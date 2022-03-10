@@ -1,0 +1,8 @@
+{
+  "name": "@builder.io/qwik/optimizer",
+  "version": "0.0.17-0-dev20220309001500",
+  "main": "../optimizer.cjs",
+  "module": "../optimizer.mjs",
+  "types": "../optimizer.d.ts",
+  "private": true
+}

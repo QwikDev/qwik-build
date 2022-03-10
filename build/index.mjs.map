@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../src/build/index.ts"],
+  "sourcesContent": ["/**\n * True when build is made for SSR purposes\n *\n * @alpha\n */\nexport const isServer: boolean = /*#__PURE__*/ (() => typeof process !== \"undefined\" &&\n  process.versions != null &&\n  process.versions.node != null\n)();\n\n\n/**\n * True when build is made for browser, client-side execution\n *\n * @alpha\n */\nexport const isBrowser: boolean = /*#__PURE__*/ (() => typeof window !== \"undefined\" && window.document != null)();\n"],
+  "mappings": ";AAKO,IAAM,WAAmC,uBAAM,OAAO,YAAY,eACvE,QAAQ,YAAY,QACpB,QAAQ,SAAS,QAAQ;AASpB,IAAM,YAAoC,uBAAM,OAAO,WAAW,eAAe,OAAO,YAAY;",
+  "names": []
+}
