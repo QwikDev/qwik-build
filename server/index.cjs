@@ -8969,19 +8969,17 @@ var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
 var import_qwik = require("../core.cjs");
 var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
-var _nextTick = typeof queueMicrotask === "function" ? queueMicrotask : process.nextTick;
 function createPlatform(document, opts) {
   if (!document || document.nodeType !== 9) {
     throw new Error(`Invalid Document implementation`);
   }
-  let queuePromise;
   const doc = document;
   const symbols = opts.symbols;
   if (opts == null ? void 0 : opts.url) {
     doc.location.href = opts.url.href;
   }
   const serverPlatform = {
-    async importSymbol(element, qrl, symbolName) {
+    async importSymbol(_element, qrl, symbolName) {
       let [modulePath] = String(qrl).split("#");
       if (!modulePath.endsWith(".js")) {
         modulePath += ".js";
@@ -8993,23 +8991,19 @@ function createPlatform(document, opts) {
       }
       return symbol;
     },
-    queueRender: (renderMarked) => {
-      if (!queuePromise) {
-        queuePromise = new Promise((resolve, reject) => _setImmediate(() => {
-          queuePromise = null;
-          renderMarked(doc).then(resolve, reject);
-        }));
-      }
-      return queuePromise;
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        _setImmediate(() => {
+          resolve(fn());
+        });
+      });
     },
-    queueStoreFlush: (flushStore) => {
-      if (!queuePromise) {
-        queuePromise = new Promise((resolve, reject) => _nextTick(() => {
-          queuePromise = null;
-          flushStore(doc).then(resolve, reject);
-        }));
-      }
-      return queuePromise;
+    nextTick: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
+        });
+      });
     },
     chunkForSymbol(symbolName) {
       let symbol;
@@ -9300,7 +9294,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.17-0-dev20220309001500",
+  qwik: "0.0.17-0-dev20220310211125",
   qwikDom: "2.1.9"
 };
 module.exports = __toCommonJS(server_exports);

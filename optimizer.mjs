@@ -9,6 +9,16 @@ var __export = (target, all) => {
   }
 };
 
+var qDev = false !== globalThis.qDev;
+
+var qTest = void 0 !== globalThis.describe;
+
+var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
+
+var logWarn = (message, ...optionalParams) => {
+  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+};
+
 var path_exports = {};
 
 __export(path_exports, {
@@ -488,7 +498,7 @@ async function loadPlatformBinding(sys) {
             const mod = await sys.dynamicImport("./" + platformBindingPath);
             return mod;
           } catch (e) {
-            console.warn(e);
+            logWarn(e);
           }
         }
       }
@@ -986,7 +996,7 @@ function getBuildFile(isSSR) {
 }
 
 var versions = {
-  qwik: "0.0.17-0-dev20220309001500"
+  qwik: "0.0.17-0-dev20220310211125"
 };
 
 export { createOptimizer, qwikRollup, qwikVite, versions };

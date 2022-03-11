@@ -6,7 +6,9 @@
  */
 var __create = Object.create;
 var __defProp = Object.defineProperty;
+var __defProps = Object.defineProperties;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __getProtoOf = Object.getPrototypeOf;
@@ -24,6 +26,7 @@ var __spreadValues = (a, b) => {
     }
   return a;
 };
+var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __markAsModule = (target) => __defProp(target, "__esModule", { value: true });
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
@@ -88,7 +91,6 @@ function createPlatform(document2) {
   }
   const doc = document2;
   let render2 = null;
-  let store = null;
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform = {
     importSymbol(element, url, symbolName) {
@@ -103,7 +105,7 @@ function createPlatform(document2) {
         return mod2[symbolName];
       });
     },
-    queueRender: (renderMarked2) => {
+    nextTick: (renderMarked2) => {
       if (!render2) {
         render2 = {
           fn: renderMarked2,
@@ -120,40 +122,22 @@ function createPlatform(document2) {
       }
       return render2.promise;
     },
-    queueStoreFlush: (storeFlush) => {
-      if (!store) {
-        store = {
-          fn: storeFlush,
-          promise: null,
-          resolve: null,
-          reject: null
-        };
-        store.promise = new Promise((resolve, reject) => {
-          store.resolve = resolve;
-          store.reject = reject;
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
         });
-      } else if (storeFlush !== store.fn) {
-        throw new Error("Must be same function");
-      }
-      return store.promise;
+      });
     },
     flush: async () => {
       await Promise.resolve();
-      if (store) {
-        try {
-          store.resolve(await store.fn(doc));
-        } catch (e) {
-          store.reject(e);
-        }
-        store = null;
-      }
       if (render2) {
         try {
           render2.resolve(await render2.fn(doc));
         } catch (e) {
           render2.reject(e);
         }
-        store = null;
+        render2 = null;
       }
     },
     chunkForSymbol() {
@@ -238,33 +222,17 @@ var import_globalthis = __toESM(require_globalthis());
 var import_globalthis = __toESM(require_globalthis());
 var QHostAttr = "q:host";
 var OnRenderProp = "on:qRender";
-var OnRenderSelector = "[q\\:host]";
 var ComponentScopedStyles = "q:sstyle";
 var ComponentStylesPrefixHost = "\u{1F4E6}";
 var ComponentStylesPrefixContent = "\u{1F3F7}\uFE0F";
-var QSlot = "Q:SLOT";
-var QSlotSelector = "Q\\:SLOT";
 var QSlotAttr = "q:slot";
 var QObjAttr = "q:obj";
 var QObjSelector = "[q\\:obj]";
-var QSlotName = "name";
 var ELEMENT_ID = "q:id";
 var ELEMENT_ID_SELECTOR = "[q\\:id]";
 var ELEMENT_ID_PREFIX = "#";
 
 // src/core/util/types.ts
-function isDomElementWithTagName(node, tagName) {
-  return isHtmlElement(node) && node.tagName.toUpperCase() == tagName.toUpperCase();
-}
-function isTemplateElement(node) {
-  return isDomElementWithTagName(node, "template");
-}
-function isQSLotTemplateElement(node) {
-  return isTemplateElement(node) && node.hasAttribute(QSlotAttr);
-}
-function isComponentElement(node) {
-  return isHtmlElement(node) && node.hasAttribute(QHostAttr);
-}
 function isHtmlElement(node) {
   return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
 }
@@ -408,18 +376,26 @@ var import_globalthis = __toESM(require_globalthis());
 
 // src/core/assert/assert.ts
 var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/log.ts
+var import_globalthis = __toESM(require_globalthis());
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  console.error("%cQWIK", STYLE, message, ...optionalParams);
+};
+var logWarn = (message, ...optionalParams) => {
+  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+};
+var logDebug = (message, ...optionalParams) => {
+  console.debug("%cQWIK", STYLE, message, ...optionalParams);
+};
+
+// src/core/assert/assert.ts
 function assertDefined(value, text) {
   if (qDev) {
     if (value != null)
       return;
     throw newError(text || "Expected defined value.");
-  }
-}
-function assertNotEqual(value1, value2, text) {
-  if (qDev) {
-    if (value1 !== value2)
-      return;
-    throw newError(text || `Expected '${value1}' !== '${value2}'.`);
   }
 }
 function assertEqual(value1, value2, text) {
@@ -429,221 +405,20 @@ function assertEqual(value1, value2, text) {
     throw newError(text || `Expected '${value1}' === '${value2}'.`);
   }
 }
-function assertGreaterOrEqual(value1, value2, text) {
-  if (qDev) {
-    if (value1 >= value2)
-      return;
-    throw newError(text || `Expected '${value1}' >= '${value2}'.`);
-  }
-}
-function assertGreater(value1, value2, text) {
-  if (qDev) {
-    if (value1 > value2)
-      return;
-    throw newError(text || `Expected '${value1}' > '${value2}'.`);
-  }
-}
 function newError(text) {
   debugger;
   const error = new Error(text);
-  console.error(error);
+  logError(error);
   return error;
 }
 
 // src/core/render/notify-render.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/platform/platform.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/element.ts
-var import_globalthis = __toESM(require_globalthis());
-function isNode(value) {
-  return value && typeof value.nodeType == "number";
-}
-function isDocument(value) {
-  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
-}
-function isElement(value) {
-  return isNode(value) && value.nodeType == 1 /* ELEMENT_NODE */;
-}
-function isComment(value) {
-  return isNode(value) && value.nodeType == 8 /* COMMENT_NODE */;
-}
-
-// src/core/platform/platform.ts
-var createPlatform2 = (doc) => {
-  let queuePromise;
-  let storePromise;
-  const moduleCache = /* @__PURE__ */ new Map();
-  return {
-    importSymbol(element, url, symbolName) {
-      const urlDoc = toUrl2(element.ownerDocument, element, url).toString();
-      const urlCopy = new URL(urlDoc);
-      urlCopy.hash = "";
-      urlCopy.search = "";
-      const importURL = urlCopy.href;
-      const mod = moduleCache.get(importURL);
-      if (mod) {
-        return mod[symbolName];
-      }
-      return Promise.resolve().then(() => __toESM(require(importURL))).then((mod2) => {
-        moduleCache.set(importURL, mod2);
-        return mod2[symbolName];
-      });
-    },
-    queueRender: (renderMarked2) => {
-      if (!queuePromise) {
-        queuePromise = new Promise((resolve, reject) => doc.defaultView.requestAnimationFrame(() => {
-          queuePromise = null;
-          renderMarked2(doc).then(resolve, reject);
-        }));
-      }
-      return queuePromise;
-    },
-    queueStoreFlush: (flushStore) => {
-      if (!storePromise) {
-        storePromise = new Promise((resolve, reject) => doc.defaultView.requestAnimationFrame(() => {
-          storePromise = null;
-          flushStore(doc).then(resolve, reject);
-        }));
-      }
-      return storePromise;
-    },
-    chunkForSymbol() {
-      return void 0;
-    }
-  };
-};
-function toUrl2(doc, element, url) {
-  let _url;
-  let _base = void 0;
-  if (url === void 0) {
-    if (element) {
-      _url = element.getAttribute("q:base");
-      _base = toUrl2(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-    } else {
-      _url = doc.baseURI;
-    }
-  } else if (url) {
-    _url = url, _base = toUrl2(doc, element.closest("[q\\:base]"));
-  } else {
-    throw new Error("INTERNAL ERROR");
-  }
-  return new URL(String(_url), _base);
-}
-var getPlatform2 = (docOrNode) => {
-  const doc = isDocument(docOrNode) ? docOrNode : docOrNode.ownerDocument;
-  return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
-};
-var DocumentPlatform = /* @__PURE__ */ Symbol();
-
 // src/core/component/component-ctx.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/render/cursor.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/array_map.ts
-var import_globalthis = __toESM(require_globalthis());
-function arrayInsert2(array, index, value1, value2) {
-  let end = array.length;
-  if (end == index) {
-    array.push(value1, value2);
-  } else if (end === 1) {
-    array.push(value2, array[0]);
-    array[0] = value1;
-  } else {
-    end--;
-    array.push(array[end - 1], array[end]);
-    while (end > index) {
-      const previousEnd = end - 2;
-      array[end] = array[previousEnd];
-      end--;
-    }
-    array[index] = value1;
-    array[index + 1] = value2;
-  }
-}
-function keyValueArrayGet(keyValueArray, key, notFoundFactory) {
-  const index = keyValueArrayIndexOf(keyValueArray, key);
-  if (index >= 0) {
-    return keyValueArray[index | 1];
-  }
-  if (notFoundFactory) {
-    const value = notFoundFactory();
-    arrayInsert2(keyValueArray, ~index, key, value);
-    return value;
-  }
-  return void 0;
-}
-function keyValueArrayIndexOf(keyValueArray, key) {
-  return _arrayIndexOfSorted(keyValueArray, key, 1);
-}
-function _arrayIndexOfSorted(array, value, shift) {
-  let start = 0;
-  let end = array.length >> shift;
-  while (end !== start) {
-    const middle = start + (end - start >> 1);
-    const current = array[middle << shift];
-    if (value === current) {
-      return middle << shift;
-    } else if (current > value) {
-      end = middle;
-    } else {
-      start = middle + 1;
-    }
-  }
-  return ~(end << shift);
-}
-
-// src/core/render/slots.ts
-var import_globalthis = __toESM(require_globalthis());
-function isSlotMap(value) {
-  return Array.isArray(value);
-}
-function getSlotMap(component2) {
-  const slots = [];
-  const host = component2.hostElement;
-  const firstChild = host.firstElementChild;
-  if (isQSlotTemplate(firstChild)) {
-    slotMapAddChildren(slots, firstChild.content, null);
-  }
-  const previousSlots = [];
-  host.querySelectorAll(QSlotSelector).forEach((qSlot) => {
-    for (const parent of previousSlots) {
-      if (parent.contains(qSlot)) {
-        return;
-      }
-    }
-    previousSlots.push(qSlot);
-    const name = qSlot.getAttribute("name") || "";
-    slotMapAddChildren(slots, qSlot, name);
-  });
-  return slots;
-}
-function isQSlotTemplate(node) {
-  return isDomElementWithTagName(node, "template") && node.hasAttribute(QSlotAttr);
-}
-function slotMapAddChildren(slots, parent, name) {
-  _slotParent = parent;
-  let child = parent.firstChild;
-  if (name !== null) {
-    keyValueArrayGet(slots, name, emptyArrayFactory);
-  }
-  while (child) {
-    const slotName = name !== null ? name : isHtmlElement(child) && child.getAttribute(QSlotAttr) || "";
-    keyValueArrayGet(slots, slotName, emptyArrayFactory).push(child);
-    child = child.nextSibling;
-  }
-  _slotParent = void 0;
-}
-var _slotParent;
-function emptyArrayFactory() {
-  return [-1, _slotParent];
-}
-
-// src/core/props/props-on.ts
+// src/core/render/render.ts
 var import_globalthis = __toESM(require_globalthis());
 
 // src/core/index.ts
@@ -683,6 +458,20 @@ var QRL = class {
 };
 var QRLInternal = QRL;
 var FIND_EXT = /\.[\w?=&]+$/;
+
+// src/core/util/dom.ts
+var import_globalthis = __toESM(require_globalthis());
+function getDocument(node) {
+  if (typeof document !== "undefined") {
+    return document;
+  }
+  let doc = node.ownerDocument;
+  while (doc && doc.nodeType !== 9) {
+    doc = doc.parentNode;
+  }
+  assertDefined(doc);
+  return doc;
+}
 
 // src/core/import/qrl.ts
 var runtimeSymbolId = 0;
@@ -743,7 +532,7 @@ function parseQRL(qrl2, element) {
   const captureEndIdx = endIdx;
   const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : JSONparse(qrl2.substring(captureStartIdx, captureEndIdx));
   if (chunk === RUNTIME_QRL) {
-    console.error(`Q-ERROR: '${qrl2}' is runtime but no instance found on element.`);
+    logError(`Q-ERROR: '${qrl2}' is runtime but no instance found on element.`);
   }
   return new QRLInternal(chunk, symbol, null, null, capture, null, guard);
 }
@@ -751,7 +540,7 @@ function JSONparse(json) {
   try {
     return JSON.parse(json);
   } catch (e) {
-    console.error("JSON:", json);
+    logError("JSON:", json);
     throw e;
   }
 }
@@ -788,15 +577,92 @@ function toQrlOrError(symbolOrQrl) {
 
 // src/core/import/qrl.public.ts
 var import_globalthis = __toESM(require_globalthis());
+
+// src/core/platform/platform.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/element.ts
+var import_globalthis = __toESM(require_globalthis());
+function isNode(value) {
+  return value && typeof value.nodeType == "number";
+}
+function isDocument(value) {
+  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
+}
+function isElement(value) {
+  return isNode(value) && value.nodeType == 1 /* ELEMENT_NODE */;
+}
+
+// src/core/platform/platform.ts
+var createPlatform2 = (doc) => {
+  const moduleCache = /* @__PURE__ */ new Map();
+  return {
+    importSymbol(element, url, symbolName) {
+      const urlDoc = toUrl2(doc, element, url).toString();
+      const urlCopy = new URL(urlDoc);
+      urlCopy.hash = "";
+      urlCopy.search = "";
+      const importURL = urlCopy.href;
+      const mod = moduleCache.get(importURL);
+      if (mod) {
+        return mod[symbolName];
+      }
+      return Promise.resolve().then(() => __toESM(require(importURL))).then((mod2) => {
+        moduleCache.set(importURL, mod2);
+        return mod2[symbolName];
+      });
+    },
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          resolve(fn());
+        });
+      });
+    },
+    nextTick: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
+        });
+      });
+    },
+    chunkForSymbol() {
+      return void 0;
+    }
+  };
+};
+function toUrl2(doc, element, url) {
+  let _url;
+  let _base = void 0;
+  if (url === void 0) {
+    if (element) {
+      _url = element.getAttribute("q:base");
+      _base = toUrl2(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
+    } else {
+      _url = doc.baseURI;
+    }
+  } else if (url) {
+    _url = url, _base = toUrl2(doc, element.closest("[q\\:base]"));
+  } else {
+    throw new Error("INTERNAL ERROR");
+  }
+  return new URL(String(_url), _base);
+}
+var getPlatform2 = (docOrNode) => {
+  const doc = isDocument(docOrNode) ? docOrNode : getDocument(docOrNode);
+  return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
+};
+var DocumentPlatform = /* @__PURE__ */ Symbol();
+
+// src/core/import/qrl.public.ts
 async function qrlImport(element, qrl2) {
   const qrl_ = toInternalQRL(qrl2);
   if (qrl_.symbolRef)
     return qrl_.symbolRef;
-  const doc = element.ownerDocument;
   if (qrl_.symbolFn) {
     return qrl_.symbolRef = qrl_.symbolFn().then((module2) => module2[qrl_.symbol]);
   } else {
-    return qrl_.symbolRef = await getPlatform2(doc).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    return qrl_.symbolRef = await getPlatform2(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
   }
 }
 function $(expression) {
@@ -807,59 +673,6 @@ function implicit$FirstArg(fn) {
     return fn.call(null, $(first), ...rest);
   };
 }
-
-// src/core/render/jsx/factory.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/array.ts
-var import_globalthis = __toESM(require_globalthis());
-function flattenArray(array, dst) {
-  if (!dst)
-    dst = [];
-  for (const item of array) {
-    if (Array.isArray(item)) {
-      flattenArray(item, dst);
-    } else {
-      dst.push(item);
-    }
-  }
-  return dst;
-}
-
-// src/core/render/jsx/jsx-runtime.ts
-var import_globalthis = __toESM(require_globalthis());
-var JSXNodeImpl = class {
-  constructor(type, props, key) {
-    this.type = type;
-    this.props = props;
-    this.key = key;
-    if (props) {
-      if (props.children !== void 0) {
-        if (Array.isArray(props.children)) {
-          this.children = props.children;
-        } else {
-          this.children = [props.children];
-        }
-      } else {
-        this.children = EMPTY_ARRAY;
-      }
-    }
-  }
-};
-var isJSXNode = (n) => {
-  if (qDev) {
-    if (n instanceof JSXNodeImpl) {
-      return true;
-    }
-    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
-      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-    }
-    return false;
-  } else {
-    return n instanceof JSXNodeImpl;
-  }
-};
-var Fragment = {};
 
 // src/core/use/use-core.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -875,7 +688,7 @@ function getInvokeContext() {
     }
     if (Array.isArray(context)) {
       const element = context[0];
-      const hostElement = element.closest(OnRenderSelector);
+      const hostElement = getHostElement(element);
       assertDefined(element);
       return document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]);
     }
@@ -911,6 +724,26 @@ function newInvokeContext(hostElement, element, event, url) {
 function useWaitOn(promise) {
   const ctx = getInvokeContext();
   (ctx.waitOn || (ctx.waitOn = [])).push(promise);
+}
+function getHostElement(el) {
+  let foundSlot = false;
+  let node = el;
+  while (node) {
+    const isHost = node.hasAttribute(QHostAttr);
+    const isSlot = node.tagName === "Q:SLOT";
+    if (isHost) {
+      if (!foundSlot) {
+        break;
+      } else {
+        foundSlot = false;
+      }
+    }
+    if (isSlot) {
+      foundSlot = true;
+    }
+    node = node.parentElement;
+  }
+  return node;
 }
 
 // src/core/use/use-host-element.public.ts
@@ -981,7 +814,7 @@ function _useStyles(styles, scoped) {
     hostElement.setAttribute(ComponentScopedStyles, styleId);
   }
   useWaitOn(qrlImport(hostElement, styleQrl).then((styleText) => {
-    const document2 = hostElement.ownerDocument;
+    const document2 = getDocument(hostElement);
     const head = document2.querySelector("head");
     if (head && !head.querySelector(`style[q\\:style="${styleId}"]`)) {
       const style = document2.createElement("style");
@@ -1006,6 +839,7 @@ var import_globalthis = __toESM(require_globalthis());
 function QStore_hydrate(doc) {
   const script = doc.querySelector('script[type="qwik/json"]');
   doc.qDehydrate = () => QStore_dehydrate(doc);
+  const map = getProxyMap(doc);
   if (script) {
     script.parentElement.removeChild(script);
     const meta = JSON.parse(script.textContent || "{}");
@@ -1014,10 +848,10 @@ function QStore_hydrate(doc) {
       const id = el.getAttribute(ELEMENT_ID);
       elements.set(ELEMENT_ID_PREFIX + id, el);
     });
-    reviveQObjects(meta.objs, meta.subs, elements);
     for (const obj of meta.objs) {
       reviveNestedQObjects(obj, meta.objs);
     }
+    reviveQObjects(meta.objs, meta.subs, elements, map);
     doc.querySelectorAll(QObjSelector).forEach((el) => {
       const qobj = el.getAttribute(QObjAttr);
       const host = el.getAttribute(QHostAttr);
@@ -1043,9 +877,13 @@ function QStore_dehydrate(doc) {
   function getElementID(el) {
     let id = elementToIndex.get(el);
     if (id === void 0) {
-      id = intToStr(elementToIndex.size);
-      el.setAttribute(ELEMENT_ID, id);
-      id = ELEMENT_ID_PREFIX + id;
+      if (el.isConnected) {
+        id = intToStr(elementToIndex.size);
+        el.setAttribute(ELEMENT_ID, id);
+        id = ELEMENT_ID_PREFIX + id;
+      } else {
+        id = null;
+      }
       elementToIndex.set(el, id);
     }
     return id;
@@ -1072,8 +910,8 @@ function QStore_dehydrate(doc) {
     const subs2 = a[QOjectSubsSymbol];
     if (subs2) {
       return Object.fromEntries(Array.from(subs2.entries()).map(([el, set]) => {
-        if (el.isConnected) {
-          const id = getElementID(el);
+        const id = getElementID(el);
+        if (id !== null) {
           return [id, Array.from(set)];
         } else {
           return [void 0, void 0];
@@ -1089,8 +927,31 @@ function QStore_dehydrate(doc) {
     objToId.set(obj, count);
     count++;
   }
+  const convert = (value) => {
+    var _a, _b;
+    if (value && typeof value === "object") {
+      value = (_a = value[QOjectTargetSymbol]) != null ? _a : value;
+    }
+    const idx = objToId.get(value);
+    if (idx !== void 0) {
+      return intToStr(idx);
+    }
+    return (_b = elementToIndex.get(value)) != null ? _b : value;
+  };
+  const convertedObjs = objs.map((obj) => {
+    if (Array.isArray(obj)) {
+      return obj.map(convert);
+    } else if (typeof obj === "object") {
+      const output = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        output[key] = convert(value);
+      });
+      return output;
+    }
+    return obj;
+  });
   const data = {
-    objs,
+    objs: convertedObjs,
     subs
   };
   elements.forEach((node) => {
@@ -1115,37 +976,37 @@ function QStore_dehydrate(doc) {
       node.setAttribute(QHostAttr, objs2.map((obj) => ctx.refMap.indexOf(obj)).join(" "));
     }
   });
+  if (qDev) {
+    elementToIndex.forEach((value, el) => {
+      if (getDocument(el) !== doc) {
+        logWarn("element from different document", value, el.tagName);
+      }
+      if (!value) {
+        logWarn("unconnected element", el.tagName, "\n");
+      }
+    });
+  }
   const script = doc.createElement("script");
   script.setAttribute("type", "qwik/json");
-  script.textContent = JSON.stringify(data, function(key, value) {
-    var _a, _b;
-    if (key.startsWith("__"))
-      return void 0;
-    if (value && typeof value === "object") {
-      value = (_a = value[QOjectTargetSymbol]) != null ? _a : value;
-    }
-    if (this === objs)
-      return value;
-    const idx = objToId.get(value);
-    if (idx !== void 0) {
-      return intToStr(idx);
-    }
-    return (_b = elementToIndex.get(value)) != null ? _b : value;
-  }, qDev ? "  " : void 0);
+  script.textContent = JSON.stringify(data, void 0, qDev ? "  " : void 0);
   doc.body.appendChild(script);
 }
-function reviveQObjects(objs, subs, elementMap) {
+function reviveQObjects(objs, subs, elementMap, map) {
   for (let i = 0; i < objs.length; i++) {
     const sub = subs[i];
     if (sub) {
       const value = objs[i];
-      const converted = new Map(Object.entries(sub).map((entry) => {
+      const converted = /* @__PURE__ */ new Map();
+      Object.entries(sub).forEach((entry) => {
         const el = elementMap.get(entry[0]);
-        assertDefined(el);
+        if (!el) {
+          logWarn("QWIK can not revive subscriptions because of missing element ID", entry, value);
+          return;
+        }
         const set = new Set(entry[1]);
-        return [el, set];
-      }));
-      objs[i] = _restoreQObject(value, converted);
+        converted.set(el, set);
+      });
+      objs[i] = _restoreQObject(value, map, converted);
     }
   }
 }
@@ -1224,62 +1085,6 @@ function useProps() {
 
 // src/core/watch/watch.ts
 var import_globalthis = __toESM(require_globalthis());
-
-// src/core/watch/observer.ts
-var import_globalthis = __toESM(require_globalthis());
-function createWatchFnObserver(doc) {
-  const subscriptions = /* @__PURE__ */ new Map();
-  function wrap2(obj) {
-    const id = `${doc}`;
-    if (!id) {
-      throw new Error("Q-ERROR: only object stores can be observed.");
-    }
-    const obs = subscriptions.get(obj);
-    if (obs) {
-      return obs.value;
-    }
-    const proxy = new SubscribeProxy(obj, subscriptions, wrap2);
-    const value = new Proxy(obj, proxy);
-    subscriptions.set(obj, { value, proxy });
-    return value;
-  }
-  wrap2.getGuard = function() {
-    const map = /* @__PURE__ */ new Map();
-    subscriptions.forEach(() => {
-      return "";
-    });
-    return map;
-  };
-  return wrap2;
-}
-var SubscribeProxy = class {
-  constructor(obj, subscriptions, wrap2) {
-    this.obj = obj;
-    this.subscriptions = subscriptions;
-    this.wrap = wrap2;
-    this.properties = null;
-  }
-  get(target, prop) {
-    let value = target[prop];
-    const props = this.properties || (this.properties = /* @__PURE__ */ new Set());
-    props.add(prop);
-    if (typeof value == "object" && value != null) {
-      value = this.wrap(value);
-    }
-    return value;
-  }
-  set(_, prop, newValue) {
-    throw new Error("Writing to observables is not allowed! Property: " + prop + " " + newValue);
-  }
-  has(target, property) {
-    return Object.prototype.hasOwnProperty.call(target, property);
-  }
-  ownKeys(target) {
-    return Object.getOwnPropertyNames(target);
-  }
-};
-
-// src/core/watch/watch.ts
 var ON_WATCH = "on:qWatch";
 function registerOnWatch(element, props, watchFnQrl) {
   props[ON_WATCH] = watchFnQrl;
@@ -1294,22 +1099,10 @@ async function invokeWatchFn(element, watchFnQrl) {
     try {
       previousCleanupFn();
     } catch (e) {
-      console.error(e);
+      logError(e);
     }
   }
-  const obs = createWatchFnObserver(element.ownerDocument);
-  try {
-    const nextCleanupFn = watchFn(obs);
-    if (isCleanupFn(nextCleanupFn)) {
-      cleanupFnMap.set(watchFn, nextCleanupFn);
-    }
-  } catch (e) {
-    console.error(e);
-  } finally {
-    watchFnQrl.guard = obs.getGuard();
-    const ctx = getContext(element);
-    setEvent(ctx, ON_WATCH, watchFnQrl);
-  }
+  throw new Error("TO IMPLEMENT");
 }
 function isCleanupFn(value) {
   return typeof value === "function";
@@ -1324,141 +1117,90 @@ var onWatch$ = implicit$FirstArg(onWatch);
 // src/core/render/jsx/async.public.ts
 var import_globalthis = __toESM(require_globalthis());
 
+// src/core/render/jsx/factory.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/array.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/render/jsx/jsx-runtime.ts
+var import_globalthis = __toESM(require_globalthis());
+
 // src/core/render/jsx/host.public.ts
 var import_globalthis = __toESM(require_globalthis());
 var Host = { __brand__: "host" };
+var SkipRerender = { __brand__: "skip" };
+
+// src/core/render/jsx/jsx-runtime.ts
+var JSXNodeImpl = class {
+  constructor(type, props, key = null) {
+    this.type = type;
+    this.props = props;
+    this.children = EMPTY_ARRAY;
+    this.text = void 0;
+    this.key = null;
+    if (key != null) {
+      this.key = String(key);
+    }
+    if (props) {
+      const children = processNode(props.children);
+      if (children !== void 0) {
+        if (Array.isArray(children)) {
+          this.children = children;
+        } else {
+          this.children = [children];
+        }
+      }
+    }
+  }
+};
+function processNode(node) {
+  if (node == null || typeof node === "boolean") {
+    return void 0;
+  }
+  if (isJSXNode(node)) {
+    if (node.type === Host || node.type === SkipRerender) {
+      return node;
+    } else if (typeof node.type === "function") {
+      return processNode(node.type(__spreadProps(__spreadValues({}, node.props), { children: node.children }), node.key));
+    } else {
+      return node;
+    }
+  } else if (Array.isArray(node)) {
+    return node.flatMap(processNode).filter((e) => e != null);
+  } else if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
+    const newNode = new JSXNodeImpl("#text", null, null);
+    newNode.text = String(node);
+    return newNode;
+  } else {
+    logWarn("Unvalid node, skipping");
+    return void 0;
+  }
+}
+var isJSXNode = (n) => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
+      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+    }
+    return false;
+  } else {
+    return n instanceof JSXNodeImpl;
+  }
+};
 
 // src/core/render/jsx/slot.public.ts
 var import_globalthis = __toESM(require_globalthis());
-var Slot = {
-  __brand__: "slot"
-};
 
 // src/core/render/render.public.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/util/promises.ts
-var import_globalthis = __toESM(require_globalthis());
-function flattenPromiseTree(tree) {
-  return Promise.all(tree).then((values) => {
-    const flatArray = flattenArray(values);
-    for (let i = 0; i < flatArray.length; i++) {
-      if (isPromise(flatArray[i])) {
-        return flattenPromiseTree(flatArray);
-      }
-    }
-    return flatArray;
-  });
-}
-function isPromise(value) {
-  return value instanceof Promise;
-}
-var then = (promise, thenFn) => {
-  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
-};
-
-// src/core/render/render.ts
-var import_globalthis = __toESM(require_globalthis());
-function visitJsxNode(component2, renderQueue, cursor, jsxNode, isSvg) {
-  if (isJSXNode(jsxNode)) {
-    const nodeType = jsxNode.type;
-    if (nodeType == null)
-      return;
-    if (typeof nodeType === "string") {
-      visitJsxLiteralNode(component2, renderQueue, cursor, jsxNode, isSvg);
-    } else if (nodeType === Fragment || nodeType == null) {
-      const jsxChildren = jsxNode.children || EMPTY_ARRAY;
-      for (const jsxChild of jsxChildren) {
-        visitJsxNode(component2, renderQueue, cursor, jsxChild, isSvg);
-      }
-    } else if (jsxNode.type === Host) {
-      updateProperties(cursor.parent, jsxNode.props, isSvg);
-      const jsxChildren = jsxNode.children || EMPTY_ARRAY;
-      for (const jsxChild of jsxChildren) {
-        visitJsxNode(component2, renderQueue, cursor, jsxChild, isSvg);
-      }
-    } else if (jsxNode.type === Slot) {
-      component2 && visitQSlotJsxNode(component2, renderQueue, cursor, jsxNode, isSvg);
-    } else if (typeof jsxNode.type === "function") {
-      visitJsxNode(component2, renderQueue, cursor, jsxNode.type(jsxNode.props), isSvg);
-    } else {
-      throw qError(600 /* Render_unexpectedJSXNodeType_type */, nodeType);
-    }
-  } else if (isPromise(jsxNode)) {
-    const vNodeCursor = cursorReconcileVirtualNode(cursor);
-    const render2 = (jsxNode2) => {
-      cursorReconcileStartVirtualNode(vNodeCursor);
-      visitJsxNode(component2, renderQueue, vNodeCursor, jsxNode2, isSvg);
-      cursorReconcileEnd(vNodeCursor);
-    };
-    jsxNode.then(render2, render2);
-    if (jsxNode.whilePending) {
-      const vNodePending = cursorClone(vNodeCursor);
-      cursorReconcileStartVirtualNode(vNodePending);
-      visitJsxNode(component2, renderQueue, vNodePending, jsxNode.whilePending, isSvg);
-      cursorReconcileEnd(vNodePending);
-    }
-  } else if (Array.isArray(jsxNode)) {
-    const jsxChildren = jsxNode;
-    for (const jsxChild of jsxChildren) {
-      visitJsxNode(component2, renderQueue, cursor, jsxChild, isSvg);
-    }
-  } else if (typeof jsxNode === "string" || typeof jsxNode === "number") {
-    cursorReconcileText(cursor, String(jsxNode));
-  }
-}
-function visitJsxLiteralNode(component2, renderQueue, cursor, jsxNode, isSvg) {
-  const jsxTag = jsxNode.type;
-  const isQComponent = OnRenderProp in jsxNode.props;
-  if (!isSvg) {
-    isSvg = jsxTag === "svg";
-  }
-  const elementCursor = cursorReconcileElement(cursor, component2, jsxTag, jsxNode.props, isQComponent ? renderQueue : null, isSvg);
-  if (isSvg && jsxTag === "foreignObject") {
-    isSvg = false;
-  }
-  if (!hasInnerHtmlOrTextBinding(jsxNode)) {
-    const jsxChildren = jsxNode.children || EMPTY_ARRAY;
-    for (const jsxChild of jsxChildren) {
-      visitJsxNode(component2, renderQueue, elementCursor, jsxChild, isSvg);
-    }
-    cursorReconcileEnd(elementCursor);
-  } else if (isQComponent) {
-    throw new Error("innerHTML/innerText bindings not supported on component content");
-  }
-}
-function hasInnerHtmlOrTextBinding(jsxNode) {
-  return "innerHTML" in jsxNode.props || "innerText" in jsxNode.props;
-}
-function visitQSlotJsxNode(component2, renderQueue, cursor, jsxNode, isSvg) {
-  const slotName = jsxNode.props.name || "";
-  const slotCursor = cursorReconcileElement(cursor, component2, QSlot, __spreadValues({ [QSlotName]: slotName }, jsxNode.props), null, isSvg);
-  const slotMap = getSlotMap(component2);
-  const namedSlot = keyValueArrayGet(slotMap, slotName);
-  if (namedSlot && namedSlot.length > 2 /* firstNode */) {
-    const cursorParent = slotCursor.parent;
-    if (namedSlot[1 /* parent */] !== cursorParent) {
-      cursorReconcileEnd(slotCursor);
-      for (let i = 2 /* firstNode */; i < namedSlot.length; i++) {
-        const node = namedSlot[i];
-        cursorParent.appendChild(node);
-      }
-      cursorReconcileEnd(slotCursor);
-    }
-    renderMarked(cursorParent.ownerDocument);
-  } else {
-    const jsxChildren = jsxNode.children;
-    for (const jsxChild of jsxChildren) {
-      visitJsxNode(component2, renderQueue, slotCursor, jsxChild, isSvg);
-    }
-    cursorReconcileEnd(slotCursor);
-  }
-}
-
-// src/core/use/use-event.public.ts
+// src/core/render/cursor.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/use/use-lexical-scope.public.ts
+// src/core/props/props-on.ts
 var import_globalthis = __toESM(require_globalthis());
 
 // src/core/json/q-json.ts
@@ -1467,23 +1209,27 @@ function qDeflate(obj, hostCtx) {
   return hostCtx.refMap.add(obj);
 }
 
-// src/core/use/use-url.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-store.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-transient.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/index.ts
-var version = globalThis.QWIK_VERSION;
-
 // src/core/util/case.ts
 var import_globalthis = __toESM(require_globalthis());
 function fromCamelToKebabCase(text) {
   return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
+
+// src/core/util/promises.ts
+var import_globalthis = __toESM(require_globalthis());
+function isPromise(value) {
+  return value instanceof Promise;
+}
+var then = (promise, thenFn) => {
+  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+};
+var promiseAll = (promises) => {
+  const hasPromise = promises.some(isPromise);
+  if (hasPromise) {
+    return Promise.all(promises);
+  }
+  return promises;
+};
 
 // src/core/util/stringify.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -1525,7 +1271,7 @@ function qPropReadQRL(ctx, prop) {
     }));
   };
 }
-function qPropWriteQRL(ctx, prop, value) {
+function qPropWriteQRL(rctx, ctx, prop, value) {
   if (!value) {
     return;
   }
@@ -1535,7 +1281,7 @@ function qPropWriteQRL(ctx, prop, value) {
   }
   const existingQRLs = getExistingQRLs(ctx, prop);
   if (Array.isArray(value)) {
-    value.forEach((value2) => qPropWriteQRL(ctx, prop, value2));
+    value.forEach((value2) => qPropWriteQRL(rctx, ctx, prop, value2));
   } else if (isQrl(value)) {
     const capture = value.capture;
     if (capture == null) {
@@ -1552,12 +1298,12 @@ function qPropWriteQRL(ctx, prop, value) {
     existingQRLs.push(value);
   } else if (isQrlFactory(value)) {
     if (existingQRLs.length === 0) {
-      qPropWriteQRL(ctx, prop, value(ctx.element));
+      qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
     }
   } else if (isPromise(value)) {
     const writePromise = value.then((qrl2) => {
       existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-      qPropWriteQRL(ctx, prop, qrl2);
+      qPropWriteQRL(rctx, ctx, prop, qrl2);
       return qrl2;
     });
     existingQRLs.push(writePromise);
@@ -1568,7 +1314,10 @@ function qPropWriteQRL(ctx, prop, value) {
     getEvents(ctx)[prop] = serializeQRLs(existingQRLs, ctx);
   } else {
     const kebabProp = fromCamelToKebabCase(prop);
-    ctx.element.setAttribute(kebabProp, serializeQRLs(existingQRLs, ctx));
+    const newValue = serializeQRLs(existingQRLs, ctx);
+    if (ctx.element.getAttribute(kebabProp) !== newValue) {
+      setAttribute(rctx, ctx.element, kebabProp, newValue);
+    }
   }
 }
 function getExistingQRLs(ctx, prop) {
@@ -1599,160 +1348,453 @@ function getExistingQRLs(ctx, prop) {
   return parts;
 }
 function serializeQRLs(existingQRLs, ctx) {
-  const platform = getPlatform2(ctx.element.ownerDocument);
+  const platform = getPlatform2(getDocument(ctx.element));
   const element = ctx.element;
   return existingQRLs.map((qrl2) => isPromise(qrl2) ? "" : stringifyQRL(qrl2, element, platform)).filter((v) => !!v).join("\n");
 }
 
 // src/core/render/cursor.ts
 var SVG_NS = "http://www.w3.org/2000/svg";
-function cursorForParent(parent) {
-  let firstChild = parent.firstChild;
-  if (firstChild && firstChild.nodeType === 10 /* DOCUMENT_TYPE_NODE */) {
-    firstChild = firstChild.nextSibling;
-  }
-  return newCursor(parent, firstChild, null);
-}
-function newCursor(parent, node, end) {
-  return { parent, node, end };
-}
-function getNode(cursor) {
-  const node = cursor.node;
-  return cursor.end == node ? null : node;
-}
-function setNode(cursor, node) {
-  cursor.node = cursor.end == node ? null : node;
-}
-function cursorClone(cursor) {
-  return newCursor(cursor.parent, cursor.node, cursor.end);
-}
-function cursorForComponent(componentHost) {
-  assertEqual(isComponentElement(componentHost), true);
-  let firstNonTemplate = componentHost.firstChild;
-  if (isQSLotTemplateElement(firstNonTemplate)) {
-    firstNonTemplate = firstNonTemplate.nextSibling;
-  }
-  return newCursor(componentHost, firstNonTemplate, null);
-}
-function cursorReconcileElement(cursor, component2, expectTag, expectProps, componentRenderQueue, isSvg) {
-  let node = getNode(cursor);
-  assertNotEqual(node, void 0, "Cursor already closed");
-  if (isSlotMap(node)) {
-    assertDefined(cursor.parent);
-    return slotMapReconcileSlots(cursor.parent, node, cursor.end, component2, expectTag, expectProps, componentRenderQueue, isSvg);
-  } else {
-    assertNotEqual(node, void 0, "Cursor already closed");
-    node = _reconcileElement(cursor.parent, node, cursor.end, component2, expectTag, expectProps, componentRenderQueue, isSvg);
-    assertDefined(node);
-    setNode(cursor, node.nextSibling);
-    return _reconcileElementChildCursor(node, !!componentRenderQueue);
-  }
-}
-function slotMapReconcileSlots(parent, slots, end, component2, expectTag, expectProps, componentRenderQueue, isSvg) {
-  const slotName = expectProps[QSlotAttr] || "";
-  const namedSlot = keyValueArrayGet(slots, slotName);
-  let childNode;
-  if (namedSlot) {
-    assertGreaterOrEqual(namedSlot.length, 2);
-    const parent2 = namedSlot[1 /* parent */];
-    let index = namedSlot[0 /* index */];
-    if (index == -1) {
-      index = 2;
+function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
+  if (ch.length === 1 && ch[0].type === SkipRerender) {
+    if (elm.firstChild !== null) {
+      return;
     }
-    childNode = namedSlot.length > index ? namedSlot[index] : null;
-    const node = _reconcileElement(parent2, childNode, end, component2, expectTag, expectProps, componentRenderQueue, isSvg);
-    if (childNode !== node) {
-      namedSlot[index] = node;
-      childNode = node;
-    }
-    namedSlot[0 /* index */] = index + 1;
-  } else {
-    const template = getUnSlottedStorage(parent);
-    childNode = _reconcileElement(template.content, null, end, component2, expectTag, expectProps, true, isSvg);
-    assertDefined(childNode);
+    ch = ch[0].children;
   }
-  return _reconcileElementChildCursor(childNode, !!componentRenderQueue);
+  const oldCh = getChildren(elm, mode);
+  if (oldCh.length > 0 && ch.length > 0) {
+    return updateChildren(ctx, elm, oldCh, ch, isSvg);
+  } else if (ch.length > 0) {
+    return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
+  } else if (oldCh.length > 0) {
+    return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
+  }
 }
-function _reconcileElement(parent, existing, end, component2, expectTag, expectProps, componentRenderQueue, isSvg) {
-  let shouldDescendIntoComponent;
-  let reconciledElement;
-  if (isDomElementWithTagName(existing, expectTag)) {
-    updateProperties(existing, expectProps, isSvg);
-    shouldDescendIntoComponent = !!componentRenderQueue;
-    reconciledElement = existing;
-  } else {
-    const doc = isDocument(parent) ? parent : parent.ownerDocument;
-    reconciledElement = replaceNode(parent, existing, isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag), end);
-    if (componentRenderQueue) {
-      reconciledElement.setAttribute(QHostAttr, "");
-    }
-    shouldDescendIntoComponent = !!componentRenderQueue;
-    updateProperties(reconciledElement, expectProps, isSvg);
-  }
-  component2 && component2.styleClass && reconciledElement.classList.add(component2.styleClass);
-  if (shouldDescendIntoComponent) {
-    const hostComponent = getQComponent(reconciledElement);
-    hostComponent.styleHostClass && reconciledElement.classList.add(hostComponent.styleHostClass);
-    if (Array.isArray(componentRenderQueue)) {
-      componentRenderQueue.push(hostComponent.render());
-    } else if (reconciledElement.hasAttribute(QHostAttr)) {
-      const set = getScheduled(reconciledElement.ownerDocument);
-      set.add(reconciledElement);
+function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
+  let oldStartIdx = 0;
+  let newStartIdx = 0;
+  let oldEndIdx = oldCh.length - 1;
+  let oldStartVnode = oldCh[0];
+  let oldEndVnode = oldCh[oldEndIdx];
+  let newEndIdx = newCh.length - 1;
+  let newStartVnode = newCh[0];
+  let newEndVnode = newCh[newEndIdx];
+  let oldKeyToIdx;
+  let idxInOld;
+  let elmToMove;
+  let before;
+  const results = [];
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    if (oldStartVnode == null) {
+      oldStartVnode = oldCh[++oldStartIdx];
+    } else if (oldEndVnode == null) {
+      oldEndVnode = oldCh[--oldEndIdx];
+    } else if (newStartVnode == null) {
+      newStartVnode = newCh[++newStartIdx];
+    } else if (newEndVnode == null) {
+      newEndVnode = newCh[--newEndIdx];
+    } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      results.push(patchVnode(ctx, oldStartVnode, newStartVnode, isSvg));
+      oldStartVnode = oldCh[++oldStartIdx];
+      newStartVnode = newCh[++newStartIdx];
+    } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      results.push(patchVnode(ctx, oldEndVnode, newEndVnode, isSvg));
+      oldEndVnode = oldCh[--oldEndIdx];
+      newEndVnode = newCh[--newEndIdx];
+    } else if (sameVnode(oldStartVnode, newEndVnode)) {
+      results.push(patchVnode(ctx, oldStartVnode, newEndVnode, isSvg));
+      insertBefore(ctx, parentElm, oldStartVnode, oldEndVnode.nextSibling);
+      oldStartVnode = oldCh[++oldStartIdx];
+      newEndVnode = newCh[--newEndIdx];
+    } else if (sameVnode(oldEndVnode, newStartVnode)) {
+      results.push(patchVnode(ctx, oldEndVnode, newStartVnode, isSvg));
+      insertBefore(ctx, parentElm, oldEndVnode, oldStartVnode);
+      oldEndVnode = oldCh[--oldEndIdx];
+      newStartVnode = newCh[++newStartIdx];
+    } else {
+      if (oldKeyToIdx === void 0) {
+        oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+      }
+      idxInOld = oldKeyToIdx[newStartVnode.key];
+      if (idxInOld === void 0) {
+        const newElm = createElm(ctx, newStartVnode, isSvg);
+        results.push(then(newElm, (newElm2) => {
+          insertBefore(ctx, parentElm, newElm2, oldStartVnode);
+        }));
+      } else {
+        elmToMove = oldCh[idxInOld];
+        if (elmToMove.nodeName !== newStartVnode.type) {
+          const newElm = createElm(ctx, newStartVnode, isSvg);
+          results.push(then(newElm, (newElm2) => {
+            insertBefore(ctx, parentElm, newElm2, oldStartVnode);
+          }));
+        } else {
+          results.push(patchVnode(ctx, elmToMove, newStartVnode, isSvg));
+          oldCh[idxInOld] = void 0;
+          insertBefore(ctx, parentElm, elmToMove, oldStartVnode);
+        }
+      }
+      newStartVnode = newCh[++newStartIdx];
     }
   }
-  return reconciledElement;
+  if (newStartIdx <= newEndIdx) {
+    before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+    results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
+  }
+  let wait = promiseAll(results);
+  if (oldStartIdx <= oldEndIdx) {
+    wait = then(wait, () => {
+      removeVnodes(ctx, parentElm, oldCh, oldStartIdx, oldEndIdx);
+    });
+  }
+  return wait;
 }
-var noop = () => {
-  return true;
+function isComponentNode(node) {
+  return node.props && OnRenderProp in node.props;
+}
+function getCh(elm) {
+  return Array.from(elm.childNodes).filter(isNode2);
+}
+function getChildren(elm, mode) {
+  switch (mode) {
+    case "default":
+      return getCh(elm);
+    case "slot":
+      return getCh(elm).filter(isChildSlot);
+    case "root":
+      return getCh(elm).filter(isChildComponent);
+    case "fallback":
+      return getCh(elm).filter(isFallback);
+  }
+}
+function isNode2(elm) {
+  return elm.nodeType === 1 || elm.nodeType === 3;
+}
+function isFallback(node) {
+  return node.nodeName === "Q:FALLBACK";
+}
+function isChildSlot(node) {
+  return node.nodeName !== "Q:FALLBACK" && isChildComponent(node);
+}
+function isSlotTemplate(node) {
+  return node.nodeName === "TEMPLATE" && node.hasAttribute(QSlotAttr);
+}
+function isChildComponent(node) {
+  return node.nodeName !== "TEMPLATE" || !node.hasAttribute(QSlotAttr);
+}
+function splitBy(input, condition) {
+  var _a;
+  const output = {};
+  for (const item of input) {
+    const key = condition(item);
+    const array = (_a = output[key]) != null ? _a : output[key] = [];
+    array.push(item);
+  }
+  return output;
+}
+function patchVnode(ctx, elm, vnode, isSvg) {
+  ctx.perf.visited++;
+  const tag = vnode.type;
+  if (tag === "#text") {
+    if (elm.data !== vnode.text) {
+      setProperty(ctx, elm, "data", vnode.text);
+    }
+    return;
+  }
+  if (tag === Host || tag === SkipRerender) {
+    return;
+  }
+  if (!isSvg) {
+    isSvg = tag === "svg";
+  }
+  let promise;
+  const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+  const isSlot = tag === "q:slot";
+  if (isSvg && vnode.type === "foreignObject") {
+    isSvg = false;
+  } else if (isSlot) {
+    ctx.component.slots.push(vnode);
+  }
+  const isComponent = isComponentNode(vnode);
+  let componentCtx;
+  if (dirty) {
+    assertEqual(isComponent, true);
+    componentCtx = getQComponent(elm);
+    promise = componentCtx.render(ctx);
+  }
+  const ch = vnode.children;
+  if (isComponent) {
+    return then(promise, () => {
+      const slotMaps = getSlots(componentCtx, elm);
+      const splittedChidren = splitBy(ch, getSlotName);
+      const promises = [];
+      Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
+        if (slotEl && !splittedChidren[key]) {
+          const oldCh = getChildren(slotEl, "slot");
+          if (oldCh.length > 0) {
+            removeVnodes(ctx, slotEl, oldCh, 0, oldCh.length - 1);
+          }
+        }
+      });
+      Object.entries(splittedChidren).forEach(([key, ch2]) => {
+        const slotElm = getSlotElement(ctx, slotMaps, elm, key);
+        promises.push(smartUpdateChildren(ctx, slotElm, ch2, "slot", isSvg));
+      });
+      return then(promiseAll(promises), () => {
+        removeTemplates(ctx, slotMaps);
+      });
+    });
+  }
+  return then(promise, () => {
+    const mode = isSlot ? "fallback" : "default";
+    return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
+  });
+}
+function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
+  const promises = [];
+  for (; startIdx <= endIdx; ++startIdx) {
+    const ch = vnodes[startIdx];
+    assertDefined(ch);
+    promises.push(createElm(ctx, ch, isSvg));
+  }
+  return then(promiseAll(promises), (children) => {
+    for (const child of children) {
+      insertBefore(ctx, parentElm, child, before);
+    }
+  });
+}
+function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
+  for (; startIdx <= endIdx; ++startIdx) {
+    const ch = nodes[startIdx];
+    assertDefined(ch);
+    removeNode(ctx, parentElm, ch);
+  }
+}
+var refCount = 0;
+var RefSymbol = Symbol();
+function setSlotRef(ctx, hostElm, slotEl) {
+  var _a;
+  let ref = (_a = hostElm[RefSymbol]) != null ? _a : hostElm.getAttribute("q:sref");
+  if (ref === null) {
+    ref = intToStr(refCount++);
+    hostElm[RefSymbol] = ref;
+    setAttribute(ctx, hostElm, "q:sref", ref);
+  }
+  slotEl.setAttribute("q:sref", ref);
+}
+function getSlotElement(ctx, slotMaps, parentEl, slotName) {
+  const slotEl = slotMaps.slots[slotName];
+  if (slotEl) {
+    return slotEl;
+  }
+  const templateEl = slotMaps.templates[slotName];
+  if (templateEl) {
+    return templateEl.content;
+  }
+  const template = createTemplate(ctx, slotName);
+  prepend(ctx, parentEl, template);
+  slotMaps.templates[slotName] = template;
+  return template.content;
+}
+function createTemplate(ctx, slotName) {
+  const template = createElement(ctx, "template", false);
+  template.setAttribute(QSlotAttr, slotName);
+  return template;
+}
+function removeTemplates(ctx, slotMaps) {
+  Object.keys(slotMaps.templates).forEach((key) => {
+    const template = slotMaps.templates[key];
+    if (template && slotMaps.slots[key] !== void 0) {
+      removeNode(ctx, template.parentNode, template);
+      slotMaps.templates[key] = void 0;
+    }
+  });
+}
+function resolveSlotProjection(ctx, hostElm, before, after) {
+  Object.entries(before.slots).forEach(([key, slotEl]) => {
+    if (slotEl && !after.slots[key]) {
+      const template = createTemplate(ctx, key);
+      const slotChildren = getChildren(slotEl, "slot");
+      template.content.append(...slotChildren);
+      hostElm.insertBefore(template, hostElm.firstChild);
+      ctx.operations.push({
+        el: template,
+        operation: "slot-to-template",
+        args: slotChildren,
+        fn: () => {
+        }
+      });
+    }
+  });
+  Object.entries(after.slots).forEach(([key, slotEl]) => {
+    if (slotEl && !before.slots[key]) {
+      const template = before.templates[key];
+      if (template) {
+        slotEl.appendChild(template.content);
+        template.remove();
+        ctx.operations.push({
+          el: slotEl,
+          operation: "template-to-slot",
+          args: [template],
+          fn: () => {
+          }
+        });
+      }
+    }
+  });
+}
+function getSlotName(node) {
+  var _a, _b;
+  return (_b = (_a = node.props) == null ? void 0 : _a["q:slot"]) != null ? _b : "";
+}
+function createElm(ctx, vnode, isSvg) {
+  ctx.perf.visited++;
+  const tag = vnode.type;
+  if (tag === "#text") {
+    return vnode.elm = createTextNode(ctx, vnode.text);
+  }
+  if (!isSvg) {
+    isSvg = tag === "svg";
+  }
+  const data = vnode.props;
+  const elm = vnode.elm = createElement(ctx, tag, isSvg);
+  const isComponent = isComponentNode(vnode);
+  setKey(elm, vnode.key);
+  updateProperties(ctx, elm, data, isSvg);
+  if (isSvg && tag === "foreignObject") {
+    isSvg = false;
+  }
+  const currentComponent = ctx.component;
+  if (currentComponent) {
+    const styleTag = currentComponent.styleClass;
+    if (styleTag) {
+      classlistAdd(ctx, elm, styleTag);
+    }
+    if (tag === "q:slot") {
+      setSlotRef(ctx, currentComponent.hostElement, elm);
+      ctx.component.slots.push(vnode);
+    }
+  }
+  let wait;
+  let componentCtx;
+  if (isComponent) {
+    componentCtx = getQComponent(elm);
+    const hostStyleTag = componentCtx.styleHostClass;
+    elm.setAttribute(QHostAttr, "");
+    if (hostStyleTag) {
+      classlistAdd(ctx, elm, hostStyleTag);
+    }
+    wait = componentCtx.render(ctx);
+  }
+  return then(wait, () => {
+    let children = vnode.children;
+    if (children.length > 0) {
+      if (children.length === 1 && children[0].type === SkipRerender) {
+        children = children[0].children;
+      }
+      const slotMap = isComponent ? getSlots(componentCtx, elm) : void 0;
+      const promises = children.map((ch) => createElm(ctx, ch, isSvg));
+      return then(promiseAll(promises), () => {
+        let parent = elm;
+        for (const node of children) {
+          if (slotMap) {
+            parent = getSlotElement(ctx, slotMap, elm, getSlotName(node));
+          }
+          parent.appendChild(node.elm);
+        }
+        return elm;
+      });
+    }
+    return elm;
+  });
+}
+var getSlots = (componentCtx, hostElm) => {
+  var _a, _b, _c, _d, _e;
+  const slots = {};
+  const templates = {};
+  const slotRef = hostElm.getAttribute("q:sref");
+  const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
+  const newSlots = (_a = componentCtx == null ? void 0 : componentCtx.slots) != null ? _a : EMPTY_ARRAY;
+  const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
+  for (const elm of existingSlots) {
+    slots[(_b = elm.getAttribute("name")) != null ? _b : ""] = elm;
+  }
+  for (const vnode of newSlots) {
+    slots[(_d = (_c = vnode.props) == null ? void 0 : _c.name) != null ? _d : ""] = vnode.elm;
+  }
+  for (const elm of t) {
+    templates[(_e = elm.getAttribute("name")) != null ? _e : ""] = elm;
+  }
+  return { slots, templates };
 };
-var handleStyle = (elm, _, newValue, oldValue) => {
+var handleStyle = (ctx, elm, _, newValue, oldValue) => {
   if (typeof newValue == "string") {
     elm.style.cssText = newValue;
   } else {
     for (const prop in oldValue) {
       if (!newValue || newValue[prop] == null) {
         if (prop.includes("-")) {
-          elm.style.removeProperty(prop);
+          styleSetProperty(ctx, elm, prop, null);
         } else {
-          elm.style[prop] = "";
+          setProperty(ctx, elm.style, prop, "");
         }
       }
     }
     for (const prop in newValue) {
-      if (!oldValue || newValue[prop] !== oldValue[prop]) {
+      const value = newValue[prop];
+      if (!oldValue || value !== oldValue[prop]) {
         if (prop.includes("-")) {
-          elm.style.setProperty(prop, newValue[prop]);
+          styleSetProperty(ctx, elm, prop, value);
         } else {
-          elm.style[prop] = newValue[prop];
+          setProperty(ctx, elm.style, prop, value);
         }
       }
     }
   }
   return true;
 };
-var PROP_HANDLER_MAP = {
-  class: noop,
-  style: handleStyle
+var checkBeforeAssign = (ctx, elm, prop, newValue) => {
+  if (prop in elm) {
+    if (elm[prop] !== newValue) {
+      setProperty(ctx, elm, prop, newValue);
+    }
+  }
+  return true;
 };
-var ALLOWS_PROPS = ["className", "class", "style", "id", "title"];
-function updateProperties(node, expectProps, isSvg) {
+var setInnerHTML = (ctx, elm, prop, newValue) => {
+  setProperty(ctx, elm, prop, newValue);
+  setAttribute(ctx, elm, "q:static", "");
+  return true;
+};
+var PROP_HANDLER_MAP = {
+  style: handleStyle,
+  value: checkBeforeAssign,
+  checked: checkBeforeAssign,
+  innerHTML: setInnerHTML
+};
+var ALLOWS_PROPS = ["className", "style", "id", "q:slot"];
+function updateProperties(rctx, node, expectProps, isSvg) {
+  if (!expectProps) {
+    return false;
+  }
   const ctx = getContext(node);
   const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : void 0;
   if ("class" in expectProps) {
     const className = expectProps.class;
     expectProps.className = className && typeof className == "object" ? Object.keys(className).filter((k) => className[k]).join(" ") : className;
   }
-  for (const key of Object.keys(expectProps)) {
-    if (key === "children") {
+  for (let key of Object.keys(expectProps)) {
+    if (key === "children" || key === "class") {
       continue;
     }
     const newValue = expectProps[key];
     if (isOnProp(key)) {
-      setEvent(ctx, key, newValue);
+      setEvent(rctx, ctx, key, newValue);
       continue;
     }
     if (isOn$Prop(key)) {
-      setEvent(ctx, key.replace("$", ""), $(newValue));
+      setEvent(rctx, ctx, key.replace("$", ""), $(newValue));
       continue;
     }
     const oldValue = ctx.cache.get(key);
@@ -1760,187 +1802,276 @@ function updateProperties(node, expectProps, isSvg) {
       continue;
     }
     ctx.cache.set(key, newValue);
-    const skipQwik = ALLOWS_PROPS.includes(key) || key.startsWith("h:");
-    if (qwikProps && !skipQwik) {
-      qwikProps[key] = newValue;
-    } else {
-      if (key.startsWith("data-") || key.endsWith("aria-") || isSvg) {
-        renderAttribute(node, key, newValue);
+    if (key.startsWith("data-") || key.startsWith("aria-") || isSvg) {
+      setAttribute(rctx, node, key, newValue);
+      continue;
+    }
+    if (qwikProps) {
+      const skipProperty = ALLOWS_PROPS.includes(key);
+      const hPrefixed = key.startsWith("h:");
+      if (!skipProperty && !hPrefixed) {
+        qwikProps[key] = newValue;
         continue;
       }
-      const exception = PROP_HANDLER_MAP[key];
-      if (exception) {
-        if (exception(node, key, newValue, oldValue)) {
-          continue;
-        }
+      if (hPrefixed) {
+        key = key.slice(2);
       }
-      if (key in node) {
-        try {
-          node[key] = newValue;
-        } catch (e) {
-          console.error(e);
-        }
+    }
+    const exception = PROP_HANDLER_MAP[key];
+    if (exception) {
+      if (exception(rctx, node, key, newValue, oldValue)) {
         continue;
       }
-      renderAttribute(node, key, newValue);
     }
+    if (key in node) {
+      setProperty(rctx, node, key, newValue);
+      continue;
+    }
+    setAttribute(rctx, node, key, newValue);
   }
-  return false;
+  return ctx.dirty;
 }
-function renderAttribute(node, key, newValue) {
-  if (newValue == null) {
-    node.removeAttribute(key);
-  } else {
-    node.setAttribute(key, String(newValue));
-  }
-}
-function _reconcileElementChildCursor(node, isComponent) {
-  assertDefined(node);
-  if (isComponent) {
-    return newCursor(node, getSlotMap(getQComponent(node)), null);
-  } else {
-    return cursorForParent(node);
-  }
-}
-function cursorReconcileText(cursor, expectText) {
-  let node = getNode(cursor);
-  assertNotEqual(node, void 0, "Cursor already closed");
-  assertDefined(cursor.parent);
-  if (isSlotMap(node)) {
-    let parent;
-    let childNode;
-    const namedSlot = keyValueArrayGet(node, "");
-    if (namedSlot) {
-      assertGreaterOrEqual(namedSlot.length, 2);
-      parent = namedSlot[1 /* parent */];
-      let index = namedSlot[0 /* index */];
-      if (index == -1) {
-        index = 2;
-      }
-      childNode = namedSlot.length > index ? namedSlot[index] : null;
-      node = _reconcileText(parent, childNode, cursor.end, expectText);
-      if (childNode !== node) {
-        namedSlot[index] = node;
-      }
-      namedSlot[0 /* index */] = index + 1;
+function setAttribute(ctx, el, prop, value) {
+  const fn = () => {
+    if (value == null) {
+      el.removeAttribute(prop);
     } else {
-      const template = getUnSlottedStorage(cursor.parent);
-      _reconcileText(template.content, null, cursor.end, expectText);
+      el.setAttribute(prop, String(value));
     }
-  } else {
-    node = _reconcileText(cursor.parent, node, cursor.end, expectText);
-    setNode(cursor, node.nextSibling);
+  };
+  ctx.operations.push({
+    el,
+    operation: "set-attribute",
+    args: [prop, value],
+    fn
+  });
+}
+function styleSetProperty(ctx, el, prop, value) {
+  const fn = () => {
+    if (value == null) {
+      el.style.removeProperty(prop);
+    } else {
+      el.style.setProperty(prop, String(value));
+    }
+  };
+  ctx.operations.push({
+    el,
+    operation: "style-set-property",
+    args: [prop, value],
+    fn
+  });
+}
+function classlistAdd(ctx, el, hostStyleTag) {
+  const fn = () => {
+    el.classList.add(hostStyleTag);
+  };
+  ctx.operations.push({
+    el,
+    operation: "classlist-add",
+    args: [hostStyleTag],
+    fn
+  });
+}
+function setProperty(ctx, node, key, value) {
+  const fn = () => {
+    try {
+      node[key] = value;
+    } catch (err) {
+      logError("Set property", { node, key, value }, err);
+    }
+  };
+  ctx.operations.push({
+    el: node,
+    operation: "set-property",
+    args: [key, value],
+    fn
+  });
+}
+function createElement(ctx, expectTag, isSvg) {
+  const el = isSvg ? ctx.doc.createElementNS(SVG_NS, expectTag) : ctx.doc.createElement(expectTag);
+  ctx.operations.push({
+    el,
+    operation: "create-element",
+    args: [expectTag],
+    fn: () => {
+    }
+  });
+  return el;
+}
+function insertBefore(ctx, parent, newChild, refChild) {
+  const fn = () => {
+    parent.insertBefore(newChild, refChild ? refChild : null);
+  };
+  ctx.operations.push({
+    el: parent,
+    operation: "insert-before",
+    args: [newChild, refChild],
+    fn
+  });
+  return newChild;
+}
+function prepend(ctx, parent, newChild) {
+  const fn = () => {
+    parent.insertBefore(newChild, parent.firstChild);
+  };
+  ctx.operations.push({
+    el: parent,
+    operation: "prepend",
+    args: [newChild],
+    fn
+  });
+}
+function removeNode(ctx, parent, el) {
+  const fn = () => {
+    if (el.parentNode === parent) {
+      parent.removeChild(el);
+    }
+  };
+  ctx.operations.push({
+    el,
+    operation: "remove",
+    args: [],
+    fn
+  });
+}
+function createTextNode(ctx, text) {
+  return ctx.doc.createTextNode(text);
+}
+function executeContextWithSlots(ctx) {
+  const before = ctx.roots.map((elm) => getSlots(void 0, elm));
+  executeContext(ctx);
+  const after = ctx.roots.map((elm) => getSlots(void 0, elm));
+  assertEqual(before.length, after.length);
+  for (let i = 0; i < before.length; i++) {
+    resolveSlotProjection(ctx, ctx.roots[i], before[i], after[i]);
   }
 }
-function _reconcileText(parent, node, beforeNode, expectText) {
-  if (node && node.nodeType == 3 /* TEXT_NODE */) {
-    if (node.textContent !== expectText) {
-      node.textContent = expectText;
-    }
-  } else {
-    node = replaceNode(parent, node, parent.ownerDocument.createTextNode(expectText), beforeNode);
+function executeContext(ctx) {
+  for (const op of ctx.operations) {
+    op.fn();
   }
-  return node;
 }
-function cursorReconcileEnd(cursor) {
-  let node = getNode(cursor);
-  if (isSlotMap(node)) {
-    for (let i = 0; i < node.length; i = i + 2) {
-      const namedSlot = node[i + 1];
-      if (namedSlot[0 /* index */] !== -1) {
-        assertGreater(namedSlot[0 /* index */], 1 /* parent */);
-        for (let k = namedSlot[0 /* index */]; k < namedSlot.length; k++) {
-          namedSlot[1 /* parent */].removeChild(namedSlot[k]);
-        }
-      }
-    }
-  } else {
-    while (node) {
-      const next = node.nextSibling;
-      cursor.parent.removeChild(node);
-      node = next;
-    }
-  }
-  setNode(cursor, void 0);
-}
-function getUnSlottedStorage(componentElement) {
-  assertEqual(isComponentElement(componentElement), true, "Must be component element");
-  let template = componentElement == null ? void 0 : componentElement.firstElementChild;
-  if (!isDomElementWithTagName(template, "template") || !template.hasAttribute(QSlotAttr)) {
-    template = componentElement.insertBefore(componentElement.ownerDocument.createElement("template"), template);
-    template.setAttribute(QSlotAttr, "");
-  }
-  return template;
-}
-var V_NODE_START = "<node:";
-var V_NODE_END = "</node:";
-function cursorReconcileVirtualNode(cursor) {
+function printRenderStats(ctx) {
   var _a;
-  let node = getNode(cursor);
-  if (isSlotMap(node)) {
-    throw new Error("Not expecting slot map here");
-  } else {
-    if (isComment(node) && ((_a = node.textContent) == null ? void 0 : _a.startsWith(V_NODE_START))) {
-      throw new Error("IMPLEMENT");
-    } else {
-      const id = Math.round(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
-      const parent = cursor.parent;
-      const doc = parent.ownerDocument;
-      const startVNode = doc.createComment(V_NODE_START + id + ">");
-      const endVNode = doc.createComment(V_NODE_END + id + ">");
-      node = replaceNode(cursor.parent, node, endVNode, null);
-      cursor.parent.insertBefore(startVNode, endVNode);
-      setNode(cursor, endVNode.nextSibling);
-      return newCursor(parent, startVNode, endVNode);
+  const byOp = {};
+  for (const op of ctx.operations) {
+    byOp[op.operation] = ((_a = byOp[op.operation]) != null ? _a : 0) + 1;
+  }
+  const affectedElements = Array.from(new Set(ctx.operations.map((a) => a.el)));
+  const stats = {
+    byOp,
+    roots: ctx.roots,
+    hostElements: Array.from(ctx.hostElements),
+    affectedElements,
+    visitedNodes: ctx.perf.visited,
+    operations: ctx.operations.map((v) => [v.operation, v.el, ...v.args])
+  };
+  logDebug("Render stats", stats);
+  return stats;
+}
+function createKeyToOldIdx(children, beginIdx, endIdx) {
+  const map = {};
+  for (let i = beginIdx; i <= endIdx; ++i) {
+    const child = children[i];
+    if (child.nodeType == 1 /* ELEMENT_NODE */) {
+      const key = getKey(child);
+      if (key !== void 0) {
+        map[key] = i;
+      }
     }
   }
+  return map;
 }
-function cursorReconcileStartVirtualNode(cursor) {
-  const node = getNode(cursor);
-  assertEqual(isComment(node) && node.textContent.startsWith(V_NODE_START), true);
-  setNode(cursor, node && node.nextSibling);
-}
-function replaceNode(parentNode, existingNode, newNode, insertBefore) {
-  parentNode.insertBefore(newNode, existingNode || insertBefore);
-  if (existingNode) {
-    parentNode.removeChild(existingNode);
+var KEY_SYMBOL = Symbol("vnode key");
+function getKey(el) {
+  let key = el[KEY_SYMBOL];
+  if (key === void 0) {
+    key = el[KEY_SYMBOL] = el.getAttribute("q:key");
   }
-  return newNode;
+  return key;
+}
+function setKey(el, key) {
+  if (typeof key === "string") {
+    el.setAttribute("q:key", key);
+  }
+  el[KEY_SYMBOL] = key;
+}
+function sameVnode(vnode1, vnode2) {
+  const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
+  const isSameKey = vnode1.nodeType === 1 /* ELEMENT_NODE */ ? getKey(vnode1) === vnode2.key : true;
+  return isSameSel && isSameKey;
+}
+
+// src/core/use/use-document.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-event.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-lexical-scope.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-url.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-store.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-transient.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/index.ts
+var version = globalThis.QWIK_VERSION;
+
+// src/core/render/render.ts
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+  if (jsxNode === void 0) {
+    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
+  }
+  if (Array.isArray(jsxNode)) {
+    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
+  } else if (jsxNode.type === Host) {
+    updateProperties(ctx, elm, jsxNode.props, isSvg);
+    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
+  } else {
+    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
+  }
 }
 
 // src/core/component/component-ctx.ts
-var QComponentCtx = class {
+var QComponentCtx2 = class {
   constructor(hostElement) {
     this.styleId = void 0;
     this.styleClass = null;
     this.styleHostClass = null;
+    this.slots = [];
     this.hostElement = hostElement;
     this.ctx = getContext(hostElement);
   }
-  async render() {
+  render(ctx) {
     const hostElement = this.hostElement;
     const onRender = getEvent(this.ctx, OnRenderProp);
     assertDefined(onRender);
-    const renderQueue = [];
-    try {
-      const event = "qRender";
-      const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
-      await then(promise, (jsxNode) => {
-        if (this.styleId === void 0) {
-          const scopedStyleId = this.styleId = hostElement.getAttribute(ComponentScopedStyles);
-          if (scopedStyleId) {
-            this.styleHostClass = styleHost(scopedStyleId);
-            this.styleClass = styleContent(scopedStyleId);
-          }
+    const event = "qRender";
+    this.ctx.dirty = false;
+    ctx.globalState.hostsStaging.delete(hostElement);
+    const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
+    return then(promise, (jsxNode) => {
+      jsxNode = jsxNode[0];
+      if (this.styleId === void 0) {
+        const scopedStyleId = this.styleId = hostElement.getAttribute(ComponentScopedStyles);
+        if (scopedStyleId) {
+          this.styleHostClass = styleHost(scopedStyleId);
+          this.styleClass = styleContent(scopedStyleId);
         }
-        const cursor = cursorForComponent(this.hostElement);
-        visitJsxNode(this, renderQueue, cursor, jsxNode, false);
-        cursorReconcileEnd(cursor);
+      }
+      ctx.hostElements.add(hostElement);
+      this.slots = [];
+      const newCtx = __spreadProps(__spreadValues({}, ctx), {
+        component: this
       });
-    } catch (e) {
-      console.log(e);
-    }
-    return [this.hostElement, ...await flattenPromiseTree(renderQueue)];
+      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    });
   }
 };
 var COMPONENT_PROP = "__qComponent__";
@@ -1948,48 +2079,128 @@ function getQComponent(hostElement) {
   const element = hostElement;
   let component2 = element[COMPONENT_PROP];
   if (!component2)
-    component2 = element[COMPONENT_PROP] = new QComponentCtx(hostElement);
+    component2 = element[COMPONENT_PROP] = new QComponentCtx2(hostElement);
   return component2;
 }
 
 // src/core/render/notify-render.ts
 function notifyRender(hostElement) {
   assertDefined(hostElement.getAttribute(QHostAttr));
-  getScheduled(hostElement.ownerDocument).add(hostElement);
-  return scheduleRender(hostElement.ownerDocument);
+  const ctx = getContext(hostElement);
+  const doc = getDocument(hostElement);
+  const state = getRenderingState(doc);
+  if (ctx.dirty) {
+    return state.renderPromise;
+  }
+  ctx.dirty = true;
+  const activeRendering = state.hostsRendering !== void 0;
+  if (activeRendering) {
+    state.hostsStaging.add(hostElement);
+    return state.renderPromise.then((ctx2) => {
+      if (state.hostsNext.has(hostElement)) {
+        return state.renderPromise;
+      } else {
+        return ctx2;
+      }
+    });
+  } else {
+    state.hostsNext.add(hostElement);
+    return scheduleFrame(doc, state);
+  }
+}
+function scheduleFrame(doc, state) {
+  if (state.renderPromise === void 0) {
+    state.renderPromise = getPlatform2(doc).nextTick(() => renderMarked(doc, state));
+  }
+  return state.renderPromise;
 }
 var SCHEDULE = Symbol();
-function getScheduled(doc) {
+function getRenderingState(doc) {
   let set = doc[SCHEDULE];
   if (!set) {
-    set = doc[SCHEDULE] = /* @__PURE__ */ new Set();
+    doc[SCHEDULE] = set = {
+      hostsNext: /* @__PURE__ */ new Set(),
+      hostsStaging: /* @__PURE__ */ new Set(),
+      renderPromise: void 0,
+      hostsRendering: void 0
+    };
   }
   return set;
 }
-function scheduleRender(doc) {
-  return getPlatform2(doc).queueRender(renderMarked);
+async function renderMarked(doc, state) {
+  state.hostsRendering = new Set(state.hostsNext);
+  state.hostsNext.clear();
+  const platform = getPlatform2(doc);
+  const renderingQueue = Array.from(state.hostsRendering);
+  sortNodes(renderingQueue);
+  const ctx = {
+    doc,
+    operations: [],
+    roots: [],
+    hostElements: /* @__PURE__ */ new Set(),
+    globalState: state,
+    perf: {
+      visited: 0,
+      timing: []
+    },
+    component: void 0
+  };
+  for (const el of renderingQueue) {
+    if (!ctx.hostElements.has(el)) {
+      ctx.roots.push(el);
+      const cmp = getQComponent(el);
+      await cmp.render(ctx);
+    }
+  }
+  if (ctx.operations.length === 0) {
+    postRendering(doc, state);
+    return ctx;
+  }
+  return platform.raf(() => {
+    executeContextWithSlots(ctx);
+    if (qDev) {
+      if (typeof window !== "undefined" && window.document != null) {
+        printRenderStats(ctx);
+      }
+    }
+    postRendering(doc, state);
+    return ctx;
+  });
 }
-async function renderMarked(doc) {
-  const set = getScheduled(doc);
-  const hosts = Array.from(set);
-  set.clear();
-  return Promise.all(hosts.map((hostElement) => {
-    const cmp = getQComponent(hostElement);
-    return cmp && cmp.render();
-  }));
+function postRendering(doc, state) {
+  state.hostsStaging.forEach((el) => {
+    state.hostsNext.add(el);
+  });
+  state.hostsStaging.clear();
+  state.hostsRendering = void 0;
+  state.renderPromise = void 0;
+  if (state.hostsNext.size > 0) {
+    scheduleFrame(doc, state);
+  }
+}
+function sortNodes(elements) {
+  elements.sort((a, b) => a.compareDocumentPosition(b) & 2 ? 1 : -1);
 }
 
 // src/core/object/q-object.ts
-function _restoreQObject(obj, subs) {
-  return readWriteProxy(obj, subs);
+var ProxyMapSymbol = Symbol("ProxyMapSymbol");
+function getProxyMap(doc) {
+  let map = doc[ProxyMapSymbol];
+  if (!map) {
+    map = doc[ProxyMapSymbol] = /* @__PURE__ */ new WeakMap();
+  }
+  return map;
 }
-function readWriteProxy(target, subs) {
+function _restoreQObject(obj, map, subs) {
+  return readWriteProxy(obj, map, subs);
+}
+function readWriteProxy(target, proxyMap, subs) {
   if (!target || typeof target !== "object")
     return target;
   let proxy = proxyMap.get(target);
   if (proxy)
     return proxy;
-  proxy = new Proxy(target, new ReadWriteProxyHandler(subs));
+  proxy = new Proxy(target, new ReadWriteProxyHandler(proxyMap, subs));
   proxyMap.set(target, proxy);
   return proxy;
 }
@@ -2004,7 +2215,7 @@ function unwrapProxy(proxy) {
   }
   return proxy;
 }
-function wrap(value) {
+function wrap(value, proxyMap) {
   if (value && typeof value === "object") {
     const nakedValue = unwrapProxy(value);
     if (nakedValue !== value) {
@@ -2012,13 +2223,14 @@ function wrap(value) {
     }
     verifySerializable(value);
     const proxy = proxyMap.get(value);
-    return proxy ? proxy : readWriteProxy(value);
+    return proxy ? proxy : readWriteProxy(value, proxyMap);
   } else {
     return value;
   }
 }
 var ReadWriteProxyHandler = class {
-  constructor(subs = /* @__PURE__ */ new Map()) {
+  constructor(proxy, subs = /* @__PURE__ */ new Map()) {
+    this.proxy = proxy;
     this.subs = subs;
     this.transients = null;
   }
@@ -2046,7 +2258,7 @@ var ReadWriteProxyHandler = class {
         sub.add(prop);
       }
     }
-    return wrap(value);
+    return wrap(value, this.proxy);
   }
   set(target, prop, newValue) {
     const unwrappedNewValue = unwrapProxy(newValue);
@@ -2087,7 +2299,6 @@ function verifySerializable(value) {
     }
   }
 }
-var proxyMap = /* @__PURE__ */ new WeakMap();
 
 // src/core/props/props-obj-map.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -2124,7 +2335,7 @@ Error.stackTraceLimit = 9999;
 var Q_IS_HYDRATED = "__isHydrated__";
 var Q_CTX = "__ctx__";
 function hydrateIfNeeded(element) {
-  const doc = element.ownerDocument;
+  const doc = getDocument(element);
   const isHydrated = doc[Q_IS_HYDRATED];
   if (!isHydrated) {
     doc[Q_IS_HYDRATED] = true;
@@ -2140,21 +2351,22 @@ function getContext(element) {
       element,
       cache,
       refMap: newQObjectMap(element),
-      id: void 0,
-      props: void 0
+      dirty: false,
+      props: void 0,
+      events: void 0
     };
   }
   return ctx;
 }
-function setEvent(ctx, prop, value) {
-  qPropWriteQRL(ctx, prop, value);
+function setEvent(rctx, ctx, prop, value) {
+  qPropWriteQRL(rctx, ctx, prop, value);
 }
 function getEvent(ctx, prop) {
   return qPropReadQRL(ctx, prop);
 }
 function getProps(ctx) {
   if (!ctx.props) {
-    ctx.props = readWriteProxy({});
+    ctx.props = readWriteProxy({}, getProxyMap(getDocument(ctx.element)));
     ctx.refMap.add(ctx.props);
   }
   return ctx.props;

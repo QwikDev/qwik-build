@@ -48,7 +48,7 @@
  * function topLevelFn() {}
  *
  * function myCode() {
- *   const store = createStore({});
+ *   const store = useStore({});
  *   function localFn() {}
  *   // Valid Examples
  *   $(greet); // greet is importable
@@ -525,7 +525,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * ```typescript
  * export const Counter = component$((props: { value?: number; step?: number }) => {
- *   const state = createStore({ count: props.value || 0 });
+ *   const state = useStore({ count: props.value || 0 });
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
@@ -538,7 +538,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * - `component$` is how a component gets declared.
  * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
  * - `{ count: number }` declares the private (state) interface of the component.
- * - `onMount` closure: is used to create the data store (see: `createStore`);
+ * - `onMount` closure: is used to create the data store (see: `useStore`);
  * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
  *
  * The above can then be used like so:
@@ -558,7 +558,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PROPS & QwikEvents) => JSXNode<PROPS>;
+export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
 
 /**
  * Declare a Qwik component that can be used to create UI.
@@ -583,7 +583,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  *
  * ```typescript
  * export const Counter = component$((props: { value?: number; step?: number }) => {
- *   const state = createStore({ count: props.value || 0 });
+ *   const state = useStore({ count: props.value || 0 });
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
@@ -596,7 +596,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  * - `component$` is how a component gets declared.
  * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
  * - `{ count: number }` declares the private (state) interface of the component.
- * - `onMount` closure: is used to create the data store (see: `createStore`);
+ * - `onMount` closure: is used to create the data store (see: `useStore`);
  * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
  *
  * The above can then be used like so:
@@ -616,7 +616,20 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  *
  * @public
  */
-export declare function component<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & QwikEvents) => JSXNode<PROPS>;
+export declare function component<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
+
+declare interface ComponentBaseProps extends QwikEvents {
+    class?: string | {
+        [className: string]: boolean;
+    };
+    className?: string | undefined;
+    style?: CSSProperties | undefined;
+    key?: string | number;
+    id?: string | undefined;
+    'q:slot'?: string;
+    [key: `h:${string}`]: any;
+    children?: JSXChildren;
+}
 
 /**
  * @public
@@ -647,40 +660,19 @@ export declare interface CorePlatform {
      * Platform specific queue, such as process.nextTick() for Node
      * and requestAnimationFrame() for the browser.
      */
-    queueRender: (renderMarked: (doc: Document) => Promise<any>) => Promise<any>;
-    /**
-     * Platform specific queue, such as process.nextTick() for Node
-     * and requestAnimationFrame() for the browser.
-     */
-    queueStoreFlush: (flushStore: (doc: Document) => Promise<any>) => Promise<any>;
+    raf: (fn: () => any) => Promise<any>;
+    nextTick: (fn: () => any) => Promise<any>;
     /**
      * Takes a qrl and serializes into a string
      */
     chunkForSymbol: (symbolName: string) => string | undefined;
 }
 
-/**
- * Creates a object that Qwik can track across serializations.
- *
- * Use `createStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ## Example
- *
- * Example showing how `createStore` is used in Counter example to keep track of count.
- *
- * ```typescript
- * export const Counter = component$(() => {
- *   const store = createStore({ count: 0 });
- *   return $(() => <button on$:click={() => store.count++}>{store.count}</button>);
- * });
- * ```
- *
- * @public
- */
-export declare function createStore<STATE extends {}>(initialState: STATE): STATE;
-
 declare interface CSSProperties {
+    [key: string]: string | number;
+}
+
+declare interface CSSProperties_2 {
     [key: string]: string | number;
 }
 
@@ -708,7 +700,7 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
     children?: JSXChildren;
-    key?: string;
+    key?: string | number;
 }
 
 declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -740,13 +732,15 @@ declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare const Fragment: any;
+export declare const Fragment: FunctionComponent<{
+    children?: any;
+}>;
 
 /**
  * @public
  */
 export declare interface FunctionComponent<P = {}> {
-    (props: P): JSXNode | null;
+    (props: P, key?: string): JSXNode | null;
 }
 
 /**
@@ -817,7 +811,7 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     placeholder?: string | undefined;
     slot?: string | undefined;
     spellCheck?: Booleanish | undefined;
-    style?: CSSProperties | undefined;
+    style?: CSSProperties_2 | undefined;
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
@@ -1160,7 +1154,7 @@ declare interface IntrinsicElements {
 /**
  * @public
  */
-declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string): JSXNode<T>;
+declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number): JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -1177,9 +1171,11 @@ export declare type JSXFactory<T, PROPS extends {} = any> = (props: PROPS, state
  */
 export declare interface JSXNode<T = any> {
     type: T;
-    props: any;
-    children: ComponentChild[];
-    key: string | number | any;
+    props: Record<string, any> | null;
+    children: JSXNode[];
+    key: string | null;
+    elm?: Node;
+    text?: string;
 }
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1269,7 +1265,7 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
  * @returns A promise which is resolved when the component has been rendered.
  * @public
  */
-export declare function notifyRender(hostElement: Element): Promise<void>;
+export declare function notifyRender(hostElement: Element): Promise<RenderContext>;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
@@ -1297,7 +1293,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * ```typescript
  * export const MyComp = component$(() => {
- *   const store = createStore({ count: 0, doubleCount: 0 });
+ *   const store = useStore({ count: 0, doubleCount: 0 });
  *   onWatch$((obs) => {
  *     store.doubleCount = 2 * obs(store).count;
  *   });
@@ -1332,7 +1328,7 @@ export declare interface Observer {
      *
      * ```typescript
      * export const MyComp = component$(() => {
-     *   const store = createStore({ count: 0, doubleCount: 0 });
+     *   const store = useStore({ count: 0, doubleCount: 0 });
      *   onWatch$((obs) => {
      *     store.doubleCount = 2 * obs(store).count;
      *   });
@@ -1494,7 +1490,7 @@ export declare function onUnmount(unmountFn: QRL<() => void>): void;
  *
  * ```typescript
  * export const MyComp = component$(() => {
- *   const store = createStore({ count: 0, doubleCount: 0 });
+ *   const store = useStore({ count: 0, doubleCount: 0 });
  *   onWatch$((obs) => {
  *     store.doubleCount = 2 * obs(store).count;
  *   });
@@ -1537,7 +1533,7 @@ export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)
  *
  * ```typescript
  * export const MyComp = component$(() => {
- *   const store = createStore({ count: 0, doubleCount: 0 });
+ *   const store = useStore({ count: 0, doubleCount: 0 });
  *   onWatch$((obs) => {
  *     store.doubleCount = 2 * obs(store).count;
  *   });
@@ -1591,6 +1587,12 @@ declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+}
+
+declare interface PerfEvent {
+    name: string;
+    timeStart: number;
+    timeEnd: number;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1767,6 +1769,42 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  * @public
  */
 export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
+
+declare class QComponentCtx {
+    __brand__: 'QComponentCtx';
+    ctx: QContext;
+    hostElement: HTMLElement;
+    styleId: string | undefined | null;
+    styleClass: string | null;
+    styleHostClass: string | null;
+    slots: JSXNode[];
+    constructor(hostElement: HTMLElement);
+    render(ctx: RenderContext): ValueOrPromise<void>;
+}
+
+declare interface QContext {
+    cache: Map<string, any>;
+    refMap: QObjectMap;
+    element: Element;
+    dirty: boolean;
+    props: Record<string, any> | undefined;
+    events: QContextEvents | undefined;
+}
+
+declare interface QContextEvents {
+    [eventName: string]: string | undefined;
+}
+
+declare type QObject<T extends {}> = T & {
+    __brand__: 'QObject';
+};
+
+declare interface QObjectMap {
+    add(qObject: QObject<any>): number;
+    get(index: number): QObject<any> | undefined;
+    indexOf(object: QObject<any>): number | undefined;
+    array: QObject<any>[];
+}
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -2007,7 +2045,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  * @param jsxNode - JSX to render
  * @public
  */
-export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): Promise<HTMLElement[]>;
+export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): ValueOrPromise<RenderContext>;
 
 /**
  * @public
@@ -2015,6 +2053,35 @@ export declare function render(parent: Element | Document, jsxNode: JSXNode<unkn
 export declare type RenderableProps<P, RefType = any> = P & Readonly<{
     children?: ComponentChildren;
 }>;
+
+declare interface RenderContext {
+    doc: Document;
+    roots: Element[];
+    hostElements: Set<Element>;
+    operations: RenderOperation[];
+    component: QComponentCtx | undefined;
+    globalState: RenderingState;
+    perf: RenderPerf;
+}
+
+declare interface RenderingState {
+    hostsNext: Set<Element>;
+    hostsStaging: Set<Element>;
+    hostsRendering: Set<Element> | undefined;
+    renderPromise: Promise<RenderContext> | undefined;
+}
+
+declare interface RenderOperation {
+    el: Node;
+    operation: string;
+    args: any[];
+    fn: () => void;
+}
+
+declare interface RenderPerf {
+    timing: PerfEvent[];
+    visited: number;
+}
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;
@@ -2050,6 +2117,11 @@ export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlat
 /**
  * @public
  */
+export declare const SkipRerender: FunctionComponent<{}>;
+
+/**
+ * @public
+ */
 export declare const Slot: FunctionComponent<{
     name?: string;
     children?: any;
@@ -2080,6 +2152,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     class?: string | {
         [className: string]: boolean;
     } | undefined;
+    className?: string;
     color?: string | undefined;
     height?: number | string | undefined;
     id?: string | undefined;
@@ -2089,7 +2162,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     method?: string | undefined;
     min?: number | string | undefined;
     name?: string | undefined;
-    style?: CSSProperties | undefined;
+    style?: CSSProperties_2 | undefined;
     target?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
@@ -2401,6 +2474,11 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @public
+ */
+export declare function useDocument(): Document;
+
+/**
  * Retrieves the current event which triggered the action.
  *
  * NOTE: The `useEvent` method can only be used in the synchronous portion of the callback
@@ -2441,6 +2519,27 @@ export declare const useScopedStyles$: (first: string) => void;
  * @alpha
  */
 export declare function useScopedStyles(styles: QRL<string>): void;
+
+/**
+ * Creates a object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create state for your application. The return object is a proxy which has
+ * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ## Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of count.
+ *
+ * ```typescript
+ * export const Counter = component$(() => {
+ *   const store = useStore({ count: 0 });
+ *   return $(() => <button on$:click={() => store.count++}>{store.count}</button>);
+ * });
+ * ```
+ *
+ * @public
+ */
+export declare function useStore<STATE extends {}>(initialState: STATE): STATE;
 
 /**
  * Refer to component styles.
