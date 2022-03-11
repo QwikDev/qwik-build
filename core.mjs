@@ -3348,7 +3348,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-0-dev20220311011133";
+const version = "0.0.18-0-dev20220311014644";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component, component$, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate, onDehydrate$, onDocument, onHydrate, onHydrate$, onResume, onResume$, onUnmount, onUnmount$, onWatch, onWatch$, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles, useScopedStyles$, useStore, useStyles, useStyles$, useTransient, version };
 //# sourceMappingURL=core.mjs.map

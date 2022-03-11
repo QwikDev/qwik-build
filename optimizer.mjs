@@ -996,7 +996,7 @@ function getBuildFile(isSSR) {
 }
 
 var versions = {
-  qwik: "0.0.18-0-dev20220311011133"
+  qwik: "0.0.18-0-dev20220311014644"
 };
 
 export { createOptimizer, qwikRollup, qwikVite, versions };
