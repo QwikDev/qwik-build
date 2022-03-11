@@ -2027,6 +2027,7 @@ declare interface QwikProps {
     'q:base'?: string;
     'q:obj'?: string;
     'q:host'?: string;
+    'q:version'?: string;
 }
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {

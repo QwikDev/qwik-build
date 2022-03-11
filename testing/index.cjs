@@ -1263,6 +1263,7 @@ function qPropReadQRL(ctx, prop) {
         qrl2.symbolRef = await qrlImport(ctx.element, qrl2);
       }
       context.qrl = qrl2;
+      symbolUsed(ctx.element, qrl2.symbol);
       if (qrlGuard) {
         return invokeWatchFn(ctx.element, qrl2);
       } else {
@@ -1271,6 +1272,15 @@ function qPropReadQRL(ctx, prop) {
     }));
   };
 }
+var symbolUsed = (el, name) => {
+  if (typeof CustomEvent === "function") {
+    el.dispatchEvent(new CustomEvent("qSymbol", {
+      detail: { name },
+      bubbles: true,
+      composed: true
+    }));
+  }
+};
 function qPropWriteQRL(rctx, ctx, prop, value) {
   if (!value) {
     return;
@@ -1509,7 +1519,8 @@ function patchVnode(ctx, elm, vnode, isSvg) {
     isSvg = tag === "svg";
   }
   let promise;
-  const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+  const props = vnode.props;
+  const dirty = updateProperties(ctx, elm, props, isSvg);
   const isSlot = tag === "q:slot";
   if (isSvg && vnode.type === "foreignObject") {
     isSvg = false;
@@ -1546,6 +1557,13 @@ function patchVnode(ctx, elm, vnode, isSvg) {
       });
     });
   }
+  const setsInnerHTML = props && "innerHTML" in props;
+  if (setsInnerHTML) {
+    if (qDev && ch.length > 0) {
+      logWarn("Node can not have children when innerHTML is set");
+    }
+    return;
+  }
   return then(promise, () => {
     const mode = isSlot ? "fallback" : "default";
     return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
@@ -1568,7 +1586,7 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
     const ch = nodes[startIdx];
     assertDefined(ch);
-    removeNode(ctx, parentElm, ch);
+    removeNode(ctx, ch);
   }
 }
 var refCount = 0;
@@ -1606,7 +1624,7 @@ function removeTemplates(ctx, slotMaps) {
   Object.keys(slotMaps.templates).forEach((key) => {
     const template = slotMaps.templates[key];
     if (template && slotMaps.slots[key] !== void 0) {
-      removeNode(ctx, template.parentNode, template);
+      removeNode(ctx, template);
       slotMaps.templates[key] = void 0;
     }
   });
@@ -1657,11 +1675,11 @@ function createElm(ctx, vnode, isSvg) {
   if (!isSvg) {
     isSvg = tag === "svg";
   }
-  const data = vnode.props;
+  const props = vnode.props;
   const elm = vnode.elm = createElement(ctx, tag, isSvg);
   const isComponent = isComponentNode(vnode);
   setKey(elm, vnode.key);
-  updateProperties(ctx, elm, data, isSvg);
+  updateProperties(ctx, elm, props, isSvg);
   if (isSvg && tag === "foreignObject") {
     isSvg = false;
   }
@@ -1686,6 +1704,14 @@ function createElm(ctx, vnode, isSvg) {
       classlistAdd(ctx, elm, hostStyleTag);
     }
     wait = componentCtx.render(ctx);
+  } else {
+    const setsInnerHTML = props && "innerHTML" in props;
+    if (setsInnerHTML) {
+      if (qDev && vnode.children.length > 0) {
+        logWarn("Node can not have children when innerHTML is set");
+      }
+      return elm;
+    }
   }
   return then(wait, () => {
     let children = vnode.children;
@@ -1762,16 +1788,10 @@ var checkBeforeAssign = (ctx, elm, prop, newValue) => {
   }
   return true;
 };
-var setInnerHTML = (ctx, elm, prop, newValue) => {
-  setProperty(ctx, elm, prop, newValue);
-  setAttribute(ctx, elm, "q:static", "");
-  return true;
-};
 var PROP_HANDLER_MAP = {
   style: handleStyle,
   value: checkBeforeAssign,
-  checked: checkBeforeAssign,
-  innerHTML: setInnerHTML
+  checked: checkBeforeAssign
 };
 var ALLOWS_PROPS = ["className", "style", "id", "q:slot"];
 function updateProperties(rctx, node, expectProps, isSvg) {
@@ -1921,10 +1941,13 @@ function prepend(ctx, parent, newChild) {
     fn
   });
 }
-function removeNode(ctx, parent, el) {
+function removeNode(ctx, el) {
   const fn = () => {
-    if (el.parentNode === parent) {
+    const parent = el.parentNode;
+    if (parent) {
       parent.removeChild(el);
+    } else if (qDev) {
+      logWarn("Trying to remove component already removed", el);
     }
   };
   ctx.operations.push({
@@ -2086,8 +2109,9 @@ function getQComponent(hostElement) {
 // src/core/render/notify-render.ts
 function notifyRender(hostElement) {
   assertDefined(hostElement.getAttribute(QHostAttr));
-  const ctx = getContext(hostElement);
   const doc = getDocument(hostElement);
+  hydrateIfNeeded(doc);
+  const ctx = getContext(hostElement);
   const state = getRenderingState(doc);
   if (ctx.dirty) {
     return state.renderPromise;
@@ -2334,8 +2358,7 @@ function newQObjectMap(element) {
 Error.stackTraceLimit = 9999;
 var Q_IS_HYDRATED = "__isHydrated__";
 var Q_CTX = "__ctx__";
-function hydrateIfNeeded(element) {
-  const doc = getDocument(element);
+function hydrateIfNeeded(doc) {
   const isHydrated = doc[Q_IS_HYDRATED];
   if (!isHydrated) {
     doc[Q_IS_HYDRATED] = true;
@@ -2343,7 +2366,6 @@ function hydrateIfNeeded(element) {
   }
 }
 function getContext(element) {
-  hydrateIfNeeded(element);
   let ctx = element[Q_CTX];
   if (!ctx) {
     const cache = /* @__PURE__ */ new Map();
