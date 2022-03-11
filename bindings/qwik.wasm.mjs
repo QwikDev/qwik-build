@@ -241,21 +241,8 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_isArray_dcc02660d0bae0c9 = function(arg0) {
-        var ret = Array.isArray(getObject(arg0));
-        return ret;
-    };
-    imports.wbg.__wbindgen_is_object = function(arg0) {
-        const val = getObject(arg0);
-        var ret = typeof(val) === 'object' && val !== null;
-        return ret;
-    };
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
-    };
-    imports.wbg.__wbindgen_number_new = function(arg0) {
-        var ret = arg0;
-        return addHeapObject(ret);
     };
     imports.wbg.__wbg_get_2d1407dba3452350 = function(arg0, arg1) {
         var ret = getObject(arg0)[takeObject(arg1)];
@@ -304,6 +291,19 @@ async function init(input) {
         var ret = getStringFromWasm0(arg0, arg1);
         return addHeapObject(ret);
     };
+    imports.wbg.__wbindgen_number_new = function(arg0) {
+        var ret = arg0;
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_isArray_dcc02660d0bae0c9 = function(arg0) {
+        var ret = Array.isArray(getObject(arg0));
+        return ret;
+    };
+    imports.wbg.__wbindgen_is_object = function(arg0) {
+        const val = getObject(arg0);
+        var ret = typeof(val) === 'object' && val !== null;
+        return ret;
+    };
     imports.wbg.__wbindgen_is_function = function(arg0) {
         var ret = typeof(getObject(arg0)) === 'function';
         return ret;
@@ -347,8 +347,8 @@ async function init(input) {
     imports.wbg.__wbg_set_4769de301eb521d7 = function(arg0, arg1, arg2) {
         getObject(arg0).set(getObject(arg1), arg2 >>> 0);
     };
-    imports.wbg.__wbg_new_d0bf1a18ac785d9e = function(arg0, arg1) {
-        var ret = new Error(getStringFromWasm0(arg0, arg1));
+    imports.wbg.__wbg_entries_3322bc6f6208d475 = function(arg0) {
+        var ret = Object.entries(getObject(arg0));
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_is_null = function(arg0) {
@@ -373,8 +373,8 @@ async function init(input) {
         var ret = getObject(arg0) instanceof ArrayBuffer;
         return ret;
     };
-    imports.wbg.__wbg_entries_3322bc6f6208d475 = function(arg0) {
-        var ret = Object.entries(getObject(arg0));
+    imports.wbg.__wbg_new_d0bf1a18ac785d9e = function(arg0, arg1) {
+        var ret = new Error(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_object_clone_ref = function(arg0) {

@@ -1062,7 +1062,7 @@ function getBuildFile(isSSR) {
 }
 
 var versions = {
-  qwik: "0.0.17-0-dev20220310211125"
+  qwik: "0.0.18-0-dev20220311011133"
 };
 
 module.exports = __toCommonJS(src_exports);
