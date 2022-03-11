@@ -627,122 +627,6 @@ function implicit$FirstArg(fn) {
 // </docs>
 const qrl = staticQrl;
 
-let _context;
-function tryGetInvokeContext() {
-    return _context;
-}
-function getInvokeContext() {
-    if (!_context) {
-        const context = typeof document !== 'undefined' && document && document.__q_context__;
-        if (!context) {
-            // TODO(misko): centralize
-            throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
-        }
-        if (Array.isArray(context)) {
-            const element = context[0];
-            const hostElement = getHostElement(element);
-            assertDefined(element);
-            return (document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]));
-        }
-        return context;
-    }
-    return _context;
-}
-function useInvoke(context, fn, ...args) {
-    const previousContext = _context;
-    let returnValue;
-    try {
-        _context = context;
-        returnValue = fn.apply(null, args);
-    }
-    finally {
-        const currentCtx = _context;
-        _context = previousContext;
-        if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
-            // eslint-disable-next-line no-unsafe-finally
-            return Promise.all(currentCtx.waitOn).then(() => returnValue);
-        }
-    }
-    return returnValue;
-}
-function newInvokeContext(hostElement, element, event, url) {
-    return {
-        hostElement,
-        element,
-        event: event,
-        url: url || null,
-        qrl: undefined,
-        subscriptions: event === 'qRender',
-    };
-}
-/**
- * @private
- */
-function useWaitOn(promise) {
-    const ctx = getInvokeContext();
-    (ctx.waitOn || (ctx.waitOn = [])).push(promise);
-}
-function getHostElement(el) {
-    let foundSlot = false;
-    let node = el;
-    while (node) {
-        const isHost = node.hasAttribute(QHostAttr);
-        const isSlot = node.tagName === 'Q:SLOT';
-        if (isHost) {
-            if (!foundSlot) {
-                break;
-            }
-            else {
-                foundSlot = false;
-            }
-        }
-        if (isSlot) {
-            foundSlot = true;
-        }
-        node = node.parentElement;
-    }
-    return node;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
-/**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useHostElement() {
-    const element = getInvokeContext().hostElement;
-    assertDefined(element);
-    return element;
-}
-
-function hashCode(text, hash = 0) {
-    if (text.length === 0)
-        return hash;
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-}
-
-function styleKey(qStyles) {
-    return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-    return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-    return styleId && ComponentStylesPrefixContent + styleId;
-}
-
 /**
  * @license
  * Copyright Builder.io, Inc. All Rights Reserved.
@@ -956,6 +840,83 @@ function qInflate(ref, hostCtx) {
     return obj;
 }
 
+let _context;
+function tryGetInvokeContext() {
+    return _context;
+}
+function getInvokeContext() {
+    if (!_context) {
+        const context = typeof document !== 'undefined' && document && document.__q_context__;
+        if (!context) {
+            // TODO(misko): centralize
+            throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+        }
+        if (Array.isArray(context)) {
+            const element = context[0];
+            const hostElement = getHostElement(element);
+            assertDefined(element);
+            return (document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]));
+        }
+        return context;
+    }
+    return _context;
+}
+function useInvoke(context, fn, ...args) {
+    const previousContext = _context;
+    let returnValue;
+    try {
+        _context = context;
+        returnValue = fn.apply(null, args);
+    }
+    finally {
+        const currentCtx = _context;
+        _context = previousContext;
+        if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
+            // eslint-disable-next-line no-unsafe-finally
+            return Promise.all(currentCtx.waitOn).then(() => returnValue);
+        }
+    }
+    return returnValue;
+}
+function newInvokeContext(hostElement, element, event, url) {
+    return {
+        hostElement,
+        element,
+        event: event,
+        url: url || null,
+        qrl: undefined,
+        subscriptions: event === 'qRender',
+    };
+}
+/**
+ * @private
+ */
+function useWaitOn(promise) {
+    const ctx = getInvokeContext();
+    (ctx.waitOn || (ctx.waitOn = [])).push(promise);
+}
+function getHostElement(el) {
+    let foundSlot = false;
+    let node = el;
+    while (node) {
+        const isHost = node.hasAttribute(QHostAttr);
+        const isSlot = node.tagName === 'Q:SLOT';
+        if (isHost) {
+            if (!foundSlot) {
+                break;
+            }
+            else {
+                foundSlot = false;
+            }
+        }
+        if (isSlot) {
+            foundSlot = true;
+        }
+        node = node.parentElement;
+    }
+    return node;
+}
+
 /**
  * @license
  * Copyright Builder.io, Inc. All Rights Reserved.
@@ -1030,166 +991,6 @@ function safeJSONStringify(value) {
     catch (e) {
         return String(e);
     }
-}
-
-const ON_WATCH = 'on:qWatch';
-function registerOnWatch(element, props, watchFnQrl) {
-    props[ON_WATCH] = watchFnQrl;
-    invokeWatchFn(element, watchFnQrl);
-}
-const cleanupFnMap = new Map();
-async function invokeWatchFn(element, watchFnQrl) {
-    const watchFn = await qrlImport(element, watchFnQrl);
-    const previousCleanupFn = cleanupFnMap.get(watchFn);
-    cleanupFnMap.delete(watchFn);
-    if (isCleanupFn(previousCleanupFn)) {
-        try {
-            previousCleanupFn();
-        }
-        catch (e) {
-            // TODO(misko): Centralize error handling
-            logError(e);
-        }
-    }
-    throw new Error('TO IMPLEMENT');
-}
-function isCleanupFn(value) {
-    return typeof value === 'function';
-}
-
-const ON_PROP_REGEX = /on(Document|Window)?:/;
-const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
-function isOnProp(prop) {
-    return ON_PROP_REGEX.test(prop);
-}
-function isOn$Prop(prop) {
-    return ON$_PROP_REGEX.test(prop);
-}
-function isQrlFactory(value) {
-    return typeof value === 'function' && value.__brand__ === 'QRLFactory';
-}
-function qPropReadQRL(ctx, prop) {
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (existingQRLs.length === 0) {
-        return null;
-    }
-    return () => {
-        const context = getInvokeContext();
-        const qrls = getExistingQRLs(ctx, prop);
-        return Promise.all(qrls.map(async (qrlOrPromise) => {
-            const qrl = await qrlOrPromise;
-            const qrlGuard = context.qrlGuard;
-            if (qrlGuard && !qrlGuard(qrl))
-                return;
-            if (!qrl.symbolRef) {
-                qrl.symbolRef = await qrlImport(ctx.element, qrl);
-            }
-            context.qrl = qrl;
-            if (qrlGuard) {
-                return invokeWatchFn(ctx.element, qrl);
-            }
-            else {
-                return useInvoke(context, qrl.symbolRef);
-            }
-        }));
-    };
-}
-function qPropWriteQRL(rctx, ctx, prop, value) {
-    if (!value) {
-        return;
-    }
-    prop = prop.replace('$:', ':');
-    if (typeof value == 'string') {
-        value = parseQRL(value);
-    }
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (Array.isArray(value)) {
-        value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
-    }
-    else if (isQrl(value)) {
-        const capture = value.capture;
-        if (capture == null) {
-            // we need to serialize the lexical scope references
-            const captureRef = value.captureRef;
-            value.capture =
-                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
-        }
-        // Important we modify the array as it is cached.
-        for (let i = 0; i < existingQRLs.length; i++) {
-            const qrl = existingQRLs[i];
-            if (!isPromise(qrl) &&
-                qrl.canonicalChunk === value.canonicalChunk &&
-                qrl.symbol === value.symbol) {
-                existingQRLs.splice(i, 1);
-                i--;
-            }
-        }
-        existingQRLs.push(value);
-    }
-    else if (isQrlFactory(value)) {
-        if (existingQRLs.length === 0) {
-            // if we don't have any than we use the `qrlFactory` to create a QRLInternal
-            // (otherwise ignore the factory)
-            qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
-        }
-    }
-    else if (isPromise(value)) {
-        const writePromise = value.then((qrl) => {
-            existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-            qPropWriteQRL(rctx, ctx, prop, qrl);
-            return qrl;
-        });
-        existingQRLs.push(writePromise);
-    }
-    else {
-        // TODO(misko): Test/better text
-        throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
-    }
-    if (prop.startsWith('on:q')) {
-        getEvents(ctx)[prop] = serializeQRLs(existingQRLs, ctx);
-    }
-    else {
-        const kebabProp = fromCamelToKebabCase(prop);
-        const newValue = serializeQRLs(existingQRLs, ctx);
-        if (ctx.element.getAttribute(kebabProp) !== newValue) {
-            setAttribute(rctx, ctx.element, kebabProp, newValue);
-        }
-    }
-}
-function getExistingQRLs(ctx, prop) {
-    let parts = ctx.cache.get(prop);
-    if (!parts) {
-        if (prop.startsWith('on:q')) {
-            parts = [];
-            const qrls = getEvents(ctx)[prop];
-            if (qrls) {
-                qrls.split('\n').forEach((qrl) => {
-                    if (qrl) {
-                        parts.push(parseQRL(qrl, ctx.element));
-                    }
-                });
-                ctx.cache.set(prop, parts);
-                return parts;
-            }
-        }
-        const attrName = fromCamelToKebabCase(prop);
-        parts = [];
-        (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
-            if (qrl) {
-                parts.push(parseQRL(qrl, ctx.element));
-            }
-        });
-        ctx.cache.set(prop, parts);
-    }
-    return parts;
-}
-function serializeQRLs(existingQRLs, ctx) {
-    const platform = getPlatform(getDocument(ctx.element));
-    const element = ctx.element;
-    return existingQRLs
-        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, element, platform)))
-        .filter((v) => !!v)
-        .join('\n');
 }
 
 function QStore_hydrate(doc) {
@@ -1646,7 +1447,8 @@ function patchVnode(ctx, elm, vnode, isSvg) {
         isSvg = tag === 'svg';
     }
     let promise;
-    const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+    const props = vnode.props;
+    const dirty = updateProperties(ctx, elm, props, isSvg);
     const isSlot = tag === 'q:slot';
     if (isSvg && vnode.type === 'foreignObject') {
         isSvg = false;
@@ -1686,6 +1488,13 @@ function patchVnode(ctx, elm, vnode, isSvg) {
             });
         });
     }
+    const setsInnerHTML = props && 'innerHTML' in props;
+    if (setsInnerHTML) {
+        if (qDev && ch.length > 0) {
+            logWarn('Node can not have children when innerHTML is set');
+        }
+        return;
+    }
     return then(promise, () => {
         const mode = isSlot ? 'fallback' : 'default';
         return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
@@ -1708,7 +1517,7 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = nodes[startIdx];
         assertDefined(ch);
-        removeNode(ctx, parentElm, ch);
+        removeNode(ctx, ch);
     }
 }
 let refCount = 0;
@@ -1746,7 +1555,7 @@ function removeTemplates(ctx, slotMaps) {
     Object.keys(slotMaps.templates).forEach((key) => {
         const template = slotMaps.templates[key];
         if (template && slotMaps.slots[key] !== undefined) {
-            removeNode(ctx, template.parentNode, template);
+            removeNode(ctx, template);
             slotMaps.templates[key] = undefined;
         }
     });
@@ -1799,11 +1608,11 @@ function createElm(ctx, vnode, isSvg) {
     if (!isSvg) {
         isSvg = tag === 'svg';
     }
-    const data = vnode.props;
+    const props = vnode.props;
     const elm = (vnode.elm = createElement(ctx, tag, isSvg));
     const isComponent = isComponentNode(vnode);
     setKey(elm, vnode.key);
-    updateProperties(ctx, elm, data, isSvg);
+    updateProperties(ctx, elm, props, isSvg);
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
@@ -1828,6 +1637,15 @@ function createElm(ctx, vnode, isSvg) {
             classlistAdd(ctx, elm, hostStyleTag);
         }
         wait = componentCtx.render(ctx);
+    }
+    else {
+        const setsInnerHTML = props && 'innerHTML' in props;
+        if (setsInnerHTML) {
+            if (qDev && vnode.children.length > 0) {
+                logWarn('Node can not have children when innerHTML is set');
+            }
+            return elm;
+        }
     }
     return then(wait, () => {
         let children = vnode.children;
@@ -1911,16 +1729,10 @@ const checkBeforeAssign = (ctx, elm, prop, newValue) => {
     }
     return true;
 };
-const setInnerHTML = (ctx, elm, prop, newValue) => {
-    setProperty(ctx, elm, prop, newValue);
-    setAttribute(ctx, elm, 'q:static', '');
-    return true;
-};
 const PROP_HANDLER_MAP = {
     style: handleStyle,
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
-    innerHTML: setInnerHTML,
 };
 const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
 function updateProperties(rctx, node, expectProps, isSvg) {
@@ -2085,10 +1897,14 @@ function prepend(ctx, parent, newChild) {
         fn,
     });
 }
-function removeNode(ctx, parent, el) {
+function removeNode(ctx, el) {
     const fn = () => {
-        if (el.parentNode === parent) {
+        const parent = el.parentNode;
+        if (parent) {
             parent.removeChild(el);
+        }
+        else if (qDev) {
+            logWarn('Trying to remove component already removed', el);
         }
     };
     ctx.operations.push({
@@ -2180,6 +1996,27 @@ function visitJsxNode(ctx, elm, jsxNode, isSvg) {
     else {
         return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
     }
+}
+
+function hashCode(text, hash = 0) {
+    if (text.length === 0)
+        return hash;
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Number(Math.abs(hash)).toString(36);
+}
+
+function styleKey(qStyles) {
+    return qStyles && String(hashCode(qStyles.symbol));
+}
+function styleHost(styleId) {
+    return styleId && ComponentStylesPrefixHost + styleId;
+}
+function styleContent(styleId) {
+    return styleId && ComponentStylesPrefixContent + styleId;
 }
 
 /**
@@ -2321,8 +2158,9 @@ function getQComponent(hostElement) {
 // TODO(misko): this should take QComponent as well.
 function notifyRender(hostElement) {
     assertDefined(hostElement.getAttribute(QHostAttr));
-    const ctx = getContext(hostElement);
     const doc = getDocument(hostElement);
+    hydrateIfNeeded(doc);
+    const ctx = getContext(hostElement);
     const state = getRenderingState(doc);
     if (ctx.dirty) {
         // TODO
@@ -2598,8 +2436,7 @@ Error.stackTraceLimit = 9999;
 // TODO(misko): For better debugger experience the getProps should never store Proxy, always naked objects to make it easier to traverse in the debugger.
 const Q_IS_HYDRATED = '__isHydrated__';
 const Q_CTX = '__ctx__';
-function hydrateIfNeeded(element) {
-    const doc = getDocument(element);
+function hydrateIfNeeded(doc) {
     const isHydrated = doc[Q_IS_HYDRATED];
     if (!isHydrated) {
         doc[Q_IS_HYDRATED] = true;
@@ -2607,7 +2444,6 @@ function hydrateIfNeeded(element) {
     }
 }
 function getContext(element) {
-    hydrateIfNeeded(element);
     let ctx = element[Q_CTX];
     if (!ctx) {
         const cache = new Map();
@@ -2644,6 +2480,199 @@ function getEvents(ctx) {
     return events;
 }
 
+const ON_WATCH = 'on:qWatch';
+function registerOnWatch(element, props, watchFnQrl) {
+    props[ON_WATCH] = watchFnQrl;
+    invokeWatchFn(element, watchFnQrl);
+}
+const cleanupFnMap = new Map();
+async function invokeWatchFn(element, watchFnQrl) {
+    const watchFn = await qrlImport(element, watchFnQrl);
+    const previousCleanupFn = cleanupFnMap.get(watchFn);
+    cleanupFnMap.delete(watchFn);
+    if (isCleanupFn(previousCleanupFn)) {
+        try {
+            previousCleanupFn();
+        }
+        catch (e) {
+            // TODO(misko): Centralize error handling
+            logError(e);
+        }
+    }
+    throw new Error('TO IMPLEMENT');
+}
+function isCleanupFn(value) {
+    return typeof value === 'function';
+}
+
+const ON_PROP_REGEX = /on(Document|Window)?:/;
+const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
+function isOnProp(prop) {
+    return ON_PROP_REGEX.test(prop);
+}
+function isOn$Prop(prop) {
+    return ON$_PROP_REGEX.test(prop);
+}
+function isQrlFactory(value) {
+    return typeof value === 'function' && value.__brand__ === 'QRLFactory';
+}
+function qPropReadQRL(ctx, prop) {
+    const existingQRLs = getExistingQRLs(ctx, prop);
+    if (existingQRLs.length === 0) {
+        return null;
+    }
+    return () => {
+        const context = getInvokeContext();
+        const qrls = getExistingQRLs(ctx, prop);
+        return Promise.all(qrls.map(async (qrlOrPromise) => {
+            const qrl = await qrlOrPromise;
+            const qrlGuard = context.qrlGuard;
+            if (qrlGuard && !qrlGuard(qrl))
+                return;
+            if (!qrl.symbolRef) {
+                qrl.symbolRef = await qrlImport(ctx.element, qrl);
+            }
+            context.qrl = qrl;
+            symbolUsed(ctx.element, qrl.symbol);
+            if (qrlGuard) {
+                return invokeWatchFn(ctx.element, qrl);
+            }
+            else {
+                return useInvoke(context, qrl.symbolRef);
+            }
+        }));
+    };
+}
+const symbolUsed = (el, name) => {
+    if (typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent('qSymbol', {
+            detail: { name },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
+function qPropWriteQRL(rctx, ctx, prop, value) {
+    if (!value) {
+        return;
+    }
+    prop = prop.replace('$:', ':');
+    if (typeof value == 'string') {
+        value = parseQRL(value);
+    }
+    const existingQRLs = getExistingQRLs(ctx, prop);
+    if (Array.isArray(value)) {
+        value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
+    }
+    else if (isQrl(value)) {
+        const capture = value.capture;
+        if (capture == null) {
+            // we need to serialize the lexical scope references
+            const captureRef = value.captureRef;
+            value.capture =
+                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+        }
+        // Important we modify the array as it is cached.
+        for (let i = 0; i < existingQRLs.length; i++) {
+            const qrl = existingQRLs[i];
+            if (!isPromise(qrl) &&
+                qrl.canonicalChunk === value.canonicalChunk &&
+                qrl.symbol === value.symbol) {
+                existingQRLs.splice(i, 1);
+                i--;
+            }
+        }
+        existingQRLs.push(value);
+    }
+    else if (isQrlFactory(value)) {
+        if (existingQRLs.length === 0) {
+            // if we don't have any than we use the `qrlFactory` to create a QRLInternal
+            // (otherwise ignore the factory)
+            qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
+        }
+    }
+    else if (isPromise(value)) {
+        const writePromise = value.then((qrl) => {
+            existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
+            qPropWriteQRL(rctx, ctx, prop, qrl);
+            return qrl;
+        });
+        existingQRLs.push(writePromise);
+    }
+    else {
+        // TODO(misko): Test/better text
+        throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
+    }
+    if (prop.startsWith('on:q')) {
+        getEvents(ctx)[prop] = serializeQRLs(existingQRLs, ctx);
+    }
+    else {
+        const kebabProp = fromCamelToKebabCase(prop);
+        const newValue = serializeQRLs(existingQRLs, ctx);
+        if (ctx.element.getAttribute(kebabProp) !== newValue) {
+            if (rctx) {
+                setAttribute(rctx, ctx.element, kebabProp, newValue);
+            }
+            else {
+                ctx.element.setAttribute(kebabProp, newValue);
+            }
+        }
+    }
+}
+function getExistingQRLs(ctx, prop) {
+    let parts = ctx.cache.get(prop);
+    if (!parts) {
+        if (prop.startsWith('on:q')) {
+            parts = [];
+            const qrls = getEvents(ctx)[prop];
+            if (qrls) {
+                qrls.split('\n').forEach((qrl) => {
+                    if (qrl) {
+                        parts.push(parseQRL(qrl, ctx.element));
+                    }
+                });
+                ctx.cache.set(prop, parts);
+                return parts;
+            }
+        }
+        const attrName = fromCamelToKebabCase(prop);
+        parts = [];
+        (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
+            if (qrl) {
+                parts.push(parseQRL(qrl, ctx.element));
+            }
+        });
+        ctx.cache.set(prop, parts);
+    }
+    return parts;
+}
+function serializeQRLs(existingQRLs, ctx) {
+    const platform = getPlatform(getDocument(ctx.element));
+    const element = ctx.element;
+    return existingQRLs
+        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, element, platform)))
+        .filter((v) => !!v)
+        .join('\n');
+}
+
+// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useHostElement() {
+    const element = getInvokeContext().hostElement;
+    assertDefined(element);
+    return element;
+}
+
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
@@ -2655,7 +2684,7 @@ function getEvents(ctx) {
  * @public
  */
 // </docs>
-function onUnmount(unmountFn) {
+function onUnmountFromQrl(unmountFn) {
     throw new Error('IMPLEMENT: onUnmount' + unmountFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
@@ -2669,7 +2698,7 @@ function onUnmount(unmountFn) {
  * @public
  */
 // </docs>
-const onUnmount$ = implicit$FirstArg(onUnmount);
+const onUnmount$ = implicit$FirstArg(onUnmountFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
@@ -2682,7 +2711,7 @@ const onUnmount$ = implicit$FirstArg(onUnmount);
  * @public
  */
 // </docs>
-function onResume(resumeFn) {
+function onResumeFromQrl(resumeFn) {
     throw new Error('IMPLEMENT: onRender' + resumeFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
@@ -2697,7 +2726,7 @@ function onResume(resumeFn) {
  * @public
  */
 // </docs>
-const onResume$ = implicit$FirstArg(onResume);
+const onResume$ = implicit$FirstArg(onResumeFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
@@ -2710,7 +2739,7 @@ const onResume$ = implicit$FirstArg(onResume);
  * @public
  */
 // </docs>
-function onHydrate(hydrateFn) {
+function onHydrateFromQrl(hydrateFn) {
     throw new Error('IMPLEMENT: onHydrate' + hydrateFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
@@ -2725,7 +2754,7 @@ function onHydrate(hydrateFn) {
  * @public
  */
 // </docs>
-const onHydrate$ = implicit$FirstArg(onHydrate);
+const onHydrate$ = implicit$FirstArg(onHydrateFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDehydrate instead)
@@ -2740,7 +2769,7 @@ const onHydrate$ = implicit$FirstArg(onHydrate);
  * @public
  */
 // </docs>
-function onDehydrate(dehydrateFn) {
+function onDehydrateFromQrl(dehydrateFn) {
     throw new Error('IMPLEMENT: onDehydrate' + dehydrateFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
@@ -2757,7 +2786,7 @@ function onDehydrate(dehydrateFn) {
  * @public
  */
 // </docs>
-const onDehydrate$ = implicit$FirstArg(onDehydrate);
+const onDehydrate$ = implicit$FirstArg(onDehydrateFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#on">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#on instead)
@@ -2773,7 +2802,9 @@ const onDehydrate$ = implicit$FirstArg(onDehydrate);
  */
 // </docs>
 function on(event, eventFn) {
-    throw new Error('IMPLEMENT: on' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2790,7 +2821,9 @@ function on(event, eventFn) {
  */
 // </docs>
 function onDocument(event, eventFn) {
-    throw new Error('IMPLEMENT: onDocument' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onWindow">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2807,7 +2840,9 @@ function onDocument(event, eventFn) {
  */
 // </docs>
 function onWindow(event, eventFn) {
-    throw new Error('IMPLEMENT: onWindow' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, 'on-w' + `indow:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2818,7 +2853,7 @@ function onWindow(event, eventFn) {
  * @alpha
  */
 // </docs>
-function useStyles(styles) {
+function useStylesFromQrl(styles) {
     _useStyles(styles, false);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
@@ -2830,7 +2865,7 @@ function useStyles(styles) {
  * @alpha
  */
 // </docs>
-const useStyles$ = implicit$FirstArg(useStyles);
+const useStyles$ = implicit$FirstArg(useStylesFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
@@ -2838,7 +2873,7 @@ const useStyles$ = implicit$FirstArg(useStyles);
  * @alpha
  */
 // </docs>
-function useScopedStyles(styles) {
+function useScopedStylesFromQrl(styles) {
     _useStyles(styles, true);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
@@ -2848,11 +2883,11 @@ function useScopedStyles(styles) {
  * @alpha
  */
 // </docs>
-const useScopedStyles$ = implicit$FirstArg(useScopedStyles);
+const useScopedStyles$ = implicit$FirstArg(useScopedStylesFromQrl);
 /**
  * @public
  */
-function component(onMount, options = {}) {
+function componentFromQrl(onMount, options = {}) {
     var _a;
     const tagName = (_a = options.tagName) !== null && _a !== void 0 ? _a : 'div';
     // Return a QComponent Factory function.
@@ -2931,7 +2966,7 @@ function component(onMount, options = {}) {
  */
 // </docs>
 function component$(onMount, options) {
-    return component($(onMount), options);
+    return componentFromQrl($(onMount), options);
 }
 function resolveQrl(hostElement, onMountQrl) {
     return onMountQrl.symbolRef
@@ -3042,7 +3077,7 @@ function useProps() {
  * @public
  */
 // </docs>
-function onWatch(watchFn) {
+function onWatchFromQrl(watchFn) {
     registerOnWatch(useHostElement(), useProps(), watchFn);
 }
 // <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
@@ -3090,7 +3125,7 @@ function onWatch(watchFn) {
  * @public
  */
 // </docs>
-const onWatch$ = implicit$FirstArg(onWatch);
+const onWatch$ = implicit$FirstArg(onWatchFromQrl);
 
 /**
  * Use to render asynchronous (`Promise`) values.
@@ -3239,25 +3274,26 @@ function render(parent, jsxNode) {
         jsxNode = jsx(jsxNode, null);
     }
     const doc = isDocument(parent) ? parent : getDocument(parent);
-    const elm = parent;
     const stylesParent = isDocument(parent) ? parent.head : parent.parentElement;
+    hydrateIfNeeded(doc);
     const ctx = {
         operations: [],
         doc,
         component: undefined,
         hostElements: new Set(),
         globalState: getRenderingState(doc),
-        roots: [elm],
+        roots: [parent],
         perf: {
             visited: 0,
             timing: [],
         },
     };
-    return then(visitJsxNode(ctx, elm, processNode(jsxNode), false), () => {
+    return then(visitJsxNode(ctx, parent, processNode(jsxNode), false), () => {
         executeContext(ctx);
         if (stylesParent) {
             injectQwikSlotCSS(stylesParent);
         }
+        injectQVersion(parent);
         if (qDev) {
             if (typeof window !== 'undefined' && window.document != null) {
                 printRenderStats(ctx);
@@ -3271,6 +3307,10 @@ function injectQwikSlotCSS(parent) {
     style.setAttribute('id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
     parent.insertBefore(style, parent.firstChild);
+}
+function injectQVersion(parent) {
+    const element = isDocument(parent) ? parent.documentElement : parent;
+    element.setAttribute('q:version', version || '');
 }
 
 /**
@@ -3327,6 +3367,7 @@ function useLexicalScope() {
     const qrl = (_a = context.qrl) !== null && _a !== void 0 ? _a : parseQRL(decodeURIComponent(String(useURL())));
     if (qrl.captureRef == null) {
         const el = context.element;
+        hydrateIfNeeded(getDocument(el));
         const ctx = getContext(el);
         assertDefined(qrl.capture);
         qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
@@ -3383,7 +3424,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-0-dev20220311014644";
+const version = "0.0.18-1-dev20220311195411";
 
 exports.$ = $;
 exports.Async = Async;
@@ -3392,8 +3433,8 @@ exports.Host = Host;
 exports.SkipRerender = SkipRerender;
 exports.Slot = Slot;
 exports.bubble = bubble;
-exports.component = component;
 exports.component$ = component$;
+exports.componentFromQrl = componentFromQrl;
 exports.dehydrate = dehydrate;
 exports.getPlatform = getPlatform;
 exports.h = h;
@@ -3403,17 +3444,17 @@ exports.jsxDEV = jsx;
 exports.jsxs = jsx;
 exports.notifyRender = notifyRender;
 exports.on = on;
-exports.onDehydrate = onDehydrate;
 exports.onDehydrate$ = onDehydrate$;
+exports.onDehydrateFromQrl = onDehydrateFromQrl;
 exports.onDocument = onDocument;
-exports.onHydrate = onHydrate;
 exports.onHydrate$ = onHydrate$;
-exports.onResume = onResume;
+exports.onHydrateFromQrl = onHydrateFromQrl;
 exports.onResume$ = onResume$;
-exports.onUnmount = onUnmount;
+exports.onResumeFromQrl = onResumeFromQrl;
 exports.onUnmount$ = onUnmount$;
-exports.onWatch = onWatch;
+exports.onUnmountFromQrl = onUnmountFromQrl;
 exports.onWatch$ = onWatch$;
+exports.onWatchFromQrl = onWatchFromQrl;
 exports.onWindow = onWindow;
 exports.qrl = qrl;
 exports.qrlImport = qrlImport;
@@ -3423,11 +3464,11 @@ exports.useDocument = useDocument;
 exports.useEvent = useEvent;
 exports.useHostElement = useHostElement;
 exports.useLexicalScope = useLexicalScope;
-exports.useScopedStyles = useScopedStyles;
 exports.useScopedStyles$ = useScopedStyles$;
+exports.useScopedStylesFromQrl = useScopedStylesFromQrl;
 exports.useStore = useStore;
-exports.useStyles = useStyles;
 exports.useStyles$ = useStyles$;
+exports.useStylesFromQrl = useStylesFromQrl;
 exports.useTransient = useTransient;
 exports.version = version;
 //# sourceMappingURL=core.cjs.map
