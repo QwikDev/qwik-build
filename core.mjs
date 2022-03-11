@@ -1050,6 +1050,7 @@ function qPropReadQRL(ctx, prop) {
                 qrl.symbolRef = await qrlImport(ctx.element, qrl);
             }
             context.qrl = qrl;
+            symbolUsed(ctx.element, qrl.symbol);
             if (qrlGuard) {
                 return invokeWatchFn(ctx.element, qrl);
             }
@@ -1059,6 +1060,15 @@ function qPropReadQRL(ctx, prop) {
         }));
     };
 }
+const symbolUsed = (el, name) => {
+    if (typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent('qSymbol', {
+            detail: { name },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+};
 function qPropWriteQRL(rctx, ctx, prop, value) {
     if (!value) {
         return;
@@ -1611,7 +1621,8 @@ function patchVnode(ctx, elm, vnode, isSvg) {
         isSvg = tag === 'svg';
     }
     let promise;
-    const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+    const props = vnode.props;
+    const dirty = updateProperties(ctx, elm, props, isSvg);
     const isSlot = tag === 'q:slot';
     if (isSvg && vnode.type === 'foreignObject') {
         isSvg = false;
@@ -1651,6 +1662,13 @@ function patchVnode(ctx, elm, vnode, isSvg) {
             });
         });
     }
+    const setsInnerHTML = props && 'innerHTML' in props;
+    if (setsInnerHTML) {
+        if (qDev && ch.length > 0) {
+            logWarn('Node can not have children when innerHTML is set');
+        }
+        return;
+    }
     return then(promise, () => {
         const mode = isSlot ? 'fallback' : 'default';
         return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
@@ -1673,7 +1691,7 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = nodes[startIdx];
         assertDefined(ch);
-        removeNode(ctx, parentElm, ch);
+        removeNode(ctx, ch);
     }
 }
 let refCount = 0;
@@ -1711,7 +1729,7 @@ function removeTemplates(ctx, slotMaps) {
     Object.keys(slotMaps.templates).forEach((key) => {
         const template = slotMaps.templates[key];
         if (template && slotMaps.slots[key] !== undefined) {
-            removeNode(ctx, template.parentNode, template);
+            removeNode(ctx, template);
             slotMaps.templates[key] = undefined;
         }
     });
@@ -1764,11 +1782,11 @@ function createElm(ctx, vnode, isSvg) {
     if (!isSvg) {
         isSvg = tag === 'svg';
     }
-    const data = vnode.props;
+    const props = vnode.props;
     const elm = (vnode.elm = createElement(ctx, tag, isSvg));
     const isComponent = isComponentNode(vnode);
     setKey(elm, vnode.key);
-    updateProperties(ctx, elm, data, isSvg);
+    updateProperties(ctx, elm, props, isSvg);
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
@@ -1793,6 +1811,15 @@ function createElm(ctx, vnode, isSvg) {
             classlistAdd(ctx, elm, hostStyleTag);
         }
         wait = componentCtx.render(ctx);
+    }
+    else {
+        const setsInnerHTML = props && 'innerHTML' in props;
+        if (setsInnerHTML) {
+            if (qDev && vnode.children.length > 0) {
+                logWarn('Node can not have children when innerHTML is set');
+            }
+            return elm;
+        }
     }
     return then(wait, () => {
         let children = vnode.children;
@@ -1876,16 +1903,10 @@ const checkBeforeAssign = (ctx, elm, prop, newValue) => {
     }
     return true;
 };
-const setInnerHTML = (ctx, elm, prop, newValue) => {
-    setProperty(ctx, elm, prop, newValue);
-    setAttribute(ctx, elm, 'q:static', '');
-    return true;
-};
 const PROP_HANDLER_MAP = {
     style: handleStyle,
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
-    innerHTML: setInnerHTML,
 };
 const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
 function updateProperties(rctx, node, expectProps, isSvg) {
@@ -2050,10 +2071,14 @@ function prepend(ctx, parent, newChild) {
         fn,
     });
 }
-function removeNode(ctx, parent, el) {
+function removeNode(ctx, el) {
     const fn = () => {
-        if (el.parentNode === parent) {
+        const parent = el.parentNode;
+        if (parent) {
             parent.removeChild(el);
+        }
+        else if (qDev) {
+            logWarn('Trying to remove component already removed', el);
         }
     };
     ctx.operations.push({
@@ -2286,8 +2311,9 @@ function getQComponent(hostElement) {
 // TODO(misko): this should take QComponent as well.
 function notifyRender(hostElement) {
     assertDefined(hostElement.getAttribute(QHostAttr));
-    const ctx = getContext(hostElement);
     const doc = getDocument(hostElement);
+    hydrateIfNeeded(doc);
+    const ctx = getContext(hostElement);
     const state = getRenderingState(doc);
     if (ctx.dirty) {
         // TODO
@@ -2563,8 +2589,7 @@ Error.stackTraceLimit = 9999;
 // TODO(misko): For better debugger experience the getProps should never store Proxy, always naked objects to make it easier to traverse in the debugger.
 const Q_IS_HYDRATED = '__isHydrated__';
 const Q_CTX = '__ctx__';
-function hydrateIfNeeded(element) {
-    const doc = getDocument(element);
+function hydrateIfNeeded(doc) {
     const isHydrated = doc[Q_IS_HYDRATED];
     if (!isHydrated) {
         doc[Q_IS_HYDRATED] = true;
@@ -2572,7 +2597,6 @@ function hydrateIfNeeded(element) {
     }
 }
 function getContext(element) {
-    hydrateIfNeeded(element);
     let ctx = element[Q_CTX];
     if (!ctx) {
         const cache = new Map();
@@ -3204,25 +3228,26 @@ function render(parent, jsxNode) {
         jsxNode = jsx(jsxNode, null);
     }
     const doc = isDocument(parent) ? parent : getDocument(parent);
-    const elm = parent;
     const stylesParent = isDocument(parent) ? parent.head : parent.parentElement;
+    hydrateIfNeeded(doc);
     const ctx = {
         operations: [],
         doc,
         component: undefined,
         hostElements: new Set(),
         globalState: getRenderingState(doc),
-        roots: [elm],
+        roots: [parent],
         perf: {
             visited: 0,
             timing: [],
         },
     };
-    return then(visitJsxNode(ctx, elm, processNode(jsxNode), false), () => {
+    return then(visitJsxNode(ctx, parent, processNode(jsxNode), false), () => {
         executeContext(ctx);
         if (stylesParent) {
             injectQwikSlotCSS(stylesParent);
         }
+        injectQVersion(parent);
         if (qDev) {
             if (typeof window !== 'undefined' && window.document != null) {
                 printRenderStats(ctx);
@@ -3236,6 +3261,10 @@ function injectQwikSlotCSS(parent) {
     style.setAttribute('id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
     parent.insertBefore(style, parent.firstChild);
+}
+function injectQVersion(parent) {
+    const element = isDocument(parent) ? parent.documentElement : parent;
+    element.setAttribute('q:version', version || '');
 }
 
 /**
@@ -3292,6 +3321,7 @@ function useLexicalScope() {
     const qrl = (_a = context.qrl) !== null && _a !== void 0 ? _a : parseQRL(decodeURIComponent(String(useURL())));
     if (qrl.captureRef == null) {
         const el = context.element;
+        hydrateIfNeeded(getDocument(el));
         const ctx = getContext(el);
         assertDefined(qrl.capture);
         qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
@@ -3348,7 +3378,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-0-dev20220311014644";
+const version = "0.0.18-1-dev20220311164003";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component, component$, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate, onDehydrate$, onDocument, onHydrate, onHydrate$, onResume, onResume$, onUnmount, onUnmount$, onWatch, onWatch$, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles, useScopedStyles$, useStore, useStyles, useStyles$, useTransient, version };
 //# sourceMappingURL=core.mjs.map

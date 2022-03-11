@@ -809,7 +809,8 @@ function qwikRollup(opts) {
     name: "qwik",
     enforce: "pre",
     log: log,
-    config(config, {command: command}) {
+    async config(config, {command: command}) {
+      optimizer || (optimizer = await createOptimizer());
       if ("serve" === command) {
         isBuild = false;
         entryStrategy = {
@@ -817,6 +818,7 @@ function qwikRollup(opts) {
         };
         config.ssr && (config.ssr.noExternal = false);
       }
+      "build" === command && fixSSRInput(config, optimizer);
       log("vite command", command);
       return {
         esbuild: {
@@ -1061,8 +1063,20 @@ function getBuildFile(isSSR) {
   return `\nexport const isServer = ${isSSR};\nexport const isBrowser = ${!isSSR};\n`;
 }
 
+function slash(p) {
+  return p.replace(/\\/g, "/");
+}
+
+function fixSSRInput(config, optimizer) {
+  var _a, _b;
+  if ("string" === typeof (null == (_a = null == config ? void 0 : config.build) ? void 0 : _a.ssr) && (null == (_b = null == config ? void 0 : config.build.rollupOptions) ? void 0 : _b.input)) {
+    const resolvedRoot = optimizer.path.normalize(slash(config.root ? optimizer.path.resolve(config.root) : process.cwd()));
+    config.build.rollupOptions.input = optimizer.path.resolve(resolvedRoot, config.build.ssr);
+  }
+}
+
 var versions = {
-  qwik: "0.0.18-0-dev20220311014644"
+  qwik: "0.0.18-1-dev20220311164003"
 };
 
 module.exports = __toCommonJS(src_exports);
