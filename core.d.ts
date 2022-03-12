@@ -583,6 +583,14 @@ export declare type ComponentChild = JSXNode<any> | object | string | number | b
  */
 export declare type ComponentChildren = ComponentChild[] | ComponentChild;
 
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
+}
+
 /**
  * Declare a Qwik component that can be used to create UI.
  *
@@ -1770,42 +1778,6 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  */
 export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
 
-declare class QComponentCtx {
-    __brand__: 'QComponentCtx';
-    ctx: QContext;
-    hostElement: HTMLElement;
-    styleId: string | undefined | null;
-    styleClass: string | null;
-    styleHostClass: string | null;
-    slots: JSXNode[];
-    constructor(hostElement: HTMLElement);
-    render(ctx: RenderContext): ValueOrPromise<void>;
-}
-
-declare interface QContext {
-    cache: Map<string, any>;
-    refMap: QObjectMap;
-    element: Element;
-    dirty: boolean;
-    props: Record<string, any> | undefined;
-    events: QContextEvents | undefined;
-}
-
-declare interface QContextEvents {
-    [eventName: string]: string | undefined;
-}
-
-declare type QObject<T extends {}> = T & {
-    __brand__: 'QObject';
-};
-
-declare interface QObjectMap {
-    add(qObject: QObject<any>): number;
-    get(index: number): QObject<any> | undefined;
-    indexOf(object: QObject<any>): number | undefined;
-    array: QObject<any>[];
-}
-
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
  *
@@ -2060,7 +2032,7 @@ declare interface RenderContext {
     roots: Element[];
     hostElements: Set<Element>;
     operations: RenderOperation[];
-    component: QComponentCtx | undefined;
+    component: ComponentCtx | undefined;
     globalState: RenderingState;
     perf: RenderPerf;
 }

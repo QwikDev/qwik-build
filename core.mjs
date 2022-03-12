@@ -958,6 +958,193 @@ function safeJSONStringify(value) {
     }
 }
 
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+    if (jsxNode === undefined) {
+        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
+    }
+    if (Array.isArray(jsxNode)) {
+        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
+    }
+    else if (jsxNode.type === Host) {
+        updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
+    }
+    else {
+        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
+    }
+}
+
+function hashCode(text, hash = 0) {
+    if (text.length === 0)
+        return hash;
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Number(Math.abs(hash)).toString(36);
+}
+
+function styleKey(qStyles) {
+    return qStyles && String(hashCode(qStyles.symbol));
+}
+function styleHost(styleId) {
+    return styleId && ComponentStylesPrefixHost + styleId;
+}
+function styleContent(styleId) {
+    return styleId && ComponentStylesPrefixContent + styleId;
+}
+
+/**
+ * @license
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
+/**
+ * Place at the root of the component View to allow binding of attributes on the Host element.
+ *
+ * ```
+ * <Host someAttr={someExpr} someAttrStatic="value">
+ *   View content implementation.
+ * </Host>
+ * ```
+ *
+ * Qwik requires that components have [docs/HOST_ELEMENTS.ts] so that it is possible to have
+ * asynchronous loading point. Host element is not owned by the component. At times it is
+ * desirable for the component to render additional attributes on the host element. `<Host>`
+ * servers that purpose.
+ * @public
+ */
+const Host = { __brand__: 'host' };
+/**
+ * @public
+ */
+const SkipRerender = { __brand__: 'skip' };
+
+/**
+ * @public
+ */
+function jsx(type, props, key) {
+    return new JSXNodeImpl(type, props, key);
+}
+class JSXNodeImpl {
+    constructor(type, props, key = null) {
+        this.type = type;
+        this.props = props;
+        this.children = EMPTY_ARRAY;
+        this.text = undefined;
+        this.key = null;
+        if (key != null) {
+            this.key = String(key);
+        }
+        if (props) {
+            const children = processNode(props.children);
+            if (children !== undefined) {
+                if (Array.isArray(children)) {
+                    this.children = children;
+                }
+                else {
+                    this.children = [children];
+                }
+            }
+        }
+    }
+}
+function processNode(node) {
+    if (node == null || typeof node === 'boolean') {
+        return undefined;
+    }
+    if (isJSXNode(node)) {
+        if (node.type === Host || node.type === SkipRerender) {
+            return node;
+        }
+        else if (typeof node.type === 'function') {
+            return processNode(node.type(Object.assign(Object.assign({}, node.props), { children: node.children }), node.key));
+        }
+        else {
+            return node;
+        }
+    }
+    else if (Array.isArray(node)) {
+        return node.flatMap(processNode).filter((e) => e != null);
+    }
+    else if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
+        const newNode = new JSXNodeImpl('#text', null, null);
+        newNode.text = String(node);
+        return newNode;
+    }
+    else {
+        logWarn('Unvalid node, skipping');
+        return undefined;
+    }
+}
+const isJSXNode = (n) => {
+    if (qDev) {
+        if (n instanceof JSXNodeImpl) {
+            return true;
+        }
+        if (n && typeof n === 'object' && n.constructor.name === JSXNodeImpl.name) {
+            throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+        }
+        return false;
+    }
+    else {
+        return n instanceof JSXNodeImpl;
+    }
+};
+/**
+ * @public
+ */
+const Fragment = (props) => props.children;
+
+const firstRenderComponent = (rctx, ctx) => {
+    ctx.element.setAttribute(QHostAttr, '');
+    const result = renderComponent(rctx, ctx);
+    // if (ctx.component?.styleHostClass) {
+    //   classlistAdd(rctx, ctx.element, ctx.component.styleHostClass);
+    // }
+    return result;
+};
+const renderComponent = (rctx, ctx) => {
+    const hostElement = ctx.element;
+    const onRender = getEvent(ctx, OnRenderProp);
+    const event = 'qRender';
+    assertDefined(onRender);
+    // Component is not dirty any more
+    ctx.dirty = false;
+    rctx.globalState.hostsStaging.delete(hostElement);
+    // Invoke render hook
+    const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
+    return then(promise, (jsxNode) => {
+        var _a;
+        // Types are wrong here
+        jsxNode = jsxNode[0];
+        rctx.hostElements.add(hostElement);
+        let componentCtx = ctx.component;
+        if (!componentCtx) {
+            componentCtx = ctx.component = {
+                hostElement,
+                slots: [],
+                styleHostClass: undefined,
+                styleClass: undefined,
+                styleId: undefined,
+            };
+            const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) !== null && _a !== void 0 ? _a : undefined;
+            if (scopedStyleId) {
+                componentCtx.styleId = scopedStyleId;
+                componentCtx.styleHostClass = styleHost(scopedStyleId);
+                componentCtx.styleClass = styleContent(scopedStyleId);
+                hostElement.classList.add(componentCtx.styleHostClass);
+            }
+        }
+        componentCtx.slots = [];
+        const newCtx = Object.assign(Object.assign({}, rctx), { component: componentCtx });
+        return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    });
+};
+
 function QStore_hydrate(doc) {
     const script = doc.querySelector('script[type="qwik/json"]');
     doc.qDehydrate = () => QStore_dehydrate(doc);
@@ -1214,34 +1401,6 @@ const strToInt = (nu) => {
     return parseInt(nu, 36);
 };
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-/**
- * Place at the root of the component View to allow binding of attributes on the Host element.
- *
- * ```
- * <Host someAttr={someExpr} someAttrStatic="value">
- *   View content implementation.
- * </Host>
- * ```
- *
- * Qwik requires that components have [docs/HOST_ELEMENTS.ts] so that it is possible to have
- * asynchronous loading point. Host element is not owned by the component. At times it is
- * desirable for the component to render additional attributes on the host element. `<Host>`
- * servers that purpose.
- * @public
- */
-const Host = { __brand__: 'host' };
-/**
- * @public
- */
-const SkipRerender = { __brand__: 'skip' };
-
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
     if (ch.length === 1 && ch[0].type === SkipRerender) {
@@ -1396,12 +1555,12 @@ function splitBy(input, condition) {
     }
     return output;
 }
-function patchVnode(ctx, elm, vnode, isSvg) {
-    ctx.perf.visited++;
+function patchVnode(rctx, elm, vnode, isSvg) {
+    rctx.perf.visited++;
     const tag = vnode.type;
     if (tag === '#text') {
         if (elm.data !== vnode.text) {
-            setProperty(ctx, elm, 'data', vnode.text);
+            setProperty(rctx, elm, 'data', vnode.text);
         }
         return;
     }
@@ -1413,25 +1572,23 @@ function patchVnode(ctx, elm, vnode, isSvg) {
     }
     let promise;
     const props = vnode.props;
-    const dirty = updateProperties(ctx, elm, props, isSvg);
+    const ctx = getContext(elm);
+    const dirty = updateProperties(rctx, ctx, props, isSvg);
     const isSlot = tag === 'q:slot';
     if (isSvg && vnode.type === 'foreignObject') {
         isSvg = false;
     }
     else if (isSlot) {
-        ctx.component.slots.push(vnode);
+        rctx.component.slots.push(vnode);
     }
     const isComponent = isComponentNode(vnode);
-    let componentCtx;
     if (dirty) {
-        assertEqual(isComponent, true);
-        componentCtx = getQComponent(elm);
-        promise = componentCtx.render(ctx);
+        promise = renderComponent(rctx, ctx);
     }
     const ch = vnode.children;
     if (isComponent) {
         return then(promise, () => {
-            const slotMaps = getSlots(componentCtx, elm);
+            const slotMaps = getSlots(ctx.component, elm);
             const splittedChidren = splitBy(ch, getSlotName);
             const promises = [];
             // Mark empty slots and remove content
@@ -1439,17 +1596,17 @@ function patchVnode(ctx, elm, vnode, isSvg) {
                 if (slotEl && !splittedChidren[key]) {
                     const oldCh = getChildren(slotEl, 'slot');
                     if (oldCh.length > 0) {
-                        removeVnodes(ctx, slotEl, oldCh, 0, oldCh.length - 1);
+                        removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
                     }
                 }
             });
             // Render into slots
             Object.entries(splittedChidren).forEach(([key, ch]) => {
-                const slotElm = getSlotElement(ctx, slotMaps, elm, key);
-                promises.push(smartUpdateChildren(ctx, slotElm, ch, 'slot', isSvg));
+                const slotElm = getSlotElement(rctx, slotMaps, elm, key);
+                promises.push(smartUpdateChildren(rctx, slotElm, ch, 'slot', isSvg));
             });
             return then(promiseAll(promises), () => {
-                removeTemplates(ctx, slotMaps);
+                removeTemplates(rctx, slotMaps);
             });
         });
     }
@@ -1462,7 +1619,7 @@ function patchVnode(ctx, elm, vnode, isSvg) {
     }
     return then(promise, () => {
         const mode = isSlot ? 'fallback' : 'default';
-        return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
+        return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
     });
 }
 function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
@@ -1564,44 +1721,38 @@ function getSlotName(node) {
     var _a, _b;
     return (_b = (_a = node.props) === null || _a === void 0 ? void 0 : _a['q:slot']) !== null && _b !== void 0 ? _b : '';
 }
-function createElm(ctx, vnode, isSvg) {
-    ctx.perf.visited++;
+function createElm(rctx, vnode, isSvg) {
+    rctx.perf.visited++;
     const tag = vnode.type;
     if (tag === '#text') {
-        return (vnode.elm = createTextNode(ctx, vnode.text));
+        return (vnode.elm = createTextNode(rctx, vnode.text));
     }
     if (!isSvg) {
         isSvg = tag === 'svg';
     }
     const props = vnode.props;
-    const elm = (vnode.elm = createElement(ctx, tag, isSvg));
+    const elm = (vnode.elm = createElement(rctx, tag, isSvg));
     const isComponent = isComponentNode(vnode);
+    const ctx = getContext(elm);
     setKey(elm, vnode.key);
-    updateProperties(ctx, elm, props, isSvg);
+    updateProperties(rctx, ctx, props, isSvg);
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
-    const currentComponent = ctx.component;
+    const currentComponent = rctx.component;
     if (currentComponent) {
         const styleTag = currentComponent.styleClass;
         if (styleTag) {
-            classlistAdd(ctx, elm, styleTag);
+            classlistAdd(rctx, elm, styleTag);
         }
         if (tag === 'q:slot') {
-            setSlotRef(ctx, currentComponent.hostElement, elm);
-            ctx.component.slots.push(vnode);
+            setSlotRef(rctx, currentComponent.hostElement, elm);
+            rctx.component.slots.push(vnode);
         }
     }
     let wait;
-    let componentCtx;
     if (isComponent) {
-        componentCtx = getQComponent(elm);
-        const hostStyleTag = componentCtx.styleHostClass;
-        elm.setAttribute(QHostAttr, '');
-        if (hostStyleTag) {
-            classlistAdd(ctx, elm, hostStyleTag);
-        }
-        wait = componentCtx.render(ctx);
+        wait = firstRenderComponent(rctx, ctx);
     }
     else {
         const setsInnerHTML = props && 'innerHTML' in props;
@@ -1618,13 +1769,13 @@ function createElm(ctx, vnode, isSvg) {
             if (children.length === 1 && children[0].type === SkipRerender) {
                 children = children[0].children;
             }
-            const slotMap = isComponent ? getSlots(componentCtx, elm) : undefined;
-            const promises = children.map((ch) => createElm(ctx, ch, isSvg));
+            const slotMap = isComponent ? getSlots(ctx.component, elm) : undefined;
+            const promises = children.map((ch) => createElm(rctx, ch, isSvg));
             return then(promiseAll(promises), () => {
                 let parent = elm;
                 for (const node of children) {
                     if (slotMap) {
-                        parent = getSlotElement(ctx, slotMap, elm, getSlotName(node));
+                        parent = getSlotElement(rctx, slotMap, elm, getSlotName(node));
                     }
                     parent.appendChild(node.elm);
                 }
@@ -1700,11 +1851,11 @@ const PROP_HANDLER_MAP = {
     checked: checkBeforeAssign,
 };
 const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
-function updateProperties(rctx, node, expectProps, isSvg) {
+function updateProperties(rctx, ctx, expectProps, isSvg) {
     if (!expectProps) {
         return false;
     }
-    const ctx = getContext(node);
+    const elm = ctx.element;
     const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : undefined;
     if ('class' in expectProps) {
         const className = expectProps.class;
@@ -1738,7 +1889,7 @@ function updateProperties(rctx, node, expectProps, isSvg) {
         ctx.cache.set(key, newValue);
         // Check of data- or aria-
         if (key.startsWith('data-') || key.startsWith('aria-') || isSvg) {
-            setAttribute(rctx, node, key, newValue);
+            setAttribute(rctx, elm, key, newValue);
             continue;
         }
         if (qwikProps) {
@@ -1756,17 +1907,17 @@ function updateProperties(rctx, node, expectProps, isSvg) {
         // Check if its an exception
         const exception = PROP_HANDLER_MAP[key];
         if (exception) {
-            if (exception(rctx, node, key, newValue, oldValue)) {
+            if (exception(rctx, elm, key, newValue, oldValue)) {
                 continue;
             }
         }
         // Check if property in prototype
-        if (key in node) {
-            setProperty(rctx, node, key, newValue);
+        if (key in elm) {
+            setProperty(rctx, elm, key, newValue);
             continue;
         }
         // Fallback to render attribute
-        setAttribute(rctx, node, key, newValue);
+        setAttribute(rctx, elm, key, newValue);
     }
     return ctx.dirty;
 }
@@ -1947,164 +2098,6 @@ function sameVnode(vnode1, vnode2) {
     return isSameSel && isSameKey;
 }
 
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-    if (jsxNode === undefined) {
-        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
-    }
-    if (Array.isArray(jsxNode)) {
-        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
-    }
-    else if (jsxNode.type === Host) {
-        updateProperties(ctx, elm, jsxNode.props, isSvg);
-        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
-    }
-    else {
-        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
-    }
-}
-
-function hashCode(text, hash = 0) {
-    if (text.length === 0)
-        return hash;
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-}
-
-function styleKey(qStyles) {
-    return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-    return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-    return styleId && ComponentStylesPrefixContent + styleId;
-}
-
-/**
- * @public
- */
-function jsx(type, props, key) {
-    return new JSXNodeImpl(type, props, key);
-}
-class JSXNodeImpl {
-    constructor(type, props, key = null) {
-        this.type = type;
-        this.props = props;
-        this.children = EMPTY_ARRAY;
-        this.text = undefined;
-        this.key = null;
-        if (key != null) {
-            this.key = String(key);
-        }
-        if (props) {
-            const children = processNode(props.children);
-            if (children !== undefined) {
-                if (Array.isArray(children)) {
-                    this.children = children;
-                }
-                else {
-                    this.children = [children];
-                }
-            }
-        }
-    }
-}
-function processNode(node) {
-    if (node == null || typeof node === 'boolean') {
-        return undefined;
-    }
-    if (isJSXNode(node)) {
-        if (node.type === Host || node.type === SkipRerender) {
-            return node;
-        }
-        else if (typeof node.type === 'function') {
-            return processNode(node.type(Object.assign(Object.assign({}, node.props), { children: node.children }), node.key));
-        }
-        else {
-            return node;
-        }
-    }
-    else if (Array.isArray(node)) {
-        return node.flatMap(processNode).filter((e) => e != null);
-    }
-    else if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
-        const newNode = new JSXNodeImpl('#text', null, null);
-        newNode.text = String(node);
-        return newNode;
-    }
-    else {
-        logWarn('Unvalid node, skipping');
-        return undefined;
-    }
-}
-const isJSXNode = (n) => {
-    if (qDev) {
-        if (n instanceof JSXNodeImpl) {
-            return true;
-        }
-        if (n && typeof n === 'object' && n.constructor.name === JSXNodeImpl.name) {
-            throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-        }
-        return false;
-    }
-    else {
-        return n instanceof JSXNodeImpl;
-    }
-};
-/**
- * @public
- */
-const Fragment = (props) => props.children;
-
-// TODO(misko): Can we get rid of this whole file, and instead teach getProps to know how to render
-// the advantage will be that the render capability would then be exposed to the outside world as well.
-class QComponentCtx {
-    constructor(hostElement) {
-        this.styleId = undefined;
-        this.styleClass = null;
-        this.styleHostClass = null;
-        this.slots = [];
-        this.hostElement = hostElement;
-        this.ctx = getContext(hostElement);
-    }
-    render(ctx) {
-        const hostElement = this.hostElement;
-        const onRender = getEvent(this.ctx, OnRenderProp);
-        assertDefined(onRender);
-        const event = 'qRender';
-        this.ctx.dirty = false;
-        ctx.globalState.hostsStaging.delete(hostElement);
-        const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
-        return then(promise, (jsxNode) => {
-            // Types are wrong here
-            jsxNode = jsxNode[0];
-            if (this.styleId === undefined) {
-                const scopedStyleId = (this.styleId = hostElement.getAttribute(ComponentScopedStyles));
-                if (scopedStyleId) {
-                    this.styleHostClass = styleHost(scopedStyleId);
-                    this.styleClass = styleContent(scopedStyleId);
-                }
-            }
-            ctx.hostElements.add(hostElement);
-            this.slots = [];
-            const newCtx = Object.assign(Object.assign({}, ctx), { component: this });
-            return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
-        });
-    }
-}
-const COMPONENT_PROP = '__qComponent__';
-function getQComponent(hostElement) {
-    const element = hostElement;
-    let component = element[COMPONENT_PROP];
-    if (!component)
-        component = element[COMPONENT_PROP] = new QComponentCtx(hostElement);
-    return component;
-}
-
 /**
  * Mark component for rendering.
  *
@@ -2177,21 +2170,20 @@ async function renderMarked(doc, state) {
     sortNodes(renderingQueue);
     const ctx = {
         doc,
+        globalState: state,
+        hostElements: new Set(),
         operations: [],
         roots: [],
-        hostElements: new Set(),
-        globalState: state,
+        component: undefined,
         perf: {
             visited: 0,
             timing: [],
         },
-        component: undefined,
     };
     for (const el of renderingQueue) {
         if (!ctx.hostElements.has(el)) {
             ctx.roots.push(el);
-            const cmp = getQComponent(el);
-            await cmp.render(ctx);
+            await renderComponent(ctx, getContext(el));
         }
     }
     // Early exist, no dom operations
@@ -2370,7 +2362,6 @@ function verifySerializable(value) {
 }
 
 function newQObjectMap(element) {
-    const map = new Map();
     const array = [];
     let added = element.hasAttribute(QObjAttr);
     return {
@@ -2379,12 +2370,12 @@ function newQObjectMap(element) {
             return array[index];
         },
         indexOf(obj) {
-            return map.get(obj);
+            const index = array.indexOf(obj);
+            return index === -1 ? undefined : index;
         },
         add(object) {
-            const index = map.get(object);
-            if (index === undefined) {
-                map.set(object, array.length);
+            const index = array.indexOf(object);
+            if (index === -1) {
                 array.push(object);
                 if (!added) {
                     element.setAttribute(QObjAttr, '');
@@ -2419,6 +2410,7 @@ function getContext(element) {
             dirty: false,
             props: undefined,
             events: undefined,
+            component: undefined,
         };
     }
     return ctx;
@@ -2470,6 +2462,16 @@ function isCleanupFn(value) {
     return typeof value === 'function';
 }
 
+const emitEvent = (el, eventName, detail, bubbles) => {
+    if (typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent(eventName, {
+            detail,
+            bubbles: bubbles,
+            composed: bubbles,
+        }));
+    }
+};
+
 const ON_PROP_REGEX = /on(Document|Window)?:/;
 const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
 function isOnProp(prop) {
@@ -2498,7 +2500,7 @@ function qPropReadQRL(ctx, prop) {
                 qrl.symbolRef = await qrlImport(ctx.element, qrl);
             }
             context.qrl = qrl;
-            symbolUsed(ctx.element, qrl.symbol);
+            emitEvent(ctx.element, 'qSymbol', { name: qrl.symbol }, true);
             if (qrlGuard) {
                 return invokeWatchFn(ctx.element, qrl);
             }
@@ -2508,15 +2510,6 @@ function qPropReadQRL(ctx, prop) {
         }));
     };
 }
-const symbolUsed = (el, name) => {
-    if (typeof CustomEvent === 'function') {
-        el.dispatchEvent(new CustomEvent('qSymbol', {
-            detail: { name },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-};
 function qPropWriteQRL(rctx, ctx, prop, value) {
     if (!value) {
         return;
@@ -2677,7 +2670,7 @@ const onUnmount$ = implicit$FirstArg(onUnmountFromQrl);
  */
 // </docs>
 function onResumeFromQrl(resumeFn) {
-    throw new Error('IMPLEMENT: onRender' + resumeFn);
+    onWindow('load', resumeFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3242,12 +3235,12 @@ function render(parent, jsxNode) {
     const stylesParent = isDocument(parent) ? parent.head : parent.parentElement;
     hydrateIfNeeded(doc);
     const ctx = {
-        operations: [],
         doc,
-        component: undefined,
-        hostElements: new Set(),
         globalState: getRenderingState(doc),
+        hostElements: new Set(),
+        operations: [],
         roots: [parent],
+        component: undefined,
         perf: {
             visited: 0,
             timing: [],
@@ -3389,7 +3382,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-1-dev20220312112657";
+const version = "0.0.18-1-dev20220312231136";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component$, componentFromQrl, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate$, onDehydrateFromQrl, onDocument, onHydrate$, onHydrateFromQrl, onResume$, onResumeFromQrl, onUnmount$, onUnmountFromQrl, onWatch$, onWatchFromQrl, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesFromQrl, useStore, useStyles$, useStylesFromQrl, useTransient, version };
 //# sourceMappingURL=core.mjs.map
