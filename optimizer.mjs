@@ -1010,7 +1010,7 @@ function fixSSRInput(config, optimizer) {
 }
 
 var versions = {
-  qwik: "0.0.18-1-dev20220312231657"
+  qwik: "0.0.18-1-dev20220312232446"
 };
 
 export { createOptimizer, qwikRollup, qwikVite, versions };
