@@ -2188,6 +2188,12 @@ async function renderMarked(doc, state) {
     }
     // Early exist, no dom operations
     if (ctx.operations.length === 0) {
+        if (qDev) {
+            if (typeof window !== 'undefined' && window.document != null) {
+                logDebug('Render skipped. No operations.');
+                printRenderStats(ctx);
+            }
+        }
         postRendering(doc, state);
         return ctx;
     }
@@ -2312,6 +2318,9 @@ class ReadWriteProxyHandler {
         }
         const value = target[prop];
         const invokeCtx = tryGetInvokeContext();
+        if (qDev && !invokeCtx) {
+            logWarn(`State assigned outside invocation context. Getting prop`, prop, this);
+        }
         if (invokeCtx && invokeCtx.subscriptions) {
             const isArray = Array.isArray(target);
             const sub = this.getSub(invokeCtx.hostElement);
@@ -2326,9 +2335,7 @@ class ReadWriteProxyHandler {
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((_, el) => {
-                notifyRender(el);
-            });
+            this.subs.forEach((_, el) => notifyRender(el));
             return true;
         }
         const oldValue = target[prop];
@@ -3382,7 +3389,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-1-dev20220313193034";
+const version = "0.0.18-1-dev20220313232519";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component$, componentFromQrl, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate$, onDehydrateFromQrl, onDocument, onHydrate$, onHydrateFromQrl, onResume$, onResumeFromQrl, onUnmount$, onUnmountFromQrl, onWatch$, onWatchFromQrl, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesFromQrl, useStore, useStyles$, useStylesFromQrl, useTransient, version };
 //# sourceMappingURL=core.mjs.map
