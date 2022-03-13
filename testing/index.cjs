@@ -1535,7 +1535,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
     }
   }
   if (newStartIdx <= newEndIdx) {
-    let before = newCh[newEndIdx + 1] == null ? void 0 : newCh[newEndIdx + 1].elm;
+    const before = newCh[newEndIdx + 1] == null ? void 0 : newCh[newEndIdx + 1].elm;
     results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
   }
   let wait = promiseAll(results);

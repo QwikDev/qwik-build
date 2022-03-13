@@ -1535,7 +1535,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
         }
     }
     if (newStartIdx <= newEndIdx) {
-        let before = newCh[newEndIdx + 1] == null ? undefined : newCh[newEndIdx + 1].elm;
+        const before = newCh[newEndIdx + 1] == null ? undefined : newCh[newEndIdx + 1].elm;
         results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
     }
     let wait = promiseAll(results);
@@ -3424,7 +3424,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-1-dev20220313232519";
+const version = "0.0.18-1-dev20220313232703";
 
 exports.$ = $;
 exports.Async = Async;
