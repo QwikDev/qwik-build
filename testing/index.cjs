@@ -1463,7 +1463,7 @@ function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
   if (oldCh.length > 0 && ch.length > 0) {
     return updateChildren(ctx, elm, oldCh, ch, isSvg);
   } else if (ch.length > 0) {
-    return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
+    return addVnodes(ctx, elm, void 0, ch, 0, ch.length - 1, isSvg);
   } else if (oldCh.length > 0) {
     return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
   }
@@ -1480,7 +1480,6 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
   let oldKeyToIdx;
   let idxInOld;
   let elmToMove;
-  let before;
   const results = [];
   while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
     if (oldStartVnode == null) {
@@ -1536,7 +1535,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
     }
   }
   if (newStartIdx <= newEndIdx) {
-    before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+    const before = newCh[newEndIdx + 1] == null ? void 0 : newCh[newEndIdx + 1].elm;
     results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
   }
   let wait = promiseAll(results);
@@ -1592,6 +1591,7 @@ function splitBy(input, condition) {
 }
 function patchVnode(rctx, elm, vnode, isSvg) {
   rctx.perf.visited++;
+  vnode.elm = elm;
   const tag = vnode.type;
   if (tag === "#text") {
     if (elm.data !== vnode.text) {
@@ -2174,6 +2174,12 @@ async function renderMarked(doc, state) {
     }
   }
   if (ctx.operations.length === 0) {
+    if (qDev) {
+      if (typeof window !== "undefined" && window.document != null) {
+        logDebug("Render skipped. No operations.");
+        printRenderStats(ctx);
+      }
+    }
     postRendering(doc, state);
     return ctx;
   }
@@ -2272,6 +2278,9 @@ var ReadWriteProxyHandler = class {
     }
     const value = target[prop];
     const invokeCtx = tryGetInvokeContext();
+    if (qDev && !invokeCtx) {
+      logWarn(`State assigned outside invocation context. Getting prop`, prop, this);
+    }
     if (invokeCtx && invokeCtx.subscriptions) {
       const isArray = Array.isArray(target);
       const sub = this.getSub(invokeCtx.hostElement);
@@ -2286,9 +2295,7 @@ var ReadWriteProxyHandler = class {
     const isArray = Array.isArray(target);
     if (isArray) {
       target[prop] = unwrappedNewValue;
-      this.subs.forEach((_, el) => {
-        notifyRender(el);
-      });
+      this.subs.forEach((_, el) => notifyRender(el));
       return true;
     }
     const oldValue = target[prop];
