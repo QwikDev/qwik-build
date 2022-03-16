@@ -3381,8 +3381,8 @@ function useLexicalScope() {
 /**
  * Creates a object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
@@ -3424,7 +3424,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-1-dev20220314004649";
+const version = "0.0.18-2-dev20220316045552";
 
 exports.$ = $;
 exports.Async = Async;
