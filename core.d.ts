@@ -560,6 +560,37 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
 
+declare interface ComponentBaseProps extends QwikEvents {
+    class?: string | {
+        [className: string]: boolean;
+    };
+    className?: string | undefined;
+    style?: CSSProperties | undefined;
+    key?: string | number;
+    id?: string | undefined;
+    'q:slot'?: string;
+    [key: `h:${string}`]: any;
+    children?: JSXChildren;
+}
+
+/**
+ * @public
+ */
+export declare type ComponentChild = JSXNode<any> | object | string | number | bigint | boolean | null | undefined;
+
+/**
+ * @public
+ */
+export declare type ComponentChildren = ComponentChild[] | ComponentChild;
+
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
+}
+
 /**
  * Declare a Qwik component that can be used to create UI.
  *
@@ -616,30 +647,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  *
  * @public
  */
-export declare function component<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
-
-declare interface ComponentBaseProps extends QwikEvents {
-    class?: string | {
-        [className: string]: boolean;
-    };
-    className?: string | undefined;
-    style?: CSSProperties | undefined;
-    key?: string | number;
-    id?: string | undefined;
-    'q:slot'?: string;
-    [key: `h:${string}`]: any;
-    children?: JSXChildren;
-}
-
-/**
- * @public
- */
-export declare type ComponentChild = JSXNode<any> | object | string | number | bigint | boolean | null | undefined;
-
-/**
- * @public
- */
-export declare type ComponentChildren = ComponentChild[] | ComponentChild;
+export declare function componentFromQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
 
 /**
  * @public
@@ -1367,7 +1375,7 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function on(event: string, eventFn: QRL<() => void>): QRL<() => void>;
+export declare function on(event: string, eventFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's on dehydrate hook.
@@ -1391,7 +1399,7 @@ export declare const onDehydrate$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onDehydrate(dehydrateFn: QRL<() => void>): void;
+export declare function onDehydrateFromQrl(dehydrateFn: QRL<() => void>): void;
 
 /**
  * Register a listener on `document`.
@@ -1403,7 +1411,7 @@ export declare function onDehydrate(dehydrateFn: QRL<() => void>): void;
  *
  * @public
  */
-export declare function onDocument(event: string, eventFn: QRL<() => void>): QRL<() => void>;
+export declare function onDocument(event: string, eventFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's on hydrate hook.
@@ -1423,7 +1431,7 @@ export declare const onHydrate$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onHydrate(hydrateFn: QRL<() => void>): void;
+export declare function onHydrateFromQrl(hydrateFn: QRL<() => void>): void;
 
 /**
  * @public
@@ -1448,7 +1456,7 @@ export declare const onResume$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onResume(resumeFn: QRL<() => void>): void;
+export declare function onResumeFromQrl(resumeFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's destroy hook.
@@ -1466,7 +1474,7 @@ export declare const onUnmount$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onUnmount(unmountFn: QRL<() => void>): void;
+export declare function onUnmountFromQrl(unmountFn: QRL<() => void>): void;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -1552,7 +1560,7 @@ export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare function onWatch(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
+export declare function onWatchFromQrl(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
 
 /**
  * Register a listener on `window`.
@@ -1564,7 +1572,7 @@ export declare function onWatch(watchFn: QRL<(obs: Observer) => unknown | (() =>
  *
  * @public
  */
-export declare function onWindow(event: string, eventFn: QRL<() => void>): QRL<() => void>;
+export declare function onWindow(event: string, eventFn: QRL<() => void>): void;
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1769,42 +1777,6 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  * @public
  */
 export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
-
-declare class QComponentCtx {
-    __brand__: 'QComponentCtx';
-    ctx: QContext;
-    hostElement: HTMLElement;
-    styleId: string | undefined | null;
-    styleClass: string | null;
-    styleHostClass: string | null;
-    slots: JSXNode[];
-    constructor(hostElement: HTMLElement);
-    render(ctx: RenderContext): ValueOrPromise<void>;
-}
-
-declare interface QContext {
-    cache: Map<string, any>;
-    refMap: QObjectMap;
-    element: Element;
-    dirty: boolean;
-    props: Record<string, any> | undefined;
-    events: QContextEvents | undefined;
-}
-
-declare interface QContextEvents {
-    [eventName: string]: string | undefined;
-}
-
-declare type QObject<T extends {}> = T & {
-    __brand__: 'QObject';
-};
-
-declare interface QObjectMap {
-    add(qObject: QObject<any>): number;
-    get(index: number): QObject<any> | undefined;
-    indexOf(object: QObject<any>): number | undefined;
-    array: QObject<any>[];
-}
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -2017,6 +1989,7 @@ declare interface QwikProps {
         [className: string]: boolean;
     };
     innerHTML?: string;
+    dangerouslySetInnerHTML?: string;
     /**
      *
      */
@@ -2027,6 +2000,7 @@ declare interface QwikProps {
     'q:base'?: string;
     'q:obj'?: string;
     'q:host'?: string;
+    'q:version'?: string;
 }
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
@@ -2059,7 +2033,7 @@ declare interface RenderContext {
     roots: Element[];
     hostElements: Set<Element>;
     operations: RenderOperation[];
-    component: QComponentCtx | undefined;
+    component: ComponentCtx | undefined;
     globalState: RenderingState;
     perf: RenderPerf;
 }
@@ -2518,13 +2492,13 @@ export declare const useScopedStyles$: (first: string) => void;
 /**
  * @alpha
  */
-export declare function useScopedStyles(styles: QRL<string>): void;
+export declare function useScopedStylesFromQrl(styles: QRL<string>): void;
 
 /**
  * Creates a object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
@@ -2553,7 +2527,7 @@ export declare const useStyles$: (first: string) => void;
  *
  * @alpha
  */
-export declare function useStyles(styles: QRL<string>): void;
+export declare function useStylesFromQrl(styles: QRL<string>): void;
 
 /**
  * @public
