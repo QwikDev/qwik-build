@@ -1989,6 +1989,7 @@ declare interface QwikProps {
         [className: string]: boolean;
     };
     innerHTML?: string;
+    dangerouslySetInnerHTML?: string;
     /**
      *
      */

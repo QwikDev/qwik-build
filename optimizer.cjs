@@ -1076,7 +1076,7 @@ function fixSSRInput(config, optimizer) {
 }
 
 var versions = {
-  qwik: "0.0.18-2-dev20220316045552"
+  qwik: "0.0.18-2-dev20220316234933"
 };
 
 module.exports = __toCommonJS(src_exports);

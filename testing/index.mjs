@@ -1452,7 +1452,7 @@ function patchVnode(rctx, elm, vnode, isSvg) {
       });
     });
   }
-  const setsInnerHTML = props && "innerHTML" in props;
+  const setsInnerHTML = checkInnerHTML(props);
   if (setsInnerHTML) {
     if (qDev && ch.length > 0) {
       logWarn("Node can not have children when innerHTML is set");
@@ -1592,7 +1592,7 @@ function createElm(rctx, vnode, isSvg) {
   if (isComponent) {
     wait = firstRenderComponent(rctx, ctx);
   } else {
-    const setsInnerHTML = props && "innerHTML" in props;
+    const setsInnerHTML = checkInnerHTML(props);
     if (setsInnerHTML) {
       if (qDev && vnode.children.length > 0) {
         logWarn("Node can not have children when innerHTML is set");
@@ -1674,10 +1674,20 @@ var checkBeforeAssign = (ctx, elm, prop, newValue) => {
   }
   return true;
 };
+var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+var setInnerHTML = (ctx, elm, _, newValue) => {
+  if (dangerouslySetInnerHTML in elm) {
+    setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+  } else if ("innerHTML" in elm) {
+    setProperty(ctx, elm, "innerHTML", newValue);
+  }
+  return true;
+};
 var PROP_HANDLER_MAP = {
   style: handleStyle,
   value: checkBeforeAssign,
-  checked: checkBeforeAssign
+  checked: checkBeforeAssign,
+  [dangerouslySetInnerHTML]: setInnerHTML
 };
 var ALLOWS_PROPS = ["className", "style", "id", "q:slot"];
 function updateProperties(rctx, ctx, expectProps, isSvg) {
@@ -1908,6 +1918,9 @@ function sameVnode(vnode1, vnode2) {
   const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
   const isSameKey = vnode1.nodeType === 1 /* ELEMENT_NODE */ ? getKey(vnode1) === vnode2.key : true;
   return isSameSel && isSameKey;
+}
+function checkInnerHTML(props) {
+  return props && ("innerHTML" in props || dangerouslySetInnerHTML in props);
 }
 
 // src/core/render/notify-render.ts

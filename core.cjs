@@ -1645,7 +1645,7 @@ function patchVnode(rctx, elm, vnode, isSvg) {
             });
         });
     }
-    const setsInnerHTML = props && 'innerHTML' in props;
+    const setsInnerHTML = checkInnerHTML(props);
     if (setsInnerHTML) {
         if (qDev && ch.length > 0) {
             logWarn('Node can not have children when innerHTML is set');
@@ -1790,7 +1790,7 @@ function createElm(rctx, vnode, isSvg) {
         wait = firstRenderComponent(rctx, ctx);
     }
     else {
-        const setsInnerHTML = props && 'innerHTML' in props;
+        const setsInnerHTML = checkInnerHTML(props);
         if (setsInnerHTML) {
             if (qDev && vnode.children.length > 0) {
                 logWarn('Node can not have children when innerHTML is set');
@@ -1880,10 +1880,21 @@ const checkBeforeAssign = (ctx, elm, prop, newValue) => {
     }
     return true;
 };
+const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+const setInnerHTML = (ctx, elm, _, newValue) => {
+    if (dangerouslySetInnerHTML in elm) {
+        setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+    }
+    else if ('innerHTML' in elm) {
+        setProperty(ctx, elm, 'innerHTML', newValue);
+    }
+    return true;
+};
 const PROP_HANDLER_MAP = {
     style: handleStyle,
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
+    [dangerouslySetInnerHTML]: setInnerHTML,
 };
 const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
 function updateProperties(rctx, ctx, expectProps, isSvg) {
@@ -2131,6 +2142,9 @@ function sameVnode(vnode1, vnode2) {
     const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
     const isSameKey = vnode1.nodeType === NodeType.ELEMENT_NODE ? getKey(vnode1) === vnode2.key : true;
     return isSameSel && isSameKey;
+}
+function checkInnerHTML(props) {
+    return props && ('innerHTML' in props || dangerouslySetInnerHTML in props);
 }
 
 /**
@@ -3424,7 +3438,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-2-dev20220316045552";
+const version = "0.0.18-2-dev20220316234933";
 
 exports.$ = $;
 exports.Async = Async;
