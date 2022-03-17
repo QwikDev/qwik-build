@@ -1201,9 +1201,11 @@ function QStore_hydrate(doc) {
             const host = el.getAttribute(QHostAttr);
             const ctx = getContext(el);
             qobj.split(' ').forEach((part) => {
-                const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
-                assertDefined(obj);
-                ctx.refMap.add(obj);
+                if (part !== '') {
+                    const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
+                    assertDefined(obj);
+                    ctx.refMap.add(obj);
+                }
             });
             if (host) {
                 const [props, events] = host.split(' ').map(strToInt);
@@ -3438,7 +3440,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-2-dev20220316234933";
+const version = "0.0.18-3-dev20220317010606";
 
 exports.$ = $;
 exports.Async = Async;

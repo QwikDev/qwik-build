@@ -1166,9 +1166,11 @@ function QStore_hydrate(doc) {
             const host = el.getAttribute(QHostAttr);
             const ctx = getContext(el);
             qobj.split(' ').forEach((part) => {
-                const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
-                assertDefined(obj);
-                ctx.refMap.add(obj);
+                if (part !== '') {
+                    const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
+                    assertDefined(obj);
+                    ctx.refMap.add(obj);
+                }
             });
             if (host) {
                 const [props, events] = host.split(' ').map(strToInt);
@@ -3403,7 +3405,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-2-dev20220316234933";
+const version = "0.0.18-3-dev20220317010606";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component$, componentFromQrl, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate$, onDehydrateFromQrl, onDocument, onHydrate$, onHydrateFromQrl, onResume$, onResumeFromQrl, onUnmount$, onUnmountFromQrl, onWatch$, onWatchFromQrl, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesFromQrl, useStore, useStyles$, useStylesFromQrl, useTransient, version };
 //# sourceMappingURL=core.mjs.map
