@@ -3440,7 +3440,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-3-dev20220317010606";
+const version = "0.0.18-3-dev20220317103612";
 
 exports.$ = $;
 exports.Async = Async;

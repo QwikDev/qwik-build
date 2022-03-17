@@ -78,6 +78,67 @@ var import_global = __toESM(require_global());
 // src/server/document.ts
 var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
+
+// src/server/utils.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+function createTimer() {
+  if (typeof performance === "undefined") {
+    return () => 0;
+  }
+  const start = performance.now();
+  return () => {
+    const end = performance.now();
+    const delta = end - start;
+    return delta / 1e6;
+  };
+}
+function ensureGlobals(doc, opts) {
+  if (!doc[QWIK_DOC]) {
+    if (!doc || doc.nodeType !== 9) {
+      throw new Error(`Invalid document`);
+    }
+    doc[QWIK_DOC] = true;
+    const loc = normalizeUrl(opts.url);
+    Object.defineProperty(doc, "baseURI", {
+      get: () => loc.href,
+      set: (url) => loc.href = normalizeUrl(url).href
+    });
+    doc.defaultView = {
+      get document() {
+        return doc;
+      },
+      get location() {
+        return loc;
+      },
+      get origin() {
+        return loc.origin;
+      },
+      CustomEvent: class CustomEvent {
+        constructor(type, details) {
+          Object.assign(this, details);
+          this.type = type;
+        }
+      }
+    };
+  }
+  return doc.defaultView;
+}
+var QWIK_DOC = Symbol();
+function normalizeUrl(url) {
+  if (url != null) {
+    if (typeof url === "string") {
+      return new URL(url || "/", BASE_URI);
+    }
+    if (typeof url.href === "string") {
+      return new URL(url.href || "/", BASE_URI);
+    }
+  }
+  return new URL(BASE_URI);
+}
+var BASE_URI = `http://document.qwik.dev/`;
+
+// src/server/document.ts
 var import_qwik2 = require("../core.cjs");
 
 // dist-dev/qwikdom.mjs
@@ -8970,7 +9031,7 @@ function createPlatform(document, opts) {
   const doc = document;
   const symbols = opts.symbols;
   if (opts == null ? void 0 : opts.url) {
-    doc.location.href = opts.url.href;
+    doc.location.href = normalizeUrl(opts.url).href;
   }
   const serverPlatform = {
     async importSymbol(_element, qrl, symbolName) {
@@ -9046,42 +9107,11 @@ function serializeDocument(doc, opts) {
   return "<!DOCTYPE html>" + doc.documentElement.outerHTML;
 }
 
-// src/server/utils.ts
-var import_globalthis = __toESM(require_globalthis());
-var import_global = __toESM(require_global());
-function createTimer() {
-  if (typeof performance === "undefined") {
-    return () => 0;
-  }
-  const start = performance.now();
-  return () => {
-    const end = performance.now();
-    const delta = end - start;
-    return delta / 1e6;
-  };
-}
-
 // src/server/document.ts
 function createGlobal(opts) {
   opts = opts || {};
   const doc = qwikdom_default.createDocument();
-  const baseURI = opts.url === void 0 ? BASE_URI : opts.url.href;
-  const loc = new URL(baseURI, BASE_URI);
-  Object.defineProperty(doc, "baseURI", {
-    get: () => loc.href,
-    set: (url) => loc.href = url
-  });
-  const glb = {
-    document: doc,
-    location: loc,
-    CustomEvent: class CustomEvent {
-      constructor(type, details) {
-        Object.assign(this, details);
-        this.type = type;
-      }
-    }
-  };
-  glb.document.defaultView = glb;
+  const glb = ensureGlobals(doc, opts);
   return glb;
 }
 function createDocument(opts) {
@@ -9089,9 +9119,7 @@ function createDocument(opts) {
   return glb.document;
 }
 async function renderToDocument(doc, rootNode, opts) {
-  if (!doc || doc.nodeType !== 9) {
-    throw new Error(`Invalid document`);
-  }
+  ensureGlobals(doc, opts);
   await setServerPlatform(doc, opts);
   await (0, import_qwik2.render)(doc, rootNode);
   if (opts.dehydrate !== false) {
@@ -9116,7 +9144,6 @@ async function renderToString(rootNode, opts) {
   };
   return result;
 }
-var BASE_URI = `http://document.qwik.dev/`;
 
 // src/server/prefetch.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -9288,7 +9315,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-3-dev20220317010606",
+  qwik: "0.0.18-3-dev20220317103612",
   qwikDom: "2.1.11"
 };
 module.exports = __toCommonJS(server_exports);

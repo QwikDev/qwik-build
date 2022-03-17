@@ -34,7 +34,7 @@ export declare function createTimer(): () => number;
  * @public
  */
 export declare interface DocumentOptions {
-    url?: URL;
+    url?: URL | string;
     debug?: boolean;
 }
 
