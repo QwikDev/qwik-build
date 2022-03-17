@@ -415,10 +415,10 @@ function newError(text) {
 // src/core/render/notify-render.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/component/component-ctx.ts
+// src/core/render/cursor.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/render/render.ts
+// src/core/props/props-on.ts
 var import_globalthis = __toESM(require_globalthis());
 
 // src/core/index.ts
@@ -782,30 +782,35 @@ function styleContent(styleId) {
 }
 
 // src/core/component/component.public.ts
-function onUnmount(unmountFn) {
+function onUnmountFromQrl(unmountFn) {
   throw new Error("IMPLEMENT: onUnmount" + unmountFn);
 }
-var onUnmount$ = implicit$FirstArg(onUnmount);
-function onResume(resumeFn) {
-  throw new Error("IMPLEMENT: onRender" + resumeFn);
+var onUnmount$ = implicit$FirstArg(onUnmountFromQrl);
+function onResumeFromQrl(resumeFn) {
+  onWindow("load", resumeFn);
 }
-var onResume$ = implicit$FirstArg(onResume);
-function onHydrate(hydrateFn) {
+var onResume$ = implicit$FirstArg(onResumeFromQrl);
+function onHydrateFromQrl(hydrateFn) {
   throw new Error("IMPLEMENT: onHydrate" + hydrateFn);
 }
-var onHydrate$ = implicit$FirstArg(onHydrate);
-function onDehydrate(dehydrateFn) {
+var onHydrate$ = implicit$FirstArg(onHydrateFromQrl);
+function onDehydrateFromQrl(dehydrateFn) {
   throw new Error("IMPLEMENT: onDehydrate" + dehydrateFn);
 }
-var onDehydrate$ = implicit$FirstArg(onDehydrate);
-function useStyles(styles) {
+var onDehydrate$ = implicit$FirstArg(onDehydrateFromQrl);
+function onWindow(event, eventFn) {
+  const el = useHostElement();
+  const ctx = getContext(el);
+  qPropWriteQRL(void 0, ctx, `on-window:${event}`, eventFn);
+}
+function useStylesFromQrl(styles) {
   _useStyles(styles, false);
 }
-var useStyles$ = implicit$FirstArg(useStyles);
-function useScopedStyles(styles) {
+var useStyles$ = implicit$FirstArg(useStylesFromQrl);
+function useScopedStylesFromQrl(styles) {
   _useStyles(styles, true);
 }
-var useScopedStyles$ = implicit$FirstArg(useScopedStyles);
+var useScopedStyles$ = implicit$FirstArg(useScopedStylesFromQrl);
 function _useStyles(styles, scoped) {
   const styleQrl = toQrlOrError(styles);
   const styleId = styleKey(styleQrl);
@@ -857,9 +862,11 @@ function QStore_hydrate(doc) {
       const host = el.getAttribute(QHostAttr);
       const ctx = getContext(el);
       qobj.split(" ").forEach((part) => {
-        const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
-        assertDefined(obj);
-        ctx.refMap.add(obj);
+        if (part !== "") {
+          const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
+          assertDefined(obj);
+          ctx.refMap.add(obj);
+        }
       });
       if (host) {
         const [props, events] = host.split(" ").map(strToInt);
@@ -1109,10 +1116,10 @@ function isCleanupFn(value) {
 }
 
 // src/core/watch/watch.public.ts
-function onWatch(watchFn) {
+function onWatchFromQrl(watchFn) {
   registerOnWatch(useHostElement(), useProps(), watchFn);
 }
-var onWatch$ = implicit$FirstArg(onWatch);
+var onWatch$ = implicit$FirstArg(onWatchFromQrl);
 
 // src/core/render/jsx/async.public.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -1197,22 +1204,20 @@ var import_globalthis = __toESM(require_globalthis());
 // src/core/render/render.public.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/render/cursor.ts
+// src/core/render/render.ts
 var import_globalthis = __toESM(require_globalthis());
-
-// src/core/props/props-on.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/json/q-json.ts
-var import_globalthis = __toESM(require_globalthis());
-function qDeflate(obj, hostCtx) {
-  return hostCtx.refMap.add(obj);
-}
-
-// src/core/util/case.ts
-var import_globalthis = __toESM(require_globalthis());
-function fromCamelToKebabCase(text) {
-  return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+  if (jsxNode === void 0) {
+    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
+  }
+  if (Array.isArray(jsxNode)) {
+    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
+  } else if (jsxNode.type === Host) {
+    updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
+  } else {
+    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
+  }
 }
 
 // src/core/util/promises.ts
@@ -1231,8 +1236,53 @@ var promiseAll = (promises) => {
   return promises;
 };
 
+// src/core/use/use-document.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-event.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-lexical-scope.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/json/q-json.ts
+var import_globalthis = __toESM(require_globalthis());
+function qDeflate(obj, hostCtx) {
+  return hostCtx.refMap.add(obj);
+}
+
+// src/core/use/use-url.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-store.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/use/use-transient.public.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/index.ts
+var version = globalThis.QWIK_VERSION;
+
+// src/core/util/case.ts
+var import_globalthis = __toESM(require_globalthis());
+function fromCamelToKebabCase(text) {
+  return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
 // src/core/util/stringify.ts
 var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/event.ts
+var import_globalthis = __toESM(require_globalthis());
+var emitEvent = (el, eventName, detail, bubbles) => {
+  if (typeof CustomEvent === "function") {
+    el.dispatchEvent(new CustomEvent(eventName, {
+      detail,
+      bubbles,
+      composed: bubbles
+    }));
+  }
+};
 
 // src/core/props/props-on.ts
 var ON_PROP_REGEX = /on(Document|Window)?:/;
@@ -1263,6 +1313,7 @@ function qPropReadQRL(ctx, prop) {
         qrl2.symbolRef = await qrlImport(ctx.element, qrl2);
       }
       context.qrl = qrl2;
+      emitEvent(ctx.element, "qSymbol", { name: qrl2.symbol }, true);
       if (qrlGuard) {
         return invokeWatchFn(ctx.element, qrl2);
       } else {
@@ -1316,7 +1367,11 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
     const kebabProp = fromCamelToKebabCase(prop);
     const newValue = serializeQRLs(existingQRLs, ctx);
     if (ctx.element.getAttribute(kebabProp) !== newValue) {
-      setAttribute(rctx, ctx.element, kebabProp, newValue);
+      if (rctx) {
+        setAttribute(rctx, ctx.element, kebabProp, newValue);
+      } else {
+        ctx.element.setAttribute(kebabProp, newValue);
+      }
     }
   }
 }
@@ -1353,6 +1408,50 @@ function serializeQRLs(existingQRLs, ctx) {
   return existingQRLs.map((qrl2) => isPromise(qrl2) ? "" : stringifyQRL(qrl2, element, platform)).filter((v) => !!v).join("\n");
 }
 
+// src/core/component/component-ctx.ts
+var import_globalthis = __toESM(require_globalthis());
+var firstRenderComponent = (rctx, ctx) => {
+  ctx.element.setAttribute(QHostAttr, "");
+  const result = renderComponent(rctx, ctx);
+  return result;
+};
+var renderComponent = (rctx, ctx) => {
+  const hostElement = ctx.element;
+  const onRender = getEvent(ctx, OnRenderProp);
+  const event = "qRender";
+  assertDefined(onRender);
+  ctx.dirty = false;
+  rctx.globalState.hostsStaging.delete(hostElement);
+  const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
+  return then(promise, (jsxNode) => {
+    var _a;
+    jsxNode = jsxNode[0];
+    rctx.hostElements.add(hostElement);
+    let componentCtx = ctx.component;
+    if (!componentCtx) {
+      componentCtx = ctx.component = {
+        hostElement,
+        slots: [],
+        styleHostClass: void 0,
+        styleClass: void 0,
+        styleId: void 0
+      };
+      const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) != null ? _a : void 0;
+      if (scopedStyleId) {
+        componentCtx.styleId = scopedStyleId;
+        componentCtx.styleHostClass = styleHost(scopedStyleId);
+        componentCtx.styleClass = styleContent(scopedStyleId);
+        hostElement.classList.add(componentCtx.styleHostClass);
+      }
+    }
+    componentCtx.slots = [];
+    const newCtx = __spreadProps(__spreadValues({}, rctx), {
+      component: componentCtx
+    });
+    return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+  });
+};
+
 // src/core/render/cursor.ts
 var SVG_NS = "http://www.w3.org/2000/svg";
 function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
@@ -1366,7 +1465,7 @@ function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
   if (oldCh.length > 0 && ch.length > 0) {
     return updateChildren(ctx, elm, oldCh, ch, isSvg);
   } else if (ch.length > 0) {
-    return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
+    return addVnodes(ctx, elm, void 0, ch, 0, ch.length - 1, isSvg);
   } else if (oldCh.length > 0) {
     return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
   }
@@ -1383,7 +1482,6 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
   let oldKeyToIdx;
   let idxInOld;
   let elmToMove;
-  let before;
   const results = [];
   while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
     if (oldStartVnode == null) {
@@ -1439,7 +1537,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
     }
   }
   if (newStartIdx <= newEndIdx) {
-    before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+    const before = newCh[newEndIdx + 1] == null ? void 0 : newCh[newEndIdx + 1].elm;
     results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
   }
   let wait = promiseAll(results);
@@ -1493,12 +1591,13 @@ function splitBy(input, condition) {
   }
   return output;
 }
-function patchVnode(ctx, elm, vnode, isSvg) {
-  ctx.perf.visited++;
+function patchVnode(rctx, elm, vnode, isSvg) {
+  rctx.perf.visited++;
+  vnode.elm = elm;
   const tag = vnode.type;
   if (tag === "#text") {
     if (elm.data !== vnode.text) {
-      setProperty(ctx, elm, "data", vnode.text);
+      setProperty(rctx, elm, "data", vnode.text);
     }
     return;
   }
@@ -1509,46 +1608,52 @@ function patchVnode(ctx, elm, vnode, isSvg) {
     isSvg = tag === "svg";
   }
   let promise;
-  const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+  const props = vnode.props;
+  const ctx = getContext(elm);
+  const dirty = updateProperties(rctx, ctx, props, isSvg);
   const isSlot = tag === "q:slot";
   if (isSvg && vnode.type === "foreignObject") {
     isSvg = false;
   } else if (isSlot) {
-    ctx.component.slots.push(vnode);
+    rctx.component.slots.push(vnode);
   }
   const isComponent = isComponentNode(vnode);
-  let componentCtx;
   if (dirty) {
-    assertEqual(isComponent, true);
-    componentCtx = getQComponent(elm);
-    promise = componentCtx.render(ctx);
+    promise = renderComponent(rctx, ctx);
   }
   const ch = vnode.children;
   if (isComponent) {
     return then(promise, () => {
-      const slotMaps = getSlots(componentCtx, elm);
+      const slotMaps = getSlots(ctx.component, elm);
       const splittedChidren = splitBy(ch, getSlotName);
       const promises = [];
       Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
         if (slotEl && !splittedChidren[key]) {
           const oldCh = getChildren(slotEl, "slot");
           if (oldCh.length > 0) {
-            removeVnodes(ctx, slotEl, oldCh, 0, oldCh.length - 1);
+            removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
           }
         }
       });
       Object.entries(splittedChidren).forEach(([key, ch2]) => {
-        const slotElm = getSlotElement(ctx, slotMaps, elm, key);
-        promises.push(smartUpdateChildren(ctx, slotElm, ch2, "slot", isSvg));
+        const slotElm = getSlotElement(rctx, slotMaps, elm, key);
+        promises.push(smartUpdateChildren(rctx, slotElm, ch2, "slot", isSvg));
       });
       return then(promiseAll(promises), () => {
-        removeTemplates(ctx, slotMaps);
+        removeTemplates(rctx, slotMaps);
       });
     });
   }
+  const setsInnerHTML = checkInnerHTML(props);
+  if (setsInnerHTML) {
+    if (qDev && ch.length > 0) {
+      logWarn("Node can not have children when innerHTML is set");
+    }
+    return;
+  }
   return then(promise, () => {
     const mode = isSlot ? "fallback" : "default";
-    return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
+    return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
   });
 }
 function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
@@ -1568,7 +1673,7 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
     const ch = nodes[startIdx];
     assertDefined(ch);
-    removeNode(ctx, parentElm, ch);
+    removeNode(ctx, ch);
   }
 }
 var refCount = 0;
@@ -1606,7 +1711,7 @@ function removeTemplates(ctx, slotMaps) {
   Object.keys(slotMaps.templates).forEach((key) => {
     const template = slotMaps.templates[key];
     if (template && slotMaps.slots[key] !== void 0) {
-      removeNode(ctx, template.parentNode, template);
+      removeNode(ctx, template);
       slotMaps.templates[key] = void 0;
     }
   });
@@ -1648,44 +1753,46 @@ function getSlotName(node) {
   var _a, _b;
   return (_b = (_a = node.props) == null ? void 0 : _a["q:slot"]) != null ? _b : "";
 }
-function createElm(ctx, vnode, isSvg) {
-  ctx.perf.visited++;
+function createElm(rctx, vnode, isSvg) {
+  rctx.perf.visited++;
   const tag = vnode.type;
   if (tag === "#text") {
-    return vnode.elm = createTextNode(ctx, vnode.text);
+    return vnode.elm = createTextNode(rctx, vnode.text);
   }
   if (!isSvg) {
     isSvg = tag === "svg";
   }
-  const data = vnode.props;
-  const elm = vnode.elm = createElement(ctx, tag, isSvg);
+  const props = vnode.props;
+  const elm = vnode.elm = createElement(rctx, tag, isSvg);
   const isComponent = isComponentNode(vnode);
+  const ctx = getContext(elm);
   setKey(elm, vnode.key);
-  updateProperties(ctx, elm, data, isSvg);
+  updateProperties(rctx, ctx, props, isSvg);
   if (isSvg && tag === "foreignObject") {
     isSvg = false;
   }
-  const currentComponent = ctx.component;
+  const currentComponent = rctx.component;
   if (currentComponent) {
     const styleTag = currentComponent.styleClass;
     if (styleTag) {
-      classlistAdd(ctx, elm, styleTag);
+      classlistAdd(rctx, elm, styleTag);
     }
     if (tag === "q:slot") {
-      setSlotRef(ctx, currentComponent.hostElement, elm);
-      ctx.component.slots.push(vnode);
+      setSlotRef(rctx, currentComponent.hostElement, elm);
+      rctx.component.slots.push(vnode);
     }
   }
   let wait;
-  let componentCtx;
   if (isComponent) {
-    componentCtx = getQComponent(elm);
-    const hostStyleTag = componentCtx.styleHostClass;
-    elm.setAttribute(QHostAttr, "");
-    if (hostStyleTag) {
-      classlistAdd(ctx, elm, hostStyleTag);
+    wait = firstRenderComponent(rctx, ctx);
+  } else {
+    const setsInnerHTML = checkInnerHTML(props);
+    if (setsInnerHTML) {
+      if (qDev && vnode.children.length > 0) {
+        logWarn("Node can not have children when innerHTML is set");
+      }
+      return elm;
     }
-    wait = componentCtx.render(ctx);
   }
   return then(wait, () => {
     let children = vnode.children;
@@ -1693,13 +1800,13 @@ function createElm(ctx, vnode, isSvg) {
       if (children.length === 1 && children[0].type === SkipRerender) {
         children = children[0].children;
       }
-      const slotMap = isComponent ? getSlots(componentCtx, elm) : void 0;
-      const promises = children.map((ch) => createElm(ctx, ch, isSvg));
+      const slotMap = isComponent ? getSlots(ctx.component, elm) : void 0;
+      const promises = children.map((ch) => createElm(rctx, ch, isSvg));
       return then(promiseAll(promises), () => {
         let parent = elm;
         for (const node of children) {
           if (slotMap) {
-            parent = getSlotElement(ctx, slotMap, elm, getSlotName(node));
+            parent = getSlotElement(rctx, slotMap, elm, getSlotName(node));
           }
           parent.appendChild(node.elm);
         }
@@ -1762,23 +1869,27 @@ var checkBeforeAssign = (ctx, elm, prop, newValue) => {
   }
   return true;
 };
-var setInnerHTML = (ctx, elm, prop, newValue) => {
-  setProperty(ctx, elm, prop, newValue);
-  setAttribute(ctx, elm, "q:static", "");
+var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+var setInnerHTML = (ctx, elm, _, newValue) => {
+  if (dangerouslySetInnerHTML in elm) {
+    setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+  } else if ("innerHTML" in elm) {
+    setProperty(ctx, elm, "innerHTML", newValue);
+  }
   return true;
 };
 var PROP_HANDLER_MAP = {
   style: handleStyle,
   value: checkBeforeAssign,
   checked: checkBeforeAssign,
-  innerHTML: setInnerHTML
+  [dangerouslySetInnerHTML]: setInnerHTML
 };
 var ALLOWS_PROPS = ["className", "style", "id", "q:slot"];
-function updateProperties(rctx, node, expectProps, isSvg) {
+function updateProperties(rctx, ctx, expectProps, isSvg) {
   if (!expectProps) {
     return false;
   }
-  const ctx = getContext(node);
+  const elm = ctx.element;
   const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : void 0;
   if ("class" in expectProps) {
     const className = expectProps.class;
@@ -1803,7 +1914,7 @@ function updateProperties(rctx, node, expectProps, isSvg) {
     }
     ctx.cache.set(key, newValue);
     if (key.startsWith("data-") || key.startsWith("aria-") || isSvg) {
-      setAttribute(rctx, node, key, newValue);
+      setAttribute(rctx, elm, key, newValue);
       continue;
     }
     if (qwikProps) {
@@ -1819,15 +1930,15 @@ function updateProperties(rctx, node, expectProps, isSvg) {
     }
     const exception = PROP_HANDLER_MAP[key];
     if (exception) {
-      if (exception(rctx, node, key, newValue, oldValue)) {
+      if (exception(rctx, elm, key, newValue, oldValue)) {
         continue;
       }
     }
-    if (key in node) {
-      setProperty(rctx, node, key, newValue);
+    if (key in elm) {
+      setProperty(rctx, elm, key, newValue);
       continue;
     }
-    setAttribute(rctx, node, key, newValue);
+    setAttribute(rctx, elm, key, newValue);
   }
   return ctx.dirty;
 }
@@ -1921,10 +2032,13 @@ function prepend(ctx, parent, newChild) {
     fn
   });
 }
-function removeNode(ctx, parent, el) {
+function removeNode(ctx, el) {
   const fn = () => {
-    if (el.parentNode === parent) {
+    const parent = el.parentNode;
+    if (parent) {
       parent.removeChild(el);
+    } else if (qDev) {
+      logWarn("Trying to remove component already removed", el);
     }
   };
   ctx.operations.push({
@@ -2001,93 +2115,16 @@ function sameVnode(vnode1, vnode2) {
   const isSameKey = vnode1.nodeType === 1 /* ELEMENT_NODE */ ? getKey(vnode1) === vnode2.key : true;
   return isSameSel && isSameKey;
 }
-
-// src/core/use/use-document.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-event.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-lexical-scope.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-url.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-store.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-transient.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/index.ts
-var version = globalThis.QWIK_VERSION;
-
-// src/core/render/render.ts
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-  if (jsxNode === void 0) {
-    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
-  }
-  if (Array.isArray(jsxNode)) {
-    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
-  } else if (jsxNode.type === Host) {
-    updateProperties(ctx, elm, jsxNode.props, isSvg);
-    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
-  } else {
-    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
-  }
-}
-
-// src/core/component/component-ctx.ts
-var QComponentCtx2 = class {
-  constructor(hostElement) {
-    this.styleId = void 0;
-    this.styleClass = null;
-    this.styleHostClass = null;
-    this.slots = [];
-    this.hostElement = hostElement;
-    this.ctx = getContext(hostElement);
-  }
-  render(ctx) {
-    const hostElement = this.hostElement;
-    const onRender = getEvent(this.ctx, OnRenderProp);
-    assertDefined(onRender);
-    const event = "qRender";
-    this.ctx.dirty = false;
-    ctx.globalState.hostsStaging.delete(hostElement);
-    const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
-    return then(promise, (jsxNode) => {
-      jsxNode = jsxNode[0];
-      if (this.styleId === void 0) {
-        const scopedStyleId = this.styleId = hostElement.getAttribute(ComponentScopedStyles);
-        if (scopedStyleId) {
-          this.styleHostClass = styleHost(scopedStyleId);
-          this.styleClass = styleContent(scopedStyleId);
-        }
-      }
-      ctx.hostElements.add(hostElement);
-      this.slots = [];
-      const newCtx = __spreadProps(__spreadValues({}, ctx), {
-        component: this
-      });
-      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
-    });
-  }
-};
-var COMPONENT_PROP = "__qComponent__";
-function getQComponent(hostElement) {
-  const element = hostElement;
-  let component2 = element[COMPONENT_PROP];
-  if (!component2)
-    component2 = element[COMPONENT_PROP] = new QComponentCtx2(hostElement);
-  return component2;
+function checkInnerHTML(props) {
+  return props && ("innerHTML" in props || dangerouslySetInnerHTML in props);
 }
 
 // src/core/render/notify-render.ts
 function notifyRender(hostElement) {
   assertDefined(hostElement.getAttribute(QHostAttr));
-  const ctx = getContext(hostElement);
   const doc = getDocument(hostElement);
+  hydrateIfNeeded(doc);
+  const ctx = getContext(hostElement);
   const state = getRenderingState(doc);
   if (ctx.dirty) {
     return state.renderPromise;
@@ -2135,24 +2172,29 @@ async function renderMarked(doc, state) {
   sortNodes(renderingQueue);
   const ctx = {
     doc,
+    globalState: state,
+    hostElements: /* @__PURE__ */ new Set(),
     operations: [],
     roots: [],
-    hostElements: /* @__PURE__ */ new Set(),
-    globalState: state,
+    component: void 0,
     perf: {
       visited: 0,
       timing: []
-    },
-    component: void 0
+    }
   };
   for (const el of renderingQueue) {
     if (!ctx.hostElements.has(el)) {
       ctx.roots.push(el);
-      const cmp = getQComponent(el);
-      await cmp.render(ctx);
+      await renderComponent(ctx, getContext(el));
     }
   }
   if (ctx.operations.length === 0) {
+    if (qDev) {
+      if (typeof window !== "undefined" && window.document != null) {
+        logDebug("Render skipped. No operations.");
+        printRenderStats(ctx);
+      }
+    }
     postRendering(doc, state);
     return ctx;
   }
@@ -2251,6 +2293,9 @@ var ReadWriteProxyHandler = class {
     }
     const value = target[prop];
     const invokeCtx = tryGetInvokeContext();
+    if (qDev && !invokeCtx) {
+      logWarn(`State assigned outside invocation context. Getting prop`, prop, this);
+    }
     if (invokeCtx && invokeCtx.subscriptions) {
       const isArray = Array.isArray(target);
       const sub = this.getSub(invokeCtx.hostElement);
@@ -2265,9 +2310,7 @@ var ReadWriteProxyHandler = class {
     const isArray = Array.isArray(target);
     if (isArray) {
       target[prop] = unwrappedNewValue;
-      this.subs.forEach((_, el) => {
-        notifyRender(el);
-      });
+      this.subs.forEach((_, el) => notifyRender(el));
       return true;
     }
     const oldValue = target[prop];
@@ -2303,7 +2346,6 @@ function verifySerializable(value) {
 // src/core/props/props-obj-map.ts
 var import_globalthis = __toESM(require_globalthis());
 function newQObjectMap(element) {
-  const map = /* @__PURE__ */ new Map();
   const array = [];
   let added = element.hasAttribute(QObjAttr);
   return {
@@ -2312,12 +2354,12 @@ function newQObjectMap(element) {
       return array[index];
     },
     indexOf(obj) {
-      return map.get(obj);
+      const index = array.indexOf(obj);
+      return index === -1 ? void 0 : index;
     },
     add(object) {
-      const index = map.get(object);
-      if (index === void 0) {
-        map.set(object, array.length);
+      const index = array.indexOf(object);
+      if (index === -1) {
         array.push(object);
         if (!added) {
           element.setAttribute(QObjAttr, "");
@@ -2334,8 +2376,7 @@ function newQObjectMap(element) {
 Error.stackTraceLimit = 9999;
 var Q_IS_HYDRATED = "__isHydrated__";
 var Q_CTX = "__ctx__";
-function hydrateIfNeeded(element) {
-  const doc = getDocument(element);
+function hydrateIfNeeded(doc) {
   const isHydrated = doc[Q_IS_HYDRATED];
   if (!isHydrated) {
     doc[Q_IS_HYDRATED] = true;
@@ -2343,7 +2384,6 @@ function hydrateIfNeeded(element) {
   }
 }
 function getContext(element) {
-  hydrateIfNeeded(element);
   let ctx = element[Q_CTX];
   if (!ctx) {
     const cache = /* @__PURE__ */ new Map();
@@ -2353,7 +2393,8 @@ function getContext(element) {
       refMap: newQObjectMap(element),
       dirty: false,
       props: void 0,
-      events: void 0
+      events: void 0,
+      component: void 0
     };
   }
   return ctx;
