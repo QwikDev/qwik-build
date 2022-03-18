@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "0.0.18-3-dev20220317103612",
+  "version": "0.0.18-3-dev20220318133822",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.cjs",

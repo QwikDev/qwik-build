@@ -83,6 +83,15 @@ function ensureGlobals(doc, opts) {
       get origin() {
         return loc.origin;
       },
+      addEventListener: noop,
+      removeEventListener: noop,
+      history: {
+        pushState: noop,
+        replaceState: noop,
+        go: noop,
+        back: noop,
+        forward: noop
+      },
       CustomEvent: class CustomEvent {
         constructor(type, details) {
           Object.assign(this, details);
@@ -106,6 +115,8 @@ function normalizeUrl(url) {
   return new URL(BASE_URI);
 }
 var BASE_URI = `http://document.qwik.dev/`;
+var noop = () => {
+};
 
 // src/server/document.ts
 import { dehydrate, render } from "../core.mjs";
@@ -9277,7 +9288,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-3-dev20220317103612",
+  qwik: "0.0.18-3-dev20220318133822",
   qwikDom: "2.1.11"
 };
 export {
