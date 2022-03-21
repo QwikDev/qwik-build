@@ -43,6 +43,7 @@ function _interopNamespace(e) {
 // minification can replace the `globalThis.qDev` with `false`
 // which will remove all dev code within from the build
 const qDev = true;
+const qTest = globalThis.describe !== undefined;
 
 /**
  * @license
@@ -82,11 +83,11 @@ const STYLE = qDev
     : '';
 const logError = (message, ...optionalParams) => {
     // eslint-disable-next-line no-console
-    console.error('%cQWIK', STYLE, message, ...optionalParams);
+    console.error('%cQWIK ERROR', STYLE, message, ...optionalParams);
 };
 const logWarn = (message, ...optionalParams) => {
     // eslint-disable-next-line no-console
-    console.warn('%cQWIK', STYLE, message, ...optionalParams);
+    console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
 };
 const logDebug = (message, ...optionalParams) => {
     // eslint-disable-next-line no-console
@@ -197,7 +198,7 @@ function staticQrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
 function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
     return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null);
 }
-function stringifyQRL(qrl, element, platform) {
+function stringifyQRL(qrl, platform, element) {
     var _a;
     const qrl_ = toInternalQRL(qrl);
     const symbol = qrl_.symbol;
@@ -330,9 +331,7 @@ const ComponentStylesPrefixContent = '🏷️';
  */
 const QSlotAttr = 'q:slot';
 const QObjAttr = 'q:obj';
-const QObjSelector = '[q\\:obj]';
 const ELEMENT_ID = 'q:id';
-const ELEMENT_ID_SELECTOR = '[q\\:id]';
 const ELEMENT_ID_PREFIX = '#';
 
 /**
@@ -627,122 +626,6 @@ function implicit$FirstArg(fn) {
 // </docs>
 const qrl = staticQrl;
 
-let _context;
-function tryGetInvokeContext() {
-    return _context;
-}
-function getInvokeContext() {
-    if (!_context) {
-        const context = typeof document !== 'undefined' && document && document.__q_context__;
-        if (!context) {
-            // TODO(misko): centralize
-            throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
-        }
-        if (Array.isArray(context)) {
-            const element = context[0];
-            const hostElement = getHostElement(element);
-            assertDefined(element);
-            return (document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]));
-        }
-        return context;
-    }
-    return _context;
-}
-function useInvoke(context, fn, ...args) {
-    const previousContext = _context;
-    let returnValue;
-    try {
-        _context = context;
-        returnValue = fn.apply(null, args);
-    }
-    finally {
-        const currentCtx = _context;
-        _context = previousContext;
-        if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
-            // eslint-disable-next-line no-unsafe-finally
-            return Promise.all(currentCtx.waitOn).then(() => returnValue);
-        }
-    }
-    return returnValue;
-}
-function newInvokeContext(hostElement, element, event, url) {
-    return {
-        hostElement,
-        element,
-        event: event,
-        url: url || null,
-        qrl: undefined,
-        subscriptions: event === 'qRender',
-    };
-}
-/**
- * @private
- */
-function useWaitOn(promise) {
-    const ctx = getInvokeContext();
-    (ctx.waitOn || (ctx.waitOn = [])).push(promise);
-}
-function getHostElement(el) {
-    let foundSlot = false;
-    let node = el;
-    while (node) {
-        const isHost = node.hasAttribute(QHostAttr);
-        const isSlot = node.tagName === 'Q:SLOT';
-        if (isHost) {
-            if (!foundSlot) {
-                break;
-            }
-            else {
-                foundSlot = false;
-            }
-        }
-        if (isSlot) {
-            foundSlot = true;
-        }
-        node = node.parentElement;
-    }
-    return node;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
-/**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useHostElement() {
-    const element = getInvokeContext().hostElement;
-    assertDefined(element);
-    return element;
-}
-
-function hashCode(text, hash = 0) {
-    if (text.length === 0)
-        return hash;
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-}
-
-function styleKey(qStyles) {
-    return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-    return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-    return styleId && ComponentStylesPrefixContent + styleId;
-}
-
 /**
  * @license
  * Copyright Builder.io, Inc. All Rights Reserved.
@@ -952,8 +835,88 @@ function qDeflate(obj, hostCtx) {
 }
 function qInflate(ref, hostCtx) {
     const obj = hostCtx.refMap.get(ref);
-    assertDefined(obj);
+    assertEqual(hostCtx.refMap.array.length > ref, true);
     return obj;
+}
+
+let _context;
+function tryGetInvokeContext() {
+    if (!_context) {
+        const context = typeof document !== 'undefined' && document && document.__q_context__;
+        if (!context) {
+            return undefined;
+        }
+        if (Array.isArray(context)) {
+            const element = context[0];
+            const hostElement = getHostElement(element);
+            assertDefined(element);
+            return (document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]));
+        }
+        return context;
+    }
+    return _context;
+}
+function getInvokeContext() {
+    const ctx = tryGetInvokeContext();
+    if (!ctx) {
+        throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+    }
+    return ctx;
+}
+function useInvoke(context, fn, ...args) {
+    const previousContext = _context;
+    let returnValue;
+    try {
+        _context = context;
+        returnValue = fn.apply(null, args);
+    }
+    finally {
+        const currentCtx = _context;
+        _context = previousContext;
+        if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
+            // eslint-disable-next-line no-unsafe-finally
+            return Promise.all(currentCtx.waitOn).then(() => returnValue);
+        }
+    }
+    return returnValue;
+}
+function newInvokeContext(hostElement, element, event, url) {
+    return {
+        hostElement,
+        element,
+        event: event,
+        url: url || null,
+        qrl: undefined,
+        subscriptions: event === 'qRender',
+    };
+}
+/**
+ * @private
+ */
+function useWaitOn(promise) {
+    const ctx = getInvokeContext();
+    (ctx.waitOn || (ctx.waitOn = [])).push(promise);
+}
+function getHostElement(el) {
+    let foundSlot = false;
+    let node = el;
+    while (node) {
+        const isHost = node.hasAttribute(QHostAttr);
+        const isSlot = node.tagName === 'Q:SLOT';
+        if (isHost) {
+            if (!foundSlot) {
+                break;
+            }
+            else {
+                foundSlot = false;
+            }
+        }
+        if (isSlot) {
+            foundSlot = true;
+        }
+        node = node.parentElement;
+    }
+    return node;
 }
 
 /**
@@ -1032,421 +995,42 @@ function safeJSONStringify(value) {
     }
 }
 
-const ON_WATCH = 'on:qWatch';
-function registerOnWatch(element, props, watchFnQrl) {
-    props[ON_WATCH] = watchFnQrl;
-    invokeWatchFn(element, watchFnQrl);
-}
-const cleanupFnMap = new Map();
-async function invokeWatchFn(element, watchFnQrl) {
-    const watchFn = await qrlImport(element, watchFnQrl);
-    const previousCleanupFn = cleanupFnMap.get(watchFn);
-    cleanupFnMap.delete(watchFn);
-    if (isCleanupFn(previousCleanupFn)) {
-        try {
-            previousCleanupFn();
-        }
-        catch (e) {
-            // TODO(misko): Centralize error handling
-            logError(e);
-        }
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+    if (jsxNode === undefined) {
+        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
     }
-    throw new Error('TO IMPLEMENT');
-}
-function isCleanupFn(value) {
-    return typeof value === 'function';
-}
-
-const ON_PROP_REGEX = /on(Document|Window)?:/;
-const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
-function isOnProp(prop) {
-    return ON_PROP_REGEX.test(prop);
-}
-function isOn$Prop(prop) {
-    return ON$_PROP_REGEX.test(prop);
-}
-function isQrlFactory(value) {
-    return typeof value === 'function' && value.__brand__ === 'QRLFactory';
-}
-function qPropReadQRL(ctx, prop) {
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (existingQRLs.length === 0) {
-        return null;
+    if (Array.isArray(jsxNode)) {
+        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
     }
-    return () => {
-        const context = getInvokeContext();
-        const qrls = getExistingQRLs(ctx, prop);
-        return Promise.all(qrls.map(async (qrlOrPromise) => {
-            const qrl = await qrlOrPromise;
-            const qrlGuard = context.qrlGuard;
-            if (qrlGuard && !qrlGuard(qrl))
-                return;
-            if (!qrl.symbolRef) {
-                qrl.symbolRef = await qrlImport(ctx.element, qrl);
-            }
-            context.qrl = qrl;
-            if (qrlGuard) {
-                return invokeWatchFn(ctx.element, qrl);
-            }
-            else {
-                return useInvoke(context, qrl.symbolRef);
-            }
-        }));
-    };
-}
-function qPropWriteQRL(rctx, ctx, prop, value) {
-    if (!value) {
-        return;
-    }
-    prop = prop.replace('$:', ':');
-    if (typeof value == 'string') {
-        value = parseQRL(value);
-    }
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (Array.isArray(value)) {
-        value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
-    }
-    else if (isQrl(value)) {
-        const capture = value.capture;
-        if (capture == null) {
-            // we need to serialize the lexical scope references
-            const captureRef = value.captureRef;
-            value.capture =
-                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
-        }
-        // Important we modify the array as it is cached.
-        for (let i = 0; i < existingQRLs.length; i++) {
-            const qrl = existingQRLs[i];
-            if (!isPromise(qrl) &&
-                qrl.canonicalChunk === value.canonicalChunk &&
-                qrl.symbol === value.symbol) {
-                existingQRLs.splice(i, 1);
-                i--;
-            }
-        }
-        existingQRLs.push(value);
-    }
-    else if (isQrlFactory(value)) {
-        if (existingQRLs.length === 0) {
-            // if we don't have any than we use the `qrlFactory` to create a QRLInternal
-            // (otherwise ignore the factory)
-            qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
-        }
-    }
-    else if (isPromise(value)) {
-        const writePromise = value.then((qrl) => {
-            existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-            qPropWriteQRL(rctx, ctx, prop, qrl);
-            return qrl;
-        });
-        existingQRLs.push(writePromise);
+    else if (jsxNode.type === Host) {
+        updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
     }
     else {
-        // TODO(misko): Test/better text
-        throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
+        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
     }
-    if (prop.startsWith('on:q')) {
-        getEvents(ctx)[prop] = serializeQRLs(existingQRLs, ctx);
-    }
-    else {
-        const kebabProp = fromCamelToKebabCase(prop);
-        const newValue = serializeQRLs(existingQRLs, ctx);
-        if (ctx.element.getAttribute(kebabProp) !== newValue) {
-            setAttribute(rctx, ctx.element, kebabProp, newValue);
-        }
-    }
-}
-function getExistingQRLs(ctx, prop) {
-    let parts = ctx.cache.get(prop);
-    if (!parts) {
-        if (prop.startsWith('on:q')) {
-            parts = [];
-            const qrls = getEvents(ctx)[prop];
-            if (qrls) {
-                qrls.split('\n').forEach((qrl) => {
-                    if (qrl) {
-                        parts.push(parseQRL(qrl, ctx.element));
-                    }
-                });
-                ctx.cache.set(prop, parts);
-                return parts;
-            }
-        }
-        const attrName = fromCamelToKebabCase(prop);
-        parts = [];
-        (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
-            if (qrl) {
-                parts.push(parseQRL(qrl, ctx.element));
-            }
-        });
-        ctx.cache.set(prop, parts);
-    }
-    return parts;
-}
-function serializeQRLs(existingQRLs, ctx) {
-    const platform = getPlatform(getDocument(ctx.element));
-    const element = ctx.element;
-    return existingQRLs
-        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, element, platform)))
-        .filter((v) => !!v)
-        .join('\n');
 }
 
-function QStore_hydrate(doc) {
-    const script = doc.querySelector('script[type="qwik/json"]');
-    doc.qDehydrate = () => QStore_dehydrate(doc);
-    const map = getProxyMap(doc);
-    if (script) {
-        script.parentElement.removeChild(script);
-        const meta = JSON.parse(script.textContent || '{}');
-        const elements = new Map();
-        doc.querySelectorAll(ELEMENT_ID_SELECTOR).forEach((el) => {
-            const id = el.getAttribute(ELEMENT_ID);
-            elements.set(ELEMENT_ID_PREFIX + id, el);
-        });
-        for (const obj of meta.objs) {
-            reviveNestedQObjects(obj, meta.objs);
-        }
-        reviveQObjects(meta.objs, meta.subs, elements, map);
-        doc.querySelectorAll(QObjSelector).forEach((el) => {
-            const qobj = el.getAttribute(QObjAttr);
-            const host = el.getAttribute(QHostAttr);
-            const ctx = getContext(el);
-            qobj.split(' ').forEach((part) => {
-                const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
-                assertDefined(obj);
-                ctx.refMap.add(obj);
-            });
-            if (host) {
-                const [props, events] = host.split(' ').map(strToInt);
-                assertDefined(props);
-                assertDefined(events);
-                ctx.props = ctx.refMap.get(props);
-                ctx.events = ctx.refMap.get(events);
-            }
-        });
+function hashCode(text, hash = 0) {
+    if (text.length === 0)
+        return hash;
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
     }
+    return Number(Math.abs(hash)).toString(36);
 }
-/**
- * Serialize the current state of the application into DOM
- *
- * @param doc
- */
-function QStore_dehydrate(doc) {
-    const objSet = new Set();
-    // Element to index
-    const elementToIndex = new Map();
-    function getElementID(el) {
-        let id = elementToIndex.get(el);
-        if (id === undefined) {
-            if (el.isConnected) {
-                id = intToStr(elementToIndex.size);
-                el.setAttribute(ELEMENT_ID, id);
-                id = ELEMENT_ID_PREFIX + id;
-            }
-            else {
-                id = null;
-            }
-            elementToIndex.set(el, id);
-        }
-        return id;
-    }
-    // Find all Elements which have qObjects attached to them
-    const elements = doc.querySelectorAll(QObjSelector);
-    elements.forEach((node) => {
-        const props = getContext(node);
-        const qMap = props.refMap;
-        qMap.array.forEach((v) => {
-            collectQObjects(v, objSet);
-        });
-    });
-    // Convert objSet to array
-    const objArray = Array.from(objSet);
-    objArray.sort((a, b) => {
-        const isProxyA = a[QOjectTargetSymbol] !== undefined ? 0 : 1;
-        const isProxyB = b[QOjectTargetSymbol] !== undefined ? 0 : 1;
-        return isProxyA - isProxyB;
-    });
-    const objs = objArray.map((a) => {
-        var _a;
-        return (_a = a[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : a;
-    });
-    const subs = objArray
-        .map((a) => {
-        const subs = a[QOjectSubsSymbol];
-        if (subs) {
-            return Object.fromEntries(Array.from(subs.entries()).map(([el, set]) => {
-                const id = getElementID(el);
-                if (id !== null) {
-                    return [id, Array.from(set)];
-                }
-                else {
-                    return [undefined, undefined];
-                }
-            }));
-        }
-        else {
-            return null;
-        }
-    })
-        .filter((a) => !!a);
-    const objToId = new Map();
-    let count = 0;
-    for (const obj of objs) {
-        objToId.set(obj, count);
-        count++;
-    }
-    const convert = (value) => {
-        var _a, _b;
-        if (value && typeof value === 'object') {
-            value = (_a = value[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : value;
-        }
-        const idx = objToId.get(value);
-        if (idx !== undefined) {
-            return intToStr(idx);
-        }
-        return (_b = elementToIndex.get(value)) !== null && _b !== void 0 ? _b : value;
-    };
-    const convertedObjs = objs.map((obj) => {
-        if (Array.isArray(obj)) {
-            return obj.map(convert);
-        }
-        else if (typeof obj === 'object') {
-            const output = {};
-            Object.entries(obj).forEach(([key, value]) => {
-                output[key] = convert(value);
-            });
-            return output;
-        }
-        return obj;
-    });
-    const data = {
-        objs: convertedObjs,
-        subs,
-    };
-    // Write back to the dom
-    elements.forEach((node) => {
-        const ctx = getContext(node);
-        const props = ctx.props;
-        const events = ctx.events;
-        const attribute = ctx.refMap.array
-            .map((obj) => {
-            var _a;
-            if (isElement(obj)) {
-                return getElementID(obj);
-            }
-            const idx = typeof obj === 'object' ? objToId.get((_a = obj[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : obj) : objToId.get(obj);
-            assertDefined(idx);
-            return intToStr(idx);
-        })
-            .join(' ');
-        node.setAttribute(QObjAttr, attribute);
-        if (props) {
-            const objs = [props];
-            if (events) {
-                objs.push(events);
-            }
-            node.setAttribute(QHostAttr, objs.map((obj) => ctx.refMap.indexOf(obj)).join(' '));
-        }
-    });
-    // Sanity check of serialized element
-    if (qDev) {
-        elementToIndex.forEach((value, el) => {
-            if (getDocument(el) !== doc) {
-                logWarn('element from different document', value, el.tagName);
-            }
-            if (!value) {
-                logWarn('unconnected element', el.tagName, '\n');
-            }
-        });
-    }
-    // Serialize
-    const script = doc.createElement('script');
-    script.setAttribute('type', 'qwik/json');
-    script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
-    doc.body.appendChild(script);
+
+function styleKey(qStyles) {
+    return qStyles && String(hashCode(qStyles.symbol));
 }
-function reviveQObjects(objs, subs, elementMap, map) {
-    for (let i = 0; i < objs.length; i++) {
-        const sub = subs[i];
-        if (sub) {
-            const value = objs[i];
-            const converted = new Map();
-            Object.entries(sub).forEach((entry) => {
-                const el = elementMap.get(entry[0]);
-                if (!el) {
-                    logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
-                    return;
-                }
-                const set = new Set(entry[1]);
-                converted.set(el, set);
-            });
-            objs[i] = _restoreQObject(value, map, converted);
-        }
-    }
+function styleHost(styleId) {
+    return styleId && ComponentStylesPrefixHost + styleId;
 }
-function reviveNestedQObjects(obj, map) {
-    if (obj && typeof obj == 'object') {
-        if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                const value = obj[i];
-                if (typeof value == 'string') {
-                    obj[i] = map[strToInt(value)];
-                }
-                else {
-                    reviveNestedQObjects(value, map);
-                }
-            }
-        }
-        else {
-            for (const key in obj) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const value = obj[key];
-                    if (typeof value == 'string') {
-                        obj[key] = map[strToInt(value)];
-                    }
-                    else {
-                        reviveNestedQObjects(value, map);
-                    }
-                }
-            }
-        }
-    }
+function styleContent(styleId) {
+    return styleId && ComponentStylesPrefixContent + styleId;
 }
-function collectQObjects(obj, seen) {
-    if (obj != null) {
-        if (isElement(obj)) {
-            return;
-        }
-        if (typeof obj === 'boolean') {
-            return;
-        }
-        if (seen.has(obj))
-            return;
-        seen.add(obj);
-        if (typeof obj === 'object') {
-            if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
-                    collectQObjects(obj[i], seen);
-                }
-            }
-            else {
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        collectQObjects(value, seen);
-                    }
-                }
-            }
-        }
-    }
-}
-const intToStr = (nu) => {
-    return nu.toString(36);
-};
-const strToInt = (nu) => {
-    return parseInt(nu, 36);
-};
 
 /**
  * @license
@@ -1475,712 +1059,6 @@ const Host = { __brand__: 'host' };
  * @public
  */
 const SkipRerender = { __brand__: 'skip' };
-
-const SVG_NS = 'http://www.w3.org/2000/svg';
-function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
-    if (ch.length === 1 && ch[0].type === SkipRerender) {
-        if (elm.firstChild !== null) {
-            return;
-        }
-        ch = ch[0].children;
-    }
-    const oldCh = getChildren(elm, mode);
-    if (oldCh.length > 0 && ch.length > 0) {
-        return updateChildren(ctx, elm, oldCh, ch, isSvg);
-    }
-    else if (ch.length > 0) {
-        return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
-    }
-    else if (oldCh.length > 0) {
-        return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
-    }
-}
-function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
-    let oldStartIdx = 0;
-    let newStartIdx = 0;
-    let oldEndIdx = oldCh.length - 1;
-    let oldStartVnode = oldCh[0];
-    let oldEndVnode = oldCh[oldEndIdx];
-    let newEndIdx = newCh.length - 1;
-    let newStartVnode = newCh[0];
-    let newEndVnode = newCh[newEndIdx];
-    let oldKeyToIdx;
-    let idxInOld;
-    let elmToMove;
-    let before;
-    const results = [];
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-        if (oldStartVnode == null) {
-            oldStartVnode = oldCh[++oldStartIdx]; // Vnode might have been moved left
-        }
-        else if (oldEndVnode == null) {
-            oldEndVnode = oldCh[--oldEndIdx];
-        }
-        else if (newStartVnode == null) {
-            newStartVnode = newCh[++newStartIdx];
-        }
-        else if (newEndVnode == null) {
-            newEndVnode = newCh[--newEndIdx];
-        }
-        else if (sameVnode(oldStartVnode, newStartVnode)) {
-            results.push(patchVnode(ctx, oldStartVnode, newStartVnode, isSvg));
-            oldStartVnode = oldCh[++oldStartIdx];
-            newStartVnode = newCh[++newStartIdx];
-        }
-        else if (sameVnode(oldEndVnode, newEndVnode)) {
-            results.push(patchVnode(ctx, oldEndVnode, newEndVnode, isSvg));
-            oldEndVnode = oldCh[--oldEndIdx];
-            newEndVnode = newCh[--newEndIdx];
-        }
-        else if (sameVnode(oldStartVnode, newEndVnode)) {
-            // Vnode moved right
-            results.push(patchVnode(ctx, oldStartVnode, newEndVnode, isSvg));
-            insertBefore(ctx, parentElm, oldStartVnode, oldEndVnode.nextSibling);
-            oldStartVnode = oldCh[++oldStartIdx];
-            newEndVnode = newCh[--newEndIdx];
-        }
-        else if (sameVnode(oldEndVnode, newStartVnode)) {
-            // Vnode moved left
-            results.push(patchVnode(ctx, oldEndVnode, newStartVnode, isSvg));
-            insertBefore(ctx, parentElm, oldEndVnode, oldStartVnode);
-            oldEndVnode = oldCh[--oldEndIdx];
-            newStartVnode = newCh[++newStartIdx];
-        }
-        else {
-            if (oldKeyToIdx === undefined) {
-                oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
-            }
-            idxInOld = oldKeyToIdx[newStartVnode.key];
-            if (idxInOld === undefined) {
-                // New element
-                const newElm = createElm(ctx, newStartVnode, isSvg);
-                results.push(then(newElm, (newElm) => {
-                    insertBefore(ctx, parentElm, newElm, oldStartVnode);
-                }));
-            }
-            else {
-                elmToMove = oldCh[idxInOld];
-                if (elmToMove.nodeName !== newStartVnode.type) {
-                    const newElm = createElm(ctx, newStartVnode, isSvg);
-                    results.push(then(newElm, (newElm) => {
-                        insertBefore(ctx, parentElm, newElm, oldStartVnode);
-                    }));
-                }
-                else {
-                    results.push(patchVnode(ctx, elmToMove, newStartVnode, isSvg));
-                    oldCh[idxInOld] = undefined;
-                    insertBefore(ctx, parentElm, elmToMove, oldStartVnode);
-                }
-            }
-            newStartVnode = newCh[++newStartIdx];
-        }
-    }
-    if (newStartIdx <= newEndIdx) {
-        before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
-        results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
-    }
-    let wait = promiseAll(results);
-    if (oldStartIdx <= oldEndIdx) {
-        wait = then(wait, () => {
-            removeVnodes(ctx, parentElm, oldCh, oldStartIdx, oldEndIdx);
-        });
-    }
-    return wait;
-}
-function isComponentNode(node) {
-    return node.props && OnRenderProp in node.props;
-}
-function getCh(elm) {
-    return Array.from(elm.childNodes).filter(isNode);
-}
-function getChildren(elm, mode) {
-    switch (mode) {
-        case 'default':
-            return getCh(elm);
-        case 'slot':
-            return getCh(elm).filter(isChildSlot);
-        case 'root':
-            return getCh(elm).filter(isChildComponent);
-        case 'fallback':
-            return getCh(elm).filter(isFallback);
-    }
-}
-function isNode(elm) {
-    return elm.nodeType === 1 || elm.nodeType === 3;
-}
-function isFallback(node) {
-    return node.nodeName === 'Q:FALLBACK';
-}
-function isChildSlot(node) {
-    return node.nodeName !== 'Q:FALLBACK' && isChildComponent(node);
-}
-function isSlotTemplate(node) {
-    return node.nodeName === 'TEMPLATE' && node.hasAttribute(QSlotAttr);
-}
-function isChildComponent(node) {
-    return node.nodeName !== 'TEMPLATE' || !node.hasAttribute(QSlotAttr);
-}
-function splitBy(input, condition) {
-    var _a;
-    const output = {};
-    for (const item of input) {
-        const key = condition(item);
-        const array = (_a = output[key]) !== null && _a !== void 0 ? _a : (output[key] = []);
-        array.push(item);
-    }
-    return output;
-}
-function patchVnode(ctx, elm, vnode, isSvg) {
-    ctx.perf.visited++;
-    const tag = vnode.type;
-    if (tag === '#text') {
-        if (elm.data !== vnode.text) {
-            setProperty(ctx, elm, 'data', vnode.text);
-        }
-        return;
-    }
-    if (tag === Host || tag === SkipRerender) {
-        return;
-    }
-    if (!isSvg) {
-        isSvg = tag === 'svg';
-    }
-    let promise;
-    const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
-    const isSlot = tag === 'q:slot';
-    if (isSvg && vnode.type === 'foreignObject') {
-        isSvg = false;
-    }
-    else if (isSlot) {
-        ctx.component.slots.push(vnode);
-    }
-    const isComponent = isComponentNode(vnode);
-    let componentCtx;
-    if (dirty) {
-        assertEqual(isComponent, true);
-        componentCtx = getQComponent(elm);
-        promise = componentCtx.render(ctx);
-    }
-    const ch = vnode.children;
-    if (isComponent) {
-        return then(promise, () => {
-            const slotMaps = getSlots(componentCtx, elm);
-            const splittedChidren = splitBy(ch, getSlotName);
-            const promises = [];
-            // Mark empty slots and remove content
-            Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
-                if (slotEl && !splittedChidren[key]) {
-                    const oldCh = getChildren(slotEl, 'slot');
-                    if (oldCh.length > 0) {
-                        removeVnodes(ctx, slotEl, oldCh, 0, oldCh.length - 1);
-                    }
-                }
-            });
-            // Render into slots
-            Object.entries(splittedChidren).forEach(([key, ch]) => {
-                const slotElm = getSlotElement(ctx, slotMaps, elm, key);
-                promises.push(smartUpdateChildren(ctx, slotElm, ch, 'slot', isSvg));
-            });
-            return then(promiseAll(promises), () => {
-                removeTemplates(ctx, slotMaps);
-            });
-        });
-    }
-    return then(promise, () => {
-        const mode = isSlot ? 'fallback' : 'default';
-        return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
-    });
-}
-function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
-    const promises = [];
-    for (; startIdx <= endIdx; ++startIdx) {
-        const ch = vnodes[startIdx];
-        assertDefined(ch);
-        promises.push(createElm(ctx, ch, isSvg));
-    }
-    return then(promiseAll(promises), (children) => {
-        for (const child of children) {
-            insertBefore(ctx, parentElm, child, before);
-        }
-    });
-}
-function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
-    for (; startIdx <= endIdx; ++startIdx) {
-        const ch = nodes[startIdx];
-        assertDefined(ch);
-        removeNode(ctx, parentElm, ch);
-    }
-}
-let refCount = 0;
-const RefSymbol = Symbol();
-function setSlotRef(ctx, hostElm, slotEl) {
-    var _a;
-    let ref = (_a = hostElm[RefSymbol]) !== null && _a !== void 0 ? _a : hostElm.getAttribute('q:sref');
-    if (ref === null) {
-        ref = intToStr(refCount++);
-        hostElm[RefSymbol] = ref;
-        setAttribute(ctx, hostElm, 'q:sref', ref);
-    }
-    slotEl.setAttribute('q:sref', ref);
-}
-function getSlotElement(ctx, slotMaps, parentEl, slotName) {
-    const slotEl = slotMaps.slots[slotName];
-    if (slotEl) {
-        return slotEl;
-    }
-    const templateEl = slotMaps.templates[slotName];
-    if (templateEl) {
-        return templateEl.content;
-    }
-    const template = createTemplate(ctx, slotName);
-    prepend(ctx, parentEl, template);
-    slotMaps.templates[slotName] = template;
-    return template.content;
-}
-function createTemplate(ctx, slotName) {
-    const template = createElement(ctx, 'template', false);
-    template.setAttribute(QSlotAttr, slotName);
-    return template;
-}
-function removeTemplates(ctx, slotMaps) {
-    Object.keys(slotMaps.templates).forEach((key) => {
-        const template = slotMaps.templates[key];
-        if (template && slotMaps.slots[key] !== undefined) {
-            removeNode(ctx, template.parentNode, template);
-            slotMaps.templates[key] = undefined;
-        }
-    });
-}
-function resolveSlotProjection(ctx, hostElm, before, after) {
-    Object.entries(before.slots).forEach(([key, slotEl]) => {
-        if (slotEl && !after.slots[key]) {
-            // Slot removed
-            // Move slot to template
-            const template = createTemplate(ctx, key);
-            const slotChildren = getChildren(slotEl, 'slot');
-            template.content.append(...slotChildren);
-            hostElm.insertBefore(template, hostElm.firstChild);
-            ctx.operations.push({
-                el: template,
-                operation: 'slot-to-template',
-                args: slotChildren,
-                fn: () => { },
-            });
-        }
-    });
-    Object.entries(after.slots).forEach(([key, slotEl]) => {
-        if (slotEl && !before.slots[key]) {
-            // Slot created
-            // Move template to slot
-            const template = before.templates[key];
-            if (template) {
-                slotEl.appendChild(template.content);
-                template.remove();
-                ctx.operations.push({
-                    el: slotEl,
-                    operation: 'template-to-slot',
-                    args: [template],
-                    fn: () => { },
-                });
-            }
-        }
-    });
-}
-function getSlotName(node) {
-    var _a, _b;
-    return (_b = (_a = node.props) === null || _a === void 0 ? void 0 : _a['q:slot']) !== null && _b !== void 0 ? _b : '';
-}
-function createElm(ctx, vnode, isSvg) {
-    ctx.perf.visited++;
-    const tag = vnode.type;
-    if (tag === '#text') {
-        return (vnode.elm = createTextNode(ctx, vnode.text));
-    }
-    if (!isSvg) {
-        isSvg = tag === 'svg';
-    }
-    const data = vnode.props;
-    const elm = (vnode.elm = createElement(ctx, tag, isSvg));
-    const isComponent = isComponentNode(vnode);
-    setKey(elm, vnode.key);
-    updateProperties(ctx, elm, data, isSvg);
-    if (isSvg && tag === 'foreignObject') {
-        isSvg = false;
-    }
-    const currentComponent = ctx.component;
-    if (currentComponent) {
-        const styleTag = currentComponent.styleClass;
-        if (styleTag) {
-            classlistAdd(ctx, elm, styleTag);
-        }
-        if (tag === 'q:slot') {
-            setSlotRef(ctx, currentComponent.hostElement, elm);
-            ctx.component.slots.push(vnode);
-        }
-    }
-    let wait;
-    let componentCtx;
-    if (isComponent) {
-        componentCtx = getQComponent(elm);
-        const hostStyleTag = componentCtx.styleHostClass;
-        elm.setAttribute(QHostAttr, '');
-        if (hostStyleTag) {
-            classlistAdd(ctx, elm, hostStyleTag);
-        }
-        wait = componentCtx.render(ctx);
-    }
-    return then(wait, () => {
-        let children = vnode.children;
-        if (children.length > 0) {
-            if (children.length === 1 && children[0].type === SkipRerender) {
-                children = children[0].children;
-            }
-            const slotMap = isComponent ? getSlots(componentCtx, elm) : undefined;
-            const promises = children.map((ch) => createElm(ctx, ch, isSvg));
-            return then(promiseAll(promises), () => {
-                let parent = elm;
-                for (const node of children) {
-                    if (slotMap) {
-                        parent = getSlotElement(ctx, slotMap, elm, getSlotName(node));
-                    }
-                    parent.appendChild(node.elm);
-                }
-                return elm;
-            });
-        }
-        return elm;
-    });
-}
-const getSlots = (componentCtx, hostElm) => {
-    var _a, _b, _c, _d, _e;
-    const slots = {};
-    const templates = {};
-    const slotRef = hostElm.getAttribute('q:sref');
-    const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
-    const newSlots = (_a = componentCtx === null || componentCtx === void 0 ? void 0 : componentCtx.slots) !== null && _a !== void 0 ? _a : EMPTY_ARRAY;
-    const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
-    // Map slots
-    for (const elm of existingSlots) {
-        slots[(_b = elm.getAttribute('name')) !== null && _b !== void 0 ? _b : ''] = elm;
-    }
-    // Map virtual slots
-    for (const vnode of newSlots) {
-        slots[(_d = (_c = vnode.props) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : ''] = vnode.elm;
-    }
-    // Map templates
-    for (const elm of t) {
-        templates[(_e = elm.getAttribute('name')) !== null && _e !== void 0 ? _e : ''] = elm;
-    }
-    return { slots, templates };
-};
-const handleStyle = (ctx, elm, _, newValue, oldValue) => {
-    // TODO, needs reimplementation
-    if (typeof newValue == 'string') {
-        elm.style.cssText = newValue;
-    }
-    else {
-        for (const prop in oldValue) {
-            if (!newValue || newValue[prop] == null) {
-                if (prop.includes('-')) {
-                    styleSetProperty(ctx, elm, prop, null);
-                }
-                else {
-                    setProperty(ctx, elm.style, prop, '');
-                }
-            }
-        }
-        for (const prop in newValue) {
-            const value = newValue[prop];
-            if (!oldValue || value !== oldValue[prop]) {
-                if (prop.includes('-')) {
-                    styleSetProperty(ctx, elm, prop, value);
-                }
-                else {
-                    setProperty(ctx, elm.style, prop, value);
-                }
-            }
-        }
-    }
-    return true;
-};
-const checkBeforeAssign = (ctx, elm, prop, newValue) => {
-    if (prop in elm) {
-        if (elm[prop] !== newValue) {
-            setProperty(ctx, elm, prop, newValue);
-        }
-    }
-    return true;
-};
-const setInnerHTML = (ctx, elm, prop, newValue) => {
-    setProperty(ctx, elm, prop, newValue);
-    setAttribute(ctx, elm, 'q:static', '');
-    return true;
-};
-const PROP_HANDLER_MAP = {
-    style: handleStyle,
-    value: checkBeforeAssign,
-    checked: checkBeforeAssign,
-    innerHTML: setInnerHTML,
-};
-const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
-function updateProperties(rctx, node, expectProps, isSvg) {
-    if (!expectProps) {
-        return false;
-    }
-    const ctx = getContext(node);
-    const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : undefined;
-    if ('class' in expectProps) {
-        const className = expectProps.class;
-        expectProps.className =
-            className && typeof className == 'object'
-                ? Object.keys(className)
-                    .filter((k) => className[k])
-                    .join(' ')
-                : className;
-    }
-    // TODO
-    // when a proper disappears, we cant reset the value
-    for (let key of Object.keys(expectProps)) {
-        if (key === 'children' || key === 'class') {
-            continue;
-        }
-        const newValue = expectProps[key];
-        if (isOnProp(key)) {
-            setEvent(rctx, ctx, key, newValue);
-            continue;
-        }
-        if (isOn$Prop(key)) {
-            setEvent(rctx, ctx, key.replace('$', ''), $(newValue));
-            continue;
-        }
-        // Early exit if value didnt change
-        const oldValue = ctx.cache.get(key);
-        if (newValue === oldValue) {
-            continue;
-        }
-        ctx.cache.set(key, newValue);
-        // Check of data- or aria-
-        if (key.startsWith('data-') || key.startsWith('aria-') || isSvg) {
-            setAttribute(rctx, node, key, newValue);
-            continue;
-        }
-        if (qwikProps) {
-            const skipProperty = ALLOWS_PROPS.includes(key);
-            const hPrefixed = key.startsWith('h:');
-            if (!skipProperty && !hPrefixed) {
-                // Qwik props
-                qwikProps[key] = newValue;
-                continue;
-            }
-            if (hPrefixed) {
-                key = key.slice(2);
-            }
-        }
-        // Check if its an exception
-        const exception = PROP_HANDLER_MAP[key];
-        if (exception) {
-            if (exception(rctx, node, key, newValue, oldValue)) {
-                continue;
-            }
-        }
-        // Check if property in prototype
-        if (key in node) {
-            setProperty(rctx, node, key, newValue);
-            continue;
-        }
-        // Fallback to render attribute
-        setAttribute(rctx, node, key, newValue);
-    }
-    return ctx.dirty;
-}
-function setAttribute(ctx, el, prop, value) {
-    const fn = () => {
-        if (value == null) {
-            el.removeAttribute(prop);
-        }
-        else {
-            el.setAttribute(prop, String(value));
-        }
-    };
-    ctx.operations.push({
-        el,
-        operation: 'set-attribute',
-        args: [prop, value],
-        fn,
-    });
-}
-function styleSetProperty(ctx, el, prop, value) {
-    const fn = () => {
-        if (value == null) {
-            el.style.removeProperty(prop);
-        }
-        else {
-            el.style.setProperty(prop, String(value));
-        }
-    };
-    ctx.operations.push({
-        el,
-        operation: 'style-set-property',
-        args: [prop, value],
-        fn,
-    });
-}
-function classlistAdd(ctx, el, hostStyleTag) {
-    const fn = () => {
-        el.classList.add(hostStyleTag);
-    };
-    ctx.operations.push({
-        el,
-        operation: 'classlist-add',
-        args: [hostStyleTag],
-        fn,
-    });
-}
-function setProperty(ctx, node, key, value) {
-    const fn = () => {
-        try {
-            node[key] = value;
-        }
-        catch (err) {
-            logError('Set property', { node, key, value }, err);
-        }
-    };
-    ctx.operations.push({
-        el: node,
-        operation: 'set-property',
-        args: [key, value],
-        fn,
-    });
-}
-function createElement(ctx, expectTag, isSvg) {
-    const el = isSvg ? ctx.doc.createElementNS(SVG_NS, expectTag) : ctx.doc.createElement(expectTag);
-    ctx.operations.push({
-        el,
-        operation: 'create-element',
-        args: [expectTag],
-        fn: () => { },
-    });
-    return el;
-}
-function insertBefore(ctx, parent, newChild, refChild) {
-    const fn = () => {
-        parent.insertBefore(newChild, refChild ? refChild : null);
-    };
-    ctx.operations.push({
-        el: parent,
-        operation: 'insert-before',
-        args: [newChild, refChild],
-        fn,
-    });
-    return newChild;
-}
-function prepend(ctx, parent, newChild) {
-    const fn = () => {
-        parent.insertBefore(newChild, parent.firstChild);
-    };
-    ctx.operations.push({
-        el: parent,
-        operation: 'prepend',
-        args: [newChild],
-        fn,
-    });
-}
-function removeNode(ctx, parent, el) {
-    const fn = () => {
-        if (el.parentNode === parent) {
-            parent.removeChild(el);
-        }
-    };
-    ctx.operations.push({
-        el: el,
-        operation: 'remove',
-        args: [],
-        fn,
-    });
-}
-function createTextNode(ctx, text) {
-    return ctx.doc.createTextNode(text);
-}
-function executeContextWithSlots(ctx) {
-    const before = ctx.roots.map((elm) => getSlots(undefined, elm));
-    executeContext(ctx);
-    const after = ctx.roots.map((elm) => getSlots(undefined, elm));
-    assertEqual(before.length, after.length);
-    for (let i = 0; i < before.length; i++) {
-        resolveSlotProjection(ctx, ctx.roots[i], before[i], after[i]);
-    }
-}
-function executeContext(ctx) {
-    for (const op of ctx.operations) {
-        op.fn();
-    }
-}
-function printRenderStats(ctx) {
-    var _a;
-    const byOp = {};
-    for (const op of ctx.operations) {
-        byOp[op.operation] = ((_a = byOp[op.operation]) !== null && _a !== void 0 ? _a : 0) + 1;
-    }
-    const affectedElements = Array.from(new Set(ctx.operations.map((a) => a.el)));
-    const stats = {
-        byOp,
-        roots: ctx.roots,
-        hostElements: Array.from(ctx.hostElements),
-        affectedElements,
-        visitedNodes: ctx.perf.visited,
-        operations: ctx.operations.map((v) => [v.operation, v.el, ...v.args]),
-    };
-    logDebug('Render stats', stats);
-    return stats;
-}
-function createKeyToOldIdx(children, beginIdx, endIdx) {
-    const map = {};
-    for (let i = beginIdx; i <= endIdx; ++i) {
-        const child = children[i];
-        if (child.nodeType == NodeType.ELEMENT_NODE) {
-            const key = getKey(child);
-            if (key !== undefined) {
-                map[key] = i;
-            }
-        }
-    }
-    return map;
-}
-const KEY_SYMBOL = Symbol('vnode key');
-function getKey(el) {
-    let key = el[KEY_SYMBOL];
-    if (key === undefined) {
-        key = el[KEY_SYMBOL] = el.getAttribute('q:key');
-    }
-    return key;
-}
-function setKey(el, key) {
-    if (typeof key === 'string') {
-        el.setAttribute('q:key', key);
-    }
-    el[KEY_SYMBOL] = key;
-}
-function sameVnode(vnode1, vnode2) {
-    const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
-    const isSameKey = vnode1.nodeType === NodeType.ELEMENT_NODE ? getKey(vnode1) === vnode2.key : true;
-    return isSameSel && isSameKey;
-}
-
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-    if (jsxNode === undefined) {
-        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
-    }
-    if (Array.isArray(jsxNode)) {
-        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
-    }
-    else if (jsxNode.type === Host) {
-        updateProperties(ctx, elm, jsxNode.props, isSvg);
-        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
-    }
-    else {
-        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
-    }
-}
 
 /**
  * @public
@@ -2258,49 +1136,1100 @@ const isJSXNode = (n) => {
  */
 const Fragment = (props) => props.children;
 
-// TODO(misko): Can we get rid of this whole file, and instead teach getProps to know how to render
-// the advantage will be that the render capability would then be exposed to the outside world as well.
-class QComponentCtx {
-    constructor(hostElement) {
-        this.styleId = undefined;
-        this.styleClass = null;
-        this.styleHostClass = null;
-        this.slots = [];
-        this.hostElement = hostElement;
-        this.ctx = getContext(hostElement);
-    }
-    render(ctx) {
-        const hostElement = this.hostElement;
-        const onRender = getEvent(this.ctx, OnRenderProp);
-        assertDefined(onRender);
-        const event = 'qRender';
-        this.ctx.dirty = false;
-        ctx.globalState.hostsStaging.delete(hostElement);
-        const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
-        return then(promise, (jsxNode) => {
-            // Types are wrong here
-            jsxNode = jsxNode[0];
-            if (this.styleId === undefined) {
-                const scopedStyleId = (this.styleId = hostElement.getAttribute(ComponentScopedStyles));
-                if (scopedStyleId) {
-                    this.styleHostClass = styleHost(scopedStyleId);
-                    this.styleClass = styleContent(scopedStyleId);
-                }
+const firstRenderComponent = (rctx, ctx) => {
+    ctx.element.setAttribute(QHostAttr, '');
+    const result = renderComponent(rctx, ctx);
+    // if (ctx.component?.styleHostClass) {
+    //   classlistAdd(rctx, ctx.element, ctx.component.styleHostClass);
+    // }
+    return result;
+};
+const renderComponent = (rctx, ctx) => {
+    const hostElement = ctx.element;
+    const onRender = getEvent(ctx, OnRenderProp);
+    assertDefined(onRender);
+    // Component is not dirty any more
+    ctx.dirty = false;
+    rctx.globalState.hostsStaging.delete(hostElement);
+    // Invoke render hook
+    const promise = useInvoke(newInvokeContext(hostElement, hostElement, 'qRender'), onRender);
+    return then(promise, (jsxNode) => {
+        var _a;
+        // Types are wrong here
+        jsxNode = jsxNode[0];
+        rctx.hostElements.add(hostElement);
+        let componentCtx = ctx.component;
+        if (!componentCtx) {
+            componentCtx = ctx.component = {
+                hostElement,
+                slots: [],
+                styleHostClass: undefined,
+                styleClass: undefined,
+                styleId: undefined,
+            };
+            const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) !== null && _a !== void 0 ? _a : undefined;
+            if (scopedStyleId) {
+                componentCtx.styleId = scopedStyleId;
+                componentCtx.styleHostClass = styleHost(scopedStyleId);
+                componentCtx.styleClass = styleContent(scopedStyleId);
+                hostElement.classList.add(componentCtx.styleHostClass);
             }
-            ctx.hostElements.add(hostElement);
-            this.slots = [];
-            const newCtx = Object.assign(Object.assign({}, ctx), { component: this });
-            return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+        }
+        componentCtx.slots = [];
+        const newCtx = Object.assign(Object.assign({}, rctx), { component: componentCtx });
+        return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    });
+};
+
+const UNDEFINED_PREFIX = '\u0010';
+const QRL_PREFIX = '\u0011';
+function resume(elmOrDoc) {
+    const parentElm = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+    if (!isRoot(parentElm)) {
+        // logWarn('Skipping hydration because parent element is not q:container');
+        return;
+    }
+    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const isDoc = isDocument(elmOrDoc) || elmOrDoc === doc.documentElement;
+    const parentJSON = isDoc ? doc.body : parentElm;
+    const script = getQwikJSON(parentJSON);
+    if (!script) {
+        logWarn('Skipping hydration qwik/json metadata was not found.');
+        return;
+    }
+    script.remove();
+    const map = getProxyMap(doc);
+    const meta = JSON.parse(script.textContent || '{}');
+    // Collect all elements
+    const elements = new Map();
+    getNodesInScope(parentElm, hasQId).forEach((el) => {
+        const id = el.getAttribute(ELEMENT_ID);
+        elements.set(ELEMENT_ID_PREFIX + id, el);
+    });
+    // Revive proxies with subscriptions into the proxymap
+    reviveValues(meta.objs, meta.subs, elements, map);
+    // Rebuild target objects
+    for (const obj of meta.objs) {
+        reviveNestedObjects(obj, elements, meta.objs, map);
+    }
+    // Walk all elements with q:obj and resume their state
+    getNodesInScope(parentElm, hasQObj).forEach((el) => {
+        const qobj = el.getAttribute(QObjAttr);
+        const host = el.getAttribute(QHostAttr);
+        const ctx = getContext(el);
+        qobj.split(' ').forEach((part) => {
+            if (part !== '') {
+                const obj = getObject(part, elements, meta.objs, map);
+                ctx.refMap.add(obj);
+            }
+            else if (qDev) {
+                logError('QObj contains empty ref');
+            }
+        });
+        if (host) {
+            const [props, events] = host.split(' ').map(strToInt);
+            assertDefined(props);
+            assertDefined(events);
+            ctx.props = ctx.refMap.get(props);
+            ctx.events = ctx.refMap.get(events);
+        }
+    });
+}
+function snapshotState(elmOrDoc) {
+    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const parentElm = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+    const proxyMap = getProxyMap(doc);
+    const objSet = new Set();
+    const platform = getPlatform(doc);
+    const elementToIndex = new Map();
+    // Collect all qObjected around the DOM
+    const elements = getNodesInScope(parentElm, hasQObj);
+    elements.forEach((node) => {
+        const props = getContext(node);
+        const qMap = props.refMap;
+        qMap.array.forEach((v) => {
+            collectQObjects(v, objSet, platform);
+            objSet.add(normalizeObj(v, platform)); // Add root elements
+        });
+    });
+    // Convert objSet to array
+    const objs = Array.from(objSet);
+    objs.sort((a, b) => {
+        const isProxyA = proxyMap.has(a) ? 0 : 1;
+        const isProxyB = proxyMap.has(b) ? 0 : 1;
+        return isProxyA - isProxyB;
+    });
+    const objToId = new Map();
+    let count = 0;
+    for (const obj of objs) {
+        objToId.set(obj, count);
+        count++;
+    }
+    function getElementID(el) {
+        let id = elementToIndex.get(el);
+        if (id === undefined) {
+            if (el.isConnected) {
+                id = intToStr(elementToIndex.size);
+                el.setAttribute(ELEMENT_ID, id);
+                id = ELEMENT_ID_PREFIX + id;
+            }
+            else {
+                id = null;
+            }
+            elementToIndex.set(el, id);
+        }
+        return id;
+    }
+    function getObjId(obj) {
+        if (obj !== null && typeof obj === 'object') {
+            const target = obj[QOjectTargetSymbol];
+            const id = objToId.get(normalizeObj(target !== null && target !== void 0 ? target : obj, platform));
+            if (id !== undefined) {
+                const proxySuffix = target ? '!' : '';
+                return intToStr(id) + proxySuffix;
+            }
+            if (!target && isElement(obj)) {
+                return getElementID(obj);
+            }
+        }
+        else {
+            const id = objToId.get(normalizeObj(obj, platform));
+            if (id !== undefined) {
+                return intToStr(id);
+            }
+        }
+        return null;
+    }
+    const subs = objs
+        .map((obj) => {
+        var _a;
+        const subs = (_a = proxyMap.get(obj)) === null || _a === void 0 ? void 0 : _a[QOjectSubsSymbol];
+        if (subs) {
+            return Object.fromEntries(Array.from(subs.entries()).map(([el, set]) => {
+                const id = getElementID(el);
+                if (id !== null) {
+                    return [id, Array.from(set)];
+                }
+                else {
+                    return [undefined, undefined];
+                }
+            }));
+        }
+        else {
+            return null;
+        }
+    })
+        .filter((a) => !!a);
+    const serialize = (value) => {
+        var _a;
+        return (_a = getObjId(value)) !== null && _a !== void 0 ? _a : value;
+    };
+    const convertedObjs = objs.map((obj) => {
+        if (Array.isArray(obj)) {
+            return obj.map(serialize);
+        }
+        else if (obj && typeof obj === 'object') {
+            const output = {};
+            Object.entries(obj).forEach(([key, value]) => {
+                output[key] = serialize(value);
+            });
+            return output;
+        }
+        return obj;
+    });
+    // Write back to the dom
+    elements.forEach((node) => {
+        const ctx = getContext(node);
+        const props = ctx.props;
+        const events = ctx.events;
+        const attribute = ctx.refMap.array
+            .map((obj) => {
+            const id = getObjId(obj);
+            assertDefined(id);
+            return id;
+        })
+            .join(' ');
+        node.setAttribute(QObjAttr, attribute);
+        if (props) {
+            const objs = [props];
+            if (events) {
+                objs.push(events);
+            }
+            node.setAttribute(QHostAttr, objs.map((obj) => ctx.refMap.indexOf(obj)).join(' '));
+        }
+    });
+    // Sanity check of serialized element
+    if (qDev) {
+        elementToIndex.forEach((value, el) => {
+            if (getDocument(el) !== doc) {
+                logWarn('element from different document', value, el.tagName);
+            }
+            if (!value) {
+                logWarn('unconnected element', el.tagName, '\n');
+            }
         });
     }
+    return {
+        objs: convertedObjs,
+        subs,
+    };
 }
-const COMPONENT_PROP = '__qComponent__';
-function getQComponent(hostElement) {
-    const element = hostElement;
-    let component = element[COMPONENT_PROP];
-    if (!component)
-        component = element[COMPONENT_PROP] = new QComponentCtx(hostElement);
-    return component;
+function getQwikJSON(parentElm) {
+    let child = parentElm.lastElementChild;
+    while (child) {
+        if (child.tagName === 'SCRIPT' && child.getAttribute('type') === 'qwik/json') {
+            return child;
+        }
+        child = child.previousElementSibling;
+    }
+    return undefined;
+}
+function getNodesInScope(parent, predicate) {
+    const nodes = [];
+    walkNodes(nodes, parent, predicate);
+    return nodes;
+}
+function walkNodes(nodes, parent, predicate) {
+    let child = parent.firstElementChild;
+    while (child) {
+        if (!isRoot(child)) {
+            if (predicate(child)) {
+                nodes.push(child);
+            }
+            walkNodes(nodes, child, predicate);
+        }
+        child = child.nextElementSibling;
+    }
+}
+function reviveValues(objs, subs, elementMap, map) {
+    for (let i = 0; i < objs.length; i++) {
+        const value = objs[i];
+        if (typeof value === 'string') {
+            if (value === UNDEFINED_PREFIX) {
+                objs[i] = undefined;
+            }
+            else if (value.startsWith(QRL_PREFIX)) {
+                objs[i] = parseQRL(value.slice(1));
+            }
+        }
+        else {
+            const sub = subs[i];
+            if (sub) {
+                const converted = new Map();
+                Object.entries(sub).forEach((entry) => {
+                    const el = elementMap.get(entry[0]);
+                    if (!el) {
+                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
+                        return;
+                    }
+                    const set = new Set(entry[1]);
+                    converted.set(el, set);
+                });
+                _restoreQObject(value, map, converted);
+            }
+        }
+    }
+}
+function reviveNestedObjects(obj, elements, objs, map) {
+    if (obj && typeof obj == 'object') {
+        if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                const value = obj[i];
+                if (typeof value == 'string') {
+                    obj[i] = getObject(value, elements, objs, map);
+                }
+                else {
+                    reviveNestedObjects(value, elements, objs, map);
+                }
+            }
+        }
+        else if (Object.getPrototypeOf(obj) === Object.prototype) {
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    if (typeof value == 'string') {
+                        obj[key] = getObject(value, elements, objs, map);
+                    }
+                    else {
+                        reviveNestedObjects(value, elements, objs, map);
+                    }
+                }
+            }
+        }
+    }
+}
+function getObject(id, elements, objs, map) {
+    if (id[0] === ELEMENT_ID_PREFIX) {
+        assertEqual(elements.has(id), true);
+        return elements.get(id);
+    }
+    const index = strToInt(id);
+    assertEqual(objs.length > index, true);
+    const obj = objs[index];
+    const needsProxy = id[id.length - 1] === '!';
+    if (needsProxy) {
+        const finalObj = map.get(obj);
+        assertDefined(finalObj);
+        return finalObj;
+    }
+    return obj;
+}
+function normalizeObj(obj, platform) {
+    var _a;
+    if (obj === undefined || !shouldSerialize(obj)) {
+        return UNDEFINED_PREFIX;
+    }
+    if (obj && typeof obj === 'object') {
+        const value = (_a = obj[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : obj;
+        if (isQrl(value)) {
+            return QRL_PREFIX + stringifyQRL(obj, platform);
+        }
+        return value;
+    }
+    return obj;
+}
+function collectQObjects(obj, seen, platform) {
+    if (obj != null) {
+        if (typeof obj === 'object') {
+            if (!obj[QOjectTargetSymbol] && isElement(obj)) {
+                return;
+            }
+            obj = normalizeObj(obj, platform);
+        }
+        if (typeof obj === 'object') {
+            if (seen.has(obj))
+                return;
+            seen.add(obj);
+            if (Array.isArray(obj)) {
+                for (let i = 0; i < obj.length; i++) {
+                    collectQObjects(obj[i], seen, platform);
+                }
+            }
+            else {
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        collectQObjects(obj[key], seen, platform);
+                    }
+                }
+            }
+        }
+        if (typeof obj === 'string') {
+            seen.add(obj);
+        }
+    }
+}
+function isRoot(el) {
+    return el.hasAttribute('q:container');
+}
+function hasQObj(el) {
+    return el.hasAttribute(QObjAttr);
+}
+function hasQId(el) {
+    return el.hasAttribute(ELEMENT_ID);
+}
+const intToStr = (nu) => {
+    return nu.toString(36);
+};
+const strToInt = (nu) => {
+    return parseInt(nu, 36);
+};
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
+    if (ch.length === 1 && ch[0].type === SkipRerender) {
+        if (elm.firstChild !== null) {
+            return;
+        }
+        ch = ch[0].children;
+    }
+    const oldCh = getChildren(elm, mode);
+    if (oldCh.length > 0 && ch.length > 0) {
+        return updateChildren(ctx, elm, oldCh, ch, isSvg);
+    }
+    else if (ch.length > 0) {
+        return addVnodes(ctx, elm, undefined, ch, 0, ch.length - 1, isSvg);
+    }
+    else if (oldCh.length > 0) {
+        return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
+    }
+}
+function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
+    let oldStartIdx = 0;
+    let newStartIdx = 0;
+    let oldEndIdx = oldCh.length - 1;
+    let oldStartVnode = oldCh[0];
+    let oldEndVnode = oldCh[oldEndIdx];
+    let newEndIdx = newCh.length - 1;
+    let newStartVnode = newCh[0];
+    let newEndVnode = newCh[newEndIdx];
+    let oldKeyToIdx;
+    let idxInOld;
+    let elmToMove;
+    const results = [];
+    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+        if (oldStartVnode == null) {
+            oldStartVnode = oldCh[++oldStartIdx]; // Vnode might have been moved left
+        }
+        else if (oldEndVnode == null) {
+            oldEndVnode = oldCh[--oldEndIdx];
+        }
+        else if (newStartVnode == null) {
+            newStartVnode = newCh[++newStartIdx];
+        }
+        else if (newEndVnode == null) {
+            newEndVnode = newCh[--newEndIdx];
+        }
+        else if (sameVnode(oldStartVnode, newStartVnode)) {
+            results.push(patchVnode(ctx, oldStartVnode, newStartVnode, isSvg));
+            oldStartVnode = oldCh[++oldStartIdx];
+            newStartVnode = newCh[++newStartIdx];
+        }
+        else if (sameVnode(oldEndVnode, newEndVnode)) {
+            results.push(patchVnode(ctx, oldEndVnode, newEndVnode, isSvg));
+            oldEndVnode = oldCh[--oldEndIdx];
+            newEndVnode = newCh[--newEndIdx];
+        }
+        else if (sameVnode(oldStartVnode, newEndVnode)) {
+            // Vnode moved right
+            results.push(patchVnode(ctx, oldStartVnode, newEndVnode, isSvg));
+            insertBefore(ctx, parentElm, oldStartVnode, oldEndVnode.nextSibling);
+            oldStartVnode = oldCh[++oldStartIdx];
+            newEndVnode = newCh[--newEndIdx];
+        }
+        else if (sameVnode(oldEndVnode, newStartVnode)) {
+            // Vnode moved left
+            results.push(patchVnode(ctx, oldEndVnode, newStartVnode, isSvg));
+            insertBefore(ctx, parentElm, oldEndVnode, oldStartVnode);
+            oldEndVnode = oldCh[--oldEndIdx];
+            newStartVnode = newCh[++newStartIdx];
+        }
+        else {
+            if (oldKeyToIdx === undefined) {
+                oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+            }
+            idxInOld = oldKeyToIdx[newStartVnode.key];
+            if (idxInOld === undefined) {
+                // New element
+                const newElm = createElm(ctx, newStartVnode, isSvg);
+                results.push(then(newElm, (newElm) => {
+                    insertBefore(ctx, parentElm, newElm, oldStartVnode);
+                }));
+            }
+            else {
+                elmToMove = oldCh[idxInOld];
+                if (elmToMove.nodeName !== newStartVnode.type) {
+                    const newElm = createElm(ctx, newStartVnode, isSvg);
+                    results.push(then(newElm, (newElm) => {
+                        insertBefore(ctx, parentElm, newElm, oldStartVnode);
+                    }));
+                }
+                else {
+                    results.push(patchVnode(ctx, elmToMove, newStartVnode, isSvg));
+                    oldCh[idxInOld] = undefined;
+                    insertBefore(ctx, parentElm, elmToMove, oldStartVnode);
+                }
+            }
+            newStartVnode = newCh[++newStartIdx];
+        }
+    }
+    if (newStartIdx <= newEndIdx) {
+        const before = newCh[newEndIdx + 1] == null ? undefined : newCh[newEndIdx + 1].elm;
+        results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
+    }
+    let wait = promiseAll(results);
+    if (oldStartIdx <= oldEndIdx) {
+        wait = then(wait, () => {
+            removeVnodes(ctx, parentElm, oldCh, oldStartIdx, oldEndIdx);
+        });
+    }
+    return wait;
+}
+function isComponentNode(node) {
+    return node.props && OnRenderProp in node.props;
+}
+function getCh(elm) {
+    return Array.from(elm.childNodes).filter(isNode);
+}
+function getChildren(elm, mode) {
+    switch (mode) {
+        case 'default':
+            return getCh(elm);
+        case 'slot':
+            return getCh(elm).filter(isChildSlot);
+        case 'root':
+            return getCh(elm).filter(isChildComponent);
+        case 'fallback':
+            return getCh(elm).filter(isFallback);
+    }
+}
+function isNode(elm) {
+    return elm.nodeType === 1 || elm.nodeType === 3;
+}
+function isFallback(node) {
+    return node.nodeName === 'Q:FALLBACK';
+}
+function isChildSlot(node) {
+    return node.nodeName !== 'Q:FALLBACK' && isChildComponent(node);
+}
+function isSlotTemplate(node) {
+    return node.nodeName === 'TEMPLATE' && node.hasAttribute(QSlotAttr);
+}
+function isChildComponent(node) {
+    return node.nodeName !== 'TEMPLATE' || !node.hasAttribute(QSlotAttr);
+}
+function splitBy(input, condition) {
+    var _a;
+    const output = {};
+    for (const item of input) {
+        const key = condition(item);
+        const array = (_a = output[key]) !== null && _a !== void 0 ? _a : (output[key] = []);
+        array.push(item);
+    }
+    return output;
+}
+function patchVnode(rctx, elm, vnode, isSvg) {
+    rctx.perf.visited++;
+    vnode.elm = elm;
+    const tag = vnode.type;
+    if (tag === '#text') {
+        if (elm.data !== vnode.text) {
+            setProperty(rctx, elm, 'data', vnode.text);
+        }
+        return;
+    }
+    if (tag === Host || tag === SkipRerender) {
+        return;
+    }
+    if (!isSvg) {
+        isSvg = tag === 'svg';
+    }
+    let promise;
+    const props = vnode.props;
+    const ctx = getContext(elm);
+    const dirty = updateProperties(rctx, ctx, props, isSvg);
+    const isSlot = tag === 'q:slot';
+    if (isSvg && vnode.type === 'foreignObject') {
+        isSvg = false;
+    }
+    else if (isSlot) {
+        rctx.component.slots.push(vnode);
+    }
+    const isComponent = isComponentNode(vnode);
+    if (dirty) {
+        promise = renderComponent(rctx, ctx);
+    }
+    const ch = vnode.children;
+    if (isComponent) {
+        return then(promise, () => {
+            const slotMaps = getSlots(ctx.component, elm);
+            const splittedChidren = splitBy(ch, getSlotName);
+            const promises = [];
+            // Mark empty slots and remove content
+            Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
+                if (slotEl && !splittedChidren[key]) {
+                    const oldCh = getChildren(slotEl, 'slot');
+                    if (oldCh.length > 0) {
+                        removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
+                    }
+                }
+            });
+            // Render into slots
+            Object.entries(splittedChidren).forEach(([key, ch]) => {
+                const slotElm = getSlotElement(rctx, slotMaps, elm, key);
+                promises.push(smartUpdateChildren(rctx, slotElm, ch, 'slot', isSvg));
+            });
+            return then(promiseAll(promises), () => {
+                removeTemplates(rctx, slotMaps);
+            });
+        });
+    }
+    const setsInnerHTML = checkInnerHTML(props);
+    if (setsInnerHTML) {
+        if (qDev && ch.length > 0) {
+            logWarn('Node can not have children when innerHTML is set');
+        }
+        return;
+    }
+    return then(promise, () => {
+        const mode = isSlot ? 'fallback' : 'default';
+        return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
+    });
+}
+function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
+    const promises = [];
+    for (; startIdx <= endIdx; ++startIdx) {
+        const ch = vnodes[startIdx];
+        assertDefined(ch);
+        promises.push(createElm(ctx, ch, isSvg));
+    }
+    return then(promiseAll(promises), (children) => {
+        for (const child of children) {
+            insertBefore(ctx, parentElm, child, before);
+        }
+    });
+}
+function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
+    for (; startIdx <= endIdx; ++startIdx) {
+        const ch = nodes[startIdx];
+        assertDefined(ch);
+        removeNode(ctx, ch);
+    }
+}
+let refCount = 0;
+const RefSymbol = Symbol();
+function setSlotRef(ctx, hostElm, slotEl) {
+    var _a;
+    let ref = (_a = hostElm[RefSymbol]) !== null && _a !== void 0 ? _a : hostElm.getAttribute('q:sref');
+    if (ref === null) {
+        ref = intToStr(refCount++);
+        hostElm[RefSymbol] = ref;
+        setAttribute(ctx, hostElm, 'q:sref', ref);
+    }
+    slotEl.setAttribute('q:sref', ref);
+}
+function getSlotElement(ctx, slotMaps, parentEl, slotName) {
+    const slotEl = slotMaps.slots[slotName];
+    if (slotEl) {
+        return slotEl;
+    }
+    const templateEl = slotMaps.templates[slotName];
+    if (templateEl) {
+        return templateEl.content;
+    }
+    const template = createTemplate(ctx, slotName);
+    prepend(ctx, parentEl, template);
+    slotMaps.templates[slotName] = template;
+    return template.content;
+}
+function createTemplate(ctx, slotName) {
+    const template = createElement(ctx, 'template', false);
+    template.setAttribute(QSlotAttr, slotName);
+    return template;
+}
+function removeTemplates(ctx, slotMaps) {
+    Object.keys(slotMaps.templates).forEach((key) => {
+        const template = slotMaps.templates[key];
+        if (template && slotMaps.slots[key] !== undefined) {
+            removeNode(ctx, template);
+            slotMaps.templates[key] = undefined;
+        }
+    });
+}
+function resolveSlotProjection(ctx, hostElm, before, after) {
+    Object.entries(before.slots).forEach(([key, slotEl]) => {
+        if (slotEl && !after.slots[key]) {
+            // Slot removed
+            // Move slot to template
+            const template = createTemplate(ctx, key);
+            const slotChildren = getChildren(slotEl, 'slot');
+            template.content.append(...slotChildren);
+            hostElm.insertBefore(template, hostElm.firstChild);
+            ctx.operations.push({
+                el: template,
+                operation: 'slot-to-template',
+                args: slotChildren,
+                fn: () => { },
+            });
+        }
+    });
+    Object.entries(after.slots).forEach(([key, slotEl]) => {
+        if (slotEl && !before.slots[key]) {
+            // Slot created
+            // Move template to slot
+            const template = before.templates[key];
+            if (template) {
+                slotEl.appendChild(template.content);
+                template.remove();
+                ctx.operations.push({
+                    el: slotEl,
+                    operation: 'template-to-slot',
+                    args: [template],
+                    fn: () => { },
+                });
+            }
+        }
+    });
+}
+function getSlotName(node) {
+    var _a, _b;
+    return (_b = (_a = node.props) === null || _a === void 0 ? void 0 : _a['q:slot']) !== null && _b !== void 0 ? _b : '';
+}
+function createElm(rctx, vnode, isSvg) {
+    rctx.perf.visited++;
+    const tag = vnode.type;
+    if (tag === '#text') {
+        return (vnode.elm = createTextNode(rctx, vnode.text));
+    }
+    if (!isSvg) {
+        isSvg = tag === 'svg';
+    }
+    const props = vnode.props;
+    const elm = (vnode.elm = createElement(rctx, tag, isSvg));
+    const isComponent = isComponentNode(vnode);
+    const ctx = getContext(elm);
+    setKey(elm, vnode.key);
+    updateProperties(rctx, ctx, props, isSvg);
+    if (isSvg && tag === 'foreignObject') {
+        isSvg = false;
+    }
+    const currentComponent = rctx.component;
+    if (currentComponent) {
+        const styleTag = currentComponent.styleClass;
+        if (styleTag) {
+            classlistAdd(rctx, elm, styleTag);
+        }
+        if (tag === 'q:slot') {
+            setSlotRef(rctx, currentComponent.hostElement, elm);
+            rctx.component.slots.push(vnode);
+        }
+    }
+    let wait;
+    if (isComponent) {
+        wait = firstRenderComponent(rctx, ctx);
+    }
+    else {
+        const setsInnerHTML = checkInnerHTML(props);
+        if (setsInnerHTML) {
+            if (qDev && vnode.children.length > 0) {
+                logWarn('Node can not have children when innerHTML is set');
+            }
+            return elm;
+        }
+    }
+    return then(wait, () => {
+        let children = vnode.children;
+        if (children.length > 0) {
+            if (children.length === 1 && children[0].type === SkipRerender) {
+                children = children[0].children;
+            }
+            const slotMap = isComponent ? getSlots(ctx.component, elm) : undefined;
+            const promises = children.map((ch) => createElm(rctx, ch, isSvg));
+            return then(promiseAll(promises), () => {
+                let parent = elm;
+                for (const node of children) {
+                    if (slotMap) {
+                        parent = getSlotElement(rctx, slotMap, elm, getSlotName(node));
+                    }
+                    parent.appendChild(node.elm);
+                }
+                return elm;
+            });
+        }
+        return elm;
+    });
+}
+const getSlots = (componentCtx, hostElm) => {
+    var _a, _b, _c, _d, _e;
+    const slots = {};
+    const templates = {};
+    const slotRef = hostElm.getAttribute('q:sref');
+    const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
+    const newSlots = (_a = componentCtx === null || componentCtx === void 0 ? void 0 : componentCtx.slots) !== null && _a !== void 0 ? _a : EMPTY_ARRAY;
+    const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
+    // Map slots
+    for (const elm of existingSlots) {
+        slots[(_b = elm.getAttribute('name')) !== null && _b !== void 0 ? _b : ''] = elm;
+    }
+    // Map virtual slots
+    for (const vnode of newSlots) {
+        slots[(_d = (_c = vnode.props) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : ''] = vnode.elm;
+    }
+    // Map templates
+    for (const elm of t) {
+        templates[(_e = elm.getAttribute('name')) !== null && _e !== void 0 ? _e : ''] = elm;
+    }
+    return { slots, templates };
+};
+const handleStyle = (ctx, elm, _, newValue) => {
+    setAttribute(ctx, elm, 'style', stringifyClassOrStyle(newValue, false));
+    return true;
+};
+const handleClass = (ctx, elm, _, newValue) => {
+    setAttribute(ctx, elm, 'class', stringifyClassOrStyle(newValue, true));
+    return true;
+};
+const checkBeforeAssign = (ctx, elm, prop, newValue) => {
+    if (prop in elm) {
+        if (elm[prop] !== newValue) {
+            setProperty(ctx, elm, prop, newValue);
+        }
+    }
+    return true;
+};
+const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+const setInnerHTML = (ctx, elm, _, newValue) => {
+    if (dangerouslySetInnerHTML in elm) {
+        setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+    }
+    else if ('innerHTML' in elm) {
+        setProperty(ctx, elm, 'innerHTML', newValue);
+    }
+    return true;
+};
+const PROP_HANDLER_MAP = {
+    style: handleStyle,
+    class: handleClass,
+    className: handleClass,
+    value: checkBeforeAssign,
+    checked: checkBeforeAssign,
+    [dangerouslySetInnerHTML]: setInnerHTML,
+};
+const ALLOWS_PROPS = ['class', 'className', 'style', 'id', 'q:slot'];
+function updateProperties(rctx, ctx, expectProps, isSvg) {
+    if (!expectProps) {
+        return false;
+    }
+    const elm = ctx.element;
+    const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : undefined;
+    // TODO
+    // when a proper disappears, we cant reset the value
+    for (let key of Object.keys(expectProps)) {
+        if (key === 'children') {
+            continue;
+        }
+        const newValue = expectProps[key];
+        if (isOnProp(key)) {
+            setEvent(rctx, ctx, key, newValue);
+            continue;
+        }
+        if (isOn$Prop(key)) {
+            setEvent(rctx, ctx, key.replace('$', ''), $(newValue));
+            continue;
+        }
+        // Early exit if value didnt change
+        const oldValue = ctx.cache.get(key);
+        if (newValue === oldValue) {
+            continue;
+        }
+        ctx.cache.set(key, newValue);
+        // Check of data- or aria-
+        if (key.startsWith('data-') || key.startsWith('aria-')) {
+            setAttribute(rctx, elm, key, newValue);
+            continue;
+        }
+        if (qwikProps) {
+            const skipProperty = ALLOWS_PROPS.includes(key);
+            const hPrefixed = key.startsWith('h:');
+            if (!skipProperty && !hPrefixed) {
+                // Qwik props
+                qwikProps[key] = newValue;
+                continue;
+            }
+            if (hPrefixed) {
+                key = key.slice(2);
+            }
+        }
+        // Check if its an exception
+        const exception = PROP_HANDLER_MAP[key];
+        if (exception) {
+            if (exception(rctx, elm, key, newValue, oldValue)) {
+                continue;
+            }
+        }
+        // Check if property in prototype
+        if (!isSvg && key in elm) {
+            setProperty(rctx, elm, key, newValue);
+            continue;
+        }
+        // Fallback to render attribute
+        setAttribute(rctx, elm, key, newValue);
+    }
+    return ctx.dirty;
+}
+function setAttribute(ctx, el, prop, value) {
+    const fn = () => {
+        if (value == null) {
+            el.removeAttribute(prop);
+        }
+        else {
+            el.setAttribute(prop, String(value));
+        }
+    };
+    ctx.operations.push({
+        el,
+        operation: 'set-attribute',
+        args: [prop, value],
+        fn,
+    });
+}
+function classlistAdd(ctx, el, hostStyleTag) {
+    const fn = () => {
+        el.classList.add(hostStyleTag);
+    };
+    ctx.operations.push({
+        el,
+        operation: 'classlist-add',
+        args: [hostStyleTag],
+        fn,
+    });
+}
+function setProperty(ctx, node, key, value) {
+    const fn = () => {
+        try {
+            node[key] = value;
+        }
+        catch (err) {
+            logError('Set property', { node, key, value }, err);
+        }
+    };
+    ctx.operations.push({
+        el: node,
+        operation: 'set-property',
+        args: [key, value],
+        fn,
+    });
+}
+function createElement(ctx, expectTag, isSvg) {
+    const el = isSvg ? ctx.doc.createElementNS(SVG_NS, expectTag) : ctx.doc.createElement(expectTag);
+    ctx.operations.push({
+        el,
+        operation: 'create-element',
+        args: [expectTag],
+        fn: () => { },
+    });
+    return el;
+}
+function insertBefore(ctx, parent, newChild, refChild) {
+    const fn = () => {
+        parent.insertBefore(newChild, refChild ? refChild : null);
+    };
+    ctx.operations.push({
+        el: parent,
+        operation: 'insert-before',
+        args: [newChild, refChild],
+        fn,
+    });
+    return newChild;
+}
+function prepend(ctx, parent, newChild) {
+    const fn = () => {
+        parent.insertBefore(newChild, parent.firstChild);
+    };
+    ctx.operations.push({
+        el: parent,
+        operation: 'prepend',
+        args: [newChild],
+        fn,
+    });
+}
+function removeNode(ctx, el) {
+    const fn = () => {
+        const parent = el.parentNode;
+        if (parent) {
+            parent.removeChild(el);
+        }
+        else if (qDev) {
+            logWarn('Trying to remove component already removed', el);
+        }
+    };
+    ctx.operations.push({
+        el: el,
+        operation: 'remove',
+        args: [],
+        fn,
+    });
+}
+function createTextNode(ctx, text) {
+    return ctx.doc.createTextNode(text);
+}
+function executeContextWithSlots(ctx) {
+    const before = ctx.roots.map((elm) => getSlots(undefined, elm));
+    executeContext(ctx);
+    const after = ctx.roots.map((elm) => getSlots(undefined, elm));
+    assertEqual(before.length, after.length);
+    for (let i = 0; i < before.length; i++) {
+        resolveSlotProjection(ctx, ctx.roots[i], before[i], after[i]);
+    }
+}
+function executeContext(ctx) {
+    for (const op of ctx.operations) {
+        op.fn();
+    }
+}
+function printRenderStats(ctx) {
+    var _a;
+    const byOp = {};
+    for (const op of ctx.operations) {
+        byOp[op.operation] = ((_a = byOp[op.operation]) !== null && _a !== void 0 ? _a : 0) + 1;
+    }
+    const affectedElements = Array.from(new Set(ctx.operations.map((a) => a.el)));
+    const stats = {
+        byOp,
+        roots: ctx.roots,
+        hostElements: Array.from(ctx.hostElements),
+        affectedElements,
+        visitedNodes: ctx.perf.visited,
+        operations: ctx.operations.map((v) => [v.operation, v.el, ...v.args]),
+    };
+    logDebug('Render stats', stats);
+    return stats;
+}
+function createKeyToOldIdx(children, beginIdx, endIdx) {
+    const map = {};
+    for (let i = beginIdx; i <= endIdx; ++i) {
+        const child = children[i];
+        if (child.nodeType == NodeType.ELEMENT_NODE) {
+            const key = getKey(child);
+            if (key !== undefined) {
+                map[key] = i;
+            }
+        }
+    }
+    return map;
+}
+const KEY_SYMBOL = Symbol('vnode key');
+function getKey(el) {
+    let key = el[KEY_SYMBOL];
+    if (key === undefined) {
+        key = el[KEY_SYMBOL] = el.getAttribute('q:key');
+    }
+    return key;
+}
+function setKey(el, key) {
+    if (typeof key === 'string') {
+        el.setAttribute('q:key', key);
+    }
+    el[KEY_SYMBOL] = key;
+}
+function sameVnode(vnode1, vnode2) {
+    const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
+    const isSameKey = vnode1.nodeType === NodeType.ELEMENT_NODE ? getKey(vnode1) === vnode2.key : true;
+    return isSameSel && isSameKey;
+}
+function checkInnerHTML(props) {
+    return props && ('innerHTML' in props || dangerouslySetInnerHTML in props);
+}
+function stringifyClassOrStyle(obj, isClass) {
+    if (obj == null)
+        return '';
+    if (typeof obj == 'object') {
+        let text = '';
+        let sep = '';
+        if (Array.isArray(obj)) {
+            if (!isClass) {
+                throw qError(QError.Render_unsupportedFormat_obj_attr, obj, 'style');
+            }
+            for (let i = 0; i < obj.length; i++) {
+                text += sep + obj[i];
+                sep = ' ';
+            }
+        }
+        else {
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    text += isClass
+                        ? value
+                            ? sep + key
+                            : ''
+                        : sep + fromCamelToKebabCase(key) + ':' + value;
+                    sep = isClass ? ' ' : ';';
+                }
+            }
+        }
+        return text;
+    }
+    return String(obj);
 }
 
 /**
@@ -2321,8 +2250,9 @@ function getQComponent(hostElement) {
 // TODO(misko): this should take QComponent as well.
 function notifyRender(hostElement) {
     assertDefined(hostElement.getAttribute(QHostAttr));
-    const ctx = getContext(hostElement);
     const doc = getDocument(hostElement);
+    resumeIfNeeded(hostElement);
+    const ctx = getContext(hostElement);
     const state = getRenderingState(doc);
     if (ctx.dirty) {
         // TODO
@@ -2353,7 +2283,7 @@ function scheduleFrame(doc, state) {
     }
     return state.renderPromise;
 }
-const SCHEDULE = Symbol();
+const SCHEDULE = Symbol('Render state');
 function getRenderingState(doc) {
     let set = doc[SCHEDULE];
     if (!set) {
@@ -2374,25 +2304,30 @@ async function renderMarked(doc, state) {
     sortNodes(renderingQueue);
     const ctx = {
         doc,
+        globalState: state,
+        hostElements: new Set(),
         operations: [],
         roots: [],
-        hostElements: new Set(),
-        globalState: state,
+        component: undefined,
         perf: {
             visited: 0,
             timing: [],
         },
-        component: undefined,
     };
     for (const el of renderingQueue) {
         if (!ctx.hostElements.has(el)) {
             ctx.roots.push(el);
-            const cmp = getQComponent(el);
-            await cmp.render(ctx);
+            await renderComponent(ctx, getContext(el));
         }
     }
     // Early exist, no dom operations
     if (ctx.operations.length === 0) {
+        if (qDev) {
+            if (typeof window !== 'undefined' && window.document != null) {
+                logDebug('Render skipped. No operations.');
+                printRenderStats(ctx);
+            }
+        }
         postRendering(doc, state);
         return ctx;
     }
@@ -2441,19 +2376,10 @@ function qObject(obj, proxyMap) {
     if (obj.constructor !== Object) {
         throw new Error(`Q-ERROR: Only objects literals can be wrapped in 'QObject', got ` + debugStringify(obj));
     }
-    const proxy = readWriteProxy(obj, proxyMap);
-    Object.assign(proxy[QOjectTargetSymbol], obj);
-    return proxy;
+    return readWriteProxy(obj, proxyMap);
 }
 function _restoreQObject(obj, map, subs) {
     return readWriteProxy(obj, map, subs);
-}
-function getTransient(obj, key) {
-    return obj[QOjectTransientsSymbol].get(key);
-}
-function setTransient(obj, key, value) {
-    obj[QOjectTransientsSymbol].set(key, value);
-    return value;
 }
 /**
  * Creates a proxy which notifies of any writes.
@@ -2470,7 +2396,6 @@ function readWriteProxy(target, proxyMap, subs) {
 }
 const QOjectTargetSymbol = ':target:';
 const QOjectSubsSymbol = ':subs:';
-const QOjectTransientsSymbol = ':transients:';
 function unwrapProxy(proxy) {
     if (proxy && typeof proxy == 'object') {
         const value = proxy[QOjectTargetSymbol];
@@ -2486,7 +2411,9 @@ function wrap(value, proxyMap) {
             // already a proxy return;
             return value;
         }
-        verifySerializable(value);
+        if (qDev) {
+            verifySerializable(value);
+        }
         const proxy = proxyMap.get(value);
         return proxy ? proxy : readWriteProxy(value, proxyMap);
     }
@@ -2498,7 +2425,6 @@ class ReadWriteProxyHandler {
     constructor(proxy, subs = new Map()) {
         this.proxy = proxy;
         this.subs = subs;
-        this.transients = null;
     }
     getSub(el) {
         let sub = this.subs.get(el);
@@ -2512,11 +2438,14 @@ class ReadWriteProxyHandler {
             return target;
         if (prop === QOjectSubsSymbol)
             return this.subs;
-        if (prop === QOjectTransientsSymbol) {
-            return this.transients || (this.transients = new WeakMap());
-        }
         const value = target[prop];
+        if (typeof prop === 'symbol') {
+            return value;
+        }
         const invokeCtx = tryGetInvokeContext();
+        if (qDev && !invokeCtx && !qTest) {
+            logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
+        }
         if (invokeCtx && invokeCtx.subscriptions) {
             const isArray = Array.isArray(target);
             const sub = this.getSub(invokeCtx.hostElement);
@@ -2527,13 +2456,16 @@ class ReadWriteProxyHandler {
         return wrap(value, this.proxy);
     }
     set(target, prop, newValue) {
+        if (typeof prop === 'symbol') {
+            target[prop] = newValue;
+            return true;
+        }
         const unwrappedNewValue = unwrapProxy(newValue);
+        verifySerializable(unwrappedNewValue);
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((_, el) => {
-                notifyRender(el);
-            });
+            this.subs.forEach((_, el) => notifyRender(el));
             return true;
         }
         const oldValue = target[prop];
@@ -2550,6 +2482,8 @@ class ReadWriteProxyHandler {
     has(target, property) {
         if (property === QOjectTargetSymbol)
             return true;
+        if (property === QOjectSubsSymbol)
+            return true;
         return Object.prototype.hasOwnProperty.call(target, property);
     }
     ownKeys(target) {
@@ -2557,7 +2491,7 @@ class ReadWriteProxyHandler {
     }
 }
 function verifySerializable(value) {
-    if (typeof value == 'object' && value !== null) {
+    if (shouldSerialize(value) && typeof value == 'object' && value !== null) {
         if (Array.isArray(value))
             return;
         if (Object.getPrototypeOf(value) !== Object.prototype) {
@@ -2565,9 +2499,23 @@ function verifySerializable(value) {
         }
     }
 }
+const NOSERIALIZE = Symbol('NoSerialize');
+function shouldSerialize(obj) {
+    if (obj !== null && (typeof obj == 'object' || typeof obj === 'function')) {
+        const noSerialize = obj[NOSERIALIZE] === true;
+        return !noSerialize;
+    }
+    return true;
+}
+/**
+ * @alpha
+ */
+function noSerialize(input) {
+    input[NOSERIALIZE] = true;
+    return input;
+}
 
 function newQObjectMap(element) {
-    const map = new Map();
     const array = [];
     let added = element.hasAttribute(QObjAttr);
     return {
@@ -2576,12 +2524,12 @@ function newQObjectMap(element) {
             return array[index];
         },
         indexOf(obj) {
-            return map.get(obj);
+            const index = array.indexOf(obj);
+            return index === -1 ? undefined : index;
         },
         add(object) {
-            const index = map.get(object);
-            if (index === undefined) {
-                map.set(object, array.length);
+            const index = array.indexOf(object);
+            if (index === -1) {
                 array.push(object);
                 if (!added) {
                     element.setAttribute(QObjAttr, '');
@@ -2595,19 +2543,23 @@ function newQObjectMap(element) {
 }
 
 Error.stackTraceLimit = 9999;
-// TODO(misko): For better debugger experience the getProps should never store Proxy, always naked objects to make it easier to traverse in the debugger.
-const Q_IS_HYDRATED = '__isHydrated__';
+const Q_IS_RESUMED = '__isResumed__';
 const Q_CTX = '__ctx__';
-function hydrateIfNeeded(element) {
-    const doc = getDocument(element);
-    const isHydrated = doc[Q_IS_HYDRATED];
+function resumeIfNeeded(elm) {
+    var _a;
+    const doc = isDocument(elm) ? elm : getDocument(elm);
+    const root = isDocument(elm) ? elm : (_a = elm.closest('[q\\:root]')) !== null && _a !== void 0 ? _a : doc;
+    if (!root) {
+        logWarn('cant find qwik app root');
+        return;
+    }
+    const isHydrated = root[Q_IS_RESUMED];
     if (!isHydrated) {
-        doc[Q_IS_HYDRATED] = true;
-        QStore_hydrate(doc);
+        root[Q_IS_RESUMED] = true;
+        resume(root);
     }
 }
 function getContext(element) {
-    hydrateIfNeeded(element);
     let ctx = element[Q_CTX];
     if (!ctx) {
         const cache = new Map();
@@ -2618,6 +2570,7 @@ function getContext(element) {
             dirty: false,
             props: undefined,
             events: undefined,
+            component: undefined,
         };
     }
     return ctx;
@@ -2644,6 +2597,196 @@ function getEvents(ctx) {
     return events;
 }
 
+const ON_WATCH = 'on:qWatch';
+function registerOnWatch(element, props, watchFnQrl) {
+    props[ON_WATCH] = watchFnQrl;
+    invokeWatchFn(element, watchFnQrl);
+}
+const cleanupFnMap = new Map();
+async function invokeWatchFn(element, watchFnQrl) {
+    const watchFn = await qrlImport(element, watchFnQrl);
+    const previousCleanupFn = cleanupFnMap.get(watchFn);
+    cleanupFnMap.delete(watchFn);
+    if (isCleanupFn(previousCleanupFn)) {
+        try {
+            previousCleanupFn();
+        }
+        catch (e) {
+            // TODO(misko): Centralize error handling
+            logError(e);
+        }
+    }
+    throw new Error('TO IMPLEMENT');
+}
+function isCleanupFn(value) {
+    return typeof value === 'function';
+}
+
+const emitEvent = (el, eventName, detail, bubbles) => {
+    if (typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent(eventName, {
+            detail,
+            bubbles: bubbles,
+            composed: bubbles,
+        }));
+    }
+};
+
+const ON_PROP_REGEX = /on(Document|Window)?:/;
+const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
+function isOnProp(prop) {
+    return ON_PROP_REGEX.test(prop);
+}
+function isOn$Prop(prop) {
+    return ON$_PROP_REGEX.test(prop);
+}
+function isQrlFactory(value) {
+    return typeof value === 'function' && value.__brand__ === 'QRLFactory';
+}
+function qPropReadQRL(ctx, prop) {
+    const existingQRLs = getExistingQRLs(ctx, prop);
+    if (existingQRLs.length === 0) {
+        return null;
+    }
+    return () => {
+        const context = getInvokeContext();
+        const qrls = getExistingQRLs(ctx, prop);
+        return Promise.all(qrls.map(async (qrlOrPromise) => {
+            const qrl = await qrlOrPromise;
+            const qrlGuard = context.qrlGuard;
+            if (qrlGuard && !qrlGuard(qrl))
+                return;
+            if (!qrl.symbolRef) {
+                qrl.symbolRef = await qrlImport(ctx.element, qrl);
+            }
+            context.qrl = qrl;
+            emitEvent(ctx.element, 'qSymbol', { name: qrl.symbol }, true);
+            if (qrlGuard) {
+                return invokeWatchFn(ctx.element, qrl);
+            }
+            else {
+                return useInvoke(context, qrl.symbolRef);
+            }
+        }));
+    };
+}
+function qPropWriteQRL(rctx, ctx, prop, value) {
+    if (!value) {
+        return;
+    }
+    prop = prop.replace('$:', ':');
+    if (typeof value == 'string') {
+        value = parseQRL(value);
+    }
+    const existingQRLs = getExistingQRLs(ctx, prop);
+    if (Array.isArray(value)) {
+        value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
+    }
+    else if (isQrl(value)) {
+        const capture = value.capture;
+        if (capture == null) {
+            // we need to serialize the lexical scope references
+            const captureRef = value.captureRef;
+            value.capture =
+                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+        }
+        // Important we modify the array as it is cached.
+        for (let i = 0; i < existingQRLs.length; i++) {
+            const qrl = existingQRLs[i];
+            if (!isPromise(qrl) &&
+                qrl.canonicalChunk === value.canonicalChunk &&
+                qrl.symbol === value.symbol) {
+                existingQRLs.splice(i, 1);
+                i--;
+            }
+        }
+        existingQRLs.push(value);
+    }
+    else if (isQrlFactory(value)) {
+        if (existingQRLs.length === 0) {
+            // if we don't have any than we use the `qrlFactory` to create a QRLInternal
+            // (otherwise ignore the factory)
+            qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
+        }
+    }
+    else if (isPromise(value)) {
+        const writePromise = value.then((qrl) => {
+            existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
+            qPropWriteQRL(rctx, ctx, prop, qrl);
+            return qrl;
+        });
+        existingQRLs.push(writePromise);
+    }
+    else {
+        // TODO(misko): Test/better text
+        throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
+    }
+    if (prop.startsWith('on:q')) {
+        getEvents(ctx)[prop] = existingQRLs.filter((a) => !isPromise(a));
+    }
+    else {
+        const kebabProp = fromCamelToKebabCase(prop);
+        const newValue = serializeQRLs(existingQRLs, ctx);
+        if (ctx.element.getAttribute(kebabProp) !== newValue) {
+            if (rctx) {
+                setAttribute(rctx, ctx.element, kebabProp, newValue);
+            }
+            else {
+                ctx.element.setAttribute(kebabProp, newValue);
+            }
+        }
+    }
+}
+function getExistingQRLs(ctx, prop) {
+    let parts = ctx.cache.get(prop);
+    if (!parts) {
+        if (prop.startsWith('on:q')) {
+            parts = [];
+            const qrls = getEvents(ctx)[prop];
+            if (qrls) {
+                parts.push(...qrls);
+                ctx.cache.set(prop, parts);
+                return parts;
+            }
+        }
+        const attrName = fromCamelToKebabCase(prop);
+        parts = [];
+        (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
+            if (qrl) {
+                parts.push(parseQRL(qrl, ctx.element));
+            }
+        });
+        ctx.cache.set(prop, parts);
+    }
+    return parts;
+}
+function serializeQRLs(existingQRLs, ctx) {
+    const platform = getPlatform(getDocument(ctx.element));
+    const element = ctx.element;
+    return existingQRLs
+        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, platform, element)))
+        .filter((v) => !!v)
+        .join('\n');
+}
+
+// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useHostElement() {
+    const element = getInvokeContext().hostElement;
+    assertDefined(element);
+    return element;
+}
+
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
@@ -2655,7 +2798,7 @@ function getEvents(ctx) {
  * @public
  */
 // </docs>
-function onUnmount(unmountFn) {
+function onUnmountFromQrl(unmountFn) {
     throw new Error('IMPLEMENT: onUnmount' + unmountFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
@@ -2669,7 +2812,7 @@ function onUnmount(unmountFn) {
  * @public
  */
 // </docs>
-const onUnmount$ = implicit$FirstArg(onUnmount);
+const onUnmount$ = implicit$FirstArg(onUnmountFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
@@ -2677,58 +2820,30 @@ const onUnmount$ = implicit$FirstArg(onUnmount);
  * A lazy-loadable reference to a component's on resume hook.
  *
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
  * @public
  */
 // </docs>
-function onResume(resumeFn) {
-    throw new Error('IMPLEMENT: onRender' + resumeFn);
+function onResumeFromQrl(resumeFn) {
+    onWindow('load', resumeFn);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
+// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
 /**
  * A lazy-loadable reference to a component's on resume hook.
  *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
- *
- * @public
- */
-// </docs>
-const onResume$ = implicit$FirstArg(onResume);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
-/**
- * A lazy-loadable reference to a component's on hydrate hook.
- *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
+ * Invoked when the component's state is re-resumed from serialization. This allows the
  * component to do any work to re-activate itself.
  *
  * @public
  */
 // </docs>
-function onHydrate(hydrateFn) {
-    throw new Error('IMPLEMENT: onHydrate' + hydrateFn);
-}
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
+const onResume$ = implicit$FirstArg(onResumeFromQrl);
+// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
-/**
- * A lazy-loadable reference to a component's on hydrate hook.
- *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
- * component to do any work to re-activate itself.
- *
- * @public
- */
-// </docs>
-const onHydrate$ = implicit$FirstArg(onHydrate);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDehydrate instead)
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
 /**
  * A lazy-loadable reference to a component's on dehydrate hook.
  *
@@ -2740,12 +2855,12 @@ const onHydrate$ = implicit$FirstArg(onHydrate);
  * @public
  */
 // </docs>
-function onDehydrate(dehydrateFn) {
-    throw new Error('IMPLEMENT: onDehydrate' + dehydrateFn);
+function onPauseFromQrl(dehydrateFn) {
+    throw new Error('IMPLEMENT: onPause' + dehydrateFn);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
+// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDehydrate instead)
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
 /**
  * A lazy-loadable reference to a component's on dehydrate hook.
  *
@@ -2757,7 +2872,7 @@ function onDehydrate(dehydrateFn) {
  * @public
  */
 // </docs>
-const onDehydrate$ = implicit$FirstArg(onDehydrate);
+const onPause$ = implicit$FirstArg(onPauseFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#on">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#on instead)
@@ -2773,7 +2888,9 @@ const onDehydrate$ = implicit$FirstArg(onDehydrate);
  */
 // </docs>
 function on(event, eventFn) {
-    throw new Error('IMPLEMENT: on' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2790,7 +2907,9 @@ function on(event, eventFn) {
  */
 // </docs>
 function onDocument(event, eventFn) {
-    throw new Error('IMPLEMENT: onDocument' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onWindow">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2807,7 +2926,9 @@ function onDocument(event, eventFn) {
  */
 // </docs>
 function onWindow(event, eventFn) {
-    throw new Error('IMPLEMENT: onWindow' + eventFn);
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2818,7 +2939,7 @@ function onWindow(event, eventFn) {
  * @alpha
  */
 // </docs>
-function useStyles(styles) {
+function useStylesFromQrl(styles) {
     _useStyles(styles, false);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
@@ -2830,7 +2951,7 @@ function useStyles(styles) {
  * @alpha
  */
 // </docs>
-const useStyles$ = implicit$FirstArg(useStyles);
+const useStyles$ = implicit$FirstArg(useStylesFromQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
@@ -2838,7 +2959,7 @@ const useStyles$ = implicit$FirstArg(useStyles);
  * @alpha
  */
 // </docs>
-function useScopedStyles(styles) {
+function useScopedStylesFromQrl(styles) {
     _useStyles(styles, true);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
@@ -2848,11 +2969,11 @@ function useScopedStyles(styles) {
  * @alpha
  */
 // </docs>
-const useScopedStyles$ = implicit$FirstArg(useScopedStyles);
+const useScopedStyles$ = implicit$FirstArg(useScopedStylesFromQrl);
 /**
  * @public
  */
-function component(onMount, options = {}) {
+function componentFromQrl(onMount, options = {}) {
     var _a;
     const tagName = (_a = options.tagName) !== null && _a !== void 0 ? _a : 'div';
     // Return a QComponent Factory function.
@@ -2920,7 +3041,7 @@ function component(onMount, options = {}) {
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `onDehydrate`, `onHalt`, `onResume`, `on`,
+ * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
  * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
  *
  * @param onMount - Initialization closure used when the component is first created.
@@ -2931,7 +3052,7 @@ function component(onMount, options = {}) {
  */
 // </docs>
 function component$(onMount, options) {
-    return component($(onMount), options);
+    return componentFromQrl($(onMount), options);
 }
 function resolveQrl(hostElement, onMountQrl) {
     return onMountQrl.symbolRef
@@ -2979,13 +3100,19 @@ function bubble(eventType, payload) {
     return _bubble(eventType, payload || {});
 }
 
-//TODO(misko): Add public DOCS.
-//TODO(misko): Rename to dehydrate
 /**
+ * Serialize the current state of the application into DOM
+ *
  * @public
  */
-function dehydrate(document) {
-    QStore_dehydrate(document);
+function snapshot(elmOrDoc) {
+    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const data = snapshotState(elmOrDoc);
+    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : elmOrDoc;
+    const script = doc.createElement('script');
+    script.setAttribute('type', 'qwik/json');
+    script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
+    parentJSON.appendChild(script);
 }
 
 function useProps() {
@@ -3042,7 +3169,7 @@ function useProps() {
  * @public
  */
 // </docs>
-function onWatch(watchFn) {
+function onWatchFromQrl(watchFn) {
     registerOnWatch(useHostElement(), useProps(), watchFn);
 }
 // <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
@@ -3090,7 +3217,7 @@ function onWatch(watchFn) {
  * @public
  */
 // </docs>
-const onWatch$ = implicit$FirstArg(onWatch);
+const onWatch$ = implicit$FirstArg(onWatchFromQrl);
 
 /**
  * Use to render asynchronous (`Promise`) values.
@@ -3239,25 +3366,26 @@ function render(parent, jsxNode) {
         jsxNode = jsx(jsxNode, null);
     }
     const doc = isDocument(parent) ? parent : getDocument(parent);
-    const elm = parent;
     const stylesParent = isDocument(parent) ? parent.head : parent.parentElement;
+    resumeIfNeeded(parent);
     const ctx = {
-        operations: [],
         doc,
-        component: undefined,
-        hostElements: new Set(),
         globalState: getRenderingState(doc),
-        roots: [elm],
+        hostElements: new Set(),
+        operations: [],
+        roots: [parent],
+        component: undefined,
         perf: {
             visited: 0,
             timing: [],
         },
     };
-    return then(visitJsxNode(ctx, elm, processNode(jsxNode), false), () => {
+    return then(visitJsxNode(ctx, parent, processNode(jsxNode), false), () => {
         executeContext(ctx);
         if (stylesParent) {
             injectQwikSlotCSS(stylesParent);
         }
+        injectQVersion(parent);
         if (qDev) {
             if (typeof window !== 'undefined' && window.document != null) {
                 printRenderStats(ctx);
@@ -3271,6 +3399,11 @@ function injectQwikSlotCSS(parent) {
     style.setAttribute('id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
     parent.insertBefore(style, parent.firstChild);
+}
+function injectQVersion(parent) {
+    const element = isDocument(parent) ? parent.documentElement : parent;
+    element.setAttribute('q:version', version || '');
+    element.setAttribute('q:container', '');
 }
 
 /**
@@ -3327,6 +3460,7 @@ function useLexicalScope() {
     const qrl = (_a = context.qrl) !== null && _a !== void 0 ? _a : parseQRL(decodeURIComponent(String(useURL())));
     if (qrl.captureRef == null) {
         const el = context.element;
+        resumeIfNeeded(el);
         const ctx = getContext(el);
         assertDefined(qrl.capture);
         qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
@@ -3340,8 +3474,8 @@ function useLexicalScope() {
 /**
  * Creates a object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
@@ -3361,18 +3495,6 @@ function useStore(initialState) {
     return qObject(initialState, getProxyMap(useDocument()));
 }
 
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useTransient">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useTransient instead)
-/**
- * @public
- */
-// </docs>
-function useTransient(obj, factory, ...args) {
-    const existing = getTransient(obj, factory);
-    return existing || setTransient(obj, factory, factory.apply(obj, args));
-}
-
 /**
  * @license
  * Copyright Builder.io, Inc. All Rights Reserved.
@@ -3383,7 +3505,7 @@ function useTransient(obj, factory, ...args) {
 /**
  * @alpha
  */
-const version = "0.0.18-0-dev20220311014644";
+const version = "0.0.18-3-dev20220321204323";
 
 exports.$ = $;
 exports.Async = Async;
@@ -3392,42 +3514,40 @@ exports.Host = Host;
 exports.SkipRerender = SkipRerender;
 exports.Slot = Slot;
 exports.bubble = bubble;
-exports.component = component;
 exports.component$ = component$;
-exports.dehydrate = dehydrate;
+exports.componentFromQrl = componentFromQrl;
 exports.getPlatform = getPlatform;
 exports.h = h;
 exports.implicit$FirstArg = implicit$FirstArg;
 exports.jsx = jsx;
 exports.jsxDEV = jsx;
 exports.jsxs = jsx;
+exports.noSerialize = noSerialize;
 exports.notifyRender = notifyRender;
 exports.on = on;
-exports.onDehydrate = onDehydrate;
-exports.onDehydrate$ = onDehydrate$;
 exports.onDocument = onDocument;
-exports.onHydrate = onHydrate;
-exports.onHydrate$ = onHydrate$;
-exports.onResume = onResume;
+exports.onPause$ = onPause$;
+exports.onPauseFromQrl = onPauseFromQrl;
 exports.onResume$ = onResume$;
-exports.onUnmount = onUnmount;
+exports.onResumeFromQrl = onResumeFromQrl;
 exports.onUnmount$ = onUnmount$;
-exports.onWatch = onWatch;
+exports.onUnmountFromQrl = onUnmountFromQrl;
 exports.onWatch$ = onWatch$;
+exports.onWatchFromQrl = onWatchFromQrl;
 exports.onWindow = onWindow;
 exports.qrl = qrl;
 exports.qrlImport = qrlImport;
 exports.render = render;
 exports.setPlatform = setPlatform;
+exports.snapshot = snapshot;
 exports.useDocument = useDocument;
 exports.useEvent = useEvent;
 exports.useHostElement = useHostElement;
 exports.useLexicalScope = useLexicalScope;
-exports.useScopedStyles = useScopedStyles;
 exports.useScopedStyles$ = useScopedStyles$;
+exports.useScopedStylesFromQrl = useScopedStylesFromQrl;
 exports.useStore = useStore;
-exports.useStyles = useStyles;
 exports.useStyles$ = useStyles$;
-exports.useTransient = useTransient;
+exports.useStylesFromQrl = useStylesFromQrl;
 exports.version = version;
 //# sourceMappingURL=core.cjs.map
