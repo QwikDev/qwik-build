@@ -2218,7 +2218,11 @@ function stringifyClassOrStyle(obj, isClass) {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
-                    text += isClass ? (value ? sep + key : '') : sep + key + ':' + value;
+                    text += isClass
+                        ? value
+                            ? sep + key
+                            : ''
+                        : sep + fromCamelToKebabCase(key) + ':' + value;
                     sep = isClass ? ' ' : ';';
                 }
             }
@@ -3501,7 +3505,7 @@ function useStore(initialState) {
 /**
  * @alpha
  */
-const version = "0.0.18-3-dev20220321173311";
+const version = "0.0.18-3-dev20220321210445";
 
 exports.$ = $;
 exports.Async = Async;

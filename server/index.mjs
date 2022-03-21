@@ -9288,7 +9288,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-3-dev20220321173311",
+  qwik: "0.0.18-3-dev20220321210445",
   qwikDom: "2.1.11"
 };
 export {

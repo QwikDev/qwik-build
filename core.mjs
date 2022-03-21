@@ -2183,7 +2183,11 @@ function stringifyClassOrStyle(obj, isClass) {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
-                    text += isClass ? (value ? sep + key : '') : sep + key + ':' + value;
+                    text += isClass
+                        ? value
+                            ? sep + key
+                            : ''
+                        : sep + fromCamelToKebabCase(key) + ':' + value;
                     sep = isClass ? ' ' : ';';
                 }
             }
@@ -3466,7 +3470,7 @@ function useStore(initialState) {
 /**
  * @alpha
  */
-const version = "0.0.18-3-dev20220321173311";
+const version = "0.0.18-3-dev20220321210445";
 
 export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component$, componentFromQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, notifyRender, on, onDocument, onPause$, onPauseFromQrl, onResume$, onResumeFromQrl, onUnmount$, onUnmountFromQrl, onWatch$, onWatchFromQrl, onWindow, qrl, qrlImport, render, setPlatform, snapshot, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesFromQrl, useStore, useStyles$, useStylesFromQrl, version };
 //# sourceMappingURL=core.mjs.map
