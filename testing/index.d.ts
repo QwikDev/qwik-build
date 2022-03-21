@@ -34,7 +34,7 @@ export declare function createTimer(): () => number;
  * @public
  */
 export declare interface DocumentOptions {
-    url?: URL;
+    url?: URL | string;
     debug?: boolean;
 }
 
@@ -147,7 +147,7 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
     /**
      * Defaults to `true`
      */
-    dehydrate?: boolean;
+    snapshot?: boolean;
 }
 
 /**
