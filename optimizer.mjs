@@ -16,7 +16,7 @@ var qTest = void 0 !== globalThis.describe;
 var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
 
 var logWarn = (message, ...optionalParams) => {
-  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+  console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
 };
 
 var path_exports = {};
@@ -1010,7 +1010,7 @@ function fixSSRInput(config, optimizer) {
 }
 
 var versions = {
-  qwik: "0.0.18-3-dev20220318133822"
+  qwik: "0.0.18-3-dev20220321173311"
 };
 
 export { createOptimizer, qwikRollup, qwikVite, versions };

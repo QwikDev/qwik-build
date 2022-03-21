@@ -29,17 +29,22 @@
             bubbles: !0,
             composed: !0
         }));
-        const dispatch = async (element, eventName, ev, url, previousCtx, attrValue) => {
+        const dispatch = async (element, eventName, ev) => {
             for (const on of ON_PREFIXES) {
-                attrValue = element.getAttribute(on + eventName) || "";
+                const attrValue = element.getAttribute(on + eventName);
+                if (!attrValue) {
+                    continue;
+                }
+                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                 for (const qrl of attrValue.split("\n")) {
-                    if (url = qrlResolver(doc, element, qrl)) {
+                    const url = qrlResolver(doc, element, qrl);
+                    if (url) {
                         const symbolName = getSymbolName(url);
                         const handler = (window[url.pathname] || await import(String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
-                        previousCtx = doc.__q_context__;
+                        const previousCtx = doc.__q_context__;
                         try {
                             doc.__q_context__ = [ element, ev, url ];
-                            handler(element, ev, url);
+                            handler(ev, element, url);
                         } finally {
                             doc.__q_context__ = previousCtx;
                             symbolUsed(element, symbolName);

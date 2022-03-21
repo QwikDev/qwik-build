@@ -147,7 +147,7 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
     /**
      * Defaults to `true`
      */
-    dehydrate?: boolean;
+    snapshot?: boolean;
 }
 
 /**
