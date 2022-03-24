@@ -1,16 +1,8 @@
-const qrlResolver = (doc, element, eventUrl, _url, _base) => {
-    if (void 0 === eventUrl) {
-        if (element) {
-            _url = element.getAttribute("q:base");
-            _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-        } else {
-            _url = doc.baseURI;
-        }
-    } else if (eventUrl) {
-        _url = eventUrl;
-        _base = qrlResolver(doc, element.closest("[q\\:base]"));
-    }
-    return _url ? new URL(_url, _base) : void 0;
+const qrlResolver = (element, eventUrl) => {
+    const doc = element.ownerDocument;
+    const containerEl = element.closest("[q\\:container]");
+    const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
+    return new URL(eventUrl, base);
 };
 
 const setupPrefetching = (win, doc, IntersectionObserver) => {
@@ -24,7 +16,7 @@ const setupPrefetching = (win, doc, IntersectionObserver) => {
                     const name = attr.name;
                     const value = attr.value;
                     if (name.startsWith("on:") && value) {
-                        const url = qrlResolver(doc, element, value);
+                        const url = qrlResolver(element, value);
                         url.hash = url.search = "";
                         const key = url.toString() + ".js";
                         if (!qrlCache[key]) {
