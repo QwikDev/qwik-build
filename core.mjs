@@ -632,7 +632,7 @@ function codeToText(code) {
         [QError.Event_emitEventCouldNotFindListener_event_element]: "Re-emitting event '{}' but no listener found at '{}' or any of its parents.",
     }[code];
     let textCode = '000' + code;
-    textCode = textCode.substr(textCode.length - 3);
+    textCode = textCode.slice(-3);
     return `${area}(Q-${textCode}): ${text}`;
 }
 
@@ -3357,7 +3357,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-4-dev20220324125337";
+const version = "0.0.18-4-dev20220324165048";
 
 /**
  * Render JSX.
