@@ -40,7 +40,9 @@
                     const url = qrlResolver(doc, element, qrl);
                     if (url) {
                         const symbolName = getSymbolName(url);
-                        const handler = (window[url.pathname] || await import(String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
+                        const handler = (window[url.pathname] || await import(
+                        /* @vite-ignore */
+                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
                         const previousCtx = doc.__q_context__;
                         try {
                             doc.__q_context__ = [ element, ev, url ];

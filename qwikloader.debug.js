@@ -1,4 +1,11 @@
 !function() {
+    /**
+ * @license
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
     const qrlResolver = (doc, element, eventUrl, _url, _base) => {
         if (void 0 === eventUrl) {
             if (element) {
@@ -40,7 +47,9 @@
                     const url = qrlResolver(doc, element, qrl);
                     if (url) {
                         const symbolName = getSymbolName(url);
-                        const handler = (window[url.pathname] || await import(String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
+                        const handler = (window[url.pathname] || await import(
+                        /* @vite-ignore */
+                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
                         const previousCtx = doc.__q_context__;
                         try {
                             doc.__q_context__ = [ element, ev, url ];

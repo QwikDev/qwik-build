@@ -148,6 +148,11 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
      * Defaults to `true`
      */
     snapshot?: boolean;
+    /**
+     * When set,
+     * Defaults to `undefined`
+     */
+    fragmentTagName?: string;
 }
 
 /**

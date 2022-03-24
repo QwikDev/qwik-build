@@ -466,11 +466,6 @@ declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type Booleanish = boolean | 'true' | 'false';
 
-/**
- * @public
- */
-export declare function bubble<PAYLOAD>(eventType: string, payload?: PAYLOAD): void;
-
 declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -529,7 +524,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
- *       <button on$:click={() => (state.count += props.step || 1)}>+</button>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
  *   ));
  * });
@@ -558,9 +553,9 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
+export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PublicProps<PROPS>) => JSXNode<PROPS>;
 
-declare interface ComponentBaseProps extends QwikEvents {
+declare interface ComponentBaseProps {
     class?: string | {
         [className: string]: boolean;
     };
@@ -569,7 +564,9 @@ declare interface ComponentBaseProps extends QwikEvents {
     key?: string | number;
     id?: string | undefined;
     'q:slot'?: string;
-    [key: `h:${string}`]: any;
+    [key: `host:on${string}$`]: EventHandler_2;
+    [key: `host:on${string}Qrl`]: QrlEvent | QrlEvent[];
+    [key: `host:${string}`]: any;
     children?: JSXChildren;
 }
 
@@ -589,6 +586,13 @@ declare interface ComponentCtx {
     styleClass: string | undefined;
     styleHostClass: string | undefined;
     slots: JSXNode[];
+}
+
+/**
+ * @public
+ */
+export declare interface ComponentOptions {
+    tagName?: string;
 }
 
 /**
@@ -618,7 +622,7 @@ declare interface ComponentCtx {
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
- *       <button on$:click={() => (state.count += props.step || 1)}>+</button>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
  *   ));
  * });
@@ -647,14 +651,7 @@ declare interface ComponentCtx {
  *
  * @public
  */
-export declare function componentFromQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
-
-/**
- * @public
- */
-export declare interface ComponentOptions {
-    tagName?: string;
-}
+export declare function componentQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PublicProps<PROPS>) => JSXNode<PROPS>;
 
 /**
  * @public
@@ -663,7 +660,7 @@ export declare interface CorePlatform {
     /**
      * Dynamic import()
      */
-    importSymbol: (element: Element, url: string | URL, symbol: string) => Promise<any>;
+    importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
      * Platform specific queue, such as process.nextTick() for Node
      * and requestAnimationFrame() for the browser.
@@ -713,7 +710,12 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
-declare type EventHandler = (event: Event, element: Element) => any;
+/**
+ * @public
+ */
+export declare type EventHandler<T> = QRL<(value: T) => any>;
+
+declare type EventHandler_2 = (event: Event, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -795,7 +797,7 @@ export declare namespace h {
  * servers that purpose.
  * @public
  */
-export declare const Host: FunctionComponent<Record<string, any>>;
+export declare const Host: FunctionComponent<HTMLAttributes<HTMLElement>>;
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
@@ -1319,7 +1321,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
- *       <button on$:click={() => store.count++}>+</button>
+ *       <button onClick$={() => store.count++}>+</button>
  *     </div>
  *   ));
  * });
@@ -1354,7 +1356,7 @@ export declare interface Observer {
      *       <span>
      *         {store.count} / {store.doubleCount}
      *       </span>
-     *       <button on$:click={() => store.count++}>+</button>
+     *       <button onClick$={() => store.count++}>+</button>
      *     </div>
      *   ));
      * });
@@ -1373,6 +1375,10 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
+
+declare type On$Props<T extends {}> = {
+    [K in keyof T as K extends `${infer A}Qrl` ? NonNullable<T[K]> extends QRL ? `${A}$` : never : never]?: NonNullable<T[K]> extends QRL<infer B> ? B : never;
+};
 
 /**
  * Register a listener on the current component's host element.
@@ -1425,7 +1431,7 @@ export declare const onPause$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onPauseFromQrl(dehydrateFn: QRL<() => void>): void;
+export declare function onPauseQrl(dehydrateFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -1445,7 +1451,7 @@ export declare const onResume$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onResumeFromQrl(resumeFn: QRL<() => void>): void;
+export declare function onResumeQrl(resumeFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's destroy hook.
@@ -1463,7 +1469,7 @@ export declare const onUnmount$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onUnmountFromQrl(unmountFn: QRL<() => void>): void;
+export declare function onUnmountQrl(unmountFn: QRL<() => void>): void;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -1496,7 +1502,7 @@ export declare function onUnmountFromQrl(unmountFn: QRL<() => void>): void;
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
- *       <button on$:click={() => store.count++}>+</button>
+ *       <button onClick$={() => store.count++}>+</button>
  *     </div>
  *   ));
  * });
@@ -1539,7 +1545,7 @@ export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
- *       <button on$:click={() => store.count++}>+</button>
+ *       <button onClick$={() => store.count++}>+</button>
  *     </div>
  *   ));
  * });
@@ -1549,7 +1555,7 @@ export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare function onWatchFromQrl(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
+export declare function onWatchQrl(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
 
 /**
  * Register a listener on `window`.
@@ -1767,6 +1773,8 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  */
 export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
 
+declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
+
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
  *
@@ -1865,7 +1873,7 @@ export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends
  *
  * ```
  * <div q:base="/build/">
- *   <button on:click="./chunk-abc.js#onClick">...</button>
+ *   <button onClick="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
@@ -1890,6 +1898,9 @@ export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends
  */
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
+    resolve(container?: Element): Promise<TYPE>;
+    invoke<ARGS extends any[]>(...args: ARGS): Promise<TYPE extends (...args: any) => any ? ReturnType<TYPE> : never>;
+    invokeFn(el?: Element): (...args: any[]) => any;
 }
 
 /**
@@ -1905,22 +1916,9 @@ export declare interface QRL<TYPE = any> {
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
  * @public
  */
-export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
+export declare function qrl<T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null): QRL<T>;
 
-declare type QrlEvent = QRL<EventHandler>;
-
-/**
- * Lazy-load a `QRL` symbol and return the lazy-loaded value.
- *
- * See: `QRL`
- *
- * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
- * account.
- * @param qrl - QRL to load.
- * @returns A resolved QRL value as a Promise.
- * @public
- */
-export declare function qrlImport<T>(element: Element, qrl: QRL<T>): Promise<T>;
+declare type QrlEvent = QRL<EventHandler_2>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1940,12 +1938,8 @@ export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
 
 declare interface QwikEvents {
-    [key: `on$:${string}`]: EventHandler;
-    [key: `on:${string}`]: QrlEvent | QrlEvent[];
-    [key: `onDocument$:${string}`]: EventHandler;
-    [key: `onDocument:${string}`]: QrlEvent | QrlEvent[];
-    [key: `onWindow$:${string}`]: EventHandler;
-    [key: `onWindow:${string}`]: QrlEvent | QrlEvent[];
+    [key: `on${string}$`]: EventHandler_2 | undefined;
+    [key: `on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
 }
 
 /**
@@ -2450,6 +2444,11 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare function unwrapSubscriber<T extends {}>(obj: T): any;
+
+/**
  * @public
  */
 export declare function useDocument(): Document;
@@ -2494,7 +2493,7 @@ export declare const useScopedStyles$: (first: string) => void;
 /**
  * @alpha
  */
-export declare function useScopedStylesFromQrl(styles: QRL<string>): void;
+export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
  * Creates a object that Qwik can track across serializations.
@@ -2509,7 +2508,7 @@ export declare function useScopedStylesFromQrl(styles: QRL<string>): void;
  * ```typescript
  * export const Counter = component$(() => {
  *   const store = useStore({ count: 0 });
- *   return $(() => <button on$:click={() => store.count++}>{store.count}</button>);
+ *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
  * });
  * ```
  *
@@ -2529,7 +2528,12 @@ export declare const useStyles$: (first: string) => void;
  *
  * @alpha
  */
-export declare function useStylesFromQrl(styles: QRL<string>): void;
+export declare function useStylesQrl(styles: QRL<string>): void;
+
+/**
+ * @alpha
+ */
+export declare function useSubscriber<T extends {}>(obj: T): T;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -2570,5 +2574,10 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 }
+
+/**
+ * @alpha
+ */
+export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Element): any;
 
 export { }
