@@ -122,16 +122,18 @@ const ComponentScopedStyles = 'q:sstyle';
 /**
  * Component style host prefix
  */
-const ComponentStylesPrefixHost = '📦';
+const ComponentStylesPrefixHost = '💎';
 /**
  * Component style content prefix
  */
-const ComponentStylesPrefixContent = '🏷️';
+const ComponentStylesPrefixContent = '⭐️';
 /**
  * `<some-element q:slot="...">`
  */
 const QSlotAttr = 'q:slot';
 const QObjAttr = 'q:obj';
+const QContainerAttr = 'q:container';
+const QContainerSelector = '[q\\:container]';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
 
@@ -146,6 +148,9 @@ function getDocument(node) {
     if (typeof document !== 'undefined') {
         return document;
     }
+    if (node.nodeType === 9) {
+        return node;
+    }
     let doc = node.ownerDocument;
     while (doc && doc.nodeType !== 9) {
         doc = doc.parentNode;
@@ -154,6 +159,9 @@ function getDocument(node) {
     return doc;
 }
 
+function isStyleTask(obj) {
+    return obj && typeof obj === 'object' && obj.type === 'style';
+}
 let _context;
 function tryGetInvokeContext() {
     if (!_context) {
@@ -233,6 +241,9 @@ function getHostElement(el) {
         node = node.parentElement;
     }
     return node;
+}
+function getContainer(el) {
+    return el.closest(QContainerSelector);
 }
 
 function isQrl(value) {
@@ -328,46 +339,6 @@ const promiseAll = (promises) => {
     return promises;
 };
 
-/**
- * @private
- */
-function isHtmlElement(node) {
-    return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
-}
-/**
- * `Node.type` enumeration
- */
-var NodeType;
-(function (NodeType) {
-    NodeType[NodeType["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
-    NodeType[NodeType["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
-    NodeType[NodeType["TEXT_NODE"] = 3] = "TEXT_NODE";
-    NodeType[NodeType["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
-    NodeType[NodeType["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
-    // document, such as <?xml-stylesheet … ?>.
-    NodeType[NodeType["COMMENT_NODE"] = 8] = "COMMENT_NODE";
-    NodeType[NodeType["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
-    NodeType[NodeType["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
-    NodeType[NodeType["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
-})(NodeType || (NodeType = {}));
-
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-function isNode$1(value) {
-    return value && typeof value.nodeType == 'number';
-}
-function isDocument(value) {
-    return value && value.nodeType == NodeType.DOCUMENT_NODE;
-}
-function isElement(value) {
-    return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
-}
-
 const createPlatform = (doc) => {
     const moduleCache = new Map();
     return {
@@ -417,25 +388,10 @@ const createPlatform = (doc) => {
  * @returns fully qualified URL.
  */
 function toUrl(doc, element, url) {
-    let _url;
-    let _base = undefined;
-    if (url === undefined) {
-        //  recursive call
-        if (element) {
-            _url = element.getAttribute('q:base');
-            _base = toUrl(doc, element.parentNode && element.parentNode.closest('[q\\:base]'));
-        }
-        else {
-            _url = doc.baseURI;
-        }
-    }
-    else if (url) {
-        (_url = url), (_base = toUrl(doc, element.closest('[q\\:base]')));
-    }
-    else {
-        throw new Error('INTERNAL ERROR');
-    }
-    return new URL(String(_url), _base);
+    var _a;
+    const containerEl = getContainer(element);
+    const base = new URL((_a = containerEl === null || containerEl === void 0 ? void 0 : containerEl.getAttribute('q:base')) !== null && _a !== void 0 ? _a : doc.baseURI, doc.baseURI);
+    return new URL(url, base);
 }
 /**
  * @public
@@ -445,7 +401,7 @@ const setPlatform = (doc, plt) => (doc[DocumentPlatform] = plt);
  * @public
  */
 const getPlatform = (docOrNode) => {
-    const doc = (isDocument(docOrNode) ? docOrNode : getDocument(docOrNode));
+    const doc = getDocument(docOrNode);
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
 };
 const DocumentPlatform = /*@__PURE__*/ Symbol();
@@ -467,6 +423,29 @@ function useHostElement() {
     assertDefined(element);
     return element;
 }
+
+/**
+ * @private
+ */
+function isHtmlElement(node) {
+    return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
+}
+/**
+ * `Node.type` enumeration
+ */
+var NodeType;
+(function (NodeType) {
+    NodeType[NodeType["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
+    NodeType[NodeType["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
+    NodeType[NodeType["TEXT_NODE"] = 3] = "TEXT_NODE";
+    NodeType[NodeType["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
+    NodeType[NodeType["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
+    // document, such as <?xml-stylesheet … ?>.
+    NodeType[NodeType["COMMENT_NODE"] = 8] = "COMMENT_NODE";
+    NodeType[NodeType["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
+    NodeType[NodeType["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
+    NodeType[NodeType["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
+})(NodeType || (NodeType = {}));
 
 /**
  * @license
@@ -671,6 +650,23 @@ function codeToText(code) {
     return `${area}(Q-${textCode}): ${text}`;
 }
 
+/**
+ * @license
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
+function isNode$1(value) {
+    return value && typeof value.nodeType == 'number';
+}
+function isDocument(value) {
+    return value && value.nodeType == NodeType.DOCUMENT_NODE;
+}
+function isElement(value) {
+    return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
+}
+
 const UNDEFINED_PREFIX = '\u0010';
 const QRL_PREFIX = '\u0011';
 function resume(elmOrDoc) {
@@ -679,7 +675,7 @@ function resume(elmOrDoc) {
         // logWarn('Skipping hydration because parent element is not q:container');
         return;
     }
-    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const doc = getDocument(elmOrDoc);
     const isDoc = isDocument(elmOrDoc) || elmOrDoc === doc.documentElement;
     const parentJSON = isDoc ? doc.body : parentElm;
     const script = getQwikJSON(parentJSON);
@@ -729,7 +725,7 @@ function resume(elmOrDoc) {
     });
 }
 function snapshotState(elmOrDoc) {
-    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const doc = getDocument(elmOrDoc);
     const parentElm = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
     const proxyMap = getProxyMap(doc);
     const objSet = new Set();
@@ -1036,7 +1032,7 @@ function collectQObjects(obj, seen) {
     }
 }
 function isContainer(el) {
-    return el.hasAttribute('q:container');
+    return el.hasAttribute(QContainerAttr);
 }
 function hasQObj(el) {
     return el.hasAttribute(QObjAttr);
@@ -1215,18 +1211,11 @@ function serializeQRLs(existingQRLs, ctx) {
 Error.stackTraceLimit = 9999;
 const Q_IS_RESUMED = '__isResumed__';
 const Q_CTX = '__ctx__';
-function resumeIfNeeded(elm) {
-    var _a;
-    const doc = isDocument(elm) ? elm : getDocument(elm);
-    const root = isDocument(elm) ? elm : (_a = elm.closest('[q\\:container]')) !== null && _a !== void 0 ? _a : doc;
-    if (!root) {
-        logWarn('cant find qwik app root');
-        return;
-    }
-    const isHydrated = root[Q_IS_RESUMED];
+function resumeIfNeeded(containerEl) {
+    const isHydrated = containerEl[Q_IS_RESUMED];
     if (!isHydrated) {
-        root[Q_IS_RESUMED] = true;
-        resume(root);
+        containerEl[Q_IS_RESUMED] = true;
+        resume(containerEl);
     }
 }
 function getContext(element) {
@@ -1939,9 +1928,14 @@ function createElm(rctx, vnode, isSvg) {
     if (isComponent) {
         // Run mount hook
         const renderQRLPromise = props[OnRenderProp](elm);
-        wait = then(renderQRLPromise, (renderQrl) => {
-            ctx.renderQrl = renderQrl;
-            ctx.refMap.add(renderQrl);
+        wait = then(renderQRLPromise, (output) => {
+            ctx.renderQrl = output.renderQRL;
+            output.waitOn.forEach((task) => {
+                if (isStyleTask(task)) {
+                    appendStyle(rctx, elm, task);
+                }
+            });
+            ctx.refMap.add(output.renderQRL);
             return firstRenderComponent(rctx, ctx);
         });
     }
@@ -2162,6 +2156,24 @@ function insertBefore(ctx, parent, newChild, refChild) {
     });
     return newChild;
 }
+function appendStyle(ctx, hostElement, styleTask) {
+    const fn = () => {
+        const containerEl = ctx.containerEl;
+        if (!containerEl.querySelector(`style[q\\:style="${styleTask.scope}"]`)) {
+            const style = ctx.doc.createElement('style');
+            const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head : containerEl;
+            style.setAttribute('q:style', styleTask.scope);
+            style.textContent = styleTask.content;
+            stylesParent.insertBefore(style, containerEl.firstChild);
+        }
+    };
+    ctx.operations.push({
+        el: hostElement,
+        operation: 'append-style',
+        args: [styleTask],
+        fn,
+    });
+}
 function prepend(ctx, parent, newChild) {
     const fn = () => {
         parent.insertBefore(newChild, parent.firstChild);
@@ -2307,14 +2319,13 @@ function stringifyClassOrStyle(obj, isClass) {
  * @returns A promise which is resolved when the component has been rendered.
  * @public
  */
-// TODO(misko): tests
-// TODO(misko): this should take QComponent as well.
 function notifyRender(hostElement) {
     assertDefined(hostElement.getAttribute(QHostAttr));
-    const doc = getDocument(hostElement);
-    resumeIfNeeded(hostElement);
+    const containerEl = getContainer(hostElement);
+    assertDefined(containerEl);
+    resumeIfNeeded(containerEl);
     const ctx = getContext(hostElement);
-    const state = getRenderingState(doc);
+    const state = getRenderingState(containerEl);
     if (ctx.dirty) {
         // TODO
         return state.renderPromise;
@@ -2335,20 +2346,20 @@ function notifyRender(hostElement) {
     }
     else {
         state.hostsNext.add(hostElement);
-        return scheduleFrame(doc, state);
+        return scheduleFrame(containerEl, state);
     }
 }
-function scheduleFrame(doc, state) {
+function scheduleFrame(containerEl, state) {
     if (state.renderPromise === undefined) {
-        state.renderPromise = getPlatform(doc).nextTick(() => renderMarked(doc, state));
+        state.renderPromise = getPlatform(containerEl).nextTick(() => renderMarked(containerEl, state));
     }
     return state.renderPromise;
 }
 const SCHEDULE = Symbol('Render state');
-function getRenderingState(doc) {
-    let set = doc[SCHEDULE];
+function getRenderingState(containerEl) {
+    let set = containerEl[SCHEDULE];
     if (!set) {
-        doc[SCHEDULE] = set = {
+        containerEl[SCHEDULE] = set = {
             hostsNext: new Set(),
             hostsStaging: new Set(),
             renderPromise: undefined,
@@ -2357,10 +2368,11 @@ function getRenderingState(doc) {
     }
     return set;
 }
-async function renderMarked(doc, state) {
+async function renderMarked(containerEl, state) {
     state.hostsRendering = new Set(state.hostsNext);
     state.hostsNext.clear();
-    const platform = getPlatform(doc);
+    const doc = getDocument(containerEl);
+    const platform = getPlatform(containerEl);
     const renderingQueue = Array.from(state.hostsRendering);
     sortNodes(renderingQueue);
     const ctx = {
@@ -2369,6 +2381,7 @@ async function renderMarked(doc, state) {
         hostElements: new Set(),
         operations: [],
         roots: [],
+        containerEl,
         component: undefined,
         perf: {
             visited: 0,
@@ -2389,7 +2402,7 @@ async function renderMarked(doc, state) {
                 printRenderStats(ctx);
             }
         }
-        postRendering(doc, state);
+        postRendering(containerEl, state);
         return ctx;
     }
     return platform.raf(() => {
@@ -2399,11 +2412,11 @@ async function renderMarked(doc, state) {
                 printRenderStats(ctx);
             }
         }
-        postRendering(doc, state);
+        postRendering(containerEl, state);
         return ctx;
     });
 }
-function postRendering(doc, state) {
+function postRendering(containerEl, state) {
     // Move elements from staging to nextRender
     state.hostsStaging.forEach((el) => {
         state.hostsNext.add(el);
@@ -2413,7 +2426,7 @@ function postRendering(doc, state) {
     state.hostsRendering = undefined;
     state.renderPromise = undefined;
     if (state.hostsNext.size > 0) {
-        scheduleFrame(doc, state);
+        scheduleFrame(containerEl, state);
     }
 }
 function sortNodes(elements) {
@@ -3015,13 +3028,16 @@ function componentQrl(onMount, options = {}) {
     // Return a QComponent Factory function.
     return function QComponent(props, key) {
         const onRenderFactory = async (hostElement) => {
-            // Turn function into QRL
             const onMountQrl = toQrlOrError(onMount);
             const onMountFn = await resolveQrl(hostElement, onMountQrl);
             const ctx = getContext(hostElement);
             const props = getProps(ctx);
             const invokeCtx = newInvokeContext(getDocument(hostElement), hostElement, hostElement);
-            return useInvoke(invokeCtx, onMountFn, props);
+            const renderQRL = (await useInvoke(invokeCtx, onMountFn, props));
+            return {
+                renderQRL,
+                waitOn: await promiseAll(invokeCtx.waitOn || []),
+            };
         };
         onRenderFactory.__brand__ = 'QRLFactory';
         return jsx(tagName, Object.assign({ [OnRenderProp]: onRenderFactory }, props), key);
@@ -3105,14 +3121,12 @@ function _useStyles(styles, scoped) {
         hostElement.setAttribute(ComponentScopedStyles, styleId);
     }
     useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
-        const document = getDocument(hostElement);
-        const head = document.querySelector('head');
-        if (head && !head.querySelector(`style[q\\:style="${styleId}"]`)) {
-            const style = document.createElement('style');
-            style.setAttribute('q:style', styleId);
-            style.textContent = scoped ? styleText.replace(/�/g, styleId) : styleText;
-            head.appendChild(style);
-        }
+        const task = {
+            type: 'style',
+            scope: styleId,
+            content: scoped ? styleText.replace(/�/g, styleId) : styleText,
+        };
+        return task;
     }));
 }
 
@@ -3122,7 +3136,7 @@ function _useStyles(styles, scoped) {
  * @public
  */
 function snapshot(elmOrDoc) {
-    const doc = isDocument(elmOrDoc) ? elmOrDoc : getDocument(elmOrDoc);
+    const doc = getDocument(elmOrDoc);
     const data = snapshotState(elmOrDoc);
     const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : elmOrDoc;
     const script = doc.createElement('script');
@@ -3392,7 +3406,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-4-dev20220324165048";
+const version = "0.0.18-4-dev20220324173735";
 
 /**
  * Render JSX.
@@ -3411,21 +3425,23 @@ function render(parent, jsxNode) {
     if (!isJSXNode(jsxNode)) {
         jsxNode = jsx(jsxNode, null);
     }
-    const doc = isDocument(parent) ? parent : getDocument(parent);
-    resumeIfNeeded(parent);
+    const doc = getDocument(parent);
+    const containerEl = getElement(parent);
+    resumeIfNeeded(containerEl);
+    injectQVersion(containerEl);
     const ctx = {
         doc,
-        globalState: getRenderingState(doc),
+        globalState: getRenderingState(containerEl),
         hostElements: new Set(),
         operations: [],
         roots: [parent],
         component: undefined,
+        containerEl,
         perf: {
             visited: 0,
             timing: [],
         },
     };
-    injectQVersion(parent);
     return then(visitJsxNode(ctx, parent, processNode(jsxNode), false), () => {
         executeContext(ctx);
         if (!qTest) {
@@ -3439,18 +3455,20 @@ function render(parent, jsxNode) {
         return ctx;
     });
 }
-function injectQwikSlotCSS(parent) {
-    const doc = isDocument(parent) ? parent : getDocument(parent);
-    const element = isDocument(parent) ? parent.head : parent;
+function injectQwikSlotCSS(docOrElm) {
+    const doc = getDocument(docOrElm);
+    const element = isDocument(docOrElm) ? docOrElm.head : docOrElm;
     const style = doc.createElement('style');
     style.setAttribute('id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
     element.insertBefore(style, element.firstChild);
 }
-function injectQVersion(parent) {
-    const element = isDocument(parent) ? parent.documentElement : parent;
-    element.setAttribute('q:version', version || '');
-    element.setAttribute('q:container', '');
+function getElement(docOrElm) {
+    return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
+}
+function injectQVersion(containerEl) {
+    containerEl.setAttribute('q:version', version || '');
+    containerEl.setAttribute(QContainerAttr, '');
 }
 
 /**
@@ -3513,7 +3531,7 @@ function useLexicalScope() {
     if (qrl.captureRef == null) {
         const el = context.element;
         assertDefined(el);
-        resumeIfNeeded(el);
+        resumeIfNeeded(getContainer(el));
         const ctx = getContext(el);
         qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
     }

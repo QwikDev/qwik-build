@@ -138,7 +138,7 @@ declare interface QwikPrefetchProps {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(doc: Document, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
 
 /**
  * @public
@@ -149,7 +149,12 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
      */
     snapshot?: boolean;
     /**
-     * When set,
+     * Specifies the root of the JS files of the client build.
+     * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
+     */
+    base?: string;
+    /**
+     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
      * Defaults to `undefined`
      */
     fragmentTagName?: string;
@@ -160,12 +165,13 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: any, opts: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public
  */
 export declare interface RenderToStringOptions extends RenderToDocumentOptions {
+    fragmentTagName?: string;
 }
 
 /**
@@ -188,7 +194,7 @@ export declare interface RenderToStringResult {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function serializeDocument(doc: Document, opts?: SerializeDocumentOptions): string;
+export declare function serializeDocument(docOrEl: Document | Element, opts?: SerializeDocumentOptions): string;
 
 /**
  * @public

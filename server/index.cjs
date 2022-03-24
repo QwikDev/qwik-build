@@ -381,10 +381,10 @@ var Jn = O((Ef, Fi) => {
         if (typeof g == "function")
           re = g.call(D.currentTarget, D);
         else {
-          var $ = g.handleEvent;
-          if (typeof $ != "function")
+          var $2 = g.handleEvent;
+          if (typeof $2 != "function")
             throw new TypeError("handleEvent property of event handler object isnot a function.");
-          re = $.call(g, D);
+          re = $2.call(g, D);
         }
         switch (D.type) {
           case "mouseover":
@@ -3223,9 +3223,9 @@ var go = O((mo) => {
     }, re.fromToken = function(c) {
       return new re(c.value, c.startLine, c.startCol);
     };
-    var $ = { __proto__: null, ":first-letter": 1, ":first-line": 1, ":before": 1, ":after": 1 };
-    $.ELEMENT = 1, $.CLASS = 2, $.isElement = function(c) {
-      return c.indexOf("::") === 0 || $[c.toLowerCase()] === $.ELEMENT;
+    var $2 = { __proto__: null, ":first-letter": 1, ":first-line": 1, ":before": 1, ":after": 1 };
+    $2.ELEMENT = 1, $2.CLASS = 2, $2.isElement = function(c) {
+      return c.indexOf("::") === 0 || $2[c.toLowerCase()] === $2.ELEMENT;
     };
     function V(c, h, m) {
       l.call(this, c.join(" "), h, m, S.SELECTOR_TYPE), this.parts = c, this.specificity = ie.calculate(this);
@@ -3269,7 +3269,7 @@ var go = O((mo) => {
               o++;
               break;
             case "pseudo":
-              $.isElement(kt.text) ? b++ : u++;
+              $2.isElement(kt.text) ? b++ : u++;
               break;
             case "not":
               for (oe = 0, dt = kt.args.length; oe < dt; oe++)
@@ -4870,7 +4870,7 @@ var Ln = O((sd, dc) => {
     r !== -1 && (this.list.splice(r, 0, t), this.attrs.splice(r, 0, t));
   };
   function Y(e, t, r) {
-    var n = null, l = 0, f = 0, _ = false, y = false, w = 0, S = [], D = "", ae = true, ce = 0, g = j, re, $, V = "", ve = "", U = [], ie = "", be = "", ne = [], qe = [], He = [], Le = [], De = [], ft = false, k = yl, Fe = null, Ge = [], p = new Y.ElementStack(), d = new Y.ActiveFormattingElements(), Xe = t !== void 0, se = null, A = null, c = true;
+    var n = null, l = 0, f = 0, _ = false, y = false, w = 0, S = [], D = "", ae = true, ce = 0, g = j, re, $2, V = "", ve = "", U = [], ie = "", be = "", ne = [], qe = [], He = [], Le = [], De = [], ft = false, k = yl, Fe = null, Ge = [], p = new Y.ElementStack(), d = new Y.ActiveFormattingElements(), Xe = t !== void 0, se = null, A = null, c = true;
     t && (c = t.ownerDocument._scripting_enabled), r && r.scripting_enabled === false && (c = false);
     var h = true, m = false, a, o, u = [], b = false, T = false, I = { document: function() {
       return L;
@@ -7364,7 +7364,7 @@ var Ln = O((sd, dc) => {
     }
     wi.lookahead = -z0;
     function gl(i) {
-      switch ($ = 0, i) {
+      switch ($2 = 0, i) {
         case 120:
         case 88:
           U.push(i), g = bl;
@@ -7432,7 +7432,7 @@ var Ln = O((sd, dc) => {
         case 68:
         case 69:
         case 70:
-          $ *= 16, $ += i - 55;
+          $2 *= 16, $2 += i - 55;
           break;
         case 97:
         case 98:
@@ -7440,7 +7440,7 @@ var Ln = O((sd, dc) => {
         case 100:
         case 101:
         case 102:
-          $ *= 16, $ += i - 87;
+          $2 *= 16, $2 += i - 87;
           break;
         case 48:
         case 49:
@@ -7452,7 +7452,7 @@ var Ln = O((sd, dc) => {
         case 55:
         case 56:
         case 57:
-          $ *= 16, $ += i - 48;
+          $2 *= 16, $2 += i - 48;
           break;
         case 59:
           g = zr;
@@ -7474,7 +7474,7 @@ var Ln = O((sd, dc) => {
         case 55:
         case 56:
         case 57:
-          $ *= 10, $ += i - 48;
+          $2 *= 10, $2 += i - 48;
           break;
         case 59:
           g = zr;
@@ -7485,7 +7485,7 @@ var Ln = O((sd, dc) => {
       }
     }
     function zr(i) {
-      $ in $o ? $ = $o[$] : ($ > 1114111 || $ >= 55296 && $ < 57344) && ($ = 65533), at(), $ <= 65535 ? U.push($) : ($ = $ - 65536, U.push(55296 + ($ >> 10)), U.push(56320 + ($ & 1023))), R(i, Ct);
+      $2 in $o ? $2 = $o[$2] : ($2 > 1114111 || $2 >= 55296 && $2 < 57344) && ($2 = 65533), at(), $2 <= 65535 ? U.push($2) : ($2 = $2 - 65536, U.push(55296 + ($2 >> 10)), U.push(56320 + ($2 & 1023))), R(i, Ct);
     }
     function Ct(i) {
       switch (re) {
@@ -9035,11 +9035,11 @@ var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
 var import_qwik = require("../core.cjs");
 var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
-function createPlatform(document, opts) {
-  if (!document || document.nodeType !== 9) {
+function createPlatform(document2, opts) {
+  if (!document2 || document2.nodeType !== 9) {
     throw new Error(`Invalid Document implementation`);
   }
-  const doc = document;
+  const doc = document2;
   const symbols = opts.symbols;
   if (opts == null ? void 0 : opts.url) {
     doc.location.href = normalizeUrl(opts.url).href;
@@ -9085,23 +9085,59 @@ function createPlatform(document, opts) {
   };
   return serverPlatform;
 }
-async function setServerPlatform(document, opts) {
-  const platform = createPlatform(document, opts);
-  (0, import_qwik.setPlatform)(document, platform);
+async function setServerPlatform(document2, opts) {
+  const platform = createPlatform(document2, opts);
+  (0, import_qwik.setPlatform)(document2, platform);
 }
 
 // src/server/serialize.ts
 var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
-function serializeDocument(doc, opts) {
-  if (!doc || doc.nodeType !== 9) {
-    throw new Error(`Invalid document to serialize`);
+
+// src/core/util/element.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/types.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/markers.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/types.ts
+function isHtmlElement(node) {
+  return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
+}
+var NodeType = /* @__PURE__ */ ((NodeType2) => {
+  NodeType2[NodeType2["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
+  NodeType2[NodeType2["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
+  NodeType2[NodeType2["TEXT_NODE"] = 3] = "TEXT_NODE";
+  NodeType2[NodeType2["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
+  NodeType2[NodeType2["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
+  NodeType2[NodeType2["COMMENT_NODE"] = 8] = "COMMENT_NODE";
+  NodeType2[NodeType2["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
+  NodeType2[NodeType2["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
+  NodeType2[NodeType2["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
+  return NodeType2;
+})(NodeType || {});
+
+// src/core/util/element.ts
+function isDocument(value) {
+  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
+}
+
+// src/server/serialize.ts
+function serializeDocument(docOrEl, opts) {
+  if (!isDocument(docOrEl)) {
+    return docOrEl.outerHTML;
   }
   const symbols = opts == null ? void 0 : opts.symbols;
   if (typeof symbols === "object" && symbols != null) {
     if (symbols.injections) {
       for (const injection of symbols.injections) {
-        const el = doc.createElement(injection.tag);
+        const el = docOrEl.createElement(injection.tag);
         if (injection.attributes) {
           Object.entries(injection.attributes).forEach(([attr, value]) => {
             el.setAttribute(attr, value);
@@ -9110,12 +9146,425 @@ function serializeDocument(doc, opts) {
         if (injection.children) {
           el.textContent = injection.children;
         }
-        const parent = injection.location === "head" ? doc.head : doc.body;
+        const parent = injection.location === "head" ? docOrEl.head : docOrEl.body;
         parent.appendChild(el);
       }
     }
   }
-  return "<!DOCTYPE html>" + doc.documentElement.outerHTML;
+  return "<!DOCTYPE html>" + docOrEl.documentElement.outerHTML;
+}
+
+// src/core/util/dom.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/assert/assert.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/log.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/qdev.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+var qDev = globalThis.qDev !== false;
+var qTest = globalThis.describe !== void 0;
+
+// src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
+};
+
+// src/core/assert/assert.ts
+function assertDefined(value, text) {
+  if (qDev) {
+    if (value != null)
+      return;
+    throw newError(text || "Expected defined value.");
+  }
+}
+function newError(text) {
+  debugger;
+  const error = new Error(text);
+  logError(error);
+  return error;
+}
+
+// src/core/util/dom.ts
+function getDocument(node) {
+  if (typeof document !== "undefined") {
+    return document;
+  }
+  if (node.nodeType === 9) {
+    return node;
+  }
+  let doc = node.ownerDocument;
+  while (doc && doc.nodeType !== 9) {
+    doc = doc.parentNode;
+  }
+  assertDefined(doc);
+  return doc;
+}
+
+// src/core/render/render.public.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/cursor.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/props/props.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/error/error.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/error/stringify.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+function stringifyDebug(value) {
+  if (value == null)
+    return String(value);
+  if (typeof value === "function")
+    return value.name;
+  if (isHtmlElement(value))
+    return stringifyElement(value);
+  if (value instanceof URL)
+    return String(value);
+  if (typeof value === "object")
+    return JSON.stringify(value, function(key, value2) {
+      if (isHtmlElement(value2))
+        return stringifyElement(value2);
+      return value2;
+    });
+  return String(value);
+}
+function stringifyElement(element) {
+  let html = "<" + element.localName;
+  const attributes = element.attributes;
+  const names = [];
+  for (let i = 0; i < attributes.length; i++) {
+    names.push(attributes[i].name);
+  }
+  names.sort();
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    let value = element.getAttribute(name);
+    if (value == null ? void 0 : value.startsWith("file:/")) {
+      value = value.replace(/(file:\/\/).*(\/.*)$/, (all, protocol, file) => protocol + "..." + file);
+    }
+    html += " " + name + (value == null || value == "" ? "" : "='" + value.replace("'", "&apos;") + "'");
+  }
+  return html + ">";
+}
+
+// src/core/error/error.ts
+function qError(code, ...args) {
+  if (qDev) {
+    const text = codeToText(code);
+    const parts = text.split("{}");
+    const error = parts.map((value, index) => {
+      return value + (index === parts.length - 1 ? "" : stringifyDebug(args[index]));
+    }).join("");
+    debugger;
+    return new Error(error);
+  } else {
+    return new Error(`QError ` + code);
+  }
+}
+function codeToText(code) {
+  const area = {
+    0: "ERROR",
+    1: "QRL-ERROR",
+    2: "INJECTOR-ERROR",
+    3: "SERVICE-ERROR",
+    4: "COMPONENT-ERROR",
+    5: "PROVIDER-ERROR",
+    6: "RENDER-ERROR",
+    7: "EVENT-ERROR"
+  }[Math.floor(code / 100)];
+  const text = {
+    [0 /* TODO */]: "{}",
+    [1 /* Core_qConfigNotFound_path */]: "QConfig not found in path '{}'.",
+    [2 /* Core_unrecognizedStack_frame */]: "Unrecognized stack format '{}'",
+    [3 /* Core_noAttribute_atr1_element */]: "Could not find entity state '{}' at '{}' or any of it's parents.",
+    [4 /* Core_noAttribute_atr1_attr2_element */]: "Could not find entity state '{}' ( or entity provider '{}') at '{}' or any of it's parents.",
+    [5 /* Core_missingProperty_name_props */]: "Missing property '{}' in props '{}'.",
+    [6 /* Core_missingExport_name_url_props */]: "Missing export '{}' from '{}'. Exported symbols are: {}",
+    [100 /* QRL_expectFunction_url_actual */]: "QRL '${}' should point to function, was '{}'.",
+    [200 /* Injector_noHost_element */]: "Can't find host element above '{}'.",
+    [201 /* Injector_expectedSpecificInjector_expected_actual */]: "Provider is expecting '{}' but got '{}'.",
+    [202 /* Injector_notElement_arg */]: "Expected 'Element' was '{}'.",
+    [203 /* Injector_wrongMethodThis_expected_actual */]: "Expected injection 'this' to be of type '{}', but was of type '{}'.",
+    [204 /* Injector_missingSerializedState_entityKey_element */]: "Entity key '{}' is found on '{}' but does not contain state. Was 'serializeState()' not run during dehydration?",
+    [206 /* Injector_notFound_element */]: "No injector can be found starting at '{}'.",
+    [207 /* Injector_eventInjectorNotSerializable */]: "EventInjector does not support serialization.",
+    [300 /* Entity_notValidKey_key */]: "Data key '{}' is not a valid key.\n  - Data key can only contain characters (preferably lowercase) or number\n  - Data key is prefixed with entity name\n  - Data key is made up from parts that are separated with ':'.",
+    [301 /* Entity_keyAlreadyExists_key */]: "A entity with key '{}' already exists.",
+    [303 /* Entity_invalidAttribute_name */]: "'{}' is not a valid attribute. Attributes can only contain 'a-z' (lowercase), '0-9', '-' and '_'.",
+    [304 /* Entity_missingExpandoOrState_attrName */]: "Found '{}' but expando did not have entity and attribute did not have state.",
+    [305 /* Entity_elementMissingEntityAttr_element_attr */]: "Element '{}' is missing entity attribute definition '{}'.",
+    [306 /* Entity_noState_entity_props */]: "Unable to create state for entity '{}' with props '{}' because no state found and '$newState()' method was not defined on entity.",
+    [307 /* Entity_expected_obj */]: "'{}' is not an instance of 'Entity'.",
+    [308 /* Entity_overridesConstructor_entity */]: "'{}' overrides 'constructor' property preventing 'EntityType' retrieval.",
+    [311 /* Entity_no$keyProps_entity */]: "Entity '{}' does not define '$keyProps'.",
+    [310 /* Entity_no$type_entity */]: "Entity '{}' must have static '$type' property defining the name of the entity.",
+    [312 /* Entity_no$qrl_entity */]: "Entity '{}' must have static '$qrl' property defining the import location of the entity.",
+    [313 /* Entity_nameCollision_name_currentQrl_expectedQrl */]: "Name collision. Already have entity named '{}' with QRL '{}' but expected QRL '{}'.",
+    [309 /* Entity_keyMissingParts_key_key */]: "Entity key '{}' is missing values. Expecting '{}:someValue'.",
+    [314 /* Entity_keyTooManyParts_entity_parts_key */]: "Entity '{}' defines '$keyProps' as  '{}'. Actual key '{}' has more parts than entity defines.",
+    [315 /* Entity_keyNameMismatch_key_name_entity_name */]: "Key '{}' belongs to entity named '{}', but expected entity '{}' with name '{}'.",
+    [316 /* Entity_stateMissingKey_state */]: "Entity state is missing '$key'. Are you sure you passed in state? Got '{}'.",
+    [400 /* Component_bindNeedsKey */]: `'bind:' must have an key. (Example: 'bind:key="propertyName"').`,
+    [401 /* Component_bindNeedsValue */]: `'bind:id' must have a property name. (Example: 'bind:key="propertyName"').`,
+    [402 /* Component_needsState */]: "Can't find state on host element.",
+    [403 /* Component_needsInjectionContext_constructor */]: "Components must be instantiated inside an injection context. Use '{}.new(...)' for creation.",
+    [404 /* Component_noProperty_propName_props_host */]: "Property '{}' not found in '{}' on component '{}'.",
+    [405 /* Component_notFound_component */]: "Unable to find '{}' component.",
+    [406 /* Component_doesNotMatch_component_actual */]: "Requesting component type '{}' does not match existing component instance '{}'.",
+    [408 /* Component_noState_component_props */]: "Unable to create state for component '{}' with props '{}' because no state found and '$newState()' method was not defined on component.",
+    [500 /* Provider_unrecognizedFormat_value */]: "Unrecognized expression format '{}'.",
+    [600 /* Render_unexpectedJSXNodeType_type */]: "Unexpected JSXNode<{}> type.",
+    [601 /* Render_unsupportedFormat_obj_attr */]: "Value '{}' can't be written into '{}' attribute.",
+    [602 /* Render_expectingEntity_entity */]: "Expecting entity object, got '{}'.",
+    [603 /* Render_expectingEntityArray_obj */]: "Expecting array of entities, got '{}'.",
+    [604 /* Render_expectingEntityOrComponent_obj */]: "Expecting Entity or Component got '{}'.",
+    [699 /* Render_stateMachineStuck */]: "Render state machine did not advance.",
+    [700 /* Event_emitEventRequiresName_url */]: "Missing '$type' attribute in the '{}' url.",
+    [701 /* Event_emitEventCouldNotFindListener_event_element */]: "Re-emitting event '{}' but no listener found at '{}' or any of its parents."
+  }[code];
+  let textCode = "000" + code;
+  textCode = textCode.slice(-3);
+  return `${area}(Q-${textCode}): ${text}`;
+}
+
+// src/core/object/q-object.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/import/qrl-class.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/use/use-core.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/import/qrl.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/flyweight.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+if (qDev) {
+  Object.freeze(EMPTY_ARRAY);
+  Object.freeze(EMPTY_OBJ);
+}
+
+// src/core/util/promises.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/array.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/platform/platform.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/use/use-subscriber.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/use/use-host-element.public.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/notify-render.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/component/component-ctx.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/render.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/jsx/host.public.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/component/qrl-styles.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/hash_code.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/jsx/jsx-runtime.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/notify-render.ts
+var SCHEDULE = Symbol("Render state");
+
+// src/core/util/stringify.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/object/q-object.ts
+var ProxyMapSymbol = Symbol("ProxyMapSymbol");
+var SetSubscriber = Symbol("SetSubscriber");
+var NOSERIALIZE = Symbol("NoSerialize");
+
+// src/core/object/store.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/props/props-obj-map.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/props/props-on.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/json/q-json.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/util/case.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+function fromCamelToKebabCase(text) {
+  return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+// src/core/util/event.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/props/props.ts
+Error.stackTraceLimit = 9999;
+
+// src/core/import/qrl.public.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/cursor.ts
+var RefSymbol = Symbol();
+var handleStyle = (ctx, elm, _, newValue) => {
+  setAttribute(ctx, elm, "style", stringifyClassOrStyle(newValue, false));
+  return true;
+};
+var handleClass = (ctx, elm, _, newValue) => {
+  setAttribute(ctx, elm, "class", stringifyClassOrStyle(newValue, true));
+  return true;
+};
+var checkBeforeAssign = (ctx, elm, prop, newValue) => {
+  if (prop in elm) {
+    if (elm[prop] !== newValue) {
+      setProperty(ctx, elm, prop, newValue);
+    }
+  }
+  return true;
+};
+var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+var setInnerHTML = (ctx, elm, _, newValue) => {
+  if (dangerouslySetInnerHTML in elm) {
+    setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+  } else if ("innerHTML" in elm) {
+    setProperty(ctx, elm, "innerHTML", newValue);
+  }
+  return true;
+};
+var PROP_HANDLER_MAP = {
+  style: handleStyle,
+  class: handleClass,
+  className: handleClass,
+  value: checkBeforeAssign,
+  checked: checkBeforeAssign,
+  [dangerouslySetInnerHTML]: setInnerHTML
+};
+function setAttribute(ctx, el, prop, value) {
+  const fn = () => {
+    if (value == null) {
+      el.removeAttribute(prop);
+    } else {
+      el.setAttribute(prop, String(value));
+    }
+  };
+  ctx.operations.push({
+    el,
+    operation: "set-attribute",
+    args: [prop, value],
+    fn
+  });
+}
+function setProperty(ctx, node, key, value) {
+  const fn = () => {
+    try {
+      node[key] = value;
+    } catch (err) {
+      logError("Set property", { node, key, value }, err);
+    }
+  };
+  ctx.operations.push({
+    el: node,
+    operation: "set-property",
+    args: [key, value],
+    fn
+  });
+}
+var KEY_SYMBOL = Symbol("vnode key");
+function stringifyClassOrStyle(obj, isClass) {
+  if (obj == null)
+    return "";
+  if (typeof obj == "object") {
+    let text = "";
+    let sep = "";
+    if (Array.isArray(obj)) {
+      if (!isClass) {
+        throw qError(601 /* Render_unsupportedFormat_obj_attr */, obj, "style");
+      }
+      for (let i = 0; i < obj.length; i++) {
+        text += sep + obj[i];
+        sep = " ";
+      }
+    } else {
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          text += isClass ? value ? sep + key : "" : sep + fromCamelToKebabCase(key) + ":" + value;
+          sep = isClass ? " " : ";";
+        }
+      }
+    }
+    return text;
+  }
+  return String(obj);
+}
+
+// src/core/version.ts
+var import_globalthis = __toESM(require_globalthis());
+var import_global = __toESM(require_global());
+
+// src/core/render/render.public.ts
+function getElement(docOrElm) {
+  return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 }
 
 // src/server/document.ts
@@ -9129,12 +9578,17 @@ function createDocument(opts) {
   const glb = createGlobal(opts);
   return glb.document;
 }
-async function renderToDocument(doc, rootNode, opts) {
+async function renderToDocument(docOrElm, rootNode, opts) {
+  const doc = isDocument(docOrElm) ? docOrElm : getDocument(docOrElm);
   ensureGlobals(doc, opts);
   await setServerPlatform(doc, opts);
-  await (0, import_qwik2.render)(doc, rootNode);
+  await (0, import_qwik2.render)(docOrElm, rootNode);
+  if (opts.base) {
+    const containerEl = getElement(docOrElm);
+    containerEl.setAttribute("q:base", opts.base);
+  }
   if (opts.snapshot !== false) {
-    (0, import_qwik2.snapshot)(doc);
+    (0, import_qwik2.snapshot)(docOrElm);
   }
 }
 async function renderToString(rootNode, opts) {
@@ -9142,11 +9596,16 @@ async function renderToString(rootNode, opts) {
   const doc = createDocument(opts);
   const createDocTime = createDocTimer();
   const renderDocTimer = createTimer();
-  await renderToDocument(doc, rootNode, opts);
+  let rootEl = doc;
+  if (typeof opts.fragmentTagName === "string") {
+    rootEl = doc.createElement(opts.fragmentTagName);
+    doc.body.appendChild(rootEl);
+  }
+  await renderToDocument(rootEl, rootNode, opts);
   const renderDocTime = renderDocTimer();
   const docToStringTimer = createTimer();
   const result = {
-    html: serializeDocument(doc, opts),
+    html: serializeDocument(rootEl, opts),
     timing: {
       createDocument: createDocTime,
       render: renderDocTime,
@@ -9291,12 +9750,12 @@ async function getImports(filePath, readFileFn) {
 // src/server/scripts.ts
 var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
-var QWIK_LOADER_DEFAULT_MINIFIED = '!function(){const e=(t,n,o,s,r)=>(void 0===o?n?(s=n.getAttribute("q:base"),r=e(t,n.parentNode&&n.parentNode.closest("[q\\\\:base]"))):s=t.baseURI:o&&(s=o,r=e(t,n.closest("[q\\\\:base]"))),s?new URL(s,r):void 0),t=e=>{throw Error("QWIK: "+e)};((n,o)=>{const s="__q_context__",r=["on:","on-window:","on-document:"],a=async(e,t,o)=>{t=t.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),n.querySelectorAll("[on"+e+"\\\\:"+t+"]").forEach((e=>i(e,t,o)))},i=async(o,a,i)=>{for(const d of r){const r=o.getAttribute(d+a);if(r){o.hasAttribute("preventdefault:"+a)&&i.preventDefault();for(const a of r.split("\\n")){const r=e(n,o,a);if(r){const e=c(r),a=(window[r.pathname]||await import(\n/* @vite-ignore */\n(r+"").split("#")[0]))[e]||t(r+" does not export "+e),d=n[s];try{n[s]=[o,i,r],a(i,o,r)}finally{n[s]=d,l=e,o.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:l},bubbles:!0,composed:!0}))}}}}}var l},c=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",l=async(e,t)=>{if((t=e.target)==n)setTimeout((()=>a("-document",e.type,e)));else for(;t&&t.getAttribute;)i(t,e.type,e),t=e.bubbles?t.parentElement:null},d=e=>n.addEventListener(e,l,{capture:!0}),u=e=>{e=n.readyState,o||"interactive"!=e&&"complete"!=e||(o=1,a("","q-init",new CustomEvent("qInit")))};{const e=n.querySelector("script[events]");if(e)(e.getAttribute("events")||"").split(/[\\s,;]+/).forEach(d);else for(const e in n)0==e.indexOf("on")&&d(e.substring(2))}n.addEventListener("readystatechange",u),u()})(document)}();';
-var QWIK_LOADER_DEFAULT_DEBUG = '!function() {\n    /**\n * @license\n * Copyright Builder.io, Inc. All Rights Reserved.\n *\n * Use of this source code is governed by an MIT-style license that can be\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\n */\n    const qrlResolver = (doc, element, eventUrl, _url, _base) => {\n        if (void 0 === eventUrl) {\n            if (element) {\n                _url = element.getAttribute("q:base");\n                _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\\\:base]"));\n            } else {\n                _url = doc.baseURI;\n            }\n        } else if (eventUrl) {\n            _url = eventUrl;\n            _base = qrlResolver(doc, element.closest("[q\\\\:base]"));\n        }\n        return _url ? new URL(_url, _base) : void 0;\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(doc, element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        {\n            const scriptTag = doc.querySelector("script[events]");\n            if (scriptTag) {\n                (scriptTag.getAttribute("events") || "").split(/[\\s,;]+/).forEach(addEventListener);\n            } else {\n                for (const key in doc) {\n                    if (0 == key.indexOf("on")) {\n                        addEventListener(key.substring(2));\n                    }\n                }\n            }\n        }\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
-var QWIK_LOADER_OPTIMIZE_MINIFIED = '!function(){const e=(t,n,o,a,s)=>(void 0===o?n?(a=n.getAttribute("q:base"),s=e(t,n.parentNode&&n.parentNode.closest("[q\\\\:base]"))):a=t.baseURI:o&&(a=o,s=e(t,n.closest("[q\\\\:base]"))),a?new URL(a,s):void 0),t=e=>{throw Error("QWIK: "+e)};((n,o)=>{const a="__q_context__",s=["on:","on-window:","on-document:"],r=async(e,t,o)=>{t=t.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),n.querySelectorAll("[on"+e+"\\\\:"+t+"]").forEach((e=>c(e,t,o)))},c=async(o,r,c)=>{for(const d of s){const s=o.getAttribute(d+r);if(s){o.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of s.split("\\n")){const s=e(n,o,r);if(s){const e=i(s),r=(window[s.pathname]||await import(\n/* @vite-ignore */\n(s+"").split("#")[0]))[e]||t(s+" does not export "+e),d=n[a];try{n[a]=[o,c,s],r(c,o,s)}finally{n[a]=d,l=e,o.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:l},bubbles:!0,composed:!0}))}}}}}var l},i=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",l=async(e,t)=>{if((t=e.target)==n)setTimeout((()=>r("-document",e.type,e)));else for(;t&&t.getAttribute;)c(t,e.type,e),t=e.bubbles?t.parentElement:null},d=e=>{e=n.readyState,o||"interactive"!=e&&"complete"!=e||(o=1,r("","q-init",new CustomEvent("qInit")))};window.qEvents.forEach((e=>n.addEventListener(e,l,{capture:!0}))),n.addEventListener("readystatechange",d),d()})(document)}();';
-var QWIK_LOADER_OPTIMIZE_DEBUG = '!function() {\n    const qrlResolver = (doc, element, eventUrl, _url, _base) => {\n        if (void 0 === eventUrl) {\n            if (element) {\n                _url = element.getAttribute("q:base");\n                _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\\\:base]"));\n            } else {\n                _url = doc.baseURI;\n            }\n        } else if (eventUrl) {\n            _url = eventUrl;\n            _base = qrlResolver(doc, element.closest("[q\\\\:base]"));\n        }\n        return _url ? new URL(_url, _base) : void 0;\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(doc, element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        window.qEvents.forEach(addEventListener);\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
-var QWIK_PREFETCH_MINIFIED = 'const qrlResolver=(e,t,o,s,r)=>(void 0===o?t?(s=t.getAttribute("q:base"),r=qrlResolver(e,t.parentNode&&t.parentNode.closest("[q\\\\:base]"))):s=e.baseURI:o&&(s=o,r=qrlResolver(e,t.closest("[q\\\\:base]"))),s?new URL(s,r):void 0);((e,t,o)=>{const s=e=>{e.forEach((e=>{if(e.intersectionRatio>0){const o=e.target,s=o.attributes;for(let e=0;e<s.length;e++){const a=s[e],c=a.name,l=a.value;if(c.startsWith("on:")&&l){const e=qrlResolver(t,o,l);e.hash=e.search="";const s=e.toString()+".js";r[s]||(r[s]=s,n(s))}}}}))},r={},n=e=>{if(!a){const e=URL.createObjectURL(new Blob(["((e,a)=>{const s={},t=async(e,n)=>{1!==s[n]&&(s[n]=1,((await a(n)).headers.get(\\"Link\\")||\\"\\").replace(/<([^>]*)>/g,t))};e.addEventListener(\\"message\\",(e=>t(\\"\\",e.data)))})(self,fetch);"],{type:"text/javascript"}));a=new Worker(e)}a.postMessage(e)};let a;e.addEventListener("load",(()=>{const e=new o(s);t.querySelectorAll("[on\\\\:\\\\.]").forEach(e.observe.bind(e))}))})(window,document,IntersectionObserver);';
-var QWIK_PREFETCH_DEBUG = 'const qrlResolver = (doc, element, eventUrl, _url, _base) => {\n    if (void 0 === eventUrl) {\n        if (element) {\n            _url = element.getAttribute("q:base");\n            _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\\\:base]"));\n        } else {\n            _url = doc.baseURI;\n        }\n    } else if (eventUrl) {\n        _url = eventUrl;\n        _base = qrlResolver(doc, element.closest("[q\\\\:base]"));\n    }\n    return _url ? new URL(_url, _base) : void 0;\n};\n\nconst setupPrefetching = (win, doc, IntersectionObserver) => {\n    const intersectionObserverCallback = items => {\n        items.forEach((item => {\n            if (item.intersectionRatio > 0) {\n                const element = item.target;\n                const attrs = element.attributes;\n                for (let i = 0; i < attrs.length; i++) {\n                    const attr = attrs[i];\n                    const name = attr.name;\n                    const value = attr.value;\n                    if (name.startsWith("on:") && value) {\n                        const url = qrlResolver(doc, element, value);\n                        url.hash = url.search = "";\n                        const key = url.toString() + ".js";\n                        if (!qrlCache[key]) {\n                            qrlCache[key] = key;\n                            onEachNewQrl(key);\n                        }\n                    }\n                }\n            }\n        }));\n    };\n    const qrlCache = {};\n    const onEachNewQrl = qrl => {\n        if (!worker) {\n            const url = URL.createObjectURL(new Blob([ "/**\\n * @license\\n * Copyright Builder.io, Inc. All Rights Reserved.\\n *\\n * Use of this source code is governed by an MIT-style license that can be\\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\\n */\\nconst setUpWebWorker = (self, fetch) => {\\n  const cache = {};\\n  const prefetch = async (_, url) => {\\n    if (cache[url] !== 1) {\\n      cache[url] = 1;\\n      ((await fetch(url)).headers.get(\\"Link\\") || \\"\\").replace(/<([^>]*)>/g, prefetch);\\n    }\\n  };\\n  self.addEventListener(\\"message\\", (event) => prefetch(\\"\\", event.data));\\n};\\n\\nsetUpWebWorker(self, fetch);\\n" ], {\n                type: "text/javascript"\n            }));\n            worker = new Worker(url);\n        }\n        worker.postMessage(qrl);\n    };\n    let worker;\n    win.addEventListener("load", (() => {\n        const observer = new IntersectionObserver(intersectionObserverCallback);\n        doc.querySelectorAll("[on\\\\:\\\\.]").forEach(observer.observe.bind(observer));\n    }));\n};\n\nsetupPrefetching(window, document, IntersectionObserver);';
+var QWIK_LOADER_DEFAULT_MINIFIED = '!function(){const t=(t,e)=>{var n;const o=t.ownerDocument,r=t.closest("[q\\\\:container]"),s=new URL(null!=(n=null==r?void 0:r.getAttribute("q:base"))?n:o.baseURI,o.baseURI);return new URL(e,s)},e=t=>{throw Error("QWIK: "+t)};((n,o)=>{const r="__q_context__",s=["on:","on-window:","on-document:"],a=async(t,e,o)=>{e=e.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),n.querySelectorAll("[on"+t+"\\\\:"+e+"]").forEach((t=>c(t,e,o)))},c=async(o,a,c)=>{for(const u of s){const s=o.getAttribute(u+a);if(s){o.hasAttribute("preventdefault:"+a)&&c.preventDefault();for(const a of s.split("\\n")){const s=t(o,a);if(s){const t=i(s),a=(window[s.pathname]||await import(\n/* @vite-ignore */\n(s+"").split("#")[0]))[t]||e(s+" does not export "+t),u=n[r];try{n[r]=[o,c,s],a(c,o,s)}finally{n[r]=u,l=t,o.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:l},bubbles:!0,composed:!0}))}}}}}var l},i=t=>t.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",l=async(t,e)=>{if((e=t.target)==n)setTimeout((()=>a("-document",t.type,t)));else for(;e&&e.getAttribute;)c(e,t.type,t),e=t.bubbles?e.parentElement:null},u=t=>n.addEventListener(t,l,{capture:!0}),d=t=>{t=n.readyState,o||"interactive"!=t&&"complete"!=t||(o=1,a("","q-init",new CustomEvent("qInit")))};{const t=n.querySelector("script[events]");if(t)(t.getAttribute("events")||"").split(/[\\s,;]+/).forEach(u);else for(const t in n)0==t.indexOf("on")&&u(t.substring(2))}n.addEventListener("readystatechange",d),d()})(document)}();';
+var QWIK_LOADER_DEFAULT_DEBUG = '!function() {\n    /**\n * @license\n * Copyright Builder.io, Inc. All Rights Reserved.\n *\n * Use of this source code is governed by an MIT-style license that can be\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\n */\n    const qrlResolver = (element, eventUrl) => {\n        var _a;\n        const doc = element.ownerDocument;\n        const containerEl = element.closest("[q\\\\:container]");\n        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);\n        return new URL(eventUrl, base);\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        {\n            const scriptTag = doc.querySelector("script[events]");\n            if (scriptTag) {\n                (scriptTag.getAttribute("events") || "").split(/[\\s,;]+/).forEach(addEventListener);\n            } else {\n                for (const key in doc) {\n                    if (0 == key.indexOf("on")) {\n                        addEventListener(key.substring(2));\n                    }\n                }\n            }\n        }\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
+var QWIK_LOADER_OPTIMIZE_MINIFIED = '!function(){const t=(t,e)=>{var n;const o=t.ownerDocument,a=t.closest("[q\\\\:container]"),r=new URL(null!=(n=null==a?void 0:a.getAttribute("q:base"))?n:o.baseURI,o.baseURI);return new URL(e,r)},e=t=>{throw Error("QWIK: "+t)};((n,o)=>{const a="__q_context__",r=["on:","on-window:","on-document:"],s=async(t,e,o)=>{e=e.replace(/([A-Z])/g,(t=>"-"+t.toLowerCase())),n.querySelectorAll("[on"+t+"\\\\:"+e+"]").forEach((t=>c(t,e,o)))},c=async(o,s,c)=>{for(const u of r){const r=o.getAttribute(u+s);if(r){o.hasAttribute("preventdefault:"+s)&&c.preventDefault();for(const s of r.split("\\n")){const r=t(o,s);if(r){const t=i(r),s=(window[r.pathname]||await import(\n/* @vite-ignore */\n(r+"").split("#")[0]))[t]||e(r+" does not export "+t),u=n[a];try{n[a]=[o,c,r],s(c,o,r)}finally{n[a]=u,l=t,o.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:l},bubbles:!0,composed:!0}))}}}}}var l},i=t=>t.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",l=async(t,e)=>{if((e=t.target)==n)setTimeout((()=>s("-document",t.type,t)));else for(;e&&e.getAttribute;)c(e,t.type,t),e=t.bubbles?e.parentElement:null},u=t=>{t=n.readyState,o||"interactive"!=t&&"complete"!=t||(o=1,s("","q-init",new CustomEvent("qInit")))};window.qEvents.forEach((t=>n.addEventListener(t,l,{capture:!0}))),n.addEventListener("readystatechange",u),u()})(document)}();';
+var QWIK_LOADER_OPTIMIZE_DEBUG = '!function() {\n    const qrlResolver = (element, eventUrl) => {\n        var _a;\n        const doc = element.ownerDocument;\n        const containerEl = element.closest("[q\\\\:container]");\n        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);\n        return new URL(eventUrl, base);\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        window.qEvents.forEach(addEventListener);\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
+var QWIK_PREFETCH_MINIFIED = 'const qrlResolver=(e,t)=>{const n=e.ownerDocument,o=e.closest("[q\\\\:container]"),s=new URL(o?.getAttribute("q:base")??n.baseURI,n.baseURI);return new URL(t,s)};((e,t,n)=>{const o=e=>{e.forEach((e=>{if(e.intersectionRatio>0){const t=e.target,n=t.attributes;for(let e=0;e<n.length;e++){const o=n[e],c=o.name,a=o.value;if(c.startsWith("on:")&&a){const e=qrlResolver(t,a);e.hash=e.search="";const n=e.toString()+".js";s[n]||(s[n]=n,r(n))}}}}))},s={},r=e=>{if(!c){const e=URL.createObjectURL(new Blob(["((e,a)=>{const s={},t=async(e,n)=>{1!==s[n]&&(s[n]=1,((await a(n)).headers.get(\\"Link\\")||\\"\\").replace(/<([^>]*)>/g,t))};e.addEventListener(\\"message\\",(e=>t(\\"\\",e.data)))})(self,fetch);"],{type:"text/javascript"}));c=new Worker(e)}c.postMessage(e)};let c;e.addEventListener("load",(()=>{const e=new n(o);t.querySelectorAll("[on\\\\:\\\\.]").forEach(e.observe.bind(e))}))})(window,document,IntersectionObserver);';
+var QWIK_PREFETCH_DEBUG = 'const qrlResolver = (element, eventUrl) => {\n    const doc = element.ownerDocument;\n    const containerEl = element.closest("[q\\\\:container]");\n    const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);\n    return new URL(eventUrl, base);\n};\n\nconst setupPrefetching = (win, doc, IntersectionObserver) => {\n    const intersectionObserverCallback = items => {\n        items.forEach((item => {\n            if (item.intersectionRatio > 0) {\n                const element = item.target;\n                const attrs = element.attributes;\n                for (let i = 0; i < attrs.length; i++) {\n                    const attr = attrs[i];\n                    const name = attr.name;\n                    const value = attr.value;\n                    if (name.startsWith("on:") && value) {\n                        const url = qrlResolver(element, value);\n                        url.hash = url.search = "";\n                        const key = url.toString() + ".js";\n                        if (!qrlCache[key]) {\n                            qrlCache[key] = key;\n                            onEachNewQrl(key);\n                        }\n                    }\n                }\n            }\n        }));\n    };\n    const qrlCache = {};\n    const onEachNewQrl = qrl => {\n        if (!worker) {\n            const url = URL.createObjectURL(new Blob([ "/**\\n * @license\\n * Copyright Builder.io, Inc. All Rights Reserved.\\n *\\n * Use of this source code is governed by an MIT-style license that can be\\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\\n */\\nconst setUpWebWorker = (self, fetch) => {\\n  const cache = {};\\n  const prefetch = async (_, url) => {\\n    if (cache[url] !== 1) {\\n      cache[url] = 1;\\n      ((await fetch(url)).headers.get(\\"Link\\") || \\"\\").replace(/<([^>]*)>/g, prefetch);\\n    }\\n  };\\n  self.addEventListener(\\"message\\", (event) => prefetch(\\"\\", event.data));\\n};\\n\\nsetUpWebWorker(self, fetch);\\n" ], {\n                type: "text/javascript"\n            }));\n            worker = new Worker(url);\n        }\n        worker.postMessage(qrl);\n    };\n    let worker;\n    win.addEventListener("load", (() => {\n        const observer = new IntersectionObserver(intersectionObserverCallback);\n        doc.querySelectorAll("[on\\\\:\\\\.]").forEach(observer.observe.bind(observer));\n    }));\n};\n\nsetupPrefetching(window, document, IntersectionObserver);';
 function getQwikLoaderScript(opts = {}) {
   if (Array.isArray(opts.events) && opts.events.length > 0) {
     const loader = opts.debug ? QWIK_LOADER_OPTIMIZE_DEBUG : QWIK_LOADER_OPTIMIZE_MINIFIED;
@@ -9326,7 +9785,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-4-dev20220324165048",
+  qwik: "0.0.18-4-dev20220324173735",
   qwikDom: "2.1.14"
 };
 module.exports = __toCommonJS(server_exports);
@@ -9369,3 +9828,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 */
+/**
+ * @license
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
+/**
+ * @license
+ * Copyright Builder.io; Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */

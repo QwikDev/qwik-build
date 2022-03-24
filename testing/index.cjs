@@ -85,6 +85,140 @@ var import_globalthis = __toESM(require_globalthis());
 var import_qwik = require("../core.cjs");
 var import_fs = require("fs");
 var import_url = require("url");
+
+// src/core/use/use-core.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/assert/assert.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/log.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/qdev.ts
+var import_globalthis = __toESM(require_globalthis());
+var qDev = globalThis.qDev !== false;
+var qTest = globalThis.describe !== void 0;
+
+// src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
+};
+
+// src/core/assert/assert.ts
+function assertDefined(value, text) {
+  if (qDev) {
+    if (value != null)
+      return;
+    throw newError(text || "Expected defined value.");
+  }
+}
+function assertEqual(value1, value2, text) {
+  if (qDev) {
+    if (value1 === value2)
+      return;
+    throw newError(text || `Expected '${value1}' === '${value2}'.`);
+  }
+}
+function newError(text) {
+  debugger;
+  const error = new Error(text);
+  logError(error);
+  return error;
+}
+
+// src/core/util/markers.ts
+var import_globalthis = __toESM(require_globalthis());
+var QHostAttr = "q:host";
+var QContainerSelector = "[q\\:container]";
+
+// src/core/util/dom.ts
+var import_globalthis = __toESM(require_globalthis());
+function getDocument(node) {
+  if (typeof document !== "undefined") {
+    return document;
+  }
+  if (node.nodeType === 9) {
+    return node;
+  }
+  let doc = node.ownerDocument;
+  while (doc && doc.nodeType !== 9) {
+    doc = doc.parentNode;
+  }
+  assertDefined(doc);
+  return doc;
+}
+
+// src/core/use/use-core.ts
+var _context;
+function tryGetInvokeContext() {
+  if (!_context) {
+    const context = typeof document !== "undefined" && document && document.__q_context__;
+    if (!context) {
+      return void 0;
+    }
+    if (Array.isArray(context)) {
+      const element = context[0];
+      const hostElement = getHostElement(element);
+      assertDefined(element);
+      return document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]);
+    }
+    return context;
+  }
+  return _context;
+}
+function useInvoke(context, fn, ...args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(null, args);
+  } finally {
+    const currentCtx = _context;
+    _context = previousContext;
+    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
+      return Promise.all(currentCtx.waitOn).then(() => returnValue);
+    }
+  }
+  return returnValue;
+}
+function newInvokeContext(doc, hostElement, element, event, url) {
+  return {
+    doc,
+    hostElement,
+    element,
+    event,
+    url: url || null,
+    qrl: void 0,
+    subscriptions: event === "qRender"
+  };
+}
+function getHostElement(el) {
+  let foundSlot = false;
+  let node = el;
+  while (node) {
+    const isHost = node.hasAttribute(QHostAttr);
+    const isSlot = node.tagName === "Q:SLOT";
+    if (isHost) {
+      if (!foundSlot) {
+        break;
+      } else {
+        foundSlot = false;
+      }
+    }
+    if (isSlot) {
+      foundSlot = true;
+    }
+    node = node.parentElement;
+  }
+  return node;
+}
+function getContainer(el) {
+  return el.closest(QContainerSelector);
+}
+
+// src/testing/platform.ts
 function createPlatform(document2) {
   if (!document2 || document2.nodeType !== 9) {
     throw new Error(`Invalid Document implementation`);
@@ -151,21 +285,10 @@ function setTestPlatform(document2) {
   (0, import_qwik.setPlatform)(document2, platform);
 }
 function toUrl(doc, element, url) {
-  let _url;
-  let _base = void 0;
-  if (url === void 0) {
-    if (element) {
-      _url = element.getAttribute("q:base");
-      _base = toUrl(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-    } else {
-      _url = doc.baseURI;
-    }
-  } else if (url) {
-    _url = url, _base = toUrl(doc, element.closest("[q\\:base]"));
-  } else {
-    throw new Error("INTERNAL ERROR");
-  }
-  return new URL(String(_url), _base);
+  var _a;
+  const containerEl = getContainer(element);
+  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
+  return new URL(url, base);
 }
 function toPath(url) {
   const normalizedUrl = new URL(String(url));
@@ -217,12 +340,6 @@ var import_globalthis = __toESM(require_globalthis());
 
 // src/core/util/types.ts
 var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/markers.ts
-var import_globalthis = __toESM(require_globalthis());
-var QHostAttr = "q:host";
-
-// src/core/util/types.ts
 function isHtmlElement(node) {
   return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
 }
@@ -275,11 +392,6 @@ function stringifyElement(element) {
   }
   return html + ">";
 }
-
-// src/core/util/qdev.ts
-var import_globalthis = __toESM(require_globalthis());
-var qDev = globalThis.qDev !== false;
-var qTest = globalThis.describe !== void 0;
 
 // src/core/error/error.ts
 function qError(code, ...args) {
@@ -364,122 +476,8 @@ function codeToText(code) {
 // src/core/object/q-object.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/assert/assert.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/log.ts
-var import_globalthis = __toESM(require_globalthis());
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
-};
-
-// src/core/assert/assert.ts
-function assertDefined(value, text) {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw newError(text || "Expected defined value.");
-  }
-}
-function assertEqual(value1, value2, text) {
-  if (qDev) {
-    if (value1 === value2)
-      return;
-    throw newError(text || `Expected '${value1}' === '${value2}'.`);
-  }
-}
-function newError(text) {
-  debugger;
-  const error = new Error(text);
-  logError(error);
-  return error;
-}
-
 // src/core/import/qrl-class.ts
 var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-core.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/dom.ts
-var import_globalthis = __toESM(require_globalthis());
-function getDocument(node) {
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  let doc = node.ownerDocument;
-  while (doc && doc.nodeType !== 9) {
-    doc = doc.parentNode;
-  }
-  assertDefined(doc);
-  return doc;
-}
-
-// src/core/use/use-core.ts
-var _context;
-function tryGetInvokeContext() {
-  if (!_context) {
-    const context = typeof document !== "undefined" && document && document.__q_context__;
-    if (!context) {
-      return void 0;
-    }
-    if (Array.isArray(context)) {
-      const element = context[0];
-      const hostElement = getHostElement(element);
-      assertDefined(element);
-      return document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]);
-    }
-    return context;
-  }
-  return _context;
-}
-function useInvoke(context, fn, ...args) {
-  const previousContext = _context;
-  let returnValue;
-  try {
-    _context = context;
-    returnValue = fn.apply(null, args);
-  } finally {
-    const currentCtx = _context;
-    _context = previousContext;
-    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
-      return Promise.all(currentCtx.waitOn).then(() => returnValue);
-    }
-  }
-  return returnValue;
-}
-function newInvokeContext(doc, hostElement, element, event, url) {
-  return {
-    doc,
-    hostElement,
-    element,
-    event,
-    url: url || null,
-    qrl: void 0,
-    subscriptions: event === "qRender"
-  };
-}
-function getHostElement(el) {
-  let foundSlot = false;
-  let node = el;
-  while (node) {
-    const isHost = node.hasAttribute(QHostAttr);
-    const isSlot = node.tagName === "Q:SLOT";
-    if (isHost) {
-      if (!foundSlot) {
-        break;
-      } else {
-        foundSlot = false;
-      }
-    }
-    if (isSlot) {
-      foundSlot = true;
-    }
-    node = node.parentElement;
-  }
-  return node;
-}
 
 // src/core/import/qrl.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -509,14 +507,6 @@ var then = (promise, thenFn) => {
 
 // src/core/platform/platform.ts
 var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/element.ts
-var import_globalthis = __toESM(require_globalthis());
-function isDocument(value) {
-  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
-}
-
-// src/core/platform/platform.ts
 var createPlatform2 = (doc) => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
@@ -555,24 +545,13 @@ var createPlatform2 = (doc) => {
   };
 };
 function toUrl2(doc, element, url) {
-  let _url;
-  let _base = void 0;
-  if (url === void 0) {
-    if (element) {
-      _url = element.getAttribute("q:base");
-      _base = toUrl2(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-    } else {
-      _url = doc.baseURI;
-    }
-  } else if (url) {
-    _url = url, _base = toUrl2(doc, element.closest("[q\\:base]"));
-  } else {
-    throw new Error("INTERNAL ERROR");
-  }
-  return new URL(String(_url), _base);
+  var _a;
+  const containerEl = getContainer(element);
+  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
+  return new URL(url, base);
 }
 var getPlatform2 = (docOrNode) => {
-  const doc = isDocument(docOrNode) ? docOrNode : getDocument(docOrNode);
+  const doc = getDocument(docOrNode);
   return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
@@ -732,6 +711,9 @@ var import_globalthis = __toESM(require_globalthis());
 var import_globalthis = __toESM(require_globalthis());
 
 // src/core/object/store.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/element.ts
 var import_globalthis = __toESM(require_globalthis());
 
 // src/core/render/cursor.ts

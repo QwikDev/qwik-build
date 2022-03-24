@@ -16,6 +16,128 @@ import { createGlobal as createServerGlobal } from "../server/index.mjs";
 import { getPlatform, setPlatform } from "../core.mjs";
 import { existsSync } from "fs";
 import { fileURLToPath as fileURLToPath2 } from "url";
+
+// src/core/util/qdev.ts
+var qDev = globalThis.qDev !== false;
+var qTest = globalThis.describe !== void 0;
+
+// src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
+};
+
+// src/core/assert/assert.ts
+function assertDefined(value, text) {
+  if (qDev) {
+    if (value != null)
+      return;
+    throw newError(text || "Expected defined value.");
+  }
+}
+function assertEqual(value1, value2, text) {
+  if (qDev) {
+    if (value1 === value2)
+      return;
+    throw newError(text || `Expected '${value1}' === '${value2}'.`);
+  }
+}
+function newError(text) {
+  debugger;
+  const error = new Error(text);
+  logError(error);
+  return error;
+}
+
+// src/core/util/markers.ts
+var QHostAttr = "q:host";
+var QContainerSelector = "[q\\:container]";
+
+// src/core/util/dom.ts
+function getDocument(node) {
+  if (typeof document !== "undefined") {
+    return document;
+  }
+  if (node.nodeType === 9) {
+    return node;
+  }
+  let doc = node.ownerDocument;
+  while (doc && doc.nodeType !== 9) {
+    doc = doc.parentNode;
+  }
+  assertDefined(doc);
+  return doc;
+}
+
+// src/core/use/use-core.ts
+var _context;
+function tryGetInvokeContext() {
+  if (!_context) {
+    const context = typeof document !== "undefined" && document && document.__q_context__;
+    if (!context) {
+      return void 0;
+    }
+    if (Array.isArray(context)) {
+      const element = context[0];
+      const hostElement = getHostElement(element);
+      assertDefined(element);
+      return document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]);
+    }
+    return context;
+  }
+  return _context;
+}
+function useInvoke(context, fn, ...args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(null, args);
+  } finally {
+    const currentCtx = _context;
+    _context = previousContext;
+    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
+      return Promise.all(currentCtx.waitOn).then(() => returnValue);
+    }
+  }
+  return returnValue;
+}
+function newInvokeContext(doc, hostElement, element, event, url) {
+  return {
+    doc,
+    hostElement,
+    element,
+    event,
+    url: url || null,
+    qrl: void 0,
+    subscriptions: event === "qRender"
+  };
+}
+function getHostElement(el) {
+  let foundSlot = false;
+  let node = el;
+  while (node) {
+    const isHost = node.hasAttribute(QHostAttr);
+    const isSlot = node.tagName === "Q:SLOT";
+    if (isHost) {
+      if (!foundSlot) {
+        break;
+      } else {
+        foundSlot = false;
+      }
+    }
+    if (isSlot) {
+      foundSlot = true;
+    }
+    node = node.parentElement;
+  }
+  return node;
+}
+function getContainer(el) {
+  return el.closest(QContainerSelector);
+}
+
+// src/testing/platform.ts
 function createPlatform(document2) {
   if (!document2 || document2.nodeType !== 9) {
     throw new Error(`Invalid Document implementation`);
@@ -82,21 +204,9 @@ function setTestPlatform(document2) {
   setPlatform(document2, platform);
 }
 function toUrl(doc, element, url) {
-  let _url;
-  let _base = void 0;
-  if (url === void 0) {
-    if (element) {
-      _url = element.getAttribute("q:base");
-      _base = toUrl(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-    } else {
-      _url = doc.baseURI;
-    }
-  } else if (url) {
-    _url = url, _base = toUrl(doc, element.closest("[q\\:base]"));
-  } else {
-    throw new Error("INTERNAL ERROR");
-  }
-  return new URL(String(_url), _base);
+  const containerEl = getContainer(element);
+  const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
+  return new URL(url, base);
 }
 function toPath(url) {
   const normalizedUrl = new URL(String(url));
@@ -133,9 +243,6 @@ function createDocument(opts = {}) {
   const gbl = createGlobal(opts);
   return gbl.document;
 }
-
-// src/core/util/markers.ts
-var QHostAttr = "q:host";
 
 // src/core/util/types.ts
 function isHtmlElement(node) {
@@ -190,10 +297,6 @@ function stringifyElement(element) {
   }
   return html + ">";
 }
-
-// src/core/util/qdev.ts
-var qDev = globalThis.qDev !== false;
-var qTest = globalThis.describe !== void 0;
 
 // src/core/error/error.ts
 function qError(code, ...args) {
@@ -275,112 +378,6 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
-// src/core/util/log.ts
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
-};
-
-// src/core/assert/assert.ts
-function assertDefined(value, text) {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw newError(text || "Expected defined value.");
-  }
-}
-function assertEqual(value1, value2, text) {
-  if (qDev) {
-    if (value1 === value2)
-      return;
-    throw newError(text || `Expected '${value1}' === '${value2}'.`);
-  }
-}
-function newError(text) {
-  debugger;
-  const error = new Error(text);
-  logError(error);
-  return error;
-}
-
-// src/core/util/dom.ts
-function getDocument(node) {
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  let doc = node.ownerDocument;
-  while (doc && doc.nodeType !== 9) {
-    doc = doc.parentNode;
-  }
-  assertDefined(doc);
-  return doc;
-}
-
-// src/core/use/use-core.ts
-var _context;
-function tryGetInvokeContext() {
-  if (!_context) {
-    const context = typeof document !== "undefined" && document && document.__q_context__;
-    if (!context) {
-      return void 0;
-    }
-    if (Array.isArray(context)) {
-      const element = context[0];
-      const hostElement = getHostElement(element);
-      assertDefined(element);
-      return document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]);
-    }
-    return context;
-  }
-  return _context;
-}
-function useInvoke(context, fn, ...args) {
-  const previousContext = _context;
-  let returnValue;
-  try {
-    _context = context;
-    returnValue = fn.apply(null, args);
-  } finally {
-    const currentCtx = _context;
-    _context = previousContext;
-    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
-      return Promise.all(currentCtx.waitOn).then(() => returnValue);
-    }
-  }
-  return returnValue;
-}
-function newInvokeContext(doc, hostElement, element, event, url) {
-  return {
-    doc,
-    hostElement,
-    element,
-    event,
-    url: url || null,
-    qrl: void 0,
-    subscriptions: event === "qRender"
-  };
-}
-function getHostElement(el) {
-  let foundSlot = false;
-  let node = el;
-  while (node) {
-    const isHost = node.hasAttribute(QHostAttr);
-    const isSlot = node.tagName === "Q:SLOT";
-    if (isHost) {
-      if (!foundSlot) {
-        break;
-      } else {
-        foundSlot = false;
-      }
-    }
-    if (isSlot) {
-      foundSlot = true;
-    }
-    node = node.parentElement;
-  }
-  return node;
-}
-
 // src/core/util/flyweight.ts
 var EMPTY_ARRAY = [];
 var EMPTY_OBJ = {};
@@ -396,11 +393,6 @@ function isPromise(value) {
 var then = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
-
-// src/core/util/element.ts
-function isDocument(value) {
-  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
-}
 
 // src/core/platform/platform.ts
 var createPlatform2 = (doc) => {
@@ -444,24 +436,12 @@ var createPlatform2 = (doc) => {
   };
 };
 function toUrl2(doc, element, url) {
-  let _url;
-  let _base = void 0;
-  if (url === void 0) {
-    if (element) {
-      _url = element.getAttribute("q:base");
-      _base = toUrl2(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-    } else {
-      _url = doc.baseURI;
-    }
-  } else if (url) {
-    _url = url, _base = toUrl2(doc, element.closest("[q\\:base]"));
-  } else {
-    throw new Error("INTERNAL ERROR");
-  }
-  return new URL(String(_url), _base);
+  const containerEl = getContainer(element);
+  const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
+  return new URL(url, base);
 }
 var getPlatform2 = (docOrNode) => {
-  const doc = isDocument(docOrNode) ? docOrNode : getDocument(docOrNode);
+  const doc = getDocument(docOrNode);
   return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();

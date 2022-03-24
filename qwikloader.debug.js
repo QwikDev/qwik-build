@@ -6,19 +6,12 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-    const qrlResolver = (doc, element, eventUrl, _url, _base) => {
-        if (void 0 === eventUrl) {
-            if (element) {
-                _url = element.getAttribute("q:base");
-                _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-            } else {
-                _url = doc.baseURI;
-            }
-        } else if (eventUrl) {
-            _url = eventUrl;
-            _base = qrlResolver(doc, element.closest("[q\\:base]"));
-        }
-        return _url ? new URL(_url, _base) : void 0;
+    const qrlResolver = (element, eventUrl) => {
+        var _a;
+        const doc = element.ownerDocument;
+        const containerEl = element.closest("[q\\:container]");
+        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);
+        return new URL(eventUrl, base);
     };
     const error = msg => {
         throw new Error("QWIK: " + msg);
@@ -44,7 +37,7 @@
                 }
                 element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                 for (const qrl of attrValue.split("\n")) {
-                    const url = qrlResolver(doc, element, qrl);
+                    const url = qrlResolver(element, qrl);
                     if (url) {
                         const symbolName = getSymbolName(url);
                         const handler = (window[url.pathname] || await import(
