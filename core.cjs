@@ -669,15 +669,14 @@ function isElement(value) {
 
 const UNDEFINED_PREFIX = '\u0010';
 const QRL_PREFIX = '\u0011';
-function resume(elmOrDoc) {
-    const parentElm = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
-    if (!isContainer(parentElm)) {
-        // logWarn('Skipping hydration because parent element is not q:container');
+function resume(containerEl) {
+    if (!isContainer(containerEl)) {
+        logWarn('Skipping hydration because parent element is not q:container');
         return;
     }
-    const doc = getDocument(elmOrDoc);
-    const isDoc = isDocument(elmOrDoc) || elmOrDoc === doc.documentElement;
-    const parentJSON = isDoc ? doc.body : parentElm;
+    const doc = getDocument(containerEl);
+    const isDocElement = containerEl === doc.documentElement;
+    const parentJSON = isDocElement ? doc.body : containerEl;
     const script = getQwikJSON(parentJSON);
     if (!script) {
         logWarn('Skipping hydration qwik/json metadata was not found.');
@@ -688,7 +687,7 @@ function resume(elmOrDoc) {
     const meta = JSON.parse(script.textContent || '{}');
     // Collect all elements
     const elements = new Map();
-    getNodesInScope(parentElm, hasQId).forEach((el) => {
+    getNodesInScope(containerEl, hasQId).forEach((el) => {
         const id = el.getAttribute(ELEMENT_ID);
         elements.set(ELEMENT_ID_PREFIX + id, el);
     });
@@ -702,7 +701,7 @@ function resume(elmOrDoc) {
         reviveNestedObjects(obj, getObject);
     }
     // Walk all elements with q:obj and resume their state
-    getNodesInScope(parentElm, hasQObj).forEach((el) => {
+    getNodesInScope(containerEl, hasQObj).forEach((el) => {
         const qobj = el.getAttribute(QObjAttr);
         const host = el.getAttribute(QHostAttr);
         const ctx = getContext(el);
@@ -723,16 +722,19 @@ function resume(elmOrDoc) {
             ctx.renderQrl = ctx.refMap.get(renderQrl);
         }
     });
+    containerEl.setAttribute(QContainerAttr, 'resumed');
+    if (qDev) {
+        logDebug('Container resumed', containerEl);
+    }
 }
-function snapshotState(elmOrDoc) {
-    const doc = getDocument(elmOrDoc);
-    const parentElm = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+function snapshotState(containerEl) {
+    const doc = getDocument(containerEl);
     const proxyMap = getProxyMap(doc);
     const objSet = new Set();
     const platform = getPlatform(doc);
     const elementToIndex = new Map();
     // Collect all qObjected around the DOM
-    const elements = getNodesInScope(parentElm, hasQObj);
+    const elements = getNodesInScope(containerEl, hasQObj);
     elements.forEach((node) => {
         const props = getContext(node);
         const qMap = props.refMap;
@@ -1209,12 +1211,10 @@ function serializeQRLs(existingQRLs, ctx) {
 }
 
 Error.stackTraceLimit = 9999;
-const Q_IS_RESUMED = '__isResumed__';
 const Q_CTX = '__ctx__';
 function resumeIfNeeded(containerEl) {
-    const isHydrated = containerEl[Q_IS_RESUMED];
-    if (!isHydrated) {
-        containerEl[Q_IS_RESUMED] = true;
+    const isResumed = containerEl.getAttribute(QContainerAttr);
+    if (isResumed === 'paused') {
         resume(containerEl);
     }
 }
@@ -2158,13 +2158,14 @@ function insertBefore(ctx, parent, newChild, refChild) {
 }
 function appendStyle(ctx, hostElement, styleTask) {
     const fn = () => {
+        var _a;
         const containerEl = ctx.containerEl;
-        if (!containerEl.querySelector(`style[q\\:style="${styleTask.scope}"]`)) {
+        const stylesParent = ctx.doc.documentElement === containerEl ? (_a = ctx.doc.head) !== null && _a !== void 0 ? _a : containerEl : containerEl;
+        if (!stylesParent.querySelector(`style[q\\:style="${styleTask.scope}"]`)) {
             const style = ctx.doc.createElement('style');
-            const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head : containerEl;
             style.setAttribute('q:style', styleTask.scope);
             style.textContent = styleTask.content;
-            stylesParent.insertBefore(style, containerEl.firstChild);
+            stylesParent.insertBefore(style, stylesParent.firstChild);
         }
     };
     ctx.operations.push({
@@ -3137,12 +3138,14 @@ function _useStyles(styles, scoped) {
  */
 function snapshot(elmOrDoc) {
     const doc = getDocument(elmOrDoc);
-    const data = snapshotState(elmOrDoc);
-    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : elmOrDoc;
+    const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
+    const data = snapshotState(containerEl);
     const script = doc.createElement('script');
     script.setAttribute('type', 'qwik/json');
     script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
     parentJSON.appendChild(script);
+    containerEl.setAttribute(QContainerAttr, 'paused');
 }
 
 function useProps() {
@@ -3406,7 +3409,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-4-dev20220324173735";
+const version = "0.0.18-5-dev20220325115427";
 
 /**
  * Render JSX.
@@ -3427,8 +3430,11 @@ function render(parent, jsxNode) {
     }
     const doc = getDocument(parent);
     const containerEl = getElement(parent);
-    resumeIfNeeded(containerEl);
-    injectQVersion(containerEl);
+    if (qDev && containerEl.hasAttribute('q:container')) {
+        logError('You can render over a existing q:container. Skipping render().');
+        return;
+    }
+    injectQContainer(containerEl);
     const ctx = {
         doc,
         globalState: getRenderingState(containerEl),
@@ -3466,9 +3472,9 @@ function injectQwikSlotCSS(docOrElm) {
 function getElement(docOrElm) {
     return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 }
-function injectQVersion(containerEl) {
+function injectQContainer(containerEl) {
     containerEl.setAttribute('q:version', version || '');
-    containerEl.setAttribute(QContainerAttr, '');
+    containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
 /**
