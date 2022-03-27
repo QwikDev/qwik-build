@@ -1,17 +1,20 @@
 !function() {
-    const qrlResolver = (doc, element, eventUrl, _url, _base) => {
-        if (void 0 === eventUrl) {
-            if (element) {
-                _url = element.getAttribute("q:base");
-                _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-            } else {
-                _url = doc.baseURI;
-            }
-        } else if (eventUrl) {
-            _url = eventUrl;
-            _base = qrlResolver(doc, element.closest("[q\\:base]"));
-        }
-        return _url ? new URL(_url, _base) : void 0;
+    /**
+ * @license
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
+    const qrlResolver = (element, eventUrl) => {
+        var _a;
+        const doc = element.ownerDocument;
+        const containerEl = element.closest("[q\\:container]");
+        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);
+        return new URL(eventUrl, base);
+    };
+    const error = msg => {
+        throw new Error("QWIK: " + msg);
     };
     ((doc, hasInitialized) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -19,26 +22,40 @@
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, event)));
         };
-        const dispatch = async (element, eventName, ev, url, previousCtx, attrValue) => {
+        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {
+            detail: {
+                name: name
+            },
+            bubbles: !0,
+            composed: !0
+        }));
+        const dispatch = async (element, eventName, ev) => {
             for (const on of ON_PREFIXES) {
-                attrValue = element.getAttribute(on + eventName) || "";
+                const attrValue = element.getAttribute(on + eventName);
+                if (!attrValue) {
+                    continue;
+                }
+                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                 for (const qrl of attrValue.split("\n")) {
-                    if (url = qrlResolver(doc, element, qrl)) {
-                        const handler = getModuleExport(url, window[url.pathname] || await import(String(url).split("#")[0]));
-                        previousCtx = document.__q_context__;
+                    const url = qrlResolver(element, qrl);
+                    if (url) {
+                        const symbolName = getSymbolName(url);
+                        const handler = (window[url.pathname] || await import(
+                        /* @vite-ignore */
+                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
+                        const previousCtx = doc.__q_context__;
                         try {
-                            document.__q_context__ = [ element, ev, url ];
-                            handler(element, ev, url);
+                            doc.__q_context__ = [ element, ev, url ];
+                            handler(ev, element, url);
                         } finally {
-                            document.__q_context__ = previousCtx;
+                            doc.__q_context__ = previousCtx;
+                            symbolUsed(element, symbolName);
                         }
                     }
                 }
             }
         };
-        const getModuleExport = (url, module, exportName) => module[exportName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default"] || (msg => {
-            throw new Error("QWIK: " + msg);
-        })(url + " does not export " + exportName);
+        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
         const processEvent = async (ev, element) => {
             if ((element = ev.target) == doc) {
                 setTimeout((() => broadcast("-document", ev.type, ev)));
