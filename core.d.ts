@@ -553,7 +553,12 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PublicProps<PROPS>) => JSXNode<PROPS>;
+export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): Component<PROPS>;
+
+/**
+ * @public
+ */
+declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
 
 declare interface ComponentBaseProps {
     class?: string | {
@@ -651,7 +656,7 @@ export declare interface ComponentOptions {
  *
  * @public
  */
-export declare function componentQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PublicProps<PROPS>) => JSXNode<PROPS>;
+export declare function componentQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
 
 /**
  * @public
@@ -1771,7 +1776,7 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * @public
  */
-export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
+export declare type PropsOf<COMP extends (props: any) => JSXNode<any> | null> = COMP extends (props: infer PROPS) => JSXNode<any> | null ? NonNullable<PROPS> : never;
 
 declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
 

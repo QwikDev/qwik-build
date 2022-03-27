@@ -1541,6 +1541,7 @@ const renderComponent = (rctx, ctx) => {
     const hostElement = ctx.element;
     const onRenderQRL = ctx.renderQrl;
     assertDefined(onRenderQRL);
+    onRenderQRL.setContainer(rctx.containerEl);
     const onRenderFn = onRenderQRL.invokeFn();
     // Component is not dirty any more
     ctx.dirty = false;
@@ -2759,7 +2760,12 @@ function qrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
             lexicalScopeCapture[i] = unwrapSubscriber(lexicalScopeCapture[i]);
         }
     }
-    return new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
+    const qrl = new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
+    const ctx = tryGetInvokeContext();
+    if (ctx && ctx.element) {
+        qrl.setContainer(ctx.element);
+    }
+    return qrl;
 }
 function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
     return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
@@ -3020,9 +3026,66 @@ function useScopedStylesQrl(styles) {
  */
 // </docs>
 const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
+// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#component instead)
 /**
+ * Declare a Qwik component that can be used to create UI.
+ *
+ * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
+ * kind of component that allows the Qwik framework to lazy load and execute the component
+ * independently of other Qwik components as well as lazy load the component's life-cycle hooks
+ * and event handlers.
+ *
+ * Side note: You can also declare regular (standard JSX) components that will have standard
+ * synchronous behavior.
+ *
+ * Qwik component is a facade that describes how the component should be used without forcing the
+ * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
+ *
+ * - Component `onMount` method, which needs to return an
+ * - `onRender` closure which constructs the component's JSX.
+ *
+ * ### Example:
+ *
+ * An example showing how to create a counter component:
+ *
+ * ```typescript
+ * export const Counter = component$((props: { value?: number; step?: number }) => {
+ *   const state = useStore({ count: props.value || 0 });
+ *   return $(() => (
+ *     <div>
+ *       <span>{state.count}</span>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ * - `component$` is how a component gets declared.
+ * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
+ * - `{ count: number }` declares the private (state) interface of the component.
+ * - `onMount` closure: is used to create the data store (see: `useStore`);
+ * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
+ *
+ * The above can then be used like so:
+ *
+ * ```typescript
+ * export const OtherComponent = component$(() => {
+ *   return $(() => <Counter value={100} />);
+ * });
+ * ```
+ *
+ * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
+ * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+ *
+ * @param onMount - Initialization closure used when the component is first created.
+ * @param tagName - Optional components options. It can be used to set a custom tag-name to be
+ * used for the component's host element.
+ *
  * @public
  */
+// </docs>
 function componentQrl(onMount, options = {}) {
     var _a;
     const tagName = (_a = options.tagName) !== null && _a !== void 0 ? _a : 'div';
@@ -3034,6 +3097,7 @@ function componentQrl(onMount, options = {}) {
             const ctx = getContext(hostElement);
             const props = getProps(ctx);
             const invokeCtx = newInvokeContext(getDocument(hostElement), hostElement, hostElement);
+            invokeCtx.qrl = onMountQrl;
             const renderQRL = (await useInvoke(invokeCtx, onMountFn, props));
             return {
                 renderQRL,
@@ -3409,7 +3473,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-5-dev20220325115427";
+const version = "0.0.18-6-dev20220327223821";
 
 /**
  * Render JSX.
