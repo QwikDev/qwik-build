@@ -153,11 +153,6 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
      * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
      */
     base?: string;
-    /**
-     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
-     * Defaults to `undefined`
-     */
-    fragmentTagName?: string;
 }
 
 /**
@@ -171,6 +166,10 @@ export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOp
  * @public
  */
 export declare interface RenderToStringOptions extends RenderToDocumentOptions {
+    /**
+     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
+     * Defaults to `undefined`
+     */
     fragmentTagName?: string;
 }
 

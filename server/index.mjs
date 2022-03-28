@@ -9517,7 +9517,7 @@ function qrlImport(element, qrl) {
     return qrl_.symbolRef = qrl_.symbolFn().then((module) => qrl_.symbolRef = module[qrl_.symbol]);
   } else {
     if (!element) {
-      throw new Error("QRL does not have an attached container");
+      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
     }
     const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
     return qrl_.symbolRef = then(symbol, (ref) => {
@@ -10086,7 +10086,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-7-dev20220328161617",
+  qwik: "0.0.18-7-dev20220328223151",
   qwikDom: "2.1.14"
 };
 export {
