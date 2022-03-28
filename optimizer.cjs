@@ -29,10 +29,6 @@ var __spreadValues = (a, b) => {
   return a;
 };
 
-var __markAsModule = target => __defProp(target, "__esModule", {
-  value: true
-});
-
 var __export = (target, all) => {
   for (var name in all) {
     __defProp(target, name, {
@@ -42,20 +38,21 @@ var __export = (target, all) => {
   }
 };
 
-var __reExport = (target, module2, copyDefault, desc) => {
-  if (module2 && "object" === typeof module2 || "function" === typeof module2) {
-    for (let key of __getOwnPropNames(module2)) {
-      __hasOwnProp.call(target, key) || !copyDefault && "default" === key || __defProp(target, key, {
-        get: () => module2[key],
-        enumerable: !(desc = __getOwnPropDesc(module2, key)) || desc.enumerable
+var __copyProps = (to, from, except, desc) => {
+  if (from && "object" === typeof from || "function" === typeof from) {
+    for (let key of __getOwnPropNames(from)) {
+      __hasOwnProp.call(to, key) || key === except || __defProp(to, key, {
+        get: () => from[key],
+        enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
       });
     }
   }
-  return target;
+  return to;
 };
 
-var __toCommonJS = (cache => (module2, temp) => cache && cache.get(module2) || (temp = __reExport(__markAsModule({}), module2, 1), 
-cache && cache.set(module2, temp), temp))("undefined" !== typeof WeakMap ? new WeakMap : 0);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", {
+  value: true
+}), mod);
 
 var src_exports = {};
 
@@ -65,6 +62,8 @@ __export(src_exports, {
   qwikVite: () => qwikVite,
   versions: () => versions
 });
+
+module.exports = __toCommonJS(src_exports);
 
 var qDev = false !== globalThis.qDev;
 
@@ -1076,7 +1075,5 @@ function fixSSRInput(config, optimizer) {
 }
 
 var versions = {
-  qwik: "0.0.18-6-dev20220328155928"
+  qwik: "0.0.18-7-dev20220328161617"
 };
-
-module.exports = __toCommonJS(src_exports);
