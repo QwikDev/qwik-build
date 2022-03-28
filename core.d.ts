@@ -1306,7 +1306,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Observer` is passed into the `watchFn` of `onWatch`. It is intended to be used to wrap
+ * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
  * changes. A change to any of the properties cause the `watchFn` to re-run.
  *
@@ -1318,7 +1318,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```typescript
  * export const MyComp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
+ *   useWatch$((obs) => {
  *     store.doubleCount = 2 * obs(store).count;
  *   });
  *   return $(() => (
@@ -1333,7 +1333,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```
  *
  *
- * See: `onWatch`
+ * See: `useWatch`
  *
  * @public
  */
@@ -1341,7 +1341,7 @@ export declare interface Observer {
     /**
      * Used to signal to Qwik which state should be watched for changes.
      *
-     * The `Observer` is passed into the `watchFn` of `onWatch`. It is intended to be used to wrap
+     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
      * state objects in a read proxy which signals to Qwik which properties should be watched for
      * changes. A change to any of the properties cause the `watchFn` to re-run.
      *
@@ -1353,7 +1353,7 @@ export declare interface Observer {
      * ```typescript
      * export const MyComp = component$(() => {
      *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   onWatch$((obs) => {
+     *   useWatch$((obs) => {
      *     store.doubleCount = 2 * obs(store).count;
      *   });
      *   return $(() => (
@@ -1368,7 +1368,7 @@ export declare interface Observer {
      * ```
      *
      *
-     * See: `onWatch`
+     * See: `useWatch`
      *
      * @public
      */
@@ -1475,92 +1475,6 @@ export declare const onUnmount$: (first: () => void) => void;
  * @public
  */
 export declare function onUnmountQrl(unmountFn: QRL<() => void>): void;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)) => void;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare function onWatchQrl(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
 
 /**
  * Register a listener on `window`.
@@ -1904,8 +1818,8 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     resolve(container?: Element): Promise<TYPE>;
-    invoke<ARGS extends any[]>(...args: ARGS): Promise<TYPE extends (...args: any) => any ? ReturnType<TYPE> : never>;
-    invokeFn(el?: Element): (...args: any[]) => any;
+    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
+    invokeFn(el?: Element): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
 /**
@@ -2541,6 +2455,92 @@ export declare function useStylesQrl(styles: QRL<string>): void;
 export declare function useSubscriber<T extends {}>(obj: T): T;
 
 /**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+export declare const useWatch$: (first: (obs: Observer) => void | (() => void)) => void;
+
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+export declare function useWatchQrl(watchQrl: QRL<(obs: Observer) => void | (() => void)>): void;
+
+/**
  * Type representing a value which is either resolve or a promise.
  * @public
  */
@@ -2558,6 +2558,13 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     width?: number | string | undefined;
     disablePictureInPicture?: boolean | undefined;
     disableRemotePlayback?: boolean | undefined;
+}
+
+declare interface WatchDescriptor {
+    watchQrl: QRL<(obs: Observer) => void | (() => void)>;
+    hostElement: Element;
+    destroy?: NoSerialize<() => void>;
+    running?: NoSerialize<Promise<void>>;
 }
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2583,6 +2590,6 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Element): any;
+export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Element | WatchDescriptor): any;
 
 export { }

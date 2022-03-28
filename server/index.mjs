@@ -9068,6 +9068,9 @@ var import_global = __toESM(require_global());
 
 // src/core/util/markers.ts
 var import_global = __toESM(require_global());
+var QHostAttr = "q:host";
+var QObjAttr = "q:obj";
+var QContainerSelector = "[q\\:container]";
 
 // src/core/util/types.ts
 function isHtmlElement(node) {
@@ -9143,6 +9146,13 @@ function assertDefined(value, text) {
     if (value != null)
       return;
     throw newError(text || "Expected defined value.");
+  }
+}
+function assertEqual(value1, value2, text) {
+  if (qDev) {
+    if (value1 === value2)
+      return;
+    throw newError(text || `Expected '${value1}' === '${value2}'.`);
   }
 }
 function newError(text) {
@@ -9306,6 +9316,97 @@ var import_global = __toESM(require_global());
 
 // src/core/use/use-core.ts
 var import_global = __toESM(require_global());
+var _context;
+function tryGetInvokeContext() {
+  if (!_context) {
+    const context = typeof document !== "undefined" && document && document.__q_context__;
+    if (!context) {
+      return void 0;
+    }
+    if (Array.isArray(context)) {
+      const element = context[0];
+      const hostElement = getHostElement(element);
+      assertDefined(element);
+      return document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]);
+    }
+    return context;
+  }
+  return _context;
+}
+function getInvokeContext() {
+  const ctx = tryGetInvokeContext();
+  if (!ctx) {
+    throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+  }
+  return ctx;
+}
+function useInvoke(context, fn, ...args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(null, args);
+  } finally {
+    const currentCtx = _context;
+    _context = previousContext;
+    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
+      return Promise.all(currentCtx.waitOn).then(() => returnValue);
+    }
+  }
+  return returnValue;
+}
+function newInvokeContext(doc, hostElement, element, event, url) {
+  return {
+    doc,
+    hostElement,
+    element,
+    event,
+    url: url || null,
+    qrl: void 0,
+    subscriptions: event === "qRender"
+  };
+}
+function useWaitOn(promise) {
+  const ctx = getInvokeContext();
+  (ctx.waitOn || (ctx.waitOn = [])).push(promise);
+}
+function getHostElement(el) {
+  let foundSlot = false;
+  let node = el;
+  while (node) {
+    const isHost = node.hasAttribute(QHostAttr);
+    const isSlot = node.tagName === "Q:SLOT";
+    if (isHost) {
+      if (!foundSlot) {
+        break;
+      } else {
+        foundSlot = false;
+      }
+    }
+    if (isSlot) {
+      foundSlot = true;
+    }
+    node = node.parentElement;
+  }
+  return node;
+}
+function getContainer(el) {
+  return el.closest(QContainerSelector);
+}
+
+// src/core/util/promises.ts
+var import_global = __toESM(require_global());
+
+// src/core/util/array.ts
+var import_global = __toESM(require_global());
+
+// src/core/util/promises.ts
+function isPromise(value) {
+  return value instanceof Promise;
+}
+var then = (promise, thenFn) => {
+  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+};
 
 // src/core/import/qrl.ts
 var import_global = __toESM(require_global());
@@ -9319,20 +9420,202 @@ if (qDev) {
   Object.freeze(EMPTY_OBJ);
 }
 
-// src/core/util/promises.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/array.ts
-var import_global = __toESM(require_global());
-
 // src/core/platform/platform.ts
 var import_global = __toESM(require_global());
+var createPlatform2 = (doc) => {
+  const moduleCache = /* @__PURE__ */ new Map();
+  return {
+    importSymbol(element, url, symbolName) {
+      const urlDoc = toUrl(doc, element, url).toString();
+      const urlCopy = new URL(urlDoc);
+      urlCopy.hash = "";
+      urlCopy.search = "";
+      const importURL = urlCopy.href;
+      const mod = moduleCache.get(importURL);
+      if (mod) {
+        return mod[symbolName];
+      }
+      return import(
+        /* @vite-ignore */
+        importURL
+      ).then((mod2) => {
+        moduleCache.set(importURL, mod2);
+        return mod2[symbolName];
+      });
+    },
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          resolve(fn());
+        });
+      });
+    },
+    nextTick: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
+        });
+      });
+    },
+    chunkForSymbol() {
+      return void 0;
+    }
+  };
+};
+function toUrl(doc, element, url) {
+  var _a;
+  const containerEl = getContainer(element);
+  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
+  return new URL(url, base);
+}
+var getPlatform = (docOrNode) => {
+  const doc = getDocument(docOrNode);
+  return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
+};
+var DocumentPlatform = /* @__PURE__ */ Symbol();
 
 // src/core/use/use-subscriber.ts
 var import_global = __toESM(require_global());
 
 // src/core/use/use-host-element.public.ts
 var import_global = __toESM(require_global());
+function useHostElement() {
+  const element = getInvokeContext().hostElement;
+  assertDefined(element);
+  return element;
+}
+
+// src/core/use/use-subscriber.ts
+function wrapSubscriber(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const target = obj[QOjectTargetSymbol];
+    if (!target) {
+      return obj;
+    }
+    return new Proxy(obj, {
+      get(target2, prop) {
+        if (prop === QOjectOriginalProxy) {
+          return target2;
+        }
+        target2[SetSubscriber] = subscriber;
+        return target2[prop];
+      }
+    });
+  }
+  return obj;
+}
+
+// src/core/import/qrl.ts
+var runtimeSymbolId = 0;
+var RUNTIME_QRL = "/runtimeQRL";
+function toInternalQRL(qrl) {
+  assertEqual(isQrl(qrl), true);
+  return qrl;
+}
+function qrlImport(element, qrl) {
+  const qrl_ = toInternalQRL(qrl);
+  if (qrl_.symbolRef)
+    return qrl_.symbolRef;
+  if (qrl_.symbolFn) {
+    return qrl_.symbolRef = qrl_.symbolFn().then((module) => qrl_.symbolRef = module[qrl_.symbol]);
+  } else {
+    if (!element) {
+      throw new Error("QRL does not have an attached container");
+    }
+    const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    return qrl_.symbolRef = then(symbol, (ref) => {
+      return qrl_.symbolRef = ref;
+    });
+  }
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+  return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+}
+function stringifyQRL(qrl, opts = {}) {
+  var _a;
+  const qrl_ = toInternalQRL(qrl);
+  const symbol = qrl_.symbol;
+  const platform = opts.platform;
+  const element = opts.element;
+  const chunk = platform ? (_a = platform.chunkForSymbol(symbol)) != null ? _a : qrl_.chunk : qrl_.chunk;
+  const parts = [chunk];
+  if (symbol && symbol !== "default") {
+    parts.push("#", symbol);
+  }
+  const capture = qrl_.capture;
+  const captureRef = qrl_.captureRef;
+  if (opts.getObjId) {
+    if (captureRef && captureRef.length) {
+      const capture2 = captureRef.map(opts.getObjId);
+      parts.push(`[${capture2.join(" ")}]`);
+    }
+  } else if (capture && capture.length > 0) {
+    parts.push(`[${capture.join(" ")}]`);
+  }
+  const qrlString = parts.join("");
+  if (qrl_.chunk === RUNTIME_QRL && element) {
+    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
+    qrls.add(qrl);
+  }
+  return qrlString;
+}
+
+// src/core/import/qrl-class.ts
+function isQrl(value) {
+  return value instanceof QRLInternal;
+}
+var QRL = class {
+  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+    this.chunk = chunk;
+    this.symbol = symbol;
+    this.symbolRef = symbolRef;
+    this.symbolFn = symbolFn;
+    this.capture = capture;
+    this.captureRef = captureRef;
+    this.canonicalChunk = chunk.replace(FIND_EXT, "");
+  }
+  setContainer(el) {
+    if (!this.el) {
+      this.el = el;
+    }
+  }
+  async resolve(el) {
+    if (el) {
+      this.setContainer(el);
+    }
+    return qrlImport(this.el, this);
+  }
+  invokeFn(el) {
+    return (...args) => {
+      const currentCtx = tryGetInvokeContext();
+      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      return then(fn, (fn2) => {
+        if (typeof fn2 === "function") {
+          const context = {
+            ...newInvokeContext(),
+            ...currentCtx,
+            qrl: this,
+            waitOn: void 0
+          };
+          return useInvoke(context, fn2, ...args);
+        }
+        throw new Error("QRL is not a function");
+      });
+    };
+  }
+  copy() {
+    return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+  }
+  invoke(...args) {
+    const fn = this.invokeFn();
+    return fn(...args);
+  }
+  serialize(options) {
+    return stringifyQRL(this, options);
+  }
+};
+var QRLInternal = QRL;
+var FIND_EXT = /\?[\w=&]+$/;
 
 // src/core/render/notify-render.ts
 var import_global = __toESM(require_global());
@@ -9361,16 +9644,99 @@ var SCHEDULE = Symbol("Render state");
 // src/core/util/stringify.ts
 var import_global = __toESM(require_global());
 
+// src/core/watch/watch.public.ts
+var import_global = __toESM(require_global());
+
+// src/core/import/qrl.public.ts
+var import_global = __toESM(require_global());
+function $(expression) {
+  return runtimeQrl(expression);
+}
+function implicit$FirstArg(fn) {
+  return function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+  };
+}
+
+// src/core/watch/watch.public.ts
+function useWatchQrl(watchQrl) {
+  const hostElement = useHostElement();
+  const watch = {
+    watchQrl,
+    hostElement
+  };
+  getContext(hostElement).refMap.add(watch);
+  useWaitOn(runWatch(watch));
+}
+function runWatch(watch) {
+  const promise = new Promise((resolve) => {
+    return then(watch.running, () => {
+      const destroy = watch.destroy;
+      if (destroy) {
+        watch.destroy = void 0;
+        try {
+          destroy();
+        } catch (err) {
+          logError(err);
+        }
+      }
+      const hostElement = watch.hostElement;
+      const watchFn = watch.watchQrl.invokeFn(hostElement);
+      const obs = (obj) => wrapSubscriber(obj, watch);
+      resolve(then(watchFn(obs), (returnValue) => {
+        if (typeof returnValue === "function") {
+          watch.destroy = noSerialize(returnValue);
+        }
+      }));
+    });
+  });
+  watch.running = noSerialize(promise);
+  return promise;
+}
+var useWatch$ = implicit$FirstArg(useWatchQrl);
+
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
+var QOjectTargetSymbol = ":target:";
+var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
 var NOSERIALIZE = Symbol("NoSerialize");
+function noSerialize(input) {
+  input[NOSERIALIZE] = true;
+  return input;
+}
 
 // src/core/object/store.ts
 var import_global = __toESM(require_global());
 
 // src/core/props/props-obj-map.ts
 var import_global = __toESM(require_global());
+function newQObjectMap(element) {
+  const array = [];
+  let added = element.hasAttribute(QObjAttr);
+  return {
+    array,
+    get(index) {
+      return array[index];
+    },
+    indexOf(obj) {
+      const index = array.indexOf(obj);
+      return index === -1 ? void 0 : index;
+    },
+    add(object) {
+      const index = array.indexOf(object);
+      if (index === -1) {
+        array.push(object);
+        if (!added) {
+          element.setAttribute(QObjAttr, "");
+          added = true;
+        }
+        return array.length - 1;
+      }
+      return index;
+    }
+  };
+}
 
 // src/core/props/props-on.ts
 var import_global = __toESM(require_global());
@@ -9389,9 +9755,23 @@ var import_global = __toESM(require_global());
 
 // src/core/props/props.ts
 Error.stackTraceLimit = 9999;
-
-// src/core/import/qrl.public.ts
-var import_global = __toESM(require_global());
+var Q_CTX = "__ctx__";
+function getContext(element) {
+  let ctx = element[Q_CTX];
+  if (!ctx) {
+    const cache = /* @__PURE__ */ new Map();
+    element[Q_CTX] = ctx = {
+      element,
+      cache,
+      refMap: newQObjectMap(element),
+      dirty: false,
+      props: void 0,
+      renderQrl: void 0,
+      component: void 0
+    };
+  }
+  return ctx;
+}
 
 // src/core/render/cursor.ts
 var RefSymbol = Symbol();
@@ -9709,7 +10089,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-6-dev20220327223821",
+  qwik: "0.0.18-6-dev20220328093440",
   qwikDom: "2.1.14"
 };
 export {

@@ -131,6 +131,7 @@ function newError(text) {
 // src/core/util/markers.ts
 var import_globalthis = __toESM(require_globalthis());
 var QHostAttr = "q:host";
+var QObjAttr = "q:obj";
 var QContainerSelector = "[q\\:container]";
 
 // src/core/util/dom.ts
@@ -168,6 +169,13 @@ function tryGetInvokeContext() {
   }
   return _context;
 }
+function getInvokeContext() {
+  const ctx = tryGetInvokeContext();
+  if (!ctx) {
+    throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+  }
+  return ctx;
+}
 function useInvoke(context, fn, ...args) {
   const previousContext = _context;
   let returnValue;
@@ -193,6 +201,10 @@ function newInvokeContext(doc, hostElement, element, event, url) {
     qrl: void 0,
     subscriptions: event === "qRender"
   };
+}
+function useWaitOn(promise) {
+  const ctx = getInvokeContext();
+  (ctx.waitOn || (ctx.waitOn = [])).push(promise);
 }
 function getHostElement(el) {
   let foundSlot = false;
@@ -479,18 +491,6 @@ var import_globalthis = __toESM(require_globalthis());
 // src/core/import/qrl-class.ts
 var import_globalthis = __toESM(require_globalthis());
 
-// src/core/import/qrl.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/flyweight.ts
-var import_globalthis = __toESM(require_globalthis());
-var EMPTY_ARRAY = [];
-var EMPTY_OBJ = {};
-if (qDev) {
-  Object.freeze(EMPTY_ARRAY);
-  Object.freeze(EMPTY_OBJ);
-}
-
 // src/core/util/promises.ts
 var import_globalthis = __toESM(require_globalthis());
 
@@ -504,6 +504,18 @@ function isPromise(value) {
 var then = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
+
+// src/core/import/qrl.ts
+var import_globalthis = __toESM(require_globalthis());
+
+// src/core/util/flyweight.ts
+var import_globalthis = __toESM(require_globalthis());
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+if (qDev) {
+  Object.freeze(EMPTY_ARRAY);
+  Object.freeze(EMPTY_OBJ);
+}
 
 // src/core/platform/platform.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -561,8 +573,34 @@ var import_globalthis = __toESM(require_globalthis());
 
 // src/core/use/use-host-element.public.ts
 var import_globalthis = __toESM(require_globalthis());
+function useHostElement() {
+  const element = getInvokeContext().hostElement;
+  assertDefined(element);
+  return element;
+}
+
+// src/core/use/use-subscriber.ts
+function wrapSubscriber(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const target = obj[QOjectTargetSymbol];
+    if (!target) {
+      return obj;
+    }
+    return new Proxy(obj, {
+      get(target2, prop) {
+        if (prop === QOjectOriginalProxy) {
+          return target2;
+        }
+        target2[SetSubscriber] = subscriber;
+        return target2[prop];
+      }
+    });
+  }
+  return obj;
+}
 
 // src/core/import/qrl.ts
+var runtimeSymbolId = 0;
 var RUNTIME_QRL = "/runtimeQRL";
 function toInternalQRL(qrl) {
   assertEqual(isQrl(qrl), true);
@@ -583,6 +621,9 @@ function qrlImport(element, qrl) {
       return qrl_.symbolRef = ref;
     });
   }
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+  return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
 }
 function stringifyQRL(qrl, opts = {}) {
   var _a;
@@ -638,23 +679,26 @@ var QRL = class {
     }
     return qrlImport(this.el, this);
   }
-  invokeFn() {
-    return async (...args) => {
+  invokeFn(el) {
+    return (...args) => {
       const currentCtx = tryGetInvokeContext();
-      const fn = typeof this.symbolRef === "function" ? this.symbolRef : await this.resolve();
-      if (typeof fn === "function") {
-        const context = __spreadProps(__spreadValues(__spreadValues({}, newInvokeContext()), currentCtx), {
-          qrl: this
-        });
-        return useInvoke(context, fn, ...args);
-      }
-      throw new Error("QRL is not a function");
+      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      return then(fn, (fn2) => {
+        if (typeof fn2 === "function") {
+          const context = __spreadProps(__spreadValues(__spreadValues({}, newInvokeContext()), currentCtx), {
+            qrl: this,
+            waitOn: void 0
+          });
+          return useInvoke(context, fn2, ...args);
+        }
+        throw new Error("QRL is not a function");
+      });
     };
   }
   copy() {
     return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
   }
-  async invoke(...args) {
+  invoke(...args) {
     const fn = this.invokeFn();
     return fn(...args);
   }
@@ -694,6 +738,14 @@ var import_globalthis = __toESM(require_globalthis());
 
 // src/core/import/qrl.public.ts
 var import_globalthis = __toESM(require_globalthis());
+function $(expression) {
+  return runtimeQrl(expression);
+}
+function implicit$FirstArg(fn) {
+  return function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+  };
+}
 
 // src/core/component/component-ctx.ts
 var import_globalthis = __toESM(require_globalthis());
@@ -813,16 +865,103 @@ function stringifyClassOrStyle(obj, isClass) {
 // src/core/render/notify-render.ts
 var SCHEDULE = Symbol("Render state");
 
+// src/core/watch/watch.public.ts
+var import_globalthis = __toESM(require_globalthis());
+function useWatchQrl(watchQrl) {
+  const hostElement = useHostElement();
+  const watch = {
+    watchQrl,
+    hostElement
+  };
+  getContext(hostElement).refMap.add(watch);
+  useWaitOn(runWatch(watch));
+}
+function runWatch(watch) {
+  const promise = new Promise((resolve) => {
+    return then(watch.running, () => {
+      const destroy = watch.destroy;
+      if (destroy) {
+        watch.destroy = void 0;
+        try {
+          destroy();
+        } catch (err) {
+          logError(err);
+        }
+      }
+      const hostElement = watch.hostElement;
+      const watchFn = watch.watchQrl.invokeFn(hostElement);
+      const obs = (obj) => wrapSubscriber(obj, watch);
+      resolve(then(watchFn(obs), (returnValue) => {
+        if (typeof returnValue === "function") {
+          watch.destroy = noSerialize(returnValue);
+        }
+      }));
+    });
+  });
+  watch.running = noSerialize(promise);
+  return promise;
+}
+var useWatch$ = implicit$FirstArg(useWatchQrl);
+
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
+var QOjectTargetSymbol = ":target:";
+var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
 var NOSERIALIZE = Symbol("NoSerialize");
+function noSerialize(input) {
+  input[NOSERIALIZE] = true;
+  return input;
+}
 
 // src/core/props/props-obj-map.ts
 var import_globalthis = __toESM(require_globalthis());
+function newQObjectMap(element) {
+  const array = [];
+  let added = element.hasAttribute(QObjAttr);
+  return {
+    array,
+    get(index) {
+      return array[index];
+    },
+    indexOf(obj) {
+      const index = array.indexOf(obj);
+      return index === -1 ? void 0 : index;
+    },
+    add(object) {
+      const index = array.indexOf(object);
+      if (index === -1) {
+        array.push(object);
+        if (!added) {
+          element.setAttribute(QObjAttr, "");
+          added = true;
+        }
+        return array.length - 1;
+      }
+      return index;
+    }
+  };
+}
 
 // src/core/props/props.ts
 Error.stackTraceLimit = 9999;
+var Q_CTX = "__ctx__";
+function getContext(element) {
+  let ctx = element[Q_CTX];
+  if (!ctx) {
+    const cache = /* @__PURE__ */ new Map();
+    element[Q_CTX] = ctx = {
+      element,
+      cache,
+      refMap: newQObjectMap(element),
+      dirty: false,
+      props: void 0,
+      renderQrl: void 0,
+      component: void 0
+    };
+  }
+  return ctx;
+}
 
 // src/testing/util.ts
 var import_globalthis = __toESM(require_globalthis());

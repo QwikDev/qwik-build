@@ -211,56 +211,6 @@ function getContainer(el) {
     return el.closest(QContainerSelector);
 }
 
-function isQrl(value) {
-    return value instanceof QRLInternal;
-}
-class QRL {
-    constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
-        this.chunk = chunk;
-        this.symbol = symbol;
-        this.symbolRef = symbolRef;
-        this.symbolFn = symbolFn;
-        this.capture = capture;
-        this.captureRef = captureRef;
-        this.canonicalChunk = chunk.replace(FIND_EXT, '');
-    }
-    setContainer(el) {
-        if (!this.el) {
-            this.el = el;
-        }
-    }
-    async resolve(el) {
-        if (el) {
-            this.setContainer(el);
-        }
-        return qrlImport(this.el, this);
-    }
-    invokeFn() {
-        return async (...args) => {
-            const currentCtx = tryGetInvokeContext();
-            const fn = typeof this.symbolRef === 'function' ? this.symbolRef : await this.resolve();
-            if (typeof fn === 'function') {
-                const context = Object.assign(Object.assign(Object.assign({}, newInvokeContext()), currentCtx), { qrl: this });
-                return useInvoke(context, fn, ...args);
-            }
-            throw new Error('QRL is not a function');
-        };
-    }
-    copy() {
-        return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
-    }
-    async invoke(...args) {
-        const fn = this.invokeFn();
-        return fn(...args);
-    }
-    serialize(options) {
-        return stringifyQRL(this, options);
-    }
-}
-const QRLInternal = QRL;
-// https://regexr.com/6enjv
-const FIND_EXT = /\?[\w=&]+$/;
-
 /**
  * @license
  * Copyright Builder.io, Inc. All Rights Reserved.
@@ -303,6 +253,58 @@ const promiseAll = (promises) => {
     }
     return promises;
 };
+
+function isQrl(value) {
+    return value instanceof QRLInternal;
+}
+class QRL {
+    constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+        this.chunk = chunk;
+        this.symbol = symbol;
+        this.symbolRef = symbolRef;
+        this.symbolFn = symbolFn;
+        this.capture = capture;
+        this.captureRef = captureRef;
+        this.canonicalChunk = chunk.replace(FIND_EXT, '');
+    }
+    setContainer(el) {
+        if (!this.el) {
+            this.el = el;
+        }
+    }
+    async resolve(el) {
+        if (el) {
+            this.setContainer(el);
+        }
+        return qrlImport(this.el, this);
+    }
+    invokeFn(el) {
+        return ((...args) => {
+            const currentCtx = tryGetInvokeContext();
+            const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
+            return then(fn, (fn) => {
+                if (typeof fn === 'function') {
+                    const context = Object.assign(Object.assign(Object.assign({}, newInvokeContext()), currentCtx), { qrl: this, waitOn: undefined });
+                    return useInvoke(context, fn, ...args);
+                }
+                throw new Error('QRL is not a function');
+            });
+        });
+    }
+    copy() {
+        return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    }
+    invoke(...args) {
+        const fn = this.invokeFn();
+        return fn(...args);
+    }
+    serialize(options) {
+        return stringifyQRL(this, options);
+    }
+}
+const QRLInternal = QRL;
+// https://regexr.com/6enjv
+const FIND_EXT = /\?[\w=&]+$/;
 
 const createPlatform = (doc) => {
     const moduleCache = new Map();
@@ -660,7 +662,7 @@ function resume(containerEl) {
         return getObjectImpl(id, elements, meta.objs, map);
     };
     // Revive proxies with subscriptions into the proxymap
-    reviveValues(meta.objs, meta.subs, elements, map, parentJSON);
+    reviveValues(meta.objs, meta.subs, getObject, map, parentJSON);
     // Rebuild target objects
     for (const obj of meta.objs) {
         reviveNestedObjects(obj, getObject);
@@ -760,8 +762,8 @@ function snapshotState(containerEl) {
         var _a;
         const subs = (_a = proxyMap.get(obj)) === null || _a === void 0 ? void 0 : _a[QOjectSubsSymbol];
         if (subs) {
-            return Object.fromEntries(Array.from(subs.entries()).map(([el, set]) => {
-                const id = getElementID(el);
+            return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
+                const id = getObjId(sub);
                 if (id !== null) {
                     return [id, Array.from(set)];
                 }
@@ -863,7 +865,7 @@ function walkNodes(nodes, parent, predicate) {
         child = child.nextElementSibling;
     }
 }
-function reviveValues(objs, subs, elementMap, map, containerEl) {
+function reviveValues(objs, subs, getObject, map, containerEl) {
     for (let i = 0; i < objs.length; i++) {
         const value = objs[i];
         if (typeof value === 'string') {
@@ -879,7 +881,7 @@ function reviveValues(objs, subs, elementMap, map, containerEl) {
             if (sub) {
                 const converted = new Map();
                 Object.entries(sub).forEach((entry) => {
-                    const el = elementMap.get(entry[0]);
+                    const el = getObject(entry[0]);
                     if (!el) {
                         logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
                         return;
@@ -2400,6 +2402,133 @@ function sortNodes(elements) {
     elements.sort((a, b) => (a.compareDocumentPosition(b) & 2 ? 1 : -1));
 }
 
+// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+function useWatchQrl(watchQrl) {
+    const hostElement = useHostElement();
+    const watch = {
+        watchQrl: watchQrl,
+        hostElement,
+    };
+    getContext(hostElement).refMap.add(watch);
+    useWaitOn(runWatch(watch));
+}
+function runWatch(watch) {
+    const promise = new Promise((resolve) => {
+        return then(watch.running, () => {
+            const destroy = watch.destroy;
+            if (destroy) {
+                watch.destroy = undefined;
+                try {
+                    destroy();
+                }
+                catch (err) {
+                    logError(err);
+                }
+            }
+            const hostElement = watch.hostElement;
+            const watchFn = watch.watchQrl.invokeFn(hostElement);
+            const obs = (obj) => wrapSubscriber(obj, watch);
+            resolve(then(watchFn(obs), (returnValue) => {
+                if (typeof returnValue === 'function') {
+                    watch.destroy = noSerialize(returnValue);
+                }
+            }));
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+}
+// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+const useWatch$ = implicit$FirstArg(useWatchQrl);
+
 const ProxyMapSymbol = Symbol('ProxyMapSymbol');
 function getProxyMap(doc) {
     let map = doc[ProxyMapSymbol];
@@ -2525,15 +2654,15 @@ class ReadWriteProxyHandler {
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((_, el) => notifyRender(el));
+            this.subs.forEach((_, sub) => notifyChange(sub));
             return true;
         }
         const oldValue = target[prop];
         if (oldValue !== unwrappedNewValue) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((propSets, el) => {
+            this.subs.forEach((propSets, sub) => {
                 if (propSets.has(prop)) {
-                    notifyRender(el);
+                    notifyChange(sub);
                 }
             });
         }
@@ -2548,6 +2677,14 @@ class ReadWriteProxyHandler {
     }
     ownKeys(target) {
         return Object.getOwnPropertyNames(target);
+    }
+}
+function notifyChange(subscriber) {
+    if (isElement(subscriber)) {
+        notifyRender(subscriber);
+    }
+    else {
+        runWatch(subscriber);
     }
 }
 function verifySerializable(value) {
@@ -3177,135 +3314,6 @@ function snapshot(elmOrDoc) {
     containerEl.setAttribute(QContainerAttr, 'paused');
 }
 
-function useProps() {
-    const ctx = getInvokeContext();
-    let props = ctx.props;
-    if (!props) {
-        props = ctx.props = getProps(getContext(useHostElement()));
-    }
-    return props;
-}
-
-const ON_WATCH = 'on:qWatch';
-function registerOnWatch(element, props, watchFnQrl) {
-    props[ON_WATCH] = watchFnQrl;
-    invokeWatchFn(element, watchFnQrl);
-}
-const cleanupFnMap = new Map();
-async function invokeWatchFn(element, watchFnQrl) {
-    const watchFn = await watchFnQrl.resolve(element);
-    const previousCleanupFn = cleanupFnMap.get(watchFn);
-    cleanupFnMap.delete(watchFn);
-    if (isCleanupFn(previousCleanupFn)) {
-        try {
-            previousCleanupFn();
-        }
-        catch (e) {
-            // TODO(misko): Centralize error handling
-            logError(e);
-        }
-    }
-    throw new Error('TO IMPLEMENT');
-}
-function isCleanupFn(value) {
-    return typeof value === 'function';
-}
-
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#onWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-function onWatchQrl(watchFn) {
-    registerOnWatch(useHostElement(), useProps(), watchFn);
-}
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#onWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const onWatch$ = implicit$FirstArg(onWatchQrl);
-
 /**
  * Use to render asynchronous (`Promise`) values.
  *
@@ -3438,7 +3446,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-6-dev20220327223821";
+const version = "0.0.18-6-dev20220328093440";
 
 /**
  * Render JSX.
@@ -3603,5 +3611,5 @@ function useStore(initialState) {
     return qObject(initialState, getProxyMap(useDocument()));
 }
 
-export { $, Async, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, notifyRender, on, onDocument, onPause$, onPauseQrl, onResume$, onResumeQrl, onUnmount$, onUnmountQrl, onWatch$, onWatchQrl, onWindow, qrl, render, setPlatform, snapshot, unwrapSubscriber, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesQrl, useStore, useStyles$, useStylesQrl, useSubscriber, version, wrapSubscriber };
+export { $, Async, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, notifyRender, on, onDocument, onPause$, onPauseQrl, onResume$, onResumeQrl, onUnmount$, onUnmountQrl, onWindow, qrl, render, setPlatform, snapshot, unwrapSubscriber, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map
