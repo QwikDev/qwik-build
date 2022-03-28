@@ -466,11 +466,6 @@ declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type Booleanish = boolean | 'true' | 'false';
 
-/**
- * @public
- */
-export declare function bubble<PAYLOAD>(eventType: string, payload?: PAYLOAD): void;
-
 declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -529,7 +524,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
- *       <button on$:click={() => (state.count += props.step || 1)}>+</button>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
  *   ));
  * });
@@ -549,7 +544,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `onDehydrate`, `onHalt`, `onResume`, `on`,
+ * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
  * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
  *
  * @param onMount - Initialization closure used when the component is first created.
@@ -558,7 +553,52 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
+export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): Component<PROPS>;
+
+/**
+ * @public
+ */
+declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
+
+declare interface ComponentBaseProps {
+    class?: string | {
+        [className: string]: boolean;
+    };
+    className?: string | undefined;
+    style?: CSSProperties | string | undefined;
+    key?: string | number;
+    id?: string | undefined;
+    'q:slot'?: string;
+    [key: `host:on${string}$`]: EventHandler_2;
+    [key: `host:on${string}Qrl`]: QrlEvent | QrlEvent[];
+    [key: `host:${string}`]: any;
+    children?: JSXChildren;
+}
+
+/**
+ * @public
+ */
+export declare type ComponentChild = JSXNode<any> | object | string | number | bigint | boolean | null | undefined;
+
+/**
+ * @public
+ */
+export declare type ComponentChildren = ComponentChild[] | ComponentChild;
+
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
+}
+
+/**
+ * @public
+ */
+export declare interface ComponentOptions {
+    tagName?: string;
+}
 
 /**
  * Declare a Qwik component that can be used to create UI.
@@ -587,7 +627,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  *   return $(() => (
  *     <div>
  *       <span>{state.count}</span>
- *       <button on$:click={() => (state.count += props.step || 1)}>+</button>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
  *   ));
  * });
@@ -607,7 +647,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `onDehydrate`, `onHalt`, `onResume`, `on`,
+ * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
  * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
  *
  * @param onMount - Initialization closure used when the component is first created.
@@ -616,37 +656,7 @@ export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, 
  *
  * @public
  */
-export declare function component<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): (props: PROPS & ComponentBaseProps) => JSXNode<PROPS>;
-
-declare interface ComponentBaseProps extends QwikEvents {
-    class?: string | {
-        [className: string]: boolean;
-    };
-    className?: string | undefined;
-    style?: CSSProperties | undefined;
-    key?: string | number;
-    id?: string | undefined;
-    'q:slot'?: string;
-    [key: `h:${string}`]: any;
-    children?: JSXChildren;
-}
-
-/**
- * @public
- */
-export declare type ComponentChild = JSXNode<any> | object | string | number | bigint | boolean | null | undefined;
-
-/**
- * @public
- */
-export declare type ComponentChildren = ComponentChild[] | ComponentChild;
-
-/**
- * @public
- */
-export declare interface ComponentOptions {
-    tagName?: string;
-}
+export declare function componentQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
 
 /**
  * @public
@@ -655,7 +665,7 @@ export declare interface CorePlatform {
     /**
      * Dynamic import()
      */
-    importSymbol: (element: Element, url: string | URL, symbol: string) => Promise<any>;
+    importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
      * Platform specific queue, such as process.nextTick() for Node
      * and requestAnimationFrame() for the browser.
@@ -679,11 +689,6 @@ declare interface CSSProperties_2 {
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
-
-/**
- * @public
- */
-export declare function dehydrate(document: Document): void;
 
 declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -710,7 +715,12 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
-declare type Event_2 = () => any;
+/**
+ * @public
+ */
+export declare type EventHandler<T> = QRL<(value: T) => any>;
+
+declare type EventHandler_2 = (event: Event, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -792,7 +802,7 @@ export declare namespace h {
  * servers that purpose.
  * @public
  */
-export declare const Host: FunctionComponent<Record<string, any>>;
+export declare const Host: FunctionComponent<HTMLAttributes<HTMLElement>>;
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
@@ -811,7 +821,7 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     placeholder?: string | undefined;
     slot?: string | undefined;
     spellCheck?: Booleanish | undefined;
-    style?: CSSProperties_2 | undefined;
+    style?: CSSProperties_2 | string | undefined;
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
@@ -1251,6 +1261,20 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+declare const NOSERIALIZE: unique symbol;
+
+/**
+ * @alpha
+ */
+export declare type NoSerialize<T> = (T & {
+    [NOSERIALIZE]: true;
+}) | undefined;
+
+/**
+ * @alpha
+ */
+export declare function noSerialize<T extends {}>(input: T): NoSerialize<T>;
+
 /**
  * Mark component for rendering.
  *
@@ -1282,7 +1306,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Observer` is passed into the `watchFn` of `onWatch`. It is intended to be used to wrap
+ * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
  * changes. A change to any of the properties cause the `watchFn` to re-run.
  *
@@ -1294,7 +1318,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```typescript
  * export const MyComp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
+ *   useWatch$((obs) => {
  *     store.doubleCount = 2 * obs(store).count;
  *   });
  *   return $(() => (
@@ -1302,14 +1326,14 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
- *       <button on$:click={() => store.count++}>+</button>
+ *       <button onClick$={() => store.count++}>+</button>
  *     </div>
  *   ));
  * });
  * ```
  *
  *
- * See: `onWatch`
+ * See: `useWatch`
  *
  * @public
  */
@@ -1317,7 +1341,7 @@ export declare interface Observer {
     /**
      * Used to signal to Qwik which state should be watched for changes.
      *
-     * The `Observer` is passed into the `watchFn` of `onWatch`. It is intended to be used to wrap
+     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
      * state objects in a read proxy which signals to Qwik which properties should be watched for
      * changes. A change to any of the properties cause the `watchFn` to re-run.
      *
@@ -1329,7 +1353,7 @@ export declare interface Observer {
      * ```typescript
      * export const MyComp = component$(() => {
      *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   onWatch$((obs) => {
+     *   useWatch$((obs) => {
      *     store.doubleCount = 2 * obs(store).count;
      *   });
      *   return $(() => (
@@ -1337,14 +1361,14 @@ export declare interface Observer {
      *       <span>
      *         {store.count} / {store.doubleCount}
      *       </span>
-     *       <button on$:click={() => store.count++}>+</button>
+     *       <button onClick$={() => store.count++}>+</button>
      *     </div>
      *   ));
      * });
      * ```
      *
      *
-     * See: `onWatch`
+     * See: `useWatch`
      *
      * @public
      */
@@ -1357,6 +1381,10 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
 
+declare type On$Props<T extends {}> = {
+    [K in keyof T as K extends `${infer A}Qrl` ? NonNullable<T[K]> extends QRL ? `${A}$` : never : never]?: NonNullable<T[K]> extends QRL<infer B> ? B : never;
+};
+
 /**
  * Register a listener on the current component's host element.
  *
@@ -1367,31 +1395,7 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function on(event: string, eventFn: QRL<() => void>): QRL<() => void>;
-
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-export declare const onDehydrate$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-export declare function onDehydrate(dehydrateFn: QRL<() => void>): void;
+export declare function on(event: string, eventFn: QRL<() => void>): void;
 
 /**
  * Register a listener on `document`.
@@ -1403,38 +1407,42 @@ export declare function onDehydrate(dehydrateFn: QRL<() => void>): void;
  *
  * @public
  */
-export declare function onDocument(event: string, eventFn: QRL<() => void>): QRL<() => void>;
-
-/**
- * A lazy-loadable reference to a component's on hydrate hook.
- *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
- * component to do any work to re-activate itself.
- *
- * @public
- */
-export declare const onHydrate$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's on hydrate hook.
- *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
- * component to do any work to re-activate itself.
- *
- * @public
- */
-export declare function onHydrate(hydrateFn: QRL<() => void>): void;
+export declare function onDocument(event: string, eventFn: QRL<() => void>): void;
 
 /**
  * @public
  */
-export declare type OnMountFn<PROPS> = (props: PROPS) => ValueOrPromise<QRL<() => ValueOrPromise<JSXNode<any>>>>;
+export declare type OnMountFn<PROPS> = (props: PROPS) => ValueOrPromise<QRL<() => ValueOrPromise<JSXNode<any> | null>>>;
+
+/**
+ * A lazy-loadable reference to a component's on dehydrate hook.
+ *
+ * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
+ * the component to do last-minute clean-up before its state is serialized.
+ *
+ * Typically used with transient state.
+ *
+ * @public
+ */
+export declare const onPause$: (first: () => void) => void;
+
+/**
+ * A lazy-loadable reference to a component's on dehydrate hook.
+ *
+ * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
+ * the component to do last-minute clean-up before its state is serialized.
+ *
+ * Typically used with transient state.
+ *
+ * @public
+ */
+export declare function onPauseQrl(dehydrateFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
  *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
+ * Invoked when the component's state is re-resumed from serialization. This allows the
+ * component to do any work to re-activate itself.
  *
  * @public
  */
@@ -1444,11 +1452,11 @@ export declare const onResume$: (first: () => void) => void;
  * A lazy-loadable reference to a component's on resume hook.
  *
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
  * @public
  */
-export declare function onResume(resumeFn: QRL<() => void>): void;
+export declare function onResumeQrl(resumeFn: QRL<() => void>): void;
 
 /**
  * A lazy-loadable reference to a component's destroy hook.
@@ -1466,93 +1474,7 @@ export declare const onUnmount$: (first: () => void) => void;
  *
  * @public
  */
-export declare function onUnmount(unmountFn: QRL<() => void>): void;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button on$:click={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare const onWatch$: (first: (obs: Observer) => unknown | (() => void)) => void;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button on$:click={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare function onWatch(watchFn: QRL<(obs: Observer) => unknown | (() => void)>): void;
+export declare function onUnmountQrl(unmountFn: QRL<() => void>): void;
 
 /**
  * Register a listener on `window`.
@@ -1564,7 +1486,7 @@ export declare function onWatch(watchFn: QRL<(obs: Observer) => unknown | (() =>
  *
  * @public
  */
-export declare function onWindow(event: string, eventFn: QRL<() => void>): QRL<() => void>;
+export declare function onWindow(event: string, eventFn: QRL<() => void>): void;
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1768,43 +1690,9 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * @public
  */
-export declare type PropsOf<COMP extends (props: any) => JSXNode> = COMP extends (props: infer PROPS) => JSXNode<any> ? PROPS : never;
+export declare type PropsOf<COMP extends (props: any) => JSXNode<any> | null> = COMP extends (props: infer PROPS) => JSXNode<any> | null ? NonNullable<PROPS> : never;
 
-declare class QComponentCtx {
-    __brand__: 'QComponentCtx';
-    ctx: QContext;
-    hostElement: HTMLElement;
-    styleId: string | undefined | null;
-    styleClass: string | null;
-    styleHostClass: string | null;
-    slots: JSXNode[];
-    constructor(hostElement: HTMLElement);
-    render(ctx: RenderContext): ValueOrPromise<void>;
-}
-
-declare interface QContext {
-    cache: Map<string, any>;
-    refMap: QObjectMap;
-    element: Element;
-    dirty: boolean;
-    props: Record<string, any> | undefined;
-    events: QContextEvents | undefined;
-}
-
-declare interface QContextEvents {
-    [eventName: string]: string | undefined;
-}
-
-declare type QObject<T extends {}> = T & {
-    __brand__: 'QObject';
-};
-
-declare interface QObjectMap {
-    add(qObject: QObject<any>): number;
-    get(index: number): QObject<any> | undefined;
-    indexOf(object: QObject<any>): number | undefined;
-    array: QObject<any>[];
-}
+declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -1904,7 +1792,7 @@ declare interface QObjectMap {
  *
  * ```
  * <div q:base="/build/">
- *   <button on:click="./chunk-abc.js#onClick">...</button>
+ *   <button onClick="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
@@ -1929,6 +1817,9 @@ declare interface QObjectMap {
  */
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
+    resolve(container?: Element): Promise<TYPE>;
+    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
+    invokeFn(el?: Element): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
 /**
@@ -1944,22 +1835,9 @@ export declare interface QRL<TYPE = any> {
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
  * @public
  */
-export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
+export declare function qrl<T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null): QRL<T>;
 
-declare type QrlEvent<T extends Event_2 = Event_2> = QRL<Event_2>;
-
-/**
- * Lazy-load a `QRL` symbol and return the lazy-loaded value.
- *
- * See: `QRL`
- *
- * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
- * account.
- * @param qrl - QRL to load.
- * @returns A resolved QRL value as a Promise.
- * @public
- */
-export declare function qrlImport<T>(element: Element, qrl: QRL<T>): Promise<T>;
+declare type QrlEvent = QRL<EventHandler_2>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1979,8 +1857,8 @@ export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
 
 declare interface QwikEvents {
-    [key: `${'on' | 'onDocument' | 'onWindow'}$:${string}`]: Event_2;
-    [key: `${'on' | 'onDocument' | 'onWindow'}:${string}`]: QrlEvent | QrlEvent[];
+    [key: `on${string}$`]: EventHandler_2 | undefined;
+    [key: `on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
 }
 
 /**
@@ -2017,6 +1895,7 @@ declare interface QwikProps {
         [className: string]: boolean;
     };
     innerHTML?: string;
+    dangerouslySetInnerHTML?: string;
     /**
      *
      */
@@ -2024,9 +1903,11 @@ declare interface QwikProps {
     /**
      * URL against which relative QRLs should be resolved to.
      */
-    'q:base'?: string;
     'q:obj'?: string;
     'q:host'?: string;
+    'q:version'?: string;
+    'q:container'?: '';
+    [key: `preventDefault:${string}`]: boolean;
 }
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
@@ -2045,7 +1926,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  * @param jsxNode - JSX to render
  * @public
  */
-export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): ValueOrPromise<RenderContext>;
+export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): ValueOrPromise<RenderContext | undefined>;
 
 /**
  * @public
@@ -2059,8 +1940,9 @@ declare interface RenderContext {
     roots: Element[];
     hostElements: Set<Element>;
     operations: RenderOperation[];
-    component: QComponentCtx | undefined;
+    component: ComponentCtx | undefined;
     globalState: RenderingState;
+    containerEl: Element;
     perf: RenderPerf;
 }
 
@@ -2131,6 +2013,13 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+/**
+ * Serialize the current state of the application into DOM
+ *
+ * @public
+ */
+export declare function snapshot(elmOrDoc: Element | Document): void;
+
 declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
     media?: string | undefined;
@@ -2162,7 +2051,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     method?: string | undefined;
     min?: number | string | undefined;
     name?: string | undefined;
-    style?: CSSProperties_2 | undefined;
+    style?: CSSProperties_2 | string | undefined;
     target?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
@@ -2474,6 +2363,11 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare function unwrapSubscriber<T extends {}>(obj: T): any;
+
+/**
  * @public
  */
 export declare function useDocument(): Document;
@@ -2518,13 +2412,13 @@ export declare const useScopedStyles$: (first: string) => void;
 /**
  * @alpha
  */
-export declare function useScopedStyles(styles: QRL<string>): void;
+export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
  * Creates a object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
@@ -2533,7 +2427,7 @@ export declare function useScopedStyles(styles: QRL<string>): void;
  * ```typescript
  * export const Counter = component$(() => {
  *   const store = useStore({ count: 0 });
- *   return $(() => <button on$:click={() => store.count++}>{store.count}</button>);
+ *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
  * });
  * ```
  *
@@ -2553,12 +2447,98 @@ export declare const useStyles$: (first: string) => void;
  *
  * @alpha
  */
-export declare function useStyles(styles: QRL<string>): void;
+export declare function useStylesQrl(styles: QRL<string>): void;
 
 /**
+ * @alpha
+ */
+export declare function useSubscriber<T extends {}>(obj: T): T;
+
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare function useTransient<OBJ, ARGS extends any[], RET>(obj: OBJ, factory: (this: OBJ, ...args: ARGS) => RET, ...args: ARGS): RET;
+export declare const useWatch$: (first: (obs: Observer) => void | (() => void)) => void;
+
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+export declare function useWatchQrl(watchQrl: QRL<(obs: Observer) => void | (() => void)>): void;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -2580,6 +2560,13 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disableRemotePlayback?: boolean | undefined;
 }
 
+declare interface WatchDescriptor {
+    watchQrl: QRL<(obs: Observer) => void | (() => void)>;
+    hostElement: Element;
+    destroy?: NoSerialize<() => void>;
+    running?: NoSerialize<Promise<void>>;
+}
+
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
     allowpopups?: boolean | undefined;
@@ -2599,5 +2586,10 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 }
+
+/**
+ * @alpha
+ */
+export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Element | WatchDescriptor): any;
 
 export { }
