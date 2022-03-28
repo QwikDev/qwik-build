@@ -284,7 +284,12 @@ class QRL {
             const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
             return then(fn, (fn) => {
                 if (typeof fn === 'function') {
-                    const context = Object.assign(Object.assign(Object.assign({}, newInvokeContext()), currentCtx), { qrl: this, waitOn: undefined });
+                    const context = {
+                        ...newInvokeContext(),
+                        ...currentCtx,
+                        qrl: this,
+                        waitOn: undefined,
+                    };
                     return useInvoke(context, fn, ...args);
                 }
                 throw new Error('QRL is not a function');
@@ -355,9 +360,8 @@ const createPlatform = (doc) => {
  * @returns fully qualified URL.
  */
 function toUrl(doc, element, url) {
-    var _a;
     const containerEl = getContainer(element);
-    const base = new URL((_a = containerEl === null || containerEl === void 0 ? void 0 : containerEl.getAttribute('q:base')) !== null && _a !== void 0 ? _a : doc.baseURI, doc.baseURI);
+    const base = new URL(containerEl?.getAttribute('q:base') ?? doc.baseURI, doc.baseURI);
     return new URL(url, base);
 }
 /**
@@ -449,7 +453,7 @@ function stringifyElement(element) {
     for (let i = 0; i < names.length; i++) {
         const name = names[i];
         let value = element.getAttribute(name);
-        if (value === null || value === void 0 ? void 0 : value.startsWith('file:/')) {
+        if (value?.startsWith('file:/')) {
             value = value.replace(/(file:\/\/).*(\/.*)$/, (all, protocol, file) => protocol + '...' + file);
         }
         html +=
@@ -740,7 +744,7 @@ function snapshotState(containerEl) {
     function getObjId(obj) {
         if (obj !== null && typeof obj === 'object') {
             const target = obj[QOjectTargetSymbol];
-            const id = objToId.get(normalizeObj(target !== null && target !== void 0 ? target : obj));
+            const id = objToId.get(normalizeObj(target ?? obj));
             if (id !== undefined) {
                 const proxySuffix = target ? '!' : '';
                 return intToStr(id) + proxySuffix;
@@ -759,8 +763,7 @@ function snapshotState(containerEl) {
     }
     const subs = objs
         .map((obj) => {
-        var _a;
-        const subs = (_a = proxyMap.get(obj)) === null || _a === void 0 ? void 0 : _a[QOjectSubsSymbol];
+        const subs = proxyMap.get(obj)?.[QOjectSubsSymbol];
         if (subs) {
             return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
                 const id = getObjId(sub);
@@ -778,8 +781,7 @@ function snapshotState(containerEl) {
     })
         .filter((a) => !!a);
     const serialize = (value) => {
-        var _a;
-        return (_a = getObjId(value)) !== null && _a !== void 0 ? _a : value;
+        return getObjId(value) ?? value;
     };
     const qrlSerializeOptions = {
         platform,
@@ -946,12 +948,11 @@ function getObjectImpl(id, elements, objs, map) {
     return obj;
 }
 function normalizeObj(obj) {
-    var _a;
     if (obj === undefined || !shouldSerialize(obj)) {
         return UNDEFINED_PREFIX;
     }
     if (obj && typeof obj === 'object') {
-        const value = (_a = obj[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : obj;
+        const value = obj[QOjectTargetSymbol] ?? obj;
         return value;
     }
     return obj;
@@ -1458,7 +1459,7 @@ function processNode(node) {
             return node;
         }
         else if (typeof node.type === 'function') {
-            return processNode(node.type(Object.assign(Object.assign({}, node.props), { children: node.children }), node.key));
+            return processNode(node.type({ ...node.props, children: node.children }, node.key));
         }
         else {
             return node;
@@ -1518,7 +1519,6 @@ const renderComponent = (rctx, ctx) => {
     invocatinContext.qrl = onRenderQRL;
     const promise = useInvoke(invocatinContext, onRenderFn);
     return then(promise, (jsxNode) => {
-        var _a;
         rctx.hostElements.add(hostElement);
         let componentCtx = ctx.component;
         if (!componentCtx) {
@@ -1529,7 +1529,7 @@ const renderComponent = (rctx, ctx) => {
                 styleClass: undefined,
                 styleId: undefined,
             };
-            const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) !== null && _a !== void 0 ? _a : undefined;
+            const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
             if (scopedStyleId) {
                 componentCtx.styleId = scopedStyleId;
                 componentCtx.styleHostClass = styleHost(scopedStyleId);
@@ -1538,7 +1538,10 @@ const renderComponent = (rctx, ctx) => {
             }
         }
         componentCtx.slots = [];
-        const newCtx = Object.assign(Object.assign({}, rctx), { component: componentCtx });
+        const newCtx = {
+            ...rctx,
+            component: componentCtx,
+        };
         return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
     });
 };
@@ -1687,11 +1690,10 @@ function isChildComponent(node) {
     return node.nodeName !== 'TEMPLATE' || !node.hasAttribute(QSlotAttr);
 }
 function splitBy(input, condition) {
-    var _a;
     const output = {};
     for (const item of input) {
         const key = condition(item);
-        const array = (_a = output[key]) !== null && _a !== void 0 ? _a : (output[key] = []);
+        const array = output[key] ?? (output[key] = []);
         array.push(item);
     }
     return output;
@@ -1787,8 +1789,7 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
 let refCount = 0;
 const RefSymbol = Symbol();
 function setSlotRef(ctx, hostElm, slotEl) {
-    var _a;
-    let ref = (_a = hostElm[RefSymbol]) !== null && _a !== void 0 ? _a : hostElm.getAttribute('q:sref');
+    let ref = hostElm[RefSymbol] ?? hostElm.getAttribute('q:sref');
     if (ref === null) {
         ref = intToStr(refCount++);
         hostElm[RefSymbol] = ref;
@@ -1860,8 +1861,7 @@ function resolveSlotProjection(ctx, hostElm, before, after) {
     });
 }
 function getSlotName(node) {
-    var _a, _b;
-    return (_b = (_a = node.props) === null || _a === void 0 ? void 0 : _a['q:slot']) !== null && _b !== void 0 ? _b : '';
+    return node.props?.['q:slot'] ?? '';
 }
 function createElm(rctx, vnode, isSvg) {
     rctx.perf.visited++;
@@ -1939,24 +1939,23 @@ function createElm(rctx, vnode, isSvg) {
     });
 }
 const getSlots = (componentCtx, hostElm) => {
-    var _a, _b, _c, _d, _e;
     const slots = {};
     const templates = {};
     const slotRef = hostElm.getAttribute('q:sref');
     const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
-    const newSlots = (_a = componentCtx === null || componentCtx === void 0 ? void 0 : componentCtx.slots) !== null && _a !== void 0 ? _a : EMPTY_ARRAY;
+    const newSlots = componentCtx?.slots ?? EMPTY_ARRAY;
     const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
     // Map slots
     for (const elm of existingSlots) {
-        slots[(_b = elm.getAttribute('name')) !== null && _b !== void 0 ? _b : ''] = elm;
+        slots[elm.getAttribute('name') ?? ''] = elm;
     }
     // Map virtual slots
     for (const vnode of newSlots) {
-        slots[(_d = (_c = vnode.props) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : ''] = vnode.elm;
+        slots[vnode.props?.name ?? ''] = vnode.elm;
     }
     // Map templates
     for (const elm of t) {
-        templates[(_e = elm.getAttribute('q:slot')) !== null && _e !== void 0 ? _e : ''] = elm;
+        templates[elm.getAttribute('q:slot') ?? ''] = elm;
     }
     return { slots, templates };
 };
@@ -2126,9 +2125,8 @@ function insertBefore(ctx, parent, newChild, refChild) {
 }
 function appendStyle(ctx, hostElement, styleTask) {
     const fn = () => {
-        var _a;
         const containerEl = ctx.containerEl;
-        const stylesParent = ctx.doc.documentElement === containerEl ? (_a = ctx.doc.head) !== null && _a !== void 0 ? _a : containerEl : containerEl;
+        const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head ?? containerEl : containerEl;
         if (!stylesParent.querySelector(`style[q\\:style="${styleTask.scope}"]`)) {
             const style = ctx.doc.createElement('style');
             style.setAttribute('q:style', styleTask.scope);
@@ -2189,10 +2187,9 @@ function executeContext(ctx) {
     }
 }
 function printRenderStats(ctx) {
-    var _a;
     const byOp = {};
     for (const op of ctx.operations) {
-        byOp[op.operation] = ((_a = byOp[op.operation]) !== null && _a !== void 0 ? _a : 0) + 1;
+        byOp[op.operation] = (byOp[op.operation] ?? 0) + 1;
     }
     const affectedElements = Array.from(new Set(ctx.operations.map((a) => a.el)));
     const stats = {
@@ -2798,7 +2795,7 @@ function qrlImport(element, qrl) {
     }
     else {
         if (!element) {
-            throw new Error('QRL does not have an attached container');
+            throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || 'default'}' does not have an attached container`);
         }
         const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
         return (qrl_.symbolRef = then(symbol, (ref) => {
@@ -2873,12 +2870,11 @@ function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
     return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
 }
 function stringifyQRL(qrl, opts = {}) {
-    var _a;
     const qrl_ = toInternalQRL(qrl);
     const symbol = qrl_.symbol;
     const platform = opts.platform;
     const element = opts.element;
-    const chunk = platform ? (_a = platform.chunkForSymbol(symbol)) !== null && _a !== void 0 ? _a : qrl_.chunk : qrl_.chunk;
+    const chunk = platform ? platform.chunkForSymbol(symbol) ?? qrl_.chunk : qrl_.chunk;
     const parts = [chunk];
     if (symbol && symbol !== 'default') {
         parts.push('#', symbol);
@@ -3189,8 +3185,7 @@ const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
  */
 // </docs>
 function componentQrl(onMount, options = {}) {
-    var _a;
-    const tagName = (_a = options.tagName) !== null && _a !== void 0 ? _a : 'div';
+    const tagName = options.tagName ?? 'div';
     // Return a QComponent Factory function.
     return function QComponent(props, key) {
         const onRenderFactory = async (hostElement) => {
@@ -3207,7 +3202,7 @@ function componentQrl(onMount, options = {}) {
             };
         };
         onRenderFactory.__brand__ = 'QRLFactory';
-        return jsx(tagName, Object.assign({ [OnRenderProp]: onRenderFactory }, props), key);
+        return jsx(tagName, { [OnRenderProp]: onRenderFactory, ...props }, key);
     };
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
@@ -3446,7 +3441,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-7-dev20220328165603";
+const version = "0.0.18-7-dev20220328223304";
 
 /**
  * Render JSX.
@@ -3567,10 +3562,9 @@ function useURL() {
  */
 // </docs>
 function useLexicalScope() {
-    var _a;
     const context = getInvokeContext();
     const hostElement = context.hostElement;
-    const qrl = (_a = context.qrl) !== null && _a !== void 0 ? _a : parseQRL(decodeURIComponent(String(useURL())), hostElement);
+    const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(useURL())), hostElement);
     if (qrl.captureRef == null) {
         const el = context.element;
         assertDefined(el);
