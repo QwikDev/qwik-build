@@ -10172,7 +10172,7 @@ var QwikPrefetch = ({ debug }) => {
 
 // src/server/index.ts
 var versions = {
-  qwik: "0.0.18-7-dev20220328223151",
+  qwik: "0.0.18-7-dev20220328224850",
   qwikDom: "2.1.14"
 };
 // Annotate the CommonJS export names for ESM import in node:
