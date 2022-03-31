@@ -29,10 +29,6 @@ var __spreadValues = (a, b) => {
   return a;
 };
 
-var __markAsModule = target => __defProp(target, "__esModule", {
-  value: true
-});
-
 var __export = (target, all) => {
   for (var name in all) {
     __defProp(target, name, {
@@ -42,20 +38,21 @@ var __export = (target, all) => {
   }
 };
 
-var __reExport = (target, module2, copyDefault, desc) => {
-  if (module2 && "object" === typeof module2 || "function" === typeof module2) {
-    for (let key of __getOwnPropNames(module2)) {
-      __hasOwnProp.call(target, key) || !copyDefault && "default" === key || __defProp(target, key, {
-        get: () => module2[key],
-        enumerable: !(desc = __getOwnPropDesc(module2, key)) || desc.enumerable
+var __copyProps = (to, from, except, desc) => {
+  if (from && "object" === typeof from || "function" === typeof from) {
+    for (let key of __getOwnPropNames(from)) {
+      __hasOwnProp.call(to, key) || key === except || __defProp(to, key, {
+        get: () => from[key],
+        enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
       });
     }
   }
-  return target;
+  return to;
 };
 
-var __toCommonJS = (cache => (module2, temp) => cache && cache.get(module2) || (temp = __reExport(__markAsModule({}), module2, 1), 
-cache && cache.set(module2, temp), temp))("undefined" !== typeof WeakMap ? new WeakMap : 0);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", {
+  value: true
+}), mod);
 
 var src_exports = {};
 
@@ -66,6 +63,8 @@ __export(src_exports, {
   versions: () => versions
 });
 
+module.exports = __toCommonJS(src_exports);
+
 var qDev = false !== globalThis.qDev;
 
 var qTest = void 0 !== globalThis.describe;
@@ -73,7 +72,7 @@ var qTest = void 0 !== globalThis.describe;
 var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
 
 var logWarn = (message, ...optionalParams) => {
-  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+  console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
 };
 
 var path_exports = {};
@@ -809,7 +808,8 @@ function qwikRollup(opts) {
     name: "qwik",
     enforce: "pre",
     log: log,
-    config(config, {command: command}) {
+    async config(config, {command: command}) {
+      optimizer || (optimizer = await createOptimizer());
       if ("serve" === command) {
         isBuild = false;
         entryStrategy = {
@@ -817,6 +817,7 @@ function qwikRollup(opts) {
         };
         config.ssr && (config.ssr.noExternal = false);
       }
+      "build" === command && fixSSRInput(config, optimizer);
       log("vite command", command);
       return {
         esbuild: {
@@ -1061,8 +1062,18 @@ function getBuildFile(isSSR) {
   return `\nexport const isServer = ${isSSR};\nexport const isBrowser = ${!isSSR};\n`;
 }
 
-var versions = {
-  qwik: "0.0.18-0-dev20220311014644"
-};
+function slash(p) {
+  return p.replace(/\\/g, "/");
+}
 
-module.exports = __toCommonJS(src_exports);
+function fixSSRInput(config, optimizer) {
+  var _a, _b;
+  if ("string" === typeof (null == (_a = null == config ? void 0 : config.build) ? void 0 : _a.ssr) && (null == (_b = null == config ? void 0 : config.build.rollupOptions) ? void 0 : _b.input)) {
+    const resolvedRoot = optimizer.path.normalize(slash(config.root ? optimizer.path.resolve(config.root) : process.cwd()));
+    config.build.rollupOptions.input = optimizer.path.resolve(resolvedRoot, config.build.ssr);
+  }
+}
+
+var versions = {
+  qwik: "0.0.18-7-dev20220331204156"
+};
