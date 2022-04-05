@@ -683,6 +683,8 @@ var convertOptions = opts => {
   return output;
 };
 
+var QWIK_LOADER_DEFAULT_DEBUG = '!function() {\n    /**\n * @license\n * Copyright Builder.io, Inc. All Rights Reserved.\n *\n * Use of this source code is governed by an MIT-style license that can be\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\n */\n    const qrlResolver = (element, eventUrl) => {\n        var _a;\n        const doc = element.ownerDocument;\n        const containerEl = element.closest("[q\\\\:container]");\n        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);\n        return new URL(eventUrl, base);\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        {\n            const scriptTag = doc.querySelector("script[events]");\n            if (scriptTag) {\n                (scriptTag.getAttribute("events") || "").split(/[\\s,;]+/).forEach(addEventListener);\n            } else {\n                for (const key in doc) {\n                    if (0 == key.indexOf("on")) {\n                        addEventListener(key.substring(2));\n                    }\n                }\n            }\n        }\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
+
 var QWIK_BUILD = "@builder.io/qwik/build";
 
 function qwikVite(opts) {
@@ -692,6 +694,7 @@ function qwikVite(opts) {
     const entry = null != (_b = null == (_a = opts.ssr) ? void 0 : _a.entry) ? _b : "/src/entry.server.tsx";
     const main = null != (_d = null == (_c = opts.ssr) ? void 0 : _c.main) ? _d : "/src/main.tsx";
     Object.assign(plugin, {
+      name: "qwik-vite",
       handleHotUpdate(ctx) {
         plugin.log("handleHotUpdate()", ctx);
         if (ctx.file.endsWith(".css")) {
@@ -843,7 +846,7 @@ function qwikRollup(opts) {
       };
       return inputOptions;
     },
-    transformIndexHtml(_, ctx) {
+    transformIndexHtml(html, ctx) {
       ctx.bundle && Object.entries(ctx.bundle).forEach((([key, value]) => {
         "asset" === value.type && key.endsWith(".css") && injections.push({
           tag: "link",
@@ -854,6 +857,8 @@ function qwikRollup(opts) {
           }
         });
       }));
+      html = html.replace("</head>", `<script>${QWIK_LOADER_DEFAULT_DEBUG}<\/script>\n</head>`);
+      return html;
     },
     async buildStart() {
       optimizer || (optimizer = await createOptimizer());
@@ -1075,5 +1080,5 @@ function fixSSRInput(config, optimizer) {
 }
 
 var versions = {
-  qwik: "0.0.18-7-dev20220331205826"
+  qwik: true
 };
