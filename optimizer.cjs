@@ -29,10 +29,6 @@ var __spreadValues = (a, b) => {
   return a;
 };
 
-var __markAsModule = target => __defProp(target, "__esModule", {
-  value: true
-});
-
 var __export = (target, all) => {
   for (var name in all) {
     __defProp(target, name, {
@@ -42,20 +38,21 @@ var __export = (target, all) => {
   }
 };
 
-var __reExport = (target, module2, copyDefault, desc) => {
-  if (module2 && "object" === typeof module2 || "function" === typeof module2) {
-    for (let key of __getOwnPropNames(module2)) {
-      __hasOwnProp.call(target, key) || !copyDefault && "default" === key || __defProp(target, key, {
-        get: () => module2[key],
-        enumerable: !(desc = __getOwnPropDesc(module2, key)) || desc.enumerable
+var __copyProps = (to, from, except, desc) => {
+  if (from && "object" === typeof from || "function" === typeof from) {
+    for (let key of __getOwnPropNames(from)) {
+      __hasOwnProp.call(to, key) || key === except || __defProp(to, key, {
+        get: () => from[key],
+        enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
       });
     }
   }
-  return target;
+  return to;
 };
 
-var __toCommonJS = (cache => (module2, temp) => cache && cache.get(module2) || (temp = __reExport(__markAsModule({}), module2, 1), 
-cache && cache.set(module2, temp), temp))("undefined" !== typeof WeakMap ? new WeakMap : 0);
+var __toCommonJS = mod => __copyProps(__defProp({}, "__esModule", {
+  value: true
+}), mod);
 
 var src_exports = {};
 
@@ -66,6 +63,8 @@ __export(src_exports, {
   versions: () => versions
 });
 
+module.exports = __toCommonJS(src_exports);
+
 var qDev = false !== globalThis.qDev;
 
 var qTest = void 0 !== globalThis.describe;
@@ -73,7 +72,7 @@ var qTest = void 0 !== globalThis.describe;
 var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
 
 var logWarn = (message, ...optionalParams) => {
-  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+  console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
 };
 
 var path_exports = {};
@@ -684,6 +683,8 @@ var convertOptions = opts => {
   return output;
 };
 
+var QWIK_LOADER_DEFAULT_DEBUG = '!function() {\n    /**\n * @license\n * Copyright Builder.io, Inc. All Rights Reserved.\n *\n * Use of this source code is governed by an MIT-style license that can be\n * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE\n */\n    const qrlResolver = (element, eventUrl) => {\n        var _a;\n        const doc = element.ownerDocument;\n        const containerEl = element.closest("[q\\\\:container]");\n        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);\n        return new URL(eventUrl, base);\n    };\n    const error = msg => {\n        throw new Error("QWIK: " + msg);\n    };\n    ((doc, hasInitialized) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = async (infix, type, event) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, event)));\n        };\n        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: name\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const dispatch = async (element, eventName, ev) => {\n            for (const on of ON_PREFIXES) {\n                const attrValue = element.getAttribute(on + eventName);\n                if (!attrValue) {\n                    continue;\n                }\n                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || await import(\n                        /* @vite-ignore */\n                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            handler(ev, element, url);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                            symbolUsed(element, symbolName);\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = async (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-init", new CustomEvent("qInit"));\n            }\n        };\n        {\n            const scriptTag = doc.querySelector("script[events]");\n            if (scriptTag) {\n                (scriptTag.getAttribute("events") || "").split(/[\\s,;]+/).forEach(addEventListener);\n            } else {\n                for (const key in doc) {\n                    if (0 == key.indexOf("on")) {\n                        addEventListener(key.substring(2));\n                    }\n                }\n            }\n        }\n        doc.addEventListener("readystatechange", processReadyStateChange);\n        processReadyStateChange();\n    })(document);\n}();';
+
 var QWIK_BUILD = "@builder.io/qwik/build";
 
 function qwikVite(opts) {
@@ -693,6 +694,7 @@ function qwikVite(opts) {
     const entry = null != (_b = null == (_a = opts.ssr) ? void 0 : _a.entry) ? _b : "/src/entry.server.tsx";
     const main = null != (_d = null == (_c = opts.ssr) ? void 0 : _c.main) ? _d : "/src/main.tsx";
     Object.assign(plugin, {
+      name: "qwik-vite",
       handleHotUpdate(ctx) {
         plugin.log("handleHotUpdate()", ctx);
         if (ctx.file.endsWith(".css")) {
@@ -809,7 +811,8 @@ function qwikRollup(opts) {
     name: "qwik",
     enforce: "pre",
     log: log,
-    config(config, {command: command}) {
+    async config(config, {command: command}) {
+      optimizer || (optimizer = await createOptimizer());
       if ("serve" === command) {
         isBuild = false;
         entryStrategy = {
@@ -817,6 +820,7 @@ function qwikRollup(opts) {
         };
         config.ssr && (config.ssr.noExternal = false);
       }
+      "build" === command && fixSSRInput(config, optimizer);
       log("vite command", command);
       return {
         esbuild: {
@@ -842,7 +846,7 @@ function qwikRollup(opts) {
       };
       return inputOptions;
     },
-    transformIndexHtml(_, ctx) {
+    transformIndexHtml(html, ctx) {
       ctx.bundle && Object.entries(ctx.bundle).forEach((([key, value]) => {
         "asset" === value.type && key.endsWith(".css") && injections.push({
           tag: "link",
@@ -853,6 +857,8 @@ function qwikRollup(opts) {
           }
         });
       }));
+      html = html.replace("</head>", `<script>${QWIK_LOADER_DEFAULT_DEBUG}<\/script>\n</head>`);
+      return html;
     },
     async buildStart() {
       optimizer || (optimizer = await createOptimizer());
@@ -1061,8 +1067,18 @@ function getBuildFile(isSSR) {
   return `\nexport const isServer = ${isSSR};\nexport const isBrowser = ${!isSSR};\n`;
 }
 
-var versions = {
-  qwik: "0.0.18-0-dev20220311014644"
-};
+function slash(p) {
+  return p.replace(/\\/g, "/");
+}
 
-module.exports = __toCommonJS(src_exports);
+function fixSSRInput(config, optimizer) {
+  var _a, _b;
+  if ("string" === typeof (null == (_a = null == config ? void 0 : config.build) ? void 0 : _a.ssr) && (null == (_b = null == config ? void 0 : config.build.rollupOptions) ? void 0 : _b.input)) {
+    const resolvedRoot = optimizer.path.normalize(slash(config.root ? optimizer.path.resolve(config.root) : process.cwd()));
+    config.build.rollupOptions.input = optimizer.path.resolve(resolvedRoot, config.build.ssr);
+  }
+}
+
+var versions = {
+  qwik: true
+};
