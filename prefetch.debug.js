@@ -1,33 +1,24 @@
-const qrlResolver = (element, eventUrl) => {
-    const doc = element.ownerDocument;
-    const containerEl = element.closest("[q\\:container]");
-    const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
-    return new URL(eventUrl, base);
+const qrlResolver = (element, eventUrl, baseURI) => {
+    element = element.closest("[q\\:container]");
+    return new URL(eventUrl, new URL(element ? element.getAttribute("q:base") : baseURI, baseURI));
 };
 
 const setupPrefetching = (win, doc, IntersectionObserver) => {
-    const intersectionObserverCallback = items => {
-        items.forEach((item => {
-            if (item.intersectionRatio > 0) {
-                const element = item.target;
-                const attrs = element.attributes;
-                for (let i = 0; i < attrs.length; i++) {
-                    const attr = attrs[i];
-                    const name = attr.name;
-                    const value = attr.value;
-                    if (name.startsWith("on:") && value) {
-                        const url = qrlResolver(element, value);
-                        url.hash = url.search = "";
-                        const key = url.toString() + ".js";
-                        if (!qrlCache[key]) {
-                            qrlCache[key] = key;
-                            onEachNewQrl(key);
-                        }
-                    }
+    const intersectionObserverCallback = items => items.forEach((item => {
+        if (item.intersectionRatio > 0) {
+            const element = item.target;
+            const attrs = element.attributes;
+            for (let i = 0; i < attrs.length; i++) {
+                const value = attrs[i].value;
+                if (attrs[i].name.startsWith("on:") && value) {
+                    const url = qrlResolver(element, value, doc.baseURI);
+                    url.hash = url.search = "";
+                    const key = String(url) + ".js";
+                    qrlCache[key] || onEachNewQrl(qrlCache[key] = key);
                 }
             }
-        }));
-    };
+        }
+    }));
     const qrlCache = {};
     const onEachNewQrl = qrl => {
         if (!worker) {
