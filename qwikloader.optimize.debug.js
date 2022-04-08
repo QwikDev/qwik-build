@@ -1,12 +1,5 @@
-!function() {
-    const qrlResolver = (element, eventUrl, baseURI) => {
-        element = element.closest("[q\\:container]");
-        return new URL(eventUrl, new URL(element ? element.getAttribute("q:base") : baseURI, baseURI));
-    };
-    const error = msg => {
-        throw new Error("QWIK: " + msg);
-    };
-    ((doc, hasInitialized) => {
+(() => {
+    ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
         const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
@@ -19,13 +12,20 @@
             bubbles: !0,
             composed: !0
         }));
+        const error = msg => {
+            throw new Error("QWIK " + msg);
+        };
+        const qrlResolver = (element, qrl) => {
+            element = element.closest("[q\\:container]");
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
+        };
         const dispatch = async (element, eventName, ev) => {
-            for (const on of ON_PREFIXES) {
-                const attrValue = element.getAttribute(on + eventName);
+            for (const onPrefix of ON_PREFIXES) {
+                const attrValue = element.getAttribute(onPrefix + eventName);
                 if (attrValue) {
                     element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                     for (const qrl of attrValue.split("\n")) {
-                        const url = qrlResolver(element, qrl, doc.baseURI);
+                        const url = qrlResolver(element, qrl);
                         if (url) {
                             const symbolName = getSymbolName(url);
                             const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
@@ -53,18 +53,29 @@
                 }
             }
         };
-        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {
-            capture: !0
-        });
+        const qrlPrefetch = element => {
+            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
+                type: "text/javascript"
+            }))));
+            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\n").map((qrl => qrlResolver(element, qrl) + "")));
+            return prefetchWorker;
+        };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-init", new CustomEvent("qInit"));
+                broadcast("", "q-resume", new CustomEvent("qResume"));
+                doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
             }
         };
-        window.qEvents.forEach(addEventListener);
-        doc.addEventListener("readystatechange", processReadyStateChange);
-        processReadyStateChange();
+        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {
+            capture: !0
+        });
+        if (!doc.qR) {
+            doc.qR = 1;
+            window.qEvents.forEach(addDocEventListener);
+            doc.addEventListener("readystatechange", processReadyStateChange);
+            processReadyStateChange();
+        }
     })(document);
-}();
+})();

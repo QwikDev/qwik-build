@@ -85,8 +85,6 @@
     "optimizer.d.ts",
     "optimizer.mjs",
     "optimizer/package.json",
-    "prefetch.debug.js",
-    "prefetch.js",
     "qwikloader.debug.js",
     "qwikloader.js",
     "qwikloader.optimize.debug.js",
