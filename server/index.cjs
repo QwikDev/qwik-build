@@ -10135,7 +10135,7 @@ async function getImports(filePath, readFileFn) {
 // src/server/scripts.ts
 var import_globalthis = __toESM(require_globalthis());
 var import_global = __toESM(require_global());
-var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],s=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(e,t,n)=>(e=e.closest("[q\\\\:container]"),new URL(t,new URL(e?e.getAttribute("q:base"):n,n))),l=async(t,n,s)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of r.split("\\n")){const r=i(t,n,e.baseURI);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,s,r],i(s,t,r)}finally{e[o]=l,a(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>{n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.split("\\\\n").map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch"))},d=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f))},b=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(b);else for(const t in e)t.startsWith("on")&&b(t.slice(2))}e.addEventListener("readystatechange",d),d()}})(document);`;
+var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],s=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,s)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of r.split("\\n")){const r=i(t,n);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,s,r],i(s,t,r)}finally{e[o]=l,a(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),d=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f))},b=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(b);else for(const t in e)t.startsWith("on")&&b(t.slice(2))}e.addEventListener("readystatechange",d),d()}})(document);`;
 var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -10153,9 +10153,9 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
         const error = msg => {
             throw new Error("QWIK " + msg);
         };
-        const qrlResolver = (element, eventUrl, baseURI) => {
+        const qrlResolver = (element, qrl) => {
             element = element.closest("[q\\\\:container]");
-            return new URL(eventUrl, new URL(element ? element.getAttribute("q:base") : baseURI, baseURI));
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, eventName, ev) => {
             for (const onPrefix of ON_PREFIXES) {
@@ -10163,7 +10163,7 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
                 if (attrValue) {
                     element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                     for (const qrl of attrValue.split("\\n")) {
-                        const url = qrlResolver(element, qrl, doc.baseURI);
+                        const url = qrlResolver(element, qrl);
                         if (url) {
                             const symbolName = getSymbolName(url);
                             const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
@@ -10192,10 +10192,11 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
             }
         };
         const qrlPrefetch = element => {
-            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.split("\\\\n").map((e=>fetch(e)))));' ], {
+            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
                 type: "text/javascript"
             }))));
-            prefetchWorker.postMessage(element.getAttribute("q:prefetch"));
+            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\\n").map((qrl => qrlResolver(element, qrl) + "")));
+            return prefetchWorker;
         };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
@@ -10225,7 +10226,7 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
         }
     })(document);
 })();`;
-var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],a=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(e,t,n)=>(e=e.closest("[q\\\\:container]"),new URL(t,new URL(e?e.getAttribute("q:base"):n,n))),l=async(t,n,a)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&a.preventDefault();for(const n of r.split("\\n")){const r=i(t,n,e.baseURI);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,a,r],i(a,t,r)}finally{e[o]=l,s(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>a("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},d=e=>{n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.split("\\\\n").map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch"))},f=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,a("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(d))};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",f),f())})(document);`;
+var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,n)=>{const o="__q_context__",a=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,r)=>{for(const l of a){const a=t.getAttribute(l+n);if(a){t.hasAttribute("preventdefault:"+n)&&r.preventDefault();for(const n of a.split("\\n")){const a=i(t,n);if(a){const n=p(a),i=(window[a.pathname]||await import(a.href.split("#")[0]))[n]||c(a+" does not export "+n),l=e[o];try{e[o]=[t,r,a],i(r,t,a)}finally{e[o]=l,s(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},d=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),f=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,r("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(d))};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",f),f())})(document);`;
 var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -10243,9 +10244,9 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
         const error = msg => {
             throw new Error("QWIK " + msg);
         };
-        const qrlResolver = (element, eventUrl, baseURI) => {
+        const qrlResolver = (element, qrl) => {
             element = element.closest("[q\\\\:container]");
-            return new URL(eventUrl, new URL(element ? element.getAttribute("q:base") : baseURI, baseURI));
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, eventName, ev) => {
             for (const onPrefix of ON_PREFIXES) {
@@ -10253,7 +10254,7 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
                 if (attrValue) {
                     element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                     for (const qrl of attrValue.split("\\n")) {
-                        const url = qrlResolver(element, qrl, doc.baseURI);
+                        const url = qrlResolver(element, qrl);
                         if (url) {
                             const symbolName = getSymbolName(url);
                             const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
@@ -10282,10 +10283,11 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
             }
         };
         const qrlPrefetch = element => {
-            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.split("\\\\n").map((e=>fetch(e)))));' ], {
+            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
                 type: "text/javascript"
             }))));
-            prefetchWorker.postMessage(element.getAttribute("q:prefetch"));
+            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\\n").map((qrl => qrlResolver(element, qrl) + "")));
+            return prefetchWorker;
         };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;

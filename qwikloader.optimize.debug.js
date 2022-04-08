@@ -15,9 +15,9 @@
         const error = msg => {
             throw new Error("QWIK " + msg);
         };
-        const qrlResolver = (element, eventUrl, baseURI) => {
+        const qrlResolver = (element, qrl) => {
             element = element.closest("[q\\:container]");
-            return new URL(eventUrl, new URL(element ? element.getAttribute("q:base") : baseURI, baseURI));
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, eventName, ev) => {
             for (const onPrefix of ON_PREFIXES) {
@@ -25,7 +25,7 @@
                 if (attrValue) {
                     element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                     for (const qrl of attrValue.split("\n")) {
-                        const url = qrlResolver(element, qrl, doc.baseURI);
+                        const url = qrlResolver(element, qrl);
                         if (url) {
                             const symbolName = getSymbolName(url);
                             const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
@@ -54,10 +54,11 @@
             }
         };
         const qrlPrefetch = element => {
-            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.split("\\n").map((e=>fetch(e)))));' ], {
+            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
                 type: "text/javascript"
             }))));
-            prefetchWorker.postMessage(element.getAttribute("q:prefetch"));
+            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\n").map((qrl => qrlResolver(element, qrl) + "")));
+            return prefetchWorker;
         };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
