@@ -34,7 +34,7 @@ export declare function createTimer(): () => number;
  * @public
  */
 export declare interface DocumentOptions {
-    url?: URL;
+    url?: URL | string;
     debug?: boolean;
 }
 
@@ -58,15 +58,6 @@ export declare function getImports(filePath: string, readFileFn: (path: string) 
  */
 export declare function getQwikLoaderScript(opts?: {
     events?: string[];
-    debug?: boolean;
-}): string;
-
-/**
- * Provides the prefetch.js file as a string. Useful for tooling to inline the prefetch
- * script into HTML.
- * @alpha
- */
-export declare function getQwikPrefetchScript(opts?: {
     debug?: boolean;
 }): string;
 
@@ -119,18 +110,6 @@ declare interface QwikLoaderProps {
 }
 
 /**
- * @alpha
- */
-export declare const QwikPrefetch: FunctionComponent<QwikPrefetchProps>;
-
-/**
- * @alpha
- */
-declare interface QwikPrefetchProps {
-    debug?: boolean;
-}
-
-/**
  * Updates the given `document` in place by rendering the root JSX node
  * and applying to the `document`.
  *
@@ -138,7 +117,7 @@ declare interface QwikPrefetchProps {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(doc: Document, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
 
 /**
  * @public
@@ -147,7 +126,12 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
     /**
      * Defaults to `true`
      */
-    dehydrate?: boolean;
+    snapshot?: boolean;
+    /**
+     * Specifies the root of the JS files of the client build.
+     * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
+     */
+    base?: string;
 }
 
 /**
@@ -155,12 +139,17 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: any, opts: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public
  */
 export declare interface RenderToStringOptions extends RenderToDocumentOptions {
+    /**
+     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
+     * Defaults to `undefined`
+     */
+    fragmentTagName?: string;
 }
 
 /**
@@ -183,7 +172,7 @@ export declare interface RenderToStringResult {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function serializeDocument(doc: Document, opts?: SerializeDocumentOptions): string;
+export declare function serializeDocument(docOrEl: Document | Element, opts?: SerializeDocumentOptions): string;
 
 /**
  * @public
