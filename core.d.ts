@@ -553,7 +553,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnMountFn<PROPS>, options?: ComponentOptions): Component<PROPS>;
+export declare function component$<PROPS extends {}>(onMount: OnRenderFn<PROPS>, options?: ComponentOptions): Component<PROPS>;
 
 /**
  * @public
@@ -656,7 +656,7 @@ export declare interface ComponentOptions {
  *
  * @public
  */
-export declare function componentQrl<PROPS extends {}>(onMount: QRL<OnMountFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
+export declare function componentQrl<PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
 
 /**
  * @public
@@ -1161,6 +1161,19 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
+declare interface InvokeContext {
+    doc?: Document;
+    hostElement?: Element;
+    element?: Element;
+    event: any;
+    url: URL | null;
+    seq: number;
+    qrl?: QRL<any>;
+    subscriptions: boolean;
+    waitOn?: ValueOrPromise<any>[];
+    props?: Props;
+}
+
 /**
  * @public
  */
@@ -1410,11 +1423,6 @@ export declare function on(event: string, eventFn: QRL<() => void>): void;
 export declare function onDocument(event: string, eventFn: QRL<() => void>): void;
 
 /**
- * @public
- */
-export declare type OnMountFn<PROPS> = (props: PROPS) => ValueOrPromise<QRL<() => ValueOrPromise<JSXNode<any> | null>>>;
-
-/**
  * A lazy-loadable reference to a component's on dehydrate hook.
  *
  * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
@@ -1437,6 +1445,11 @@ export declare const onPause$: (first: () => void) => void;
  * @public
  */
 export declare function onPauseQrl(dehydrateFn: QRL<() => void>): void;
+
+/**
+ * @public
+ */
+export declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null>;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -1510,6 +1523,13 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
+
+/**
+ * Serialize the current state of the application into DOM
+ *
+ * @public
+ */
+export declare function pauseContainer(elmOrDoc: Element | Document): void;
 
 declare interface PerfEvent {
     name: string;
@@ -1819,7 +1839,7 @@ export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     resolve(container?: Element): Promise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
-    invokeFn(el?: Element): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
+    invokeFn(el?: Element, context?: InvokeContext): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
 /**
@@ -1947,6 +1967,9 @@ declare interface RenderContext {
 }
 
 declare interface RenderingState {
+    watchRunning: Set<Promise<WatchDescriptor>>;
+    watchNext: Set<WatchDescriptor>;
+    watchStagging: Set<WatchDescriptor>;
     hostsNext: Set<Element>;
     hostsStaging: Set<Element>;
     hostsRendering: Set<Element> | undefined;
@@ -2012,13 +2035,6 @@ export declare const Slot: FunctionComponent<{
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
-
-/**
- * Serialize the current state of the application into DOM
- *
- * @public
- */
-export declare function snapshot(elmOrDoc: Element | Document): void;
 
 declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -2561,10 +2577,11 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
 declare interface WatchDescriptor {
+    isConnected: boolean;
     watchQrl: QRL<(obs: Observer) => void | (() => void)>;
     hostElement: Element;
     destroy?: NoSerialize<() => void>;
-    running?: NoSerialize<Promise<void>>;
+    running?: NoSerialize<Promise<WatchDescriptor>>;
 }
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {

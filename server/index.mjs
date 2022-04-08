@@ -116,7 +116,7 @@ var noop = () => {
 };
 
 // src/server/document.ts
-import { snapshot, render } from "../core.mjs";
+import { pauseContainer, render } from "../core.mjs";
 
 // dist-dev/qwikdom.mjs
 var import_global = __toESM(require_global(), 1);
@@ -9313,6 +9313,7 @@ var import_global = __toESM(require_global());
 
 // src/core/use/use-core.ts
 var import_global = __toESM(require_global());
+var CONTAINER = Symbol("container");
 var _context;
 function tryGetInvokeContext() {
   if (!_context) {
@@ -9354,6 +9355,7 @@ function useInvoke(context, fn, ...args) {
 }
 function newInvokeContext(doc, hostElement, element, event, url) {
   return {
+    seq: 0,
     doc,
     hostElement,
     element,
@@ -9388,7 +9390,12 @@ function getHostElement(el) {
   return node;
 }
 function getContainer(el) {
-  return el.closest(QContainerSelector);
+  let container = el[CONTAINER];
+  if (!container) {
+    container = el.closest(QContainerSelector);
+    el[CONTAINER] = container;
+  }
+  return container;
 }
 
 // src/core/util/promises.ts
@@ -9582,17 +9589,15 @@ var QRL = class {
     }
     return qrlImport(this.el, this);
   }
-  invokeFn(el) {
+  invokeFn(el, currentCtx) {
     return (...args) => {
-      const currentCtx = tryGetInvokeContext();
       const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
       return then(fn, (fn2) => {
         if (typeof fn2 === "function") {
           const context = {
             ...newInvokeContext(),
             ...currentCtx,
-            qrl: this,
-            waitOn: void 0
+            qrl: this
           };
           return useInvoke(context, fn2, ...args);
         }
@@ -9635,12 +9640,6 @@ var import_global = __toESM(require_global());
 // src/core/render/jsx/jsx-runtime.ts
 var import_global = __toESM(require_global());
 
-// src/core/render/notify-render.ts
-var SCHEDULE = Symbol("Render state");
-
-// src/core/util/stringify.ts
-var import_global = __toESM(require_global());
-
 // src/core/watch/watch.public.ts
 var import_global = __toESM(require_global());
 
@@ -9655,36 +9654,71 @@ function implicit$FirstArg(fn) {
   };
 }
 
+// src/core/use/use-store.public.ts
+var import_global = __toESM(require_global());
+
+// src/core/use/use-document.public.ts
+var import_global = __toESM(require_global());
+
+// src/core/use/use-store.public.ts
+function useSequentialScope() {
+  const ctx = getInvokeContext();
+  const index = ctx.seq;
+  const hostElement = useHostElement();
+  const elementCtx = getContext(hostElement);
+  ctx.seq++;
+  const updateFn = (value) => {
+    elementCtx.seq[index] = elementCtx.refMap.add(value);
+  };
+  const seqIndex = elementCtx.seq[index];
+  if (typeof seqIndex === "number") {
+    return [elementCtx.refMap.get(seqIndex), updateFn];
+  }
+  return [void 0, updateFn];
+}
+
 // src/core/watch/watch.public.ts
 function useWatchQrl(watchQrl) {
-  const hostElement = useHostElement();
-  const watch = {
-    watchQrl,
-    hostElement
-  };
-  getContext(hostElement).refMap.add(watch);
-  useWaitOn(runWatch(watch));
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    const hostElement = useHostElement();
+    const watch2 = {
+      watchQrl,
+      hostElement,
+      isConnected: true
+    };
+    setWatch(watch2);
+    getContext(hostElement).refMap.add(watch2);
+    useWaitOn(runWatch(watch2));
+  }
 }
 function runWatch(watch) {
-  const promise = new Promise((resolve) => {
-    return then(watch.running, () => {
-      const destroy = watch.destroy;
-      if (destroy) {
-        watch.destroy = void 0;
-        try {
-          destroy();
-        } catch (err) {
-          logError(err);
-        }
+  var _a;
+  const runningPromise = (_a = watch.running) != null ? _a : Promise.resolve();
+  const promise = runningPromise.then(() => {
+    const destroy = watch.destroy;
+    if (destroy) {
+      watch.destroy = void 0;
+      try {
+        destroy();
+      } catch (err) {
+        logError(err);
       }
-      const hostElement = watch.hostElement;
-      const watchFn = watch.watchQrl.invokeFn(hostElement);
-      const obs = (obj) => wrapSubscriber(obj, watch);
-      resolve(then(watchFn(obs), (returnValue) => {
-        if (typeof returnValue === "function") {
-          watch.destroy = noSerialize(returnValue);
-        }
-      }));
+    }
+    const hostElement = watch.hostElement;
+    const watchFn = watch.watchQrl.invokeFn(hostElement);
+    const obs = (obj) => wrapSubscriber(obj, watch);
+    const captureRef = watch.watchQrl.captureRef;
+    if (Array.isArray(captureRef)) {
+      captureRef.forEach((obj) => {
+        removeSub(obj, watch);
+      });
+    }
+    return then(watchFn(obs), (returnValue) => {
+      if (typeof returnValue === "function") {
+        watch.destroy = noSerialize(returnValue);
+      }
+      return watch;
     });
   });
   watch.running = noSerialize(promise);
@@ -9692,11 +9726,26 @@ function runWatch(watch) {
 }
 var useWatch$ = implicit$FirstArg(useWatchQrl);
 
+// src/core/render/notify-render.ts
+var SCHEDULE = Symbol("Render state");
+
+// src/core/util/stringify.ts
+var import_global = __toESM(require_global());
+
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
 var QOjectTargetSymbol = ":target:";
+var QOjectSubsSymbol = ":subs:";
 var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
+function removeSub(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const subs = obj[QOjectSubsSymbol];
+    if (subs) {
+      subs.delete(subscriber);
+    }
+  }
+}
 var NOSERIALIZE = Symbol("NoSerialize");
 function noSerialize(input) {
   input[NOSERIALIZE] = true;
@@ -9762,6 +9811,7 @@ function getContext(element) {
       cache,
       refMap: newQObjectMap(element),
       dirty: false,
+      seq: [],
       props: void 0,
       renderQrl: void 0,
       component: void 0
@@ -9893,7 +9943,7 @@ async function renderToDocument(docOrElm, rootNode, opts) {
     containerEl.setAttribute("q:base", opts.base);
   }
   if (opts.snapshot !== false) {
-    snapshot(docOrElm);
+    pauseContainer(docOrElm);
   }
 }
 async function renderToString(rootNode, opts) {

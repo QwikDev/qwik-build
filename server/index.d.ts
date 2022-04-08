@@ -1,5 +1,5 @@
 import { FunctionComponent } from '../core';
-import { JSXNode } from '../core';
+import type { JSXNode } from '../core';
 import type { OutputEntryMap } from '../core/optimizer';
 
 /**

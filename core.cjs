@@ -132,6 +132,7 @@ const ComponentStylesPrefixContent = '⭐️';
  */
 const QSlotAttr = 'q:slot';
 const QObjAttr = 'q:obj';
+const QSeqAttr = 'q:seq';
 const QContainerAttr = 'q:container';
 const QContainerSelector = '[q\\:container]';
 const ELEMENT_ID = 'q:id';
@@ -159,6 +160,7 @@ function getDocument(node) {
     return doc;
 }
 
+const CONTAINER = Symbol('container');
 function isStyleTask(obj) {
     return obj && typeof obj === 'object' && obj.type === 'style';
 }
@@ -205,6 +207,7 @@ function useInvoke(context, fn, ...args) {
 }
 function newInvokeContext(doc, hostElement, element, event, url) {
     return {
+        seq: 0,
         doc,
         hostElement,
         element,
@@ -243,7 +246,12 @@ function getHostElement(el) {
     return node;
 }
 function getContainer(el) {
-    return el.closest(QContainerSelector);
+    let container = el[CONTAINER];
+    if (!container) {
+        container = el.closest(QContainerSelector);
+        el[CONTAINER] = container;
+    }
+    return container;
 }
 
 /**
@@ -313,9 +321,8 @@ class QRL {
         }
         return qrlImport(this.el, this);
     }
-    invokeFn(el) {
+    invokeFn(el, currentCtx) {
         return ((...args) => {
-            const currentCtx = tryGetInvokeContext();
             const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
             return then(fn, (fn) => {
                 if (typeof fn === 'function') {
@@ -323,7 +330,6 @@ class QRL {
                         ...newInvokeContext(),
                         ...currentCtx,
                         qrl: this,
-                        waitOn: undefined,
                     };
                     return useInvoke(context, fn, ...args);
                 }
@@ -675,7 +681,7 @@ function isElement(value) {
 
 const UNDEFINED_PREFIX = '\u0010';
 const QRL_PREFIX = '\u0011';
-function resume(containerEl) {
+function resumeContainer(containerEl) {
     if (!isContainer(containerEl)) {
         logWarn('Skipping hydration because parent element is not q:container');
         return;
@@ -709,8 +715,10 @@ function resume(containerEl) {
     // Walk all elements with q:obj and resume their state
     getNodesInScope(containerEl, hasQObj).forEach((el) => {
         const qobj = el.getAttribute(QObjAttr);
+        const seq = el.getAttribute(QSeqAttr);
         const host = el.getAttribute(QHostAttr);
         const ctx = getContext(el);
+        // Restore captured objets
         qobj.split(' ').forEach((part) => {
             if (part !== '') {
                 const obj = getObject(part);
@@ -720,6 +728,8 @@ function resume(containerEl) {
                 logError('QObj contains empty ref');
             }
         });
+        // Restore sequence scoping
+        ctx.seq = seq.split(' ').map((part) => strToInt(part));
         if (host) {
             const [props, renderQrl] = host.split(' ').map(strToInt);
             assertDefined(props);
@@ -730,7 +740,7 @@ function resume(containerEl) {
     });
     containerEl.setAttribute(QContainerAttr, 'resumed');
     if (qDev) {
-        logDebug('Container resumed', containerEl);
+        logDebug('Container resumed');
     }
 }
 function snapshotState(containerEl) {
@@ -851,6 +861,8 @@ function snapshotState(containerEl) {
         })
             .join(' ');
         node.setAttribute(QObjAttr, attribute);
+        const seq = ctx.seq.map((index) => intToStr(index)).join(' ');
+        node.setAttribute(QSeqAttr, seq);
         if (props) {
             const objs = [props];
             if (renderQrl) {
@@ -1218,7 +1230,7 @@ const Q_CTX = '__ctx__';
 function resumeIfNeeded(containerEl) {
     const isResumed = containerEl.getAttribute(QContainerAttr);
     if (isResumed === 'paused') {
-        resume(containerEl);
+        resumeContainer(containerEl);
     }
 }
 function getContext(element) {
@@ -1230,6 +1242,7 @@ function getContext(element) {
             cache,
             refMap: newQObjectMap(element),
             dirty: false,
+            seq: [],
             props: undefined,
             renderQrl: undefined,
             component: undefined,
@@ -1534,50 +1547,63 @@ const Fragment = (props) => props.children;
 
 const firstRenderComponent = (rctx, ctx) => {
     ctx.element.setAttribute(QHostAttr, '');
-    const result = renderComponent(rctx, ctx);
-    // if (ctx.component?.styleHostClass) {
-    //   classlistAdd(rctx, ctx.element, ctx.component.styleHostClass);
-    // }
-    return result;
+    return renderComponent(rctx, ctx);
 };
 const renderComponent = (rctx, ctx) => {
     const hostElement = ctx.element;
     const onRenderQRL = ctx.renderQrl;
     assertDefined(onRenderQRL);
-    onRenderQRL.setContainer(rctx.containerEl);
-    const onRenderFn = onRenderQRL.invokeFn();
     // Component is not dirty any more
     ctx.dirty = false;
     rctx.globalState.hostsStaging.delete(hostElement);
     // Invoke render hook
     const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, 'qRender');
-    invocatinContext.qrl = onRenderQRL;
-    const promise = useInvoke(invocatinContext, onRenderFn);
-    return then(promise, (jsxNode) => {
+    const waitOn = (invocatinContext.waitOn = []);
+    // Clean current subscription before render
+    ctx.refMap.array.forEach((obj) => {
+        removeSub(obj, hostElement);
+    });
+    const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
+    // Execution of the render function
+    const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+    // Wait for results
+    return then(renderPromise, (jsxNode) => {
         rctx.hostElements.add(hostElement);
-        let componentCtx = ctx.component;
-        if (!componentCtx) {
-            componentCtx = ctx.component = {
-                hostElement,
-                slots: [],
-                styleHostClass: undefined,
-                styleClass: undefined,
-                styleId: undefined,
-            };
-            const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
-            if (scopedStyleId) {
-                componentCtx.styleId = scopedStyleId;
-                componentCtx.styleHostClass = styleHost(scopedStyleId);
-                componentCtx.styleClass = styleContent(scopedStyleId);
-                hostElement.classList.add(componentCtx.styleHostClass);
+        const waitOnPromise = promiseAll(waitOn);
+        return then(waitOnPromise, (waitOnResolved) => {
+            waitOnResolved.forEach((task) => {
+                if (isStyleTask(task)) {
+                    appendStyle(rctx, hostElement, task);
+                }
+            });
+            if (ctx.dirty) {
+                logDebug('Dropping render. State changed during render.');
+                return renderComponent(rctx, ctx);
             }
-        }
-        componentCtx.slots = [];
-        const newCtx = {
-            ...rctx,
-            component: componentCtx,
-        };
-        return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+            let componentCtx = ctx.component;
+            if (!componentCtx) {
+                componentCtx = ctx.component = {
+                    hostElement,
+                    slots: [],
+                    styleHostClass: undefined,
+                    styleClass: undefined,
+                    styleId: undefined,
+                };
+                const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
+                if (scopedStyleId) {
+                    componentCtx.styleId = scopedStyleId;
+                    componentCtx.styleHostClass = styleHost(scopedStyleId);
+                    componentCtx.styleClass = styleContent(scopedStyleId);
+                    hostElement.classList.add(componentCtx.styleHostClass);
+                }
+            }
+            componentCtx.slots = [];
+            const newCtx = {
+                ...rctx,
+                component: componentCtx,
+            };
+            return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+        });
     });
 };
 
@@ -1930,17 +1956,10 @@ function createElm(rctx, vnode, isSvg) {
     let wait;
     if (isComponent) {
         // Run mount hook
-        const renderQRLPromise = props[OnRenderProp](elm);
-        wait = then(renderQRLPromise, (output) => {
-            ctx.renderQrl = output.renderQRL;
-            output.waitOn.forEach((task) => {
-                if (isStyleTask(task)) {
-                    appendStyle(rctx, elm, task);
-                }
-            });
-            ctx.refMap.add(output.renderQRL);
-            return firstRenderComponent(rctx, ctx);
-        });
+        const renderQRL = props[OnRenderProp];
+        ctx.renderQrl = renderQRL;
+        ctx.refMap.add(renderQRL);
+        wait = firstRenderComponent(rctx, ctx);
     }
     else {
         const setsInnerHTML = checkInnerHTML(props);
@@ -2138,6 +2157,7 @@ function setProperty(ctx, node, key, value) {
 }
 function createElement(ctx, expectTag, isSvg) {
     const el = isSvg ? ctx.doc.createElementNS(SVG_NS, expectTag) : ctx.doc.createElement(expectTag);
+    el[CONTAINER] = ctx.containerEl;
     ctx.operations.push({
         el,
         operation: 'create-element',
@@ -2162,9 +2182,9 @@ function appendStyle(ctx, hostElement, styleTask) {
     const fn = () => {
         const containerEl = ctx.containerEl;
         const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head ?? containerEl : containerEl;
-        if (!stylesParent.querySelector(`style[q\\:style="${styleTask.scope}"]`)) {
+        if (!stylesParent.querySelector(`style[q\\:style="${styleTask.styleId}"]`)) {
             const style = ctx.doc.createElement('style');
-            style.setAttribute('q:style', styleTask.scope);
+            style.setAttribute('q:style', styleTask.styleId);
             style.textContent = styleTask.content;
             stylesParent.insertBefore(style, stylesParent.firstChild);
         }
@@ -2307,6 +2327,209 @@ function stringifyClassOrStyle(obj, isClass) {
 }
 
 /**
+ * @public
+ */
+function useDocument() {
+    const doc = getInvokeContext().doc;
+    if (!doc) {
+        throw new Error('Cant access document for existing context');
+    }
+    return doc;
+}
+
+// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useStore">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useStore instead)
+/**
+ * Creates a object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ## Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of count.
+ *
+ * ```typescript
+ * export const Counter = component$(() => {
+ *   const store = useStore({ count: 0 });
+ *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useStore(initialState) {
+    const [store, setStore] = useSequentialScope();
+    if (store != null) {
+        return store;
+    }
+    const newStore = qObject(initialState, getProxyMap(useDocument()));
+    setStore(newStore);
+    return newStore;
+}
+function useSequentialScope() {
+    const ctx = getInvokeContext();
+    const index = ctx.seq;
+    const hostElement = useHostElement();
+    const elementCtx = getContext(hostElement);
+    ctx.seq++;
+    const updateFn = (value) => {
+        elementCtx.seq[index] = elementCtx.refMap.add(value);
+    };
+    const seqIndex = elementCtx.seq[index];
+    if (typeof seqIndex === 'number') {
+        return [elementCtx.refMap.get(seqIndex), updateFn];
+    }
+    return [undefined, updateFn];
+}
+
+// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+function useWatchQrl(watchQrl) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const hostElement = useHostElement();
+        const watch = {
+            watchQrl: watchQrl,
+            hostElement,
+            isConnected: true,
+        };
+        setWatch(watch);
+        getContext(hostElement).refMap.add(watch);
+        useWaitOn(runWatch(watch));
+    }
+}
+var WatchMode;
+(function (WatchMode) {
+    WatchMode[WatchMode["Watch"] = 0] = "Watch";
+    WatchMode[WatchMode["LayoutEffect"] = 1] = "LayoutEffect";
+    WatchMode[WatchMode["Effect"] = 2] = "Effect";
+})(WatchMode || (WatchMode = {}));
+function runWatch(watch) {
+    const runningPromise = watch.running ?? Promise.resolve();
+    const promise = runningPromise.then(() => {
+        const destroy = watch.destroy;
+        if (destroy) {
+            watch.destroy = undefined;
+            try {
+                destroy();
+            }
+            catch (err) {
+                logError(err);
+            }
+        }
+        const hostElement = watch.hostElement;
+        const watchFn = watch.watchQrl.invokeFn(hostElement);
+        const obs = (obj) => wrapSubscriber(obj, watch);
+        const captureRef = watch.watchQrl.captureRef;
+        if (Array.isArray(captureRef)) {
+            captureRef.forEach((obj) => {
+                removeSub(obj, watch);
+            });
+        }
+        return then(watchFn(obs), (returnValue) => {
+            if (typeof returnValue === 'function') {
+                watch.destroy = noSerialize(returnValue);
+            }
+            return watch;
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+}
+// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * See: `Observer`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+const useWatch$ = implicit$FirstArg(useWatchQrl);
+
+/**
  * Mark component for rendering.
  *
  * Use `notifyRender` method to mark a component for rendering at some later point in time.
@@ -2361,6 +2584,9 @@ function getRenderingState(containerEl) {
     let set = containerEl[SCHEDULE];
     if (!set) {
         containerEl[SCHEDULE] = set = {
+            watchNext: new Set(),
+            watchStagging: new Set(),
+            watchRunning: new Set(),
             hostsNext: new Set(),
             hostsStaging: new Set(),
             renderPromise: undefined,
@@ -2370,6 +2596,7 @@ function getRenderingState(containerEl) {
     return set;
 }
 async function renderMarked(containerEl, state) {
+    await waitForWatches(state);
     state.hostsRendering = new Set(state.hostsNext);
     state.hostsNext.clear();
     const doc = getDocument(containerEl);
@@ -2426,6 +2653,10 @@ function postRendering(containerEl, state) {
     state.hostsStaging.clear();
     state.hostsRendering = undefined;
     state.renderPromise = undefined;
+    // Run useEffect() watch
+    state.watchNext.forEach((watch) => {
+        runWatch(watch);
+    });
     if (state.hostsNext.size > 0) {
         scheduleFrame(containerEl, state);
     }
@@ -2433,133 +2664,6 @@ function postRendering(containerEl, state) {
 function sortNodes(elements) {
     elements.sort((a, b) => (a.compareDocumentPosition(b) & 2 ? 1 : -1));
 }
-
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-function useWatchQrl(watchQrl) {
-    const hostElement = useHostElement();
-    const watch = {
-        watchQrl: watchQrl,
-        hostElement,
-    };
-    getContext(hostElement).refMap.add(watch);
-    useWaitOn(runWatch(watch));
-}
-function runWatch(watch) {
-    const promise = new Promise((resolve) => {
-        return then(watch.running, () => {
-            const destroy = watch.destroy;
-            if (destroy) {
-                watch.destroy = undefined;
-                try {
-                    destroy();
-                }
-                catch (err) {
-                    logError(err);
-                }
-            }
-            const hostElement = watch.hostElement;
-            const watchFn = watch.watchQrl.invokeFn(hostElement);
-            const obs = (obj) => wrapSubscriber(obj, watch);
-            resolve(then(watchFn(obs), (returnValue) => {
-                if (typeof returnValue === 'function') {
-                    watch.destroy = noSerialize(returnValue);
-                }
-            }));
-        });
-    });
-    watch.running = noSerialize(promise);
-    return promise;
-}
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const useWatch$ = implicit$FirstArg(useWatchQrl);
 
 const ProxyMapSymbol = Symbol('ProxyMapSymbol');
 function getProxyMap(doc) {
@@ -2681,20 +2785,33 @@ class ReadWriteProxyHandler {
             }
             return true;
         }
+        const subs = this.subs;
         const unwrappedNewValue = unwrapProxy(newValue);
         verifySerializable(unwrappedNewValue);
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((_, sub) => notifyChange(sub));
+            subs.forEach((_, sub) => {
+                if (sub.isConnected) {
+                    notifyChange(sub);
+                }
+                else {
+                    subs.delete(sub);
+                }
+            });
             return true;
         }
         const oldValue = target[prop];
         if (oldValue !== unwrappedNewValue) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((propSets, sub) => {
-                if (propSets.has(prop)) {
-                    notifyChange(sub);
+            subs.forEach((propSets, sub) => {
+                if (sub.isConnected) {
+                    if (propSets.has(prop)) {
+                        notifyChange(sub);
+                    }
+                }
+                else {
+                    subs.delete(sub);
                 }
             });
         }
@@ -2711,12 +2828,34 @@ class ReadWriteProxyHandler {
         return Object.getOwnPropertyNames(target);
     }
 }
+function removeSub(obj, subscriber) {
+    if (obj && typeof obj === 'object') {
+        const subs = obj[QOjectSubsSymbol];
+        if (subs) {
+            subs.delete(subscriber);
+        }
+    }
+}
 function notifyChange(subscriber) {
     if (isElement(subscriber)) {
         notifyRender(subscriber);
     }
     else {
-        runWatch(subscriber);
+        notifyWatch(subscriber);
+    }
+}
+function notifyWatch(watch) {
+    const containerEl = getContainer(watch.hostElement);
+    const state = getRenderingState(containerEl);
+    const promise = runWatch(watch);
+    state.watchRunning.add(promise);
+    promise.then(() => {
+        state.watchRunning.delete(promise);
+    });
+}
+async function waitForWatches(state) {
+    while (state.watchRunning.size > 0) {
+        await Promise.all(state.watchRunning);
     }
 }
 function verifySerializable(value) {
@@ -3219,25 +3358,11 @@ const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
  * @public
  */
 // </docs>
-function componentQrl(onMount, options = {}) {
+function componentQrl(onRenderQrl, options = {}) {
     const tagName = options.tagName ?? 'div';
     // Return a QComponent Factory function.
-    return function QComponent(props, key) {
-        const onRenderFactory = async (hostElement) => {
-            const onMountQrl = toQrlOrError(onMount);
-            const onMountFn = await resolveQrl(hostElement, onMountQrl);
-            const ctx = getContext(hostElement);
-            const props = getProps(ctx);
-            const invokeCtx = newInvokeContext(getDocument(hostElement), hostElement, hostElement);
-            invokeCtx.qrl = onMountQrl;
-            const renderQRL = (await useInvoke(invokeCtx, onMountFn, props));
-            return {
-                renderQRL,
-                waitOn: await promiseAll(invokeCtx.waitOn || []),
-            };
-        };
-        onRenderFactory.__brand__ = 'QRLFactory';
-        return jsx(tagName, { [OnRenderProp]: onRenderFactory, ...props }, key);
+    return function QSimpleComponent(props, key) {
+        return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, key);
     };
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
@@ -3303,14 +3428,12 @@ function componentQrl(onMount, options = {}) {
 function component$(onMount, options) {
     return componentQrl($(onMount), options);
 }
-function resolveQrl(hostElement, onMountQrl) {
-    return onMountQrl.symbolRef
-        ? Promise.resolve(onMountQrl.symbolRef)
-        : Promise.resolve(null).then(() => {
-            return onMountQrl.resolve(hostElement);
-        });
-}
 function _useStyles(styles, scoped) {
+    const [style, setStyle] = useSequentialScope();
+    if (style === true) {
+        return;
+    }
+    setStyle(true);
     const styleQrl = toQrlOrError(styles);
     const styleId = styleKey(styleQrl);
     const hostElement = useHostElement();
@@ -3320,7 +3443,7 @@ function _useStyles(styles, scoped) {
     useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
         const task = {
             type: 'style',
-            scope: styleId,
+            styleId,
             content: scoped ? styleText.replace(/�/g, styleId) : styleText,
         };
         return task;
@@ -3332,7 +3455,7 @@ function _useStyles(styles, scoped) {
  *
  * @public
  */
-function snapshot(elmOrDoc) {
+function pauseContainer(elmOrDoc) {
     const doc = getDocument(elmOrDoc);
     const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
     const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
@@ -3544,17 +3667,6 @@ function injectQContainer(containerEl) {
     containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
-/**
- * @public
- */
-function useDocument() {
-    const doc = getInvokeContext().doc;
-    if (!doc) {
-        throw new Error('Cant access document for existing context');
-    }
-    return doc;
-}
-
 // <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useEvent">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useEvent instead)
@@ -3599,7 +3711,8 @@ function useURL() {
 function useLexicalScope() {
     const context = getInvokeContext();
     const hostElement = context.hostElement;
-    const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(useURL())), hostElement);
+    const qrl = (context.qrl ??
+        parseQRL(decodeURIComponent(String(useURL())), hostElement));
     if (qrl.captureRef == null) {
         const el = context.element;
         assertDefined(el);
@@ -3611,33 +3724,6 @@ function useLexicalScope() {
         return qrl.captureRef.map((obj) => wrapSubscriber(obj, hostElement));
     }
     return qrl.captureRef;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useStore">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useStore instead)
-/**
- * Creates a object that Qwik can track across serializations.
- *
- * Use `useStore` to create state for your application. The return object is a proxy which has a
- * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ## Example
- *
- * Example showing how `useStore` is used in Counter example to keep track of count.
- *
- * ```typescript
- * export const Counter = component$(() => {
- *   const store = useStore({ count: 0 });
- *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
- * });
- * ```
- *
- * @public
- */
-// </docs>
-function useStore(initialState) {
-    return qObject(initialState, getProxyMap(useDocument()));
 }
 
 exports.$ = $;
@@ -3665,10 +3751,10 @@ exports.onResumeQrl = onResumeQrl;
 exports.onUnmount$ = onUnmount$;
 exports.onUnmountQrl = onUnmountQrl;
 exports.onWindow = onWindow;
+exports.pauseContainer = pauseContainer;
 exports.qrl = qrl;
 exports.render = render;
 exports.setPlatform = setPlatform;
-exports.snapshot = snapshot;
 exports.unwrapSubscriber = unwrapSubscriber;
 exports.useDocument = useDocument;
 exports.useEvent = useEvent;
