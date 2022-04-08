@@ -1,62 +1,49 @@
-!function() {
-    /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-    const qrlResolver = (element, eventUrl) => {
-        var _a;
-        const doc = element.ownerDocument;
-        const containerEl = element.closest("[q\\:container]");
-        const base = new URL(null != (_a = null == containerEl ? void 0 : containerEl.getAttribute("q:base")) ? _a : doc.baseURI, doc.baseURI);
-        return new URL(eventUrl, base);
-    };
-    const error = msg => {
-        throw new Error("QWIK: " + msg);
-    };
-    ((doc, hasInitialized) => {
+(() => {
+    ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
-        const broadcast = async (infix, type, event) => {
+        const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
-            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, event)));
+            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const symbolUsed = (el, name) => el.dispatchEvent(new CustomEvent("qSymbol", {
+        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {
             detail: {
-                name: name
+                name: symbolName
             },
             bubbles: !0,
             composed: !0
         }));
+        const error = msg => {
+            throw new Error("QWIK " + msg);
+        };
+        const qrlResolver = (element, qrl) => {
+            element = element.closest("[q\\:container]");
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
+        };
         const dispatch = async (element, eventName, ev) => {
-            for (const on of ON_PREFIXES) {
-                const attrValue = element.getAttribute(on + eventName);
-                if (!attrValue) {
-                    continue;
-                }
-                element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
-                for (const qrl of attrValue.split("\n")) {
-                    const url = qrlResolver(element, qrl);
-                    if (url) {
-                        const symbolName = getSymbolName(url);
-                        const handler = (window[url.pathname] || await import(
-                        /* @vite-ignore */
-                        String(url).split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
-                        const previousCtx = doc.__q_context__;
-                        try {
-                            doc.__q_context__ = [ element, ev, url ];
-                            handler(ev, element, url);
-                        } finally {
-                            doc.__q_context__ = previousCtx;
-                            symbolUsed(element, symbolName);
+            for (const onPrefix of ON_PREFIXES) {
+                const attrValue = element.getAttribute(onPrefix + eventName);
+                if (attrValue) {
+                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
+                    for (const qrl of attrValue.split("\n")) {
+                        const url = qrlResolver(element, qrl);
+                        if (url) {
+                            const symbolName = getSymbolName(url);
+                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
+                            const previousCtx = doc.__q_context__;
+                            try {
+                                doc.__q_context__ = [ element, ev, url ];
+                                handler(ev, element, url);
+                            } finally {
+                                doc.__q_context__ = previousCtx;
+                                symbolUsed(element, symbolName);
+                            }
                         }
                     }
                 }
             }
         };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
-        const processEvent = async (ev, element) => {
+        const processEvent = (ev, element) => {
             if ((element = ev.target) == doc) {
                 setTimeout((() => broadcast("-document", ev.type, ev)));
             } else {
@@ -66,29 +53,38 @@
                 }
             }
         };
-        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {
-            capture: !0
-        });
+        const qrlPrefetch = element => {
+            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
+                type: "text/javascript"
+            }))));
+            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\n").map((qrl => qrlResolver(element, qrl) + "")));
+            return prefetchWorker;
+        };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-init", new CustomEvent("qInit"));
+                broadcast("", "q-resume", new CustomEvent("qResume"));
+                doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
             }
         };
-        {
-            const scriptTag = doc.querySelector("script[events]");
-            if (scriptTag) {
-                (scriptTag.getAttribute("events") || "").split(/[\s,;]+/).forEach(addEventListener);
-            } else {
-                for (const key in doc) {
-                    if (0 == key.indexOf("on")) {
-                        addEventListener(key.substring(2));
+        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {
+            capture: !0
+        });
+        if (!doc.qR) {
+            doc.qR = 1;
+            {
+                const scriptTag = doc.querySelector("script[events]");
+                if (scriptTag) {
+                    scriptTag.getAttribute("events").split(/[\s,;]+/).forEach(addDocEventListener);
+                } else {
+                    for (const key in doc) {
+                        key.startsWith("on") && addDocEventListener(key.slice(2));
                     }
                 }
             }
+            doc.addEventListener("readystatechange", processReadyStateChange);
+            processReadyStateChange();
         }
-        doc.addEventListener("readystatechange", processReadyStateChange);
-        processReadyStateChange();
     })(document);
-}();
+})();

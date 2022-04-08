@@ -3564,7 +3564,7 @@ const Slot = (props) => {
 /**
  * @alpha
  */
-const version = "0.0.18-7-dev20220408114734";
+const version = true;
 
 /**
  * Render JSX.

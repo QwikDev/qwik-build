@@ -62,15 +62,6 @@ export declare function getQwikLoaderScript(opts?: {
 }): string;
 
 /**
- * Provides the prefetch.js file as a string. Useful for tooling to inline the prefetch
- * script into HTML.
- * @alpha
- */
-export declare function getQwikPrefetchScript(opts?: {
-    debug?: boolean;
-}): string;
-
-/**
  * Options when creating a mock Qwik Global object.
  * @public
  */
@@ -115,18 +106,6 @@ export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
  */
 declare interface QwikLoaderProps {
     events?: string[];
-    debug?: boolean;
-}
-
-/**
- * @alpha
- */
-export declare const QwikPrefetch: FunctionComponent<QwikPrefetchProps>;
-
-/**
- * @alpha
- */
-declare interface QwikPrefetchProps {
     debug?: boolean;
 }
 
