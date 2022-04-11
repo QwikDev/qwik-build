@@ -36,8 +36,10 @@ const logWarn = (message, ...optionalParams) => {
     console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
 };
 const logDebug = (message, ...optionalParams) => {
-    // eslint-disable-next-line no-console
-    console.debug('%cQWIK', STYLE, message, ...optionalParams);
+    if (qDev) {
+        // eslint-disable-next-line no-console
+        console.debug('%cQWIK', STYLE, message, ...optionalParams);
+    }
 };
 
 /**
@@ -100,6 +102,7 @@ const QObjAttr = 'q:obj';
 const QSeqAttr = 'q:seq';
 const QContainerAttr = 'q:container';
 const QContainerSelector = '[q\\:container]';
+const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
 
@@ -179,7 +182,6 @@ function newInvokeContext(doc, hostElement, element, event, url) {
         event: event,
         url: url || null,
         qrl: undefined,
-        subscriptions: event === 'qRender',
     };
 }
 /**
@@ -291,9 +293,9 @@ class QRL {
             const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
             return then(fn, (fn) => {
                 if (typeof fn === 'function') {
+                    const baseContext = currentCtx ?? newInvokeContext();
                     const context = {
-                        ...newInvokeContext(),
-                        ...currentCtx,
+                        ...baseContext,
                         qrl: this,
                     };
                     return useInvoke(context, fn, ...args);
@@ -382,24 +384,6 @@ const getPlatform = (docOrNode) => {
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
 };
 const DocumentPlatform = /*@__PURE__*/ Symbol();
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
-/**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useHostElement() {
-    const element = getInvokeContext().hostElement;
-    assertDefined(element);
-    return element;
-}
 
 /**
  * @private
@@ -704,9 +688,7 @@ function resumeContainer(containerEl) {
         }
     });
     containerEl.setAttribute(QContainerAttr, 'resumed');
-    if (qDev) {
-        logDebug('Container resumed');
-    }
+    logDebug('Container resumed');
 }
 function snapshotState(containerEl) {
     const doc = getDocument(containerEl);
@@ -1522,7 +1504,8 @@ const renderComponent = (rctx, ctx) => {
     ctx.dirty = false;
     rctx.globalState.hostsStaging.delete(hostElement);
     // Invoke render hook
-    const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, 'qRender');
+    const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
+    invocatinContext.subscriber = hostElement;
     const waitOn = (invocatinContext.waitOn = []);
     // Clean current subscription before render
     ctx.refMap.array.forEach((obj) => {
@@ -2025,6 +2008,10 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
             continue;
         }
         const newValue = expectProps[key];
+        if (key === 'ref') {
+            newValue.current = elm;
+            continue;
+        }
         // Early exit if value didnt change
         const oldValue = ctx.cache.get(key);
         if (newValue === oldValue) {
@@ -2291,6 +2278,24 @@ function stringifyClassOrStyle(obj, isClass) {
     return String(obj);
 }
 
+// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useHostElement() {
+    const element = getInvokeContext().hostElement;
+    assertDefined(element);
+    return element;
+}
+
 /**
  * @public
  */
@@ -2327,15 +2332,23 @@ function useDocument() {
 // </docs>
 function useStore(initialState) {
     const [store, setStore] = useSequentialScope();
+    const hostElement = useHostElement();
     if (store != null) {
-        return store;
+        return wrapSubscriber(store, hostElement);
     }
     const newStore = qObject(initialState, getProxyMap(useDocument()));
     setStore(newStore);
-    return newStore;
+    return wrapSubscriber(newStore, hostElement);
+}
+/**
+ * @alpha
+ */
+function useRef(current) {
+    return useStore({ current });
 }
 function useSequentialScope() {
     const ctx = getInvokeContext();
+    assertEqual(ctx.event, RenderEvent);
     const index = ctx.seq;
     const hostElement = useHostElement();
     const elementCtx = getContext(hostElement);
@@ -2350,6 +2363,12 @@ function useSequentialScope() {
     return [undefined, updateFn];
 }
 
+var WatchMode;
+(function (WatchMode) {
+    WatchMode[WatchMode["Watch"] = 0] = "Watch";
+    WatchMode[WatchMode["LayoutEffect"] = 1] = "LayoutEffect";
+    WatchMode[WatchMode["Effect"] = 2] = "Effect";
+})(WatchMode || (WatchMode = {}));
 // <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
@@ -2402,51 +2421,18 @@ function useWatchQrl(watchQrl) {
         const watch = {
             watchQrl: watchQrl,
             hostElement,
+            mode: WatchMode.Watch,
             isConnected: true,
+            dirty: true,
         };
         setWatch(watch);
         getContext(hostElement).refMap.add(watch);
-        useWaitOn(runWatch(watch));
+        useWaitOn(Promise.resolve().then(() => runWatch(watch)));
     }
 }
-var WatchMode;
-(function (WatchMode) {
-    WatchMode[WatchMode["Watch"] = 0] = "Watch";
-    WatchMode[WatchMode["LayoutEffect"] = 1] = "LayoutEffect";
-    WatchMode[WatchMode["Effect"] = 2] = "Effect";
-})(WatchMode || (WatchMode = {}));
-function runWatch(watch) {
-    const runningPromise = watch.running ?? Promise.resolve();
-    const promise = runningPromise.then(() => {
-        const destroy = watch.destroy;
-        if (destroy) {
-            watch.destroy = undefined;
-            try {
-                destroy();
-            }
-            catch (err) {
-                logError(err);
-            }
-        }
-        const hostElement = watch.hostElement;
-        const watchFn = watch.watchQrl.invokeFn(hostElement);
-        const obs = (obj) => wrapSubscriber(obj, watch);
-        const captureRef = watch.watchQrl.captureRef;
-        if (Array.isArray(captureRef)) {
-            captureRef.forEach((obj) => {
-                removeSub(obj, watch);
-            });
-        }
-        return then(watchFn(obs), (returnValue) => {
-            if (typeof returnValue === 'function') {
-                watch.destroy = noSerialize(returnValue);
-            }
-            return watch;
-        });
-    });
-    watch.running = noSerialize(promise);
-    return promise;
-}
+const isWatchDescriptor = (obj) => {
+    return obj && typeof obj === 'object' && 'watchQrl' in obj;
+};
 // <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
@@ -2493,6 +2479,69 @@ function runWatch(watch) {
  */
 // </docs>
 const useWatch$ = implicit$FirstArg(useWatchQrl);
+/**
+ * @alpha
+ */
+function useEffectQrl(watchQrl) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const hostElement = useHostElement();
+        const watch = {
+            watchQrl: watchQrl,
+            hostElement,
+            mode: WatchMode.Effect,
+            isConnected: true,
+            dirty: true,
+        };
+        setWatch(watch);
+        getContext(hostElement).refMap.add(watch);
+    }
+}
+/**
+ * @alpha
+ */
+const useEffect$ = implicit$FirstArg(useEffectQrl);
+function runWatch(watch) {
+    if (!watch.dirty) {
+        logDebug('Watch is not dirty, skipping run', watch);
+        return Promise.resolve(watch);
+    }
+    watch.dirty = false;
+    const promise = new Promise((resolve) => {
+        then(watch.running, () => {
+            const destroy = watch.destroy;
+            if (destroy) {
+                watch.destroy = undefined;
+                try {
+                    destroy();
+                }
+                catch (err) {
+                    logError(err);
+                }
+            }
+            const hostElement = watch.hostElement;
+            const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, 'WatchEvent');
+            invokationContext.watch = watch;
+            invokationContext.subscriber = watch;
+            const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
+            const obs = (obj) => wrapSubscriber(obj, watch);
+            const captureRef = watch.watchQrl.captureRef;
+            if (Array.isArray(captureRef)) {
+                captureRef.forEach((obj) => {
+                    removeSub(obj, watch);
+                });
+            }
+            return then(watchFn(obs), (returnValue) => {
+                if (typeof returnValue === 'function') {
+                    watch.destroy = noSerialize(returnValue);
+                }
+                resolve(watch);
+            });
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+}
 
 /**
  * Mark component for rendering.
@@ -2595,7 +2644,7 @@ async function renderMarked(containerEl, state) {
                 printRenderStats(ctx);
             }
         }
-        postRendering(containerEl, state);
+        postRendering(containerEl, state, ctx);
         return ctx;
     }
     return platform.raf(() => {
@@ -2605,11 +2654,27 @@ async function renderMarked(containerEl, state) {
                 printRenderStats(ctx);
             }
         }
-        postRendering(containerEl, state);
+        postRendering(containerEl, state, ctx);
         return ctx;
     });
 }
-function postRendering(containerEl, state) {
+async function postRendering(containerEl, state, ctx) {
+    // Run useEffect() watch
+    const promises = [];
+    state.watchNext.forEach((watch) => {
+        promises.push(runWatch(watch));
+    });
+    state.watchNext.clear();
+    state.watchStagging.forEach((watch) => {
+        if (ctx.hostElements.has(watch.hostElement)) {
+            promises.push(runWatch(watch));
+        }
+        else {
+            state.watchNext.add(watch);
+        }
+    });
+    // Wait for all promises
+    await Promise.all(promises);
     // Move elements from staging to nextRender
     state.hostsStaging.forEach((el) => {
         state.hostsNext.add(el);
@@ -2618,11 +2683,7 @@ function postRendering(containerEl, state) {
     state.hostsStaging.clear();
     state.hostsRendering = undefined;
     state.renderPromise = undefined;
-    // Run useEffect() watch
-    state.watchNext.forEach((watch) => {
-        runWatch(watch);
-    });
-    if (state.hostsNext.size > 0) {
+    if (state.hostsNext.size + state.watchNext.size > 0) {
         scheduleFrame(containerEl, state);
     }
 }
@@ -2682,6 +2743,9 @@ function wrap(value, proxyMap) {
         if (isQrl(value)) {
             return value;
         }
+        if (isElement(value)) {
+            return value;
+        }
         const nakedValue = unwrapProxy(value);
         if (nakedValue !== value) {
             // already a proxy return;
@@ -2722,14 +2786,20 @@ class ReadWriteProxyHandler {
         if (typeof prop === 'symbol') {
             return value;
         }
-        if (!subscriber) {
-            const invokeCtx = tryGetInvokeContext();
-            if (qDev && !invokeCtx && !qTest) {
-                logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
+        const invokeCtx = tryGetInvokeContext();
+        if (qDev && !invokeCtx && !qTest) {
+            logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
+        }
+        if (invokeCtx) {
+            if (invokeCtx.subscriber === null) {
+                subscriber = undefined;
             }
-            if (invokeCtx && invokeCtx.subscriptions && invokeCtx.hostElement) {
-                subscriber = invokeCtx.hostElement;
+            else if (!subscriber) {
+                subscriber = invokeCtx.subscriber;
             }
+        }
+        else if (qDev && !qTest && !subscriber) {
+            logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
         }
         if (subscriber) {
             const isArray = Array.isArray(target);
@@ -2812,11 +2882,24 @@ function notifyChange(subscriber) {
 function notifyWatch(watch) {
     const containerEl = getContainer(watch.hostElement);
     const state = getRenderingState(containerEl);
-    const promise = runWatch(watch);
-    state.watchRunning.add(promise);
-    promise.then(() => {
-        state.watchRunning.delete(promise);
-    });
+    watch.dirty = true;
+    if (watch.mode === WatchMode.Watch) {
+        const promise = runWatch(watch);
+        state.watchRunning.add(promise);
+        promise.then(() => {
+            state.watchRunning.delete(promise);
+        });
+    }
+    else {
+        const activeRendering = state.hostsRendering !== undefined;
+        if (activeRendering) {
+            state.watchStagging.add(watch);
+        }
+        else {
+            state.watchNext.add(watch);
+            scheduleFrame(containerEl, state);
+        }
+    }
 }
 async function waitForWatches(state) {
     while (state.watchRunning.size > 0) {
@@ -2827,9 +2910,11 @@ function verifySerializable(value) {
     if (shouldSerialize(value) && typeof value == 'object' && value !== null) {
         if (Array.isArray(value))
             return;
-        if (isQrl(value))
-            return;
         if (Object.getPrototypeOf(value) !== Object.prototype) {
+            if (isQrl(value))
+                return;
+            if (isElement(value))
+                return;
             throw qError(QError.TODO, 'Only primitive and object literals can be serialized.');
         }
     }
@@ -2854,7 +2939,14 @@ function noSerialize(input) {
  * @alpha
  */
 function useSubscriber(obj) {
-    return wrapSubscriber(obj, useHostElement());
+    const ctx = getInvokeContext();
+    let subscriber = ctx.watch;
+    if (!subscriber) {
+        assertEqual(ctx.event, RenderEvent);
+        subscriber = ctx.hostElement;
+    }
+    assertDefined(subscriber);
+    return wrapSubscriber(obj, subscriber);
 }
 /**
  * @alpha
@@ -3578,7 +3670,7 @@ const version = true;
  * @param jsxNode - JSX to render
  * @public
  */
-function render(parent, jsxNode) {
+async function render(parent, jsxNode) {
     // If input is not JSX, convert it
     if (!isJSXNode(jsxNode)) {
         jsxNode = jsx(jsxNode, null);
@@ -3603,18 +3695,27 @@ function render(parent, jsxNode) {
             timing: [],
         },
     };
-    return then(visitJsxNode(ctx, parent, processNode(jsxNode), false), () => {
-        executeContext(ctx);
-        if (!qTest) {
-            injectQwikSlotCSS(parent);
+    await visitJsxNode(ctx, parent, processNode(jsxNode), false);
+    executeContext(ctx);
+    if (!qTest) {
+        injectQwikSlotCSS(parent);
+    }
+    if (qDev) {
+        if (typeof window !== 'undefined' && window.document != null) {
+            printRenderStats(ctx);
         }
-        if (qDev) {
-            if (typeof window !== 'undefined' && window.document != null) {
-                printRenderStats(ctx);
+    }
+    const promises = [];
+    ctx.hostElements.forEach((host) => {
+        const elCtx = getContext(host);
+        elCtx.refMap.array.filter(isWatchDescriptor).forEach((watch) => {
+            if (watch.dirty) {
+                promises.push(runWatch(watch));
             }
-        }
-        return ctx;
+        });
     });
+    await Promise.all(promises);
+    return ctx;
 }
 function injectQwikSlotCSS(docOrElm) {
     const doc = getDocument(docOrElm);
@@ -3630,24 +3731,6 @@ function getElement(docOrElm) {
 function injectQContainer(containerEl) {
     containerEl.setAttribute('q:version', version || '');
     containerEl.setAttribute(QContainerAttr, 'resumed');
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useEvent">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useEvent instead)
-/**
- * Retrieves the current event which triggered the action.
- *
- * NOTE: The `useEvent` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useEvent(expectEventType) {
-    const event = getInvokeContext().event;
-    expectEventType && assertEqual(event.type, expectEventType);
-    return event;
 }
 
 function useURL() {
@@ -3685,11 +3768,12 @@ function useLexicalScope() {
         const ctx = getContext(el);
         qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
     }
-    if (context.subscriptions && hostElement) {
-        return qrl.captureRef.map((obj) => wrapSubscriber(obj, hostElement));
+    const subscriber = context.subscriber;
+    if (subscriber) {
+        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
     }
     return qrl.captureRef;
 }
 
-export { $, Async, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, notifyRender, on, onDocument, onPause$, onPauseQrl, onResume$, onResumeQrl, onUnmount$, onUnmountQrl, onWindow, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles$, useScopedStylesQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
+export { $, Async, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, on, onDocument, onPause$, onPauseQrl, onResume$, onResumeQrl, onUnmount$, onUnmountQrl, onWindow, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useDocument, useEffect$, useEffectQrl, useHostElement, useLexicalScope, useRef, useScopedStyles$, useScopedStylesQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map

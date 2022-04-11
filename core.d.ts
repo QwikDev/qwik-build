@@ -568,6 +568,7 @@ declare interface ComponentBaseProps {
     style?: CSSProperties | string | undefined;
     key?: string | number;
     id?: string | undefined;
+    ref?: Ref<Element>;
     'q:slot'?: string;
     [key: `host:on${string}$`]: EventHandler_2;
     [key: `host:on${string}Qrl`]: QrlEvent | QrlEvent[];
@@ -720,7 +721,7 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare type EventHandler<T> = QRL<(value: T) => any>;
 
-declare type EventHandler_2 = (event: Event, element: Element) => any;
+declare type EventHandler_2<Type = Event> = (event: Type, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1162,16 +1163,17 @@ declare interface IntrinsicElements {
 }
 
 declare interface InvokeContext {
+    url: URL | null;
+    seq: number;
     doc?: Document;
     hostElement?: Element;
     element?: Element;
     event: any;
-    url: URL | null;
-    seq: number;
     qrl?: QRL<any>;
-    subscriptions: boolean;
     waitOn?: ValueOrPromise<any>[];
     props?: Props;
+    subscriber?: Subscriber | null;
+    watch?: WatchDescriptor;
 }
 
 /**
@@ -1287,22 +1289,6 @@ export declare type NoSerialize<T> = (T & {
  * @alpha
  */
 export declare function noSerialize<T extends {}>(input: T): NoSerialize<T>;
-
-/**
- * Mark component for rendering.
- *
- * Use `notifyRender` method to mark a component for rendering at some later point in time.
- * This method uses `getPlatform(doc).queueRender` for scheduling of the rendering. The
- * default implementation of the method is to use `requestAnimationFrame` to do actual rendering.
- *
- * The method is intended to coalesce multiple calls into `notifyRender` into a single call for
- * rendering.
- *
- * @param hostElement - Host-element of the component to re-render.
- * @returns A promise which is resolved when the component has been rendered.
- * @public
- */
-export declare function notifyRender(hostElement: Element): Promise<RenderContext>;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
@@ -1857,7 +1843,7 @@ export declare interface QRL<TYPE = any> {
  */
 export declare function qrl<T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null): QRL<T>;
 
-declare type QrlEvent = QRL<EventHandler_2>;
+declare type QrlEvent<Type = Event> = QRL<EventHandler_2<Type>>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1916,6 +1902,7 @@ declare interface QwikProps {
     };
     innerHTML?: string;
     dangerouslySetInnerHTML?: string;
+    ref?: Ref<Element>;
     /**
      *
      */
@@ -1935,6 +1922,13 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare interface Ref<T> {
+    current?: T;
+}
+
+/**
  * Render JSX.
  *
  * Use this method to render JSX. This function does reconciling which means
@@ -1946,7 +1940,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  * @param jsxNode - JSX to render
  * @public
  */
-export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): ValueOrPromise<RenderContext | undefined>;
+export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): Promise<RenderContext | undefined>;
 
 /**
  * @public
@@ -2052,6 +2046,8 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     scoped?: boolean | undefined;
     type?: string | undefined;
 }
+
+declare type Subscriber = WatchDescriptor | Element;
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     class?: string | {
@@ -2389,14 +2385,14 @@ export declare function unwrapSubscriber<T extends {}>(obj: T): any;
 export declare function useDocument(): Document;
 
 /**
- * Retrieves the current event which triggered the action.
- *
- * NOTE: The `useEvent` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
+ * @alpha
  */
-export declare function useEvent<EVENT extends {}>(expectEventType?: string): EVENT;
+export declare const useEffect$: (first: (obs: Observer) => void | (() => void)) => void;
+
+/**
+ * @alpha
+ */
+export declare function useEffectQrl(watchQrl: QRL<(obs: Observer) => void | (() => void)>): void;
 
 /**
  * Retrieves the Host Element of the current component.
@@ -2419,6 +2415,11 @@ export declare function useHostElement(): Element;
  * @public
  */
 export declare function useLexicalScope<VARS extends any[]>(): VARS;
+
+/**
+ * @alpha
+ */
+export declare function useRef<T = Element>(current?: T): Ref<T>;
 
 /**
  * @alpha
@@ -2580,8 +2581,16 @@ declare interface WatchDescriptor {
     isConnected: boolean;
     watchQrl: QRL<(obs: Observer) => void | (() => void)>;
     hostElement: Element;
+    mode: WatchMode;
     destroy?: NoSerialize<() => void>;
     running?: NoSerialize<Promise<WatchDescriptor>>;
+    dirty: boolean;
+}
+
+declare const enum WatchMode {
+    Watch = 0,
+    LayoutEffect = 1,
+    Effect = 2
 }
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2607,6 +2616,6 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Element | WatchDescriptor): any;
+export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Subscriber): any;
 
 export { }

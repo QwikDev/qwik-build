@@ -26,6 +26,11 @@ var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-
 var logError = (message, ...optionalParams) => {
   console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
 };
+var logDebug = (message, ...optionalParams) => {
+  if (qDev) {
+    console.debug("%cQWIK", STYLE, message, ...optionalParams);
+  }
+};
 
 // src/core/assert/assert.ts
 function assertDefined(value, text) {
@@ -53,6 +58,7 @@ function newError(text) {
 var QHostAttr = "q:host";
 var QObjAttr = "q:obj";
 var QContainerSelector = "[q\\:container]";
+var RenderEvent = "qRender";
 
 // src/core/util/dom.ts
 function getDocument(node) {
@@ -119,8 +125,7 @@ function newInvokeContext(doc, hostElement, element, event, url) {
     element,
     event,
     url: url || null,
-    qrl: void 0,
-    subscriptions: event === "qRender"
+    qrl: void 0
   };
 }
 function useWaitOn(promise) {
@@ -465,13 +470,6 @@ var getPlatform2 = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// src/core/use/use-host-element.public.ts
-function useHostElement() {
-  const element = getInvokeContext().hostElement;
-  assertDefined(element);
-  return element;
-}
-
 // src/core/use/use-subscriber.ts
 function wrapSubscriber(obj, subscriber) {
   if (obj && typeof obj === "object") {
@@ -576,9 +574,9 @@ var QRL = class {
       const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
       return then(fn, (fn2) => {
         if (typeof fn2 === "function") {
+          const baseContext = currentCtx ?? newInvokeContext();
           const context = {
-            ...newInvokeContext(),
-            ...currentCtx,
+            ...baseContext,
             qrl: this
           };
           return useInvoke(context, fn2, ...args);
@@ -710,9 +708,17 @@ function stringifyClassOrStyle(obj, isClass) {
   return String(obj);
 }
 
+// src/core/use/use-host-element.public.ts
+function useHostElement() {
+  const element = getInvokeContext().hostElement;
+  assertDefined(element);
+  return element;
+}
+
 // src/core/use/use-store.public.ts
 function useSequentialScope() {
   const ctx = getInvokeContext();
+  assertEqual(ctx.event, RenderEvent);
   const index = ctx.seq;
   const hostElement = useHostElement();
   const elementCtx = getContext(hostElement);
@@ -735,45 +741,72 @@ function useWatchQrl(watchQrl) {
     const watch2 = {
       watchQrl,
       hostElement,
-      isConnected: true
+      mode: 0 /* Watch */,
+      isConnected: true,
+      dirty: true
     };
     setWatch(watch2);
     getContext(hostElement).refMap.add(watch2);
-    useWaitOn(runWatch(watch2));
+    useWaitOn(Promise.resolve().then(() => runWatch(watch2)));
   }
 }
+var useWatch$ = implicit$FirstArg(useWatchQrl);
+function useEffectQrl(watchQrl) {
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    const hostElement = useHostElement();
+    const watch2 = {
+      watchQrl,
+      hostElement,
+      mode: 2 /* Effect */,
+      isConnected: true,
+      dirty: true
+    };
+    setWatch(watch2);
+    getContext(hostElement).refMap.add(watch2);
+  }
+}
+var useEffect$ = implicit$FirstArg(useEffectQrl);
 function runWatch(watch) {
-  const runningPromise = watch.running ?? Promise.resolve();
-  const promise = runningPromise.then(() => {
-    const destroy = watch.destroy;
-    if (destroy) {
-      watch.destroy = void 0;
-      try {
-        destroy();
-      } catch (err) {
-        logError(err);
+  if (!watch.dirty) {
+    logDebug("Watch is not dirty, skipping run", watch);
+    return Promise.resolve(watch);
+  }
+  watch.dirty = false;
+  const promise = new Promise((resolve) => {
+    then(watch.running, () => {
+      const destroy = watch.destroy;
+      if (destroy) {
+        watch.destroy = void 0;
+        try {
+          destroy();
+        } catch (err) {
+          logError(err);
+        }
       }
-    }
-    const hostElement = watch.hostElement;
-    const watchFn = watch.watchQrl.invokeFn(hostElement);
-    const obs = (obj) => wrapSubscriber(obj, watch);
-    const captureRef = watch.watchQrl.captureRef;
-    if (Array.isArray(captureRef)) {
-      captureRef.forEach((obj) => {
-        removeSub(obj, watch);
+      const hostElement = watch.hostElement;
+      const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, "WatchEvent");
+      invokationContext.watch = watch;
+      invokationContext.subscriber = watch;
+      const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
+      const obs = (obj) => wrapSubscriber(obj, watch);
+      const captureRef = watch.watchQrl.captureRef;
+      if (Array.isArray(captureRef)) {
+        captureRef.forEach((obj) => {
+          removeSub(obj, watch);
+        });
+      }
+      return then(watchFn(obs), (returnValue) => {
+        if (typeof returnValue === "function") {
+          watch.destroy = noSerialize(returnValue);
+        }
+        resolve(watch);
       });
-    }
-    return then(watchFn(obs), (returnValue) => {
-      if (typeof returnValue === "function") {
-        watch.destroy = noSerialize(returnValue);
-      }
-      return watch;
     });
   });
   watch.running = noSerialize(promise);
   return promise;
 }
-var useWatch$ = implicit$FirstArg(useWatchQrl);
 
 // src/core/render/notify-render.ts
 var SCHEDULE = Symbol("Render state");
