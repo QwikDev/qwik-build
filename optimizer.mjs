@@ -16,7 +16,7 @@ var qTest = void 0 !== globalThis.describe;
 var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
 
 var logWarn = (message, ...optionalParams) => {
-  console.warn("%cQWIK", STYLE, message, ...optionalParams);
+  console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
 };
 
 var path_exports = {};
@@ -617,6 +617,8 @@ var convertOptions = opts => {
   return output;
 };
 
+var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const qrlPrefetch = element => {\n            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ \'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));\' ], {\n                type: "text/javascript"\n            }))));\n            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\\n").map((qrl => qrlResolver(element, qrl) + "")));\n            return prefetchWorker;\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-resume", new CustomEvent("qResume"));\n                doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
+
 var QWIK_BUILD = "@builder.io/qwik/build";
 
 function qwikVite(opts) {
@@ -626,6 +628,7 @@ function qwikVite(opts) {
     const entry = null != (_b = null == (_a = opts.ssr) ? void 0 : _a.entry) ? _b : "/src/entry.server.tsx";
     const main = null != (_d = null == (_c = opts.ssr) ? void 0 : _c.main) ? _d : "/src/main.tsx";
     Object.assign(plugin, {
+      name: "qwik-vite",
       handleHotUpdate(ctx) {
         plugin.log("handleHotUpdate()", ctx);
         if (ctx.file.endsWith(".css")) {
@@ -743,7 +746,8 @@ function qwikRollup(opts) {
     name: "qwik",
     enforce: "pre",
     log: log,
-    config(config, {command: command}) {
+    async config(config, {command: command}) {
+      optimizer || (optimizer = await createOptimizer());
       if ("serve" === command) {
         isBuild = false;
         entryStrategy = {
@@ -751,6 +755,7 @@ function qwikRollup(opts) {
         };
         config.ssr && (config.ssr.noExternal = false);
       }
+      "build" === command && fixSSRInput(config, optimizer);
       log("vite command", command);
       return {
         esbuild: {
@@ -776,7 +781,7 @@ function qwikRollup(opts) {
       };
       return inputOptions;
     },
-    transformIndexHtml(_, ctx) {
+    transformIndexHtml(html, ctx) {
       ctx.bundle && Object.entries(ctx.bundle).forEach((([key, value]) => {
         "asset" === value.type && key.endsWith(".css") && injections.push({
           tag: "link",
@@ -787,6 +792,8 @@ function qwikRollup(opts) {
           }
         });
       }));
+      html = html.replace("</head>", `<script>${QWIK_LOADER_DEFAULT_DEBUG}<\/script>\n</head>`);
+      return html;
     },
     async buildStart() {
       optimizer || (optimizer = await createOptimizer());
@@ -995,8 +1002,20 @@ function getBuildFile(isSSR) {
   return `\nexport const isServer = ${isSSR};\nexport const isBrowser = ${!isSSR};\n`;
 }
 
+function slash(p) {
+  return p.replace(/\\/g, "/");
+}
+
+function fixSSRInput(config, optimizer) {
+  var _a, _b;
+  if ("string" === typeof (null == (_a = null == config ? void 0 : config.build) ? void 0 : _a.ssr) && (null == (_b = null == config ? void 0 : config.build.rollupOptions) ? void 0 : _b.input)) {
+    const resolvedRoot = optimizer.path.normalize(slash(config.root ? optimizer.path.resolve(config.root) : process.cwd()));
+    config.build.rollupOptions.input = optimizer.path.resolve(resolvedRoot, config.build.ssr);
+  }
+}
+
 var versions = {
-  qwik: "0.0.18-0-dev20220311014644"
+  qwik: true
 };
 
 export { createOptimizer, qwikRollup, qwikVite, versions };
