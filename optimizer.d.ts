@@ -286,7 +286,7 @@ export declare interface TransformOutput {
 export declare type TranspileOption = boolean | undefined | null;
 
 /**
- * @alpha
+ * @public
  */
 export declare const versions: {
     qwik: string;

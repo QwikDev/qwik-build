@@ -1,5 +1,6 @@
 /**
  * @license
+ * @builder.io/qwik/server
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -114,9 +115,13 @@ function normalizeUrl(url) {
 var BASE_URI = `http://document.qwik.dev/`;
 var noop = () => {
 };
+var versions = {
+  qwik: true,
+  qwikDom: "2.1.14"
+};
 
 // src/server/document.ts
-import { pauseContainer, render } from "../core.mjs";
+import { pauseContainer, render } from "./core.mjs";
 
 // dist-dev/qwikdom.mjs
 var import_global = __toESM(require_global(), 1);
@@ -8997,7 +9002,7 @@ var qwikdom_default = df();
 
 // src/server/platform.ts
 var import_global = __toESM(require_global());
-import { setPlatform } from "../core.mjs";
+import { setPlatform } from "./core.mjs";
 var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
 function createPlatform(document2, opts) {
   if (!document2 || document2.nodeType !== 9) {
@@ -10315,17 +10320,11 @@ function getQwikLoaderScript(opts = {}) {
 
 // src/server/components.ts
 var import_global = __toESM(require_global());
-import { jsx as jsx2 } from "../core.mjs";
+import { jsx as jsx2 } from "./core.mjs";
 var QwikLoader = ({ events, debug }) => {
   return jsx2("script", {
     children: [getQwikLoaderScript({ events, debug })]
   });
-};
-
-// src/server/index.ts
-var versions = {
-  qwik: true,
-  qwikDom: "2.1.14"
 };
 export {
   QwikLoader,

@@ -1,5 +1,6 @@
 /**
  * @license
+ * @builder.io/qwik/testing
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -10,7 +11,7 @@ import { fileURLToPath } from "url";
 var __dirname = dirname(fileURLToPath(import.meta.url));
 
 // src/testing/document.ts
-import { createGlobal as createServerGlobal } from "../server/index.mjs";
+import { createGlobal as createServerGlobal } from "../server.mjs";
 
 // src/testing/platform.ts
 import { getPlatform, setPlatform } from "../core.mjs";

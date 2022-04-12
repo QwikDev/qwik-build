@@ -1,3 +1,10 @@
+/**
+ * @license
+ * @builder.io/qwik
+ * Copyright Builder.io, Inc. All Rights Reserved.
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ */
 'use strict';
 
 if (typeof globalThis == 'undefined') {
@@ -11,7 +18,7 @@ if (typeof globalThis == 'undefined') {
       : {};
   e.globalThis = e;
 }
-
+globalThis.qwikCore = (function (exports) {
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
@@ -3855,4 +3862,6 @@ exports.useWatch$ = useWatch$;
 exports.useWatchQrl = useWatchQrl;
 exports.version = version;
 exports.wrapSubscriber = wrapSubscriber;
+
+return exports; })(typeof exports === 'object' ? exports : {});
 //# sourceMappingURL=core.cjs.map

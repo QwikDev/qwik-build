@@ -1,6 +1,5 @@
-import { FunctionComponent } from '../core';
+import type { FunctionComponent } from '../core';
 import type { JSXNode } from '../core';
-import type { OutputEntryMap } from '../core/optimizer';
 
 /**
  * Create emulated `Document` for server environment.
@@ -62,10 +61,33 @@ export declare function getQwikLoaderScript(opts?: {
 }): string;
 
 /**
+ * @alpha
+ */
+declare interface GlobalInjections {
+    tag: string;
+    attributes?: {
+        [key: string]: string;
+    };
+    location: 'head' | 'body';
+    children?: string;
+}
+
+/**
  * Options when creating a mock Qwik Global object.
  * @public
  */
 export declare interface GlobalOptions extends DocumentOptions {
+}
+
+/**
+ * @alpha
+ */
+declare interface OutputEntryMap {
+    version: string;
+    mapping: {
+        [canonicalName: string]: string;
+    };
+    injections?: GlobalInjections[];
 }
 
 /**
@@ -188,7 +210,7 @@ declare interface SerializeDocumentOptions extends DocumentOptions {
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const versions: {
     readonly qwik: string;

@@ -1,5 +1,6 @@
 /**
  * @license
+ * @builder.io/qwik/testing
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -72,7 +73,7 @@ var import_globalthis = __toESM(require_globalthis());
 
 // src/testing/document.ts
 var import_globalthis = __toESM(require_globalthis());
-var import_server = require("../server/index.cjs");
+var import_server = require("../server.cjs");
 
 // src/testing/platform.ts
 var import_globalthis = __toESM(require_globalthis());

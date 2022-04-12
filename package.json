@@ -34,14 +34,17 @@
       "import": "./loader/index.mjs",
       "require": "./loader/index.cjs"
     },
+    "./optimizer.cjs": "./optimizer.cjs",
+    "./optimizer.mjs": "./optimizer.mjs",
     "./optimizer": {
       "import": "./optimizer.mjs",
       "require": "./optimizer.cjs"
     },
-    "./server/index.cjs": "./server/index.cjs",
+    "./server.cjs": "./server.cjs",
+    "./server.mjs": "./server.mjs",
     "./server": {
-      "import": "./server/index.mjs",
-      "require": "./server/index.cjs"
+      "import": "./server.mjs",
+      "require": "./server.cjs"
     },
     "./testing": {
       "import": "./testing/index.mjs",
@@ -89,9 +92,9 @@
     "qwikloader.js",
     "qwikloader.optimize.debug.js",
     "qwikloader.optimize.js",
-    "server/index.cjs",
-    "server/index.d.ts",
-    "server/index.mjs",
+    "server.cjs",
+    "server.d.ts",
+    "server.mjs",
     "server/package.json",
     "testing/index.cjs",
     "testing/index.d.ts",

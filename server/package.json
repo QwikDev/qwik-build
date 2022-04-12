@@ -1,8 +1,8 @@
 {
   "name": "@builder.io/qwik/server",
   "version": true,
-  "main": "index.cjs",
-  "module": "index.mjs",
-  "types": "index.d.ts",
+  "main": "../server.cjs",
+  "module": "../server.mjs",
+  "types": "../server.d.ts",
   "private": true
 }
