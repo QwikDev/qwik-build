@@ -130,7 +130,7 @@ var resolve = function(...paths) {
     if (i >= 0) {
       path = paths[i];
     } else {
-      void 0 === cwd && (cwd = process.cwd());
+      void 0 === cwd && (cwd = "undefined" !== typeof process && "function" === typeof process.cwd ? process.cwd() : "/");
       path = cwd;
     }
     assertPath(path);
@@ -480,32 +480,65 @@ var versions = {
 };
 
 async function getSystem() {
-  const sys = {};
-  sys.path = path_exports;
+  const sys = {
+    dynamicImport: () => {
+      throw new Error("Qwik Optimizer sys.dynamicImport() not implemented");
+    },
+    path: path_exports
+  };
   sys.dynamicImport = path => import(path);
-  if (isBrowserMain()) {
-    sys.isBrowserMain = true;
-  } else if (isNodeJs()) {
-    sys.isNode = true;
-    sys.arch = process.arch;
-    sys.platform = process.platform;
-  } else {
-    isWebWorker() && (sys.isWebWorker = true);
-  }
   false;
-  if (sys.isNode) {
-    sys.fs = await sys.dynamicImport("fs");
-    sys.path = await sys.dynamicImport("path");
-  }
-  sys.binding = await loadPlatformBinding(sys);
+  isNodeJs() && (sys.path = await sys.dynamicImport("path"));
   return sys;
 }
 
+var getPlatformInputFiles = async sys => {
+  if ("function" === typeof sys.getInputFiles) {
+    return sys.getInputFiles;
+  }
+  if (isNodeJs()) {
+    const fs = await sys.dynamicImport("fs");
+    return async rootDir => {
+      const getChildFilePaths = async dir => {
+        const dirItems = await fs.promises.readdir(dir);
+        const files = await Promise.all(dirItems.map((async subdir => {
+          const resolvedPath = sys.path.resolve(dir, subdir);
+          const stats = await fs.promises.stat(resolvedPath);
+          return stats.isDirectory() ? getChildFilePaths(resolvedPath) : [ resolvedPath ];
+        })));
+        const flatted = [];
+        for (const file of files) {
+          flatted.push(...file);
+        }
+        return flatted.filter((a => extensions[sys.path.extname(a)]));
+      };
+      const filePaths = await getChildFilePaths(rootDir);
+      const inputs = (await Promise.all(filePaths.map((async filePath => {
+        const input = {
+          code: await fs.promises.readFile(filePath, "utf8"),
+          path: filePath.slice(rootDir.length + 1)
+        };
+        return input;
+      })))).sort(((a, b) => {
+        if (a.path < b.path) {
+          return -1;
+        }
+        if (a.path > b.path) {
+          return 1;
+        }
+        return 0;
+      }));
+      return inputs;
+    };
+  }
+  return null;
+};
+
 async function loadPlatformBinding(sys) {
-  if (sys.isNode) {
-    const platform = QWIK_BINDING_MAP[sys.platform];
+  if (isNodeJs()) {
+    const platform = QWIK_BINDING_MAP[process.platform];
     if (platform) {
-      const triples = platform[sys.arch];
+      const triples = platform[process.arch];
       if (triples) {
         for (const triple of triples) {
           try {
@@ -532,102 +565,54 @@ function isNodeJs() {
   return "undefined" !== typeof process && process.versions && process.versions.node && "undefined" !== typeof global;
 }
 
-function isBrowserMain() {
-  return "undefined" !== typeof window && "undefined" !== typeof document && "undefined" !== typeof location && "undefined" !== typeof navigator && "function" === typeof Window && "function" === typeof fetch;
-}
-
-function isWebWorker() {
-  return "undefined" !== typeof self && "undefined" !== typeof location && "undefined" !== typeof navigator && "function" === typeof fetch && "function" === typeof WorkerGlobalScope && "function" === typeof self.importScripts;
-}
+var extensions = {
+  ".js": true,
+  ".ts": true,
+  ".tsx": true,
+  ".jsx": true
+};
 
 var createOptimizer = async () => {
   const sys = await getSystem();
-  const binding = sys.binding;
-  return {
-    async transformModules(opts) {
-      const result = transformModules(binding, opts);
-      return result;
-    },
-    transformModulesSync(opts) {
-      const result = transformModules(binding, opts);
-      return result;
-    },
-    async transformFs(opts) {
-      const result = await transformFsAsync(sys, binding, opts);
-      return result;
-    },
-    transformFsSync(opts) {
-      const result = transformFs(binding, opts);
-      return result;
-    },
-    path: sys.path
+  const binding = await loadPlatformBinding(sys);
+  const optimizer = {
+    transformModules: async opts => transformModulesSync(binding, opts),
+    transformModulesSync: opts => transformModulesSync(binding, opts),
+    transformFs: async opts => transformFsAsync(sys, binding, opts),
+    transformFsSync: opts => transformFsSync(binding, opts),
+    sys: sys
   };
+  return optimizer;
 };
 
-var transformModules = (binding, opts) => binding.transform_modules(convertOptions(opts));
+var transformModulesSync = (binding, opts) => binding.transform_modules(convertOptions(opts));
 
-var transformFs = (binding, opts) => {
+var transformFsSync = (binding, opts) => {
   if (binding.transform_fs) {
     return binding.transform_fs(convertOptions(opts));
   }
-  throw new Error("not implemented");
+  throw new Error("Not implemented");
 };
 
-var transformFsAsync = (sys, binding, opts) => {
-  if (binding.transform_fs) {
-    return binding.transform_fs(convertOptions(opts));
+var transformFsAsync = async (sys, binding, fsOpts) => {
+  if (binding.transform_fs && !sys.getInputFiles) {
+    return binding.transform_fs(convertOptions(fsOpts));
   }
-  return transformFsVirtual(sys, opts);
-};
-
-var transformFsVirtual = async (sys, opts) => {
-  const extensions = [ ".js", ".ts", ".tsx", ".jsx" ];
-  async function getFiles(dir) {
-    const subdirs = await readDir(sys, dir);
-    const files2 = await Promise.all(subdirs.map((async subdir => {
-      const res = sys.path.resolve(dir, subdir);
-      const isDir = await isDirectory(sys, res);
-      return isDir ? getFiles(res) : [ res ];
-    })));
-    const flatted = [];
-    for (const file of files2) {
-      flatted.push(...file);
-    }
-    return flatted.filter((a => extensions.includes(sys.path.extname(a))));
+  const getInputFiles = await getPlatformInputFiles(sys);
+  if (getInputFiles) {
+    const input = await getInputFiles(fsOpts.rootDir);
+    const modulesOpts = {
+      rootDir: fsOpts.rootDir,
+      entryStrategy: fsOpts.entryStrategy,
+      minify: fsOpts.minify,
+      sourceMaps: fsOpts.sourceMaps,
+      transpile: fsOpts.transpile,
+      input: input
+    };
+    return binding.transform_modules(convertOptions(modulesOpts));
   }
-  const files = await getFiles(opts.rootDir);
-  const input = await Promise.all(files.map((async file => ({
-    code: await readFile(sys, file),
-    path: file.slice(opts.rootDir.length + 1)
-  }))));
-  const newOpts = {
-    rootDir: opts.rootDir,
-    entryStrategy: opts.entryStrategy,
-    minify: opts.minify,
-    sourceMaps: opts.sourceMaps,
-    transpile: opts.transpile,
-    input: input
-  };
-  return sys.binding.transform_modules(convertOptions(newOpts));
+  throw new Error("Not implemented");
 };
-
-var readDir = (sys, dirPath) => new Promise(((resolve3, reject) => {
-  sys.fs.readdir(dirPath, ((err, items) => {
-    err ? reject(err) : resolve3(items);
-  }));
-}));
-
-var readFile = (sys, filePath) => new Promise(((resolve3, reject) => {
-  sys.fs.readFile(filePath, "utf-8", ((err, data) => {
-    err ? reject(err) : resolve3(data);
-  }));
-}));
-
-var isDirectory = (sys, path) => new Promise(((resolve3, reject) => {
-  sys.fs.stat(path, ((err, stat) => {
-    err ? reject(err) : resolve3(stat.isDirectory());
-  }));
-}));
 
 var convertOptions = opts => {
   var _a, _b;
@@ -751,7 +736,7 @@ function qwikRollup(opts) {
   const createRollupError = (rootDir, diagnostic) => {
     var _a, _b;
     const loc = null != (_b = null == (_a = diagnostic.code_highlights[0]) ? void 0 : _a.loc) ? _b : {};
-    const id = optimizer.path.join(rootDir, diagnostic.origin);
+    const id = optimizer.sys.path.join(rootDir, diagnostic.origin);
     const err = Object.assign(new Error(diagnostic.message), {
       id: id,
       plugin: "qwik",
@@ -823,12 +808,19 @@ function qwikRollup(opts) {
       return html;
     },
     async buildStart() {
+      if ("string" !== typeof opts.srcDir && !Array.isArray(opts.srcInputs)) {
+        throw new Error('Qwik plugin must have either a "srcDir" or "srcInputs" option.');
+      }
+      if ("string" === typeof opts.srcDir && Array.isArray(opts.srcInputs)) {
+        throw new Error('Qwik plugin cannot have both the "srcDir" and "srcInputs" options.');
+      }
       optimizer || (optimizer = await createOptimizer());
       const fullBuild = "hook" !== entryStrategy.type;
       log("buildStart()", fullBuild ? "full build" : "isolated build");
       if (fullBuild) {
         outputCount = 0;
-        const rootDir = optimizer.path.isAbsolute(opts.srcDir) ? opts.srcDir : optimizer.path.resolve(opts.srcDir);
+        let rootDir = "/";
+        "string" === typeof opts.srcDir ? rootDir = optimizer.sys.path.isAbsolute(opts.srcDir) ? opts.srcDir : optimizer.sys.path.resolve(opts.srcDir) : Array.isArray(opts.srcInputs) && (optimizer.sys.getInputFiles = async () => opts.srcInputs);
         const transformOpts = {
           rootDir: rootDir,
           entryStrategy: opts.entryStrategy,
@@ -838,7 +830,7 @@ function qwikRollup(opts) {
         };
         const result = await optimizer.transformFs(transformOpts);
         for (const output of result.modules) {
-          const key = optimizer.path.join(rootDir, output.path);
+          const key = optimizer.sys.path.join(rootDir, output.path);
           log("buildStart()", "qwik module", key);
           transformedOutputs.set(key, [ output, key ]);
         }
@@ -860,19 +852,19 @@ function qwikRollup(opts) {
       let id = removeQueryParams(originalID);
       if (importer) {
         const filteredImporter = removeQueryParams(importer);
-        const dir = optimizer.path.dirname(filteredImporter);
-        id = filteredImporter.endsWith(".html") && !id.endsWith(".html") ? optimizer.path.join(dir, id) : optimizer.path.resolve(dir, id);
+        const dir = optimizer.sys.path.dirname(filteredImporter);
+        id = filteredImporter.endsWith(".html") && !id.endsWith(".html") ? optimizer.sys.path.join(dir, id) : optimizer.sys.path.resolve(dir, id);
       }
-      const tries = [ forceJSExtension(optimizer.path, id) ];
-      for (const id2 of tries) {
-        log("resolveId()", "Try", id2);
-        const res = transformedOutputs.get(id2);
-        if (res) {
-          log("resolveId()", "Resolved", id2);
-          const mod = res[0];
-          const sideEffects = !mod.isEntry || !mod.hook;
+      const tries = [ forceJSExtension(optimizer.sys.path, id) ];
+      for (const tryId of tries) {
+        log("resolveId()", "Try", tryId);
+        const transformedOutput = transformedOutputs.get(tryId);
+        if (transformedOutput) {
+          log("resolveId()", "Resolved", tryId);
+          const transformedModule = transformedOutput[0];
+          const sideEffects = !transformedModule.isEntry || !transformedModule.hook;
           return {
-            id: id2,
+            id: tryId,
             moduleSideEffects: sideEffects
           };
         }
@@ -887,7 +879,7 @@ function qwikRollup(opts) {
           code: getBuildFile(isSSR)
         };
       }
-      "hook" !== entryStrategy.type && (id = forceJSExtension(optimizer.path, id));
+      "hook" !== entryStrategy.type && (id = forceJSExtension(optimizer.sys.path, id));
       const transformedModule = transformedOutputs.get(id);
       if (transformedModule) {
         log("load()", "Found", id);
@@ -917,7 +909,7 @@ function qwikRollup(opts) {
       }
       optimizer || (optimizer = await createOptimizer());
       const filteredId = removeQueryParams(id);
-      const {ext: ext, dir: dir, base: base} = optimizer.path.parse(filteredId);
+      const {ext: ext, dir: dir, base: base} = optimizer.sys.path.parse(filteredId);
       if ([ ".tsx", ".ts", ".jsx" ].includes(ext)) {
         log("transform()", "Transforming", filteredId);
         const newOutput = optimizer.transformModulesSync({
@@ -939,10 +931,10 @@ function qwikRollup(opts) {
         transformedOutputs.clear();
         for (const [id2, output] of results.entries()) {
           const justChanged = newOutput === output;
-          const dir2 = optimizer.path.dirname(id2);
+          const dir2 = optimizer.sys.path.dirname(id2);
           for (const mod of output.modules) {
             if (mod.isEntry) {
-              const key = optimizer.path.join(dir2, mod.path);
+              const key = optimizer.sys.path.join(dir2, mod.path);
               transformedOutputs.set(key, [ mod, id2 ]);
               log("transform()", "emitting", justChanged, key);
             }
@@ -1036,8 +1028,9 @@ function slash(p) {
 function fixSSRInput(config, optimizer) {
   var _a, _b;
   if ("string" === typeof (null == (_a = null == config ? void 0 : config.build) ? void 0 : _a.ssr) && (null == (_b = null == config ? void 0 : config.build.rollupOptions) ? void 0 : _b.input)) {
-    const resolvedRoot = optimizer.path.normalize(slash(config.root ? optimizer.path.resolve(config.root) : process.cwd()));
-    config.build.rollupOptions.input = optimizer.path.resolve(resolvedRoot, config.build.ssr);
+    const cwd = "undefined" !== typeof process && "function" === typeof process.cwd ? process.cwd() : "/";
+    const resolvedRoot = optimizer.sys.path.normalize(slash(config.root ? optimizer.sys.path.resolve(config.root) : cwd));
+    config.build.rollupOptions.input = optimizer.sys.path.resolve(resolvedRoot, config.build.ssr);
   }
 }
 

@@ -7,16 +7,10 @@
  */
 'use strict';
 
+
 if (typeof globalThis == 'undefined') {
-  const e =
-    'undefined' != typeof global
-      ? global
-      : 'undefined' != typeof window
-      ? window
-      : 'undefined' != typeof self
-      ? self
-      : {};
-  e.globalThis = e;
+  const g = 'undefined' != typeof global ? global : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
+  g.globalThis = g;
 }
 globalThis.qwikCore = (function (exports) {
 

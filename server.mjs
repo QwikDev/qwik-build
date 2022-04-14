@@ -5,12 +5,11 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
+if (typeof global == 'undefined') {
+  const g = 'undefined' != typeof globalThis ? globalThis : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
+  g.global = g;
+}
+
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
@@ -18,37 +17,8 @@ var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require
     return require.apply(this, arguments);
   throw new Error('Dynamic require of "' + x + '" is not supported');
 });
-var __commonJS = (cb, mod) => function __require2() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
-
-// scripts/shim/global.js
-var require_global = __commonJS({
-  "scripts/shim/global.js"() {
-    if (typeof global == "undefined") {
-      const e = typeof globalThis != "undefined" ? globalThis : typeof window != "undefined" ? window : typeof self != "undefined" ? self : {};
-      e.global = e;
-    }
-  }
-});
-
-// src/server/index.ts
-var import_global = __toESM(require_global());
-
-// src/server/document.ts
-var import_global = __toESM(require_global());
 
 // src/server/utils.ts
-var import_global = __toESM(require_global());
 function createTimer() {
   if (typeof performance === "undefined") {
     return () => 0;
@@ -124,7 +94,6 @@ var versions = {
 import { pauseContainer, render } from "./core.mjs";
 
 // dist-dev/qwikdom.mjs
-var import_global = __toESM(require_global(), 1);
 var O = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports);
 var Vt = O((xf, Ai) => {
   "use strict";
@@ -9001,7 +8970,6 @@ var df = O((Lr) => {
 var qwikdom_default = df();
 
 // src/server/platform.ts
-var import_global = __toESM(require_global());
 import { setPlatform } from "./core.mjs";
 var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
 function createPlatform(document2, opts) {
@@ -9059,17 +9027,7 @@ async function setServerPlatform(document2, opts) {
   setPlatform(document2, platform);
 }
 
-// src/server/serialize.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/element.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/types.ts
-var import_global = __toESM(require_global());
-
 // src/core/util/markers.ts
-var import_global = __toESM(require_global());
 var QHostAttr = "q:host";
 var QObjAttr = "q:obj";
 var QContainerSelector = "[q\\:container]";
@@ -9123,17 +9081,7 @@ function serializeDocument(docOrEl, opts) {
   return "<!DOCTYPE html>" + docOrEl.documentElement.outerHTML;
 }
 
-// src/core/util/dom.ts
-var import_global = __toESM(require_global());
-
-// src/core/assert/assert.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/log.ts
-var import_global = __toESM(require_global());
-
 // src/core/util/qdev.ts
-var import_global = __toESM(require_global());
 var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
 
@@ -9186,20 +9134,7 @@ function getDocument(node) {
   return doc;
 }
 
-// src/core/render/render.public.ts
-var import_global = __toESM(require_global());
-
-// src/core/render/cursor.ts
-var import_global = __toESM(require_global());
-
-// src/core/props/props.ts
-var import_global = __toESM(require_global());
-
-// src/core/error/error.ts
-var import_global = __toESM(require_global());
-
 // src/core/error/stringify.ts
-var import_global = __toESM(require_global());
 function stringifyDebug(value) {
   if (value == null)
     return String(value);
@@ -9316,14 +9251,7 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
-// src/core/object/q-object.ts
-var import_global = __toESM(require_global());
-
-// src/core/import/qrl-class.ts
-var import_global = __toESM(require_global());
-
 // src/core/use/use-core.ts
-var import_global = __toESM(require_global());
 var CONTAINER = Symbol("container");
 var _context;
 function tryGetInvokeContext() {
@@ -9409,12 +9337,6 @@ function getContainer(el) {
 }
 
 // src/core/util/promises.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/array.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/promises.ts
 function isPromise(value) {
   return value instanceof Promise;
 }
@@ -9422,11 +9344,7 @@ var then = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
 
-// src/core/import/qrl.ts
-var import_global = __toESM(require_global());
-
 // src/core/util/flyweight.ts
-var import_global = __toESM(require_global());
 var EMPTY_ARRAY = [];
 var EMPTY_OBJ = {};
 if (qDev) {
@@ -9435,7 +9353,6 @@ if (qDev) {
 }
 
 // src/core/platform/platform.ts
-var import_global = __toESM(require_global());
 var createPlatform2 = (doc) => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
@@ -9489,7 +9406,6 @@ var getPlatform = (docOrNode) => {
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
 // src/core/use/use-subscriber.ts
-var import_global = __toESM(require_global());
 function wrapSubscriber(obj, subscriber) {
   if (obj && typeof obj === "object") {
     const target = obj[QOjectTargetSymbol];
@@ -9619,32 +9535,7 @@ var QRL = class {
 var QRLInternal = QRL;
 var FIND_EXT = /\?[\w=&]+$/;
 
-// src/core/render/notify-render.ts
-var import_global = __toESM(require_global());
-
-// src/core/component/component-ctx.ts
-var import_global = __toESM(require_global());
-
-// src/core/render/render.ts
-var import_global = __toESM(require_global());
-
-// src/core/render/jsx/host.public.ts
-var import_global = __toESM(require_global());
-
-// src/core/component/qrl-styles.ts
-var import_global = __toESM(require_global());
-
-// src/core/util/hash_code.ts
-var import_global = __toESM(require_global());
-
-// src/core/render/jsx/jsx-runtime.ts
-var import_global = __toESM(require_global());
-
-// src/core/watch/watch.public.ts
-var import_global = __toESM(require_global());
-
 // src/core/import/qrl.public.ts
-var import_global = __toESM(require_global());
 function $(expression) {
   return runtimeQrl(expression);
 }
@@ -9655,18 +9546,11 @@ function implicit$FirstArg(fn) {
 }
 
 // src/core/use/use-host-element.public.ts
-var import_global = __toESM(require_global());
 function useHostElement() {
   const element = getInvokeContext().hostElement;
   assertDefined(element);
   return element;
 }
-
-// src/core/use/use-store.public.ts
-var import_global = __toESM(require_global());
-
-// src/core/use/use-document.public.ts
-var import_global = __toESM(require_global());
 
 // src/core/use/use-store.public.ts
 function useSequentialScope() {
@@ -9764,9 +9648,6 @@ function runWatch(watch) {
 // src/core/render/notify-render.ts
 var SCHEDULE = Symbol("Render state");
 
-// src/core/util/stringify.ts
-var import_global = __toESM(require_global());
-
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
 var QOjectTargetSymbol = ":target:";
@@ -9787,11 +9668,7 @@ function noSerialize(input) {
   return input;
 }
 
-// src/core/object/store.ts
-var import_global = __toESM(require_global());
-
 // src/core/props/props-obj-map.ts
-var import_global = __toESM(require_global());
 function newQObjectMap(element) {
   const array = [];
   let added = element.hasAttribute(QObjAttr);
@@ -9819,20 +9696,10 @@ function newQObjectMap(element) {
   };
 }
 
-// src/core/props/props-on.ts
-var import_global = __toESM(require_global());
-
-// src/core/json/q-json.ts
-var import_global = __toESM(require_global());
-
 // src/core/util/case.ts
-var import_global = __toESM(require_global());
 function fromCamelToKebabCase(text) {
   return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
-
-// src/core/util/event.ts
-var import_global = __toESM(require_global());
 
 // src/core/props/props.ts
 Error.stackTraceLimit = 9999;
@@ -9949,9 +9816,6 @@ function stringifyClassOrStyle(obj, isClass) {
   return String(obj);
 }
 
-// src/core/version.ts
-var import_global = __toESM(require_global());
-
 // src/core/render/render.public.ts
 function getElement(docOrElm) {
   return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
@@ -10005,11 +9869,7 @@ async function renderToString(rootNode, opts) {
   return result;
 }
 
-// src/server/prefetch.ts
-var import_global = __toESM(require_global());
-
 // src/core/util/path.ts
-var import_global = __toESM(require_global());
 function assertPath(path) {
   if (typeof path !== "string") {
     throw new TypeError("Path must be a string. Received " + JSON.stringify(path));
@@ -10136,7 +9996,6 @@ async function getImports(filePath, readFileFn) {
 }
 
 // src/server/scripts.ts
-var import_global = __toESM(require_global());
 var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],s=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,s)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of r.split("\\n")){const r=i(t,n);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,s,r],i(s,t,r)}finally{e[o]=l,a(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),d=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f))},b=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(b);else for(const t in e)t.startsWith("on")&&b(t.slice(2))}e.addEventListener("readystatechange",d),d()}})(document);`;
 var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
@@ -10319,7 +10178,6 @@ function getQwikLoaderScript(opts = {}) {
 }
 
 // src/server/components.ts
-var import_global = __toESM(require_global());
 import { jsx as jsx2 } from "./core.mjs";
 var QwikLoader = ({ events, debug }) => {
   return jsx2("script", {

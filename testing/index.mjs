@@ -5,18 +5,13 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-// scripts/shim/__dirname.js
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-var __dirname = dirname(fileURLToPath(import.meta.url));
-
 // src/testing/document.ts
 import { createGlobal as createServerGlobal } from "../server.mjs";
 
 // src/testing/platform.ts
 import { getPlatform, setPlatform } from "../core.mjs";
 import { existsSync } from "fs";
-import { fileURLToPath as fileURLToPath2 } from "url";
+import { fileURLToPath } from "url";
 
 // src/core/util/qdev.ts
 var qDev = globalThis.qDev !== false;
@@ -237,7 +232,7 @@ function toPath(url) {
   const normalizedUrl = new URL(String(url));
   normalizedUrl.hash = "";
   normalizedUrl.search = "";
-  const path = fileURLToPath2(String(normalizedUrl));
+  const path = fileURLToPath(String(normalizedUrl));
   const importPaths = [path, ...testExts.map((ext) => path + ext)];
   for (const importPath of importPaths) {
     if (existsSync(importPath)) {

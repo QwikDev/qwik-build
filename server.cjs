@@ -5,28 +5,16 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+
 if (typeof globalThis == 'undefined') {
-  const e =
-    'undefined' != typeof global
-      ? global
-      : 'undefined' != typeof window
-      ? window
-      : 'undefined' != typeof self
-      ? self
-      : {};
-  e.globalThis = e;
+  const g = 'undefined' != typeof global ? global : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
+  g.globalThis = g;
 }
 
+
 if (typeof global == 'undefined') {
-  const e =
-    'undefined' != typeof globalThis
-      ? globalThis
-      : 'undefined' != typeof window
-      ? window
-      : 'undefined' != typeof self
-      ? self
-      : {};
-  e.global = e;
+  const g = 'undefined' != typeof globalThis ? globalThis : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
+  g.global = g;
 }
 
 globalThis.qwikServer = (function (module) {

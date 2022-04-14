@@ -112,6 +112,18 @@ export declare interface Optimizer {
      * Transforms the directory from the file system.
      */
     transformFsSync(opts: TransformFsOptions): TransformOutput;
+    /**
+     * Optimizer system use. This can be updated with a custom file system.
+     */
+    sys: OptimizerSystem;
+}
+
+/**
+ * @alpha
+ */
+export declare interface OptimizerSystem {
+    dynamicImport: (path: string) => Promise<any>;
+    getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
 }
 
@@ -162,7 +174,8 @@ export declare interface PathObject {
  */
 export declare interface QwikPluginOptions {
     entryStrategy?: EntryStrategy;
-    srcDir: string;
+    srcDir?: string;
+    srcInputs?: TransformModuleInput[];
     minify?: MinifyMode;
     debug?: boolean;
     ssrBuild?: boolean;

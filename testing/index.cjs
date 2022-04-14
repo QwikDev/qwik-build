@@ -5,6 +5,11 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+if (typeof globalThis == 'undefined') {
+  const g = 'undefined' != typeof global ? global : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
+  g.globalThis = g;
+}
+
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -28,9 +33,6 @@ var __spreadValues = (a, b) => {
   return a;
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -46,16 +48,6 @@ var __copyProps = (to, from, except, desc) => {
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// scripts/shim/globalthis.js
-var require_globalthis = __commonJS({
-  "scripts/shim/globalthis.js"() {
-    if (typeof globalThis == "undefined") {
-      const e = typeof global != "undefined" ? global : typeof window != "undefined" ? window : typeof self != "undefined" ? self : {};
-      e.globalThis = e;
-    }
-  }
-});
-
 // src/testing/index.ts
 var testing_exports = {};
 __export(testing_exports, {
@@ -69,29 +61,16 @@ __export(testing_exports, {
   toFileUrl: () => toFileUrl
 });
 module.exports = __toCommonJS(testing_exports);
-var import_globalthis = __toESM(require_globalthis());
 
 // src/testing/document.ts
-var import_globalthis = __toESM(require_globalthis());
 var import_server = require("../server.cjs");
 
 // src/testing/platform.ts
-var import_globalthis = __toESM(require_globalthis());
 var import_qwik = require("../core.cjs");
 var import_fs = require("fs");
 var import_url = require("url");
 
-// src/core/use/use-core.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/assert/assert.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/log.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/util/qdev.ts
-var import_globalthis = __toESM(require_globalthis());
 var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
 
@@ -129,14 +108,12 @@ function newError(text) {
 }
 
 // src/core/util/markers.ts
-var import_globalthis = __toESM(require_globalthis());
 var QHostAttr = "q:host";
 var QObjAttr = "q:obj";
 var QContainerSelector = "[q\\:container]";
 var RenderEvent = "qRender";
 
 // src/core/util/dom.ts
-var import_globalthis = __toESM(require_globalthis());
 function getDocument(node) {
   if (typeof document !== "undefined") {
     return document;
@@ -345,20 +322,7 @@ function createDocument(opts = {}) {
   return gbl.document;
 }
 
-// src/testing/element_fixture.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/props/props.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/error/error.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/error/stringify.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/util/types.ts
-var import_globalthis = __toESM(require_globalthis());
 function isHtmlElement(node) {
   return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
 }
@@ -492,18 +456,6 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
-// src/core/object/q-object.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/import/qrl-class.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/promises.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/array.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/util/promises.ts
 function isPromise(value) {
   return value instanceof Promise;
@@ -512,11 +464,7 @@ var then = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
 
-// src/core/import/qrl.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/util/flyweight.ts
-var import_globalthis = __toESM(require_globalthis());
 var EMPTY_ARRAY = [];
 var EMPTY_OBJ = {};
 if (qDev) {
@@ -525,7 +473,6 @@ if (qDev) {
 }
 
 // src/core/platform/platform.ts
-var import_globalthis = __toESM(require_globalthis());
 var createPlatform2 = (doc) => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
@@ -576,7 +523,6 @@ var getPlatform2 = (docOrNode) => {
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
 // src/core/use/use-subscriber.ts
-var import_globalthis = __toESM(require_globalthis());
 function wrapSubscriber(obj, subscriber) {
   if (obj && typeof obj === "object") {
     const target = obj[QOjectTargetSymbol];
@@ -705,35 +651,12 @@ var QRL = class {
 var QRLInternal = QRL;
 var FIND_EXT = /\?[\w=&]+$/;
 
-// src/core/render/notify-render.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/render/cursor.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/props/props-on.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/json/q-json.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/util/case.ts
-var import_globalthis = __toESM(require_globalthis());
 function fromCamelToKebabCase(text) {
   return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
-// src/core/util/stringify.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/event.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/render/jsx/host.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/import/qrl.public.ts
-var import_globalthis = __toESM(require_globalthis());
 function $(expression) {
   return runtimeQrl(expression);
 }
@@ -742,27 +665,6 @@ function implicit$FirstArg(fn) {
     return fn.call(null, $(first), ...rest);
   };
 }
-
-// src/core/component/component-ctx.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/render/render.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/component/qrl-styles.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/hash_code.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/render/jsx/jsx-runtime.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/object/store.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/util/element.ts
-var import_globalthis = __toESM(require_globalthis());
 
 // src/core/render/cursor.ts
 var RefSymbol = Symbol();
@@ -858,22 +760,12 @@ function stringifyClassOrStyle(obj, isClass) {
   return String(obj);
 }
 
-// src/core/watch/watch.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
 // src/core/use/use-host-element.public.ts
-var import_globalthis = __toESM(require_globalthis());
 function useHostElement() {
   const element = getInvokeContext().hostElement;
   assertDefined(element);
   return element;
 }
-
-// src/core/use/use-store.public.ts
-var import_globalthis = __toESM(require_globalthis());
-
-// src/core/use/use-document.public.ts
-var import_globalthis = __toESM(require_globalthis());
 
 // src/core/use/use-store.public.ts
 function useSequentialScope() {
@@ -992,7 +884,6 @@ function noSerialize(input) {
 }
 
 // src/core/props/props-obj-map.ts
-var import_globalthis = __toESM(require_globalthis());
 function newQObjectMap(element) {
   const array = [];
   let added = element.hasAttribute(QObjAttr);
@@ -1042,7 +933,6 @@ function getContext(element) {
 }
 
 // src/testing/util.ts
-var import_globalthis = __toESM(require_globalthis());
 var import_url2 = require("url");
 function toFileUrl(filePath) {
   return (0, import_url2.pathToFileURL)(filePath).href;
@@ -1085,7 +975,6 @@ var ElementFixture = class {
 };
 
 // src/testing/jsx.ts
-var import_globalthis = __toESM(require_globalthis());
 function toDOM(jsx, parent) {
   const doc = parent ? parent.ownerDocument : createGlobal().document;
   let element = doc.createElement(jsx.type);
