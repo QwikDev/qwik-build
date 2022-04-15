@@ -54,7 +54,7 @@ __export(testing_exports, {
   ElementFixture: () => ElementFixture,
   applyDocumentConfig: () => applyDocumentConfig,
   createDocument: () => createDocument,
-  createGlobal: () => createGlobal,
+  createWindow: () => createWindow,
   getTestPlatform: () => getTestPlatform,
   isPromise: () => isPromise,
   toDOM: () => toDOM,
@@ -312,14 +312,13 @@ function getTestPlatform(document2) {
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // src/testing/document.ts
-function createGlobal(opts = {}) {
-  const gbl = (0, import_server.createGlobal)(opts);
-  setTestPlatform(gbl.document);
-  return gbl;
+function createWindow(opts = {}) {
+  const win = (0, import_server.createWindow)(opts);
+  setTestPlatform(win.document);
+  return win;
 }
 function createDocument(opts = {}) {
-  const gbl = createGlobal(opts);
-  return gbl.document;
+  return createWindow(opts).document;
 }
 
 // src/core/util/types.ts
@@ -957,11 +956,11 @@ function appendConfig(doc, key, value) {
 }
 var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
 
-// src/testing/element_fixture.ts
+// src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
-    this.global = createGlobal();
-    this.document = this.global.document;
+    this.window = createWindow();
+    this.document = this.window.document;
     this.superParent = this.document.createElement("super-parent");
     this.parent = this.document.createElement("parent");
     this.host = this.document.createElement(options.tagName || "host");
@@ -976,7 +975,7 @@ var ElementFixture = class {
 
 // src/testing/jsx.ts
 function toDOM(jsx, parent) {
-  const doc = parent ? parent.ownerDocument : createGlobal().document;
+  const doc = parent ? parent.ownerDocument : createDocument();
   let element = doc.createElement(jsx.type);
   for (const attrName in jsx.props) {
     if (attrName !== "children") {
@@ -1011,7 +1010,7 @@ function isTemplate(node) {
   ElementFixture,
   applyDocumentConfig,
   createDocument,
-  createGlobal,
+  createWindow,
   getTestPlatform,
   isPromise,
   toDOM,

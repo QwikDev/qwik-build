@@ -74,8 +74,8 @@ var server_exports = {};
 __export(server_exports, {
   QwikLoader: () => QwikLoader,
   createDocument: () => createDocument,
-  createGlobal: () => createGlobal,
   createTimer: () => createTimer,
+  createWindow: () => createWindow,
   getImports: () => getImports,
   getQwikLoaderScript: () => getQwikLoaderScript,
   renderToDocument: () => renderToDocument,
@@ -9886,15 +9886,14 @@ function getElement(docOrElm) {
 }
 
 // src/server/document.ts
-function createGlobal(opts) {
+function createWindow(opts) {
   opts = opts || {};
-  const doc = qwikdom_default.createDocument();
+  const doc = qwikdom_default.createDocument(opts.html);
   const glb = ensureGlobals(doc, opts);
   return glb;
 }
 function createDocument(opts) {
-  const glb = createGlobal(opts);
-  return glb.document;
+  return createWindow(opts).document;
 }
 async function renderToDocument(docOrElm, rootNode, opts) {
   const doc = isDocument(docOrElm) ? docOrElm : getDocument(docOrElm);
@@ -10252,8 +10251,8 @@ var QwikLoader = ({ events, debug }) => {
 0 && (module.exports = {
   QwikLoader,
   createDocument,
-  createGlobal,
   createTimer,
+  createWindow,
   getImports,
   getQwikLoaderScript,
   renderToDocument,

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
 // src/testing/document.ts
-import { createGlobal as createServerGlobal } from "../server.mjs";
+import { createWindow as createServerWindow } from "../server.mjs";
 
 // src/testing/platform.ts
 import { getPlatform, setPlatform } from "../core.mjs";
@@ -254,14 +254,13 @@ function getTestPlatform(document2) {
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // src/testing/document.ts
-function createGlobal(opts = {}) {
-  const gbl = createServerGlobal(opts);
-  setTestPlatform(gbl.document);
-  return gbl;
+function createWindow(opts = {}) {
+  const win = createServerWindow(opts);
+  setTestPlatform(win.document);
+  return win;
 }
 function createDocument(opts = {}) {
-  const gbl = createGlobal(opts);
-  return gbl.document;
+  return createWindow(opts).document;
 }
 
 // src/core/util/types.ts
@@ -901,11 +900,11 @@ function appendConfig(doc, key, value) {
 }
 var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
 
-// src/testing/element_fixture.ts
+// src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
-    this.global = createGlobal();
-    this.document = this.global.document;
+    this.window = createWindow();
+    this.document = this.window.document;
     this.superParent = this.document.createElement("super-parent");
     this.parent = this.document.createElement("parent");
     this.host = this.document.createElement(options.tagName || "host");
@@ -920,7 +919,7 @@ var ElementFixture = class {
 
 // src/testing/jsx.ts
 function toDOM(jsx, parent) {
-  const doc = parent ? parent.ownerDocument : createGlobal().document;
+  const doc = parent ? parent.ownerDocument : createDocument();
   let element = doc.createElement(jsx.type);
   for (const attrName in jsx.props) {
     if (attrName !== "children") {
@@ -954,7 +953,7 @@ export {
   ElementFixture,
   applyDocumentConfig,
   createDocument,
-  createGlobal,
+  createWindow,
   getTestPlatform,
   isPromise,
   toDOM,

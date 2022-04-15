@@ -8,13 +8,6 @@ import type { JSXNode } from './core';
 export declare function createDocument(opts?: DocumentOptions): QwikDocument;
 
 /**
- * Create emulated `Global` for server environment. Does not implement a browser
- * `window` API, but rather only includes and emulated `document` and `location`.
- * @public
- */
-export declare function createGlobal(opts?: GlobalOptions): QwikGlobal;
-
-/**
  * @public
  */
 export declare interface CreateRenderToStringOptions {
@@ -29,11 +22,19 @@ export declare interface CreateRenderToStringOptions {
 export declare function createTimer(): () => number;
 
 /**
+ * Create emulated `Window` for server environment. Does not implement the full browser
+ * `window` API, but rather only emulates `document` and `location`.
+ * @public
+ */
+export declare function createWindow(opts?: WindowOptions): QwikWindow;
+
+/**
  * Options when creating a mock Qwik Document object.
  * @public
  */
 export declare interface DocumentOptions {
     url?: URL | string;
+    html?: string;
     debug?: boolean;
 }
 
@@ -73,13 +74,6 @@ declare interface GlobalInjections {
 }
 
 /**
- * Options when creating a mock Qwik Global object.
- * @public
- */
-export declare interface GlobalOptions extends DocumentOptions {
-}
-
-/**
  * @alpha
  */
 declare interface OutputEntryMap {
@@ -105,12 +99,25 @@ export declare interface QwikDocument extends Document {
 }
 
 /**
- * Partial Global used by Qwik Framework.
+ * @alpha
+ */
+export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
+
+/**
+ * @alpha
+ */
+export declare interface QwikLoaderProps {
+    events?: string[];
+    debug?: boolean;
+}
+
+/**
+ * Partial Window used by Qwik Framework.
  *
  * A set of properties which the Qwik Framework expects to find on global.
  * @public
  */
-export declare interface QwikGlobal extends WindowProxy {
+export declare interface QwikWindow extends WindowProxy {
     /**
      * Document used by Qwik during rendering.
      */
@@ -119,23 +126,10 @@ export declare interface QwikGlobal extends WindowProxy {
 }
 
 /**
- * @alpha
- */
-export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
-
-/**
- * @alpha
- */
-declare interface QwikLoaderProps {
-    events?: string[];
-    debug?: boolean;
-}
-
-/**
  * Updates the given `document` in place by rendering the root JSX node
  * and applying to the `document`.
  *
- * @param doc - The `document` to apply the the root node to.
+ * @param docOrElm - The `document` to apply the the root node to.
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
@@ -216,5 +210,12 @@ export declare const versions: {
     readonly qwik: string;
     readonly qwikDom: string;
 };
+
+/**
+ * Options when creating a mock Qwik Window object.
+ * @public
+ */
+export declare interface WindowOptions extends DocumentOptions {
+}
 
 export { }
