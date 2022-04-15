@@ -9870,8 +9870,10 @@ function stringifyClassOrStyle(obj, isClass) {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          text += isClass ? value ? sep + key : "" : sep + fromCamelToKebabCase(key) + ":" + value;
-          sep = isClass ? " " : ";";
+          if (value) {
+            text += isClass ? value ? sep + key : "" : sep + fromCamelToKebabCase(key) + ":" + value;
+            sep = isClass ? " " : ";";
+          }
         }
       }
     }
