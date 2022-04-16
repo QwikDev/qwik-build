@@ -1,5 +1,3 @@
-import type { NormalizedOutputOptions } from 'rollup';
-
 /**
  * @alpha
  */
@@ -90,11 +88,6 @@ export declare type MinifyMode = 'minify' | 'simplify' | 'none';
 /**
  * @alpha
  */
-export declare type MinifyOption = boolean | undefined | null;
-
-/**
- * @alpha
- */
 export declare interface Optimizer {
     /**
      * Transforms the input code string, does not access the file system.
@@ -112,6 +105,18 @@ export declare interface Optimizer {
      * Transforms the directory from the file system.
      */
     transformFsSync(opts: TransformFsOptions): TransformOutput;
+    /**
+     * Optimizer system use. This can be updated with a custom file system.
+     */
+    sys: OptimizerSystem;
+}
+
+/**
+ * @alpha
+ */
+export declare interface OptimizerSystem {
+    dynamicImport: (path: string) => Promise<any>;
+    getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
 }
 
@@ -130,7 +135,7 @@ export declare interface OutputEntryMap {
  * @alpha
  */
 export declare interface Path {
-    resolve(...pathSegments: string[]): string;
+    resolve(...paths: string[]): string;
     normalize(path: string): string;
     isAbsolute(path: string): boolean;
     join(...paths: string[]): string;
@@ -138,8 +143,20 @@ export declare interface Path {
     dirname(path: string): string;
     basename(path: string, ext?: string): string;
     extname(path: string): string;
-    format(pathObject: Partial<PathObject>): string;
-    parse(path: string): PathObject;
+    format(pathObject: {
+        root: string;
+        dir: string;
+        base: string;
+        ext: string;
+        name: string;
+    }): string;
+    parse(path: string): {
+        root: string;
+        dir: string;
+        base: string;
+        ext: string;
+        name: string;
+    };
     readonly sep: string;
     readonly delimiter: string;
     readonly win32: null;
@@ -149,30 +166,20 @@ export declare interface Path {
 /**
  * @alpha
  */
-export declare interface PathObject {
-    root: string;
-    dir: string;
-    base: string;
-    ext: string;
-    name: string;
-}
+export declare function qwikRollup(opts: QwikRollupPluginOptions): any;
 
 /**
  * @alpha
  */
-export declare interface QwikPluginOptions {
+export declare interface QwikRollupPluginOptions {
     entryStrategy?: EntryStrategy;
-    srcDir: string;
+    srcDir?: string;
+    srcInputs?: TransformModuleInput[];
     minify?: MinifyMode;
     debug?: boolean;
     ssrBuild?: boolean;
-    symbolsOutput?: string | ((data: OutputEntryMap, output: NormalizedOutputOptions) => Promise<void> | void);
+    symbolsOutput?: string | ((data: OutputEntryMap, outputOptions: any) => Promise<void> | void);
 }
-
-/**
- * @alpha
- */
-export declare function qwikRollup(opts: QwikPluginOptions): any;
 
 /**
  * @alpha
@@ -182,7 +189,7 @@ export declare function qwikVite(opts: QwikViteOptions): any;
 /**
  * @alpha
  */
-export declare interface QwikViteOptions extends QwikPluginOptions {
+export declare interface QwikViteOptions extends QwikRollupPluginOptions {
     ssr?: QwikViteSSROptions | false;
 }
 
@@ -286,7 +293,7 @@ export declare interface TransformOutput {
 export declare type TranspileOption = boolean | undefined | null;
 
 /**
- * @alpha
+ * @public
  */
 export declare const versions: {
     qwik: string;

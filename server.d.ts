@@ -1,19 +1,8 @@
-import { FunctionComponent } from '../core';
-import { JSXNode } from '../core';
-import type { OutputEntryMap } from '../core/optimizer';
-
 /**
  * Create emulated `Document` for server environment.
  * @public
  */
 export declare function createDocument(opts?: DocumentOptions): QwikDocument;
-
-/**
- * Create emulated `Global` for server environment. Does not implement a browser
- * `window` API, but rather only includes and emulated `document` and `location`.
- * @public
- */
-export declare function createGlobal(opts?: GlobalOptions): QwikGlobal;
 
 /**
  * @public
@@ -30,12 +19,27 @@ export declare interface CreateRenderToStringOptions {
 export declare function createTimer(): () => number;
 
 /**
+ * Create emulated `Window` for server environment. Does not implement the full browser
+ * `window` API, but rather only emulates `document` and `location`.
+ * @public
+ */
+export declare function createWindow(opts?: WindowOptions): QwikWindow;
+
+/**
  * Options when creating a mock Qwik Document object.
  * @public
  */
 export declare interface DocumentOptions {
-    url?: URL;
+    url?: URL | string;
+    html?: string;
     debug?: boolean;
+}
+
+/**
+ * @public
+ */
+declare interface FunctionComponent<P = {}> {
+    (props: P, key?: string): JSXNode | null;
 }
 
 /**
@@ -62,19 +66,38 @@ export declare function getQwikLoaderScript(opts?: {
 }): string;
 
 /**
- * Provides the prefetch.js file as a string. Useful for tooling to inline the prefetch
- * script into HTML.
  * @alpha
  */
-export declare function getQwikPrefetchScript(opts?: {
-    debug?: boolean;
-}): string;
+declare interface GlobalInjections {
+    tag: string;
+    attributes?: {
+        [key: string]: string;
+    };
+    location: 'head' | 'body';
+    children?: string;
+}
 
 /**
- * Options when creating a mock Qwik Global object.
  * @public
  */
-export declare interface GlobalOptions extends DocumentOptions {
+declare interface JSXNode<T = any> {
+    type: T;
+    props: Record<string, any> | null;
+    children: JSXNode[];
+    key: string | null;
+    elm?: Node;
+    text?: string;
+}
+
+/**
+ * @alpha
+ */
+declare interface OutputEntryMap {
+    version: string;
+    mapping: {
+        [canonicalName: string]: string;
+    };
+    injections?: GlobalInjections[];
 }
 
 /**
@@ -92,12 +115,25 @@ export declare interface QwikDocument extends Document {
 }
 
 /**
- * Partial Global used by Qwik Framework.
+ * @alpha
+ */
+export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
+
+/**
+ * @alpha
+ */
+export declare interface QwikLoaderProps {
+    events?: string[];
+    debug?: boolean;
+}
+
+/**
+ * Partial Window used by Qwik Framework.
  *
  * A set of properties which the Qwik Framework expects to find on global.
  * @public
  */
-export declare interface QwikGlobal extends WindowProxy {
+export declare interface QwikWindow extends WindowProxy {
     /**
      * Document used by Qwik during rendering.
      */
@@ -106,39 +142,14 @@ export declare interface QwikGlobal extends WindowProxy {
 }
 
 /**
- * @alpha
- */
-export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
-
-/**
- * @alpha
- */
-declare interface QwikLoaderProps {
-    events?: string[];
-    debug?: boolean;
-}
-
-/**
- * @alpha
- */
-export declare const QwikPrefetch: FunctionComponent<QwikPrefetchProps>;
-
-/**
- * @alpha
- */
-declare interface QwikPrefetchProps {
-    debug?: boolean;
-}
-
-/**
  * Updates the given `document` in place by rendering the root JSX node
  * and applying to the `document`.
  *
- * @param doc - The `document` to apply the the root node to.
+ * @param docOrElm - The `document` to apply the the root node to.
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(doc: Document, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
 
 /**
  * @public
@@ -147,7 +158,12 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
     /**
      * Defaults to `true`
      */
-    dehydrate?: boolean;
+    snapshot?: boolean;
+    /**
+     * Specifies the root of the JS files of the client build.
+     * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
+     */
+    base?: string;
 }
 
 /**
@@ -155,12 +171,17 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: any, opts: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public
  */
 export declare interface RenderToStringOptions extends RenderToDocumentOptions {
+    /**
+     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
+     * Defaults to `undefined`
+     */
+    fragmentTagName?: string;
 }
 
 /**
@@ -183,14 +204,19 @@ export declare interface RenderToStringResult {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function serializeDocument(doc: Document, opts?: SerializeDocumentOptions): string;
+export declare function serializeDocument(docOrEl: Document | Element, opts?: SerializeDocumentOptions): string;
 
 /**
  * @public
  */
 declare interface SerializeDocumentOptions extends DocumentOptions {
-    symbols: QrlMapper | OutputEntryMap | null;
+    symbols: ServerOutputSymbols;
 }
+
+/**
+ * @public
+ */
+export declare type ServerOutputSymbols = QrlMapper | OutputEntryMap | null;
 
 /**
  * Applies NodeJS specific platform APIs to the passed in document instance.
@@ -199,11 +225,18 @@ declare interface SerializeDocumentOptions extends DocumentOptions {
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const versions: {
     readonly qwik: string;
     readonly qwikDom: string;
 };
+
+/**
+ * Options when creating a mock Qwik Window object.
+ * @public
+ */
+export declare interface WindowOptions extends DocumentOptions {
+}
 
 export { }

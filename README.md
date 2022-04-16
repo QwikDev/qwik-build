@@ -28,12 +28,12 @@ npm init qwik@latest
 
 ## Development
 
-- See [Developer.md](https://github.com/BuilderIO/qwik/blob/main/DEVELOPER.md) for more information on how to build Qwik from the source and contribute!
+- See [Developer.md](https://github.com/BuilderIO/qwik/blob/main/CONTRIBUTING.md) for more information on how to build Qwik from the source and contribute!
 
 ## Community
 
 - Ping us at [@QwikDev](https://twitter.com/QwikDev)
-- Join our [Discord](https://discord.gg/JHVpZmqSs4) community.
+- Join our [Discord](https://discord.gg/bNVSQmPzqy) community.
 - Join our [weekly office hours](https://calendar.google.com/calendar/u/0?cid=Y180ZG91YjR2NTZ1cW43YmgzbW1oZGJ2M3R2c0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 
 ---
