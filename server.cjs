@@ -72,7 +72,6 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/server/index.ts
 var server_exports = {};
 __export(server_exports, {
-  QwikLoader: () => QwikLoader,
   createDocument: () => createDocument,
   createTimer: () => createTimer,
   createWindow: () => createWindow,
@@ -9044,7 +9043,7 @@ function createPlatform(document2, opts) {
     throw new Error(`Invalid Document implementation`);
   }
   const doc = document2;
-  const symbols = opts.symbols;
+  const symbols = opts.symbols || Q_SYMBOLS_ENTRY_MAP;
   if (opts == null ? void 0 : opts.url) {
     doc.location.href = normalizeUrl(opts.url).href;
   }
@@ -9076,15 +9075,15 @@ function createPlatform(document2, opts) {
       });
     },
     chunkForSymbol(symbolName) {
-      let symbol;
       if (symbols) {
-        if (typeof symbols === "object") {
-          symbol = symbols.mapping[symbolName];
-        } else {
-          symbol = symbols(symbolName);
+        if (typeof symbols === "object" && typeof symbols.mapping === "object") {
+          return symbols.mapping[symbolName];
+        }
+        if (typeof symbols === "function") {
+          return symbols(symbolName);
         }
       }
-      return symbol;
+      return void 0;
     }
   };
   return serverPlatform;
@@ -9093,6 +9092,7 @@ async function setServerPlatform(document2, opts) {
   const platform = createPlatform(document2, opts);
   (0, import_qwik.setPlatform)(document2, platform);
 }
+var Q_SYMBOLS_ENTRY_MAP = "__qSymbolsEntryMap__";
 
 // src/core/util/markers.ts
 var QHostAttr = "q:host";
@@ -9886,179 +9886,6 @@ function getElement(docOrElm) {
   return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 }
 
-// src/server/document.ts
-function createWindow(opts) {
-  opts = opts || {};
-  const doc = qwikdom_default.createDocument(opts.html);
-  const glb = ensureGlobals(doc, opts);
-  return glb;
-}
-function createDocument(opts) {
-  return createWindow(opts).document;
-}
-async function renderToDocument(docOrElm, rootNode, opts) {
-  const doc = isDocument(docOrElm) ? docOrElm : getDocument(docOrElm);
-  ensureGlobals(doc, opts);
-  await setServerPlatform(doc, opts);
-  await (0, import_qwik2.render)(docOrElm, rootNode);
-  if (opts.base) {
-    const containerEl = getElement(docOrElm);
-    containerEl.setAttribute("q:base", opts.base);
-  }
-  if (opts.snapshot !== false) {
-    (0, import_qwik2.pauseContainer)(docOrElm);
-  }
-}
-async function renderToString(rootNode, opts) {
-  const createDocTimer = createTimer();
-  const doc = createDocument(opts);
-  const createDocTime = createDocTimer();
-  const renderDocTimer = createTimer();
-  let rootEl = doc;
-  if (typeof opts.fragmentTagName === "string") {
-    rootEl = doc.createElement(opts.fragmentTagName);
-    doc.body.appendChild(rootEl);
-  }
-  await renderToDocument(rootEl, rootNode, opts);
-  const renderDocTime = renderDocTimer();
-  const docToStringTimer = createTimer();
-  const result = {
-    html: serializeDocument(rootEl, opts),
-    timing: {
-      createDocument: createDocTime,
-      render: renderDocTime,
-      toString: docToStringTimer()
-    }
-  };
-  return result;
-}
-
-// src/core/util/path.ts
-function assertPath(path) {
-  if (typeof path !== "string") {
-    throw new TypeError("Path must be a string. Received " + JSON.stringify(path));
-  }
-}
-function normalizeStringPosix(path, allowAboveRoot) {
-  let res = "";
-  let lastSegmentLength = 0;
-  let lastSlash = -1;
-  let dots = 0;
-  let code;
-  for (let i = 0; i <= path.length; ++i) {
-    if (i < path.length)
-      code = path.charCodeAt(i);
-    else if (code === 47)
-      break;
-    else
-      code = 47;
-    if (code === 47) {
-      if (lastSlash === i - 1 || dots === 1) {
-      } else if (lastSlash !== i - 1 && dots === 2) {
-        if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== 46 || res.charCodeAt(res.length - 2) !== 46) {
-          if (res.length > 2) {
-            const lastSlashIndex = res.lastIndexOf("/");
-            if (lastSlashIndex !== res.length - 1) {
-              if (lastSlashIndex === -1) {
-                res = "";
-                lastSegmentLength = 0;
-              } else {
-                res = res.slice(0, lastSlashIndex);
-                lastSegmentLength = res.length - 1 - res.lastIndexOf("/");
-              }
-              lastSlash = i;
-              dots = 0;
-              continue;
-            }
-          } else if (res.length === 2 || res.length === 1) {
-            res = "";
-            lastSegmentLength = 0;
-            lastSlash = i;
-            dots = 0;
-            continue;
-          }
-        }
-        if (allowAboveRoot) {
-          if (res.length > 0)
-            res += "/..";
-          else
-            res = "..";
-          lastSegmentLength = 2;
-        }
-      } else {
-        if (res.length > 0)
-          res += "/" + path.slice(lastSlash + 1, i);
-        else
-          res = path.slice(lastSlash + 1, i);
-        lastSegmentLength = i - lastSlash - 1;
-      }
-      lastSlash = i;
-      dots = 0;
-    } else if (code === 46 && dots !== -1) {
-      ++dots;
-    } else {
-      dots = -1;
-    }
-  }
-  return res;
-}
-var normalize = function normalize2(path) {
-  assertPath(path);
-  if (path.length === 0)
-    return ".";
-  const isAbsolute = path.charCodeAt(0) === 47;
-  const trailingSeparator = path.charCodeAt(path.length - 1) === 47;
-  path = normalizeStringPosix(path, !isAbsolute);
-  if (path.length === 0 && !isAbsolute)
-    path = ".";
-  if (path.length > 0 && trailingSeparator)
-    path += "/";
-  if (isAbsolute)
-    return "/" + path;
-  return path;
-};
-var join = function join2(...paths) {
-  if (paths.length === 0)
-    return ".";
-  let joined;
-  for (let i = 0; i < paths.length; ++i) {
-    const arg = paths[i];
-    assertPath(arg);
-    if (arg.length > 0) {
-      if (joined === void 0)
-        joined = arg;
-      else
-        joined += "/" + arg;
-    }
-  }
-  if (joined === void 0)
-    return ".";
-  return normalize(joined);
-};
-
-// src/server/prefetch.ts
-function getImportsFromSource(file) {
-  const imports = [];
-  const regex = /[import|from]\s+(['"`])(\..*)\1/g;
-  let match = regex.exec(file);
-  while (match != null) {
-    imports.push(match[2]);
-    match = regex.exec(file);
-  }
-  return imports;
-}
-async function getImports(filePath, readFileFn) {
-  const imports = [];
-  await Promise.all(getImportsFromSource(await readFileFn(filePath)).map(async (fileImport) => {
-    let resolvedFile = join(filePath, "..", fileImport);
-    if (!resolvedFile.startsWith(".")) {
-      resolvedFile = "./" + resolvedFile;
-    }
-    imports.push(resolvedFile, ...await getImports(resolvedFile, readFileFn));
-  }));
-  return imports;
-}
-
 // src/server/scripts.ts
 var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],s=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,s)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of r.split("\\n")){const r=i(t,n);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,s,r],i(s,t,r)}finally{e[o]=l,a(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),d=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f))},b=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(b);else for(const t in e)t.startsWith("on")&&b(t.slice(2))}e.addEventListener("readystatechange",d),d()}})(document);`;
 var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
@@ -10241,16 +10068,552 @@ function getQwikLoaderScript(opts = {}) {
   return opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED;
 }
 
-// src/server/components.ts
-var import_qwik3 = require("./core.cjs");
-var QwikLoader = ({ events, debug }) => {
-  return (0, import_qwik3.jsx)("script", {
-    children: [getQwikLoaderScript({ events, debug })]
-  });
-};
+// src/server/document.ts
+function createWindow(opts) {
+  opts = opts || {};
+  const doc = qwikdom_default.createDocument(opts.html);
+  const glb = ensureGlobals(doc, opts);
+  return glb;
+}
+function createDocument(opts) {
+  return createWindow(opts).document;
+}
+async function renderToDocument(docOrElm, rootNode, opts = {}) {
+  var _a;
+  const doc = isDocument(docOrElm) ? docOrElm : getDocument(docOrElm);
+  ensureGlobals(doc, opts);
+  await setServerPlatform(doc, opts);
+  await (0, import_qwik2.render)(docOrElm, rootNode);
+  if (typeof opts.base === "string") {
+    let qrlBase = opts.base;
+    if (!qrlBase.endsWith("/")) {
+      qrlBase += "/";
+    }
+    const containerEl = getElement(docOrElm);
+    containerEl.setAttribute("q:base", qrlBase);
+  }
+  if (opts.snapshot !== false) {
+    (0, import_qwik2.pauseContainer)(docOrElm);
+  }
+  if (!opts.qwikLoader || opts.qwikLoader.include !== false) {
+    const qwikLoaderScript = getQwikLoaderScript({
+      events: (_a = opts.qwikLoader) == null ? void 0 : _a.events,
+      debug: opts.debug
+    });
+    const scriptElm = doc.createElement("script");
+    scriptElm.setAttribute("id", "qwikloader");
+    scriptElm.innerHTML = qwikLoaderScript;
+    doc.head.appendChild(scriptElm);
+  }
+}
+async function renderToString(rootNode, opts = {}) {
+  const createDocTimer = createTimer();
+  const doc = createDocument(opts);
+  const createDocTime = createDocTimer();
+  const renderDocTimer = createTimer();
+  let rootEl = doc;
+  if (typeof opts.fragmentTagName === "string") {
+    if (opts.qwikLoader) {
+      opts.qwikLoader.include = false;
+    } else {
+      opts.qwikLoader = { include: false };
+    }
+    rootEl = doc.createElement(opts.fragmentTagName);
+    doc.body.appendChild(rootEl);
+  }
+  await renderToDocument(rootEl, rootNode, opts);
+  const renderDocTime = renderDocTimer();
+  const docToStringTimer = createTimer();
+  const result = {
+    html: serializeDocument(rootEl, opts),
+    timing: {
+      createDocument: createDocTime,
+      render: renderDocTime,
+      toString: docToStringTimer()
+    }
+  };
+  return result;
+}
+
+// src/core/util/path.ts
+function createPath(opts = {}) {
+  function assertPath(path) {
+    if (typeof path !== "string") {
+      throw new TypeError("Path must be a string. Received " + JSON.stringify(path));
+    }
+  }
+  function normalizeStringPosix(path, allowAboveRoot) {
+    let res = "";
+    let lastSegmentLength = 0;
+    let lastSlash = -1;
+    let dots = 0;
+    let code;
+    for (let i = 0; i <= path.length; ++i) {
+      if (i < path.length)
+        code = path.charCodeAt(i);
+      else if (code === 47)
+        break;
+      else
+        code = 47;
+      if (code === 47) {
+        if (lastSlash === i - 1 || dots === 1) {
+        } else if (lastSlash !== i - 1 && dots === 2) {
+          if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== 46 || res.charCodeAt(res.length - 2) !== 46) {
+            if (res.length > 2) {
+              const lastSlashIndex = res.lastIndexOf("/");
+              if (lastSlashIndex !== res.length - 1) {
+                if (lastSlashIndex === -1) {
+                  res = "";
+                  lastSegmentLength = 0;
+                } else {
+                  res = res.slice(0, lastSlashIndex);
+                  lastSegmentLength = res.length - 1 - res.lastIndexOf("/");
+                }
+                lastSlash = i;
+                dots = 0;
+                continue;
+              }
+            } else if (res.length === 2 || res.length === 1) {
+              res = "";
+              lastSegmentLength = 0;
+              lastSlash = i;
+              dots = 0;
+              continue;
+            }
+          }
+          if (allowAboveRoot) {
+            if (res.length > 0)
+              res += "/..";
+            else
+              res = "..";
+            lastSegmentLength = 2;
+          }
+        } else {
+          if (res.length > 0)
+            res += "/" + path.slice(lastSlash + 1, i);
+          else
+            res = path.slice(lastSlash + 1, i);
+          lastSegmentLength = i - lastSlash - 1;
+        }
+        lastSlash = i;
+        dots = 0;
+      } else if (code === 46 && dots !== -1) {
+        ++dots;
+      } else {
+        dots = -1;
+      }
+    }
+    return res;
+  }
+  function _format(sep2, pathObject) {
+    const dir = pathObject.dir || pathObject.root;
+    const base = pathObject.base || (pathObject.name || "") + (pathObject.ext || "");
+    if (!dir) {
+      return base;
+    }
+    if (dir === pathObject.root) {
+      return dir + base;
+    }
+    return dir + sep2 + base;
+  }
+  const resolve = function resolve2(...paths) {
+    let resolvedPath = "";
+    let resolvedAbsolute = false;
+    let cwd;
+    for (let i = paths.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+      let path;
+      if (i >= 0)
+        path = paths[i];
+      else {
+        if (cwd === void 0) {
+          if (typeof process !== "undefined" && typeof process.cwd === "function") {
+            cwd = process.cwd();
+          } else {
+            cwd = "/";
+          }
+        }
+        path = cwd;
+      }
+      assertPath(path);
+      if (path.length === 0) {
+        continue;
+      }
+      resolvedPath = path + "/" + resolvedPath;
+      resolvedAbsolute = path.charCodeAt(0) === 47;
+    }
+    resolvedPath = normalizeStringPosix(resolvedPath, !resolvedAbsolute);
+    if (resolvedAbsolute) {
+      if (resolvedPath.length > 0)
+        return "/" + resolvedPath;
+      else
+        return "/";
+    } else if (resolvedPath.length > 0) {
+      return resolvedPath;
+    } else {
+      return ".";
+    }
+  };
+  const normalize = function normalize2(path) {
+    assertPath(path);
+    if (path.length === 0)
+      return ".";
+    const isAbsolute2 = path.charCodeAt(0) === 47;
+    const trailingSeparator = path.charCodeAt(path.length - 1) === 47;
+    path = normalizeStringPosix(path, !isAbsolute2);
+    if (path.length === 0 && !isAbsolute2)
+      path = ".";
+    if (path.length > 0 && trailingSeparator)
+      path += "/";
+    if (isAbsolute2)
+      return "/" + path;
+    return path;
+  };
+  const isAbsolute = function isAbsolute2(path) {
+    assertPath(path);
+    return path.length > 0 && path.charCodeAt(0) === 47;
+  };
+  const join = function join2(...paths) {
+    if (paths.length === 0)
+      return ".";
+    let joined;
+    for (let i = 0; i < paths.length; ++i) {
+      const arg = paths[i];
+      assertPath(arg);
+      if (arg.length > 0) {
+        if (joined === void 0)
+          joined = arg;
+        else
+          joined += "/" + arg;
+      }
+    }
+    if (joined === void 0)
+      return ".";
+    return normalize(joined);
+  };
+  const relative = function relative2(from, to) {
+    assertPath(from);
+    assertPath(to);
+    if (from === to)
+      return "";
+    from = resolve(from);
+    to = resolve(to);
+    if (from === to)
+      return "";
+    let fromStart = 1;
+    for (; fromStart < from.length; ++fromStart) {
+      if (from.charCodeAt(fromStart) !== 47)
+        break;
+    }
+    const fromEnd = from.length;
+    const fromLen = fromEnd - fromStart;
+    let toStart = 1;
+    for (; toStart < to.length; ++toStart) {
+      if (to.charCodeAt(toStart) !== 47)
+        break;
+    }
+    const toEnd = to.length;
+    const toLen = toEnd - toStart;
+    const length = fromLen < toLen ? fromLen : toLen;
+    let lastCommonSep = -1;
+    let i = 0;
+    for (; i <= length; ++i) {
+      if (i === length) {
+        if (toLen > length) {
+          if (to.charCodeAt(toStart + i) === 47) {
+            return to.slice(toStart + i + 1);
+          } else if (i === 0) {
+            return to.slice(toStart + i);
+          }
+        } else if (fromLen > length) {
+          if (from.charCodeAt(fromStart + i) === 47) {
+            lastCommonSep = i;
+          } else if (i === 0) {
+            lastCommonSep = 0;
+          }
+        }
+        break;
+      }
+      const fromCode = from.charCodeAt(fromStart + i);
+      const toCode = to.charCodeAt(toStart + i);
+      if (fromCode !== toCode)
+        break;
+      else if (fromCode === 47)
+        lastCommonSep = i;
+    }
+    let out = "";
+    for (i = fromStart + lastCommonSep + 1; i <= fromEnd; ++i) {
+      if (i === fromEnd || from.charCodeAt(i) === 47) {
+        if (out.length === 0)
+          out += "..";
+        else
+          out += "/..";
+      }
+    }
+    if (out.length > 0)
+      return out + to.slice(toStart + lastCommonSep);
+    else {
+      toStart += lastCommonSep;
+      if (to.charCodeAt(toStart) === 47)
+        ++toStart;
+      return to.slice(toStart);
+    }
+  };
+  const dirname = function dirname2(path) {
+    assertPath(path);
+    if (path.length === 0)
+      return ".";
+    let code = path.charCodeAt(0);
+    const hasRoot = code === 47;
+    let end = -1;
+    let matchedSlash = true;
+    for (let i = path.length - 1; i >= 1; --i) {
+      code = path.charCodeAt(i);
+      if (code === 47) {
+        if (!matchedSlash) {
+          end = i;
+          break;
+        }
+      } else {
+        matchedSlash = false;
+      }
+    }
+    if (end === -1)
+      return hasRoot ? "/" : ".";
+    if (hasRoot && end === 1)
+      return "//";
+    return path.slice(0, end);
+  };
+  const basename = function basename2(path, ext) {
+    if (ext !== void 0 && typeof ext !== "string")
+      throw new TypeError('"ext" argument must be a string');
+    assertPath(path);
+    let start = 0;
+    let end = -1;
+    let matchedSlash = true;
+    let i;
+    if (ext !== void 0 && ext.length > 0 && ext.length <= path.length) {
+      if (ext.length === path.length && ext === path)
+        return "";
+      let extIdx = ext.length - 1;
+      let firstNonSlashEnd = -1;
+      for (i = path.length - 1; i >= 0; --i) {
+        const code = path.charCodeAt(i);
+        if (code === 47) {
+          if (!matchedSlash) {
+            start = i + 1;
+            break;
+          }
+        } else {
+          if (firstNonSlashEnd === -1) {
+            matchedSlash = false;
+            firstNonSlashEnd = i + 1;
+          }
+          if (extIdx >= 0) {
+            if (code === ext.charCodeAt(extIdx)) {
+              if (--extIdx === -1) {
+                end = i;
+              }
+            } else {
+              extIdx = -1;
+              end = firstNonSlashEnd;
+            }
+          }
+        }
+      }
+      if (start === end)
+        end = firstNonSlashEnd;
+      else if (end === -1)
+        end = path.length;
+      return path.slice(start, end);
+    } else {
+      for (i = path.length - 1; i >= 0; --i) {
+        if (path.charCodeAt(i) === 47) {
+          if (!matchedSlash) {
+            start = i + 1;
+            break;
+          }
+        } else if (end === -1) {
+          matchedSlash = false;
+          end = i + 1;
+        }
+      }
+      if (end === -1)
+        return "";
+      return path.slice(start, end);
+    }
+  };
+  const extname = function extname2(path) {
+    assertPath(path);
+    let startDot = -1;
+    let startPart = 0;
+    let end = -1;
+    let matchedSlash = true;
+    let preDotState = 0;
+    for (let i = path.length - 1; i >= 0; --i) {
+      const code = path.charCodeAt(i);
+      if (code === 47) {
+        if (!matchedSlash) {
+          startPart = i + 1;
+          break;
+        }
+        continue;
+      }
+      if (end === -1) {
+        matchedSlash = false;
+        end = i + 1;
+      }
+      if (code === 46) {
+        if (startDot === -1)
+          startDot = i;
+        else if (preDotState !== 1)
+          preDotState = 1;
+      } else if (startDot !== -1) {
+        preDotState = -1;
+      }
+    }
+    if (startDot === -1 || end === -1 || preDotState === 0 || preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+      return "";
+    }
+    return path.slice(startDot, end);
+  };
+  const format = function format2(pathObject) {
+    if (pathObject === null || typeof pathObject !== "object") {
+      throw new TypeError('The "pathObject" argument must be of type Object. Received type ' + typeof pathObject);
+    }
+    return _format("/", pathObject);
+  };
+  const parse = function parse2(path) {
+    assertPath(path);
+    const ret = {
+      root: "",
+      dir: "",
+      base: "",
+      ext: "",
+      name: ""
+    };
+    if (path.length === 0)
+      return ret;
+    let code = path.charCodeAt(0);
+    let start;
+    const isAbsolute2 = code === 47;
+    if (isAbsolute2) {
+      ret.root = "/";
+      start = 1;
+    } else {
+      start = 0;
+    }
+    let startDot = -1;
+    let startPart = 0;
+    let end = -1;
+    let matchedSlash = true;
+    let i = path.length - 1;
+    let preDotState = 0;
+    for (; i >= start; --i) {
+      code = path.charCodeAt(i);
+      if (code === 47) {
+        if (!matchedSlash) {
+          startPart = i + 1;
+          break;
+        }
+        continue;
+      }
+      if (end === -1) {
+        matchedSlash = false;
+        end = i + 1;
+      }
+      if (code === 46) {
+        if (startDot === -1)
+          startDot = i;
+        else if (preDotState !== 1)
+          preDotState = 1;
+      } else if (startDot !== -1) {
+        preDotState = -1;
+      }
+    }
+    if (startDot === -1 || end === -1 || preDotState === 0 || preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+      if (end !== -1) {
+        if (startPart === 0 && isAbsolute2)
+          ret.base = ret.name = path.slice(1, end);
+        else
+          ret.base = ret.name = path.slice(startPart, end);
+      }
+    } else {
+      if (startPart === 0 && isAbsolute2) {
+        ret.name = path.slice(1, startDot);
+        ret.base = path.slice(1, end);
+      } else {
+        ret.name = path.slice(startPart, startDot);
+        ret.base = path.slice(startPart, end);
+      }
+      ret.ext = path.slice(startDot, end);
+    }
+    if (startPart > 0)
+      ret.dir = path.slice(0, startPart - 1);
+    else if (isAbsolute2)
+      ret.dir = "/";
+    return ret;
+  };
+  const sep = "/";
+  const delimiter = ":";
+  const win32 = null;
+  return {
+    relative,
+    resolve,
+    parse,
+    format,
+    join,
+    isAbsolute,
+    basename,
+    normalize,
+    dirname,
+    extname,
+    delimiter,
+    sep,
+    win32: null,
+    posix: {
+      relative,
+      resolve,
+      parse,
+      format,
+      join,
+      isAbsolute,
+      basename,
+      normalize,
+      dirname,
+      extname,
+      delimiter,
+      sep,
+      win32: null,
+      posix: null
+    }
+  };
+}
+
+// src/server/prefetch.ts
+function getImportsFromSource(file) {
+  const imports = [];
+  const regex = /[import|from]\s+(['"`])(\..*)\1/g;
+  let match = regex.exec(file);
+  while (match != null) {
+    imports.push(match[2]);
+    match = regex.exec(file);
+  }
+  return imports;
+}
+async function getImports(filePath, readFileFn) {
+  const imports = [];
+  const path = createPath();
+  await Promise.all(getImportsFromSource(await readFileFn(filePath)).map(async (fileImport) => {
+    let resolvedFile = path.join(filePath, "..", fileImport);
+    if (!resolvedFile.startsWith(".")) {
+      resolvedFile = "./" + resolvedFile;
+    }
+    imports.push(resolvedFile, ...await getImports(resolvedFile, readFileFn));
+  }));
+  return imports;
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  QwikLoader,
   createDocument,
   createTimer,
   createWindow,

@@ -90,17 +90,6 @@ declare interface JSXNode<T = any> {
 }
 
 /**
- * @alpha
- */
-declare interface OutputEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
-}
-
-/**
  * @public
  */
 declare type QrlMapper = (symbolName: string) => string | undefined;
@@ -112,19 +101,6 @@ declare type QrlMapper = (symbolName: string) => string | undefined;
  * @public
  */
 export declare interface QwikDocument extends Document {
-}
-
-/**
- * @alpha
- */
-export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
-
-/**
- * @alpha
- */
-export declare interface QwikLoaderProps {
-    events?: string[];
-    debug?: boolean;
 }
 
 /**
@@ -149,7 +125,7 @@ export declare interface QwikWindow extends WindowProxy {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderToDocumentOptions): Promise<void>;
 
 /**
  * @public
@@ -164,6 +140,13 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
      * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
      */
     base?: string;
+    /**
+     * Specifies if the Qwik Loader script is added to the document or not. Defaults to `{ include: true }`.
+     */
+    qwikLoader?: {
+        events?: string[];
+        include?: boolean;
+    };
 }
 
 /**
@@ -171,7 +154,7 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public
@@ -210,19 +193,30 @@ export declare function serializeDocument(docOrEl: Document | Element, opts?: Se
  * @public
  */
 declare interface SerializeDocumentOptions extends DocumentOptions {
-    symbols: ServerOutputSymbols;
+    symbols?: ServerOutputSymbols;
 }
 
 /**
  * @public
  */
-export declare type ServerOutputSymbols = QrlMapper | OutputEntryMap | null;
+export declare type ServerOutputSymbols = QrlMapper | SymbolsEntryMap | null;
 
 /**
  * Applies NodeJS specific platform APIs to the passed in document instance.
  * @public
  */
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
+
+/**
+ * @alpha
+ */
+declare interface SymbolsEntryMap {
+    version: string;
+    mapping: {
+        [canonicalName: string]: string;
+    };
+    injections?: GlobalInjections[];
+}
 
 /**
  * @public

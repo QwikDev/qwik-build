@@ -1,3 +1,20 @@
+declare interface BasePluginOptions {
+    debug?: boolean;
+    outClientDir?: string;
+    outServerDir?: string;
+    entryStrategy?: EntryStrategy;
+    minify?: MinifyMode;
+    srcRootInput?: string | string[];
+    srcEntryServerInput?: string;
+    srcDir?: string | null;
+    srcInputs?: TransformModuleInput[] | null;
+    symbolsInput?: OutputEntryMap | null;
+    symbolsOutput?: ((data: OutputEntryMap) => Promise<void> | void) | null;
+    transformedModuleOutput?: ((data: {
+        [id: string]: TransformModule;
+    }) => Promise<void> | void) | null;
+}
+
 /**
  * @alpha
  */
@@ -16,7 +33,7 @@ export declare interface ComponentEntryStrategy {
 /**
  * @alpha
  */
-export declare const createOptimizer: () => Promise<Optimizer>;
+export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
 /**
  * @alpha
@@ -111,10 +128,17 @@ export declare interface Optimizer {
     sys: OptimizerSystem;
 }
 
+declare interface OptimizerOptions {
+    sys?: OptimizerSystem;
+    binding?: any;
+}
+
 /**
  * @alpha
  */
 export declare interface OptimizerSystem {
+    cwd: () => string;
+    env: () => SystemEnvironment;
     dynamicImport: (path: string) => Promise<any>;
     getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
@@ -163,44 +187,34 @@ export declare interface Path {
     readonly posix: Path;
 }
 
-/**
- * @alpha
- */
-export declare function qwikRollup(opts: QwikRollupPluginOptions): any;
+declare type QwikBuildMode = 'client' | 'ssr';
 
 /**
  * @alpha
  */
-export declare interface QwikRollupPluginOptions {
-    entryStrategy?: EntryStrategy;
-    srcDir?: string;
-    srcInputs?: TransformModuleInput[];
-    minify?: MinifyMode;
-    debug?: boolean;
-    ssrBuild?: boolean;
-    symbolsOutput?: string | ((data: OutputEntryMap, outputOptions: any) => Promise<void> | void);
+export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): any;
+
+/**
+ * @alpha
+ */
+export declare interface QwikRollupPluginOptions extends BasePluginOptions {
+    optimizerOptions?: OptimizerOptions;
+    rootDir?: string;
+    isDevBuild?: boolean;
+    buildMode?: QwikBuildMode;
 }
 
 /**
  * @alpha
  */
-export declare function qwikVite(opts: QwikViteOptions): any;
+export declare function qwikVite(qwikViteOpts?: QwikViteOptions): any;
 
 /**
  * @alpha
  */
-export declare interface QwikViteOptions extends QwikRollupPluginOptions {
-    ssr?: QwikViteSSROptions | false;
-}
-
-/**
- * @alpha
- */
-export declare interface QwikViteSSROptions {
-    /** Defaults to `/src/entry.server.tsx` */
-    entry?: string;
-    /** Defaults to `/src/main.tsx` */
-    main?: string;
+export declare interface QwikViteOptions extends BasePluginOptions {
+    optimizerOptions?: OptimizerOptions;
+    srcEntryDevInput?: string;
 }
 
 /**
@@ -231,6 +245,8 @@ export declare interface SourceLocation {
  * @alpha
  */
 export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
+
+declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
 
 /**
  * @alpha
