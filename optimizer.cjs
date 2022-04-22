@@ -944,9 +944,9 @@ globalThis.qwikOptimizer = function(module) {
     const createOutputAnalyzer = () => {
       const bundles = [];
       const addBundle = b => bundles.push(b);
-      const generateOutputEntryMap = async () => {
+      const generateSymbolsEntryMap = async () => {
         const optimizer2 = await getOptimizer();
-        const outputEntryMap = {
+        const symbolsEntryMap = {
           version: "1",
           mapping: {},
           injections: injections
@@ -960,15 +960,15 @@ globalThis.qwikOptimizer = function(module) {
             const found = bundles.find((b => Object.keys(b.modules).find((f => f.endsWith(basename)))));
             found && (basename = found.fileName);
             basename = optimizer2.sys.path.basename(basename);
-            outputEntryMap.mapping[symbolName] = basename;
+            symbolsEntryMap.mapping[symbolName] = basename;
           }));
         }
-        log("generateOutputEntryMap()", outputEntryMap);
-        return outputEntryMap;
+        log("generateSymbolsEntryMap()", symbolsEntryMap);
+        return symbolsEntryMap;
       };
       return {
         addBundle: addBundle,
-        generateOutputEntryMap: generateOutputEntryMap
+        generateSymbolsEntryMap: generateSymbolsEntryMap
       };
     };
     const getOptions = () => __spreadValues({}, opts);
@@ -1114,11 +1114,11 @@ globalThis.qwikOptimizer = function(module) {
               modules: b.modules
             });
           }
-          const outputEntryMap = await outputAnalyzer.generateOutputEntryMap();
-          "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(outputEntryMap) : this.emitFile({
+          const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
+          "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(symbolsEntryMap) : this.emitFile({
             type: "asset",
             fileName: SYMBOLS_MANIFEST_FILENAME,
-            source: JSON.stringify(outputEntryMap, null, 2)
+            source: JSON.stringify(symbolsEntryMap, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         } else if ("ssr" === opts.buildMode && opts.symbolsInput) {
@@ -1280,11 +1280,11 @@ globalThis.qwikOptimizer = function(module) {
               modules: b.modules
             });
           }
-          const outputEntryMap = await outputAnalyzer.generateOutputEntryMap();
-          "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(outputEntryMap) : this.emitFile({
+          const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
+          "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(symbolsEntryMap) : this.emitFile({
             type: "asset",
             fileName: SYMBOLS_MANIFEST_FILENAME,
-            source: JSON.stringify(outputEntryMap, null, 2)
+            source: JSON.stringify(symbolsEntryMap, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         } else if ("ssr" === opts.buildMode) {

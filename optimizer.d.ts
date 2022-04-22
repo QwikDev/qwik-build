@@ -8,8 +8,8 @@ declare interface BasePluginOptions {
     srcEntryServerInput?: string;
     srcDir?: string | null;
     srcInputs?: TransformModuleInput[] | null;
-    symbolsInput?: OutputEntryMap | null;
-    symbolsOutput?: ((data: OutputEntryMap) => Promise<void> | void) | null;
+    symbolsInput?: SymbolsEntryMap | null;
+    symbolsOutput?: ((symbolsEntryMap: SymbolsEntryMap) => Promise<void> | void) | null;
     transformedModuleOutput?: ((data: {
         [id: string]: TransformModule;
     }) => Promise<void> | void) | null;
@@ -147,17 +147,6 @@ export declare interface OptimizerSystem {
 /**
  * @alpha
  */
-export declare interface OutputEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
-}
-
-/**
- * @alpha
- */
 export declare interface Path {
     resolve(...paths: string[]): string;
     normalize(path: string): string;
@@ -245,6 +234,17 @@ export declare interface SourceLocation {
  * @alpha
  */
 export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
+
+/**
+ * @alpha
+ */
+export declare interface SymbolsEntryMap {
+    version: string;
+    mapping: {
+        [canonicalName: string]: string;
+    };
+    injections?: GlobalInjections[];
+}
 
 declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
 
