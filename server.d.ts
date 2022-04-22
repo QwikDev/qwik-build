@@ -1,6 +1,3 @@
-import type { FunctionComponent } from './core';
-import type { JSXNode } from './core';
-
 /**
  * Create emulated `Document` for server environment.
  * @public
@@ -39,6 +36,13 @@ export declare interface DocumentOptions {
 }
 
 /**
+ * @public
+ */
+declare interface FunctionComponent<P = {}> {
+    (props: P, key?: string): JSXNode | null;
+}
+
+/**
  * Returns a set of imports for a given source file.
  *
  * The function recursively visits the dependencies and returns a fully populated graph.
@@ -74,14 +78,15 @@ declare interface GlobalInjections {
 }
 
 /**
- * @alpha
+ * @public
  */
-declare interface OutputEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
+declare interface JSXNode<T = any> {
+    type: T;
+    props: Record<string, any> | null;
+    children: JSXNode[];
+    key: string | null;
+    elm?: Node;
+    text?: string;
 }
 
 /**
@@ -96,19 +101,6 @@ declare type QrlMapper = (symbolName: string) => string | undefined;
  * @public
  */
 export declare interface QwikDocument extends Document {
-}
-
-/**
- * @alpha
- */
-export declare const QwikLoader: FunctionComponent<QwikLoaderProps>;
-
-/**
- * @alpha
- */
-export declare interface QwikLoaderProps {
-    events?: string[];
-    debug?: boolean;
 }
 
 /**
@@ -133,7 +125,7 @@ export declare interface QwikWindow extends WindowProxy {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderToDocumentOptions): Promise<void>;
 
 /**
  * @public
@@ -148,6 +140,13 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
      * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
      */
     base?: string;
+    /**
+     * Specifies if the Qwik Loader script is added to the document or not. Defaults to `{ include: true }`.
+     */
+    qwikLoader?: {
+        events?: string[];
+        include?: boolean;
+    };
 }
 
 /**
@@ -155,7 +154,7 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: JSXNode, opts: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public
@@ -194,14 +193,30 @@ export declare function serializeDocument(docOrEl: Document | Element, opts?: Se
  * @public
  */
 declare interface SerializeDocumentOptions extends DocumentOptions {
-    symbols: QrlMapper | OutputEntryMap | null;
+    symbols?: ServerOutputSymbols;
 }
+
+/**
+ * @public
+ */
+export declare type ServerOutputSymbols = QrlMapper | SymbolsEntryMap | null;
 
 /**
  * Applies NodeJS specific platform APIs to the passed in document instance.
  * @public
  */
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
+
+/**
+ * @alpha
+ */
+declare interface SymbolsEntryMap {
+    version: string;
+    mapping: {
+        [canonicalName: string]: string;
+    };
+    injections?: GlobalInjections[];
+}
 
 /**
  * @public

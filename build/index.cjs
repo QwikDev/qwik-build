@@ -23,6 +23,6 @@ __export(build_exports, {
   isServer: () => isServer
 });
 module.exports = __toCommonJS(build_exports);
-var isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && process.versions != null && process.versions.node != null)();
-var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && window.document != null)();
+var isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node || typeof Deno !== "undefined")();
+var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && !!window.document || typeof self !== "undefined" && typeof self.importScripts === "function")();
 //# sourceMappingURL=index.cjs.map
