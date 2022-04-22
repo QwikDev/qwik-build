@@ -5,25 +5,11 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 // minification can replace the `globalThis.qDev` with `false`
 // which will remove all dev code within from the build
 const qDev = true;
 const qTest = globalThis.describe !== undefined;
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 const EMPTY_ARRAY = [];
 const EMPTY_OBJ = {};
 if (qDev) {
@@ -49,13 +35,6 @@ const logDebug = (message, ...optionalParams) => {
     }
 };
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function assertDefined(value, text) {
     if (qDev) {
         if (value != null)
@@ -78,11 +57,7 @@ function newError(text) {
 }
 
 /**
- * @license
- * Copyright Builder.io; Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * State factory of the component.
  */
 /**
  * State factory of the component.
@@ -113,13 +88,6 @@ const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function getDocument(node) {
     if (typeof document !== 'undefined') {
         return document;
@@ -228,13 +196,6 @@ function getContainer(el) {
     return container;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function flattenArray(array, dst) {
     // Yes this function is just Array.flat, but we need to run on old versions of Node.
     if (!dst)
@@ -250,13 +211,6 @@ function flattenArray(array, dst) {
     return dst;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function isPromise(value) {
     return value instanceof Promise;
 }
@@ -415,13 +369,6 @@ var NodeType;
     NodeType[NodeType["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
 })(NodeType || (NodeType = {}));
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function stringifyDebug(value) {
     if (value == null)
         return String(value);
@@ -459,13 +406,6 @@ function stringifyElement(element) {
     return html + '>';
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 var QError;
 (function (QError) {
     // core 000-099
@@ -618,13 +558,6 @@ function codeToText(code) {
     return `${area}(Q-${textCode}): ${text}`;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function isNode$1(value) {
     return value && typeof value.nodeType == 'number';
 }
@@ -1056,24 +989,10 @@ function qInflate(ref, hostCtx) {
     return obj;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function fromCamelToKebabCase(text) {
     return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function debugStringify(value) {
     if (value != null && typeof value == 'object') {
         return String(value.constructor.name) + '\n' + safeJSONStringify(value);
@@ -1232,13 +1151,6 @@ function getProps(ctx) {
     return ctx.props;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 /**
  * Place at the root of the component View to allow binding of attributes on the Host element.
  *
@@ -2991,13 +2903,6 @@ function unwrapSubscriber(obj) {
     return obj;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 let runtimeSymbolId = 0;
 const RUNTIME_QRL = '/runtimeQRL';
 // https://regexr.com/68v72
