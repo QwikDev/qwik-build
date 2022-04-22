@@ -128,7 +128,10 @@ export declare interface Optimizer {
     sys: OptimizerSystem;
 }
 
-declare interface OptimizerOptions {
+/**
+ * @alpha
+ */
+export declare interface OptimizerOptions {
     sys?: OptimizerSystem;
     binding?: any;
 }
@@ -246,7 +249,10 @@ export declare interface SymbolsEntryMap {
     injections?: GlobalInjections[];
 }
 
-declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
+/**
+ * @alpha
+ */
+export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
 
 /**
  * @alpha
