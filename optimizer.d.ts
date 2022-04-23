@@ -297,6 +297,7 @@ declare interface TransformOptions {
     sourceMaps?: boolean;
     transpile?: boolean;
     explicityExtensions?: boolean;
+    dev?: boolean;
 }
 
 /**

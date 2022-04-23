@@ -521,26 +521,6 @@ var getPlatform2 = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// src/core/use/use-subscriber.ts
-function wrapSubscriber(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const target = obj[QOjectTargetSymbol];
-    if (!target) {
-      return obj;
-    }
-    return new Proxy(obj, {
-      get(target2, prop) {
-        if (prop === QOjectOriginalProxy) {
-          return target2;
-        }
-        target2[SetSubscriber] = subscriber;
-        return target2[prop];
-      }
-    });
-  }
-  return obj;
-}
-
 // src/core/import/qrl.ts
 var runtimeSymbolId = 0;
 var RUNTIME_QRL = "/runtimeQRL";
@@ -804,7 +784,7 @@ function useWatchQrl(watchQrl) {
   }
 }
 var useWatch$ = implicit$FirstArg(useWatchQrl);
-function useEffectQrl(watchQrl) {
+function useWatchEffectQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     const hostElement = useHostElement();
@@ -819,7 +799,7 @@ function useEffectQrl(watchQrl) {
     getContext(hostElement).refMap.add(watch2);
   }
 }
-var useEffect$ = implicit$FirstArg(useEffectQrl);
+var useWatchEffect$ = implicit$FirstArg(useWatchEffectQrl);
 function runWatch(watch) {
   if (!watch.dirty) {
     logDebug("Watch is not dirty, skipping run", watch);
@@ -840,16 +820,22 @@ function runWatch(watch) {
       const hostElement = watch.hostElement;
       const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, "WatchEvent");
       invokationContext.watch = watch;
-      invokationContext.subscriber = watch;
       const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
-      const obs = (obj) => wrapSubscriber(obj, watch);
+      const tracker = (obj, prop) => {
+        obj[SetSubscriber] = watch;
+        if (prop) {
+          return obj[prop];
+        } else {
+          return obj[QOjectAllSymbol];
+        }
+      };
       const captureRef = watch.watchQrl.captureRef;
       if (Array.isArray(captureRef)) {
         captureRef.forEach((obj) => {
           removeSub(obj, watch);
         });
       }
-      return then(watchFn(obs), (returnValue) => {
+      return then(watchFn(tracker), (returnValue) => {
         if (typeof returnValue === "function") {
           watch.destroy = noSerialize(returnValue);
         }
@@ -866,9 +852,8 @@ var SCHEDULE = Symbol("Render state");
 
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
-var QOjectTargetSymbol = ":target:";
+var QOjectAllSymbol = ":all:";
 var QOjectSubsSymbol = ":subs:";
-var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
 function removeSub(obj, subscriber) {
   if (obj && typeof obj === "object") {

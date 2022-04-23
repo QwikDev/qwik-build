@@ -66,6 +66,28 @@
                 hasInitialized = 1;
                 broadcast("", "q-resume", new CustomEvent("qResume"));
                 doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
+                if ("undefined" != typeof IntersectionObserver) {
+                    const observer = new IntersectionObserver((entries => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                observer.unobserve(entry.target);
+                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                    bubbles: !1,
+                                    detail: entry
+                                }));
+                            }
+                        }
+                    }));
+                    new MutationObserver((mutations => {
+                        for (const mutation2 of mutations) {
+                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                        }
+                    })).observe(document.body, {
+                        attributeFilter: [ "on:q-visible" ],
+                        subtree: !0
+                    });
+                    doc.querySelectorAll("[on\\:q-visible]").forEach((el => observer.observe(el)));
+                }
             }
         };
         const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {

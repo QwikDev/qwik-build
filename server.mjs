@@ -9405,26 +9405,6 @@ var getPlatform = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// src/core/use/use-subscriber.ts
-function wrapSubscriber(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const target = obj[QOjectTargetSymbol];
-    if (!target) {
-      return obj;
-    }
-    return new Proxy(obj, {
-      get(target2, prop) {
-        if (prop === QOjectOriginalProxy) {
-          return target2;
-        }
-        target2[SetSubscriber] = subscriber;
-        return target2[prop];
-      }
-    });
-  }
-  return obj;
-}
-
 // src/core/import/qrl.ts
 var runtimeSymbolId = 0;
 var RUNTIME_QRL = "/runtimeQRL";
@@ -9588,7 +9568,7 @@ function useWatchQrl(watchQrl) {
   }
 }
 var useWatch$ = implicit$FirstArg(useWatchQrl);
-function useEffectQrl(watchQrl) {
+function useWatchEffectQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     const hostElement = useHostElement();
@@ -9603,7 +9583,7 @@ function useEffectQrl(watchQrl) {
     getContext(hostElement).refMap.add(watch2);
   }
 }
-var useEffect$ = implicit$FirstArg(useEffectQrl);
+var useWatchEffect$ = implicit$FirstArg(useWatchEffectQrl);
 function runWatch(watch) {
   if (!watch.dirty) {
     logDebug("Watch is not dirty, skipping run", watch);
@@ -9624,16 +9604,22 @@ function runWatch(watch) {
       const hostElement = watch.hostElement;
       const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, "WatchEvent");
       invokationContext.watch = watch;
-      invokationContext.subscriber = watch;
       const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
-      const obs = (obj) => wrapSubscriber(obj, watch);
+      const tracker = (obj, prop) => {
+        obj[SetSubscriber] = watch;
+        if (prop) {
+          return obj[prop];
+        } else {
+          return obj[QOjectAllSymbol];
+        }
+      };
       const captureRef = watch.watchQrl.captureRef;
       if (Array.isArray(captureRef)) {
         captureRef.forEach((obj) => {
           removeSub(obj, watch);
         });
       }
-      return then(watchFn(obs), (returnValue) => {
+      return then(watchFn(tracker), (returnValue) => {
         if (typeof returnValue === "function") {
           watch.destroy = noSerialize(returnValue);
         }
@@ -9650,9 +9636,8 @@ var SCHEDULE = Symbol("Render state");
 
 // src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
-var QOjectTargetSymbol = ":target:";
+var QOjectAllSymbol = ":all:";
 var QOjectSubsSymbol = ":subs:";
-var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
 function removeSub(obj, subscriber) {
   if (obj && typeof obj === "object") {
@@ -9824,7 +9809,7 @@ function getElement(docOrElm) {
 }
 
 // src/server/scripts.ts
-var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,n)=>{const o="__q_context__",r=["on:","on-window:","on-document:"],s=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,s)=>{for(const l of r){const r=t.getAttribute(l+n);if(r){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of r.split("\\n")){const r=i(t,n);if(r){const n=p(r),i=(window[r.pathname]||await import(r.href.split("#")[0]))[n]||c(r+" does not export "+n),l=e[o];try{e[o]=[t,s,r],i(s,t,r)}finally{e[o]=l,a(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),d=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f))},b=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(b);else for(const t in e)t.startsWith("on")&&b(t.slice(2))}e.addEventListener("readystatechange",d),d()}})(document);`;
+var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),p=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"q-visible",new CustomEvent("qVisible",{bubbles:!1,detail:r})))}));new MutationObserver((e=>{for(const r of e)r.target.hasAttribute("on:q-visible")&&t.observe(r.target)})).observe(document.body,{attributeFilter:["on:q-visible"],subtree:!0}),e.querySelectorAll("[on\\\\:q-visible]").forEach((e=>t.observe(e)))}},d=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(d);else for(const t in e)t.startsWith("on")&&d(t.slice(2))}e.addEventListener("readystatechange",p),p()}})(document);`;
 var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -9893,6 +9878,28 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
                 hasInitialized = 1;
                 broadcast("", "q-resume", new CustomEvent("qResume"));
                 doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);
+                if ("undefined" != typeof IntersectionObserver) {
+                    const observer = new IntersectionObserver((entries => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                observer.unobserve(entry.target);
+                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                    bubbles: !1,
+                                    detail: entry
+                                }));
+                            }
+                        }
+                    }));
+                    new MutationObserver((mutations => {
+                        for (const mutation2 of mutations) {
+                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                        }
+                    })).observe(document.body, {
+                        attributeFilter: [ "on:q-visible" ],
+                        subtree: !0
+                    });
+                    doc.querySelectorAll("[on\\\\:q-visible]").forEach((el => observer.observe(el)));
+                }
             }
         };
         const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {
@@ -9915,7 +9922,7 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
         }
     })(document);
 })();`;
-var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,n)=>{const o="__q_context__",a=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),c=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,r)=>{for(const l of a){const a=t.getAttribute(l+n);if(a){t.hasAttribute("preventdefault:"+n)&&r.preventDefault();for(const n of a.split("\\n")){const a=i(t,n);if(a){const n=p(a),i=(window[a.pathname]||await import(a.href.split("#")[0]))[n]||c(a+" does not export "+n),l=e[o];try{e[o]=[t,r,a],i(r,t,a)}finally{e[o]=l,s(t,n)}}}}}},p=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},d=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>i(e,t)+""))),n),f=n=>{n=e.readyState,t||"interactive"!=n&&"complete"!=n||(t=1,r("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(d))};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",f),f())})(document);`;
+var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),d=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"q-visible",new CustomEvent("qVisible",{bubbles:!1,detail:r})))}));new MutationObserver((e=>{for(const r of e)r.target.hasAttribute("on:q-visible")&&t.observe(r.target)})).observe(document.body,{attributeFilter:["on:q-visible"],subtree:!0}),e.querySelectorAll("[on\\\\:q-visible]").forEach((e=>t.observe(e)))}};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",d),d())})(document);`;
 var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -9984,6 +9991,28 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
                 hasInitialized = 1;
                 broadcast("", "q-resume", new CustomEvent("qResume"));
                 doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);
+                if ("undefined" != typeof IntersectionObserver) {
+                    const observer = new IntersectionObserver((entries => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                observer.unobserve(entry.target);
+                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                    bubbles: !1,
+                                    detail: entry
+                                }));
+                            }
+                        }
+                    }));
+                    new MutationObserver((mutations => {
+                        for (const mutation2 of mutations) {
+                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                        }
+                    })).observe(document.body, {
+                        attributeFilter: [ "on:q-visible" ],
+                        subtree: !0
+                    });
+                    doc.querySelectorAll("[on\\\\:q-visible]").forEach((el => observer.observe(el)));
+                }
             }
         };
         const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {

@@ -729,7 +729,7 @@ function snapshotState(containerEl) {
             return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
                 const id = getObjId(sub);
                 if (id !== null) {
-                    return [id, Array.from(set)];
+                    return [id, set ? Array.from(set) : null];
                 }
                 else {
                     return [undefined, undefined];
@@ -851,7 +851,7 @@ function reviveValues(objs, subs, getObject, map, containerEl) {
                         logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
                         return;
                     }
-                    const set = new Set(entry[1]);
+                    const set = entry[1] === null ? null : new Set(entry[1]);
                     converted.set(el, set);
                 });
                 _restoreQObject(value, map, converted);
@@ -1438,6 +1438,14 @@ const isJSXNode = (n) => {
 /**
  * @public
  */
+const Comment = (props) => {
+    const newNode = new JSXNodeImpl('#comment', null, null);
+    newNode.text = props.text || '';
+    return newNode;
+};
+/**
+ * @public
+ */
 const Fragment = (props) => props.children;
 
 const firstRenderComponent = (rctx, ctx) => {
@@ -1632,7 +1640,8 @@ function getChildren(elm, mode) {
     }
 }
 function isNode(elm) {
-    return elm.nodeType === 1 || elm.nodeType === 3;
+    const type = elm.nodeType;
+    return type === 1 || type === 3 || type === 8;
 }
 function isFallback(node) {
     return node.nodeName === 'Q:FALLBACK';
@@ -1660,6 +1669,12 @@ function patchVnode(rctx, elm, vnode, isSvg) {
     vnode.elm = elm;
     const tag = vnode.type;
     if (tag === '#text') {
+        if (elm.data !== vnode.text) {
+            setProperty(rctx, elm, 'data', vnode.text);
+        }
+        return;
+    }
+    if (tag === '#comment') {
         if (elm.data !== vnode.text) {
             setProperty(rctx, elm, 'data', vnode.text);
         }
@@ -1825,6 +1840,9 @@ function createElm(rctx, vnode, isSvg) {
     const tag = vnode.type;
     if (tag === '#text') {
         return (vnode.elm = createTextNode(rctx, vnode.text));
+    }
+    if (tag === '#comment') {
+        return (vnode.elm = createCommentNode(rctx, vnode.text));
     }
     if (!isSvg) {
         isSvg = tag === 'svg';
@@ -2127,6 +2145,9 @@ function removeNode(ctx, el) {
 function createTextNode(ctx, text) {
     return ctx.doc.createTextNode(text);
 }
+function createCommentNode(ctx, text) {
+    return ctx.doc.createComment(text);
+}
 function executeContextWithSlots(ctx) {
     const before = ctx.roots.map((elm) => getSlots(undefined, elm));
     executeContext(ctx);
@@ -2286,7 +2307,8 @@ function useStore(initialState) {
     if (store != null) {
         return wrapSubscriber(store, hostElement);
     }
-    const newStore = qObject(initialState, getProxyMap(useDocument()));
+    const value = typeof initialState === 'function' ? initialState() : initialState;
+    const newStore = qObject(value, getProxyMap(useDocument()));
     setStore(newStore);
     return wrapSubscriber(newStore, hostElement);
 }
@@ -2432,7 +2454,7 @@ const useWatch$ = implicit$FirstArg(useWatchQrl);
 /**
  * @alpha
  */
-function useEffectQrl(watchQrl) {
+function useWatchEffectQrl(watchQrl) {
     const [watch, setWatch] = useSequentialScope();
     if (!watch) {
         const hostElement = useHostElement();
@@ -2450,7 +2472,7 @@ function useEffectQrl(watchQrl) {
 /**
  * @alpha
  */
-const useEffect$ = implicit$FirstArg(useEffectQrl);
+const useWatchEffect$ = implicit$FirstArg(useWatchEffectQrl);
 function runWatch(watch) {
     if (!watch.dirty) {
         logDebug('Watch is not dirty, skipping run', watch);
@@ -2472,16 +2494,23 @@ function runWatch(watch) {
             const hostElement = watch.hostElement;
             const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, 'WatchEvent');
             invokationContext.watch = watch;
-            invokationContext.subscriber = watch;
             const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
-            const obs = (obj) => wrapSubscriber(obj, watch);
+            const tracker = (obj, prop) => {
+                obj[SetSubscriber] = watch;
+                if (prop) {
+                    return obj[prop];
+                }
+                else {
+                    return obj[QOjectAllSymbol];
+                }
+            };
             const captureRef = watch.watchQrl.captureRef;
             if (Array.isArray(captureRef)) {
                 captureRef.forEach((obj) => {
                     removeSub(obj, watch);
                 });
             }
-            return then(watchFn(obs), (returnValue) => {
+            return then(watchFn(tracker), (returnValue) => {
                 if (typeof returnValue === 'function') {
                     watch.destroy = noSerialize(returnValue);
                 }
@@ -2677,9 +2706,13 @@ function readWriteProxy(target, proxyMap, subs) {
     return proxy;
 }
 const QOjectTargetSymbol = ':target:';
+const QOjectAllSymbol = ':all:';
 const QOjectSubsSymbol = ':subs:';
 const QOjectOriginalProxy = ':proxy:';
 const SetSubscriber = Symbol('SetSubscriber');
+/**
+ * @alpha
+ */
 function unwrapProxy(proxy) {
     if (proxy && typeof proxy == 'object') {
         const value = proxy[QOjectTargetSymbol];
@@ -2694,6 +2727,9 @@ function wrap(value, proxyMap) {
             return value;
         }
         if (isElement(value)) {
+            return value;
+        }
+        if (!shouldSerialize(value)) {
             return value;
         }
         const nakedValue = unwrapProxy(value);
@@ -2718,7 +2754,7 @@ class ReadWriteProxyHandler {
     }
     getSub(el) {
         let sub = this.subs.get(el);
-        if (!sub) {
+        if (sub === undefined) {
             this.subs.set(el, (sub = new Set()));
         }
         return sub;
@@ -2726,20 +2762,16 @@ class ReadWriteProxyHandler {
     get(target, prop) {
         let subscriber = this.subscriber;
         this.subscriber = undefined;
+        if (typeof prop === 'symbol') {
+            return target[prop];
+        }
         if (prop === QOjectTargetSymbol)
             return target;
         if (prop === QOjectSubsSymbol)
             return this.subs;
         if (prop === QOjectOriginalProxy)
             return this.proxyMap.get(target);
-        const value = target[prop];
-        if (typeof prop === 'symbol') {
-            return value;
-        }
         const invokeCtx = tryGetInvokeContext();
-        if (qDev && !invokeCtx && !qTest) {
-            logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
-        }
         if (invokeCtx) {
             if (invokeCtx.subscriber === null) {
                 subscriber = undefined;
@@ -2751,11 +2783,26 @@ class ReadWriteProxyHandler {
         else if (qDev && !qTest && !subscriber) {
             logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
         }
+        if (prop === QOjectAllSymbol) {
+            if (subscriber) {
+                this.subs.set(subscriber, null);
+            }
+            return target;
+        }
+        const value = target[prop];
+        if (typeof prop === 'symbol') {
+            return value;
+        }
         if (subscriber) {
             const isArray = Array.isArray(target);
-            const sub = this.getSub(subscriber);
-            if (!isArray) {
-                sub.add(prop);
+            if (isArray) {
+                this.subs.set(subscriber, null);
+            }
+            else {
+                const sub = this.getSub(subscriber);
+                if (sub) {
+                    sub.add(prop);
+                }
             }
         }
         return wrap(value, this.proxyMap);
@@ -2791,7 +2838,7 @@ class ReadWriteProxyHandler {
             target[prop] = unwrappedNewValue;
             subs.forEach((propSets, sub) => {
                 if (sub.isConnected) {
-                    if (propSets.has(prop)) {
+                    if (propSets === null || propSets.has(prop)) {
                         notifyChange(sub);
                     }
                 }
@@ -2810,6 +2857,22 @@ class ReadWriteProxyHandler {
         return Object.prototype.hasOwnProperty.call(target, property);
     }
     ownKeys(target) {
+        let subscriber = this.subscriber;
+        const invokeCtx = tryGetInvokeContext();
+        if (invokeCtx) {
+            if (invokeCtx.subscriber === null) {
+                subscriber = undefined;
+            }
+            else if (!subscriber) {
+                subscriber = invokeCtx.subscriber;
+            }
+        }
+        else if (qDev && !qTest && !subscriber) {
+            logWarn(`State assigned outside invocation context. OwnKeys of:`, target);
+        }
+        if (subscriber) {
+            this.subs.set(subscriber, null);
+        }
         return Object.getOwnPropertyNames(target);
     }
 }
@@ -2914,6 +2977,10 @@ function wrapSubscriber(obj, subscriber) {
                 }
                 target[SetSubscriber] = subscriber;
                 return target[prop];
+            },
+            ownKeys(target) {
+                target[SetSubscriber] = subscriber;
+                return Reflect.ownKeys(target);
             },
         });
     }
@@ -3126,8 +3193,8 @@ function toQrlOrError(symbolOrQrl) {
  * @public
  */
 // </docs>
-function onUnmountQrl(unmountFn) {
-    throw new Error('IMPLEMENT: onUnmount' + unmountFn);
+function useCleanupQrl(unmountFn) {
+    throw new Error('IMPLEMENT: useCleanupQrl' + unmountFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3140,7 +3207,7 @@ function onUnmountQrl(unmountFn) {
  * @public
  */
 // </docs>
-const onUnmount$ = implicit$FirstArg(onUnmountQrl);
+const useCleanup$ = implicit$FirstArg(useCleanupQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
@@ -3153,8 +3220,8 @@ const onUnmount$ = implicit$FirstArg(onUnmountQrl);
  * @public
  */
 // </docs>
-function onResumeQrl(resumeFn) {
-    onWindow('load', resumeFn);
+function useResumeQrl(resumeFn) {
+    useOnWindow('qInit', resumeFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3168,7 +3235,7 @@ function onResumeQrl(resumeFn) {
  * @public
  */
 // </docs>
-const onResume$ = implicit$FirstArg(onResumeQrl);
+const useResume$ = implicit$FirstArg(useResumeQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
@@ -3183,7 +3250,7 @@ const onResume$ = implicit$FirstArg(onResumeQrl);
  * @public
  */
 // </docs>
-function onPauseQrl(dehydrateFn) {
+function usePauseQrl(dehydrateFn) {
     throw new Error('IMPLEMENT: onPause' + dehydrateFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
@@ -3200,7 +3267,7 @@ function onPauseQrl(dehydrateFn) {
  * @public
  */
 // </docs>
-const onPause$ = implicit$FirstArg(onPauseQrl);
+const usePause$ = implicit$FirstArg(usePauseQrl);
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#on">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#on instead)
@@ -3215,7 +3282,7 @@ const onPause$ = implicit$FirstArg(onPauseQrl);
  * @public
  */
 // </docs>
-function on(event, eventFn) {
+function useOn(event, eventFn) {
     const el = useHostElement();
     const ctx = getContext(el);
     qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
@@ -3234,7 +3301,7 @@ function on(event, eventFn) {
  * @public
  */
 // </docs>
-function onDocument(event, eventFn) {
+function useOnDocument(event, eventFn) {
     const el = useHostElement();
     const ctx = getContext(el);
     qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventFn);
@@ -3253,7 +3320,7 @@ function onDocument(event, eventFn) {
  * @public
  */
 // </docs>
-function onWindow(event, eventFn) {
+function useOnWindow(event, eventFn) {
     const el = useHostElement();
     const ctx = getContext(el);
     qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
@@ -3720,6 +3787,7 @@ function useLexicalScope() {
 
 exports.$ = $;
 exports.Async = Async;
+exports.Comment = Comment;
 exports.Fragment = Fragment;
 exports.Host = Host;
 exports.SkipRerender = SkipRerender;
@@ -3733,26 +3801,25 @@ exports.jsx = jsx;
 exports.jsxDEV = jsx;
 exports.jsxs = jsx;
 exports.noSerialize = noSerialize;
-exports.on = on;
-exports.onDocument = onDocument;
-exports.onPause$ = onPause$;
-exports.onPauseQrl = onPauseQrl;
-exports.onResume$ = onResume$;
-exports.onResumeQrl = onResumeQrl;
-exports.onUnmount$ = onUnmount$;
-exports.onUnmountQrl = onUnmountQrl;
-exports.onWindow = onWindow;
 exports.pauseContainer = pauseContainer;
 exports.qrl = qrl;
 exports.render = render;
 exports.setPlatform = setPlatform;
+exports.untrack = unwrapProxy;
 exports.unwrapSubscriber = unwrapSubscriber;
+exports.useCleanup$ = useCleanup$;
+exports.useCleanupQrl = useCleanupQrl;
 exports.useDocument = useDocument;
-exports.useEffect$ = useEffect$;
-exports.useEffectQrl = useEffectQrl;
 exports.useHostElement = useHostElement;
 exports.useLexicalScope = useLexicalScope;
+exports.useOn = useOn;
+exports.useOnDocument = useOnDocument;
+exports.useOnWindow = useOnWindow;
+exports.usePause$ = usePause$;
+exports.usePauseQrl = usePauseQrl;
 exports.useRef = useRef;
+exports.useResume$ = useResume$;
+exports.useResumeQrl = useResumeQrl;
 exports.useScopedStyles$ = useScopedStyles$;
 exports.useScopedStylesQrl = useScopedStylesQrl;
 exports.useStore = useStore;
@@ -3760,6 +3827,8 @@ exports.useStyles$ = useStyles$;
 exports.useStylesQrl = useStylesQrl;
 exports.useSubscriber = useSubscriber;
 exports.useWatch$ = useWatch$;
+exports.useWatchEffect$ = useWatchEffect$;
+exports.useWatchEffectQrl = useWatchEffectQrl;
 exports.useWatchQrl = useWatchQrl;
 exports.version = version;
 exports.wrapSubscriber = wrapSubscriber;

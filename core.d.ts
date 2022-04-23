@@ -498,6 +498,14 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @public
+ */
+declare const Comment_2: FunctionComponent<{
+    text?: string;
+}>;
+export { Comment_2 as Comment }
+
+/**
  * Declare a Qwik component that can be used to create UI.
  *
  * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
@@ -1302,78 +1310,6 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     wmode?: string | undefined;
 }
 
-/**
- * Used to signal to Qwik which state should be watched for changes.
- *
- * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
- * state objects in a read proxy which signals to Qwik which properties should be watched for
- * changes. A change to any of the properties cause the `watchFn` to re-run.
- *
- * ## Example
- *
- * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
- * Any changes to the `state.count` property will cause the `watchFn` to re-run.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * See: `useWatch`
- *
- * @public
- */
-export declare interface Observer {
-    /**
-     * Used to signal to Qwik which state should be watched for changes.
-     *
-     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
-     * state objects in a read proxy which signals to Qwik which properties should be watched for
-     * changes. A change to any of the properties cause the `watchFn` to re-run.
-     *
-     * ## Example
-     *
-     * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
-     * Any changes to the `state.count` property will cause the `watchFn` to re-run.
-     *
-     * ```typescript
-     * export const MyComp = component$(() => {
-     *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((obs) => {
-     *     store.doubleCount = 2 * obs(store).count;
-     *   });
-     *   return $(() => (
-     *     <div>
-     *       <span>
-     *         {store.count} / {store.doubleCount}
-     *       </span>
-     *       <button onClick$={() => store.count++}>+</button>
-     *     </div>
-     *   ));
-     * });
-     * ```
-     *
-     *
-     * See: `useWatch`
-     *
-     * @public
-     */
-    <T extends {}>(obj: T): T;
-}
-
 declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
@@ -1385,107 +1321,9 @@ declare type On$Props<T extends {}> = {
 };
 
 /**
- * Register a listener on the current component's host element.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
- *
- * See: `on`, `onWindow`, `onDocument`.
- *
- * @public
- */
-export declare function on(event: string, eventFn: QRL<() => void>): void;
-
-/**
- * Register a listener on `document`.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
- *
- * See: `on`, `onWindow`, `onDocument`.
- *
- * @public
- */
-export declare function onDocument(event: string, eventFn: QRL<() => void>): void;
-
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-export declare const onPause$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-export declare function onPauseQrl(dehydrateFn: QRL<() => void>): void;
-
-/**
  * @public
  */
 export declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null>;
-
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * Invoked when the component's state is re-resumed from serialization. This allows the
- * component to do any work to re-activate itself.
- *
- * @public
- */
-export declare const onResume$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to resume even if no user interaction has taken place.
- *
- * @public
- */
-export declare function onResumeQrl(resumeFn: QRL<() => void>): void;
-
-/**
- * A lazy-loadable reference to a component's destroy hook.
- *
- * Invoked when the component is destroyed (removed from render tree).
- *
- * @public
- */
-export declare const onUnmount$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's destroy hook.
- *
- * Invoked when the component is destroyed (removed from render tree).
- *
- * @public
- */
-export declare function onUnmountQrl(unmountFn: QRL<() => void>): void;
-
-/**
- * Register a listener on `window`.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
- *
- * See: `on`, `onWindow`, `onDocument`.
- *
- * @public
- */
-export declare function onWindow(event: string, eventFn: QRL<() => void>): void;
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -2366,6 +2204,79 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
+/**
+ * Used to signal to Qwik which state should be watched for changes.
+ *
+ * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+ * state objects in a read proxy which signals to Qwik which properties should be watched for
+ * changes. A change to any of the properties cause the `watchFn` to re-run.
+ *
+ * ## Example
+ *
+ * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
+ * Any changes to the `state.count` property will cause the `watchFn` to re-run.
+ *
+ * ```typescript
+ * export const MyComp = component$(() => {
+ *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   useWatch$((obs) => {
+ *     store.doubleCount = 2 * obs(store).count;
+ *   });
+ *   return $(() => (
+ *     <div>
+ *       <span>
+ *         {store.count} / {store.doubleCount}
+ *       </span>
+ *       <button onClick$={() => store.count++}>+</button>
+ *     </div>
+ *   ));
+ * });
+ * ```
+ *
+ *
+ * See: `useWatch`
+ *
+ * @public
+ */
+export declare interface Tracker {
+    /**
+     * Used to signal to Qwik which state should be watched for changes.
+     *
+     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+     * state objects in a read proxy which signals to Qwik which properties should be watched for
+     * changes. A change to any of the properties cause the `watchFn` to re-run.
+     *
+     * ## Example
+     *
+     * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
+     * Any changes to the `state.count` property will cause the `watchFn` to re-run.
+     *
+     * ```typescript
+     * export const MyComp = component$(() => {
+     *   const store = useStore({ count: 0, doubleCount: 0 });
+     *   useWatch$((obs) => {
+     *     store.doubleCount = 2 * obs(store).count;
+     *   });
+     *   return $(() => (
+     *     <div>
+     *       <span>
+     *         {store.count} / {store.doubleCount}
+     *       </span>
+     *       <button onClick$={() => store.count++}>+</button>
+     *     </div>
+     *   ));
+     * });
+     * ```
+     *
+     *
+     * See: `useWatch`
+     *
+     * @public
+     */
+    <T extends {}>(obj: T): T;
+    <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
+}
+
 declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
@@ -2377,22 +2288,35 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
+export declare function untrack<T>(proxy: T): T;
+
+/**
+ * @alpha
+ */
 export declare function unwrapSubscriber<T extends {}>(obj: T): any;
+
+/**
+ * A lazy-loadable reference to a component's destroy hook.
+ *
+ * Invoked when the component is destroyed (removed from render tree).
+ *
+ * @public
+ */
+export declare const useCleanup$: (first: () => void) => void;
+
+/**
+ * A lazy-loadable reference to a component's destroy hook.
+ *
+ * Invoked when the component is destroyed (removed from render tree).
+ *
+ * @public
+ */
+export declare function useCleanupQrl(unmountFn: QRL<() => void>): void;
 
 /**
  * @public
  */
 export declare function useDocument(): Document;
-
-/**
- * @alpha
- */
-export declare const useEffect$: (first: (obs: Observer) => void | (() => void)) => void;
-
-/**
- * @alpha
- */
-export declare function useEffectQrl(watchQrl: QRL<(obs: Observer) => void | (() => void)>): void;
 
 /**
  * Retrieves the Host Element of the current component.
@@ -2417,9 +2341,89 @@ export declare function useHostElement(): Element;
 export declare function useLexicalScope<VARS extends any[]>(): VARS;
 
 /**
+ * Register a listener on the current component's host element.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX.
+ *
+ * See: `on`, `onWindow`, `onDocument`.
+ *
+ * @public
+ */
+export declare function useOn(event: string, eventFn: QRL<() => void>): void;
+
+/**
+ * Register a listener on `document`.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX.
+ *
+ * See: `on`, `onWindow`, `onDocument`.
+ *
+ * @public
+ */
+export declare function useOnDocument(event: string, eventFn: QRL<() => void>): void;
+
+/**
+ * Register a listener on `window`.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX.
+ *
+ * See: `on`, `onWindow`, `onDocument`.
+ *
+ * @public
+ */
+export declare function useOnWindow(event: string, eventFn: QRL<() => void>): void;
+
+/**
+ * A lazy-loadable reference to a component's on dehydrate hook.
+ *
+ * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
+ * the component to do last-minute clean-up before its state is serialized.
+ *
+ * Typically used with transient state.
+ *
+ * @public
+ */
+export declare const usePause$: (first: () => void) => void;
+
+/**
+ * A lazy-loadable reference to a component's on dehydrate hook.
+ *
+ * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
+ * the component to do last-minute clean-up before its state is serialized.
+ *
+ * Typically used with transient state.
+ *
+ * @public
+ */
+export declare function usePauseQrl(dehydrateFn: QRL<() => void>): void;
+
+/**
  * @alpha
  */
 export declare function useRef<T = Element>(current?: T): Ref<T>;
+
+/**
+ * A lazy-loadable reference to a component's on resume hook.
+ *
+ * Invoked when the component's state is re-resumed from serialization. This allows the
+ * component to do any work to re-activate itself.
+ *
+ * @public
+ */
+export declare const useResume$: (first: () => void) => void;
+
+/**
+ * A lazy-loadable reference to a component's on resume hook.
+ *
+ * The hook is eagerly invoked when the application resumes on the client. Because it is called
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
+ *
+ * @public
+ */
+export declare function useResumeQrl(resumeFn: QRL<() => void>): void;
 
 /**
  * @alpha
@@ -2450,7 +2454,7 @@ export declare function useScopedStylesQrl(styles: QRL<string>): void;
  *
  * @public
  */
-export declare function useStore<STATE extends {}>(initialState: STATE): STATE;
+export declare function useStore<STATE extends object>(initialState: STATE | (() => STATE)): STATE;
 
 /**
  * Refer to component styles.
@@ -2512,7 +2516,17 @@ export declare function useSubscriber<T extends {}>(obj: T): T;
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare const useWatch$: (first: (obs: Observer) => void | (() => void)) => void;
+export declare const useWatch$: (first: WatchFn) => void;
+
+/**
+ * @alpha
+ */
+export declare const useWatchEffect$: (first: WatchFn) => void;
+
+/**
+ * @alpha
+ */
+export declare function useWatchEffectQrl(watchQrl: QRL<WatchFn>): void;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -2555,7 +2569,7 @@ export declare const useWatch$: (first: (obs: Observer) => void | (() => void)) 
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare function useWatchQrl(watchQrl: QRL<(obs: Observer) => void | (() => void)>): void;
+export declare function useWatchQrl(watchQrl: QRL<WatchFn>): void;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -2579,13 +2593,15 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 
 declare interface WatchDescriptor {
     isConnected: boolean;
-    watchQrl: QRL<(obs: Observer) => void | (() => void)>;
+    watchQrl: QRL<WatchFn>;
     hostElement: Element;
     mode: WatchMode;
     destroy?: NoSerialize<() => void>;
     running?: NoSerialize<Promise<WatchDescriptor>>;
     dirty: boolean;
 }
+
+declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
 
 declare const enum WatchMode {
     Watch = 0,
