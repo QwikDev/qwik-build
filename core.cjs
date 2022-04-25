@@ -2722,7 +2722,7 @@ function unwrapProxy(proxy) {
     return proxy;
 }
 function wrap(value, proxyMap) {
-    if (value && typeof value === 'object') {
+    if (value && typeof value === 'object' && !(NOSERIALIZE in value)) {
         if (isQrl(value)) {
             return value;
         }
