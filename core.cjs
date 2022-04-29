@@ -1912,7 +1912,7 @@ const getSlots = (componentCtx, hostElm) => {
     const slotRef = hostElm.getAttribute('q:sref');
     const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
     const newSlots = componentCtx?.slots ?? EMPTY_ARRAY;
-    const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
+    const t = Array.from(hostElm.children).filter(isSlotTemplate);
     // Map slots
     for (const elm of existingSlots) {
         slots[elm.getAttribute('name') ?? ''] = elm;
@@ -2722,7 +2722,7 @@ function unwrapProxy(proxy) {
     return proxy;
 }
 function wrap(value, proxyMap) {
-    if (value && typeof value === 'object' && !(NOSERIALIZE in value)) {
+    if (value && typeof value === 'object') {
         if (isQrl(value)) {
             return value;
         }

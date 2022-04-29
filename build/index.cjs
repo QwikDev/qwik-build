@@ -16,7 +16,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/build/index.ts
+// packages/qwik/src/build/index.ts
 var build_exports = {};
 __export(build_exports, {
   isBrowser: () => isBrowser,

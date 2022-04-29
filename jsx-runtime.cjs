@@ -16,7 +16,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/jsx-runtime.ts
+// packages/qwik/src/jsx-runtime.ts
 var jsx_runtime_exports = {};
 __export(jsx_runtime_exports, {
   Fragment: () => import_qwik.Fragment,

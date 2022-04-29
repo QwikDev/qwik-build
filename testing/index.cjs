@@ -48,7 +48,7 @@ var __copyProps = (to, from, except, desc) => {
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/testing/index.ts
+// packages/qwik/src/testing/index.ts
 var testing_exports = {};
 __export(testing_exports, {
   ElementFixture: () => ElementFixture,
@@ -62,19 +62,19 @@ __export(testing_exports, {
 });
 module.exports = __toCommonJS(testing_exports);
 
-// src/testing/document.ts
+// packages/qwik/src/testing/document.ts
 var import_server = require("../server.cjs");
 
-// src/testing/platform.ts
+// packages/qwik/src/testing/platform.ts
 var import_qwik = require("../core.cjs");
 var import_fs = require("fs");
 var import_url = require("url");
 
-// src/core/util/qdev.ts
+// packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
 
-// src/core/util/log.ts
+// packages/qwik/src/core/util/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
 var logError = (message, ...optionalParams) => {
   console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
@@ -85,7 +85,7 @@ var logDebug = (message, ...optionalParams) => {
   }
 };
 
-// src/core/assert/assert.ts
+// packages/qwik/src/core/assert/assert.ts
 function assertDefined(value, text) {
   if (qDev) {
     if (value != null)
@@ -107,13 +107,13 @@ function newError(text) {
   return error;
 }
 
-// src/core/util/markers.ts
+// packages/qwik/src/core/util/markers.ts
 var QHostAttr = "q:host";
 var QObjAttr = "q:obj";
 var QContainerSelector = "[q\\:container]";
 var RenderEvent = "qRender";
 
-// src/core/util/dom.ts
+// packages/qwik/src/core/util/dom.ts
 function getDocument(node) {
   if (typeof document !== "undefined") {
     return document;
@@ -129,7 +129,7 @@ function getDocument(node) {
   return doc;
 }
 
-// src/core/use/use-core.ts
+// packages/qwik/src/core/use/use-core.ts
 var CONTAINER = Symbol("container");
 var _context;
 function tryGetInvokeContext() {
@@ -214,7 +214,7 @@ function getContainer(el) {
   return container;
 }
 
-// src/testing/platform.ts
+// packages/qwik/src/testing/platform.ts
 function createPlatform(document2) {
   if (!document2 || document2.nodeType !== 9) {
     throw new Error(`Invalid Document implementation`);
@@ -311,7 +311,7 @@ function getTestPlatform(document2) {
 }
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
-// src/testing/document.ts
+// packages/qwik/src/testing/document.ts
 function createWindow(opts = {}) {
   const win = (0, import_server.createWindow)(opts);
   setTestPlatform(win.document);
@@ -321,7 +321,7 @@ function createDocument(opts = {}) {
   return createWindow(opts).document;
 }
 
-// src/core/util/types.ts
+// packages/qwik/src/core/util/types.ts
 function isHtmlElement(node) {
   return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
 }
@@ -338,7 +338,7 @@ var NodeType = /* @__PURE__ */ ((NodeType2) => {
   return NodeType2;
 })(NodeType || {});
 
-// src/core/error/stringify.ts
+// packages/qwik/src/core/error/stringify.ts
 function stringifyDebug(value) {
   if (value == null)
     return String(value);
@@ -375,7 +375,7 @@ function stringifyElement(element) {
   return html + ">";
 }
 
-// src/core/error/error.ts
+// packages/qwik/src/core/error/error.ts
 function qError(code, ...args) {
   if (qDev) {
     const text = codeToText(code);
@@ -455,7 +455,7 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
-// src/core/util/promises.ts
+// packages/qwik/src/core/util/promises.ts
 function isPromise(value) {
   return value instanceof Promise;
 }
@@ -463,7 +463,7 @@ var then = (promise, thenFn) => {
   return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 };
 
-// src/core/util/flyweight.ts
+// packages/qwik/src/core/util/flyweight.ts
 var EMPTY_ARRAY = [];
 var EMPTY_OBJ = {};
 if (qDev) {
@@ -471,7 +471,7 @@ if (qDev) {
   Object.freeze(EMPTY_OBJ);
 }
 
-// src/core/platform/platform.ts
+// packages/qwik/src/core/platform/platform.ts
 var createPlatform2 = (doc) => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
@@ -521,7 +521,7 @@ var getPlatform2 = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// src/core/import/qrl.ts
+// packages/qwik/src/core/import/qrl.ts
 var runtimeSymbolId = 0;
 var RUNTIME_QRL = "/runtimeQRL";
 function toInternalQRL(qrl) {
@@ -576,7 +576,7 @@ function stringifyQRL(qrl, opts = {}) {
   return qrlString;
 }
 
-// src/core/import/qrl-class.ts
+// packages/qwik/src/core/import/qrl-class.ts
 function isQrl(value) {
   return value instanceof QRLInternal;
 }
@@ -630,12 +630,12 @@ var QRL = class {
 var QRLInternal = QRL;
 var FIND_EXT = /\?[\w=&]+$/;
 
-// src/core/util/case.ts
+// packages/qwik/src/core/util/case.ts
 function fromCamelToKebabCase(text) {
   return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
-// src/core/import/qrl.public.ts
+// packages/qwik/src/core/import/qrl.public.ts
 function $(expression) {
   return runtimeQrl(expression);
 }
@@ -645,7 +645,7 @@ function implicit$FirstArg(fn) {
   };
 }
 
-// src/core/render/cursor.ts
+// packages/qwik/src/core/render/cursor.ts
 var RefSymbol = Symbol();
 var handleStyle = (ctx, elm, _, newValue) => {
   setAttribute(ctx, elm, "style", stringifyClassOrStyle(newValue, false));
@@ -741,14 +741,14 @@ function stringifyClassOrStyle(obj, isClass) {
   return String(obj);
 }
 
-// src/core/use/use-host-element.public.ts
+// packages/qwik/src/core/use/use-host-element.public.ts
 function useHostElement() {
   const element = getInvokeContext().hostElement;
   assertDefined(element);
   return element;
 }
 
-// src/core/use/use-store.public.ts
+// packages/qwik/src/core/use/use-store.public.ts
 function useSequentialScope() {
   const ctx = getInvokeContext();
   assertEqual(ctx.event, RenderEvent);
@@ -766,7 +766,7 @@ function useSequentialScope() {
   return [void 0, updateFn];
 }
 
-// src/core/watch/watch.public.ts
+// packages/qwik/src/core/watch/watch.public.ts
 function useWatchQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
@@ -847,10 +847,10 @@ function runWatch(watch) {
   return promise;
 }
 
-// src/core/render/notify-render.ts
+// packages/qwik/src/core/render/notify-render.ts
 var SCHEDULE = Symbol("Render state");
 
-// src/core/object/q-object.ts
+// packages/qwik/src/core/object/q-object.ts
 var ProxyMapSymbol = Symbol("ProxyMapSymbol");
 var QOjectAllSymbol = ":all:";
 var QOjectSubsSymbol = ":subs:";
@@ -869,7 +869,7 @@ function noSerialize(input) {
   return input;
 }
 
-// src/core/props/props-obj-map.ts
+// packages/qwik/src/core/props/props-obj-map.ts
 function newQObjectMap(element) {
   const array = [];
   let added = element.hasAttribute(QObjAttr);
@@ -897,7 +897,7 @@ function newQObjectMap(element) {
   };
 }
 
-// src/core/props/props.ts
+// packages/qwik/src/core/props/props.ts
 Error.stackTraceLimit = 9999;
 var Q_CTX = "__ctx__";
 function getContext(element) {
@@ -918,7 +918,7 @@ function getContext(element) {
   return ctx;
 }
 
-// src/testing/util.ts
+// packages/qwik/src/testing/util.ts
 var import_url2 = require("url");
 function toFileUrl(filePath) {
   return (0, import_url2.pathToFileURL)(filePath).href;
@@ -943,7 +943,7 @@ function appendConfig(doc, key, value) {
 }
 var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
 
-// src/testing/element-fixture.ts
+// packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
     this.window = createWindow();
@@ -960,7 +960,7 @@ var ElementFixture = class {
   }
 };
 
-// src/testing/jsx.ts
+// packages/qwik/src/testing/jsx.ts
 function toDOM(jsx, parent) {
   const doc = parent ? parent.ownerDocument : createDocument();
   let element = doc.createElement(jsx.type);
