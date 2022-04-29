@@ -1810,7 +1810,7 @@ declare interface RenderContext {
 declare interface RenderingState {
     watchRunning: Set<Promise<WatchDescriptor>>;
     watchNext: Set<WatchDescriptor>;
-    watchStagging: Set<WatchDescriptor>;
+    watchStaging: Set<WatchDescriptor>;
     hostsNext: Set<Element>;
     hostsStaging: Set<Element>;
     hostsRendering: Set<Element> | undefined;

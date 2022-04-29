@@ -2136,7 +2136,7 @@ function getRenderingState(containerEl) {
   if (!set) {
     containerEl[SCHEDULE] = set = {
       watchNext: /* @__PURE__ */ new Set(),
-      watchStagging: /* @__PURE__ */ new Set(),
+      watchStaging: /* @__PURE__ */ new Set(),
       watchRunning: /* @__PURE__ */ new Set(),
       hostsNext: /* @__PURE__ */ new Set(),
       hostsStaging: /* @__PURE__ */ new Set(),
@@ -2200,13 +2200,14 @@ async function postRendering(containerEl, state, ctx) {
     promises.push(runWatch(watch));
   });
   state.watchNext.clear();
-  state.watchStagging.forEach((watch) => {
+  state.watchStaging.forEach((watch) => {
     if (ctx.hostElements.has(watch.hostElement)) {
       promises.push(runWatch(watch));
     } else {
       state.watchNext.add(watch);
     }
   });
+  state.watchStaging.clear();
   await Promise.all(promises);
   state.hostsStaging.forEach((el) => {
     state.hostsNext.add(el);
@@ -2430,7 +2431,7 @@ function notifyWatch(watch) {
   } else {
     const activeRendering = state.hostsRendering !== void 0;
     if (activeRendering) {
-      state.watchStagging.add(watch);
+      state.watchStaging.add(watch);
     } else {
       state.watchNext.add(watch);
       scheduleFrame(containerEl, state);

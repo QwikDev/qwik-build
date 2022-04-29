@@ -2577,7 +2577,7 @@ function getRenderingState(containerEl) {
     if (!set) {
         containerEl[SCHEDULE] = set = {
             watchNext: new Set(),
-            watchStagging: new Set(),
+            watchStaging: new Set(),
             watchRunning: new Set(),
             hostsNext: new Set(),
             hostsStaging: new Set(),
@@ -2643,7 +2643,7 @@ async function postRendering(containerEl, state, ctx) {
         promises.push(runWatch(watch));
     });
     state.watchNext.clear();
-    state.watchStagging.forEach((watch) => {
+    state.watchStaging.forEach((watch) => {
         if (ctx.hostElements.has(watch.hostElement)) {
             promises.push(runWatch(watch));
         }
@@ -2651,6 +2651,7 @@ async function postRendering(containerEl, state, ctx) {
             state.watchNext.add(watch);
         }
     });
+    state.watchStaging.clear();
     // Wait for all promises
     await Promise.all(promises);
     // Move elements from staging to nextRender
@@ -2905,7 +2906,7 @@ function notifyWatch(watch) {
     else {
         const activeRendering = state.hostsRendering !== undefined;
         if (activeRendering) {
-            state.watchStagging.add(watch);
+            state.watchStaging.add(watch);
         }
         else {
             state.watchNext.add(watch);
