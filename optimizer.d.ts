@@ -3,6 +3,7 @@ declare interface BasePluginOptions {
     outClientDir?: string;
     outServerDir?: string;
     entryStrategy?: EntryStrategy;
+    forceFullBuild?: boolean;
     minify?: MinifyMode;
     srcRootInput?: string | string[];
     srcEntryServerInput?: string;
@@ -199,12 +200,12 @@ export declare interface QwikRollupPluginOptions extends BasePluginOptions {
 /**
  * @alpha
  */
-export declare function qwikVite(qwikViteOpts?: QwikViteOptions): any;
+export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 
 /**
  * @alpha
  */
-export declare interface QwikViteOptions extends BasePluginOptions {
+export declare interface QwikVitePluginOptions extends BasePluginOptions {
     optimizerOptions?: OptimizerOptions;
     srcEntryDevInput?: string;
 }
@@ -258,7 +259,6 @@ export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browser
  * @alpha
  */
 export declare interface TransformFsOptions extends TransformOptions {
-    rootDir: string;
 }
 
 /**
@@ -284,7 +284,6 @@ export declare interface TransformModuleInput {
  * @alpha
  */
 export declare interface TransformModulesOptions extends TransformOptions {
-    rootDir: string;
     input: TransformModuleInput[];
 }
 
@@ -292,6 +291,7 @@ export declare interface TransformModulesOptions extends TransformOptions {
  * @alpha
  */
 declare interface TransformOptions {
+    rootDir: string;
     entryStrategy?: EntryStrategy;
     minify?: MinifyMode;
     sourceMaps?: boolean;

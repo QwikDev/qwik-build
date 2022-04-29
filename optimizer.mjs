@@ -630,6 +630,7 @@ function createPlugin(optimizerOptions = {}) {
     outClientDir: null,
     outServerDir: null,
     isDevBuild: true,
+    forceFullBuild: false,
     buildMode: "client",
     entryStrategy: null,
     minify: null,
@@ -659,6 +660,7 @@ function createPlugin(optimizerOptions = {}) {
     } : opts.entryStrategy = {
       type: "single"
     });
+    "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type;
     updatedOpts.minify && (opts.minify = updatedOpts.minify);
     "minify" !== opts.minify && "none" !== opts.minify && "simplify" !== opts.minify && (opts.isDevBuild ? opts.minify = "none" : opts.minify = "minify");
     "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
@@ -714,10 +716,8 @@ function createPlugin(optimizerOptions = {}) {
     }
   };
   const buildStart = async () => {
-    var _a;
-    const isFullBuild = "hook" !== (null == (_a = opts.entryStrategy) ? void 0 : _a.type);
-    log("buildStart()", opts.buildMode, isFullBuild ? "full build" : "isolated build");
-    if (isFullBuild) {
+    log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build");
+    if (opts.forceFullBuild) {
       const optimizer2 = await getOptimizer();
       outputCount = 0;
       let rootDir = "/";
@@ -725,7 +725,13 @@ function createPlugin(optimizerOptions = {}) {
         rootDir = opts.srcDir;
         log("buildStart() srcDir", opts.srcDir);
       } else if (Array.isArray(opts.srcInputs)) {
-        optimizer2.sys.getInputFiles = async () => opts.srcInputs;
+        optimizer2.sys.getInputFiles = async rootDir2 => opts.srcInputs.map((i => {
+          const relInput = {
+            path: optimizer2.sys.path.relative(rootDir2, i.path),
+            code: i.code
+          };
+          return relInput;
+        }));
         log(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
       }
       const transformOpts = {
@@ -788,7 +794,7 @@ function createPlugin(optimizerOptions = {}) {
         code: getBuildTimeModule(opts)
       };
     }
-    "hook" !== opts.entryStrategy.type && (id2 = forceJSExtension(optimizer2.sys.path, id2));
+    opts.forceFullBuild && (id2 = forceJSExtension(optimizer2.sys.path, id2));
     const transformedModule = transformedOutputs.get(id2);
     if (transformedModule) {
       log("load()", "Found", id2);
@@ -801,7 +807,7 @@ function createPlugin(optimizerOptions = {}) {
     return null;
   };
   const transform = async (code, id2) => {
-    if ("hook" !== opts.entryStrategy.type) {
+    if (opts.forceFullBuild) {
       return null;
     }
     const pregenerated = transformedOutputs.get(id2);
@@ -835,6 +841,7 @@ function createPlugin(optimizerOptions = {}) {
       });
       diagnosticsCallback(newOutput.diagnostics, optimizer2);
       results.set(pathId, newOutput);
+      transformedOutputs.clear();
       for (const [id3, output] of results.entries()) {
         const justChanged = newOutput === output;
         const dir2 = optimizer2.sys.path.dirname(id3);
@@ -982,6 +989,9 @@ function qwikRollup(qwikRollupOpts = {}) {
   const qwikPlugin = createPlugin(qwikRollupOpts.optimizerOptions);
   const rollupPlugin = {
     name: "rollup-plugin-qwik",
+    api: {
+      getOptimizer: () => qwikPlugin.getOptimizer()
+    },
     async options(inputOpts) {
       inputOpts.onwarn = (warning, warn) => {
         if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -1001,10 +1011,10 @@ function qwikRollup(qwikRollupOpts = {}) {
     outputOptions(outputOpts) {
       const opts = qwikPlugin.getOptions();
       if ("ssr" === opts.buildMode) {
-        outputOpts.dir || (outputOpts.dir = opts.outClientDir);
+        outputOpts.dir || (outputOpts.dir = opts.outServerDir);
         outputOpts.format || (outputOpts.format = "cjs");
       } else {
-        outputOpts.dir || (outputOpts.dir = opts.outServerDir);
+        outputOpts.dir || (outputOpts.dir = opts.outClientDir);
         outputOpts.format || (outputOpts.format = "es");
       }
       "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
@@ -1049,18 +1059,24 @@ function qwikRollup(qwikRollupOpts = {}) {
           });
         }
         const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
-        "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(symbolsEntryMap) : this.emitFile({
+        "function" === typeof opts.symbolsOutput && await opts.symbolsOutput(symbolsEntryMap);
+        this.emitFile({
           type: "asset",
           fileName: SYMBOLS_MANIFEST_FILENAME,
           source: JSON.stringify(symbolsEntryMap, null, 2)
         });
         "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-      } else if ("ssr" === opts.buildMode && opts.symbolsInput) {
+      } else if ("ssr" === opts.buildMode && opts.symbolsInput && "object" === typeof opts.symbolsInput) {
         const symbolsStr = JSON.stringify(opts.symbolsInput);
         for (const fileName in rollupBundle) {
           const b = rollupBundle[fileName];
           "chunk" === b.type && (b.code = qwikPlugin.updateSymbolsEntryMap(symbolsStr, b.code));
         }
+        this.emitFile({
+          type: "asset",
+          fileName: SYMBOLS_MANIFEST_FILENAME,
+          source: JSON.stringify(opts.symbolsInput, null, 2)
+        });
       }
     }
   };
@@ -1084,6 +1100,8 @@ var createRollupError = (optimizer, diagnostic) => {
 };
 
 var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob([\'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));\'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),p=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"q-visible",new CustomEvent("qVisible",{bubbles:!1,detail:r})))}));new MutationObserver((e=>{for(const r of e)r.target.hasAttribute("on:q-visible")&&t.observe(r.target)})).observe(document.body,{attributeFilter:["on:q-visible"],subtree:!0}),e.querySelectorAll("[on\\\\:q-visible]").forEach((e=>t.observe(e)))}},d=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(d);else for(const t in e)t.startsWith("on")&&d(t.slice(2))}e.addEventListener("readystatechange",p),p()}})(document);';
+
+var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const qrlPrefetch = element => {\n            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ \'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));\' ], {\n                type: "text/javascript"\n            }))));\n            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\\n").map((qrl => qrlResolver(element, qrl) + "")));\n            return prefetchWorker;\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "q-resume", new CustomEvent("qResume"));\n                doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);\n                        }\n                    })).observe(document.body, {\n                        attributeFilter: [ "on:q-visible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:q-visible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
 
 function qwikVite(qwikViteOpts = {}) {
   let hasValidatedSource = false;
@@ -1116,6 +1134,18 @@ function qwikVite(qwikViteOpts = {}) {
       const optimizer = await qwikPlugin.getOptimizer();
       const opts = await qwikPlugin.normalizeOptions(pluginOpts);
       srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
+      let assetFileNames = "build/q-[hash].[ext]";
+      let entryFileNames = "build/q-[hash].js";
+      let chunkFileNames = "build/q-[hash].js";
+      if ("ssr" === opts.buildMode) {
+        assetFileNames = "[name].[ext]";
+        entryFileNames = "[name].js";
+        chunkFileNames = "[name].js";
+      } else if (opts.isDevBuild) {
+        assetFileNames = "build/[name].[ext]";
+        entryFileNames = "build/[name].js";
+        chunkFileNames = "build/[name].js";
+      }
       const updatedViteConfig = {
         esbuild: {
           include: /\.js$/
@@ -1127,8 +1157,9 @@ function qwikVite(qwikViteOpts = {}) {
         build: {
           rollupOptions: {
             output: {
-              chunkFileNames: "build/q-[hash].js",
-              assetFileNames: "build/q-[hash].[ext]"
+              assetFileNames: assetFileNames,
+              entryFileNames: entryFileNames,
+              chunkFileNames: chunkFileNames
             },
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -1191,7 +1222,8 @@ function qwikVite(qwikViteOpts = {}) {
         return null;
       }
       if (isClientOnly && id === VITE_CLIENT_MODULE) {
-        return getViteDevModule();
+        const opts = qwikPlugin.getOptions();
+        return getViteDevModule(opts);
       }
       return qwikPlugin.load(id);
     },
@@ -1218,7 +1250,8 @@ function qwikVite(qwikViteOpts = {}) {
           });
         }
         const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
-        "function" === typeof opts.symbolsOutput ? await opts.symbolsOutput(symbolsEntryMap) : this.emitFile({
+        "function" === typeof opts.symbolsOutput && await opts.symbolsOutput(symbolsEntryMap);
+        this.emitFile({
           type: "asset",
           fileName: SYMBOLS_MANIFEST_FILENAME,
           source: JSON.stringify(symbolsEntryMap, null, 2)
@@ -1234,12 +1267,17 @@ function qwikVite(qwikViteOpts = {}) {
             symbolsInput = JSON.parse(qSymbolsContent);
           } catch (e) {}
         }
-        if (symbolsInput) {
+        if (symbolsInput && "object" === typeof symbolsInput) {
           const symbolsStr = JSON.stringify(symbolsInput);
           for (const fileName in rollupBundle) {
             const b = rollupBundle[fileName];
             "chunk" === b.type && (b.code = qwikPlugin.updateSymbolsEntryMap(symbolsStr, b.code));
           }
+          this.emitFile({
+            type: "asset",
+            fileName: SYMBOLS_MANIFEST_FILENAME,
+            source: JSON.stringify(symbolsInput, null, 2)
+          });
         }
       }
     },
@@ -1358,8 +1396,9 @@ function updateEntryDev(code) {
   return code;
 }
 
-function getViteDevModule() {
-  return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n  \n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${JSON.stringify(QWIK_LOADER_DEFAULT_MINIFIED)};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
+function getViteDevModule(opts) {
+  const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
+  return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n  \n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
 }
 
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
