@@ -100,7 +100,7 @@ export declare interface ManualEntryStrategy {
 /**
  * @alpha
  */
-export declare type MinifyMode = 'minify' | 'simplify' | 'none';
+export declare type MinifyMode = 'simplify' | 'none';
 
 /**
  * @alpha

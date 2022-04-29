@@ -746,7 +746,7 @@ globalThis.qwikOptimizer = function(module) {
         type: "single"
       });
       updatedOpts.minify && (opts.minify = updatedOpts.minify);
-      "minify" !== opts.minify && "none" !== opts.minify && "simplify" !== opts.minify && (opts.isDevBuild ? opts.minify = "none" : opts.minify = "minify");
+      "simplify" !== opts.minify && "none" !== opts.minify && (opts.isDevBuild ? opts.minify = "none" : opts.minify = "simplify");
       "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
       "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
       opts.rootDir = optimizer2.sys.path.resolve(optimizer2.sys.cwd(), opts.rootDir);

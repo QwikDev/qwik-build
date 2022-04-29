@@ -542,9 +542,10 @@ function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
 function stringifyQRL(qrl, opts = {}) {
   const qrl_ = toInternalQRL(qrl);
   const symbol = qrl_.symbol;
+  const refSymbol = qrl_.refSymbol ?? symbol;
   const platform = opts.platform;
   const element = opts.element;
-  const chunk = platform ? platform.chunkForSymbol(symbol) ?? qrl_.chunk : qrl_.chunk;
+  const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
   const parts = [chunk];
   if (symbol && symbol !== "default") {
     parts.push("#", symbol);
@@ -645,7 +646,9 @@ var QRL = class {
     };
   }
   copy() {
-    return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    copy.refSymbol = this.refSymbol;
+    return copy;
   }
   invoke(...args) {
     const fn = this.invokeFn();
@@ -1945,6 +1948,7 @@ function useEffectQrl(watchQrl, opts) {
     const run = opts?.run;
     if (run) {
       const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
+      watchHandler.refSymbol = watchQrl.symbol;
       if (opts?.run === "load") {
         useResumeQrl(watchHandler);
       } else {
@@ -1970,6 +1974,7 @@ function useClientEffectQrl(watchQrl, opts) {
     getContext(hostElement).refMap.add(watch2);
     if (isServer) {
       const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
+      watchHandler.refSymbol = watchQrl.symbol;
       if (opts?.run === "load") {
         useResumeQrl(watchHandler);
       } else {
@@ -1983,7 +1988,10 @@ function useServerQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     setWatch(true);
-    useWaitOn(watchQrl.invoke());
+    const isServer = getPlatform2(useDocument()).isServer;
+    if (isServer) {
+      useWaitOn(watchQrl.invoke());
+    }
   }
 }
 var useServer$ = implicit$FirstArg(useServerQrl);
