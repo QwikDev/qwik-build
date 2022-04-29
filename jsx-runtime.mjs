@@ -1,4 +1,4 @@
-// src/jsx-runtime.ts
+// packages/qwik/src/jsx-runtime.ts
 import { jsx, jsxs, jsxDEV, Fragment } from "./core.mjs";
 export {
   Fragment,
