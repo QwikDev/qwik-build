@@ -749,7 +749,7 @@ function createPlugin(optimizerOptions = {}) {
       results.set("@buildStart", result);
     }
   };
-  const resolveId = async (id2, importer) => {
+  const resolveId = async (id2, importer, _resolveIdOpts = {}) => {
     if (id2 === QWIK_BUILD_ID) {
       log("resolveId()", "Resolved", QWIK_BUILD_ID);
       return {
@@ -784,12 +784,12 @@ function createPlugin(optimizerOptions = {}) {
     }
     return null;
   };
-  const load = async id2 => {
+  const load = async (id2, loadOpts = {}) => {
     const optimizer2 = await getOptimizer();
     if (id2 === QWIK_BUILD_ID) {
       log("load()", QWIK_BUILD_ID, opts.buildMode);
       return {
-        code: getBuildTimeModule(opts)
+        code: getBuildTimeModule(opts, loadOpts)
       };
     }
     opts.forceFullBuild && (id2 = forceJSExtension(optimizer2.sys.path, id2));
@@ -931,8 +931,9 @@ function createPlugin(optimizerOptions = {}) {
   };
 }
 
-function getBuildTimeModule(opts) {
-  return `\nexport const isServer = ${"ssr" === opts.buildMode};\nexport const isBrowser = ${"client" === opts.buildMode};\n`;
+function getBuildTimeModule(pluginOpts, loadOpts) {
+  const isServer = "ssr" === pluginOpts.buildMode || !!loadOpts.ssr;
+  return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\n`;
 }
 
 function parseId(originalId) {
@@ -1203,16 +1204,16 @@ function qwikVite(qwikViteOpts = {}) {
       }));
       await qwikPlugin.buildStart();
     },
-    resolveId(id, importer) {
+    resolveId(id, importer, resolveIdOpts) {
       if (id.startsWith("\0")) {
         return null;
       }
       if (isClientOnly && id === VITE_CLIENT_MODULE) {
         return id;
       }
-      return qwikPlugin.resolveId(id, importer);
+      return qwikPlugin.resolveId(id, importer, resolveIdOpts);
     },
-    async load(id) {
+    async load(id, loadOpts) {
       if (id.startsWith("\0")) {
         return null;
       }
@@ -1220,7 +1221,7 @@ function qwikVite(qwikViteOpts = {}) {
         const opts = qwikPlugin.getOptions();
         return getViteDevModule(opts);
       }
-      return qwikPlugin.load(id);
+      return qwikPlugin.load(id, loadOpts);
     },
     transform(code, id) {
       if (id.startsWith("\0")) {
