@@ -441,7 +441,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.19-1"
+  qwik: "0.0.19-2"
 };
 
 async function getSystem() {
@@ -655,10 +655,8 @@ function createPlugin(optimizerOptions = {}) {
     updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
       ...updatedOpts.entryStrategy
     });
-    opts.entryStrategy || (opts.isDevBuild ? opts.entryStrategy = {
+    opts.entryStrategy && !opts.isDevBuild || (opts.entryStrategy = {
       type: "hook"
-    } : opts.entryStrategy = {
-      type: "single"
     });
     "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type;
     updatedOpts.minify && (opts.minify = updatedOpts.minify);
@@ -1134,17 +1132,19 @@ function qwikVite(qwikViteOpts = {}) {
       const optimizer = await qwikPlugin.getOptimizer();
       const opts = await qwikPlugin.normalizeOptions(pluginOpts);
       srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
-      let assetFileNames = "build/q-[hash].[ext]";
-      let entryFileNames = "build/q-[hash].js";
-      let chunkFileNames = "build/q-[hash].js";
+      const outputOptions = {
+        assetFileNames: "build/q-[hash].[ext]",
+        entryFileNames: "build/q-[hash].js",
+        chunkFileNames: "build/q-[hash].js"
+      };
       if ("ssr" === opts.buildMode) {
-        assetFileNames = "[name].[ext]";
-        entryFileNames = "[name].js";
-        chunkFileNames = "[name].js";
+        outputOptions.assetFileNames = "[name].[ext]";
+        outputOptions.entryFileNames = "[name].js";
+        outputOptions.chunkFileNames = "[name].js";
       } else if (opts.isDevBuild) {
-        assetFileNames = "build/[name].[ext]";
-        entryFileNames = "build/[name].js";
-        chunkFileNames = "build/[name].js";
+        outputOptions.assetFileNames = "build/[name].[ext]";
+        outputOptions.entryFileNames = "build/[name].js";
+        outputOptions.chunkFileNames = "build/[name].js";
       }
       const updatedViteConfig = {
         esbuild: {
@@ -1156,11 +1156,7 @@ function qwikVite(qwikViteOpts = {}) {
         },
         build: {
           rollupOptions: {
-            output: {
-              assetFileNames: assetFileNames,
-              entryFileNames: entryFileNames,
-              chunkFileNames: chunkFileNames
-            },
+            output: outputOptions,
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                 return;
@@ -1181,7 +1177,6 @@ function qwikVite(qwikViteOpts = {}) {
         updatedViteConfig.build.rollupOptions.input = opts.srcEntryServerInput;
         updatedViteConfig.build.outDir = opts.outServerDir;
         updatedViteConfig.build.ssr = true;
-        updatedViteConfig.build.emptyOutDir = false;
         updatedViteConfig.ssr && false === updatedViteConfig.ssr.noExternal || (updatedViteConfig.ssr ? updatedViteConfig.ssr.noExternal = true : updatedViteConfig.ssr = {
           noExternal: true
         });
