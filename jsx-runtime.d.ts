@@ -1666,6 +1666,9 @@ declare interface WatchDescriptor {
     dirty: boolean;
 }
 
+/**
+ * @alpha
+ */
 declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
 
 declare const enum WatchMode {

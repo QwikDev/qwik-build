@@ -266,7 +266,9 @@ class QRL {
         });
     }
     copy() {
-        return new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+        const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+        copy.refSymbol = this.refSymbol;
+        return copy;
     }
     invoke(...args) {
         const fn = this.invokeFn();
@@ -283,6 +285,7 @@ const FIND_EXT = /\?[\w=&]+$/;
 const createPlatform = (doc) => {
     const moduleCache = new Map();
     return {
+        isServer: false,
         importSymbol(element, url, symbolName) {
             const urlDoc = toUrl(doc, element, url).toString();
             const urlCopy = new URL(urlDoc);
@@ -2306,126 +2309,68 @@ function useSequentialScope() {
     return [undefined, updateFn];
 }
 
+function useURL() {
+    const url = getInvokeContext().url;
+    if (!url) {
+        // TODO(misko): centralize
+        throw new Error('Q-ERROR: no URL is associated with the execution context');
+    }
+    return url;
+}
+
+// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useLexicalScope">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useLexicalScope instead)
+/**
+ * Used by the Qwik Optimizer to restore the lexical scoped variables.
+ *
+ * This method should not be present in the application source code.
+ *
+ * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useLexicalScope() {
+    const context = getInvokeContext();
+    const hostElement = context.hostElement;
+    const qrl = (context.qrl ??
+        parseQRL(decodeURIComponent(String(useURL())), hostElement));
+    if (qrl.captureRef == null) {
+        const el = context.element;
+        assertDefined(el);
+        resumeIfNeeded(getContainer(el));
+        const ctx = getContext(el);
+        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
+    }
+    const subscriber = context.subscriber;
+    if (subscriber) {
+        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
+    }
+    return qrl.captureRef;
+}
+
 var WatchMode;
 (function (WatchMode) {
     WatchMode[WatchMode["Watch"] = 0] = "Watch";
     WatchMode[WatchMode["LayoutEffect"] = 1] = "LayoutEffect";
     WatchMode[WatchMode["Effect"] = 2] = "Effect";
 })(WatchMode || (WatchMode = {}));
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-function useWatchQrl(watchQrl) {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        const hostElement = useHostElement();
-        const watch = {
-            watchQrl: watchQrl,
-            hostElement,
-            mode: WatchMode.Watch,
-            isConnected: true,
-            dirty: true,
-        };
-        setWatch(watch);
-        getContext(hostElement).refMap.add(watch);
-        useWaitOn(Promise.resolve().then(() => runWatch(watch)));
-    }
-}
 const isWatchDescriptor = (obj) => {
     return obj && typeof obj === 'object' && 'watchQrl' in obj;
 };
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const useWatch$ = implicit$FirstArg(useWatchQrl);
 /**
  * @alpha
  */
-function useWatchEffectQrl(watchQrl) {
+function handleWatch() {
+    const [watch] = useLexicalScope();
+    notifyWatch(watch);
+}
+/**
+ * @alpha
+ */
+function useEffectQrl(watchQrl, opts) {
     const [watch, setWatch] = useSequentialScope();
     if (!watch) {
         const hostElement = useHostElement();
@@ -2438,12 +2383,73 @@ function useWatchEffectQrl(watchQrl) {
         };
         setWatch(watch);
         getContext(hostElement).refMap.add(watch);
+        const run = opts?.run;
+        if (run) {
+            const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
+            watchHandler.refSymbol = watchQrl.symbol;
+            if (opts?.run === 'load') {
+                useResumeQrl(watchHandler);
+            }
+            else {
+                useOn('qVisible', watchHandler);
+            }
+        }
     }
 }
 /**
  * @alpha
  */
-const useWatchEffect$ = implicit$FirstArg(useWatchEffectQrl);
+const useEffect$ = implicit$FirstArg(useEffectQrl);
+/**
+ * @alpha
+ */
+function useClientEffectQrl(watchQrl, opts) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const hostElement = useHostElement();
+        const isServer = getPlatform(useDocument()).isServer;
+        const watch = {
+            watchQrl: watchQrl,
+            hostElement,
+            mode: WatchMode.Effect,
+            isConnected: true,
+            dirty: !isServer,
+        };
+        setWatch(watch);
+        getContext(hostElement).refMap.add(watch);
+        if (isServer) {
+            const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
+            watchHandler.refSymbol = watchQrl.symbol;
+            if (opts?.run === 'load') {
+                useResumeQrl(watchHandler);
+            }
+            else {
+                useOn('qVisible', watchHandler);
+            }
+        }
+    }
+}
+/**
+ * @alpha
+ */
+const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+/**
+ * @alpha
+ */
+function useServerQrl(watchQrl) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        setWatch(true);
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useWaitOn(watchQrl.invoke());
+        }
+    }
+}
+/**
+ * @alpha
+ */
+const useServer$ = implicit$FirstArg(useServerQrl);
 function runWatch(watch) {
     if (!watch.dirty) {
         logDebug('Watch is not dirty, skipping run', watch);
@@ -3085,9 +3091,10 @@ function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
 function stringifyQRL(qrl, opts = {}) {
     const qrl_ = toInternalQRL(qrl);
     const symbol = qrl_.symbol;
+    const refSymbol = qrl_.refSymbol ?? symbol;
     const platform = opts.platform;
     const element = opts.element;
-    const chunk = platform ? platform.chunkForSymbol(symbol) ?? qrl_.chunk : qrl_.chunk;
+    const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
     const parts = [chunk];
     if (symbol && symbol !== 'default') {
         parts.push('#', symbol);
@@ -3715,47 +3722,5 @@ function injectQContainer(containerEl) {
     containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
-function useURL() {
-    const url = getInvokeContext().url;
-    if (!url) {
-        // TODO(misko): centralize
-        throw new Error('Q-ERROR: no URL is associated with the execution context');
-    }
-    return url;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useLexicalScope">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useLexicalScope instead)
-/**
- * Used by the Qwik Optimizer to restore the lexical scoped variables.
- *
- * This method should not be present in the application source code.
- *
- * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useLexicalScope() {
-    const context = getInvokeContext();
-    const hostElement = context.hostElement;
-    const qrl = (context.qrl ??
-        parseQRL(decodeURIComponent(String(useURL())), hostElement));
-    if (qrl.captureRef == null) {
-        const el = context.element;
-        assertDefined(el);
-        resumeIfNeeded(getContainer(el));
-        const ctx = getContext(el);
-        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
-    }
-    const subscriber = context.subscriber;
-    if (subscriber) {
-        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
-    }
-    return qrl.captureRef;
-}
-
-export { $, Async, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, usePause$, usePauseQrl, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchEffect$, useWatchEffectQrl, useWatchQrl, version, wrapSubscriber };
+export { $, Async, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, handleWatch, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useDocument, useEffect$, useEffectQrl, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, usePause$, usePauseQrl, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServer$, useServerQrl, useStore, useStyles$, useStylesQrl, useSubscriber, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map
