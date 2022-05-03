@@ -674,6 +674,10 @@ export declare interface CorePlatform {
     /**
      * Dynamic import()
      */
+    isServer: boolean;
+    /**
+     * Dynamic import()
+     */
     importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
      * Platform specific queue, such as process.nextTick() for Node
@@ -795,6 +799,11 @@ export declare namespace h {
         }
     }
 }
+
+/**
+ * @alpha
+ */
+export declare function handleWatch(): void;
 
 /**
  * Place at the root of the component View to allow binding of attributes on the Host element.
@@ -1847,6 +1856,11 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare type ServerFn = () => ValueOrPromise<void | (() => void)>;
+
+/**
  * @public
  */
 export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlatform;
@@ -2314,9 +2328,41 @@ export declare const useCleanup$: (first: () => void) => void;
 export declare function useCleanupQrl(unmountFn: QRL<() => void>): void;
 
 /**
+ * @alpha
+ */
+export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
+
+/**
+ * @alpha
+ */
+export declare function useClientEffectQrl(watchQrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
+
+/**
  * @public
  */
 export declare function useDocument(): Document;
+
+/**
+ * @alpha
+ */
+export declare const useEffect$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
+
+/**
+ * @alpha
+ */
+export declare interface UseEffectOptions {
+    run?: UseEffectRunOptions;
+}
+
+/**
+ * @alpha
+ */
+export declare function useEffectQrl(watchQrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
+
+/**
+ * @alpha
+ */
+export declare type UseEffectRunOptions = 'visible' | 'load';
 
 /**
  * Retrieves the Host Element of the current component.
@@ -2436,6 +2482,16 @@ export declare const useScopedStyles$: (first: string) => void;
 export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
+ * @alpha
+ */
+export declare const useServer$: (first: ServerFn) => void;
+
+/**
+ * @alpha
+ */
+export declare function useServerQrl(watchQrl: QRL<ServerFn>): void;
+
+/**
  * Creates a object that Qwik can track across serializations.
  *
  * Use `useStore` to create state for your application. The return object is a proxy which has a
@@ -2476,109 +2532,14 @@ export declare function useStylesQrl(styles: QRL<string>): void;
 export declare function useSubscriber<T extends {}>(obj: T): T;
 
 /**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare const useWatch$: (first: WatchFn) => void;
-
-/**
- * @alpha
- */
-export declare const useWatchEffect$: (first: WatchFn) => void;
-
-/**
- * @alpha
- */
-export declare function useWatchEffectQrl(watchQrl: QRL<WatchFn>): void;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-export declare function useWatchQrl(watchQrl: QRL<WatchFn>): void;
-
-/**
  * Type representing a value which is either resolve or a promise.
  * @public
  */
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * @alpha
+ * 0.0.19-2
+ * @public
  */
 export declare const version: string;
 
@@ -2601,7 +2562,10 @@ declare interface WatchDescriptor {
     dirty: boolean;
 }
 
-declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
+/**
+ * @alpha
+ */
+export declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
 
 declare const enum WatchMode {
     Watch = 0,

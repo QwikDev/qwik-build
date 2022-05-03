@@ -4,7 +4,7 @@ declare interface BasePluginOptions {
     outServerDir?: string;
     entryStrategy?: EntryStrategy;
     forceFullBuild?: boolean;
-    minify?: MinifyMode;
+    minify?: 'none' | 'minify';
     srcRootInput?: string | string[];
     srcEntryServerInput?: string;
     srcDir?: string | null;
@@ -101,7 +101,7 @@ export declare interface ManualEntryStrategy {
 /**
  * @alpha
  */
-export declare type MinifyMode = 'minify' | 'simplify' | 'none';
+export declare type MinifyMode = 'simplify' | 'none';
 
 /**
  * @alpha
@@ -180,7 +180,11 @@ export declare interface Path {
     readonly posix: Path;
 }
 
-declare type QwikBuildMode = 'client' | 'ssr';
+/**
+ * "development" and "production" are client builds,
+ * and "ssr" is a server build. Defaults to "development".
+ */
+declare type QwikBuildMode = 'development' | 'production' | 'ssr';
 
 /**
  * @alpha
@@ -193,7 +197,6 @@ export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): an
 export declare interface QwikRollupPluginOptions extends BasePluginOptions {
     optimizerOptions?: OptimizerOptions;
     rootDir?: string;
-    isDevBuild?: boolean;
     buildMode?: QwikBuildMode;
 }
 
