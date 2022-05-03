@@ -153,7 +153,7 @@ var BASE_URI = `http://document.qwik.dev/`;
 var noop = () => {
 };
 var versions = {
-  qwik: "0.0.19-2",
+  qwik: "0.0.19",
   qwikDom: "2.1.14"
 };
 
@@ -9779,10 +9779,10 @@ var firstRenderComponent = (rctx, ctx) => {
   return renderComponent(rctx, ctx);
 };
 var renderComponent = (rctx, ctx) => {
+  ctx.dirty = false;
   const hostElement = ctx.element;
   const onRenderQRL = ctx.renderQrl;
   assertDefined(onRenderQRL);
-  ctx.dirty = false;
   rctx.globalState.hostsStaging.delete(hostElement);
   const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
   invocatinContext.subscriber = hostElement;
@@ -10246,7 +10246,11 @@ async function renderMarked(containerEl, state) {
   for (const el of renderingQueue) {
     if (!ctx.hostElements.has(el)) {
       ctx.roots.push(el);
-      await renderComponent(ctx, getContext(el));
+      try {
+        await renderComponent(ctx, getContext(el));
+      } catch (e) {
+        logError("Render failed", e, el);
+      }
     }
   }
   if (ctx.operations.length === 0) {
@@ -10339,14 +10343,14 @@ function wrap(value, proxyMap) {
     if (isQrl(value)) {
       return value;
     }
-    if (isElement(value)) {
-      return value;
-    }
-    if (!shouldSerialize(value)) {
-      return value;
-    }
     const nakedValue = unwrapProxy(value);
     if (nakedValue !== value) {
+      return value;
+    }
+    if (isNode(nakedValue)) {
+      return value;
+    }
+    if (!shouldSerialize(nakedValue)) {
       return value;
     }
     if (qDev) {
@@ -10390,7 +10394,6 @@ var ReadWriteProxyHandler = class {
         subscriber = invokeCtx.subscriber;
       }
     } else if (qDev && !qTest && !subscriber) {
-      logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
     }
     if (prop === QOjectAllSymbol) {
       if (subscriber) {
@@ -10426,7 +10429,9 @@ var ReadWriteProxyHandler = class {
     }
     const subs = this.subs;
     const unwrappedNewValue = unwrapProxy(newValue);
-    verifySerializable(unwrappedNewValue);
+    if (qDev) {
+      verifySerializable(unwrappedNewValue);
+    }
     const isArray = Array.isArray(target);
     if (isArray) {
       target[prop] = unwrappedNewValue;
@@ -10471,7 +10476,6 @@ var ReadWriteProxyHandler = class {
         subscriber = invokeCtx.subscriber;
       }
     } else if (qDev && !qTest && !subscriber) {
-      logWarn(`State assigned outside invocation context. OwnKeys of:`, target);
     }
     if (subscriber) {
       this.subs.set(subscriber, null);
@@ -10520,16 +10524,27 @@ async function waitForWatches(state) {
   }
 }
 function verifySerializable(value) {
-  if (shouldSerialize(value) && typeof value == "object" && value !== null) {
-    if (Array.isArray(value))
-      return;
-    if (Object.getPrototypeOf(value) !== Object.prototype) {
+  if (value == null) {
+    return null;
+  }
+  if (shouldSerialize(value)) {
+    const type = typeof value;
+    if (type === "object") {
+      if (Array.isArray(value))
+        return;
+      if (Object.getPrototypeOf(value) === Object.prototype)
+        return;
       if (isQrl(value))
         return;
       if (isElement(value))
         return;
-      throw qError(0 /* TODO */, "Only primitive and object literals can be serialized.");
+      if (isDocument(value))
+        return;
     }
+    if (["boolean", "string", "number"].includes(type)) {
+      return;
+    }
+    throw qError(0 /* TODO */, "Only primitive and object literals can be serialized", value);
   }
 }
 var NOSERIALIZE = Symbol("NoSerialize");
@@ -10548,6 +10563,7 @@ function noSerialize(input) {
 // packages/qwik/src/core/object/store.ts
 var UNDEFINED_PREFIX = "";
 var QRL_PREFIX = "";
+var DOCUMENT_PREFIX = "";
 function resumeContainer(containerEl) {
   if (!isContainer(containerEl)) {
     logWarn("Skipping hydration because parent element is not q:container");
@@ -10634,6 +10650,8 @@ function reviveValues(objs, subs, getObject, map, containerEl) {
     if (typeof value === "string") {
       if (value === UNDEFINED_PREFIX) {
         objs[i] = void 0;
+      } else if (value === DOCUMENT_PREFIX) {
+        objs[i] = getDocument(containerEl);
       } else if (value.startsWith(QRL_PREFIX)) {
         objs[i] = parseQRL(value.slice(1), containerEl);
       }

@@ -573,6 +573,7 @@ function isElement(value) {
 
 const UNDEFINED_PREFIX = '\u0010';
 const QRL_PREFIX = '\u0011';
+const DOCUMENT_PREFIX = '\u0012';
 function resumeContainer(containerEl) {
     if (!isContainer(containerEl)) {
         logWarn('Skipping hydration because parent element is not q:container');
@@ -645,7 +646,7 @@ function snapshotState(containerEl) {
         const props = getContext(node);
         const qMap = props.refMap;
         qMap.array.forEach((v) => {
-            collectValue(v, objSet);
+            collectValue(v, objSet, doc);
         });
     });
     // Convert objSet to array
@@ -679,17 +680,23 @@ function snapshotState(containerEl) {
     function getObjId(obj) {
         if (obj !== null && typeof obj === 'object') {
             const target = obj[QOjectTargetSymbol];
-            const id = objToId.get(normalizeObj(target ?? obj));
+            const id = objToId.get(normalizeObj(target ?? obj, doc));
             if (id !== undefined) {
                 const proxySuffix = target ? '!' : '';
                 return intToStr(id) + proxySuffix;
             }
-            if (!target && isElement(obj)) {
-                return getElementID(obj);
+            if (!target && isNode$1(obj)) {
+                if (obj.nodeType === 1) {
+                    return getElementID(obj);
+                }
+                else {
+                    logError('Can not serialize a HTML Node that is not an Element', obj);
+                    return null;
+                }
             }
         }
         else {
-            const id = objToId.get(normalizeObj(obj));
+            const id = objToId.get(normalizeObj(obj, doc));
             if (id !== undefined) {
                 return intToStr(id);
             }
@@ -811,6 +818,9 @@ function reviveValues(objs, subs, getObject, map, containerEl) {
             if (value === UNDEFINED_PREFIX) {
                 objs[i] = undefined;
             }
+            else if (value === DOCUMENT_PREFIX) {
+                objs[i] = getDocument(containerEl);
+            }
             else if (value.startsWith(QRL_PREFIX)) {
                 objs[i] = parseQRL(value.slice(1), containerEl);
             }
@@ -884,7 +894,10 @@ function getObjectImpl(id, elements, objs, map) {
     }
     return obj;
 }
-function normalizeObj(obj) {
+function normalizeObj(obj, doc) {
+    if (obj === doc) {
+        return DOCUMENT_PREFIX;
+    }
     if (obj === undefined || !shouldSerialize(obj)) {
         return UNDEFINED_PREFIX;
     }
@@ -894,49 +907,54 @@ function normalizeObj(obj) {
     }
     return obj;
 }
-function collectValue(obj, seen) {
-    collectQObjects(obj, seen);
-    seen.add(normalizeObj(obj));
-}
-function collectQrl(obj, seen) {
-    seen.add(normalizeObj(obj));
-    if (obj.captureRef) {
-        obj.captureRef.forEach((obj) => collectValue(obj, seen));
+function collectValue(obj, seen, doc) {
+    const handled = collectQObjects(obj, seen, doc);
+    if (!handled) {
+        seen.add(normalizeObj(obj, doc));
     }
 }
-function collectQObjects(obj, seen) {
+function collectQrl(obj, seen, doc) {
+    seen.add(normalizeObj(obj, doc));
+    if (obj.captureRef) {
+        obj.captureRef.forEach((obj) => collectValue(obj, seen, doc));
+    }
+}
+function collectQObjects(obj, seen, doc) {
     if (obj != null) {
         if (typeof obj === 'object') {
-            if (!obj[QOjectTargetSymbol] && isElement(obj)) {
-                return;
+            if (!obj[QOjectTargetSymbol] && isNode$1(obj)) {
+                return obj.nodeType === 1;
             }
             if (isQrl(obj)) {
-                collectQrl(obj, seen);
-                return;
+                collectQrl(obj, seen, doc);
+                return true;
             }
-            obj = normalizeObj(obj);
+            obj = normalizeObj(obj, doc);
         }
         if (typeof obj === 'object') {
             if (seen.has(obj))
-                return;
+                return true;
             seen.add(obj);
             if (Array.isArray(obj)) {
                 for (let i = 0; i < obj.length; i++) {
-                    collectQObjects(obj[i], seen);
+                    collectQObjects(obj[i], seen, doc);
                 }
             }
             else {
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        collectQObjects(obj[key], seen);
+                        collectQObjects(obj[key], seen, doc);
                     }
                 }
             }
+            return true;
         }
         if (typeof obj === 'string') {
             seen.add(obj);
+            return true;
         }
     }
+    return false;
 }
 function isContainer(el) {
     return el.hasAttribute(QContainerAttr);
@@ -1427,11 +1445,11 @@ const firstRenderComponent = (rctx, ctx) => {
     return renderComponent(rctx, ctx);
 };
 const renderComponent = (rctx, ctx) => {
+    ctx.dirty = false;
     const hostElement = ctx.element;
     const onRenderQRL = ctx.renderQrl;
     assertDefined(onRenderQRL);
     // Component is not dirty any more
-    ctx.dirty = false;
     rctx.globalState.hostsStaging.delete(hostElement);
     // Invoke render hook
     const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
@@ -2589,7 +2607,12 @@ async function renderMarked(containerEl, state) {
     for (const el of renderingQueue) {
         if (!ctx.hostElements.has(el)) {
             ctx.roots.push(el);
-            await renderComponent(ctx, getContext(el));
+            try {
+                await renderComponent(ctx, getContext(el));
+            }
+            catch (e) {
+                logError('Render failed', e, el);
+            }
         }
     }
     // Early exist, no dom operations
@@ -2621,6 +2644,7 @@ async function postRendering(containerEl, state, ctx) {
         promises.push(runWatch(watch));
     });
     state.watchNext.clear();
+    // Run staging effectd
     state.watchStaging.forEach((watch) => {
         if (ctx.hostElements.has(watch.hostElement)) {
             promises.push(runWatch(watch));
@@ -2704,15 +2728,15 @@ function wrap(value, proxyMap) {
         if (isQrl(value)) {
             return value;
         }
-        if (isElement(value)) {
-            return value;
-        }
-        if (!shouldSerialize(value)) {
-            return value;
-        }
         const nakedValue = unwrapProxy(value);
         if (nakedValue !== value) {
             // already a proxy return;
+            return value;
+        }
+        if (isNode$1(nakedValue)) {
+            return value;
+        }
+        if (!shouldSerialize(nakedValue)) {
             return value;
         }
         if (qDev) {
@@ -2758,9 +2782,6 @@ class ReadWriteProxyHandler {
                 subscriber = invokeCtx.subscriber;
             }
         }
-        else if (qDev && !qTest && !subscriber) {
-            logWarn(`State assigned outside invocation context. Getting prop "${prop}" of:`, target);
-        }
         if (prop === QOjectAllSymbol) {
             if (subscriber) {
                 this.subs.set(subscriber, null);
@@ -2797,7 +2818,9 @@ class ReadWriteProxyHandler {
         }
         const subs = this.subs;
         const unwrappedNewValue = unwrapProxy(newValue);
-        verifySerializable(unwrappedNewValue);
+        if (qDev) {
+            verifySerializable(unwrappedNewValue);
+        }
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
@@ -2844,9 +2867,6 @@ class ReadWriteProxyHandler {
             else if (!subscriber) {
                 subscriber = invokeCtx.subscriber;
             }
-        }
-        else if (qDev && !qTest && !subscriber) {
-            logWarn(`State assigned outside invocation context. OwnKeys of:`, target);
         }
         if (subscriber) {
             this.subs.set(subscriber, null);
@@ -2898,16 +2918,27 @@ async function waitForWatches(state) {
     }
 }
 function verifySerializable(value) {
-    if (shouldSerialize(value) && typeof value == 'object' && value !== null) {
-        if (Array.isArray(value))
-            return;
-        if (Object.getPrototypeOf(value) !== Object.prototype) {
+    if (value == null) {
+        return null;
+    }
+    if (shouldSerialize(value)) {
+        const type = typeof value;
+        if (type === 'object') {
+            if (Array.isArray(value))
+                return;
+            if (Object.getPrototypeOf(value) === Object.prototype)
+                return;
             if (isQrl(value))
                 return;
             if (isElement(value))
                 return;
-            throw qError(QError.TODO, 'Only primitive and object literals can be serialized.');
+            if (isDocument(value))
+                return;
         }
+        if (['boolean', 'string', 'number'].includes(type)) {
+            return;
+        }
+        throw qError(QError.TODO, 'Only primitive and object literals can be serialized', value);
     }
 }
 const NOSERIALIZE = Symbol('NoSerialize');
@@ -3646,7 +3677,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.19-2";
+const version = "0.0.19";
 
 /**
  * Render JSX.
