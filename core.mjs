@@ -2938,7 +2938,7 @@ function verifySerializable(value) {
         if (['boolean', 'string', 'number'].includes(type)) {
             return;
         }
-        throw qError(QError.TODO, 'Only primitive and object literals can be serialized.');
+        throw qError(QError.TODO, 'Only primitive and object literals can be serialized', value);
     }
 }
 const NOSERIALIZE = Symbol('NoSerialize');
@@ -3674,7 +3674,8 @@ const Slot = (props) => {
 };
 
 /**
- * @alpha
+ * QWIK_VERSION
+ * @public
  */
 const version = "0.0.19-2";
 
