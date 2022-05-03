@@ -2538,7 +2538,7 @@ export declare function useSubscriber<T extends {}>(obj: T): T;
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.19-2
+ * 0.0.19
  * @public
  */
 export declare const version: string;

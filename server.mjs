@@ -86,7 +86,7 @@ var BASE_URI = `http://document.qwik.dev/`;
 var noop = () => {
 };
 var versions = {
-  qwik: "0.0.19-2",
+  qwik: "0.0.19",
   qwikDom: "2.1.14"
 };
 
