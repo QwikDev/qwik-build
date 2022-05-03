@@ -625,13 +625,12 @@ function createPlugin(optimizerOptions = {}) {
   let addWatchFileCallback = () => {};
   let diagnosticsCallback = () => {};
   const opts = {
+    buildMode: "development",
     debug: false,
     rootDir: null,
     outClientDir: null,
     outServerDir: null,
-    isDevBuild: true,
     forceFullBuild: false,
-    buildMode: "client",
     entryStrategy: null,
     minify: null,
     srcDir: null,
@@ -650,17 +649,17 @@ function createPlugin(optimizerOptions = {}) {
     const updatedOpts = Object.assign({}, inputOpts);
     const optimizer2 = await getOptimizer();
     opts.debug = !!updatedOpts.debug;
-    opts.isDevBuild = !!updatedOpts.isDevBuild;
-    opts.buildMode = "ssr" === updatedOpts.buildMode ? "ssr" : "client";
+    opts.buildMode = "development";
+    "ssr" === updatedOpts.buildMode ? opts.buildMode = "ssr" : "production" === updatedOpts.buildMode && (opts.buildMode = "production");
     updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
       ...updatedOpts.entryStrategy
     });
-    opts.entryStrategy && !opts.isDevBuild || (opts.entryStrategy = {
+    opts.entryStrategy || (opts.entryStrategy = {
       type: "hook"
     });
     "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type;
     updatedOpts.minify && (opts.minify = updatedOpts.minify);
-    "simplify" !== opts.minify && "none" !== opts.minify && (opts.isDevBuild ? opts.minify = "none" : opts.minify = "simplify");
+    "ssr" === opts.buildMode ? opts.minify = "none" : "minify" !== opts.minify && "none" !== opts.minify && ("production" === opts.buildMode ? opts.minify = "minify" : opts.minify = "none");
     "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
     "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
     opts.rootDir = optimizer2.sys.path.resolve(optimizer2.sys.cwd(), opts.rootDir);
@@ -732,17 +731,20 @@ function createPlugin(optimizerOptions = {}) {
         }));
         log(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
       }
+      log("transformedOutput.clear()");
+      transformedOutputs.clear();
       const transformOpts = {
         rootDir: rootDir,
         entryStrategy: opts.entryStrategy,
-        minify: opts.minify,
+        minify: "minify" === opts.minify ? "simplify" : "none",
         transpile: true,
-        explicityExtensions: true
+        explicityExtensions: true,
+        dev: "production" !== opts.buildMode
       };
       const result = await optimizer2.transformFs(transformOpts);
       for (const output of result.modules) {
         const key = optimizer2.sys.path.join(rootDir, output.path);
-        log("buildStart()", "qwik module", key);
+        log("buildStart() add transformedOutput", key);
         transformedOutputs.set(key, [ output, key ]);
       }
       diagnosticsCallback(result.diagnostics, optimizer2);
@@ -772,7 +774,7 @@ function createPlugin(optimizerOptions = {}) {
     for (const tryId of tryImportPathIds) {
       const transformedOutput = transformedOutputs.get(tryId);
       if (transformedOutput) {
-        log(`resolveId() Resolved ${tryId}`);
+        log(`resolveId() Resolved ${tryId} from transformedOutputs`);
         const transformedModule = transformedOutput[0];
         const sideEffects = !transformedModule.isEntry || !transformedModule.hook;
         return {
@@ -780,7 +782,7 @@ function createPlugin(optimizerOptions = {}) {
           moduleSideEffects: sideEffects
         };
       }
-      log(`resolveId() Resolved not found ${tryId}`);
+      log(`resolveId() id ${tryId} not found in transformedOutputs`);
     }
     return null;
   };
@@ -831,7 +833,7 @@ function createPlugin(optimizerOptions = {}) {
         entryStrategy: {
           type: "hook"
         },
-        minify: opts.minify,
+        minify: "minify" === opts.minify ? "simplify" : "none",
         sourceMaps: false,
         transpile: true,
         explicityExtensions: true,
@@ -839,7 +841,6 @@ function createPlugin(optimizerOptions = {}) {
       });
       diagnosticsCallback(newOutput.diagnostics, optimizer2);
       results.set(pathId, newOutput);
-      transformedOutputs.clear();
       for (const [id3, output] of results.entries()) {
         const justChanged = newOutput === output;
         const dir2 = optimizer2.sys.path.dirname(id3);
@@ -1048,7 +1049,7 @@ function qwikRollup(qwikRollupOpts = {}) {
     },
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
-      if ("client" === opts.buildMode) {
+      if ("production" === opts.buildMode || "development" === opts.buildMode) {
         const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
         for (const fileName in rollupBundle) {
           const b = rollupBundle[fileName];
@@ -1116,10 +1117,11 @@ function qwikVite(qwikViteOpts = {}) {
     async config(viteConfig, viteEnv) {
       qwikPlugin.log(`vite config(), command: ${viteEnv.command}, env.mode: ${viteEnv.mode}`);
       isClientOnly = "serve" === viteEnv.command && "ssr" !== viteEnv.mode;
+      let buildMode = "development";
+      "build" === viteEnv.command && ("ssr" === viteEnv.mode ? buildMode = "ssr" : "production" === viteEnv.mode && (buildMode = "production"));
       const pluginOpts = {
         debug: qwikViteOpts.debug,
-        isDevBuild: "serve" === viteEnv.command,
-        buildMode: "build" === viteEnv.command && "ssr" === viteEnv.mode ? "ssr" : "client",
+        buildMode: buildMode,
         entryStrategy: qwikViteOpts.entryStrategy,
         minify: qwikViteOpts.minify,
         rootDir: viteConfig.root,
@@ -1133,16 +1135,16 @@ function qwikVite(qwikViteOpts = {}) {
       const optimizer = await qwikPlugin.getOptimizer();
       const opts = await qwikPlugin.normalizeOptions(pluginOpts);
       srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
-      const outputOptions = {
-        assetFileNames: "build/q-[hash].[ext]",
-        entryFileNames: "build/q-[hash].js",
-        chunkFileNames: "build/q-[hash].js"
-      };
+      const outputOptions = {};
       if ("ssr" === opts.buildMode) {
         outputOptions.assetFileNames = "[name].[ext]";
         outputOptions.entryFileNames = "[name].js";
         outputOptions.chunkFileNames = "[name].js";
-      } else if (opts.isDevBuild) {
+      } else if ("production" === opts.buildMode) {
+        outputOptions.assetFileNames = "build/q-[hash].[ext]";
+        outputOptions.entryFileNames = "build/q-[hash].js";
+        outputOptions.chunkFileNames = "build/q-[hash].js";
+      } else {
         outputOptions.assetFileNames = "build/[name].[ext]";
         outputOptions.entryFileNames = "build/[name].js";
         outputOptions.chunkFileNames = "build/[name].js";
@@ -1236,7 +1238,7 @@ function qwikVite(qwikViteOpts = {}) {
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
       const optimizer = await qwikPlugin.getOptimizer();
-      if ("client" === opts.buildMode) {
+      if ("production" === opts.buildMode || "development" === opts.buildMode) {
         const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
         for (const fileName in rollupBundle) {
           const b = rollupBundle[fileName];

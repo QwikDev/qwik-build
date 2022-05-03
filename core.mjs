@@ -3643,7 +3643,8 @@ const Slot = (props) => {
 };
 
 /**
- * @alpha
+ * QWIK_VERSION
+ * @public
  */
 const version = "0.0.19-2";
 
