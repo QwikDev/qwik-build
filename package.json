@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "0.0.18-0-dev20220311014644",
+  "version": "0.0.19",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.cjs",
@@ -34,14 +34,17 @@
       "import": "./loader/index.mjs",
       "require": "./loader/index.cjs"
     },
+    "./optimizer.cjs": "./optimizer.cjs",
+    "./optimizer.mjs": "./optimizer.mjs",
     "./optimizer": {
       "import": "./optimizer.mjs",
       "require": "./optimizer.cjs"
     },
-    "./server/index.cjs": "./server/index.cjs",
+    "./server.cjs": "./server.cjs",
+    "./server.mjs": "./server.mjs",
     "./server": {
-      "import": "./server/index.mjs",
-      "require": "./server/index.cjs"
+      "import": "./server.mjs",
+      "require": "./server.cjs"
     },
     "./testing": {
       "import": "./testing/index.mjs",
@@ -85,15 +88,13 @@
     "optimizer.d.ts",
     "optimizer.mjs",
     "optimizer/package.json",
-    "prefetch.debug.js",
-    "prefetch.js",
     "qwikloader.debug.js",
     "qwikloader.js",
     "qwikloader.optimize.debug.js",
     "qwikloader.optimize.js",
-    "server/index.cjs",
-    "server/index.d.ts",
-    "server/index.mjs",
+    "server.cjs",
+    "server.d.ts",
+    "server.mjs",
     "server/package.json",
     "testing/index.cjs",
     "testing/index.d.ts",
@@ -117,10 +118,11 @@
       "url": "https://twitter.com/manucorporat"
     }
   ],
-  "homepage": "https://github.com/BuilderIO/qwik#readme",
+  "homepage": "https://qwik.builder.io/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/BuilderIO/qwik.git"
+    "url": "https://github.com/BuilderIO/qwik.git",
+    "directory": "packages/qwik"
   },
   "bugs": {
     "url": "https://github.com/BuilderIO/qwik/issues"
@@ -139,6 +141,6 @@
     "Builder.io"
   ],
   "engines": {
-    "node": ">=10"
+    "node": ">=14"
   }
 }
