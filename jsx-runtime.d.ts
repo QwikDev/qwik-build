@@ -919,12 +919,10 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare const NOSERIALIZE = Symbol('NoSerialize');
-
 /**
  * @alpha
  */
-declare type NoSerialize<T> = (T & { [NOSERIALIZE]: true }) | undefined;
+declare type NoSerialize<T> = (T & { __no_serialize__: true }) | undefined;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;

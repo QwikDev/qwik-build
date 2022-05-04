@@ -2941,11 +2941,10 @@ function verifySerializable(value) {
         throw qError(QError.TODO, 'Only primitive and object literals can be serialized', value);
     }
 }
-const NOSERIALIZE = Symbol('NoSerialize');
+const noSerializeSet = /*#__PURE__*/ new WeakSet();
 function shouldSerialize(obj) {
     if (obj !== null && (typeof obj == 'object' || typeof obj === 'function')) {
-        const noSerialize = obj[NOSERIALIZE] === true;
-        return !noSerialize;
+        return !noSerializeSet.has(obj);
     }
     return true;
 }
@@ -2953,7 +2952,7 @@ function shouldSerialize(obj) {
  * @alpha
  */
 function noSerialize(input) {
-    input[NOSERIALIZE] = true;
+    noSerializeSet.add(input);
     return input;
 }
 

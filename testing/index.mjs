@@ -2422,16 +2422,15 @@ function verifySerializable(value) {
     throw qError(0 /* TODO */, "Only primitive and object literals can be serialized", value);
   }
 }
-var NOSERIALIZE = Symbol("NoSerialize");
+var noSerializeSet = /* @__PURE__ */ new WeakSet();
 function shouldSerialize(obj) {
   if (obj !== null && (typeof obj == "object" || typeof obj === "function")) {
-    const noSerialize2 = obj[NOSERIALIZE] === true;
-    return !noSerialize2;
+    return !noSerializeSet.has(obj);
   }
   return true;
 }
 function noSerialize(input) {
-  input[NOSERIALIZE] = true;
+  noSerializeSet.add(input);
   return input;
 }
 
