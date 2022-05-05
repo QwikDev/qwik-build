@@ -64,7 +64,6 @@
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                console.log("hreferf");
                 broadcast("", "qresume", new CustomEvent("qresume"));
                 doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
                 if ("undefined" != typeof IntersectionObserver) {
