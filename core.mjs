@@ -249,7 +249,7 @@ class QRL {
         }
         return qrlImport(this.el, this);
     }
-    invokeFn(el, currentCtx) {
+    invokeFn(el, currentCtx, beforeFn) {
         return ((...args) => {
             const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
             return then(fn, (fn) => {
@@ -259,6 +259,9 @@ class QRL {
                         ...baseContext,
                         qrl: this,
                     };
+                    if (beforeFn) {
+                        beforeFn();
+                    }
                     return useInvoke(context, fn, ...args);
                 }
                 throw new Error('QRL is not a function');
@@ -1011,7 +1014,7 @@ function qInflate(ref, hostCtx) {
 }
 
 function fromCamelToKebabCase(text) {
-    return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    return text.replace(/([A-Z])/g, '-$1').toLowerCase();
 }
 
 function debugStringify(value) {
@@ -1029,8 +1032,8 @@ function safeJSONStringify(value) {
     }
 }
 
-const ON_PROP_REGEX = /^on([A-Z]|-.).*Qrl$/;
-const ON$_PROP_REGEX = /^on([A-Z]|-.).*\$$/;
+const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*Qrl$/;
+const ON$_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
 function isOnProp(prop) {
     return ON_PROP_REGEX.test(prop);
 }
@@ -1144,12 +1147,14 @@ function getContext(element) {
     }
     return ctx;
 }
-const PREFIXES = ['onWindow', 'onWindow', 'on'];
+const PREFIXES = ['document:on', 'window:on', 'on'];
+const SCOPED = ['on-document', 'on-window', 'on'];
 function normalizeOnProp(prop) {
     let scope = 'on';
-    for (const prefix of PREFIXES) {
+    for (let i = 0; i < PREFIXES.length; i++) {
+        const prefix = PREFIXES[i];
         if (prop.startsWith(prefix)) {
-            scope = prefix;
+            scope = SCOPED[i];
             prop = prop.slice(prefix.length);
         }
     }
@@ -1708,6 +1713,13 @@ function patchVnode(rctx, elm, vnode, isSvg) {
                     }
                 }
             });
+            // Mark empty slots and remove content
+            Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
+                if (templateEl && !splittedChidren[key]) {
+                    removeNode(rctx, templateEl);
+                    slotMaps.templates[key] = undefined;
+                }
+            });
             // Render into slots
             Object.entries(splittedChidren).forEach(([key, ch]) => {
                 const slotElm = getSlotElement(rctx, slotMaps, elm, key);
@@ -1955,6 +1967,7 @@ const PROP_HANDLER_MAP = {
 };
 const ALLOWS_PROPS = ['class', 'className', 'style', 'id', 'q:slot'];
 const HOST_PREFIX = 'host:';
+const SCOPE_PREFIX = /^(host|window|document):/;
 function updateProperties(rctx, ctx, expectProps, isSvg) {
     if (!expectProps) {
         return false;
@@ -1983,12 +1996,13 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
         }
         if (qwikProps) {
             const skipProperty = ALLOWS_PROPS.includes(key);
-            const hPrefixed = key.startsWith(HOST_PREFIX);
-            if (!skipProperty && !hPrefixed) {
+            const hasPrefix = SCOPE_PREFIX.test(key);
+            if (!skipProperty && !hasPrefix) {
                 // Qwik props
                 qwikProps[key] = newValue;
                 continue;
             }
+            const hPrefixed = key.startsWith(HOST_PREFIX);
             if (hPrefixed) {
                 key = key.slice(HOST_PREFIX.length);
             }
@@ -2369,14 +2383,13 @@ function useLexicalScope() {
     return qrl.captureRef;
 }
 
-var WatchMode;
-(function (WatchMode) {
-    WatchMode[WatchMode["Watch"] = 0] = "Watch";
-    WatchMode[WatchMode["LayoutEffect"] = 1] = "LayoutEffect";
-    WatchMode[WatchMode["Effect"] = 2] = "Effect";
-})(WatchMode || (WatchMode = {}));
+var WatchFlags;
+(function (WatchFlags) {
+    WatchFlags[WatchFlags["IsConnected"] = 1] = "IsConnected";
+    WatchFlags[WatchFlags["IsDirty"] = 2] = "IsDirty";
+})(WatchFlags || (WatchFlags = {}));
 const isWatchDescriptor = (obj) => {
-    return obj && typeof obj === 'object' && 'watchQrl' in obj;
+    return obj && typeof obj === 'object' && 'qrl' in obj && 'f' in obj;
 };
 /**
  * @alpha
@@ -2388,62 +2401,46 @@ function handleWatch() {
 /**
  * @alpha
  */
-function useEffectQrl(watchQrl, opts) {
+function useWatchQrl(qrl, opts) {
     const [watch, setWatch] = useSequentialScope();
     if (!watch) {
-        const hostElement = useHostElement();
+        const el = useHostElement();
         const watch = {
-            watchQrl: watchQrl,
-            hostElement,
-            mode: WatchMode.Effect,
-            isConnected: true,
-            dirty: true,
+            qrl,
+            el,
+            f: WatchFlags.IsConnected | WatchFlags.IsDirty,
         };
         setWatch(watch);
-        getContext(hostElement).refMap.add(watch);
-        const run = opts?.run;
-        if (run) {
-            const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
-            watchHandler.refSymbol = watchQrl.symbol;
-            if (opts?.run === 'load') {
-                useResumeQrl(watchHandler);
-            }
-            else {
-                useOn('qVisible', watchHandler);
-            }
+        getContext(el).refMap.add(watch);
+        useWaitOn(runWatch(watch));
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useRunWatch(watch, opts?.run);
         }
     }
 }
 /**
  * @alpha
  */
-const useEffect$ = implicit$FirstArg(useEffectQrl);
+const useWatch$ = implicit$FirstArg(useWatchQrl);
 /**
  * @alpha
  */
-function useClientEffectQrl(watchQrl, opts) {
+function useClientEffectQrl(qrl, opts) {
     const [watch, setWatch] = useSequentialScope();
     if (!watch) {
-        const hostElement = useHostElement();
-        const isServer = getPlatform(useDocument()).isServer;
+        const el = useHostElement();
         const watch = {
-            watchQrl: watchQrl,
-            hostElement,
-            mode: WatchMode.Effect,
-            isConnected: true,
-            dirty: !isServer,
+            qrl,
+            el,
+            f: WatchFlags.IsConnected,
         };
         setWatch(watch);
-        getContext(hostElement).refMap.add(watch);
-        if (isServer) {
-            const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
-            watchHandler.refSymbol = watchQrl.symbol;
-            if (opts?.run === 'load') {
-                useResumeQrl(watchHandler);
-            }
-            else {
-                useOn('qVisible', watchHandler);
-            }
+        getContext(el).refMap.add(watch);
+        useRunWatch(watch, opts?.run ?? 'visible');
+        const doc = useDocument();
+        if (doc['qO']) {
+            doc['qO'].observe(el);
         }
     }
 }
@@ -2454,7 +2451,7 @@ const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
 /**
  * @alpha
  */
-function useServerQrl(watchQrl) {
+function useServerMountQrl(watchQrl) {
     const [watch, setWatch] = useSequentialScope();
     if (!watch) {
         setWatch(true);
@@ -2467,13 +2464,13 @@ function useServerQrl(watchQrl) {
 /**
  * @alpha
  */
-const useServer$ = implicit$FirstArg(useServerQrl);
+const useServerMount$ = implicit$FirstArg(useServerMountQrl);
 function runWatch(watch) {
-    if (!watch.dirty) {
+    if (!(watch.f & WatchFlags.IsDirty)) {
         logDebug('Watch is not dirty, skipping run', watch);
         return Promise.resolve(watch);
     }
-    watch.dirty = false;
+    watch.f &= ~WatchFlags.IsDirty;
     const promise = new Promise((resolve) => {
         then(watch.running, () => {
             const destroy = watch.destroy;
@@ -2486,10 +2483,17 @@ function runWatch(watch) {
                     logError(err);
                 }
             }
-            const hostElement = watch.hostElement;
-            const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, 'WatchEvent');
+            const el = watch.el;
+            const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
             invokationContext.watch = watch;
-            const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
+            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+                const captureRef = watch.qrl.captureRef;
+                if (Array.isArray(captureRef)) {
+                    captureRef.forEach((obj) => {
+                        removeSub(obj, watch);
+                    });
+                }
+            });
             const tracker = (obj, prop) => {
                 obj[SetSubscriber] = watch;
                 if (prop) {
@@ -2499,12 +2503,6 @@ function runWatch(watch) {
                     return obj[QOjectAllSymbol];
                 }
             };
-            const captureRef = watch.watchQrl.captureRef;
-            if (Array.isArray(captureRef)) {
-                captureRef.forEach((obj) => {
-                    removeSub(obj, watch);
-                });
-            }
             return then(watchFn(tracker), (returnValue) => {
                 if (typeof returnValue === 'function') {
                     watch.destroy = noSerialize(returnValue);
@@ -2516,6 +2514,20 @@ function runWatch(watch) {
     watch.running = noSerialize(promise);
     return promise;
 }
+const useRunWatch = (watch, run) => {
+    if (run === 'load') {
+        useResumeQrl(getWatchHandlerQrl(watch));
+    }
+    else if (run === 'visible') {
+        useVisibleQrl(getWatchHandlerQrl(watch));
+    }
+};
+const getWatchHandlerQrl = (watch) => {
+    const watchQrl = watch.qrl;
+    const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
+    watchHandler.refSymbol = watchQrl.symbol;
+    return watchHandler;
+};
 
 /**
  * Mark component for rendering.
@@ -2644,9 +2656,9 @@ async function postRendering(containerEl, state, ctx) {
         promises.push(runWatch(watch));
     });
     state.watchNext.clear();
-    // Run staging effectd
+    // Run staging effected
     state.watchStaging.forEach((watch) => {
-        if (ctx.hostElements.has(watch.hostElement)) {
+        if (ctx.hostElements.has(watch.el)) {
             promises.push(runWatch(watch));
         }
         else {
@@ -2656,12 +2668,16 @@ async function postRendering(containerEl, state, ctx) {
     state.watchStaging.clear();
     // Wait for all promises
     await Promise.all(promises);
-    // Move elements from staging to nextRender
+    // Clear staging
     state.hostsStaging.forEach((el) => {
         state.hostsNext.add(el);
     });
-    // Clear staging
     state.hostsStaging.clear();
+    // Clear staging
+    state.watchStaging.forEach((watch) => {
+        state.watchNext.add(watch);
+    });
+    state.watchStaging.clear();
     state.hostsRendering = undefined;
     state.renderPromise = undefined;
     if (state.hostsNext.size + state.watchNext.size > 0) {
@@ -2825,7 +2841,7 @@ class ReadWriteProxyHandler {
         if (isArray) {
             target[prop] = unwrappedNewValue;
             subs.forEach((_, sub) => {
-                if (sub.isConnected) {
+                if (isConnected(sub)) {
                     notifyChange(sub);
                 }
                 else {
@@ -2838,7 +2854,7 @@ class ReadWriteProxyHandler {
         if (oldValue !== unwrappedNewValue) {
             target[prop] = unwrappedNewValue;
             subs.forEach((propSets, sub) => {
-                if (sub.isConnected) {
+                if (isConnected(sub)) {
                     if (propSets === null || propSets.has(prop)) {
                         notifyChange(sub);
                     }
@@ -2891,25 +2907,16 @@ function notifyChange(subscriber) {
     }
 }
 function notifyWatch(watch) {
-    const containerEl = getContainer(watch.hostElement);
+    const containerEl = getContainer(watch.el);
     const state = getRenderingState(containerEl);
-    watch.dirty = true;
-    if (watch.mode === WatchMode.Watch) {
-        const promise = runWatch(watch);
-        state.watchRunning.add(promise);
-        promise.then(() => {
-            state.watchRunning.delete(promise);
-        });
+    watch.f |= WatchFlags.IsDirty;
+    const activeRendering = state.hostsRendering !== undefined;
+    if (activeRendering) {
+        state.watchStaging.add(watch);
     }
     else {
-        const activeRendering = state.hostsRendering !== undefined;
-        if (activeRendering) {
-            state.watchStaging.add(watch);
-        }
-        else {
-            state.watchNext.add(watch);
-            scheduleFrame(containerEl, state);
-        }
+        state.watchNext.add(watch);
+        scheduleFrame(containerEl, state);
     }
 }
 async function waitForWatches(state) {
@@ -3005,6 +3012,14 @@ function unwrapSubscriber(obj) {
         }
     }
     return obj;
+}
+function isConnected(sub) {
+    if (isElement(sub)) {
+        return sub.isConnected;
+    }
+    else {
+        return !!(sub.f & WatchFlags.IsConnected);
+    }
 }
 
 let runtimeSymbolId = 0;
@@ -3230,7 +3245,7 @@ const useCleanup$ = implicit$FirstArg(useCleanupQrl);
  */
 // </docs>
 function useResumeQrl(resumeFn) {
-    useOnWindow('qInit', resumeFn);
+    useOn('qresume', resumeFn);
 }
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3245,6 +3260,9 @@ function useResumeQrl(resumeFn) {
  */
 // </docs>
 const useResume$ = implicit$FirstArg(useResumeQrl);
+function useVisibleQrl(resumeFn) {
+    useOn('qvisible', resumeFn);
+}
 // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
@@ -3729,7 +3747,7 @@ async function render(parent, jsxNode) {
     ctx.hostElements.forEach((host) => {
         const elCtx = getContext(host);
         elCtx.refMap.array.filter(isWatchDescriptor).forEach((watch) => {
-            if (watch.dirty) {
+            if (watch.f & WatchFlags.IsDirty) {
                 promises.push(runWatch(watch));
             }
         });
@@ -3753,5 +3771,5 @@ function injectQContainer(containerEl) {
     containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
-export { $, Async, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, handleWatch, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useDocument, useEffect$, useEffectQrl, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, usePause$, usePauseQrl, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServer$, useServerQrl, useStore, useStyles$, useStylesQrl, useSubscriber, version, wrapSubscriber };
+export { $, Async, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, handleWatch, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, usePause$, usePauseQrl, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map

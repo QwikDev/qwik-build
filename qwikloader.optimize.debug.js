@@ -5,7 +5,7 @@
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {
+        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {
             detail: {
                 name: symbolName
             },
@@ -64,29 +64,30 @@
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-resume", new CustomEvent("qResume"));
+                broadcast("", "qresume", new CustomEvent("qresume"));
                 doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
                 if ("undefined" != typeof IntersectionObserver) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {
                                     bubbles: !1,
                                     detail: entry
                                 }));
                             }
                         }
                     }));
+                    doc.qO = observer;
                     new MutationObserver((mutations => {
                         for (const mutation2 of mutations) {
-                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                            observer.observe(mutation2.target);
                         }
-                    })).observe(document.body, {
-                        attributeFilter: [ "on:q-visible" ],
+                    })).observe(document.documentElement, {
+                        attributeFilter: [ "on:qvisible" ],
                         subtree: !0
                     });
-                    doc.querySelectorAll("[on\\:q-visible]").forEach((el => observer.observe(el)));
+                    doc.querySelectorAll("[on\\:qvisible]").forEach((el => observer.observe(el)));
                 }
             }
         };

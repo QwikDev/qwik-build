@@ -9499,339 +9499,6 @@ var getPlatform = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// packages/qwik/src/core/use/use-subscriber.ts
-function wrapSubscriber(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const target = obj[QOjectTargetSymbol];
-    if (!target) {
-      return obj;
-    }
-    return new Proxy(obj, {
-      get(target2, prop) {
-        if (prop === QOjectOriginalProxy) {
-          return target2;
-        }
-        target2[SetSubscriber] = subscriber;
-        return target2[prop];
-      },
-      ownKeys(target2) {
-        target2[SetSubscriber] = subscriber;
-        return Reflect.ownKeys(target2);
-      }
-    });
-  }
-  return obj;
-}
-
-// packages/qwik/src/core/import/qrl.ts
-var runtimeSymbolId = 0;
-var RUNTIME_QRL = "/runtimeQRL";
-function toInternalQRL(qrl) {
-  assertEqual(isQrl(qrl), true);
-  return qrl;
-}
-function qrlImport(element, qrl) {
-  const qrl_ = toInternalQRL(qrl);
-  if (qrl_.symbolRef)
-    return qrl_.symbolRef;
-  if (qrl_.symbolFn) {
-    return qrl_.symbolRef = qrl_.symbolFn().then((module2) => qrl_.symbolRef = module2[qrl_.symbol]);
-  } else {
-    if (!element) {
-      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
-    }
-    const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
-    return qrl_.symbolRef = then(symbol, (ref) => {
-      return qrl_.symbolRef = ref;
-    });
-  }
-}
-function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
-  return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
-}
-function stringifyQRL(qrl, opts = {}) {
-  var _a, _b;
-  const qrl_ = toInternalQRL(qrl);
-  const symbol = qrl_.symbol;
-  const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
-  const platform = opts.platform;
-  const element = opts.element;
-  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
-  const parts = [chunk];
-  if (symbol && symbol !== "default") {
-    parts.push("#", symbol);
-  }
-  const capture = qrl_.capture;
-  const captureRef = qrl_.captureRef;
-  if (opts.getObjId) {
-    if (captureRef && captureRef.length) {
-      const capture2 = captureRef.map(opts.getObjId);
-      parts.push(`[${capture2.join(" ")}]`);
-    }
-  } else if (capture && capture.length > 0) {
-    parts.push(`[${capture.join(" ")}]`);
-  }
-  const qrlString = parts.join("");
-  if (qrl_.chunk === RUNTIME_QRL && element) {
-    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
-    qrls.add(qrl);
-  }
-  return qrlString;
-}
-function parseQRL(qrl, el) {
-  const endIdx = qrl.length;
-  const hashIdx = indexOf(qrl, 0, "#");
-  const captureIdx = indexOf(qrl, hashIdx, "[");
-  const chunkEndIdx = Math.min(hashIdx, captureIdx);
-  const chunk = qrl.substring(0, chunkEndIdx);
-  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-  const symbolEndIdx = captureIdx;
-  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
-  const captureStartIdx = captureIdx;
-  const captureEndIdx = endIdx;
-  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-  if (chunk === RUNTIME_QRL) {
-    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
-  }
-  const iQrl = new QRLInternal(chunk, symbol, null, null, capture, null);
-  if (el) {
-    iQrl.setContainer(el);
-  }
-  return iQrl;
-}
-function indexOf(text, startIdx, char) {
-  const endIdx = text.length;
-  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-  return charIdx == -1 ? endIdx : charIdx;
-}
-function toQrlOrError(symbolOrQrl) {
-  if (!isQrl(symbolOrQrl)) {
-    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
-      symbolOrQrl = runtimeQrl(symbolOrQrl);
-    } else {
-      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
-    }
-  }
-  return symbolOrQrl;
-}
-
-// packages/qwik/src/core/import/qrl-class.ts
-function isQrl(value) {
-  return value instanceof QRLInternal;
-}
-var QRL = class {
-  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
-    this.chunk = chunk;
-    this.symbol = symbol;
-    this.symbolRef = symbolRef;
-    this.symbolFn = symbolFn;
-    this.capture = capture;
-    this.captureRef = captureRef;
-    this.canonicalChunk = chunk.replace(FIND_EXT, "");
-  }
-  setContainer(el) {
-    if (!this.el) {
-      this.el = el;
-    }
-  }
-  async resolve(el) {
-    if (el) {
-      this.setContainer(el);
-    }
-    return qrlImport(this.el, this);
-  }
-  invokeFn(el, currentCtx) {
-    return (...args) => {
-      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
-      return then(fn, (fn2) => {
-        if (typeof fn2 === "function") {
-          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
-          const context = __spreadProps(__spreadValues({}, baseContext), {
-            qrl: this
-          });
-          return useInvoke(context, fn2, ...args);
-        }
-        throw new Error("QRL is not a function");
-      });
-    };
-  }
-  copy() {
-    const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
-    copy.refSymbol = this.refSymbol;
-    return copy;
-  }
-  invoke(...args) {
-    const fn = this.invokeFn();
-    return fn(...args);
-  }
-  serialize(options) {
-    return stringifyQRL(this, options);
-  }
-};
-var QRLInternal = QRL;
-var FIND_EXT = /\?[\w=&]+$/;
-
-// packages/qwik/src/core/render/jsx/host.public.ts
-var Host = { __brand__: "host" };
-var SkipRerender = { __brand__: "skip" };
-
-// packages/qwik/src/core/render/render.ts
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-  if (jsxNode === void 0) {
-    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
-  }
-  if (Array.isArray(jsxNode)) {
-    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
-  } else if (jsxNode.type === Host) {
-    updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
-    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
-  } else {
-    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
-  }
-}
-
-// packages/qwik/src/core/util/hash_code.ts
-function hashCode(text, hash = 0) {
-  if (text.length === 0)
-    return hash;
-  for (let i = 0; i < text.length; i++) {
-    const chr = text.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0;
-  }
-  return Number(Math.abs(hash)).toString(36);
-}
-
-// packages/qwik/src/core/component/qrl-styles.ts
-function styleKey(qStyles) {
-  return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-  return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-  return styleId && ComponentStylesPrefixContent + styleId;
-}
-
-// packages/qwik/src/core/render/jsx/jsx-runtime.ts
-var JSXNodeImpl = class {
-  constructor(type, props, key = null) {
-    this.type = type;
-    this.props = props;
-    this.children = EMPTY_ARRAY;
-    this.text = void 0;
-    this.key = null;
-    if (key != null) {
-      this.key = String(key);
-    }
-    if (props) {
-      const children = processNode(props.children);
-      if (children !== void 0) {
-        if (Array.isArray(children)) {
-          this.children = children;
-        } else {
-          this.children = [children];
-        }
-      }
-    }
-  }
-};
-function processNode(node) {
-  if (node == null || typeof node === "boolean") {
-    return void 0;
-  }
-  if (isJSXNode(node)) {
-    if (node.type === Host || node.type === SkipRerender) {
-      return node;
-    } else if (typeof node.type === "function") {
-      return processNode(node.type(__spreadProps(__spreadValues({}, node.props), { children: node.children }), node.key));
-    } else {
-      return node;
-    }
-  } else if (Array.isArray(node)) {
-    return node.flatMap(processNode).filter((e) => e != null);
-  } else if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
-    const newNode = new JSXNodeImpl("#text", null, null);
-    newNode.text = String(node);
-    return newNode;
-  } else {
-    logWarn("Unvalid node, skipping");
-    return void 0;
-  }
-}
-var isJSXNode = (n) => {
-  if (qDev) {
-    if (n instanceof JSXNodeImpl) {
-      return true;
-    }
-    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
-      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-    }
-    return false;
-  } else {
-    return n instanceof JSXNodeImpl;
-  }
-};
-
-// packages/qwik/src/core/component/component-ctx.ts
-var firstRenderComponent = (rctx, ctx) => {
-  ctx.element.setAttribute(QHostAttr, "");
-  return renderComponent(rctx, ctx);
-};
-var renderComponent = (rctx, ctx) => {
-  ctx.dirty = false;
-  const hostElement = ctx.element;
-  const onRenderQRL = ctx.renderQrl;
-  assertDefined(onRenderQRL);
-  rctx.globalState.hostsStaging.delete(hostElement);
-  const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
-  invocatinContext.subscriber = hostElement;
-  const waitOn = invocatinContext.waitOn = [];
-  ctx.refMap.array.forEach((obj) => {
-    removeSub(obj, hostElement);
-  });
-  const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
-  const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
-  return then(renderPromise, (jsxNode) => {
-    rctx.hostElements.add(hostElement);
-    const waitOnPromise = promiseAll(waitOn);
-    return then(waitOnPromise, (waitOnResolved) => {
-      var _a;
-      waitOnResolved.forEach((task) => {
-        if (isStyleTask(task)) {
-          appendStyle(rctx, hostElement, task);
-        }
-      });
-      if (ctx.dirty) {
-        logDebug("Dropping render. State changed during render.");
-        return renderComponent(rctx, ctx);
-      }
-      let componentCtx = ctx.component;
-      if (!componentCtx) {
-        componentCtx = ctx.component = {
-          hostElement,
-          slots: [],
-          styleHostClass: void 0,
-          styleClass: void 0,
-          styleId: void 0
-        };
-        const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) != null ? _a : void 0;
-        if (scopedStyleId) {
-          componentCtx.styleId = scopedStyleId;
-          componentCtx.styleHostClass = styleHost(scopedStyleId);
-          componentCtx.styleClass = styleContent(scopedStyleId);
-          hostElement.classList.add(componentCtx.styleHostClass);
-        }
-      }
-      componentCtx.slots = [];
-      const newCtx = __spreadProps(__spreadValues({}, rctx), {
-        component: componentCtx
-      });
-      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
-    });
-  });
-};
-
 // packages/qwik/src/core/import/qrl.public.ts
 function $(expression) {
   return runtimeQrl(expression);
@@ -9918,12 +9585,12 @@ function useLexicalScope() {
 
 // packages/qwik/src/core/util/case.ts
 function fromCamelToKebabCase(text) {
-  return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
 
 // packages/qwik/src/core/props/props-on.ts
-var ON_PROP_REGEX = /^on([A-Z]|-.).*Qrl$/;
-var ON$_PROP_REGEX = /^on([A-Z]|-.).*\$$/;
+var ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*Qrl$/;
+var ON$_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
 function isOnProp(prop) {
   return ON_PROP_REGEX.test(prop);
 }
@@ -10001,17 +9668,104 @@ function serializeQRLs(existingQRLs, ctx) {
   return existingQRLs.map((qrl) => isPromise(qrl) ? "" : stringifyQRL(qrl, opts)).filter((v) => !!v).join("\n");
 }
 
+// packages/qwik/src/core/util/hash_code.ts
+function hashCode(text, hash = 0) {
+  if (text.length === 0)
+    return hash;
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0;
+  }
+  return Number(Math.abs(hash)).toString(36);
+}
+
+// packages/qwik/src/core/component/qrl-styles.ts
+function styleKey(qStyles) {
+  return qStyles && String(hashCode(qStyles.symbol));
+}
+function styleHost(styleId) {
+  return styleId && ComponentStylesPrefixHost + styleId;
+}
+function styleContent(styleId) {
+  return styleId && ComponentStylesPrefixContent + styleId;
+}
+
+// packages/qwik/src/core/render/jsx/host.public.ts
+var Host = { __brand__: "host" };
+var SkipRerender = { __brand__: "skip" };
+
+// packages/qwik/src/core/render/jsx/jsx-runtime.ts
+var JSXNodeImpl = class {
+  constructor(type, props, key = null) {
+    this.type = type;
+    this.props = props;
+    this.children = EMPTY_ARRAY;
+    this.text = void 0;
+    this.key = null;
+    if (key != null) {
+      this.key = String(key);
+    }
+    if (props) {
+      const children = processNode(props.children);
+      if (children !== void 0) {
+        if (Array.isArray(children)) {
+          this.children = children;
+        } else {
+          this.children = [children];
+        }
+      }
+    }
+  }
+};
+function processNode(node) {
+  if (node == null || typeof node === "boolean") {
+    return void 0;
+  }
+  if (isJSXNode(node)) {
+    if (node.type === Host || node.type === SkipRerender) {
+      return node;
+    } else if (typeof node.type === "function") {
+      return processNode(node.type(__spreadProps(__spreadValues({}, node.props), { children: node.children }), node.key));
+    } else {
+      return node;
+    }
+  } else if (Array.isArray(node)) {
+    return node.flatMap(processNode).filter((e) => e != null);
+  } else if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
+    const newNode = new JSXNodeImpl("#text", null, null);
+    newNode.text = String(node);
+    return newNode;
+  } else {
+    logWarn("Unvalid node, skipping");
+    return void 0;
+  }
+}
+var isJSXNode = (n) => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
+      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+    }
+    return false;
+  } else {
+    return n instanceof JSXNodeImpl;
+  }
+};
+
 // packages/qwik/src/core/component/component.public.ts
 function useCleanupQrl(unmountFn) {
   throw new Error("IMPLEMENT: useCleanupQrl" + unmountFn);
 }
 var useCleanup$ = implicit$FirstArg(useCleanupQrl);
 function useResumeQrl(resumeFn) {
-  useOnWindow("qInit", resumeFn);
+  useOn("qresume", resumeFn);
 }
 var useResume$ = implicit$FirstArg(useResumeQrl);
 function useVisibleQrl(resumeFn) {
-  useOn("qVisible", resumeFn);
+  useOn("qvisible", resumeFn);
 }
 var useVisible$ = implicit$FirstArg(useVisibleQrl);
 function usePauseQrl(dehydrateFn) {
@@ -10022,11 +9776,6 @@ function useOn(event, eventFn) {
   const el = useHostElement();
   const ctx = getContext(el);
   qPropWriteQRL(void 0, ctx, `on:${event}`, eventFn);
-}
-function useOnWindow(event, eventFn) {
-  const el = useHostElement();
-  const ctx = getContext(el);
-  qPropWriteQRL(void 0, ctx, `on-window:${event}`, eventFn);
 }
 function useStylesQrl(styles) {
   _useStyles(styles, false);
@@ -10063,59 +9812,46 @@ function handleWatch() {
   const [watch] = useLexicalScope();
   notifyWatch(watch);
 }
-function useEffectQrl(watchQrl, opts) {
+function useWatchQrl(qrl, opts) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
-    const hostElement = useHostElement();
+    const el = useHostElement();
     const watch2 = {
-      watchQrl,
-      hostElement,
-      mode: 2 /* Effect */,
-      isConnected: true,
-      dirty: true
+      qrl,
+      el,
+      f: 1 /* IsConnected */ | 2 /* IsDirty */
     };
     setWatch(watch2);
-    getContext(hostElement).refMap.add(watch2);
-    const run = opts == null ? void 0 : opts.run;
-    if (run) {
-      const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
-      watchHandler.refSymbol = watchQrl.symbol;
-      if ((opts == null ? void 0 : opts.run) === "load") {
-        useResumeQrl(watchHandler);
-      } else {
-        useOn("qVisible", watchHandler);
-      }
+    getContext(el).refMap.add(watch2);
+    useWaitOn(runWatch(watch2));
+    const isServer = getPlatform(useDocument()).isServer;
+    if (isServer) {
+      useRunWatch(watch2, opts == null ? void 0 : opts.run);
     }
   }
 }
-var useEffect$ = implicit$FirstArg(useEffectQrl);
-function useClientEffectQrl(watchQrl, opts) {
+var useWatch$ = implicit$FirstArg(useWatchQrl);
+function useClientEffectQrl(qrl, opts) {
+  var _a;
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
-    const hostElement = useHostElement();
-    const isServer = getPlatform(useDocument()).isServer;
+    const el = useHostElement();
     const watch2 = {
-      watchQrl,
-      hostElement,
-      mode: 2 /* Effect */,
-      isConnected: true,
-      dirty: !isServer
+      qrl,
+      el,
+      f: 1 /* IsConnected */
     };
     setWatch(watch2);
-    getContext(hostElement).refMap.add(watch2);
-    if (isServer) {
-      const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
-      watchHandler.refSymbol = watchQrl.symbol;
-      if ((opts == null ? void 0 : opts.run) === "load") {
-        useResumeQrl(watchHandler);
-      } else {
-        useOn("qVisible", watchHandler);
-      }
+    getContext(el).refMap.add(watch2);
+    useRunWatch(watch2, (_a = opts == null ? void 0 : opts.run) != null ? _a : "visible");
+    const doc = useDocument();
+    if (doc["qO"]) {
+      doc["qO"].observe(el);
     }
   }
 }
 var useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-function useServerQrl(watchQrl) {
+function useServerMountQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     setWatch(true);
@@ -10125,13 +9861,13 @@ function useServerQrl(watchQrl) {
     }
   }
 }
-var useServer$ = implicit$FirstArg(useServerQrl);
+var useServerMount$ = implicit$FirstArg(useServerMountQrl);
 function runWatch(watch) {
-  if (!watch.dirty) {
+  if (!(watch.f & 2 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
     return Promise.resolve(watch);
   }
-  watch.dirty = false;
+  watch.f &= ~2 /* IsDirty */;
   const promise = new Promise((resolve) => {
     then(watch.running, () => {
       const destroy = watch.destroy;
@@ -10143,10 +9879,17 @@ function runWatch(watch) {
           logError(err);
         }
       }
-      const hostElement = watch.hostElement;
-      const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, "WatchEvent");
+      const el = watch.el;
+      const invokationContext = newInvokeContext(getDocument(el), el, el, "WatchEvent");
       invokationContext.watch = watch;
-      const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
+      const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+        const captureRef = watch.qrl.captureRef;
+        if (Array.isArray(captureRef)) {
+          captureRef.forEach((obj) => {
+            removeSub(obj, watch);
+          });
+        }
+      });
       const tracker = (obj, prop) => {
         obj[SetSubscriber] = watch;
         if (prop) {
@@ -10155,12 +9898,6 @@ function runWatch(watch) {
           return obj[QOjectAllSymbol];
         }
       };
-      const captureRef = watch.watchQrl.captureRef;
-      if (Array.isArray(captureRef)) {
-        captureRef.forEach((obj) => {
-          removeSub(obj, watch);
-        });
-      }
       return then(watchFn(tracker), (returnValue) => {
         if (typeof returnValue === "function") {
           watch.destroy = noSerialize(returnValue);
@@ -10172,6 +9909,275 @@ function runWatch(watch) {
   watch.running = noSerialize(promise);
   return promise;
 }
+var useRunWatch = (watch, run) => {
+  if (run === "load") {
+    useResumeQrl(getWatchHandlerQrl(watch));
+  } else if (run === "visible") {
+    useVisibleQrl(getWatchHandlerQrl(watch));
+  }
+};
+var getWatchHandlerQrl = (watch) => {
+  const watchQrl = watch.qrl;
+  const watchHandler = new QRLInternal2(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch]);
+  watchHandler.refSymbol = watchQrl.symbol;
+  return watchHandler;
+};
+
+// packages/qwik/src/core/use/use-subscriber.ts
+function wrapSubscriber(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const target = obj[QOjectTargetSymbol];
+    if (!target) {
+      return obj;
+    }
+    return new Proxy(obj, {
+      get(target2, prop) {
+        if (prop === QOjectOriginalProxy) {
+          return target2;
+        }
+        target2[SetSubscriber] = subscriber;
+        return target2[prop];
+      },
+      ownKeys(target2) {
+        target2[SetSubscriber] = subscriber;
+        return Reflect.ownKeys(target2);
+      }
+    });
+  }
+  return obj;
+}
+function isConnected(sub) {
+  if (isElement(sub)) {
+    return sub.isConnected;
+  } else {
+    return !!(sub.f & 1 /* IsConnected */);
+  }
+}
+
+// packages/qwik/src/core/import/qrl.ts
+var runtimeSymbolId = 0;
+var RUNTIME_QRL = "/runtimeQRL";
+function toInternalQRL(qrl) {
+  assertEqual(isQrl(qrl), true);
+  return qrl;
+}
+function qrlImport(element, qrl) {
+  const qrl_ = toInternalQRL(qrl);
+  if (qrl_.symbolRef)
+    return qrl_.symbolRef;
+  if (qrl_.symbolFn) {
+    return qrl_.symbolRef = qrl_.symbolFn().then((module2) => qrl_.symbolRef = module2[qrl_.symbol]);
+  } else {
+    if (!element) {
+      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
+    }
+    const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    return qrl_.symbolRef = then(symbol, (ref) => {
+      return qrl_.symbolRef = ref;
+    });
+  }
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+  return new QRLInternal2(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+}
+function stringifyQRL(qrl, opts = {}) {
+  var _a, _b;
+  const qrl_ = toInternalQRL(qrl);
+  const symbol = qrl_.symbol;
+  const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
+  const platform = opts.platform;
+  const element = opts.element;
+  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
+  const parts = [chunk];
+  if (symbol && symbol !== "default") {
+    parts.push("#", symbol);
+  }
+  const capture = qrl_.capture;
+  const captureRef = qrl_.captureRef;
+  if (opts.getObjId) {
+    if (captureRef && captureRef.length) {
+      const capture2 = captureRef.map(opts.getObjId);
+      parts.push(`[${capture2.join(" ")}]`);
+    }
+  } else if (capture && capture.length > 0) {
+    parts.push(`[${capture.join(" ")}]`);
+  }
+  const qrlString = parts.join("");
+  if (qrl_.chunk === RUNTIME_QRL && element) {
+    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
+    qrls.add(qrl);
+  }
+  return qrlString;
+}
+function parseQRL(qrl, el) {
+  const endIdx = qrl.length;
+  const hashIdx = indexOf(qrl, 0, "#");
+  const captureIdx = indexOf(qrl, hashIdx, "[");
+  const chunkEndIdx = Math.min(hashIdx, captureIdx);
+  const chunk = qrl.substring(0, chunkEndIdx);
+  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+  const symbolEndIdx = captureIdx;
+  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
+  const captureStartIdx = captureIdx;
+  const captureEndIdx = endIdx;
+  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
+  if (chunk === RUNTIME_QRL) {
+    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
+  }
+  const iQrl = new QRLInternal2(chunk, symbol, null, null, capture, null);
+  if (el) {
+    iQrl.setContainer(el);
+  }
+  return iQrl;
+}
+function indexOf(text, startIdx, char) {
+  const endIdx = text.length;
+  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+  return charIdx == -1 ? endIdx : charIdx;
+}
+function toQrlOrError(symbolOrQrl) {
+  if (!isQrl(symbolOrQrl)) {
+    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
+      symbolOrQrl = runtimeQrl(symbolOrQrl);
+    } else {
+      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
+    }
+  }
+  return symbolOrQrl;
+}
+
+// packages/qwik/src/core/import/qrl-class.ts
+function isQrl(value) {
+  return value instanceof QRLInternal2;
+}
+var QRL3 = class {
+  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+    this.chunk = chunk;
+    this.symbol = symbol;
+    this.symbolRef = symbolRef;
+    this.symbolFn = symbolFn;
+    this.capture = capture;
+    this.captureRef = captureRef;
+    this.canonicalChunk = chunk.replace(FIND_EXT, "");
+  }
+  setContainer(el) {
+    if (!this.el) {
+      this.el = el;
+    }
+  }
+  async resolve(el) {
+    if (el) {
+      this.setContainer(el);
+    }
+    return qrlImport(this.el, this);
+  }
+  invokeFn(el, currentCtx, beforeFn) {
+    return (...args) => {
+      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      return then(fn, (fn2) => {
+        if (typeof fn2 === "function") {
+          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
+          const context = __spreadProps(__spreadValues({}, baseContext), {
+            qrl: this
+          });
+          if (beforeFn) {
+            beforeFn();
+          }
+          return useInvoke(context, fn2, ...args);
+        }
+        throw new Error("QRL is not a function");
+      });
+    };
+  }
+  copy() {
+    const copy = new QRLInternal2(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    copy.refSymbol = this.refSymbol;
+    return copy;
+  }
+  invoke(...args) {
+    const fn = this.invokeFn();
+    return fn(...args);
+  }
+  serialize(options) {
+    return stringifyQRL(this, options);
+  }
+};
+var QRLInternal2 = QRL3;
+var FIND_EXT = /\?[\w=&]+$/;
+
+// packages/qwik/src/core/render/render.ts
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+  if (jsxNode === void 0) {
+    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
+  }
+  if (Array.isArray(jsxNode)) {
+    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
+  } else if (jsxNode.type === Host) {
+    updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
+  } else {
+    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
+  }
+}
+
+// packages/qwik/src/core/component/component-ctx.ts
+var firstRenderComponent = (rctx, ctx) => {
+  ctx.element.setAttribute(QHostAttr, "");
+  return renderComponent(rctx, ctx);
+};
+var renderComponent = (rctx, ctx) => {
+  ctx.dirty = false;
+  const hostElement = ctx.element;
+  const onRenderQRL = ctx.renderQrl;
+  assertDefined(onRenderQRL);
+  rctx.globalState.hostsStaging.delete(hostElement);
+  const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
+  invocatinContext.subscriber = hostElement;
+  const waitOn = invocatinContext.waitOn = [];
+  ctx.refMap.array.forEach((obj) => {
+    removeSub(obj, hostElement);
+  });
+  const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
+  const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+  return then(renderPromise, (jsxNode) => {
+    rctx.hostElements.add(hostElement);
+    const waitOnPromise = promiseAll(waitOn);
+    return then(waitOnPromise, (waitOnResolved) => {
+      var _a;
+      waitOnResolved.forEach((task) => {
+        if (isStyleTask(task)) {
+          appendStyle(rctx, hostElement, task);
+        }
+      });
+      if (ctx.dirty) {
+        logDebug("Dropping render. State changed during render.");
+        return renderComponent(rctx, ctx);
+      }
+      let componentCtx = ctx.component;
+      if (!componentCtx) {
+        componentCtx = ctx.component = {
+          hostElement,
+          slots: [],
+          styleHostClass: void 0,
+          styleClass: void 0,
+          styleId: void 0
+        };
+        const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) != null ? _a : void 0;
+        if (scopedStyleId) {
+          componentCtx.styleId = scopedStyleId;
+          componentCtx.styleHostClass = styleHost(scopedStyleId);
+          componentCtx.styleClass = styleContent(scopedStyleId);
+          hostElement.classList.add(componentCtx.styleHostClass);
+        }
+      }
+      componentCtx.slots = [];
+      const newCtx = __spreadProps(__spreadValues({}, rctx), {
+        component: componentCtx
+      });
+      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    });
+  });
+};
 
 // packages/qwik/src/core/render/notify-render.ts
 function notifyRender(hostElement) {
@@ -10281,7 +10287,7 @@ async function postRendering(containerEl, state, ctx) {
   });
   state.watchNext.clear();
   state.watchStaging.forEach((watch) => {
-    if (ctx.hostElements.has(watch.hostElement)) {
+    if (ctx.hostElements.has(watch.el)) {
       promises.push(runWatch(watch));
     } else {
       state.watchNext.add(watch);
@@ -10293,6 +10299,10 @@ async function postRendering(containerEl, state, ctx) {
     state.hostsNext.add(el);
   });
   state.hostsStaging.clear();
+  state.watchStaging.forEach((watch) => {
+    state.watchNext.add(watch);
+  });
+  state.watchStaging.clear();
   state.hostsRendering = void 0;
   state.renderPromise = void 0;
   if (state.hostsNext.size + state.watchNext.size > 0) {
@@ -10436,7 +10446,7 @@ var ReadWriteProxyHandler = class {
     if (isArray) {
       target[prop] = unwrappedNewValue;
       subs.forEach((_, sub) => {
-        if (sub.isConnected) {
+        if (isConnected(sub)) {
           notifyChange(sub);
         } else {
           subs.delete(sub);
@@ -10448,7 +10458,7 @@ var ReadWriteProxyHandler = class {
     if (oldValue !== unwrappedNewValue) {
       target[prop] = unwrappedNewValue;
       subs.forEach((propSets, sub) => {
-        if (sub.isConnected) {
+        if (isConnected(sub)) {
           if (propSets === null || propSets.has(prop)) {
             notifyChange(sub);
           }
@@ -10499,23 +10509,15 @@ function notifyChange(subscriber) {
   }
 }
 function notifyWatch(watch) {
-  const containerEl = getContainer(watch.hostElement);
+  const containerEl = getContainer(watch.el);
   const state = getRenderingState(containerEl);
-  watch.dirty = true;
-  if (watch.mode === 0 /* Watch */) {
-    const promise = runWatch(watch);
-    state.watchRunning.add(promise);
-    promise.then(() => {
-      state.watchRunning.delete(promise);
-    });
+  watch.f |= 2 /* IsDirty */;
+  const activeRendering = state.hostsRendering !== void 0;
+  if (activeRendering) {
+    state.watchStaging.add(watch);
   } else {
-    const activeRendering = state.hostsRendering !== void 0;
-    if (activeRendering) {
-      state.watchStaging.add(watch);
-    } else {
-      state.watchNext.add(watch);
-      scheduleFrame(containerEl, state);
-    }
+    state.watchNext.add(watch);
+    scheduleFrame(containerEl, state);
   }
 }
 async function waitForWatches(state) {
@@ -10789,12 +10791,14 @@ function getContext(element) {
   }
   return ctx;
 }
-var PREFIXES = ["onWindow", "onWindow", "on"];
+var PREFIXES = ["document:on", "window:on", "on"];
+var SCOPED = ["on-document", "on-window", "on"];
 function normalizeOnProp(prop) {
   let scope = "on";
-  for (const prefix of PREFIXES) {
+  for (let i = 0; i < PREFIXES.length; i++) {
+    const prefix = PREFIXES[i];
     if (prop.startsWith(prefix)) {
-      scope = prefix;
+      scope = SCOPED[i];
       prop = prop.slice(prefix.length);
     }
   }
@@ -11004,6 +11008,12 @@ function patchVnode(rctx, elm, vnode, isSvg) {
           if (oldCh.length > 0) {
             removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
           }
+        }
+      });
+      Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
+        if (templateEl && !splittedChidren[key]) {
+          removeNode(rctx, templateEl);
+          slotMaps.templates[key] = void 0;
         }
       });
       Object.entries(splittedChidren).forEach(([key, ch2]) => {
@@ -11247,6 +11257,7 @@ var PROP_HANDLER_MAP = {
 };
 var ALLOWS_PROPS = ["class", "className", "style", "id", "q:slot"];
 var HOST_PREFIX = "host:";
+var SCOPE_PREFIX = /^(host|window|document):/;
 function updateProperties(rctx, ctx, expectProps, isSvg) {
   if (!expectProps) {
     return false;
@@ -11273,11 +11284,12 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
     }
     if (qwikProps) {
       const skipProperty = ALLOWS_PROPS.includes(key);
-      const hPrefixed = key.startsWith(HOST_PREFIX);
-      if (!skipProperty && !hPrefixed) {
+      const hasPrefix = SCOPE_PREFIX.test(key);
+      if (!skipProperty && !hasPrefix) {
         qwikProps[key] = newValue;
         continue;
       }
+      const hPrefixed = key.startsWith(HOST_PREFIX);
       if (hPrefixed) {
         key = key.slice(HOST_PREFIX.length);
       }
@@ -11527,7 +11539,7 @@ function getElement(docOrElm) {
 }
 
 // packages/qwik/src/server/scripts.ts
-var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),p=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"q-visible",new CustomEvent("qVisible",{bubbles:!1,detail:r})))}));new MutationObserver((e=>{for(const r of e)r.target.hasAttribute("on:q-visible")&&t.observe(r.target)})).observe(document.body,{attributeFilter:["on:q-visible"],subtree:!0}),e.querySelectorAll("[on\\\\:q-visible]").forEach((e=>t.observe(e)))}},d=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(d);else for(const t in e)t.startsWith("on")&&d(t.slice(2))}e.addEventListener("readystatechange",p),p()}})(document);`;
+var QWIK_LOADER_DEFAULT_MINIFIED = `((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),p=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","qresume",new CustomEvent("qresume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:r})))}));e.qO=t,new MutationObserver((e=>{for(const r of e)t.observe(r.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}},d=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(d);else for(const t in e)t.startsWith("on")&&d(t.slice(2))}e.addEventListener("readystatechange",p),p()}})(document);`;
 var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -11535,7 +11547,7 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {
+        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {
             detail: {
                 name: symbolName
             },
@@ -11594,29 +11606,30 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-resume", new CustomEvent("qResume"));
+                broadcast("", "qresume", new CustomEvent("qresume"));
                 doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);
                 if ("undefined" != typeof IntersectionObserver) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {
                                     bubbles: !1,
                                     detail: entry
                                 }));
                             }
                         }
                     }));
+                    doc.qO = observer;
                     new MutationObserver((mutations => {
                         for (const mutation2 of mutations) {
-                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                            observer.observe(mutation2.target);
                         }
-                    })).observe(document.body, {
-                        attributeFilter: [ "on:q-visible" ],
+                    })).observe(document.documentElement, {
+                        attributeFilter: [ "on:qvisible" ],
                         subtree: !0
                     });
-                    doc.querySelectorAll("[on\\\\:q-visible]").forEach((el => observer.observe(el)));
+                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));
                 }
             }
         };
@@ -11640,7 +11653,7 @@ var QWIK_LOADER_DEFAULT_DEBUG = `(() => {
         }
     })(document);
 })();`;
-var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qSymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),d=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","q-resume",new CustomEvent("qResume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"q-visible",new CustomEvent("qVisible",{bubbles:!1,detail:r})))}));new MutationObserver((e=>{for(const r of e)r.target.hasAttribute("on:q-visible")&&t.observe(r.target)})).observe(document.body,{attributeFilter:["on:q-visible"],subtree:!0}),e.querySelectorAll("[on\\\\:q-visible]").forEach((e=>t.observe(e)))}};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",d),d())})(document);`;
+var QWIK_LOADER_OPTIMIZE_MINIFIED = `((e,t,n)=>{const r="__q_context__",o=["on:","on-window:","on-document:"],s=(t,n,r)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>l(e,n,r)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,n,s)=>{for(const l of o){const o=t.getAttribute(l+n);if(o){t.hasAttribute("preventdefault:"+n)&&s.preventDefault();for(const n of o.split("\\n")){const o=c(t,n);if(o){const n=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[n]||i(o+" does not export "+n),l=e[r];try{e[r]=[t,s,o],c(s,t,o)}finally{e[r]=l,a(t,n)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;n&&n.getAttribute;)l(n,t.type,t),n=t.bubbles?n.parentElement:null},f=e=>(n||(n=new Worker(URL.createObjectURL(new Blob(['addEventListener("message",(e=>e.data.map((e=>fetch(e)))));'],{type:"text/javascript"})))),n.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),n),d=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,s("","qresume",new CustomEvent("qresume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),l(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,u,{capture:!0}))),e.addEventListener("readystatechange",d),d())})(document);`;
 var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
@@ -11648,7 +11661,7 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qSymbol", {
+        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {
             detail: {
                 name: symbolName
             },
@@ -11707,29 +11720,30 @@ var QWIK_LOADER_OPTIMIZE_DEBUG = `(() => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-resume", new CustomEvent("qResume"));
+                broadcast("", "qresume", new CustomEvent("qresume"));
                 doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);
                 if ("undefined" != typeof IntersectionObserver) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "q-visible", new CustomEvent("qVisible", {
+                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {
                                     bubbles: !1,
                                     detail: entry
                                 }));
                             }
                         }
                     }));
+                    doc.qO = observer;
                     new MutationObserver((mutations => {
                         for (const mutation2 of mutations) {
-                            mutation2.target.hasAttribute("on:q-visible") && observer.observe(mutation2.target);
+                            observer.observe(mutation2.target);
                         }
-                    })).observe(document.body, {
-                        attributeFilter: [ "on:q-visible" ],
+                    })).observe(document.documentElement, {
+                        attributeFilter: [ "on:qvisible" ],
                         subtree: !0
                     });
-                    doc.querySelectorAll("[on\\\\:q-visible]").forEach((el => observer.observe(el)));
+                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));
                 }
             }
         };

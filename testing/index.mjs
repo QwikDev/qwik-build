@@ -489,177 +489,49 @@ var getPlatform2 = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// packages/qwik/src/core/use/use-subscriber.ts
-function wrapSubscriber(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const target = obj[QOjectTargetSymbol];
-    if (!target) {
-      return obj;
-    }
-    return new Proxy(obj, {
-      get(target2, prop) {
-        if (prop === QOjectOriginalProxy) {
-          return target2;
-        }
-        target2[SetSubscriber] = subscriber;
-        return target2[prop];
-      },
-      ownKeys(target2) {
-        target2[SetSubscriber] = subscriber;
-        return Reflect.ownKeys(target2);
-      }
-    });
-  }
-  return obj;
+// packages/qwik/src/core/import/qrl.public.ts
+function $(expression) {
+  return runtimeQrl(expression);
+}
+function implicit$FirstArg(fn) {
+  return function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+  };
 }
 
-// packages/qwik/src/core/import/qrl.ts
-var runtimeSymbolId = 0;
-var RUNTIME_QRL = "/runtimeQRL";
-function toInternalQRL(qrl) {
-  assertEqual(isQrl(qrl), true);
-  return qrl;
-}
-function qrlImport(element, qrl) {
-  const qrl_ = toInternalQRL(qrl);
-  if (qrl_.symbolRef)
-    return qrl_.symbolRef;
-  if (qrl_.symbolFn) {
-    return qrl_.symbolRef = qrl_.symbolFn().then((module) => qrl_.symbolRef = module[qrl_.symbol]);
-  } else {
-    if (!element) {
-      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
-    }
-    const symbol = getPlatform2(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
-    return qrl_.symbolRef = then(symbol, (ref) => {
-      return qrl_.symbolRef = ref;
-    });
-  }
-}
-function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
-  return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
-}
-function stringifyQRL(qrl, opts = {}) {
-  const qrl_ = toInternalQRL(qrl);
-  const symbol = qrl_.symbol;
-  const refSymbol = qrl_.refSymbol ?? symbol;
-  const platform = opts.platform;
-  const element = opts.element;
-  const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
-  const parts = [chunk];
-  if (symbol && symbol !== "default") {
-    parts.push("#", symbol);
-  }
-  const capture = qrl_.capture;
-  const captureRef = qrl_.captureRef;
-  if (opts.getObjId) {
-    if (captureRef && captureRef.length) {
-      const capture2 = captureRef.map(opts.getObjId);
-      parts.push(`[${capture2.join(" ")}]`);
-    }
-  } else if (capture && capture.length > 0) {
-    parts.push(`[${capture.join(" ")}]`);
-  }
-  const qrlString = parts.join("");
-  if (qrl_.chunk === RUNTIME_QRL && element) {
-    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
-    qrls.add(qrl);
-  }
-  return qrlString;
-}
-function parseQRL(qrl, el) {
-  const endIdx = qrl.length;
-  const hashIdx = indexOf(qrl, 0, "#");
-  const captureIdx = indexOf(qrl, hashIdx, "[");
-  const chunkEndIdx = Math.min(hashIdx, captureIdx);
-  const chunk = qrl.substring(0, chunkEndIdx);
-  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-  const symbolEndIdx = captureIdx;
-  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
-  const captureStartIdx = captureIdx;
-  const captureEndIdx = endIdx;
-  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-  if (chunk === RUNTIME_QRL) {
-    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
-  }
-  const iQrl = new QRLInternal(chunk, symbol, null, null, capture, null);
-  if (el) {
-    iQrl.setContainer(el);
-  }
-  return iQrl;
-}
-function indexOf(text, startIdx, char) {
-  const endIdx = text.length;
-  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-  return charIdx == -1 ? endIdx : charIdx;
-}
-function toQrlOrError(symbolOrQrl) {
-  if (!isQrl(symbolOrQrl)) {
-    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
-      symbolOrQrl = runtimeQrl(symbolOrQrl);
-    } else {
-      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
-    }
-  }
-  return symbolOrQrl;
+// packages/qwik/src/core/use/use-host-element.public.ts
+function useHostElement() {
+  const element = getInvokeContext().hostElement;
+  assertDefined(element);
+  return element;
 }
 
-// packages/qwik/src/core/import/qrl-class.ts
-function isQrl(value) {
-  return value instanceof QRLInternal;
+// packages/qwik/src/core/use/use-document.public.ts
+function useDocument() {
+  const doc = getInvokeContext().doc;
+  if (!doc) {
+    throw new Error("Cant access document for existing context");
+  }
+  return doc;
 }
-var QRL = class {
-  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
-    this.chunk = chunk;
-    this.symbol = symbol;
-    this.symbolRef = symbolRef;
-    this.symbolFn = symbolFn;
-    this.capture = capture;
-    this.captureRef = captureRef;
-    this.canonicalChunk = chunk.replace(FIND_EXT, "");
+
+// packages/qwik/src/core/use/use-store.public.ts
+function useSequentialScope() {
+  const ctx = getInvokeContext();
+  assertEqual(ctx.event, RenderEvent);
+  const index = ctx.seq;
+  const hostElement = useHostElement();
+  const elementCtx = getContext(hostElement);
+  ctx.seq++;
+  const updateFn = (value) => {
+    elementCtx.seq[index] = elementCtx.refMap.add(value);
+  };
+  const seqIndex = elementCtx.seq[index];
+  if (typeof seqIndex === "number") {
+    return [elementCtx.refMap.get(seqIndex), updateFn];
   }
-  setContainer(el) {
-    if (!this.el) {
-      this.el = el;
-    }
-  }
-  async resolve(el) {
-    if (el) {
-      this.setContainer(el);
-    }
-    return qrlImport(this.el, this);
-  }
-  invokeFn(el, currentCtx) {
-    return (...args) => {
-      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
-      return then(fn, (fn2) => {
-        if (typeof fn2 === "function") {
-          const baseContext = currentCtx ?? newInvokeContext();
-          const context = {
-            ...baseContext,
-            qrl: this
-          };
-          return useInvoke(context, fn2, ...args);
-        }
-        throw new Error("QRL is not a function");
-      });
-    };
-  }
-  copy() {
-    const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
-    copy.refSymbol = this.refSymbol;
-    return copy;
-  }
-  invoke(...args) {
-    const fn = this.invokeFn();
-    return fn(...args);
-  }
-  serialize(options) {
-    return stringifyQRL(this, options);
-  }
-};
-var QRLInternal = QRL;
-var FIND_EXT = /\?[\w=&]+$/;
+  return [void 0, updateFn];
+}
 
 // packages/qwik/src/core/json/q-json.ts
 function qDeflate(obj, hostCtx) {
@@ -672,104 +544,42 @@ function qInflate(ref, hostCtx) {
   return obj;
 }
 
-// packages/qwik/src/core/util/case.ts
-function fromCamelToKebabCase(text) {
-  return text.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+// packages/qwik/src/core/use/use-url.public.ts
+function useURL() {
+  const url = getInvokeContext().url;
+  if (!url) {
+    throw new Error("Q-ERROR: no URL is associated with the execution context");
+  }
+  return url;
 }
 
-// packages/qwik/src/core/props/props-on.ts
-var ON_PROP_REGEX = /^on([A-Z]|-.).*Qrl$/;
-var ON$_PROP_REGEX = /^on([A-Z]|-.).*\$$/;
-function isOnProp(prop) {
-  return ON_PROP_REGEX.test(prop);
+// packages/qwik/src/core/use/use-lexical-scope.public.ts
+function useLexicalScope() {
+  const context = getInvokeContext();
+  const hostElement = context.hostElement;
+  const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(useURL())), hostElement);
+  if (qrl.captureRef == null) {
+    const el = context.element;
+    assertDefined(el);
+    resumeIfNeeded(getContainer(el));
+    const ctx = getContext(el);
+    qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
+  }
+  const subscriber = context.subscriber;
+  if (subscriber) {
+    return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
+  }
+  return qrl.captureRef;
 }
-function isOn$Prop(prop) {
-  return ON$_PROP_REGEX.test(prop);
-}
-function qPropWriteQRL(rctx, ctx, prop, value) {
-  if (!value) {
-    return;
-  }
-  if (typeof value == "string") {
-    value = parseQRL(value, ctx.element);
-  }
-  const existingQRLs = getExistingQRLs(ctx, prop);
-  if (Array.isArray(value)) {
-    value.forEach((value2) => qPropWriteQRL(rctx, ctx, prop, value2));
-  } else if (isQrl(value)) {
-    const cp = value.copy();
-    cp.setContainer(ctx.element);
-    const capture = cp.capture;
-    if (capture == null) {
-      const captureRef = cp.captureRef;
-      cp.capture = captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
-    }
-    for (let i = 0; i < existingQRLs.length; i++) {
-      const qrl = existingQRLs[i];
-      if (!isPromise(qrl) && qrl.canonicalChunk === cp.canonicalChunk && qrl.symbol === cp.symbol) {
-        existingQRLs.splice(i, 1);
-        i--;
-      }
-    }
-    existingQRLs.push(cp);
-  } else if (isPromise(value)) {
-    const writePromise = value.then((qrl) => {
-      existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-      qPropWriteQRL(rctx, ctx, prop, qrl);
-      return qrl;
-    });
-    existingQRLs.push(writePromise);
-  } else {
-    throw qError(0 /* TODO */, `Not QRLInternal: prop: ${prop}; value: ` + value);
-  }
-  const kebabProp = fromCamelToKebabCase(prop);
-  const newValue = serializeQRLs(existingQRLs, ctx);
-  if (ctx.element.getAttribute(kebabProp) !== newValue) {
-    if (rctx) {
-      setAttribute(rctx, ctx.element, kebabProp, newValue);
-    } else {
-      ctx.element.setAttribute(kebabProp, newValue);
-    }
-  }
-}
-function getExistingQRLs(ctx, prop) {
-  const key = "event:" + prop;
-  let parts = ctx.cache.get(key);
-  if (!parts) {
-    const attrName = fromCamelToKebabCase(prop);
-    parts = [];
-    (ctx.element.getAttribute(attrName) || "").split("\n").forEach((qrl) => {
-      if (qrl) {
-        parts.push(parseQRL(qrl, ctx.element));
-      }
-    });
-    ctx.cache.set(key, parts);
-  }
-  return parts;
-}
-function serializeQRLs(existingQRLs, ctx) {
-  const platform = getPlatform2(getDocument(ctx.element));
-  const element = ctx.element;
-  const opts = {
-    platform,
-    element
-  };
-  return existingQRLs.map((qrl) => isPromise(qrl) ? "" : stringifyQRL(qrl, opts)).filter((v) => !!v).join("\n");
+
+// packages/qwik/src/core/util/case.ts
+function fromCamelToKebabCase(text) {
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
 
 // packages/qwik/src/core/render/jsx/host.public.ts
 var Host = { __brand__: "host" };
 var SkipRerender = { __brand__: "skip" };
-
-// packages/qwik/src/core/import/qrl.public.ts
-function $(expression) {
-  return runtimeQrl(expression);
-}
-function implicit$FirstArg(fn) {
-  return function(first, ...rest) {
-    return fn.call(null, $(first), ...rest);
-  };
-}
 
 // packages/qwik/src/core/render/render.ts
 function visitJsxNode(ctx, elm, jsxNode, isSvg) {
@@ -1304,6 +1114,12 @@ function patchVnode(rctx, elm, vnode, isSvg) {
           }
         }
       });
+      Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
+        if (templateEl && !splittedChidren[key]) {
+          removeNode(rctx, templateEl);
+          slotMaps.templates[key] = void 0;
+        }
+      });
       Object.entries(splittedChidren).forEach(([key, ch2]) => {
         const slotElm = getSlotElement(rctx, slotMaps, elm, key);
         promises.push(smartUpdateChildren(rctx, slotElm, ch2, "slot", isSvg));
@@ -1542,6 +1358,7 @@ var PROP_HANDLER_MAP = {
 };
 var ALLOWS_PROPS = ["class", "className", "style", "id", "q:slot"];
 var HOST_PREFIX = "host:";
+var SCOPE_PREFIX = /^(host|window|document):/;
 function updateProperties(rctx, ctx, expectProps, isSvg) {
   if (!expectProps) {
     return false;
@@ -1568,11 +1385,12 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
     }
     if (qwikProps) {
       const skipProperty = ALLOWS_PROPS.includes(key);
-      const hPrefixed = key.startsWith(HOST_PREFIX);
-      if (!skipProperty && !hPrefixed) {
+      const hasPrefix = SCOPE_PREFIX.test(key);
+      if (!skipProperty && !hasPrefix) {
         qwikProps[key] = newValue;
         continue;
       }
+      const hPrefixed = key.startsWith(HOST_PREFIX);
       if (hPrefixed) {
         key = key.slice(HOST_PREFIX.length);
       }
@@ -1814,66 +1632,84 @@ function stringifyClassOrStyle(obj, isClass) {
   return String(obj);
 }
 
-// packages/qwik/src/core/use/use-host-element.public.ts
-function useHostElement() {
-  const element = getInvokeContext().hostElement;
-  assertDefined(element);
-  return element;
+// packages/qwik/src/core/props/props-on.ts
+var ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*Qrl$/;
+var ON$_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
+function isOnProp(prop) {
+  return ON_PROP_REGEX.test(prop);
 }
-
-// packages/qwik/src/core/use/use-document.public.ts
-function useDocument() {
-  const doc = getInvokeContext().doc;
-  if (!doc) {
-    throw new Error("Cant access document for existing context");
+function isOn$Prop(prop) {
+  return ON$_PROP_REGEX.test(prop);
+}
+function qPropWriteQRL(rctx, ctx, prop, value) {
+  if (!value) {
+    return;
   }
-  return doc;
+  if (typeof value == "string") {
+    value = parseQRL(value, ctx.element);
+  }
+  const existingQRLs = getExistingQRLs(ctx, prop);
+  if (Array.isArray(value)) {
+    value.forEach((value2) => qPropWriteQRL(rctx, ctx, prop, value2));
+  } else if (isQrl(value)) {
+    const cp = value.copy();
+    cp.setContainer(ctx.element);
+    const capture = cp.capture;
+    if (capture == null) {
+      const captureRef = cp.captureRef;
+      cp.capture = captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+    }
+    for (let i = 0; i < existingQRLs.length; i++) {
+      const qrl = existingQRLs[i];
+      if (!isPromise(qrl) && qrl.canonicalChunk === cp.canonicalChunk && qrl.symbol === cp.symbol) {
+        existingQRLs.splice(i, 1);
+        i--;
+      }
+    }
+    existingQRLs.push(cp);
+  } else if (isPromise(value)) {
+    const writePromise = value.then((qrl) => {
+      existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
+      qPropWriteQRL(rctx, ctx, prop, qrl);
+      return qrl;
+    });
+    existingQRLs.push(writePromise);
+  } else {
+    throw qError(0 /* TODO */, `Not QRLInternal: prop: ${prop}; value: ` + value);
+  }
+  const kebabProp = fromCamelToKebabCase(prop);
+  const newValue = serializeQRLs(existingQRLs, ctx);
+  if (ctx.element.getAttribute(kebabProp) !== newValue) {
+    if (rctx) {
+      setAttribute(rctx, ctx.element, kebabProp, newValue);
+    } else {
+      ctx.element.setAttribute(kebabProp, newValue);
+    }
+  }
 }
-
-// packages/qwik/src/core/use/use-store.public.ts
-function useSequentialScope() {
-  const ctx = getInvokeContext();
-  assertEqual(ctx.event, RenderEvent);
-  const index = ctx.seq;
-  const hostElement = useHostElement();
-  const elementCtx = getContext(hostElement);
-  ctx.seq++;
-  const updateFn = (value) => {
-    elementCtx.seq[index] = elementCtx.refMap.add(value);
+function getExistingQRLs(ctx, prop) {
+  const key = "event:" + prop;
+  let parts = ctx.cache.get(key);
+  if (!parts) {
+    const attrName = fromCamelToKebabCase(prop);
+    parts = [];
+    (ctx.element.getAttribute(attrName) || "").split("\n").forEach((qrl) => {
+      if (qrl) {
+        parts.push(parseQRL(qrl, ctx.element));
+      }
+    });
+    ctx.cache.set(key, parts);
+  }
+  return parts;
+}
+function serializeQRLs(existingQRLs, ctx) {
+  const platform = getPlatform2(getDocument(ctx.element));
+  const element = ctx.element;
+  const opts = {
+    platform,
+    element
   };
-  const seqIndex = elementCtx.seq[index];
-  if (typeof seqIndex === "number") {
-    return [elementCtx.refMap.get(seqIndex), updateFn];
-  }
-  return [void 0, updateFn];
-}
-
-// packages/qwik/src/core/use/use-url.public.ts
-function useURL() {
-  const url = getInvokeContext().url;
-  if (!url) {
-    throw new Error("Q-ERROR: no URL is associated with the execution context");
-  }
-  return url;
-}
-
-// packages/qwik/src/core/use/use-lexical-scope.public.ts
-function useLexicalScope() {
-  const context = getInvokeContext();
-  const hostElement = context.hostElement;
-  const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(useURL())), hostElement);
-  if (qrl.captureRef == null) {
-    const el = context.element;
-    assertDefined(el);
-    resumeIfNeeded(getContainer(el));
-    const ctx = getContext(el);
-    qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
-  }
-  const subscriber = context.subscriber;
-  if (subscriber) {
-    return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
-  }
-  return qrl.captureRef;
+  return existingQRLs.map((qrl) => isPromise(qrl) ? "" : stringifyQRL(qrl, opts)).filter((v) => !!v).join("\n");
 }
 
 // packages/qwik/src/core/component/component.public.ts
@@ -1882,11 +1718,11 @@ function useCleanupQrl(unmountFn) {
 }
 var useCleanup$ = implicit$FirstArg(useCleanupQrl);
 function useResumeQrl(resumeFn) {
-  useOnWindow("qInit", resumeFn);
+  useOn("qresume", resumeFn);
 }
 var useResume$ = implicit$FirstArg(useResumeQrl);
 function useVisibleQrl(resumeFn) {
-  useOn("qVisible", resumeFn);
+  useOn("qvisible", resumeFn);
 }
 var useVisible$ = implicit$FirstArg(useVisibleQrl);
 function usePauseQrl(dehydrateFn) {
@@ -1897,11 +1733,6 @@ function useOn(event, eventFn) {
   const el = useHostElement();
   const ctx = getContext(el);
   qPropWriteQRL(void 0, ctx, `on:${event}`, eventFn);
-}
-function useOnWindow(event, eventFn) {
-  const el = useHostElement();
-  const ctx = getContext(el);
-  qPropWriteQRL(void 0, ctx, `on-window:${event}`, eventFn);
 }
 function useStylesQrl(styles) {
   _useStyles(styles, false);
@@ -1938,59 +1769,45 @@ function handleWatch() {
   const [watch] = useLexicalScope();
   notifyWatch(watch);
 }
-function useEffectQrl(watchQrl, opts) {
+function useWatchQrl(qrl, opts) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
-    const hostElement = useHostElement();
+    const el = useHostElement();
     const watch2 = {
-      watchQrl,
-      hostElement,
-      mode: 2 /* Effect */,
-      isConnected: true,
-      dirty: true
+      qrl,
+      el,
+      f: 1 /* IsConnected */ | 2 /* IsDirty */
     };
     setWatch(watch2);
-    getContext(hostElement).refMap.add(watch2);
-    const run = opts?.run;
-    if (run) {
-      const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
-      watchHandler.refSymbol = watchQrl.symbol;
-      if (opts?.run === "load") {
-        useResumeQrl(watchHandler);
-      } else {
-        useOn("qVisible", watchHandler);
-      }
+    getContext(el).refMap.add(watch2);
+    useWaitOn(runWatch(watch2));
+    const isServer = getPlatform2(useDocument()).isServer;
+    if (isServer) {
+      useRunWatch(watch2, opts?.run);
     }
   }
 }
-var useEffect$ = implicit$FirstArg(useEffectQrl);
-function useClientEffectQrl(watchQrl, opts) {
+var useWatch$ = implicit$FirstArg(useWatchQrl);
+function useClientEffectQrl(qrl, opts) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
-    const hostElement = useHostElement();
-    const isServer = getPlatform2(useDocument()).isServer;
+    const el = useHostElement();
     const watch2 = {
-      watchQrl,
-      hostElement,
-      mode: 2 /* Effect */,
-      isConnected: true,
-      dirty: !isServer
+      qrl,
+      el,
+      f: 1 /* IsConnected */
     };
     setWatch(watch2);
-    getContext(hostElement).refMap.add(watch2);
-    if (isServer) {
-      const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch2]);
-      watchHandler.refSymbol = watchQrl.symbol;
-      if (opts?.run === "load") {
-        useResumeQrl(watchHandler);
-      } else {
-        useOn("qVisible", watchHandler);
-      }
+    getContext(el).refMap.add(watch2);
+    useRunWatch(watch2, opts?.run ?? "visible");
+    const doc = useDocument();
+    if (doc["qO"]) {
+      doc["qO"].observe(el);
     }
   }
 }
 var useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-function useServerQrl(watchQrl) {
+function useServerMountQrl(watchQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     setWatch(true);
@@ -2000,13 +1817,13 @@ function useServerQrl(watchQrl) {
     }
   }
 }
-var useServer$ = implicit$FirstArg(useServerQrl);
+var useServerMount$ = implicit$FirstArg(useServerMountQrl);
 function runWatch(watch) {
-  if (!watch.dirty) {
+  if (!(watch.f & 2 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
     return Promise.resolve(watch);
   }
-  watch.dirty = false;
+  watch.f &= ~2 /* IsDirty */;
   const promise = new Promise((resolve) => {
     then(watch.running, () => {
       const destroy = watch.destroy;
@@ -2018,10 +1835,17 @@ function runWatch(watch) {
           logError(err);
         }
       }
-      const hostElement = watch.hostElement;
-      const invokationContext = newInvokeContext(getDocument(hostElement), hostElement, hostElement, "WatchEvent");
+      const el = watch.el;
+      const invokationContext = newInvokeContext(getDocument(el), el, el, "WatchEvent");
       invokationContext.watch = watch;
-      const watchFn = watch.watchQrl.invokeFn(hostElement, invokationContext);
+      const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+        const captureRef = watch.qrl.captureRef;
+        if (Array.isArray(captureRef)) {
+          captureRef.forEach((obj) => {
+            removeSub(obj, watch);
+          });
+        }
+      });
       const tracker = (obj, prop) => {
         obj[SetSubscriber] = watch;
         if (prop) {
@@ -2030,12 +1854,6 @@ function runWatch(watch) {
           return obj[QOjectAllSymbol];
         }
       };
-      const captureRef = watch.watchQrl.captureRef;
-      if (Array.isArray(captureRef)) {
-        captureRef.forEach((obj) => {
-          removeSub(obj, watch);
-        });
-      }
       return then(watchFn(tracker), (returnValue) => {
         if (typeof returnValue === "function") {
           watch.destroy = noSerialize(returnValue);
@@ -2047,6 +1865,201 @@ function runWatch(watch) {
   watch.running = noSerialize(promise);
   return promise;
 }
+var useRunWatch = (watch, run) => {
+  if (run === "load") {
+    useResumeQrl(getWatchHandlerQrl(watch));
+  } else if (run === "visible") {
+    useVisibleQrl(getWatchHandlerQrl(watch));
+  }
+};
+var getWatchHandlerQrl = (watch) => {
+  const watchQrl = watch.qrl;
+  const watchHandler = new QRLInternal3(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch]);
+  watchHandler.refSymbol = watchQrl.symbol;
+  return watchHandler;
+};
+
+// packages/qwik/src/core/use/use-subscriber.ts
+function wrapSubscriber(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const target = obj[QOjectTargetSymbol];
+    if (!target) {
+      return obj;
+    }
+    return new Proxy(obj, {
+      get(target2, prop) {
+        if (prop === QOjectOriginalProxy) {
+          return target2;
+        }
+        target2[SetSubscriber] = subscriber;
+        return target2[prop];
+      },
+      ownKeys(target2) {
+        target2[SetSubscriber] = subscriber;
+        return Reflect.ownKeys(target2);
+      }
+    });
+  }
+  return obj;
+}
+function isConnected(sub) {
+  if (isElement(sub)) {
+    return sub.isConnected;
+  } else {
+    return !!(sub.f & 1 /* IsConnected */);
+  }
+}
+
+// packages/qwik/src/core/import/qrl.ts
+var runtimeSymbolId = 0;
+var RUNTIME_QRL = "/runtimeQRL";
+function toInternalQRL(qrl) {
+  assertEqual(isQrl(qrl), true);
+  return qrl;
+}
+function qrlImport(element, qrl) {
+  const qrl_ = toInternalQRL(qrl);
+  if (qrl_.symbolRef)
+    return qrl_.symbolRef;
+  if (qrl_.symbolFn) {
+    return qrl_.symbolRef = qrl_.symbolFn().then((module) => qrl_.symbolRef = module[qrl_.symbol]);
+  } else {
+    if (!element) {
+      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
+    }
+    const symbol = getPlatform2(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    return qrl_.symbolRef = then(symbol, (ref) => {
+      return qrl_.symbolRef = ref;
+    });
+  }
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+  return new QRLInternal3(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+}
+function stringifyQRL(qrl, opts = {}) {
+  const qrl_ = toInternalQRL(qrl);
+  const symbol = qrl_.symbol;
+  const refSymbol = qrl_.refSymbol ?? symbol;
+  const platform = opts.platform;
+  const element = opts.element;
+  const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
+  const parts = [chunk];
+  if (symbol && symbol !== "default") {
+    parts.push("#", symbol);
+  }
+  const capture = qrl_.capture;
+  const captureRef = qrl_.captureRef;
+  if (opts.getObjId) {
+    if (captureRef && captureRef.length) {
+      const capture2 = captureRef.map(opts.getObjId);
+      parts.push(`[${capture2.join(" ")}]`);
+    }
+  } else if (capture && capture.length > 0) {
+    parts.push(`[${capture.join(" ")}]`);
+  }
+  const qrlString = parts.join("");
+  if (qrl_.chunk === RUNTIME_QRL && element) {
+    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
+    qrls.add(qrl);
+  }
+  return qrlString;
+}
+function parseQRL(qrl, el) {
+  const endIdx = qrl.length;
+  const hashIdx = indexOf(qrl, 0, "#");
+  const captureIdx = indexOf(qrl, hashIdx, "[");
+  const chunkEndIdx = Math.min(hashIdx, captureIdx);
+  const chunk = qrl.substring(0, chunkEndIdx);
+  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+  const symbolEndIdx = captureIdx;
+  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
+  const captureStartIdx = captureIdx;
+  const captureEndIdx = endIdx;
+  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
+  if (chunk === RUNTIME_QRL) {
+    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
+  }
+  const iQrl = new QRLInternal3(chunk, symbol, null, null, capture, null);
+  if (el) {
+    iQrl.setContainer(el);
+  }
+  return iQrl;
+}
+function indexOf(text, startIdx, char) {
+  const endIdx = text.length;
+  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+  return charIdx == -1 ? endIdx : charIdx;
+}
+function toQrlOrError(symbolOrQrl) {
+  if (!isQrl(symbolOrQrl)) {
+    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
+      symbolOrQrl = runtimeQrl(symbolOrQrl);
+    } else {
+      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
+    }
+  }
+  return symbolOrQrl;
+}
+
+// packages/qwik/src/core/import/qrl-class.ts
+function isQrl(value) {
+  return value instanceof QRLInternal3;
+}
+var QRL4 = class {
+  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+    this.chunk = chunk;
+    this.symbol = symbol;
+    this.symbolRef = symbolRef;
+    this.symbolFn = symbolFn;
+    this.capture = capture;
+    this.captureRef = captureRef;
+    this.canonicalChunk = chunk.replace(FIND_EXT, "");
+  }
+  setContainer(el) {
+    if (!this.el) {
+      this.el = el;
+    }
+  }
+  async resolve(el) {
+    if (el) {
+      this.setContainer(el);
+    }
+    return qrlImport(this.el, this);
+  }
+  invokeFn(el, currentCtx, beforeFn) {
+    return (...args) => {
+      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      return then(fn, (fn2) => {
+        if (typeof fn2 === "function") {
+          const baseContext = currentCtx ?? newInvokeContext();
+          const context = {
+            ...baseContext,
+            qrl: this
+          };
+          if (beforeFn) {
+            beforeFn();
+          }
+          return useInvoke(context, fn2, ...args);
+        }
+        throw new Error("QRL is not a function");
+      });
+    };
+  }
+  copy() {
+    const copy = new QRLInternal3(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    copy.refSymbol = this.refSymbol;
+    return copy;
+  }
+  invoke(...args) {
+    const fn = this.invokeFn();
+    return fn(...args);
+  }
+  serialize(options) {
+    return stringifyQRL(this, options);
+  }
+};
+var QRLInternal3 = QRL4;
+var FIND_EXT = /\?[\w=&]+$/;
 
 // packages/qwik/src/core/render/notify-render.ts
 function notifyRender(hostElement) {
@@ -2156,7 +2169,7 @@ async function postRendering(containerEl, state, ctx) {
   });
   state.watchNext.clear();
   state.watchStaging.forEach((watch) => {
-    if (ctx.hostElements.has(watch.hostElement)) {
+    if (ctx.hostElements.has(watch.el)) {
       promises.push(runWatch(watch));
     } else {
       state.watchNext.add(watch);
@@ -2168,6 +2181,10 @@ async function postRendering(containerEl, state, ctx) {
     state.hostsNext.add(el);
   });
   state.hostsStaging.clear();
+  state.watchStaging.forEach((watch) => {
+    state.watchNext.add(watch);
+  });
+  state.watchStaging.clear();
   state.hostsRendering = void 0;
   state.renderPromise = void 0;
   if (state.hostsNext.size + state.watchNext.size > 0) {
@@ -2311,7 +2328,7 @@ var ReadWriteProxyHandler = class {
     if (isArray) {
       target[prop] = unwrappedNewValue;
       subs.forEach((_, sub) => {
-        if (sub.isConnected) {
+        if (isConnected(sub)) {
           notifyChange(sub);
         } else {
           subs.delete(sub);
@@ -2323,7 +2340,7 @@ var ReadWriteProxyHandler = class {
     if (oldValue !== unwrappedNewValue) {
       target[prop] = unwrappedNewValue;
       subs.forEach((propSets, sub) => {
-        if (sub.isConnected) {
+        if (isConnected(sub)) {
           if (propSets === null || propSets.has(prop)) {
             notifyChange(sub);
           }
@@ -2374,23 +2391,15 @@ function notifyChange(subscriber) {
   }
 }
 function notifyWatch(watch) {
-  const containerEl = getContainer(watch.hostElement);
+  const containerEl = getContainer(watch.el);
   const state = getRenderingState(containerEl);
-  watch.dirty = true;
-  if (watch.mode === 0 /* Watch */) {
-    const promise = runWatch(watch);
-    state.watchRunning.add(promise);
-    promise.then(() => {
-      state.watchRunning.delete(promise);
-    });
+  watch.f |= 2 /* IsDirty */;
+  const activeRendering = state.hostsRendering !== void 0;
+  if (activeRendering) {
+    state.watchStaging.add(watch);
   } else {
-    const activeRendering = state.hostsRendering !== void 0;
-    if (activeRendering) {
-      state.watchStaging.add(watch);
-    } else {
-      state.watchNext.add(watch);
-      scheduleFrame(containerEl, state);
-    }
+    state.watchNext.add(watch);
+    scheduleFrame(containerEl, state);
   }
 }
 async function waitForWatches(state) {
@@ -2488,12 +2497,14 @@ function getContext(element) {
   }
   return ctx;
 }
-var PREFIXES = ["onWindow", "onWindow", "on"];
+var PREFIXES = ["document:on", "window:on", "on"];
+var SCOPED = ["on-document", "on-window", "on"];
 function normalizeOnProp(prop) {
   let scope = "on";
-  for (const prefix of PREFIXES) {
+  for (let i = 0; i < PREFIXES.length; i++) {
+    const prefix = PREFIXES[i];
     if (prop.startsWith(prefix)) {
-      scope = prefix;
+      scope = SCOPED[i];
       prop = prop.slice(prefix.length);
     }
   }
