@@ -43,19 +43,6 @@ declare interface FunctionComponent<P = {}> {
 }
 
 /**
- * Returns a set of imports for a given source file.
- *
- * The function recursively visits the dependencies and returns a fully populated graph.
- *
- * This does not take dynamic imports into the account and so it produces an incomplete list.
- *
- * @param filePath - File path to read
- * @param readFileFn - a function used to retrieve the contents of a file at a given `filePath`
- * @alpha
- */
-export declare function getImports(filePath: string, readFileFn: (path: string) => Promise<string>): Promise<string[]>;
-
-/**
  * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader
  * script into HTML.
  * @alpha
@@ -90,9 +77,31 @@ declare interface JSXNode<T = any> {
 }
 
 /**
+ * @alpha
+ */
+declare interface PrefetchStrategy {
+    implementation?: PrefetchStrategyImplementation;
+    symbolsToPrefetch?: SymbolsToPrefetch;
+}
+
+/**
+ * @alpha
+ */
+declare type PrefetchStrategyImplementation = 'link-prefetch' | 'link-preload' | 'link-modulepreload' | 'qrl-import' | 'worker-fetch' | 'none';
+
+/**
  * @public
  */
-declare type QrlMapper = (symbolName: string) => string | undefined;
+export declare type QrlMapper = (symbolName: string) => string | undefined;
+
+/**
+ * @alpha
+ */
+export declare interface QwikBundle {
+    size: number;
+    imports?: string[];
+    dynamicImports?: string[];
+}
 
 /**
  * Partial Document used by Qwik Framework.
@@ -101,6 +110,33 @@ declare type QrlMapper = (symbolName: string) => string | undefined;
  * @public
  */
 export declare interface QwikDocument extends Document {
+}
+
+/**
+ * @alpha
+ */
+export declare interface QwikManifest {
+    symbols: {
+        [symbolName: string]: QwikSymbol;
+    };
+    mapping: {
+        [symbolName: string]: string;
+    };
+    bundles: {
+        [fileName: string]: QwikBundle;
+    };
+    injections?: GlobalInjections[];
+    version: string;
+}
+
+/**
+ * @alpha
+ */
+export declare interface QwikSymbol {
+    ctxKind: 'function' | 'event';
+    ctxName: string;
+    captures: boolean;
+    parent: string | null;
 }
 
 /**
@@ -165,6 +201,7 @@ export declare interface RenderToStringOptions extends RenderToDocumentOptions {
      * Defaults to `undefined`
      */
     fragmentTagName?: string;
+    prefetchStrategy?: PrefetchStrategy;
 }
 
 /**
@@ -172,6 +209,7 @@ export declare interface RenderToStringOptions extends RenderToDocumentOptions {
  */
 export declare interface RenderToStringResult {
     html: string;
+    prefetchUrls: string[];
     timing: {
         createDocument: number;
         render: number;
@@ -182,9 +220,6 @@ export declare interface RenderToStringResult {
 /**
  * Serializes the given `document` to a string. Additionally, will serialize the
  * Qwik component state and optionally add Qwik protocols to the document.
- *
- * @param doc - The `document` to apply the the root node to.
- * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
 export declare function serializeDocument(docOrEl: Document | Element, opts?: SerializeDocumentOptions): string;
@@ -193,13 +228,9 @@ export declare function serializeDocument(docOrEl: Document | Element, opts?: Se
  * @public
  */
 declare interface SerializeDocumentOptions extends DocumentOptions {
-    symbols?: ServerOutputSymbols;
+    manifest?: QwikManifest;
+    qrlMapper?: QrlMapper;
 }
-
-/**
- * @public
- */
-export declare type ServerOutputSymbols = QrlMapper | SymbolsEntryMap | null;
 
 /**
  * Applies NodeJS specific platform APIs to the passed in document instance.
@@ -208,15 +239,16 @@ export declare type ServerOutputSymbols = QrlMapper | SymbolsEntryMap | null;
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
 
 /**
+ * all: Prefetch all QRLs used by the app.
+ * all-document: Prefetch all QRLs used by the document.
+ * events-document: Prefetch event QRLs used by the document. Default
+ *
  * @alpha
  */
-declare interface SymbolsEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
-}
+declare type SymbolsToPrefetch = 'all-document' | 'all' | 'events-document' | ((opts: {
+    document: QwikDocument;
+    manifest: QwikManifest;
+}) => string[]);
 
 /**
  * @public

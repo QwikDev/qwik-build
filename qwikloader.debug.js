@@ -53,19 +53,11 @@
                 }
             }
         };
-        const qrlPrefetch = element => {
-            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ 'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));' ], {
-                type: "text/javascript"
-            }))));
-            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\n").map((qrl => qrlResolver(element, qrl) + "")));
-            return prefetchWorker;
-        };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
                 broadcast("", "qresume", new CustomEvent("qresume"));
-                doc.querySelectorAll("[q\\:prefetch]").forEach(qrlPrefetch);
                 if ("undefined" != typeof IntersectionObserver) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {

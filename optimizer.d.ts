@@ -4,13 +4,12 @@ declare interface BasePluginOptions {
     outServerDir?: string;
     entryStrategy?: EntryStrategy;
     forceFullBuild?: boolean;
-    minify?: 'none' | 'minify';
     srcRootInput?: string | string[];
     srcEntryServerInput?: string;
     srcDir?: string | null;
     srcInputs?: TransformModuleInput[] | null;
-    symbolsInput?: SymbolsEntryMap | null;
-    symbolsOutput?: ((symbolsEntryMap: SymbolsEntryMap) => Promise<void> | void) | null;
+    manifestInput?: QwikManifest | null;
+    manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     transformedModuleOutput?: ((data: {
         [id: string]: TransformModule;
     }) => Promise<void> | void) | null;
@@ -79,8 +78,11 @@ export declare interface HookAnalysis {
     name: string;
     entry: string | null;
     canonicalFilename: string;
-    localDecl: string[];
-    localIdents: string[];
+    extension: string;
+    parent: string | null;
+    ctxKind: 'event' | 'function';
+    ctxName: string;
+    captures: boolean;
 }
 
 /**
@@ -189,6 +191,32 @@ declare type QwikBuildMode = 'development' | 'production' | 'ssr';
 /**
  * @alpha
  */
+export declare interface QwikBundle {
+    size: number;
+    imports?: string[];
+    dynamicImports?: string[];
+}
+
+/**
+ * @alpha
+ */
+export declare interface QwikManifest {
+    symbols: {
+        [symbolName: string]: QwikSymbol;
+    };
+    mapping: {
+        [symbolName: string]: string;
+    };
+    bundles: {
+        [fileName: string]: QwikBundle;
+    };
+    injections?: GlobalInjections[];
+    version: string;
+}
+
+/**
+ * @alpha
+ */
 export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): any;
 
 /**
@@ -198,6 +226,16 @@ export declare interface QwikRollupPluginOptions extends BasePluginOptions {
     optimizerOptions?: OptimizerOptions;
     rootDir?: string;
     buildMode?: QwikBuildMode;
+}
+
+/**
+ * @alpha
+ */
+export declare interface QwikSymbol {
+    ctxKind: 'function' | 'event';
+    ctxName: string;
+    captures: boolean;
+    parent: string | null;
 }
 
 /**
@@ -241,17 +279,6 @@ export declare interface SourceLocation {
  * @alpha
  */
 export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
-
-/**
- * @alpha
- */
-export declare interface SymbolsEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
-}
 
 /**
  * @alpha

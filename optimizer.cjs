@@ -683,6 +683,7 @@ globalThis.qwikOptimizer = function(module) {
         minify: fsOpts.minify,
         sourceMaps: fsOpts.sourceMaps,
         transpile: fsOpts.transpile,
+        dev: fsOpts.dev,
         input: input
       };
       return binding.transform_modules(convertOptions(modulesOpts));
@@ -704,13 +705,127 @@ globalThis.qwikOptimizer = function(module) {
     output.entryStrategy = null != (_b = null == (_a = opts.entryStrategy) ? void 0 : _a.type) ? _b : "smart";
     return output;
   };
+  function prioritorizeSymbolNames(manifest) {
+    const symbols = manifest.symbols;
+    return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
+      const a = symbols[symbolNameA];
+      const b = symbols[symbolNameB];
+      if ("event" === a.ctxKind && "event" !== b.ctxKind) {
+        return -1;
+      }
+      if ("event" !== a.ctxKind && "event" === b.ctxKind) {
+        return 1;
+      }
+      if ("event" === a.ctxKind && "event" === b.ctxKind) {
+        const aIndex = EVENT_PRIORITY.indexOf(a.ctxName.toLowerCase());
+        const bIndex = EVENT_PRIORITY.indexOf(b.ctxName.toLowerCase());
+        if (aIndex > -1 && bIndex > -1) {
+          if (aIndex < bIndex) {
+            return -1;
+          }
+          if (aIndex > bIndex) {
+            return 1;
+          }
+        } else {
+          if (aIndex > -1) {
+            return -1;
+          }
+          if (bIndex > -1) {
+            return 1;
+          }
+        }
+      } else if ("function" === a.ctxKind && "function" === b.ctxKind) {
+        const aIndex = FUNCTION_PRIORITY.indexOf(a.ctxName.toLowerCase());
+        const bIndex = FUNCTION_PRIORITY.indexOf(b.ctxName.toLowerCase());
+        if (aIndex > -1 && bIndex > -1) {
+          if (aIndex < bIndex) {
+            return -1;
+          }
+          if (aIndex > bIndex) {
+            return 1;
+          }
+        } else {
+          if (aIndex > -1) {
+            return -1;
+          }
+          if (bIndex > -1) {
+            return 1;
+          }
+        }
+      }
+      if (!a.parent && b.parent) {
+        return -1;
+      }
+      if (a.parent && !b.parent) {
+        return 1;
+      }
+      if (a.captures && !b.captures) {
+        return -1;
+      }
+      if (!a.captures && b.captures) {
+        return 1;
+      }
+      if (a.ctxName < b.ctxName) {
+        return -1;
+      }
+      if (a.ctxName > b.ctxName) {
+        return 1;
+      }
+      if (symbolNameA < symbolNameB) {
+        return -1;
+      }
+      if (symbolNameA > symbolNameB) {
+        return 1;
+      }
+      return 0;
+    }));
+  }
+  var EVENT_PRIORITY = [ "onClick$", "onDblClick$", "onContextMenu$", "onAuxClick$", "onPointerDown$", "onPointerUp$", "onPointerMove$", "onPointerOver$", "onPointerEnter$", "onPointerLeave$", "onPointerOut$", "onPointerCancel$", "onGotPointerCapture$", "onLostPointerCapture$", "onTouchStart$", "onTouchEnd$", "onTouchMove$", "onTouchCancel$", "onMouseDown$", "onMouseUp$", "onMouseMove$", "onMouseEnter$", "onMouseLeave$", "onMouseOver$", "onMouseOut$", "onWheel$", "onGestureStart$", "onGestureChange$", "onGestureEnd$", "onKeyDown$", "onKeyUp$", "onKeyPress$", "onInput$", "onChange$", "onSearch$", "onInvalid$", "onBeforeInput$", "onSelect$", "onFocusIn$", "onFocusOut$", "onFocus$", "onBlur$", "onSubmit$", "onReset$", "onScroll$" ].map((n => n.toLowerCase()));
+  var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useScopedStyles$" ].map((n => n.toLowerCase()));
+  function prioritorizeBundles(manifest) {
+    return Object.keys(manifest.bundles).sort(((a, b) => {
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    }));
+  }
+  function updateManifestPriorities(manifest) {
+    const prioritorizedSymbolNames = prioritorizeSymbolNames(manifest);
+    const prioritorizedSymbols = {};
+    const prioritorizedMapping = {};
+    for (const symbolName of prioritorizedSymbolNames) {
+      prioritorizedSymbols[symbolName] = manifest.symbols[symbolName];
+      prioritorizedMapping[symbolName] = manifest.mapping[symbolName];
+    }
+    const prioritorizedBundleNames = prioritorizeBundles(manifest);
+    const prioritorizedBundles = {};
+    for (const bundleName of prioritorizedBundleNames) {
+      const entry = prioritorizedBundles[bundleName] = manifest.bundles[bundleName];
+      entry.imports && entry.imports.sort();
+      entry.dynamicImports && entry.dynamicImports.sort();
+    }
+    manifest.symbols = prioritorizedSymbols;
+    manifest.mapping = prioritorizedMapping;
+    manifest.bundles = prioritorizedBundles;
+    manifest.injections && manifest.injections.sort();
+    return manifest;
+  }
+  function getValidManifest(manifest) {
+    if (null != manifest && null != manifest.mapping && "object" === typeof manifest.mapping && null != manifest.symbols && "object" === typeof manifest.symbols && null != manifest.bundles && "object" === typeof manifest.bundles) {
+      return manifest;
+    }
+    return;
+  }
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
     const injections = [];
     const transformedOutputs = new Map;
     let optimizer = null;
-    let outputCount = 0;
     let addWatchFileCallback = () => {};
     let diagnosticsCallback = () => {};
     const opts = {
@@ -721,13 +836,12 @@ globalThis.qwikOptimizer = function(module) {
       outServerDir: null,
       forceFullBuild: false,
       entryStrategy: null,
-      minify: null,
       srcDir: null,
       srcInputs: null,
       srcRootInput: null,
       srcEntryServerInput: null,
-      symbolsInput: null,
-      symbolsOutput: null,
+      manifestInput: null,
+      manifestOutput: null,
       transformedModuleOutput: null
     };
     const getOptimizer = async () => {
@@ -744,8 +858,6 @@ globalThis.qwikOptimizer = function(module) {
       opts.entryStrategy || (opts.entryStrategy = {
         type: "hook"
       });
-      updatedOpts.minify && (opts.minify = updatedOpts.minify);
-      "ssr" === opts.buildMode ? opts.minify = "none" : "minify" !== opts.minify && "none" !== opts.minify && ("production" === opts.buildMode ? opts.minify = "minify" : opts.minify = "none");
       "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
       "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
       opts.rootDir = optimizer2.sys.path.resolve(optimizer2.sys.cwd(), opts.rootDir);
@@ -773,8 +885,9 @@ globalThis.qwikOptimizer = function(module) {
       "string" === typeof updatedOpts.outServerDir && (opts.outServerDir = updatedOpts.outServerDir);
       "string" !== typeof opts.outServerDir && (opts.outServerDir = SERVER_DIR_DEFAULT);
       opts.outServerDir = optimizer2.sys.path.resolve(opts.rootDir, opts.outServerDir);
-      updatedOpts.symbolsInput && "object" === typeof updatedOpts.symbolsInput && "object" === typeof updatedOpts.symbolsInput.mapping && (opts.symbolsInput = updatedOpts.symbolsInput);
-      "function" === typeof updatedOpts.symbolsOutput && (opts.symbolsOutput = updatedOpts.symbolsOutput);
+      const manifestInput = getValidManifest(updatedOpts.manifestInput);
+      manifestInput && (opts.manifestInput = manifestInput);
+      "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
       return __spreadValues({}, opts);
     };
     const validateSource = async () => {
@@ -801,7 +914,6 @@ globalThis.qwikOptimizer = function(module) {
       log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build");
       if (opts.forceFullBuild) {
         const optimizer2 = await getOptimizer();
-        outputCount = 0;
         let rootDir = "/";
         if ("string" === typeof opts.srcDir) {
           rootDir = opts.srcDir;
@@ -821,7 +933,7 @@ globalThis.qwikOptimizer = function(module) {
         const transformOpts = {
           rootDir: rootDir,
           entryStrategy: opts.entryStrategy,
-          minify: "minify" === opts.minify ? "simplify" : "none",
+          minify: "simplify",
           transpile: true,
           explicityExtensions: true,
           dev: "production" !== opts.buildMode
@@ -920,11 +1032,12 @@ globalThis.qwikOptimizer = function(module) {
           entryStrategy: {
             type: "hook"
           },
-          minify: "minify" === opts.minify ? "simplify" : "none",
+          minify: "simplify",
           sourceMaps: false,
           transpile: true,
           explicityExtensions: true,
-          rootDir: dir
+          rootDir: dir,
+          dev: "production" !== opts.buildMode
         });
         diagnosticsCallback(newOutput.diagnostics, optimizer2);
         results.set(pathId, newOutput);
@@ -952,36 +1065,60 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const createOutputAnalyzer = () => {
-      const bundles = [];
-      const addBundle = b => bundles.push(b);
-      const generateSymbolsEntryMap = async () => {
+      const outputBundles = [];
+      const addBundle = b => outputBundles.push(b);
+      const generateManifest = async () => {
         const optimizer2 = await getOptimizer();
-        const symbolsEntryMap = {
-          version: "1",
+        const path = optimizer2.sys.path;
+        const manifest = {
+          symbols: {},
           mapping: {},
-          injections: injections
+          bundles: {},
+          injections: injections,
+          version: "1"
         };
         const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-        if (hooks.length > 0 && 0 === outputCount) {
-          outputCount++;
-          hooks.forEach((h => {
-            const symbolName = h.name;
-            let basename = h.canonicalFilename + ".js";
-            const found = bundles.find((b => Object.keys(b.modules).find((f => f.endsWith(basename)))));
-            found && (basename = found.fileName);
-            basename = optimizer2.sys.path.basename(basename);
-            symbolsEntryMap.mapping[symbolName] = basename;
-          }));
+        for (const hook of hooks) {
+          const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
+          const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
+          if (outputBundle) {
+            const symbolName = hook.name;
+            const bundleFileName = path.basename(outputBundle.fileName);
+            manifest.mapping[symbolName] = bundleFileName;
+            manifest.symbols[symbolName] = {
+              ctxKind: hook.ctxKind,
+              ctxName: hook.ctxName,
+              captures: hook.captures,
+              parent: hook.parent
+            };
+            addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+          }
         }
-        log("generateSymbolsEntryMap()", symbolsEntryMap);
-        return symbolsEntryMap;
+        for (const outputBundle of outputBundles) {
+          const bundleFileName = path.basename(outputBundle.fileName);
+          addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+        }
+        return updateManifestPriorities(manifest);
       };
       return {
         addBundle: addBundle,
-        generateSymbolsEntryMap: generateSymbolsEntryMap
+        generateManifest: generateManifest
       };
     };
-    const getOptions = () => __spreadValues({}, opts);
+    const addBundleToManifest = (path, manifest, outputBundle, bundleFileName) => {
+      if (!manifest.bundles[bundleFileName]) {
+        const buildDirName = path.dirname(outputBundle.fileName);
+        const bundle = {
+          size: outputBundle.size
+        };
+        const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+        bundleImports.length > 0 && (bundle.imports = bundleImports);
+        const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+        bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
+        manifest.bundles[bundleFileName] = bundle;
+      }
+    };
+    const getOptions = () => opts;
     const getTransformedOutputs = () => {
       const to = {};
       for (const [v, id2] of transformedOutputs.values()) {
@@ -989,7 +1126,7 @@ globalThis.qwikOptimizer = function(module) {
       }
       return to;
     };
-    const updateSymbolsEntryMap = (symbolsStr, code) => code.replace(/("|')__qSymbolsEntryMap__("|')/g, symbolsStr);
+    const updateSsrManifestDefault = (symbolsStr, code) => code.replace(/("|')__QwikManifest__("|')/g, symbolsStr);
     const log = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
     };
@@ -1012,7 +1149,7 @@ globalThis.qwikOptimizer = function(module) {
       onDiagnostics: onDiagnostics,
       resolveId: resolveId,
       transform: transform,
-      updateSymbolsEntryMap: updateSymbolsEntryMap,
+      updateSsrManifestDefault: updateSsrManifestDefault,
       validateSource: validateSource
     };
   }
@@ -1054,7 +1191,7 @@ globalThis.qwikOptimizer = function(module) {
   var ENTRY_SERVER_FILENAME_DEFAULT = "entry.server.tsx";
   var DIST_DIR_DEFAULT = "dist";
   var SERVER_DIR_DEFAULT = "server";
-  var SYMBOLS_MANIFEST_FILENAME = "symbols-manifest.json";
+  var Q_MANIFEST_FILENAME = "q-manifest.json";
   function qwikRollup(qwikRollupOpts = {}) {
     const qwikPlugin = createPlugin(qwikRollupOpts.optimizerOptions);
     const rollupPlugin = {
@@ -1123,30 +1260,31 @@ globalThis.qwikOptimizer = function(module) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
           for (const fileName in rollupBundle) {
             const b = rollupBundle[fileName];
-            "chunk" === b.type && b.isDynamicEntry && outputAnalyzer.addBundle({
+            "chunk" === b.type && outputAnalyzer.addBundle({
               fileName: fileName,
-              modules: b.modules
+              modules: b.modules,
+              imports: b.imports,
+              dynamicImports: b.dynamicImports,
+              size: b.code.length
             });
           }
-          const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
-          "function" === typeof opts.symbolsOutput && await opts.symbolsOutput(symbolsEntryMap);
+          const manifest = await outputAnalyzer.generateManifest();
+          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           this.emitFile({
             type: "asset",
-            fileName: SYMBOLS_MANIFEST_FILENAME,
-            source: JSON.stringify(symbolsEntryMap, null, 2)
+            fileName: Q_MANIFEST_FILENAME,
+            source: JSON.stringify(manifest, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-        } else if ("ssr" === opts.buildMode && opts.symbolsInput && "object" === typeof opts.symbolsInput) {
-          const symbolsStr = JSON.stringify(opts.symbolsInput);
-          for (const fileName in rollupBundle) {
-            const b = rollupBundle[fileName];
-            "chunk" === b.type && (b.code = qwikPlugin.updateSymbolsEntryMap(symbolsStr, b.code));
+        } else if ("ssr" === opts.buildMode) {
+          const manifestInput = getValidManifest(opts.manifestInput);
+          if (manifestInput) {
+            const manifestStr = JSON.stringify(opts.manifestInput);
+            for (const fileName in rollupBundle) {
+              const b = rollupBundle[fileName];
+              "chunk" === b.type && (b.code = qwikPlugin.updateSsrManifestDefault(manifestStr, b.code));
+            }
           }
-          this.emitFile({
-            type: "asset",
-            fileName: SYMBOLS_MANIFEST_FILENAME,
-            source: JSON.stringify(opts.symbolsInput, null, 2)
-          });
         }
       }
     };
@@ -1167,8 +1305,8 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   };
-  var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t,r)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],s=(t,r,n)=>{r=r.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+r+"]").forEach((e=>l(e,r,n)))},a=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},c=(t,r)=>(t=t.closest("[q\\\\:container]"),new URL(r,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),l=async(t,r,s)=>{for(const l of o){const o=t.getAttribute(l+r);if(o){t.hasAttribute("preventdefault:"+r)&&s.preventDefault();for(const r of o.split("\\n")){const o=c(t,r);if(o){const r=b(o),c=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),l=e[n];try{e[n]=[t,s,o],c(s,t,o)}finally{e[n]=l,a(t,r)}}}}}},b=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,r)=>{if((r=t.target)==e)setTimeout((()=>s("-document",t.type,t)));else for(;r&&r.getAttribute;)l(r,t.type,t),r=t.bubbles?r.parentElement:null},f=e=>(r||(r=new Worker(URL.createObjectURL(new Blob([\'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));\'],{type:"text/javascript"})))),r.postMessage(e.getAttribute("q:prefetch").split("\\n").map((t=>c(e,t)+""))),r),p=r=>{if(r=e.readyState,!t&&("interactive"==r||"complete"==r)&&(t=1,s("","qresume",new CustomEvent("qresume")),e.querySelectorAll("[q\\\\:prefetch]").forEach(f),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const r of e)r.isIntersecting&&(t.unobserve(r.target),l(r.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:r})))}));e.qO=t,new MutationObserver((e=>{for(const r of e)t.observe(r.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}},d=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(d);else for(const t in e)t.startsWith("on")&&d(t.slice(2))}e.addEventListener("readystatechange",p),p()}})(document);';
-  var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const qrlPrefetch = element => {\n            prefetchWorker || (prefetchWorker = new Worker(URL.createObjectURL(new Blob([ \'addEventListener("message",(e=>e.data.map((e=>fetch(e)))));\' ], {\n                type: "text/javascript"\n            }))));\n            prefetchWorker.postMessage(element.getAttribute("q:prefetch").split("\\n").map((qrl => qrlResolver(element, qrl) + "")));\n            return prefetchWorker;\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                doc.querySelectorAll("[q\\\\:prefetch]").forEach(qrlPrefetch);\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
+  var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>c(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},a=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),c=async(t,r,c)=>{for(const u of o){const o=t.getAttribute(u+r);if(o){t.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of o.split("\\n")){const o=a(t,r);if(o){const r=l(o),a=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),u=e[n];try{e[n]=[t,c,o],a(c,t,o)}finally{e[n]=u,s(t,r)}}}}}},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)c(n,t.type,t),n=t.bubbles?n.parentElement:null},b=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,r("","qresume",new CustomEvent("qresume")),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),c(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}},f=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(f);else for(const t in e)t.startsWith("on")&&f(t.slice(2))}e.addEventListener("readystatechange",b),b()}})(document);';
+  var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
   function qwikVite(qwikViteOpts = {}) {
     let hasValidatedSource = false;
     let isClientOnly = false;
@@ -1189,15 +1327,16 @@ globalThis.qwikOptimizer = function(module) {
           debug: qwikViteOpts.debug,
           buildMode: buildMode,
           entryStrategy: qwikViteOpts.entryStrategy,
-          minify: qwikViteOpts.minify,
           rootDir: viteConfig.root,
           outClientDir: qwikViteOpts.outClientDir,
           outServerDir: qwikViteOpts.outServerDir,
           srcInputs: qwikViteOpts.srcInputs,
           srcRootInput: qwikViteOpts.srcRootInput,
           srcEntryServerInput: qwikViteOpts.srcEntryServerInput,
-          symbolsOutput: qwikViteOpts.symbolsOutput
+          manifestInput: qwikViteOpts.manifestInput,
+          manifestOutput: qwikViteOpts.manifestOutput
         };
+        "production" === buildMode && (pluginOpts.forceFullBuild = true);
         const optimizer = await qwikPlugin.getOptimizer();
         const opts = await qwikPlugin.normalizeOptions(pluginOpts);
         srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
@@ -1308,40 +1447,38 @@ globalThis.qwikOptimizer = function(module) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
           for (const fileName in rollupBundle) {
             const b = rollupBundle[fileName];
-            "chunk" === b.type && b.isDynamicEntry && outputAnalyzer.addBundle({
+            "chunk" === b.type && outputAnalyzer.addBundle({
               fileName: fileName,
-              modules: b.modules
+              modules: b.modules,
+              imports: b.imports,
+              dynamicImports: b.dynamicImports,
+              size: b.code.length
             });
           }
-          const symbolsEntryMap = await outputAnalyzer.generateSymbolsEntryMap();
-          "function" === typeof opts.symbolsOutput && await opts.symbolsOutput(symbolsEntryMap);
+          const manifest = await outputAnalyzer.generateManifest();
+          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           this.emitFile({
             type: "asset",
-            fileName: SYMBOLS_MANIFEST_FILENAME,
-            source: JSON.stringify(symbolsEntryMap, null, 2)
+            fileName: Q_MANIFEST_FILENAME,
+            source: JSON.stringify(manifest, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         } else if ("ssr" === opts.buildMode) {
-          let symbolsInput = opts.symbolsInput;
-          if (!symbolsInput && "node" === optimizer.sys.env()) {
+          let manifestInput = opts.manifestInput;
+          if (!manifestInput && "node" === optimizer.sys.env()) {
             try {
               const fs = await optimizer.sys.dynamicImport("fs");
-              const qSymbolsPath = optimizer.sys.path.join(opts.outClientDir, SYMBOLS_MANIFEST_FILENAME);
+              const qSymbolsPath = optimizer.sys.path.join(opts.outClientDir, Q_MANIFEST_FILENAME);
               const qSymbolsContent = fs.readFileSync(qSymbolsPath, "utf-8");
-              symbolsInput = JSON.parse(qSymbolsContent);
+              manifestInput = JSON.parse(qSymbolsContent);
             } catch (e) {}
           }
-          if (symbolsInput && "object" === typeof symbolsInput) {
-            const symbolsStr = JSON.stringify(symbolsInput);
+          if (manifestInput && "object" === typeof manifestInput && "object" === typeof manifestInput.mapping) {
+            const manifestStr = JSON.stringify(manifestInput);
             for (const fileName in rollupBundle) {
               const b = rollupBundle[fileName];
-              "chunk" === b.type && (b.code = qwikPlugin.updateSymbolsEntryMap(symbolsStr, b.code));
+              "chunk" === b.type && (b.code = qwikPlugin.updateSsrManifestDefault(manifestStr, b.code));
             }
-            this.emitFile({
-              type: "asset",
-              fileName: SYMBOLS_MANIFEST_FILENAME,
-              source: JSON.stringify(symbolsInput, null, 2)
-            });
           }
         }
       },
@@ -1390,22 +1527,24 @@ globalThis.qwikOptimizer = function(module) {
               fixStacktrace: true
             });
             if (render) {
-              const symbols = {
-                version: "1",
+              const manifest = {
+                symbols: {},
                 mapping: {},
-                injections: []
+                bundles: {},
+                injections: [],
+                version: "1"
               };
               Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
                 entry[1].forEach((v => {
                   var _a2, _b;
                   const hook = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.hook;
-                  hook && v.lastHMRTimestamp && (symbols.mapping[hook.name] = `${v.url}?t=${v.lastHMRTimestamp}`);
+                  hook && v.lastHMRTimestamp && (manifest.mapping[hook.name] = `${v.url}?t=${v.lastHMRTimestamp}`);
                 }));
               }));
-              qwikPlugin.log("handleSSR()", "symbols", symbols);
+              qwikPlugin.log("handleSSR()", "symbols", manifest);
               const mainMod = await server.moduleGraph.getModuleByUrl(opts.srcRootInput[0]);
               mainMod && mainMod.importedModules.forEach((moduleNode => {
-                moduleNode.url.endsWith(".css") && symbols.injections.push({
+                moduleNode.url.endsWith(".css") && manifest.injections.push({
                   tag: "link",
                   location: "head",
                   attributes: {
@@ -1417,7 +1556,7 @@ globalThis.qwikOptimizer = function(module) {
               const renderToStringOpts = {
                 url: url.href,
                 debug: true,
-                symbols: isClientOnly ? null : symbols,
+                manifest: isClientOnly ? void 0 : manifest,
                 snapshot: !isClientOnly
               };
               const result = await render(renderToStringOpts);
