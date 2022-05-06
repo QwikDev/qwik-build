@@ -77,6 +77,8 @@ export declare interface HookAnalysis {
     origin: string;
     name: string;
     entry: string | null;
+    displayName: string;
+    hash: string;
     canonicalFilename: string;
     extension: string;
     parent: string | null;
@@ -232,6 +234,10 @@ export declare interface QwikRollupPluginOptions extends BasePluginOptions {
  * @alpha
  */
 export declare interface QwikSymbol {
+    origin: string;
+    displayName: string;
+    hash: string;
+    canonicalFilename: string;
     ctxKind: 'function' | 'event';
     ctxName: string;
     captures: boolean;
