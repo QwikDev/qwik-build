@@ -1,4 +1,19 @@
-import type { NormalizedOutputOptions } from 'rollup';
+declare interface BasePluginOptions {
+    debug?: boolean;
+    outClientDir?: string;
+    outServerDir?: string;
+    entryStrategy?: EntryStrategy;
+    forceFullBuild?: boolean;
+    srcRootInput?: string | string[];
+    srcEntryServerInput?: string;
+    srcDir?: string | null;
+    srcInputs?: TransformModuleInput[] | null;
+    manifestInput?: QwikManifest | null;
+    manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
+    transformedModuleOutput?: ((data: {
+        [id: string]: TransformModule;
+    }) => Promise<void> | void) | null;
+}
 
 /**
  * @alpha
@@ -18,7 +33,7 @@ export declare interface ComponentEntryStrategy {
 /**
  * @alpha
  */
-export declare const createOptimizer: () => Promise<Optimizer>;
+export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
 /**
  * @alpha
@@ -63,8 +78,11 @@ export declare interface HookAnalysis {
     name: string;
     entry: string | null;
     canonicalFilename: string;
-    localDecl: string[];
-    localIdents: string[];
+    extension: string;
+    parent: string | null;
+    ctxKind: 'event' | 'function';
+    ctxName: string;
+    captures: boolean;
 }
 
 /**
@@ -85,12 +103,7 @@ export declare interface ManualEntryStrategy {
 /**
  * @alpha
  */
-export declare type MinifyMode = 'minify' | 'simplify' | 'none';
-
-/**
- * @alpha
- */
-export declare type MinifyOption = boolean | undefined | null;
+export declare type MinifyMode = 'simplify' | 'none';
 
 /**
  * @alpha
@@ -112,25 +125,36 @@ export declare interface Optimizer {
      * Transforms the directory from the file system.
      */
     transformFsSync(opts: TransformFsOptions): TransformOutput;
+    /**
+     * Optimizer system use. This can be updated with a custom file system.
+     */
+    sys: OptimizerSystem;
+}
+
+/**
+ * @alpha
+ */
+export declare interface OptimizerOptions {
+    sys?: OptimizerSystem;
+    binding?: any;
+}
+
+/**
+ * @alpha
+ */
+export declare interface OptimizerSystem {
+    cwd: () => string;
+    env: () => SystemEnvironment;
+    dynamicImport: (path: string) => Promise<any>;
+    getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
 }
 
 /**
  * @alpha
  */
-export declare interface OutputEntryMap {
-    version: string;
-    mapping: {
-        [canonicalName: string]: string;
-    };
-    injections?: GlobalInjections[];
-}
-
-/**
- * @alpha
- */
 export declare interface Path {
-    resolve(...pathSegments: string[]): string;
+    resolve(...paths: string[]): string;
     normalize(path: string): string;
     isAbsolute(path: string): boolean;
     join(...paths: string[]): string;
@@ -138,8 +162,20 @@ export declare interface Path {
     dirname(path: string): string;
     basename(path: string, ext?: string): string;
     extname(path: string): string;
-    format(pathObject: Partial<PathObject>): string;
-    parse(path: string): PathObject;
+    format(pathObject: {
+        root: string;
+        dir: string;
+        base: string;
+        ext: string;
+        name: string;
+    }): string;
+    parse(path: string): {
+        root: string;
+        dir: string;
+        base: string;
+        ext: string;
+        name: string;
+    };
     readonly sep: string;
     readonly delimiter: string;
     readonly win32: null;
@@ -147,53 +183,72 @@ export declare interface Path {
 }
 
 /**
+ * "development" and "production" are client builds,
+ * and "ssr" is a server build. Defaults to "development".
+ */
+declare type QwikBuildMode = 'development' | 'production' | 'ssr';
+
+/**
  * @alpha
  */
-export declare interface PathObject {
-    root: string;
-    dir: string;
-    base: string;
-    ext: string;
-    name: string;
+export declare interface QwikBundle {
+    size: number;
+    imports?: string[];
+    dynamicImports?: string[];
 }
 
 /**
  * @alpha
  */
-export declare interface QwikPluginOptions {
-    entryStrategy?: EntryStrategy;
-    srcDir: string;
-    minify?: MinifyMode;
-    debug?: boolean;
-    ssrBuild?: boolean;
-    symbolsOutput?: string | ((data: OutputEntryMap, output: NormalizedOutputOptions) => Promise<void> | void);
+export declare interface QwikManifest {
+    symbols: {
+        [symbolName: string]: QwikSymbol;
+    };
+    mapping: {
+        [symbolName: string]: string;
+    };
+    bundles: {
+        [fileName: string]: QwikBundle;
+    };
+    injections?: GlobalInjections[];
+    version: string;
 }
 
 /**
  * @alpha
  */
-export declare function qwikRollup(opts: QwikPluginOptions): any;
+export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): any;
 
 /**
  * @alpha
  */
-export declare function qwikVite(opts: QwikViteOptions): any;
-
-/**
- * @alpha
- */
-export declare interface QwikViteOptions extends QwikPluginOptions {
-    ssr?: QwikViteSSROptions | false;
+export declare interface QwikRollupPluginOptions extends BasePluginOptions {
+    optimizerOptions?: OptimizerOptions;
+    rootDir?: string;
+    buildMode?: QwikBuildMode;
 }
 
 /**
  * @alpha
  */
-export declare interface QwikViteSSROptions {
-    /** Defaults to `/src/entry.server.tsx` */
-    entry?: string;
-    /** Defaults to `/src/main.tsx` */
-    main?: string;
+export declare interface QwikSymbol {
+    ctxKind: 'function' | 'event';
+    ctxName: string;
+    captures: boolean;
+    parent: string | null;
+}
+
+/**
+ * @alpha
+ */
+export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
+
+/**
+ * @alpha
+ */
+export declare interface QwikVitePluginOptions extends BasePluginOptions {
+    optimizerOptions?: OptimizerOptions;
+    srcEntryDevInput?: string;
 }
 
 /**
@@ -228,8 +283,12 @@ export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 /**
  * @alpha
  */
+export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
+
+/**
+ * @alpha
+ */
 export declare interface TransformFsOptions extends TransformOptions {
-    rootDir: string;
 }
 
 /**
@@ -255,7 +314,6 @@ export declare interface TransformModuleInput {
  * @alpha
  */
 export declare interface TransformModulesOptions extends TransformOptions {
-    rootDir: string;
     input: TransformModuleInput[];
 }
 
@@ -263,11 +321,13 @@ export declare interface TransformModulesOptions extends TransformOptions {
  * @alpha
  */
 declare interface TransformOptions {
+    rootDir: string;
     entryStrategy?: EntryStrategy;
     minify?: MinifyMode;
     sourceMaps?: boolean;
     transpile?: boolean;
     explicityExtensions?: boolean;
+    dev?: boolean;
 }
 
 /**
@@ -286,7 +346,7 @@ export declare interface TransformOutput {
 export declare type TranspileOption = boolean | undefined | null;
 
 /**
- * @alpha
+ * @public
  */
 export declare const versions: {
     qwik: string;

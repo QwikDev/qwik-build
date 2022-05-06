@@ -6,7 +6,7 @@
 
 # The HTML-first framework
 
-Qwik is designed for the fastest possible page load time, by delivering pure HTML with near 0 javascript for your pages to become interactive, regardless of how complex your site or app is. It achieves this via [resumability](https://github.com/BuilderIO/qwik/blob/main/docs/pages/guide/resumable-vs-replayable.mdx) of HTML and [ultra fine-grained lazy-loading](https://github.com/BuilderIO/qwik/blob/main/docs/pages/guide/lazy-loading.mdx) of code.
+Qwik is designed for the fastest possible page load time, by delivering pure HTML with near 0 javascript for your pages to become interactive, regardless of how complex your site or app is. It achieves this via [resumability](https://github.com/BuilderIO/qwik/blob/main/packages/docs/pages/guide/resumable-vs-replayable.mdx) of HTML and [ultra fine-grained lazy-loading](https://github.com/BuilderIO/qwik/blob/main/packages/docs/pages/guide/lazy-loading.mdx) of code.
 
 ## Getting Started
 
@@ -16,8 +16,8 @@ Try out our starter:
 npm init qwik@latest
 ```
 
-- Understand the difference between [resumable and replayable](https://github.com/BuilderIO/qwik/blob/main/docs/pages/guide/resumable-vs-replayable.mdx) applications.
-- Learn about Qwik's high level [mental model](https://github.com/BuilderIO/qwik/blob/main/docs/pages/guide/mental-model.mdx).
+- Understand the difference between [resumable and replayable](https://github.com/BuilderIO/qwik/blob/main/packages/docs/pages/guide/resumable-vs-replayable.mdx) applications.
+- Learn about Qwik's high level [mental model](https://github.com/BuilderIO/qwik/blob/main/packages/docs/pages/guide/mental-model.mdx).
 
 ## Blog Posts
 
@@ -28,12 +28,12 @@ npm init qwik@latest
 
 ## Development
 
-- See [Developer.md](https://github.com/BuilderIO/qwik/blob/main/DEVELOPER.md) for more information on how to build Qwik from the source and contribute!
+- See [Developer.md](https://github.com/BuilderIO/qwik/blob/main/CONTRIBUTING.md) for more information on how to build Qwik from the source and contribute!
 
 ## Community
 
 - Ping us at [@QwikDev](https://twitter.com/QwikDev)
-- Join our [Discord](https://discord.gg/JHVpZmqSs4) community.
+- Join our [Discord](https://discord.gg/bNVSQmPzqy) community.
 - Join our [weekly office hours](https://calendar.google.com/calendar/u/0?cid=Y180ZG91YjR2NTZ1cW43YmgzbW1oZGJ2M3R2c0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t)
 
 ---
