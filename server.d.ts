@@ -133,6 +133,10 @@ export declare interface QwikManifest {
  * @alpha
  */
 export declare interface QwikSymbol {
+    origin: string;
+    displayName: string;
+    hash: string;
+    canonicalFilename: string;
     ctxKind: 'function' | 'event';
     ctxName: string;
     captures: boolean;

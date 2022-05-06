@@ -759,22 +759,10 @@ globalThis.qwikOptimizer = function(module) {
       if (a.parent && !b.parent) {
         return 1;
       }
-      if (a.captures && !b.captures) {
+      if (a.hash < b.hash) {
         return -1;
       }
-      if (!a.captures && b.captures) {
-        return 1;
-      }
-      if (a.ctxName < b.ctxName) {
-        return -1;
-      }
-      if (a.ctxName > b.ctxName) {
-        return 1;
-      }
-      if (symbolNameA < symbolNameB) {
-        return -1;
-      }
-      if (symbolNameA > symbolNameB) {
+      if (a.hash > b.hash) {
         return 1;
       }
       return 0;
@@ -936,7 +924,7 @@ globalThis.qwikOptimizer = function(module) {
           minify: "simplify",
           transpile: true,
           explicityExtensions: true,
-          dev: "production" !== opts.buildMode
+          dev: "development" === opts.buildMode
         };
         const result = await optimizer2.transformFs(transformOpts);
         for (const output of result.modules) {
@@ -1037,7 +1025,7 @@ globalThis.qwikOptimizer = function(module) {
           transpile: true,
           explicityExtensions: true,
           rootDir: dir,
-          dev: "production" !== opts.buildMode
+          dev: "development" === opts.buildMode
         });
         diagnosticsCallback(newOutput.diagnostics, optimizer2);
         results.set(pathId, newOutput);
@@ -1086,6 +1074,10 @@ globalThis.qwikOptimizer = function(module) {
             const bundleFileName = path.basename(outputBundle.fileName);
             manifest.mapping[symbolName] = bundleFileName;
             manifest.symbols[symbolName] = {
+              origin: hook.origin,
+              displayName: hook.displayName,
+              canonicalFilename: hook.canonicalFilename,
+              hash: hook.hash,
               ctxKind: hook.ctxKind,
               ctxName: hook.ctxName,
               captures: hook.captures,
@@ -1443,20 +1435,20 @@ globalThis.qwikOptimizer = function(module) {
       async generateBundle(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
         const optimizer = await qwikPlugin.getOptimizer();
+        const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+        for (const fileName in rollupBundle) {
+          const b = rollupBundle[fileName];
+          "chunk" === b.type && outputAnalyzer.addBundle({
+            fileName: fileName,
+            modules: b.modules,
+            imports: b.imports,
+            dynamicImports: b.dynamicImports,
+            size: b.code.length
+          });
+        }
+        const manifest = await outputAnalyzer.generateManifest();
+        "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
         if ("production" === opts.buildMode || "development" === opts.buildMode) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-          for (const fileName in rollupBundle) {
-            const b = rollupBundle[fileName];
-            "chunk" === b.type && outputAnalyzer.addBundle({
-              fileName: fileName,
-              modules: b.modules,
-              imports: b.imports,
-              dynamicImports: b.dynamicImports,
-              size: b.code.length
-            });
-          }
-          const manifest = await outputAnalyzer.generateManifest();
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           this.emitFile({
             type: "asset",
             fileName: Q_MANIFEST_FILENAME,
@@ -1464,20 +1456,22 @@ globalThis.qwikOptimizer = function(module) {
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         } else if ("ssr" === opts.buildMode) {
-          let manifestInput = opts.manifestInput;
-          if (!manifestInput && "node" === optimizer.sys.env()) {
+          let clientManifestInput = opts.manifestInput;
+          if (!clientManifestInput && "node" === optimizer.sys.env()) {
             try {
               const fs = await optimizer.sys.dynamicImport("fs");
               const qSymbolsPath = optimizer.sys.path.join(opts.outClientDir, Q_MANIFEST_FILENAME);
               const qSymbolsContent = fs.readFileSync(qSymbolsPath, "utf-8");
-              manifestInput = JSON.parse(qSymbolsContent);
+              clientManifestInput = JSON.parse(qSymbolsContent);
+              fs.writeFileSync(optimizer.sys.path.join(opts.outServerDir, "q-manifest.server.json"), JSON.stringify(manifest, null, 2));
             } catch (e) {}
           }
-          if (manifestInput && "object" === typeof manifestInput && "object" === typeof manifestInput.mapping) {
-            const manifestStr = JSON.stringify(manifestInput);
+          const clientManifest = getValidManifest(clientManifestInput);
+          if (clientManifest) {
+            const clientManifestStr = JSON.stringify(clientManifest);
             for (const fileName in rollupBundle) {
               const b = rollupBundle[fileName];
-              "chunk" === b.type && (b.code = qwikPlugin.updateSsrManifestDefault(manifestStr, b.code));
+              "chunk" === b.type && (b.code = qwikPlugin.updateSsrManifestDefault(clientManifestStr, b.code));
             }
           }
         }
