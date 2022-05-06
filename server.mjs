@@ -165,7 +165,7 @@ function getBuildBase(opts) {
   return null;
 }
 var versions = {
-  qwik: "0.0.19",
+  qwik: "0.0.20-0",
   qwikDom: "2.1.14"
 };
 

@@ -494,7 +494,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.19"
+    qwik: "0.0.20-0"
   };
   async function getSystem() {
     const sys = {
