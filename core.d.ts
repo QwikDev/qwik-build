@@ -12,7 +12,7 @@
  * `mousemove` event fires.
  *
  * ```typescript
- * onDocument(
+ * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
  * );
@@ -22,7 +22,7 @@
  *
  * ```typescript
  * // FILE: <current file>
- * onDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+ * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
  * // FILE: chunk-abc.js
  * export const onMousemove = () => console.log('mousemove');
@@ -529,12 +529,12 @@ export { Comment_2 as Comment }
  * ```typescript
  * export const Counter = component$((props: { value?: number; step?: number }) => {
  *   const state = useStore({ count: props.value || 0 });
- *   return $(() => (
+ *   return (
  *     <div>
  *       <span>{state.count}</span>
  *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
- *   ));
+ *   );
  * });
  * ```
  *
@@ -548,12 +548,12 @@ export { Comment_2 as Comment }
  *
  * ```typescript
  * export const OtherComponent = component$(() => {
- *   return $(() => <Counter value={100} />);
+ *   return <Counter value={100} />;
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
- * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+ * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+ * `useOnWindow`, `useStyles`, `useScopedStyles`
  *
  * @param onMount - Initialization closure used when the component is first created.
  * @param tagName - Optional components options. It can be used to set a custom tag-name to be
@@ -637,12 +637,12 @@ export declare interface ComponentOptions {
  * ```typescript
  * export const Counter = component$((props: { value?: number; step?: number }) => {
  *   const state = useStore({ count: props.value || 0 });
- *   return $(() => (
+ *   return (
  *     <div>
  *       <span>{state.count}</span>
  *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
- *   ));
+ *   );
  * });
  * ```
  *
@@ -656,12 +656,12 @@ export declare interface ComponentOptions {
  *
  * ```typescript
  * export const OtherComponent = component$(() => {
- *   return $(() => <Counter value={100} />);
+ *   return <Counter value={100} />;
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
- * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+ * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+ * `useOnWindow`, `useStyles`, `useScopedStyles`
  *
  * @param onMount - Initialization closure used when the component is first created.
  * @param tagName - Optional components options. It can be used to set a custom tag-name to be
@@ -1567,7 +1567,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
  *
  * ```typescript
- * onDocument(
+ * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
  * );
@@ -1577,7 +1577,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  *
  * ```typescript
  * // FILE: <current file>
- * onDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+ * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
  * // FILE: chunk-abc.js
  * export const onMousemove = () => console.log('mousemove');
@@ -1597,7 +1597,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * export function useMyFunction(callback: QRL<() => void>) {
  *   doExtraStuff();
  *   // The callback passed to `onDocument` requires `QRL`.
- *   onDocument('mousemove', callback);
+ *   useOnDocument('mousemove', callback);
  * }
  * ```
  *
@@ -1616,7 +1616,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
  * // Use `qrlImport` to load / resolve the reference.
- * const greet: () => void = await qrlImport(element, lazyGreet);
+ * const greet: () => void = await lazyGreet.resolve(element);
  *
  * //  Invoke it
  * greet();
@@ -1647,7 +1647,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  *
  * ```
  * <div q:base="/build/">
- *   <button onClick="./chunk-abc.js#onClick">...</button>
+ *   <button on:lick="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
@@ -2350,7 +2350,7 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+ * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
  * changes. A change to any of the properties cause the `watchFn` to re-run.
  *
@@ -2362,20 +2362,20 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```typescript
  * export const MyComp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
  *   });
- *   return $(() => (
+ *   return (
  *     <div>
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
  *       <button onClick$={() => store.count++}>+</button>
  *     </div>
- *   ));
+ *   );
  * });
  * ```
- *
  *
  * See: `useWatch`
  *
@@ -2385,7 +2385,7 @@ export declare interface Tracker {
     /**
      * Used to signal to Qwik which state should be watched for changes.
      *
-     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+     * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
      * state objects in a read proxy which signals to Qwik which properties should be watched for
      * changes. A change to any of the properties cause the `watchFn` to re-run.
      *
@@ -2397,20 +2397,20 @@ export declare interface Tracker {
      * ```typescript
      * export const MyComp = component$(() => {
      *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((obs) => {
-     *     store.doubleCount = 2 * obs(store).count;
+     *   useWatch$((track) => {
+     *     const count = track(store, 'count');
+     *     store.doubleCount = 2 * count;
      *   });
-     *   return $(() => (
+     *   return (
      *     <div>
      *       <span>
      *         {store.count} / {store.doubleCount}
      *       </span>
      *       <button onClick$={() => store.count++}>+</button>
      *     </div>
-     *   ));
+     *   );
      * });
      * ```
-     *
      *
      * See: `useWatch`
      *
@@ -2542,7 +2542,7 @@ export declare function useOnDocument(event: string, eventFn: QRL<() => void>): 
 export declare function useOnWindow(event: string, eventFn: QRL<() => void>): void;
 
 /**
- * A lazy-loadable reference to a component's on dehydrate hook.
+ * A lazy-loadable reference to a component's on pause hook.
  *
  * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
  * the component to do last-minute clean-up before its state is serialized.
@@ -2554,7 +2554,7 @@ export declare function useOnWindow(event: string, eventFn: QRL<() => void>): vo
 export declare const usePause$: (first: () => void) => void;
 
 /**
- * A lazy-loadable reference to a component's on dehydrate hook.
+ * A lazy-loadable reference to a component's on pause hook.
  *
  * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
  * the component to do last-minute clean-up before its state is serialized.
@@ -2573,8 +2573,8 @@ export declare function useRef<T = Element>(current?: T): Ref<T>;
 /**
  * A lazy-loadable reference to a component's on resume hook.
  *
- * Invoked when the component's state is re-resumed from serialization. This allows the
- * component to do any work to re-activate itself.
+ * The hook is eagerly invoked when the application resumes on the client. Because it is called
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
  * @public
  */
@@ -2623,7 +2623,7 @@ export declare function useServerMountQrl(watchQrl: QRL<ServerFn>): void;
  * ```typescript
  * export const Counter = component$(() => {
  *   const store = useStore({ count: 0 });
- *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
+ *   return <button onClick$={() => store.count++}>{store.count}</button>;
  * });
  * ```
  *

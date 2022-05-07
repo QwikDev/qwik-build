@@ -993,7 +993,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
  *
  * ```typescript
- * onDocument(
+ * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
  * );
@@ -1003,7 +1003,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * ```typescript
  * // FILE: <current file>
- * onDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+ * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
  * // FILE: chunk-abc.js
  * export const onMousemove = () => console.log('mousemove');
@@ -1023,7 +1023,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * export function useMyFunction(callback: QRL<() => void>) {
  *   doExtraStuff();
  *   // The callback passed to `onDocument` requires `QRL`.
- *   onDocument('mousemove', callback);
+ *   useOnDocument('mousemove', callback);
  * }
  * ```
  *
@@ -1042,7 +1042,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
  * // Use `qrlImport` to load / resolve the reference.
- * const greet: () => void = await qrlImport(element, lazyGreet);
+ * const greet: () => void = await lazyGreet.resolve(element);
  *
  * //  Invoke it
  * greet();
@@ -1073,7 +1073,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * ```
  * <div q:base="/build/">
- *   <button onClick="./chunk-abc.js#onClick">...</button>
+ *   <button on:lick="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
@@ -1692,7 +1692,7 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+ * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
  * changes. A change to any of the properties cause the `watchFn` to re-run.
  *
@@ -1704,20 +1704,20 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```typescript
  * export const MyComp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
  *   });
- *   return $(() => (
+ *   return (
  *     <div>
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
  *       <button onClick$={() => store.count++}>+</button>
  *     </div>
- *   ));
+ *   );
  * });
  * ```
- *
  *
  * See: `useWatch`
  *
@@ -1725,13 +1725,13 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 // </docs>
 declare interface Tracker {
-    // <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#Observer">
+    // <docs markdown="./watch.public.md#Tracker">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#Observer instead)
+    // (edit ./watch.public.md#Tracker instead)
     /**
      * Used to signal to Qwik which state should be watched for changes.
      *
-     * The `Observer` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+     * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
      * state objects in a read proxy which signals to Qwik which properties should be watched for
      * changes. A change to any of the properties cause the `watchFn` to re-run.
      *
@@ -1743,20 +1743,20 @@ declare interface Tracker {
      * ```typescript
      * export const MyComp = component$(() => {
      *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((obs) => {
-     *     store.doubleCount = 2 * obs(store).count;
+     *   useWatch$((track) => {
+     *     const count = track(store, 'count');
+     *     store.doubleCount = 2 * count;
      *   });
-     *   return $(() => (
+     *   return (
      *     <div>
      *       <span>
      *         {store.count} / {store.doubleCount}
      *       </span>
      *       <button onClick$={() => store.count++}>+</button>
      *     </div>
-     *   ));
+     *   );
      * });
      * ```
-     *
      *
      * See: `useWatch`
      *

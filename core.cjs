@@ -1210,9 +1210,9 @@
      */
     const SkipRerender = { __brand__: 'skip' };
 
-    // <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#$">
+    // <docs markdown="./qrl.public.md#$">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#$ instead)
+    // (edit ./qrl.public.md#$ instead)
     /**
      * Qwik Optimizer marker function.
      *
@@ -1227,7 +1227,7 @@
      * `mousemove` event fires.
      *
      * ```typescript
-     * onDocument(
+     * useOnDocument(
      *   'mousemove',
      *   $(() => console.log('mousemove'))
      * );
@@ -1237,7 +1237,7 @@
      *
      * ```typescript
      * // FILE: <current file>
-     * onDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+     * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
      *
      * // FILE: chunk-abc.js
      * export const onMousemove = () => console.log('mousemove');
@@ -1290,9 +1290,9 @@
     function $(expression) {
         return runtimeQrl(expression);
     }
-    // <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#implicit$FirstArg">
+    // <docs markdown="./qrl.public.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#implicit$FirstArg instead)
+    // (edit ./qrl.public.md#implicit$FirstArg instead)
     /**
      * Create a `____$(...)` convenience method from `___(...)`.
      *
@@ -2267,9 +2267,9 @@
         return String(obj);
     }
 
-    // <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
+    // <docs markdown="./use-store.public.md#useHostElement">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
+    // (edit ./use-store.public.md#useHostElement instead)
     /**
      * Retrieves the Host Element of the current component.
      *
@@ -2296,9 +2296,9 @@
         return doc;
     }
 
-    // <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useStore">
+    // <docs markdown="./use-store.public.md#useStore">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useStore instead)
+    // (edit ./use-store.public.md#useStore instead)
     /**
      * Creates a object that Qwik can track across serializations.
      *
@@ -2312,7 +2312,7 @@
      * ```typescript
      * export const Counter = component$(() => {
      *   const store = useStore({ count: 0 });
-     *   return $(() => <button onClick$={() => store.count++}>{store.count}</button>);
+     *   return <button onClick$={() => store.count++}>{store.count}</button>;
      * });
      * ```
      *
@@ -2362,9 +2362,9 @@
         return url;
     }
 
-    // <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useLexicalScope">
+    // <docs markdown="./use-store.public.md#useLexicalScope">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useLexicalScope instead)
+    // (edit ./use-store.public.md#useLexicalScope instead)
     /**
      * Used by the Qwik Optimizer to restore the lexical scoped variables.
      *
@@ -3046,9 +3046,6 @@
         assertEqual(isQrl(qrl), true);
         return qrl;
     }
-    // <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#qrlImport">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#qrlImport instead)
     /**
      * Lazy-load a `QRL` symbol and return the lazy-loaded value.
      *
@@ -3059,7 +3056,6 @@
      * @param qrl - QRL to load.
      * @returns A resolved QRL value as a Promise.
      */
-    // </docs>
     function qrlImport(element, qrl) {
         const qrl_ = toInternalQRL(qrl);
         if (qrl_.symbolRef)
@@ -3079,9 +3075,9 @@
             }));
         }
     }
-    // <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#qrl">
+    // <docs markdown="./qrl.public.md#qrl">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#qrl instead)
+    // (edit ./qrl.public.md#qrl instead)
     /**
      * Used by Qwik Optimizer to point to lazy-loaded resources.
      *
@@ -3218,9 +3214,9 @@
         return symbolOrQrl;
     }
 
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
+    // <docs markdown="./component.public.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
+    // (edit ./component.public.md#useCleanup instead)
     /**
      * A lazy-loadable reference to a component's destroy hook.
      *
@@ -3232,9 +3228,9 @@
     function useCleanupQrl(unmountFn) {
         throw new Error('IMPLEMENT: useCleanupQrl' + unmountFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
+    // <docs markdown="./component.public.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
+    // (edit ./component.public.md#useCleanup instead)
     /**
      * A lazy-loadable reference to a component's destroy hook.
      *
@@ -3244,9 +3240,9 @@
      */
     // </docs>
     const useCleanup$ = implicit$FirstArg(useCleanupQrl);
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
+    // <docs markdown="./component.public.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
+    // (edit ./component.public.md#useResume instead)
     /**
      * A lazy-loadable reference to a component's on resume hook.
      *
@@ -3259,27 +3255,38 @@
     function useResumeQrl(resumeFn) {
         useOn('qresume', resumeFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
+    // <docs markdown="./component.public.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
+    // (edit ./component.public.md#useResume instead)
     /**
      * A lazy-loadable reference to a component's on resume hook.
      *
-     * Invoked when the component's state is re-resumed from serialization. This allows the
-     * component to do any work to re-activate itself.
+     * The hook is eagerly invoked when the application resumes on the client. Because it is called
+     * eagerly, this allows the component to resume even if no user interaction has taken place.
      *
      * @public
      */
     // </docs>
     const useResume$ = implicit$FirstArg(useResumeQrl);
+    // <docs markdown="./component.public.md#useVisible">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ./component.public.md#useVisible instead)
+    /**
+     * A lazy-loadable reference to a component's on visible hook.
+     *
+     * The hook is lazily invoked when the component becomes visible.
+     *
+     * @public
+     */
+    // </docs>
     function useVisibleQrl(resumeFn) {
         useOn('qvisible', resumeFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
+    // <docs markdown="./component.public.md#usePause">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
+    // (edit ./component.public.md#usePause instead)
     /**
-     * A lazy-loadable reference to a component's on dehydrate hook.
+     * A lazy-loadable reference to a component's on pause hook.
      *
      * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
      * the component to do last-minute clean-up before its state is serialized.
@@ -3292,11 +3299,11 @@
     function usePauseQrl(dehydrateFn) {
         throw new Error('IMPLEMENT: onPause' + dehydrateFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#OnPause">
+    // <docs markdown="./component.public.md#usePause">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#OnPause instead)
+    // (edit ./component.public.md#usePause instead)
     /**
-     * A lazy-loadable reference to a component's on dehydrate hook.
+     * A lazy-loadable reference to a component's on pause hook.
      *
      * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
      * the component to do last-minute clean-up before its state is serialized.
@@ -3307,9 +3314,9 @@
      */
     // </docs>
     const usePause$ = implicit$FirstArg(usePauseQrl);
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#on">
+    // <docs markdown="./component.public.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#on instead)
+    // (edit ./component.public.md#useOn instead)
     /**
      * Register a listener on the current component's host element.
      *
@@ -3326,9 +3333,9 @@
         const ctx = getContext(el);
         qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDocument">
+    // <docs markdown="./component.public.md#useOnDocument">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDocument instead)
+    // (edit ./component.public.md#useOnDocument instead)
     /**
      * Register a listener on `document`.
      *
@@ -3345,9 +3352,9 @@
         const ctx = getContext(el);
         qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onWindow">
+    // <docs markdown="./component.public.md#useOnWindow">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onWindow instead)
+    // (edit ./component.public.md#useOnWindow instead)
     /**
      * Register a listener on `window`.
      *
@@ -3364,9 +3371,9 @@
         const ctx = getContext(el);
         qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
+    // <docs markdown="./component.public.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useStyles instead)
+    // (edit ./component.public.md#useStyles instead)
     /**
      * Refer to component styles.
      *
@@ -3376,9 +3383,9 @@
     function useStylesQrl(styles) {
         _useStyles(styles, false);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
+    // <docs markdown="./component.public.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useStyles instead)
+    // (edit ./component.public.md#useStyles instead)
     /**
      * Refer to component styles.
      *
@@ -3386,9 +3393,9 @@
      */
     // </docs>
     const useStyles$ = implicit$FirstArg(useStylesQrl);
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
+    // <docs markdown="./component.public.md#useScopedStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
+    // (edit ./component.public.md#useScopedStyles instead)
     /**
      * @alpha
      */
@@ -3396,17 +3403,17 @@
     function useScopedStylesQrl(styles) {
         _useStyles(styles, true);
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
+    // <docs markdown="./component.public.md#useScopedStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
+    // (edit ./component.public.md#useScopedStyles instead)
     /**
      * @alpha
      */
     // </docs>
     const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
+    // <docs markdown="./component.public.md#component">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#component instead)
+    // (edit ./component.public.md#component instead)
     /**
      * Declare a Qwik component that can be used to create UI.
      *
@@ -3431,12 +3438,12 @@
      * ```typescript
      * export const Counter = component$((props: { value?: number; step?: number }) => {
      *   const state = useStore({ count: props.value || 0 });
-     *   return $(() => (
+     *   return (
      *     <div>
      *       <span>{state.count}</span>
      *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
      *     </div>
-     *   ));
+     *   );
      * });
      * ```
      *
@@ -3450,12 +3457,12 @@
      *
      * ```typescript
      * export const OtherComponent = component$(() => {
-     *   return $(() => <Counter value={100} />);
+     *   return <Counter value={100} />;
      * });
      * ```
      *
-     * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
-     * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+     * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+     * `useOnWindow`, `useStyles`, `useScopedStyles`
      *
      * @param onMount - Initialization closure used when the component is first created.
      * @param tagName - Optional components options. It can be used to set a custom tag-name to be
@@ -3471,9 +3478,9 @@
             return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, key);
         };
     }
-    // <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
+    // <docs markdown="./component.public.md#component">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#component instead)
+    // (edit ./component.public.md#component instead)
     /**
      * Declare a Qwik component that can be used to create UI.
      *
@@ -3498,12 +3505,12 @@
      * ```typescript
      * export const Counter = component$((props: { value?: number; step?: number }) => {
      *   const state = useStore({ count: props.value || 0 });
-     *   return $(() => (
+     *   return (
      *     <div>
      *       <span>{state.count}</span>
      *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
      *     </div>
-     *   ));
+     *   );
      * });
      * ```
      *
@@ -3517,12 +3524,12 @@
      *
      * ```typescript
      * export const OtherComponent = component$(() => {
-     *   return $(() => <Counter value={100} />);
+     *   return <Counter value={100} />;
      * });
      * ```
      *
-     * See also: `component`, `onUnmount`, `onHydrate`, `OnPause`, `onHalt`, `onResume`, `on`,
-     * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+     * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+     * `useOnWindow`, `useStyles`, `useScopedStyles`
      *
      * @param onMount - Initialization closure used when the component is first created.
      * @param tagName - Optional components options. It can be used to set a custom tag-name to be
