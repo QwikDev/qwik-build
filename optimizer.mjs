@@ -684,19 +684,11 @@ var EVENT_PRIORITY = [ "onClick$", "onDblClick$", "onContextMenu$", "onAuxClick$
 
 var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useScopedStyles$" ].map((n => n.toLowerCase()));
 
-function prioritorizeBundles(manifest) {
-  return Object.keys(manifest.bundles).sort(((a, b) => {
-    if (a < b) {
-      return -1;
-    }
-    if (a > b) {
-      return 1;
-    }
-    return 0;
-  }));
+function sortBundleNames(manifest) {
+  return Object.keys(manifest.bundles).sort(sortAlphabetical);
 }
 
-function updateManifestPriorities(manifest) {
+function updateSortAndPriorities(manifest) {
   const prioritorizedSymbolNames = prioritorizeSymbolNames(manifest);
   const prioritorizedSymbols = {};
   const prioritorizedMapping = {};
@@ -704,18 +696,35 @@ function updateManifestPriorities(manifest) {
     prioritorizedSymbols[symbolName] = manifest.symbols[symbolName];
     prioritorizedMapping[symbolName] = manifest.mapping[symbolName];
   }
-  const prioritorizedBundleNames = prioritorizeBundles(manifest);
-  const prioritorizedBundles = {};
-  for (const bundleName of prioritorizedBundleNames) {
-    const entry = prioritorizedBundles[bundleName] = manifest.bundles[bundleName];
-    entry.imports && entry.imports.sort();
-    entry.dynamicImports && entry.dynamicImports.sort();
+  const sortedBundleNames = sortBundleNames(manifest);
+  const sortedBundles = {};
+  for (const bundleName of sortedBundleNames) {
+    sortedBundles[bundleName] = manifest.bundles[bundleName];
+    const bundle = manifest.bundles[bundleName];
+    Array.isArray(bundle.imports) && bundle.imports.sort(sortAlphabetical);
+    Array.isArray(bundle.dynamicImports) && bundle.dynamicImports.sort(sortAlphabetical);
+    for (const symbolName of prioritorizedSymbolNames) {
+      bundleName === prioritorizedMapping[symbolName] && bundle.symbols.push(symbolName);
+    }
+    bundle.symbols.sort(sortAlphabetical);
   }
   manifest.symbols = prioritorizedSymbols;
   manifest.mapping = prioritorizedMapping;
-  manifest.bundles = prioritorizedBundles;
-  manifest.injections && manifest.injections.sort();
+  manifest.bundles = sortedBundles;
+  Array.isArray(manifest.injections) && manifest.injections.sort();
   return manifest;
+}
+
+function sortAlphabetical(a, b) {
+  a = a.toLocaleLowerCase();
+  b = b.toLocaleLowerCase();
+  if (a < b) {
+    return -1;
+  }
+  if (a > b) {
+    return 1;
+  }
+  return 0;
 }
 
 function getValidManifest(manifest) {
@@ -734,6 +743,7 @@ function createPlugin(optimizerOptions = {}) {
   let addWatchFileCallback = () => {};
   let diagnosticsCallback = () => {};
   const opts = {
+    target: "client",
     buildMode: "development",
     debug: false,
     rootDir: null,
@@ -757,13 +767,15 @@ function createPlugin(optimizerOptions = {}) {
     const updatedOpts = Object.assign({}, inputOpts);
     const optimizer2 = await getOptimizer();
     opts.debug = !!updatedOpts.debug;
-    opts.buildMode = "development";
-    "ssr" === updatedOpts.buildMode ? opts.buildMode = "ssr" : "production" === updatedOpts.buildMode && (opts.buildMode = "production");
+    "ssr" === updatedOpts.target || "client" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target = "client";
+    "production" === updatedOpts.buildMode || "development" === updatedOpts.buildMode ? opts.buildMode = updatedOpts.buildMode : opts.buildMode = "development";
     updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
       ...updatedOpts.entryStrategy
     });
-    opts.entryStrategy || (opts.entryStrategy = {
+    opts.entryStrategy || ("development" === opts.buildMode ? opts.entryStrategy = {
       type: "hook"
+    } : opts.entryStrategy = {
+      type: "smart"
     });
     "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
     "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
@@ -779,7 +791,15 @@ function createPlugin(optimizerOptions = {}) {
     } else {
       opts.srcDir = srcDir;
     }
-    "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type || !!updatedOpts.srcInputs;
+    "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : "production" === opts.buildMode ? opts.forceFullBuild = true : opts.forceFullBuild = "hook" !== opts.entryStrategy.type || !!updatedOpts.srcInputs;
+    if (false === opts.forceFullBuild && "hook" !== opts.entryStrategy.type) {
+      console.error(`forceFullBuild cannot be false with entryStrategy ${opts.entryStrategy.type}`);
+      opts.forceFullBuild = true;
+    }
+    if (false === opts.forceFullBuild && !!updatedOpts.srcInputs) {
+      console.error('forceFullBuild reassigned to "true" since "srcInputs" have been provided');
+      opts.forceFullBuild = true;
+    }
     Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
       i.path = optimizer2.sys.path.resolve(opts.rootDir, i.path);
     })) : "string" === typeof opts.srcDir && (opts.srcDir = optimizer2.sys.path.resolve(opts.rootDir, opts.srcDir));
@@ -1011,7 +1031,7 @@ function createPlugin(optimizerOptions = {}) {
         const bundleFileName = path.basename(outputBundle.fileName);
         addBundleToManifest(path, manifest, outputBundle, bundleFileName);
       }
-      return updateManifestPriorities(manifest);
+      return updateSortAndPriorities(manifest);
     };
     return {
       addBundle: addBundle,
@@ -1022,7 +1042,8 @@ function createPlugin(optimizerOptions = {}) {
     if (!manifest.bundles[bundleFileName]) {
       const buildDirName = path.dirname(outputBundle.fileName);
       const bundle = {
-        size: outputBundle.size
+        size: outputBundle.size,
+        symbols: []
       };
       const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
       bundleImports.length > 0 && (bundle.imports = bundleImports);
@@ -1068,7 +1089,7 @@ function createPlugin(optimizerOptions = {}) {
 }
 
 function getBuildTimeModule(pluginOpts, loadOpts) {
-  const isServer = "ssr" === pluginOpts.buildMode || !!loadOpts.ssr;
+  const isServer = "ssr" === pluginOpts.target || !!loadOpts.ssr;
   return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\n`;
 }
 
@@ -1125,7 +1146,8 @@ function qwikRollup(qwikRollupOpts = {}) {
   const rollupPlugin = {
     name: "rollup-plugin-qwik",
     api: {
-      getOptimizer: () => qwikPlugin.getOptimizer()
+      getOptimizer: () => qwikPlugin.getOptimizer(),
+      getOptions: () => qwikPlugin.getOptions()
     },
     async options(inputOpts) {
       inputOpts.onwarn = (warning, warn) => {
@@ -1135,7 +1157,7 @@ function qwikRollup(qwikRollupOpts = {}) {
         warn(warning);
       };
       const opts = await qwikPlugin.normalizeOptions(qwikRollupOpts);
-      if ("ssr" === opts.buildMode) {
+      if ("ssr" === opts.target) {
         inputOpts.input || (inputOpts.input = opts.srcEntryServerInput);
         inputOpts.treeshake = false;
       } else {
@@ -1145,7 +1167,7 @@ function qwikRollup(qwikRollupOpts = {}) {
     },
     outputOptions(outputOpts) {
       const opts = qwikPlugin.getOptions();
-      if ("ssr" === opts.buildMode) {
+      if ("ssr" === opts.target) {
         outputOpts.dir || (outputOpts.dir = opts.outServerDir);
         outputOpts.format || (outputOpts.format = "cjs");
       } else {
@@ -1253,11 +1275,17 @@ function qwikVite(qwikViteOpts = {}) {
     async config(viteConfig, viteEnv) {
       qwikPlugin.log(`vite config(), command: ${viteEnv.command}, env.mode: ${viteEnv.mode}`);
       isClientOnly = "serve" === viteEnv.command && "ssr" !== viteEnv.mode;
-      let buildMode = "development";
-      "build" === viteEnv.command && ("ssr" === viteEnv.mode ? buildMode = "ssr" : "production" === viteEnv.mode && (buildMode = "production"));
+      let target;
+      target = "ssr" === viteEnv.mode ? "ssr" : "client";
+      let buildMode;
+      buildMode = "build" === viteEnv.command && "development" !== viteEnv.mode ? "production" : "development";
+      "development" === buildMode && (qwikViteOpts.entryStrategy = {
+        type: "hook"
+      });
       const pluginOpts = {
-        debug: qwikViteOpts.debug,
+        target: target,
         buildMode: buildMode,
+        debug: qwikViteOpts.debug,
         entryStrategy: qwikViteOpts.entryStrategy,
         rootDir: viteConfig.root,
         outClientDir: qwikViteOpts.outClientDir,
@@ -1268,12 +1296,11 @@ function qwikVite(qwikViteOpts = {}) {
         manifestInput: qwikViteOpts.manifestInput,
         manifestOutput: qwikViteOpts.manifestOutput
       };
-      "production" === buildMode && (pluginOpts.forceFullBuild = true);
       const optimizer = await qwikPlugin.getOptimizer();
       const opts = await qwikPlugin.normalizeOptions(pluginOpts);
       srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
       const outputOptions = {};
-      if ("ssr" === opts.buildMode) {
+      if ("ssr" === opts.target) {
         outputOptions.assetFileNames = "[name].[ext]";
         outputOptions.entryFileNames = "[name].js";
         outputOptions.chunkFileNames = "[name].js";
@@ -1310,10 +1337,7 @@ function qwikVite(qwikViteOpts = {}) {
           }
         }
       };
-      "serve" === viteEnv.command && (pluginOpts.entryStrategy = {
-        type: "hook"
-      });
-      if ("ssr" === opts.buildMode) {
+      if ("ssr" === opts.target) {
         updatedViteConfig.build.rollupOptions.input = opts.srcEntryServerInput;
         updatedViteConfig.build.outDir = opts.outServerDir;
         updatedViteConfig.build.ssr = true;

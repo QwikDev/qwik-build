@@ -11856,20 +11856,17 @@ function getQwikLoaderScript(opts = {}) {
 }
 
 // packages/qwik/src/server/prefetch.ts
-function getPrefetchUrls(doc, opts) {
+function getPrefetchResources(doc, opts) {
   const manifest = getValidManifest(opts.manifest);
   if (manifest) {
     const prefetchStrategy = opts.prefetchStrategy;
     const buildBase = getBuildBase(opts);
     if (prefetchStrategy !== null && buildBase != null) {
       if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "events-document") {
-        return [];
-      }
-      if (prefetchStrategy.symbolsToPrefetch === "all-document") {
-        return [];
+        return getEventDocumentPrefetch(doc, manifest, buildBase);
       }
       if (prefetchStrategy.symbolsToPrefetch === "all") {
-        return getAllPrefetchUrls(manifest, buildBase);
+        return getAllPrefetch(manifest, buildBase);
       }
       if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
         try {
@@ -11882,66 +11879,118 @@ function getPrefetchUrls(doc, opts) {
   }
   return [];
 }
-function getAllPrefetchUrls(manifest, buildBase) {
-  const urls = [];
-  for (const symbolName in manifest.mapping) {
-    addBundle(manifest, urls, manifest.mapping[symbolName]);
-  }
-  return urls.map((url) => buildBase + url);
+function getEventDocumentPrefetch(doc, manifest, buildBase) {
+  const eventQrls = /* @__PURE__ */ new Set();
+  const findQwikEvent = (elm) => {
+    if (elm && elm.nodeType === 1) {
+      const attrs = elm.attributes;
+      if (attrs) {
+        const attrLen = attrs.length;
+        for (let i = 0; i < attrLen; i++) {
+          const nodeName = attrs[i].nodeName;
+          if (nodeName && nodeName.startsWith("on:")) {
+            const qrlValue = attrs[i].nodeValue;
+            if (qrlValue) {
+              const qrls = qrlValue.split(" ");
+              for (const qrl of qrls) {
+                const q = parseQRL(qrl);
+                if (q && q.symbol) {
+                  eventQrls.add(q.symbol);
+                }
+              }
+            }
+          }
+        }
+      }
+      const childNodes = elm.childNodes;
+      if (childNodes) {
+        const childNodesLen = childNodes.length;
+        for (let i = 0; i < childNodesLen; i++) {
+          findQwikEvent(childNodes[i]);
+        }
+      }
+    }
+  };
+  findQwikEvent(doc.body);
+  const prefetchResources = [];
+  const urls = /* @__PURE__ */ new Set();
+  eventQrls.forEach((eventSymbolName) => {
+    for (const prioritizedSymbolName in manifest.mapping) {
+      if (eventSymbolName === prioritizedSymbolName) {
+        addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
+        break;
+      }
+    }
+  });
+  return prefetchResources;
 }
-function addBundle(manifest, urls, url) {
-  if (!urls.includes(url)) {
-    urls.push(url);
-    const bundle = manifest.bundles[url];
+function getAllPrefetch(manifest, buildBase) {
+  const prefetchResources = [];
+  const urls = /* @__PURE__ */ new Set();
+  for (const prioritizedSymbolName in manifest.mapping) {
+    addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
+  }
+  return prefetchResources;
+}
+function addBundle(manifest, urls, prefetchResources, buildBase, fileName) {
+  const url = buildBase + fileName;
+  if (!urls.has(url)) {
+    urls.add(url);
+    prefetchResources.push({
+      url,
+      imports: []
+    });
+    const bundle = manifest.bundles[fileName];
     if (bundle && bundle.imports) {
-      for (const bundleUrl of bundle.imports) {
-        addBundle(manifest, urls, bundleUrl);
+      for (const importedFilename of bundle.imports) {
+        addBundle(manifest, urls, prefetchResources, buildBase, importedFilename);
       }
     }
   }
 }
-function applyPrefetchImplementation(doc, opts, prefetchUrls) {
+function applyPrefetchImplementation(doc, opts, prefetchResources) {
   const prefetchStrategy = opts.prefetchStrategy;
   if (prefetchStrategy !== null) {
     const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "link-prefetch";
     if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
-      link(doc, prefetchUrls, prefetchImpl);
+      link(doc, prefetchResources, prefetchImpl);
     } else if (prefetchImpl === "qrl-import") {
-      qrlImport2(doc, prefetchUrls);
+      qrlImport2(doc, prefetchResources);
     } else if (prefetchImpl === "worker-fetch") {
-      workerFetch(doc, prefetchUrls);
+      workerFetch(doc, prefetchResources);
     }
   }
 }
-function link(doc, prefetchUrls, prefetchImpl) {
-  for (const prefetchUrl of prefetchUrls) {
-    const link2 = doc.createElement("link");
-    link2.setAttribute("href", prefetchUrl);
+function link(doc, prefetchResources, prefetchImpl) {
+  for (const prefetchResource of prefetchResources) {
+    const linkElm = doc.createElement("link");
+    linkElm.setAttribute("href", prefetchResource.url);
     if (prefetchImpl === "link-modulepreload") {
-      link2.setAttribute("rel", "modulepreload");
+      linkElm.setAttribute("rel", "modulepreload");
     } else if (prefetchImpl === "link-preload") {
-      link2.setAttribute("rel", "preload");
-      link2.setAttribute("as", "script");
+      linkElm.setAttribute("rel", "preload");
+      linkElm.setAttribute("as", "script");
     } else {
-      link2.setAttribute("rel", "prefetch");
-      link2.setAttribute("as", "script");
+      linkElm.setAttribute("rel", "prefetch");
+      linkElm.setAttribute("as", "script");
     }
-    doc.body.appendChild(link2);
+    doc.body.appendChild(linkElm);
+    link(doc, prefetchResource.imports, prefetchImpl);
   }
 }
-function qrlImport2(doc, urls) {
+function qrlImport2(doc, prefetchResources) {
   const script = doc.createElement("script");
   script.setAttribute("type", "qwik/prefetch");
-  script.innerHTML = JSON.stringify(urls);
+  script.innerHTML = JSON.stringify(prefetchResources);
   doc.body.appendChild(script);
 }
-function workerFetch(doc, urls) {
+function workerFetch(doc, prefetchResources) {
   const fetch = `Promise.all(e.data.map(u=>fetch(u))).finally(()=>{setTimeout(postMessage({}),999)})`;
   const workerBody = `onmessage=(e)=>{${fetch}}`;
   const blob = `new Blob(['${workerBody}'],{type:"text/javascript"})`;
   const url = `URL.createObjectURL(${blob})`;
   let s = `const w=new Worker(${url});`;
-  s += `w.postMessage(${JSON.stringify(urls)}.map(u=>new URL(u,origin)+''));`;
+  s += `w.postMessage(${JSON.stringify(prefetchResources.map((p) => p.url))}.map(u=>new URL(u,origin)+''));`;
   s += `w.onmessage=()=>{w.terminate();document.getElementById('qwik-worker-fetch').remove()}`;
   const script = doc.createElement("script");
   script.setAttribute("type", "module");
@@ -12001,15 +12050,15 @@ async function renderToString(rootNode, opts = {}) {
     doc.body.appendChild(rootEl);
   }
   await renderToDocument(rootEl, rootNode, opts);
-  const prefetchUrls = getPrefetchUrls(doc, opts);
-  if (prefetchUrls.length > 0) {
-    applyPrefetchImplementation(doc, opts, prefetchUrls);
+  const prefetchResources = getPrefetchResources(doc, opts);
+  if (prefetchResources.length > 0) {
+    applyPrefetchImplementation(doc, opts, prefetchResources);
   }
   const renderDocTime = renderDocTimer();
   const docToStringTimer = createTimer();
   const result = {
     html: serializeDocument(rootEl, opts),
-    prefetchUrls,
+    prefetchResources,
     timing: {
       createDocument: createDocTime,
       render: renderDocTime,

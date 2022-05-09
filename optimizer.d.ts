@@ -3,7 +3,6 @@ declare interface BasePluginOptions {
     outClientDir?: string;
     outServerDir?: string;
     entryStrategy?: EntryStrategy;
-    forceFullBuild?: boolean;
     srcRootInput?: string | string[];
     srcEntryServerInput?: string;
     srcDir?: string | null;
@@ -184,17 +183,16 @@ export declare interface Path {
     readonly posix: Path;
 }
 
-/**
- * "development" and "production" are client builds,
- * and "ssr" is a server build. Defaults to "development".
- */
-declare type QwikBuildMode = 'development' | 'production' | 'ssr';
+declare type QwikBuildMode = 'production' | 'development';
+
+declare type QwikBuildTarget = 'client' | 'ssr';
 
 /**
  * @alpha
  */
 export declare interface QwikBundle {
     size: number;
+    symbols: string[];
     imports?: string[];
     dynamicImports?: string[];
 }
@@ -227,7 +225,9 @@ export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): an
 export declare interface QwikRollupPluginOptions extends BasePluginOptions {
     optimizerOptions?: OptimizerOptions;
     rootDir?: string;
+    target?: QwikBuildTarget;
     buildMode?: QwikBuildMode;
+    forceFullBuild?: boolean;
 }
 
 /**
