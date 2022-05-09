@@ -83,6 +83,7 @@ const QSlotAttr = 'q:slot';
 const QObjAttr = 'q:obj';
 const QSeqAttr = 'q:seq';
 const QContainerAttr = 'q:container';
+const QObjSelector = '[q\\:obj]';
 const QContainerSelector = '[q\\:container]';
 const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
@@ -574,6 +575,430 @@ function isElement(value) {
     return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
 }
 
+// <docs markdown="./qrl.public.md#$">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./qrl.public.md#$ instead)
+/**
+ * Qwik Optimizer marker function.
+ *
+ * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
+ * resource referenced by `QRL`.
+ *
+ * See: `implicit$FirstArg` for additional `____$(...)` rules.
+ *
+ * In this example `$(...)` is used to capture the callback function of `onmousemove` into
+ * lazy-loadable reference. This allows the code to refer to the function without actually
+ * loading the function. In this example, the callback function does not get loaded until
+ * `mousemove` event fires.
+ *
+ * ```typescript
+ * useOnDocument(
+ *   'mousemove',
+ *   $(() => console.log('mousemove'))
+ * );
+ * ```
+ *
+ * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
+ *
+ * ```typescript
+ * // FILE: <current file>
+ * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+ *
+ * // FILE: chunk-abc.js
+ * export const onMousemove = () => console.log('mousemove');
+ * ```
+ *
+ * ## Special Rules
+ *
+ * The Qwik Optimizer places special rules on functions that can be lazy-loaded.
+ *
+ * 1. The expression of the `$(expression)` function must be importable by the system.
+ * (expression shows up in `import` or has `export`)
+ * 2. If inlined function then all lexically captured values must be:
+ *    - importable (vars shows up in `import` or has `export`)
+ *    - const (The capturing process differs from JS capturing in that writing to captured
+ * variables does not update them, and therefore writes are forbidden. The best practice is that
+ * all captured variables are constants.)
+ *    - Must be runtime serializable.
+ *
+ * ```typescript
+ * import { importedFn } from './example';
+ *
+ * export const greet = () => console.log('greet');
+ * function topLevelFn() {}
+ *
+ * function myCode() {
+ *   const store = useStore({});
+ *   function localFn() {}
+ *   // Valid Examples
+ *   $(greet); // greet is importable
+ *   $(importedFn); // importedFn is importable
+ *   $(() => greet()); // greet is importable;
+ *   $(() => importedFn()); // importedFn is importable
+ *   $(() => console.log(store)); // store is serializable.
+ *
+ *   // Compile time errors
+ *   $(topLevelFn); // ERROR: `topLevelFn` not importable
+ *   $(() => topLevelFn()); // ERROR: `topLevelFn` not importable
+ *
+ *   // Runtime errors
+ *   $(localFn); // ERROR: `localFn` fails serialization
+ *   $(() => localFn()); // ERROR: `localFn` fails serialization
+ * }
+ *
+ * ```
+ *
+ * @param expression - Expression which should be lazy loaded
+ * @public
+ */
+// </docs>
+function $(expression) {
+    return runtimeQrl(expression);
+}
+// <docs markdown="./qrl.public.md#implicit$FirstArg">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./qrl.public.md#implicit$FirstArg instead)
+/**
+ * Create a `____$(...)` convenience method from `___(...)`.
+ *
+ * It is very common for functions to take a lazy-loadable resource as a first argument. For this
+ * reason, the Qwik Optimizer automatically extracts the first argument from any function which
+ * ends in `$`.
+ *
+ * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
+ * The former is just a shorthand for the latter.
+ *
+ * For example these function call are equivalent:
+ *
+ * - `component$(() => {...})` is same as `onRender($(() => {...}))`
+ *
+ * ```typescript
+ * export function myApi(callback: QRL<() => void>): void {
+ *   // ...
+ * }
+ *
+ * export const myApi$ = implicit$FirstArg(myApi);
+ * // type of myApi$: (callback: () => void): void
+ *
+ * // can be used as:
+ * myApi$(() => console.log('callback'));
+ *
+ * // will be transpiled to:
+ * // FILE: <current file>
+ * myApi(qrl('./chunk-abc.js', 'callback'));
+ *
+ * // FILE: chunk-abc.js
+ * export const callback = () => console.log('callback');
+ * ```
+ *
+ * @param fn - function that should have its first argument automatically `$`.
+ * @public
+ */
+// </docs>
+function implicit$FirstArg(fn) {
+    return function (first, ...rest) {
+        return fn.call(null, $(first), ...rest);
+    };
+}
+
+// <docs markdown="./use-store.public.md#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-store.public.md#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useHostElement() {
+    const element = getInvokeContext().hostElement;
+    assertDefined(element);
+    return element;
+}
+
+/**
+ * @public
+ */
+function useDocument() {
+    const doc = getInvokeContext().doc;
+    if (!doc) {
+        throw new Error('Cant access document for existing context');
+    }
+    return doc;
+}
+
+// <docs markdown="./use-store.public.md#useStore">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-store.public.md#useStore instead)
+/**
+ * Creates a object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ## Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of count.
+ *
+ * ```typescript
+ * export const Counter = component$(() => {
+ *   const store = useStore({ count: 0 });
+ *   return <button onClick$={() => store.count++}>{store.count}</button>;
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useStore(initialState) {
+    const [store, setStore] = useSequentialScope();
+    const hostElement = useHostElement();
+    if (store != null) {
+        return wrapSubscriber(store, hostElement);
+    }
+    const value = typeof initialState === 'function' ? initialState() : initialState;
+    const newStore = qObject(value, getProxyMap(useDocument()));
+    setStore(newStore);
+    return wrapSubscriber(newStore, hostElement);
+}
+/**
+ * @alpha
+ */
+function useRef(current) {
+    return useStore({ current });
+}
+function useSequentialScope() {
+    const ctx = getInvokeContext();
+    assertEqual(ctx.event, RenderEvent);
+    const index = ctx.seq;
+    const hostElement = useHostElement();
+    const elementCtx = getContext(hostElement);
+    ctx.seq++;
+    const updateFn = (value) => {
+        elementCtx.seq[index] = elementCtx.refMap.add(value);
+    };
+    const seqIndex = elementCtx.seq[index];
+    if (typeof seqIndex === 'number') {
+        return [elementCtx.refMap.get(seqIndex), updateFn];
+    }
+    return [undefined, updateFn];
+}
+
+// TODO(misko): need full object parsing /serializing
+function qDeflate(obj, hostCtx) {
+    return String(hostCtx.refMap.add(obj));
+}
+function qInflate(ref, hostCtx) {
+    const int = parseInt(ref, 10);
+    const obj = hostCtx.refMap.get(int);
+    assertEqual(hostCtx.refMap.array.length > int, true);
+    return obj;
+}
+
+function useURL() {
+    const url = getInvokeContext().url;
+    if (!url) {
+        // TODO(misko): centralize
+        throw new Error('Q-ERROR: no URL is associated with the execution context');
+    }
+    return url;
+}
+
+// <docs markdown="./use-store.public.md#useLexicalScope">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-store.public.md#useLexicalScope instead)
+/**
+ * Used by the Qwik Optimizer to restore the lexical scoped variables.
+ *
+ * This method should not be present in the application source code.
+ *
+ * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
+ */
+// </docs>
+function useLexicalScope() {
+    const context = getInvokeContext();
+    const hostElement = context.hostElement;
+    const qrl = (context.qrl ??
+        parseQRL(decodeURIComponent(String(useURL())), hostElement));
+    if (qrl.captureRef == null) {
+        const el = context.element;
+        assertDefined(el);
+        resumeIfNeeded(getContainer(el));
+        const ctx = getContext(el);
+        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
+    }
+    const subscriber = context.subscriber;
+    if (subscriber) {
+        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
+    }
+    return qrl.captureRef;
+}
+
+var WatchFlags;
+(function (WatchFlags) {
+    WatchFlags[WatchFlags["IsDirty"] = 1] = "IsDirty";
+    WatchFlags[WatchFlags["IsCleanup"] = 2] = "IsCleanup";
+})(WatchFlags || (WatchFlags = {}));
+const isWatchDescriptor = (obj) => {
+    return obj && typeof obj === 'object' && 'qrl' in obj && 'f' in obj;
+};
+/**
+ * @alpha
+ */
+function handleWatch() {
+    const [watch] = useLexicalScope();
+    notifyWatch(watch);
+}
+/**
+ * @alpha
+ */
+function useWatchQrl(qrl, opts) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl,
+            el,
+            f: WatchFlags.IsDirty,
+        };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
+        useWaitOn(Promise.resolve().then(() => runWatch(watch)));
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useRunWatch(watch, opts?.run);
+        }
+    }
+}
+/**
+ * @alpha
+ */
+const useWatch$ = implicit$FirstArg(useWatchQrl);
+/**
+ * @alpha
+ */
+function useClientEffectQrl(qrl, opts) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl,
+            el,
+            f: 0,
+        };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
+        useRunWatch(watch, opts?.run ?? 'visible');
+        const doc = useDocument();
+        if (doc['qO']) {
+            doc['qO'].observe(el);
+        }
+    }
+}
+/**
+ * @alpha
+ */
+const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+/**
+ * @alpha
+ */
+function useServerMountQrl(watchQrl) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        setWatch(true);
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useWaitOn(watchQrl.invoke());
+        }
+    }
+}
+/**
+ * @alpha
+ */
+const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+function runWatch(watch) {
+    if (!(watch.f & WatchFlags.IsDirty)) {
+        logDebug('Watch is not dirty, skipping run', watch);
+        return Promise.resolve(watch);
+    }
+    watch.f &= ~WatchFlags.IsDirty;
+    const promise = new Promise((resolve) => {
+        then(watch.running, () => {
+            cleanupWatch(watch);
+            const el = watch.el;
+            const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
+            invokationContext.watch = watch;
+            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+                const captureRef = watch.qrl.captureRef;
+                if (Array.isArray(captureRef)) {
+                    captureRef.forEach((obj) => {
+                        removeSub(obj, watch);
+                    });
+                }
+            });
+            const tracker = (obj, prop) => {
+                obj[SetSubscriber] = watch;
+                if (prop) {
+                    return obj[prop];
+                }
+                else {
+                    return obj[QOjectAllSymbol];
+                }
+            };
+            return then(watchFn(tracker), (returnValue) => {
+                if (typeof returnValue === 'function') {
+                    watch.destroy = noSerialize(returnValue);
+                }
+                resolve(watch);
+            });
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+}
+const cleanupWatch = (watch) => {
+    const destroy = watch.destroy;
+    if (destroy) {
+        watch.destroy = undefined;
+        try {
+            destroy();
+        }
+        catch (err) {
+            logError(err);
+        }
+    }
+};
+const destroyWatch = (watch) => {
+    if (watch.f & WatchFlags.IsCleanup) {
+        watch.f &= ~WatchFlags.IsCleanup;
+        const cleanup = watch.qrl.invokeFn(watch.el);
+        cleanup();
+    }
+    else {
+        cleanupWatch(watch);
+    }
+};
+const useRunWatch = (watch, run) => {
+    if (run === 'load') {
+        useResumeQrl(getWatchHandlerQrl(watch));
+    }
+    else if (run === 'visible') {
+        useVisibleQrl(getWatchHandlerQrl(watch));
+    }
+};
+const getWatchHandlerQrl = (watch) => {
+    const watchQrl = watch.qrl;
+    const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
+    watchHandler.refSymbol = watchQrl.symbol;
+    return watchHandler;
+};
+
 const UNDEFINED_PREFIX = '\u0010';
 const QRL_PREFIX = '\u0011';
 const DOCUMENT_PREFIX = '\u0012';
@@ -646,8 +1071,8 @@ function snapshotState(containerEl) {
     // Collect all qObjected around the DOM
     const elements = getNodesInScope(containerEl, hasQObj);
     elements.forEach((node) => {
-        const props = getContext(node);
-        const qMap = props.refMap;
+        const ctx = getContext(node);
+        const qMap = ctx.refMap;
         qMap.array.forEach((v) => {
             collectValue(v, objSet, doc);
         });
@@ -662,6 +1087,17 @@ function snapshotState(containerEl) {
     const objToId = new Map();
     let count = 0;
     for (const obj of objs) {
+        if (isWatchDescriptor(obj)) {
+            destroyWatch(obj);
+            if (qDev) {
+                if (obj.f & WatchFlags.IsDirty) {
+                    logWarn('Serializing dirty watch. Looks like an internal error.');
+                }
+                if (!isConnected(obj)) {
+                    logWarn('Serializing disconneted watch. Looks like an internal error.');
+                }
+            }
+        }
         objToId.set(obj, count);
         count++;
     }
@@ -751,6 +1187,7 @@ function snapshotState(containerEl) {
     // Write back to the dom
     elements.forEach((node) => {
         const ctx = getContext(node);
+        assertDefined(ctx);
         const props = ctx.props;
         const renderQrl = ctx.renderQrl;
         const attribute = ctx.refMap.array
@@ -1002,17 +1439,6 @@ function newQObjectMap(element) {
     };
 }
 
-// TODO(misko): need full object parsing /serializing
-function qDeflate(obj, hostCtx) {
-    return String(hostCtx.refMap.add(obj));
-}
-function qInflate(ref, hostCtx) {
-    const int = parseInt(ref, 10);
-    const obj = hostCtx.refMap.get(int);
-    assertEqual(hostCtx.refMap.array.length > int, true);
-    return obj;
-}
-
 function fromCamelToKebabCase(text) {
     return text.replace(/([A-Z])/g, '-$1').toLowerCase();
 }
@@ -1122,16 +1548,45 @@ function serializeQRLs(existingQRLs, ctx) {
         .join('\n');
 }
 
+/**
+ * Serialize the current state of the application into DOM
+ *
+ * @public
+ */
+function pauseContainer(elmOrDoc) {
+    const doc = getDocument(elmOrDoc);
+    const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
+    const data = snapshotState(containerEl);
+    const script = doc.createElement('script');
+    script.setAttribute('type', 'qwik/json');
+    script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
+    parentJSON.appendChild(script);
+    containerEl.setAttribute(QContainerAttr, 'paused');
+}
+
 Error.stackTraceLimit = 9999;
 const Q_CTX = '__ctx__';
 function resumeIfNeeded(containerEl) {
     const isResumed = containerEl.getAttribute(QContainerAttr);
     if (isResumed === 'paused') {
         resumeContainer(containerEl);
+        if (qDev) {
+            appendQwikDevTools(containerEl);
+        }
     }
 }
+function appendQwikDevTools(containerEl) {
+    containerEl['qwik'] = {
+        pause: () => pauseContainer(containerEl),
+        renderState: getRenderingState(containerEl),
+    };
+}
+function tryGetContext(element) {
+    return element[Q_CTX];
+}
 function getContext(element) {
-    let ctx = element[Q_CTX];
+    let ctx = tryGetContext(element);
     if (!ctx) {
         const cache = new Map();
         element[Q_CTX] = ctx = {
@@ -1146,6 +1601,23 @@ function getContext(element) {
         };
     }
     return ctx;
+}
+function cleanupContext(ctx) {
+    const el = ctx.element;
+    ctx.refMap.array.forEach((obj) => {
+        if (isWatchDescriptor(obj)) {
+            if (obj.el === el) {
+                destroyWatch(obj);
+            }
+        }
+        ctx.component = undefined;
+        ctx.renderQrl = undefined;
+        ctx.seq = [];
+        ctx.cache.clear();
+        ctx.dirty = false;
+        ctx.refMap.array.length = 0;
+    });
+    el[Q_CTX] = undefined;
 }
 const PREFIXES = ['document:on', 'window:on', 'on'];
 const SCOPED = ['on-document', 'on-window', 'on'];
@@ -1197,132 +1669,6 @@ const Host = { __brand__: 'host' };
  * @public
  */
 const SkipRerender = { __brand__: 'skip' };
-
-// <docs markdown="./qrl.public.md#$">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ./qrl.public.md#$ instead)
-/**
- * Qwik Optimizer marker function.
- *
- * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
- * resource referenced by `QRL`.
- *
- * See: `implicit$FirstArg` for additional `____$(...)` rules.
- *
- * In this example `$(...)` is used to capture the callback function of `onmousemove` into
- * lazy-loadable reference. This allows the code to refer to the function without actually
- * loading the function. In this example, the callback function does not get loaded until
- * `mousemove` event fires.
- *
- * ```typescript
- * useOnDocument(
- *   'mousemove',
- *   $(() => console.log('mousemove'))
- * );
- * ```
- *
- * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
- *
- * ```typescript
- * // FILE: <current file>
- * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
- *
- * // FILE: chunk-abc.js
- * export const onMousemove = () => console.log('mousemove');
- * ```
- *
- * ## Special Rules
- *
- * The Qwik Optimizer places special rules on functions that can be lazy-loaded.
- *
- * 1. The expression of the `$(expression)` function must be importable by the system.
- * (expression shows up in `import` or has `export`)
- * 2. If inlined function then all lexically captured values must be:
- *    - importable (vars shows up in `import` or has `export`)
- *    - const (The capturing process differs from JS capturing in that writing to captured
- * variables does not update them, and therefore writes are forbidden. The best practice is that
- * all captured variables are constants.)
- *    - Must be runtime serializable.
- *
- * ```typescript
- * import { importedFn } from './example';
- *
- * export const greet = () => console.log('greet');
- * function topLevelFn() {}
- *
- * function myCode() {
- *   const store = useStore({});
- *   function localFn() {}
- *   // Valid Examples
- *   $(greet); // greet is importable
- *   $(importedFn); // importedFn is importable
- *   $(() => greet()); // greet is importable;
- *   $(() => importedFn()); // importedFn is importable
- *   $(() => console.log(store)); // store is serializable.
- *
- *   // Compile time errors
- *   $(topLevelFn); // ERROR: `topLevelFn` not importable
- *   $(() => topLevelFn()); // ERROR: `topLevelFn` not importable
- *
- *   // Runtime errors
- *   $(localFn); // ERROR: `localFn` fails serialization
- *   $(() => localFn()); // ERROR: `localFn` fails serialization
- * }
- *
- * ```
- *
- * @param expression - Expression which should be lazy loaded
- * @public
- */
-// </docs>
-function $(expression) {
-    return runtimeQrl(expression);
-}
-// <docs markdown="./qrl.public.md#implicit$FirstArg">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ./qrl.public.md#implicit$FirstArg instead)
-/**
- * Create a `____$(...)` convenience method from `___(...)`.
- *
- * It is very common for functions to take a lazy-loadable resource as a first argument. For this
- * reason, the Qwik Optimizer automatically extracts the first argument from any function which
- * ends in `$`.
- *
- * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
- * The former is just a shorthand for the latter.
- *
- * For example these function call are equivalent:
- *
- * - `component$(() => {...})` is same as `onRender($(() => {...}))`
- *
- * ```typescript
- * export function myApi(callback: QRL<() => void>): void {
- *   // ...
- * }
- *
- * export const myApi$ = implicit$FirstArg(myApi);
- * // type of myApi$: (callback: () => void): void
- *
- * // can be used as:
- * myApi$(() => console.log('callback'));
- *
- * // will be transpiled to:
- * // FILE: <current file>
- * myApi(qrl('./chunk-abc.js', 'callback'));
- *
- * // FILE: chunk-abc.js
- * export const callback = () => console.log('callback');
- * ```
- *
- * @param fn - function that should have its first argument automatically `$`.
- * @public
- */
-// </docs>
-function implicit$FirstArg(fn) {
-    return function (first, ...rest) {
-        return fn.call(null, $(first), ...rest);
-    };
-}
 
 function visitJsxNode(ctx, elm, jsxNode, isSvg) {
     if (jsxNode === undefined) {
@@ -2135,6 +2481,10 @@ function removeNode(ctx, el) {
     const fn = () => {
         const parent = el.parentNode;
         if (parent) {
+            if (el.nodeType === 1) {
+                cleanupElement(el);
+                el.querySelectorAll(QObjSelector).forEach(cleanupElement);
+            }
             parent.removeChild(el);
         }
         else if (qDev) {
@@ -2147,6 +2497,12 @@ function removeNode(ctx, el) {
         args: [],
         fn,
     });
+}
+function cleanupElement(el) {
+    const ctx = tryGetContext(el);
+    if (ctx) {
+        cleanupContext(ctx);
+    }
 }
 function createTextNode(ctx, text) {
     return ctx.doc.createTextNode(text);
@@ -2254,280 +2610,6 @@ function stringifyClassOrStyle(obj, isClass) {
     }
     return String(obj);
 }
-
-// <docs markdown="./use-store.public.md#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ./use-store.public.md#useHostElement instead)
-/**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useHostElement() {
-    const element = getInvokeContext().hostElement;
-    assertDefined(element);
-    return element;
-}
-
-/**
- * @public
- */
-function useDocument() {
-    const doc = getInvokeContext().doc;
-    if (!doc) {
-        throw new Error('Cant access document for existing context');
-    }
-    return doc;
-}
-
-// <docs markdown="./use-store.public.md#useStore">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ./use-store.public.md#useStore instead)
-/**
- * Creates a object that Qwik can track across serializations.
- *
- * Use `useStore` to create state for your application. The return object is a proxy which has a
- * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ## Example
- *
- * Example showing how `useStore` is used in Counter example to keep track of count.
- *
- * ```typescript
- * export const Counter = component$(() => {
- *   const store = useStore({ count: 0 });
- *   return <button onClick$={() => store.count++}>{store.count}</button>;
- * });
- * ```
- *
- * @public
- */
-// </docs>
-function useStore(initialState) {
-    const [store, setStore] = useSequentialScope();
-    const hostElement = useHostElement();
-    if (store != null) {
-        return wrapSubscriber(store, hostElement);
-    }
-    const value = typeof initialState === 'function' ? initialState() : initialState;
-    const newStore = qObject(value, getProxyMap(useDocument()));
-    setStore(newStore);
-    return wrapSubscriber(newStore, hostElement);
-}
-/**
- * @alpha
- */
-function useRef(current) {
-    return useStore({ current });
-}
-function useSequentialScope() {
-    const ctx = getInvokeContext();
-    assertEqual(ctx.event, RenderEvent);
-    const index = ctx.seq;
-    const hostElement = useHostElement();
-    const elementCtx = getContext(hostElement);
-    ctx.seq++;
-    const updateFn = (value) => {
-        elementCtx.seq[index] = elementCtx.refMap.add(value);
-    };
-    const seqIndex = elementCtx.seq[index];
-    if (typeof seqIndex === 'number') {
-        return [elementCtx.refMap.get(seqIndex), updateFn];
-    }
-    return [undefined, updateFn];
-}
-
-function useURL() {
-    const url = getInvokeContext().url;
-    if (!url) {
-        // TODO(misko): centralize
-        throw new Error('Q-ERROR: no URL is associated with the execution context');
-    }
-    return url;
-}
-
-// <docs markdown="./use-store.public.md#useLexicalScope">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ./use-store.public.md#useLexicalScope instead)
-/**
- * Used by the Qwik Optimizer to restore the lexical scoped variables.
- *
- * This method should not be present in the application source code.
- *
- * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useLexicalScope() {
-    const context = getInvokeContext();
-    const hostElement = context.hostElement;
-    const qrl = (context.qrl ??
-        parseQRL(decodeURIComponent(String(useURL())), hostElement));
-    if (qrl.captureRef == null) {
-        const el = context.element;
-        assertDefined(el);
-        resumeIfNeeded(getContainer(el));
-        const ctx = getContext(el);
-        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
-    }
-    const subscriber = context.subscriber;
-    if (subscriber) {
-        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
-    }
-    return qrl.captureRef;
-}
-
-var WatchFlags;
-(function (WatchFlags) {
-    WatchFlags[WatchFlags["IsConnected"] = 1] = "IsConnected";
-    WatchFlags[WatchFlags["IsDirty"] = 2] = "IsDirty";
-})(WatchFlags || (WatchFlags = {}));
-const isWatchDescriptor = (obj) => {
-    return obj && typeof obj === 'object' && 'qrl' in obj && 'f' in obj;
-};
-/**
- * @alpha
- */
-function handleWatch() {
-    const [watch] = useLexicalScope();
-    notifyWatch(watch);
-}
-/**
- * @alpha
- */
-function useWatchQrl(qrl, opts) {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        const el = useHostElement();
-        const watch = {
-            qrl,
-            el,
-            f: WatchFlags.IsConnected | WatchFlags.IsDirty,
-        };
-        setWatch(watch);
-        getContext(el).refMap.add(watch);
-        useWaitOn(runWatch(watch));
-        const isServer = getPlatform(useDocument()).isServer;
-        if (isServer) {
-            useRunWatch(watch, opts?.run);
-        }
-    }
-}
-/**
- * @alpha
- */
-const useWatch$ = implicit$FirstArg(useWatchQrl);
-/**
- * @alpha
- */
-function useClientEffectQrl(qrl, opts) {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        const el = useHostElement();
-        const watch = {
-            qrl,
-            el,
-            f: WatchFlags.IsConnected,
-        };
-        setWatch(watch);
-        getContext(el).refMap.add(watch);
-        useRunWatch(watch, opts?.run ?? 'visible');
-        const doc = useDocument();
-        if (doc['qO']) {
-            doc['qO'].observe(el);
-        }
-    }
-}
-/**
- * @alpha
- */
-const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-/**
- * @alpha
- */
-function useServerMountQrl(watchQrl) {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        setWatch(true);
-        const isServer = getPlatform(useDocument()).isServer;
-        if (isServer) {
-            useWaitOn(watchQrl.invoke());
-        }
-    }
-}
-/**
- * @alpha
- */
-const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-function runWatch(watch) {
-    if (!(watch.f & WatchFlags.IsDirty)) {
-        logDebug('Watch is not dirty, skipping run', watch);
-        return Promise.resolve(watch);
-    }
-    watch.f &= ~WatchFlags.IsDirty;
-    const promise = new Promise((resolve) => {
-        then(watch.running, () => {
-            const destroy = watch.destroy;
-            if (destroy) {
-                watch.destroy = undefined;
-                try {
-                    destroy();
-                }
-                catch (err) {
-                    logError(err);
-                }
-            }
-            const el = watch.el;
-            const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
-            invokationContext.watch = watch;
-            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
-                const captureRef = watch.qrl.captureRef;
-                if (Array.isArray(captureRef)) {
-                    captureRef.forEach((obj) => {
-                        removeSub(obj, watch);
-                    });
-                }
-            });
-            const tracker = (obj, prop) => {
-                obj[SetSubscriber] = watch;
-                if (prop) {
-                    return obj[prop];
-                }
-                else {
-                    return obj[QOjectAllSymbol];
-                }
-            };
-            return then(watchFn(tracker), (returnValue) => {
-                if (typeof returnValue === 'function') {
-                    watch.destroy = noSerialize(returnValue);
-                }
-                resolve(watch);
-            });
-        });
-    });
-    watch.running = noSerialize(promise);
-    return promise;
-}
-const useRunWatch = (watch, run) => {
-    if (run === 'load') {
-        useResumeQrl(getWatchHandlerQrl(watch));
-    }
-    else if (run === 'visible') {
-        useVisibleQrl(getWatchHandlerQrl(watch));
-    }
-};
-const getWatchHandlerQrl = (watch) => {
-    const watchQrl = watch.qrl;
-    const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
-    watchHandler.refSymbol = watchQrl.symbol;
-    return watchHandler;
-};
 
 /**
  * Mark component for rendering.
@@ -2962,6 +3044,14 @@ function noSerialize(input) {
     noSerializeSet.add(input);
     return input;
 }
+function isConnected(sub) {
+    if (isElement(sub)) {
+        return !!tryGetContext(sub);
+    }
+    else {
+        return isConnected(sub.el);
+    }
+}
 
 /**
  * @alpha
@@ -3012,14 +3102,6 @@ function unwrapSubscriber(obj) {
         }
     }
     return obj;
-}
-function isConnected(sub) {
-    if (isElement(sub)) {
-        return sub.isConnected;
-    }
-    else {
-        return !!(sub.f & WatchFlags.IsConnected);
-    }
 }
 
 let runtimeSymbolId = 0;
@@ -3214,7 +3296,17 @@ function toQrlOrError(symbolOrQrl) {
  */
 // </docs>
 function useCleanupQrl(unmountFn) {
-    throw new Error('IMPLEMENT: useCleanupQrl' + unmountFn);
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl: unmountFn,
+            el,
+            f: WatchFlags.IsCleanup,
+        };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
+    }
 }
 // <docs markdown="./component.public.md#useCleanup">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3552,23 +3644,6 @@ function _useStyles(styles, scoped) {
 }
 
 /**
- * Serialize the current state of the application into DOM
- *
- * @public
- */
-function pauseContainer(elmOrDoc) {
-    const doc = getDocument(elmOrDoc);
-    const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
-    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
-    const data = snapshotState(containerEl);
-    const script = doc.createElement('script');
-    script.setAttribute('type', 'qwik/json');
-    script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
-    parentJSON.appendChild(script);
-    containerEl.setAttribute(QContainerAttr, 'paused');
-}
-
-/**
  * Use to render asynchronous (`Promise`) values.
  *
  * A `Promise` does not allow a synchronous examination of its state. For this reason
@@ -3746,6 +3821,7 @@ async function render(parent, jsxNode) {
         injectQwikSlotCSS(parent);
     }
     if (qDev) {
+        appendQwikDevTools(containerEl);
         if (typeof window !== 'undefined' && window.document != null) {
             printRenderStats(ctx);
         }
