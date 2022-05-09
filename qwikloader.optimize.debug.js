@@ -30,12 +30,14 @@
                             const symbolName = getSymbolName(url);
                             const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
                             const previousCtx = doc.__q_context__;
-                            try {
-                                doc.__q_context__ = [ element, ev, url ];
-                                handler(ev, element, url);
-                            } finally {
-                                doc.__q_context__ = previousCtx;
-                                symbolUsed(element, symbolName);
+                            if (element.isConnected) {
+                                try {
+                                    doc.__q_context__ = [ element, ev, url ];
+                                    handler(ev, element, url);
+                                } finally {
+                                    doc.__q_context__ = previousCtx;
+                                    symbolUsed(element, symbolName);
+                                }
                             }
                         }
                     }

@@ -79,15 +79,23 @@ declare interface JSXNode<T = any> {
 /**
  * @alpha
  */
-declare interface PrefetchStrategy {
-    implementation?: PrefetchStrategyImplementation;
-    symbolsToPrefetch?: SymbolsToPrefetch;
+export declare type PrefetchImplementation = 'link-prefetch' | 'link-preload' | 'link-modulepreload' | 'qrl-import' | 'worker-fetch' | 'none';
+
+/**
+ * @alpha
+ */
+export declare interface PrefetchResource {
+    url: string;
+    imports: PrefetchResource[];
 }
 
 /**
  * @alpha
  */
-declare type PrefetchStrategyImplementation = 'link-prefetch' | 'link-preload' | 'link-modulepreload' | 'qrl-import' | 'worker-fetch' | 'none';
+export declare interface PrefetchStrategy {
+    implementation?: PrefetchImplementation;
+    symbolsToPrefetch?: SymbolsToPrefetch;
+}
 
 /**
  * @public
@@ -99,6 +107,7 @@ export declare type QrlMapper = (symbolName: string) => string | undefined;
  */
 export declare interface QwikBundle {
     size: number;
+    symbols: string[];
     imports?: string[];
     dynamicImports?: string[];
 }
@@ -213,7 +222,7 @@ export declare interface RenderToStringOptions extends RenderToDocumentOptions {
  */
 export declare interface RenderToStringResult {
     html: string;
-    prefetchUrls: string[];
+    prefetchResources: PrefetchResource[];
     timing: {
         createDocument: number;
         render: number;
@@ -249,10 +258,10 @@ export declare function setServerPlatform(document: any, opts: SerializeDocument
  *
  * @alpha
  */
-declare type SymbolsToPrefetch = 'all-document' | 'all' | 'events-document' | ((opts: {
+declare type SymbolsToPrefetch = 'all' | 'events-document' | ((opts: {
     document: QwikDocument;
     manifest: QwikManifest;
-}) => string[]);
+}) => PrefetchResource[]);
 
 /**
  * @public

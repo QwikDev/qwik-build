@@ -231,7 +231,7 @@ function getBuildBase(opts) {
   return null;
 }
 var versions = {
-  qwik: "0.0.20-1",
+  qwik: "0.0.20-2",
   qwikDom: "2.1.14"
 };
 
@@ -9182,6 +9182,7 @@ var QSlotAttr = "q:slot";
 var QObjAttr = "q:obj";
 var QSeqAttr = "q:seq";
 var QContainerAttr = "q:container";
+var QObjSelector = "[q\\:obj]";
 var QContainerSelector = "[q\\:container]";
 var RenderEvent = "qRender";
 var ELEMENT_ID = "q:id";
@@ -9574,6 +9575,342 @@ var getPlatform = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
+// packages/qwik/src/core/use/use-subscriber.ts
+function wrapSubscriber(obj, subscriber) {
+  if (obj && typeof obj === "object") {
+    const target = obj[QOjectTargetSymbol];
+    if (!target) {
+      return obj;
+    }
+    return new Proxy(obj, {
+      get(target2, prop) {
+        if (prop === QOjectOriginalProxy) {
+          return target2;
+        }
+        target2[SetSubscriber] = subscriber;
+        return target2[prop];
+      },
+      ownKeys(target2) {
+        target2[SetSubscriber] = subscriber;
+        return Reflect.ownKeys(target2);
+      }
+    });
+  }
+  return obj;
+}
+
+// packages/qwik/src/core/import/qrl.ts
+var runtimeSymbolId = 0;
+var RUNTIME_QRL = "/runtimeQRL";
+function toInternalQRL(qrl) {
+  assertEqual(isQrl(qrl), true);
+  return qrl;
+}
+function qrlImport(element, qrl) {
+  const qrl_ = toInternalQRL(qrl);
+  if (qrl_.symbolRef)
+    return qrl_.symbolRef;
+  if (qrl_.symbolFn) {
+    return qrl_.symbolRef = qrl_.symbolFn().then((module2) => qrl_.symbolRef = module2[qrl_.symbol]);
+  } else {
+    if (!element) {
+      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
+    }
+    const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    return qrl_.symbolRef = then(symbol, (ref) => {
+      return qrl_.symbolRef = ref;
+    });
+  }
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+  return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+}
+function stringifyQRL(qrl, opts = {}) {
+  var _a, _b;
+  const qrl_ = toInternalQRL(qrl);
+  const symbol = qrl_.symbol;
+  const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
+  const platform = opts.platform;
+  const element = opts.element;
+  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
+  const parts = [chunk];
+  if (symbol && symbol !== "default") {
+    parts.push("#", symbol);
+  }
+  const capture = qrl_.capture;
+  const captureRef = qrl_.captureRef;
+  if (opts.getObjId) {
+    if (captureRef && captureRef.length) {
+      const capture2 = captureRef.map(opts.getObjId);
+      parts.push(`[${capture2.join(" ")}]`);
+    }
+  } else if (capture && capture.length > 0) {
+    parts.push(`[${capture.join(" ")}]`);
+  }
+  const qrlString = parts.join("");
+  if (qrl_.chunk === RUNTIME_QRL && element) {
+    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
+    qrls.add(qrl);
+  }
+  return qrlString;
+}
+function parseQRL(qrl, el) {
+  const endIdx = qrl.length;
+  const hashIdx = indexOf(qrl, 0, "#");
+  const captureIdx = indexOf(qrl, hashIdx, "[");
+  const chunkEndIdx = Math.min(hashIdx, captureIdx);
+  const chunk = qrl.substring(0, chunkEndIdx);
+  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+  const symbolEndIdx = captureIdx;
+  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
+  const captureStartIdx = captureIdx;
+  const captureEndIdx = endIdx;
+  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
+  if (chunk === RUNTIME_QRL) {
+    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
+  }
+  const iQrl = new QRLInternal(chunk, symbol, null, null, capture, null);
+  if (el) {
+    iQrl.setContainer(el);
+  }
+  return iQrl;
+}
+function indexOf(text, startIdx, char) {
+  const endIdx = text.length;
+  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+  return charIdx == -1 ? endIdx : charIdx;
+}
+function toQrlOrError(symbolOrQrl) {
+  if (!isQrl(symbolOrQrl)) {
+    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
+      symbolOrQrl = runtimeQrl(symbolOrQrl);
+    } else {
+      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
+    }
+  }
+  return symbolOrQrl;
+}
+
+// packages/qwik/src/core/import/qrl-class.ts
+function isQrl(value) {
+  return value instanceof QRLInternal;
+}
+var QRL = class {
+  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+    this.chunk = chunk;
+    this.symbol = symbol;
+    this.symbolRef = symbolRef;
+    this.symbolFn = symbolFn;
+    this.capture = capture;
+    this.captureRef = captureRef;
+    this.canonicalChunk = chunk.replace(FIND_EXT, "");
+  }
+  setContainer(el) {
+    if (!this.el) {
+      this.el = el;
+    }
+  }
+  async resolve(el) {
+    if (el) {
+      this.setContainer(el);
+    }
+    return qrlImport(this.el, this);
+  }
+  invokeFn(el, currentCtx, beforeFn) {
+    return (...args) => {
+      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      return then(fn, (fn2) => {
+        if (typeof fn2 === "function") {
+          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
+          const context = __spreadProps(__spreadValues({}, baseContext), {
+            qrl: this
+          });
+          if (beforeFn) {
+            beforeFn();
+          }
+          return useInvoke(context, fn2, ...args);
+        }
+        throw new Error("QRL is not a function");
+      });
+    };
+  }
+  copy() {
+    const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+    copy.refSymbol = this.refSymbol;
+    return copy;
+  }
+  invoke(...args) {
+    const fn = this.invokeFn();
+    return fn(...args);
+  }
+  serialize(options) {
+    return stringifyQRL(this, options);
+  }
+};
+var QRLInternal = QRL;
+var FIND_EXT = /\?[\w=&]+$/;
+
+// packages/qwik/src/core/render/jsx/host.public.ts
+var Host = { __brand__: "host" };
+var SkipRerender = { __brand__: "skip" };
+
+// packages/qwik/src/core/render/render.ts
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+  if (jsxNode === void 0) {
+    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
+  }
+  if (Array.isArray(jsxNode)) {
+    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
+  } else if (jsxNode.type === Host) {
+    updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
+  } else {
+    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
+  }
+}
+
+// packages/qwik/src/core/util/hash_code.ts
+function hashCode(text, hash = 0) {
+  if (text.length === 0)
+    return hash;
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0;
+  }
+  return Number(Math.abs(hash)).toString(36);
+}
+
+// packages/qwik/src/core/component/qrl-styles.ts
+function styleKey(qStyles) {
+  return qStyles && String(hashCode(qStyles.symbol));
+}
+function styleHost(styleId) {
+  return styleId && ComponentStylesPrefixHost + styleId;
+}
+function styleContent(styleId) {
+  return styleId && ComponentStylesPrefixContent + styleId;
+}
+
+// packages/qwik/src/core/render/jsx/jsx-runtime.ts
+var JSXNodeImpl = class {
+  constructor(type, props, key = null) {
+    this.type = type;
+    this.props = props;
+    this.children = EMPTY_ARRAY;
+    this.text = void 0;
+    this.key = null;
+    if (key != null) {
+      this.key = String(key);
+    }
+    if (props) {
+      const children = processNode(props.children);
+      if (children !== void 0) {
+        if (Array.isArray(children)) {
+          this.children = children;
+        } else {
+          this.children = [children];
+        }
+      }
+    }
+  }
+};
+function processNode(node) {
+  if (node == null || typeof node === "boolean") {
+    return void 0;
+  }
+  if (isJSXNode(node)) {
+    if (node.type === Host || node.type === SkipRerender) {
+      return node;
+    } else if (typeof node.type === "function") {
+      return processNode(node.type(__spreadProps(__spreadValues({}, node.props), { children: node.children }), node.key));
+    } else {
+      return node;
+    }
+  } else if (Array.isArray(node)) {
+    return node.flatMap(processNode).filter((e) => e != null);
+  } else if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
+    const newNode = new JSXNodeImpl("#text", null, null);
+    newNode.text = String(node);
+    return newNode;
+  } else {
+    logWarn("Unvalid node, skipping");
+    return void 0;
+  }
+}
+var isJSXNode = (n) => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
+      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+    }
+    return false;
+  } else {
+    return n instanceof JSXNodeImpl;
+  }
+};
+
+// packages/qwik/src/core/component/component-ctx.ts
+var firstRenderComponent = (rctx, ctx) => {
+  ctx.element.setAttribute(QHostAttr, "");
+  return renderComponent(rctx, ctx);
+};
+var renderComponent = (rctx, ctx) => {
+  ctx.dirty = false;
+  const hostElement = ctx.element;
+  const onRenderQRL = ctx.renderQrl;
+  assertDefined(onRenderQRL);
+  rctx.globalState.hostsStaging.delete(hostElement);
+  const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
+  invocatinContext.subscriber = hostElement;
+  const waitOn = invocatinContext.waitOn = [];
+  ctx.refMap.array.forEach((obj) => {
+    removeSub(obj, hostElement);
+  });
+  const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
+  const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+  return then(renderPromise, (jsxNode) => {
+    rctx.hostElements.add(hostElement);
+    const waitOnPromise = promiseAll(waitOn);
+    return then(waitOnPromise, (waitOnResolved) => {
+      var _a;
+      waitOnResolved.forEach((task) => {
+        if (isStyleTask(task)) {
+          appendStyle(rctx, hostElement, task);
+        }
+      });
+      if (ctx.dirty) {
+        logDebug("Dropping render. State changed during render.");
+        return renderComponent(rctx, ctx);
+      }
+      let componentCtx = ctx.component;
+      if (!componentCtx) {
+        componentCtx = ctx.component = {
+          hostElement,
+          slots: [],
+          styleHostClass: void 0,
+          styleClass: void 0,
+          styleId: void 0
+        };
+        const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) != null ? _a : void 0;
+        if (scopedStyleId) {
+          componentCtx.styleId = scopedStyleId;
+          componentCtx.styleHostClass = styleHost(scopedStyleId);
+          componentCtx.styleClass = styleContent(scopedStyleId);
+          hostElement.classList.add(componentCtx.styleHostClass);
+        }
+      }
+      componentCtx.slots = [];
+      const newCtx = __spreadProps(__spreadValues({}, rctx), {
+        component: componentCtx
+      });
+      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    });
+  });
+};
+
 // packages/qwik/src/core/import/qrl.public.ts
 function $(expression) {
   return runtimeQrl(expression);
@@ -9743,96 +10080,19 @@ function serializeQRLs(existingQRLs, ctx) {
   return existingQRLs.map((qrl) => isPromise(qrl) ? "" : stringifyQRL(qrl, opts)).filter((v) => !!v).join("\n");
 }
 
-// packages/qwik/src/core/util/hash_code.ts
-function hashCode(text, hash = 0) {
-  if (text.length === 0)
-    return hash;
-  for (let i = 0; i < text.length; i++) {
-    const chr = text.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0;
-  }
-  return Number(Math.abs(hash)).toString(36);
-}
-
-// packages/qwik/src/core/component/qrl-styles.ts
-function styleKey(qStyles) {
-  return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-  return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-  return styleId && ComponentStylesPrefixContent + styleId;
-}
-
-// packages/qwik/src/core/render/jsx/host.public.ts
-var Host = { __brand__: "host" };
-var SkipRerender = { __brand__: "skip" };
-
-// packages/qwik/src/core/render/jsx/jsx-runtime.ts
-var JSXNodeImpl = class {
-  constructor(type, props, key = null) {
-    this.type = type;
-    this.props = props;
-    this.children = EMPTY_ARRAY;
-    this.text = void 0;
-    this.key = null;
-    if (key != null) {
-      this.key = String(key);
-    }
-    if (props) {
-      const children = processNode(props.children);
-      if (children !== void 0) {
-        if (Array.isArray(children)) {
-          this.children = children;
-        } else {
-          this.children = [children];
-        }
-      }
-    }
-  }
-};
-function processNode(node) {
-  if (node == null || typeof node === "boolean") {
-    return void 0;
-  }
-  if (isJSXNode(node)) {
-    if (node.type === Host || node.type === SkipRerender) {
-      return node;
-    } else if (typeof node.type === "function") {
-      return processNode(node.type(__spreadProps(__spreadValues({}, node.props), { children: node.children }), node.key));
-    } else {
-      return node;
-    }
-  } else if (Array.isArray(node)) {
-    return node.flatMap(processNode).filter((e) => e != null);
-  } else if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") {
-    const newNode = new JSXNodeImpl("#text", null, null);
-    newNode.text = String(node);
-    return newNode;
-  } else {
-    logWarn("Unvalid node, skipping");
-    return void 0;
-  }
-}
-var isJSXNode = (n) => {
-  if (qDev) {
-    if (n instanceof JSXNodeImpl) {
-      return true;
-    }
-    if (n && typeof n === "object" && n.constructor.name === JSXNodeImpl.name) {
-      throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-    }
-    return false;
-  } else {
-    return n instanceof JSXNodeImpl;
-  }
-};
-
 // packages/qwik/src/core/component/component.public.ts
 function useCleanupQrl(unmountFn) {
-  throw new Error("IMPLEMENT: useCleanupQrl" + unmountFn);
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    const el = useHostElement();
+    const watch2 = {
+      qrl: unmountFn,
+      el,
+      f: 2 /* IsCleanup */
+    };
+    setWatch(watch2);
+    getContext(el).refMap.add(watch2);
+  }
 }
 var useCleanup$ = implicit$FirstArg(useCleanupQrl);
 function useResumeQrl(resumeFn) {
@@ -9883,6 +10143,9 @@ function _useStyles(styles, scoped) {
 }
 
 // packages/qwik/src/core/watch/watch.public.ts
+var isWatchDescriptor = (obj) => {
+  return obj && typeof obj === "object" && "qrl" in obj && "f" in obj;
+};
 function handleWatch() {
   const [watch] = useLexicalScope();
   notifyWatch(watch);
@@ -9894,11 +10157,11 @@ function useWatchQrl(qrl, opts) {
     const watch2 = {
       qrl,
       el,
-      f: 1 /* IsConnected */ | 2 /* IsDirty */
+      f: 1 /* IsDirty */
     };
     setWatch(watch2);
     getContext(el).refMap.add(watch2);
-    useWaitOn(runWatch(watch2));
+    useWaitOn(Promise.resolve().then(() => runWatch(watch2)));
     const isServer = getPlatform(useDocument()).isServer;
     if (isServer) {
       useRunWatch(watch2, opts == null ? void 0 : opts.run);
@@ -9914,7 +10177,7 @@ function useClientEffectQrl(qrl, opts) {
     const watch2 = {
       qrl,
       el,
-      f: 1 /* IsConnected */
+      f: 0
     };
     setWatch(watch2);
     getContext(el).refMap.add(watch2);
@@ -9938,22 +10201,14 @@ function useServerMountQrl(watchQrl) {
 }
 var useServerMount$ = implicit$FirstArg(useServerMountQrl);
 function runWatch(watch) {
-  if (!(watch.f & 2 /* IsDirty */)) {
+  if (!(watch.f & 1 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
     return Promise.resolve(watch);
   }
-  watch.f &= ~2 /* IsDirty */;
+  watch.f &= ~1 /* IsDirty */;
   const promise = new Promise((resolve) => {
     then(watch.running, () => {
-      const destroy = watch.destroy;
-      if (destroy) {
-        watch.destroy = void 0;
-        try {
-          destroy();
-        } catch (err) {
-          logError(err);
-        }
-      }
+      cleanupWatch(watch);
       const el = watch.el;
       const invokationContext = newInvokeContext(getDocument(el), el, el, "WatchEvent");
       invokationContext.watch = watch;
@@ -9984,6 +10239,26 @@ function runWatch(watch) {
   watch.running = noSerialize(promise);
   return promise;
 }
+var cleanupWatch = (watch) => {
+  const destroy = watch.destroy;
+  if (destroy) {
+    watch.destroy = void 0;
+    try {
+      destroy();
+    } catch (err) {
+      logError(err);
+    }
+  }
+};
+var destroyWatch = (watch) => {
+  if (watch.f & 2 /* IsCleanup */) {
+    watch.f &= ~2 /* IsCleanup */;
+    const cleanup = watch.qrl.invokeFn(watch.el);
+    cleanup();
+  } else {
+    cleanupWatch(watch);
+  }
+};
 var useRunWatch = (watch, run) => {
   if (run === "load") {
     useResumeQrl(getWatchHandlerQrl(watch));
@@ -9993,265 +10268,9 @@ var useRunWatch = (watch, run) => {
 };
 var getWatchHandlerQrl = (watch) => {
   const watchQrl = watch.qrl;
-  const watchHandler = new QRLInternal2(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch]);
+  const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch]);
   watchHandler.refSymbol = watchQrl.symbol;
   return watchHandler;
-};
-
-// packages/qwik/src/core/use/use-subscriber.ts
-function wrapSubscriber(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const target = obj[QOjectTargetSymbol];
-    if (!target) {
-      return obj;
-    }
-    return new Proxy(obj, {
-      get(target2, prop) {
-        if (prop === QOjectOriginalProxy) {
-          return target2;
-        }
-        target2[SetSubscriber] = subscriber;
-        return target2[prop];
-      },
-      ownKeys(target2) {
-        target2[SetSubscriber] = subscriber;
-        return Reflect.ownKeys(target2);
-      }
-    });
-  }
-  return obj;
-}
-function isConnected(sub) {
-  if (isElement(sub)) {
-    return sub.isConnected;
-  } else {
-    return !!(sub.f & 1 /* IsConnected */);
-  }
-}
-
-// packages/qwik/src/core/import/qrl.ts
-var runtimeSymbolId = 0;
-var RUNTIME_QRL = "/runtimeQRL";
-function toInternalQRL(qrl) {
-  assertEqual(isQrl(qrl), true);
-  return qrl;
-}
-function qrlImport(element, qrl) {
-  const qrl_ = toInternalQRL(qrl);
-  if (qrl_.symbolRef)
-    return qrl_.symbolRef;
-  if (qrl_.symbolFn) {
-    return qrl_.symbolRef = qrl_.symbolFn().then((module2) => qrl_.symbolRef = module2[qrl_.symbol]);
-  } else {
-    if (!element) {
-      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
-    }
-    const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
-    return qrl_.symbolRef = then(symbol, (ref) => {
-      return qrl_.symbolRef = ref;
-    });
-  }
-}
-function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
-  return new QRLInternal2(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
-}
-function stringifyQRL(qrl, opts = {}) {
-  var _a, _b;
-  const qrl_ = toInternalQRL(qrl);
-  const symbol = qrl_.symbol;
-  const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
-  const platform = opts.platform;
-  const element = opts.element;
-  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
-  const parts = [chunk];
-  if (symbol && symbol !== "default") {
-    parts.push("#", symbol);
-  }
-  const capture = qrl_.capture;
-  const captureRef = qrl_.captureRef;
-  if (opts.getObjId) {
-    if (captureRef && captureRef.length) {
-      const capture2 = captureRef.map(opts.getObjId);
-      parts.push(`[${capture2.join(" ")}]`);
-    }
-  } else if (capture && capture.length > 0) {
-    parts.push(`[${capture.join(" ")}]`);
-  }
-  const qrlString = parts.join("");
-  if (qrl_.chunk === RUNTIME_QRL && element) {
-    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
-    qrls.add(qrl);
-  }
-  return qrlString;
-}
-function parseQRL(qrl, el) {
-  const endIdx = qrl.length;
-  const hashIdx = indexOf(qrl, 0, "#");
-  const captureIdx = indexOf(qrl, hashIdx, "[");
-  const chunkEndIdx = Math.min(hashIdx, captureIdx);
-  const chunk = qrl.substring(0, chunkEndIdx);
-  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-  const symbolEndIdx = captureIdx;
-  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
-  const captureStartIdx = captureIdx;
-  const captureEndIdx = endIdx;
-  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-  if (chunk === RUNTIME_QRL) {
-    logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
-  }
-  const iQrl = new QRLInternal2(chunk, symbol, null, null, capture, null);
-  if (el) {
-    iQrl.setContainer(el);
-  }
-  return iQrl;
-}
-function indexOf(text, startIdx, char) {
-  const endIdx = text.length;
-  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-  return charIdx == -1 ? endIdx : charIdx;
-}
-function toQrlOrError(symbolOrQrl) {
-  if (!isQrl(symbolOrQrl)) {
-    if (typeof symbolOrQrl == "function" || typeof symbolOrQrl == "string") {
-      symbolOrQrl = runtimeQrl(symbolOrQrl);
-    } else {
-      throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
-    }
-  }
-  return symbolOrQrl;
-}
-
-// packages/qwik/src/core/import/qrl-class.ts
-function isQrl(value) {
-  return value instanceof QRLInternal2;
-}
-var QRL3 = class {
-  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
-    this.chunk = chunk;
-    this.symbol = symbol;
-    this.symbolRef = symbolRef;
-    this.symbolFn = symbolFn;
-    this.capture = capture;
-    this.captureRef = captureRef;
-    this.canonicalChunk = chunk.replace(FIND_EXT, "");
-  }
-  setContainer(el) {
-    if (!this.el) {
-      this.el = el;
-    }
-  }
-  async resolve(el) {
-    if (el) {
-      this.setContainer(el);
-    }
-    return qrlImport(this.el, this);
-  }
-  invokeFn(el, currentCtx, beforeFn) {
-    return (...args) => {
-      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
-      return then(fn, (fn2) => {
-        if (typeof fn2 === "function") {
-          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
-          const context = __spreadProps(__spreadValues({}, baseContext), {
-            qrl: this
-          });
-          if (beforeFn) {
-            beforeFn();
-          }
-          return useInvoke(context, fn2, ...args);
-        }
-        throw new Error("QRL is not a function");
-      });
-    };
-  }
-  copy() {
-    const copy = new QRLInternal2(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
-    copy.refSymbol = this.refSymbol;
-    return copy;
-  }
-  invoke(...args) {
-    const fn = this.invokeFn();
-    return fn(...args);
-  }
-  serialize(options) {
-    return stringifyQRL(this, options);
-  }
-};
-var QRLInternal2 = QRL3;
-var FIND_EXT = /\?[\w=&]+$/;
-
-// packages/qwik/src/core/render/render.ts
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-  if (jsxNode === void 0) {
-    return smartUpdateChildren(ctx, elm, [], "root", isSvg);
-  }
-  if (Array.isArray(jsxNode)) {
-    return smartUpdateChildren(ctx, elm, jsxNode.flat(), "root", isSvg);
-  } else if (jsxNode.type === Host) {
-    updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
-    return smartUpdateChildren(ctx, elm, jsxNode.children || [], "root", isSvg);
-  } else {
-    return smartUpdateChildren(ctx, elm, [jsxNode], "root", isSvg);
-  }
-}
-
-// packages/qwik/src/core/component/component-ctx.ts
-var firstRenderComponent = (rctx, ctx) => {
-  ctx.element.setAttribute(QHostAttr, "");
-  return renderComponent(rctx, ctx);
-};
-var renderComponent = (rctx, ctx) => {
-  ctx.dirty = false;
-  const hostElement = ctx.element;
-  const onRenderQRL = ctx.renderQrl;
-  assertDefined(onRenderQRL);
-  rctx.globalState.hostsStaging.delete(hostElement);
-  const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
-  invocatinContext.subscriber = hostElement;
-  const waitOn = invocatinContext.waitOn = [];
-  ctx.refMap.array.forEach((obj) => {
-    removeSub(obj, hostElement);
-  });
-  const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
-  const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
-  return then(renderPromise, (jsxNode) => {
-    rctx.hostElements.add(hostElement);
-    const waitOnPromise = promiseAll(waitOn);
-    return then(waitOnPromise, (waitOnResolved) => {
-      var _a;
-      waitOnResolved.forEach((task) => {
-        if (isStyleTask(task)) {
-          appendStyle(rctx, hostElement, task);
-        }
-      });
-      if (ctx.dirty) {
-        logDebug("Dropping render. State changed during render.");
-        return renderComponent(rctx, ctx);
-      }
-      let componentCtx = ctx.component;
-      if (!componentCtx) {
-        componentCtx = ctx.component = {
-          hostElement,
-          slots: [],
-          styleHostClass: void 0,
-          styleClass: void 0,
-          styleId: void 0
-        };
-        const scopedStyleId = (_a = hostElement.getAttribute(ComponentScopedStyles)) != null ? _a : void 0;
-        if (scopedStyleId) {
-          componentCtx.styleId = scopedStyleId;
-          componentCtx.styleHostClass = styleHost(scopedStyleId);
-          componentCtx.styleClass = styleContent(scopedStyleId);
-          hostElement.classList.add(componentCtx.styleHostClass);
-        }
-      }
-      componentCtx.slots = [];
-      const newCtx = __spreadProps(__spreadValues({}, rctx), {
-        component: componentCtx
-      });
-      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
-    });
-  });
 };
 
 // packages/qwik/src/core/render/notify-render.ts
@@ -10586,7 +10605,7 @@ function notifyChange(subscriber) {
 function notifyWatch(watch) {
   const containerEl = getContainer(watch.el);
   const state = getRenderingState(containerEl);
-  watch.f |= 2 /* IsDirty */;
+  watch.f |= 1 /* IsDirty */;
   const activeRendering = state.hostsRendering !== void 0;
   if (activeRendering) {
     state.watchStaging.add(watch);
@@ -10634,6 +10653,13 @@ function shouldSerialize(obj) {
 function noSerialize(input) {
   noSerializeSet.add(input);
   return input;
+}
+function isConnected(sub) {
+  if (isElement(sub)) {
+    return !!tryGetContext(sub);
+  } else {
+    return isConnected(sub.el);
+  }
 }
 
 // packages/qwik/src/core/object/store.ts
@@ -10692,6 +10718,156 @@ function resumeContainer(containerEl) {
   });
   containerEl.setAttribute(QContainerAttr, "resumed");
   logDebug("Container resumed");
+}
+function snapshotState(containerEl) {
+  const doc = getDocument(containerEl);
+  const proxyMap = getProxyMap(doc);
+  const objSet = /* @__PURE__ */ new Set();
+  const platform = getPlatform(doc);
+  const elementToIndex = /* @__PURE__ */ new Map();
+  const elements = getNodesInScope(containerEl, hasQObj);
+  elements.forEach((node) => {
+    const ctx = getContext(node);
+    const qMap = ctx.refMap;
+    qMap.array.forEach((v) => {
+      collectValue(v, objSet, doc);
+    });
+  });
+  const objs = Array.from(objSet);
+  objs.sort((a, b) => {
+    const isProxyA = proxyMap.has(a) ? 0 : 1;
+    const isProxyB = proxyMap.has(b) ? 0 : 1;
+    return isProxyA - isProxyB;
+  });
+  const objToId = /* @__PURE__ */ new Map();
+  let count = 0;
+  for (const obj of objs) {
+    if (isWatchDescriptor(obj)) {
+      destroyWatch(obj);
+      if (qDev) {
+        if (obj.f & 1 /* IsDirty */) {
+          logWarn("Serializing dirty watch. Looks like an internal error.");
+        }
+        if (!isConnected(obj)) {
+          logWarn("Serializing disconneted watch. Looks like an internal error.");
+        }
+      }
+    }
+    objToId.set(obj, count);
+    count++;
+  }
+  function getElementID(el) {
+    let id = elementToIndex.get(el);
+    if (id === void 0) {
+      if (el.isConnected) {
+        id = intToStr(elementToIndex.size);
+        el.setAttribute(ELEMENT_ID, id);
+        id = ELEMENT_ID_PREFIX + id;
+      } else {
+        id = null;
+      }
+      elementToIndex.set(el, id);
+    }
+    return id;
+  }
+  function getObjId(obj) {
+    if (obj !== null && typeof obj === "object") {
+      const target = obj[QOjectTargetSymbol];
+      const id = objToId.get(normalizeObj(target != null ? target : obj, doc));
+      if (id !== void 0) {
+        const proxySuffix = target ? "!" : "";
+        return intToStr(id) + proxySuffix;
+      }
+      if (!target && isNode(obj)) {
+        if (obj.nodeType === 1) {
+          return getElementID(obj);
+        } else {
+          logError("Can not serialize a HTML Node that is not an Element", obj);
+          return null;
+        }
+      }
+    } else {
+      const id = objToId.get(normalizeObj(obj, doc));
+      if (id !== void 0) {
+        return intToStr(id);
+      }
+    }
+    return null;
+  }
+  const subs = objs.map((obj) => {
+    var _a;
+    const subs2 = (_a = proxyMap.get(obj)) == null ? void 0 : _a[QOjectSubsSymbol];
+    if (subs2) {
+      return Object.fromEntries(Array.from(subs2.entries()).map(([sub, set]) => {
+        const id = getObjId(sub);
+        if (id !== null) {
+          return [id, set ? Array.from(set) : null];
+        } else {
+          return [void 0, void 0];
+        }
+      }));
+    } else {
+      return null;
+    }
+  }).filter((a) => !!a);
+  const serialize = (value) => {
+    var _a;
+    return (_a = getObjId(value)) != null ? _a : value;
+  };
+  const qrlSerializeOptions = {
+    platform,
+    getObjId
+  };
+  const convertedObjs = objs.map((obj) => {
+    if (Array.isArray(obj)) {
+      return obj.map(serialize);
+    } else if (obj && typeof obj === "object") {
+      if (isQrl(obj)) {
+        return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
+      }
+      const output = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        output[key] = serialize(value);
+      });
+      return output;
+    }
+    return obj;
+  });
+  elements.forEach((node) => {
+    const ctx = getContext(node);
+    assertDefined(ctx);
+    const props = ctx.props;
+    const renderQrl = ctx.renderQrl;
+    const attribute = ctx.refMap.array.map((obj) => {
+      const id = getObjId(obj);
+      assertDefined(id);
+      return id;
+    }).join(" ");
+    node.setAttribute(QObjAttr, attribute);
+    const seq = ctx.seq.map((index) => intToStr(index)).join(" ");
+    node.setAttribute(QSeqAttr, seq);
+    if (props) {
+      const objs2 = [props];
+      if (renderQrl) {
+        objs2.push(renderQrl);
+      }
+      node.setAttribute(QHostAttr, objs2.map((obj) => ctx.refMap.indexOf(obj)).join(" "));
+    }
+  });
+  if (qDev) {
+    elementToIndex.forEach((value, el) => {
+      if (getDocument(el) !== doc) {
+        logWarn("element from different document", value, el.tagName);
+      }
+      if (!value) {
+        logWarn("unconnected element", el.tagName, "\n");
+      }
+    });
+  }
+  return {
+    objs: convertedObjs,
+    subs
+  };
 }
 function getQwikJSON(parentElm) {
   let child = parentElm.lastElementChild;
@@ -10796,6 +10972,68 @@ function getObjectImpl(id, elements, objs, map) {
   }
   return obj;
 }
+function normalizeObj(obj, doc) {
+  var _a;
+  if (obj === doc) {
+    return DOCUMENT_PREFIX;
+  }
+  if (obj === void 0 || !shouldSerialize(obj)) {
+    return UNDEFINED_PREFIX;
+  }
+  if (obj && typeof obj === "object") {
+    const value = (_a = obj[QOjectTargetSymbol]) != null ? _a : obj;
+    return value;
+  }
+  return obj;
+}
+function collectValue(obj, seen, doc) {
+  const handled = collectQObjects(obj, seen, doc);
+  if (!handled) {
+    seen.add(normalizeObj(obj, doc));
+  }
+}
+function collectQrl(obj, seen, doc) {
+  seen.add(normalizeObj(obj, doc));
+  if (obj.captureRef) {
+    obj.captureRef.forEach((obj2) => collectValue(obj2, seen, doc));
+  }
+}
+function collectQObjects(obj, seen, doc) {
+  if (obj != null) {
+    if (typeof obj === "object") {
+      if (!obj[QOjectTargetSymbol] && isNode(obj)) {
+        return obj.nodeType === 1;
+      }
+      if (isQrl(obj)) {
+        collectQrl(obj, seen, doc);
+        return true;
+      }
+      obj = normalizeObj(obj, doc);
+    }
+    if (typeof obj === "object") {
+      if (seen.has(obj))
+        return true;
+      seen.add(obj);
+      if (Array.isArray(obj)) {
+        for (let i = 0; i < obj.length; i++) {
+          collectQObjects(obj[i], seen, doc);
+        }
+      } else {
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            collectQObjects(obj[key], seen, doc);
+          }
+        }
+      }
+      return true;
+    }
+    if (typeof obj === "string") {
+      seen.add(obj);
+      return true;
+    }
+  }
+  return false;
+}
 function isContainer(el) {
   return el.hasAttribute(QContainerAttr);
 }
@@ -10840,6 +11078,19 @@ function newQObjectMap(element) {
   };
 }
 
+// packages/qwik/src/core/object/store.public.ts
+function pauseContainer(elmOrDoc) {
+  const doc = getDocument(elmOrDoc);
+  const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+  const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
+  const data = snapshotState(containerEl);
+  const script = doc.createElement("script");
+  script.setAttribute("type", "qwik/json");
+  script.textContent = JSON.stringify(data, void 0, qDev ? "  " : void 0);
+  parentJSON.appendChild(script);
+  containerEl.setAttribute(QContainerAttr, "paused");
+}
+
 // packages/qwik/src/core/props/props.ts
 Error.stackTraceLimit = 9999;
 var Q_CTX = "__ctx__";
@@ -10847,10 +11098,22 @@ function resumeIfNeeded(containerEl) {
   const isResumed = containerEl.getAttribute(QContainerAttr);
   if (isResumed === "paused") {
     resumeContainer(containerEl);
+    if (qDev) {
+      appendQwikDevTools(containerEl);
+    }
   }
 }
+function appendQwikDevTools(containerEl) {
+  containerEl["qwik"] = {
+    pause: () => pauseContainer(containerEl),
+    renderState: getRenderingState(containerEl)
+  };
+}
+function tryGetContext(element) {
+  return element[Q_CTX];
+}
 function getContext(element) {
-  let ctx = element[Q_CTX];
+  let ctx = tryGetContext(element);
   if (!ctx) {
     const cache = /* @__PURE__ */ new Map();
     element[Q_CTX] = ctx = {
@@ -10865,6 +11128,23 @@ function getContext(element) {
     };
   }
   return ctx;
+}
+function cleanupContext(ctx) {
+  const el = ctx.element;
+  ctx.refMap.array.forEach((obj) => {
+    if (isWatchDescriptor(obj)) {
+      if (obj.el === el) {
+        destroyWatch(obj);
+      }
+    }
+    ctx.component = void 0;
+    ctx.renderQrl = void 0;
+    ctx.seq = [];
+    ctx.cache.clear();
+    ctx.dirty = false;
+    ctx.refMap.array.length = 0;
+  });
+  el[Q_CTX] = void 0;
 }
 var PREFIXES = ["document:on", "window:on", "on"];
 var SCOPED = ["on-document", "on-window", "on"];
@@ -11493,6 +11773,10 @@ function removeNode(ctx, el) {
   const fn = () => {
     const parent = el.parentNode;
     if (parent) {
+      if (el.nodeType === 1) {
+        cleanupElement(el);
+        el.querySelectorAll(QObjSelector).forEach(cleanupElement);
+      }
       parent.removeChild(el);
     } else if (qDev) {
       logWarn("Trying to remove component already removed", el);
@@ -11504,6 +11788,12 @@ function removeNode(ctx, el) {
     args: [],
     fn
   });
+}
+function cleanupElement(el) {
+  const ctx = tryGetContext(el);
+  if (ctx) {
+    cleanupContext(ctx);
+  }
 }
 function createTextNode(ctx, text) {
   return ctx.doc.createTextNode(text);
@@ -11614,10 +11904,10 @@ function getElement(docOrElm) {
 }
 
 // packages/qwik/src/server/scripts.ts
-var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>c(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},a=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),c=async(t,r,c)=>{for(const u of o){const o=t.getAttribute(u+r);if(o){t.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of o.split("\\n")){const o=a(t,r);if(o){const r=l(o),a=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),u=e[n];try{e[n]=[t,c,o],a(c,t,o)}finally{e[n]=u,s(t,r)}}}}}},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)c(n,t.type,t),n=t.bubbles?n.parentElement:null},b=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,r("","qresume",new CustomEvent("qresume")),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),c(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}},f=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(f);else for(const t in e)t.startsWith("on")&&f(t.slice(2))}e.addEventListener("readystatechange",b),b()}})(document);';
-var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
-var QWIK_LOADER_OPTIMIZE_MINIFIED = '((e,t)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>c(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),a=e=>{throw Error("QWIK "+e)},i=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),c=async(t,r,c)=>{for(const b of o){const o=t.getAttribute(b+r);if(o){t.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of o.split("\\n")){const o=i(t,r);if(o){const r=l(o),i=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||a(o+" does not export "+r),b=e[n];try{e[n]=[t,c,o],i(c,t,o)}finally{e[n]=b,s(t,r)}}}}}},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",b=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)c(n,t.type,t),n=t.bubbles?n.parentElement:null},u=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,r("","qresume",new CustomEvent("qresume")),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),c(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,b,{capture:!0}))),e.addEventListener("readystatechange",u),u())})(document);';
-var QWIK_LOADER_OPTIMIZE_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                symbolUsed(element, symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            window.qEvents.forEach(addDocEventListener);\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
+var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>c(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},a=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),c=async(t,r,c)=>{for(const u of o){const o=t.getAttribute(u+r);if(o){t.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of o.split("\\n")){const o=a(t,r);if(o){const r=l(o),a=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),u=e[n];if(t.isConnected)try{e[n]=[t,c,o],a(c,t,o)}finally{e[n]=u,s(t,r)}}}}}},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",u=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)c(n,t.type,t),n=t.bubbles?n.parentElement:null},b=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,r("","qresume",new CustomEvent("qresume")),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),c(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}},f=t=>e.addEventListener(t,u,{capture:!0});if(!e.qR){e.qR=1;{const t=e.querySelector("script[events]");if(t)t.getAttribute("events").split(/[\\s,;]+/).forEach(f);else for(const t in e)t.startsWith("on")&&f(t.slice(2))}e.addEventListener("readystatechange",b),b()}})(document);';
+var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            if (element.isConnected) {\n                                try {\n                                    doc.__q_context__ = [ element, ev, url ];\n                                    handler(ev, element, url);\n                                } finally {\n                                    doc.__q_context__ = previousCtx;\n                                    symbolUsed(element, symbolName);\n                                }\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
+var QWIK_LOADER_OPTIMIZE_MINIFIED = '((e,t)=>{const n="__q_context__",o=["on:","on-window:","on-document:"],r=(t,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),e.querySelectorAll("[on"+t+"\\\\:"+n+"]").forEach((e=>c(e,n,o)))},s=(e,t)=>e.dispatchEvent(new CustomEvent("qsymbol",{detail:{name:t},bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},a=(t,n)=>(t=t.closest("[q\\\\:container]"),new URL(n,new URL(t?t.getAttribute("q:base"):e.baseURI,e.baseURI))),c=async(t,r,c)=>{for(const b of o){const o=t.getAttribute(b+r);if(o){t.hasAttribute("preventdefault:"+r)&&c.preventDefault();for(const r of o.split("\\n")){const o=a(t,r);if(o){const r=l(o),a=(window[o.pathname]||await import(o.href.split("#")[0]))[r]||i(o+" does not export "+r),b=e[n];if(t.isConnected)try{e[n]=[t,c,o],a(c,t,o)}finally{e[n]=b,s(t,r)}}}}}},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",b=(t,n)=>{if((n=t.target)==e)setTimeout((()=>r("-document",t.type,t)));else for(;n&&n.getAttribute;)c(n,t.type,t),n=t.bubbles?n.parentElement:null},u=n=>{if(n=e.readyState,!t&&("interactive"==n||"complete"==n)&&(t=1,r("","qresume",new CustomEvent("qresume")),"undefined"!=typeof IntersectionObserver)){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),c(n.target,"qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));e.qO=t,new MutationObserver((e=>{for(const n of e)t.observe(n.target)})).observe(document.documentElement,{attributeFilter:["on:qvisible"],subtree:!0}),e.querySelectorAll("[on\\\\:qvisible]").forEach((e=>t.observe(e)))}};e.qR||(e.qR=1,window.qEvents.forEach((t=>e.addEventListener(t,b,{capture:!0}))),e.addEventListener("readystatechange",u),u())})(document);';
+var QWIK_LOADER_OPTIMIZE_DEBUG = '(() => {\n    ((doc, hasInitialized, prefetchWorker) => {\n        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, type, ev)));\n        };\n        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {\n            detail: {\n                name: symbolName\n            },\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, eventName, ev) => {\n            for (const onPrefix of ON_PREFIXES) {\n                const attrValue = element.getAttribute(onPrefix + eventName);\n                if (attrValue) {\n                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n                    for (const qrl of attrValue.split("\\n")) {\n                        const url = qrlResolver(element, qrl);\n                        if (url) {\n                            const symbolName = getSymbolName(url);\n                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);\n                            const previousCtx = doc.__q_context__;\n                            if (element.isConnected) {\n                                try {\n                                    doc.__q_context__ = [ element, ev, url ];\n                                    handler(ev, element, url);\n                                } finally {\n                                    doc.__q_context__ = previousCtx;\n                                    symbolUsed(element, symbolName);\n                                }\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processEvent = (ev, element) => {\n            if ((element = ev.target) == doc) {\n                setTimeout((() => broadcast("-document", ev.type, ev)));\n            } else {\n                while (element && element.getAttribute) {\n                    dispatch(element, ev.type, ev);\n                    element = ev.bubbles ? element.parentElement : null;\n                }\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qresume", new CustomEvent("qresume"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    new MutationObserver((mutations => {\n                        for (const mutation2 of mutations) {\n                            observer.observe(mutation2.target);\n                        }\n                    })).observe(document.documentElement, {\n                        attributeFilter: [ "on:qvisible" ],\n                        subtree: !0\n                    });\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {\n            capture: !0\n        });\n        if (!doc.qR) {\n            doc.qR = 1;\n            window.qEvents.forEach(addDocEventListener);\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
 function getQwikLoaderScript(opts = {}) {
   if (Array.isArray(opts.events) && opts.events.length > 0) {
     const loader = opts.debug ? QWIK_LOADER_OPTIMIZE_DEBUG : QWIK_LOADER_OPTIMIZE_MINIFIED;
@@ -11627,20 +11917,17 @@ function getQwikLoaderScript(opts = {}) {
 }
 
 // packages/qwik/src/server/prefetch.ts
-function getPrefetchUrls(doc, opts) {
+function getPrefetchResources(doc, opts) {
   const manifest = getValidManifest(opts.manifest);
   if (manifest) {
     const prefetchStrategy = opts.prefetchStrategy;
     const buildBase = getBuildBase(opts);
     if (prefetchStrategy !== null && buildBase != null) {
       if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "events-document") {
-        return [];
-      }
-      if (prefetchStrategy.symbolsToPrefetch === "all-document") {
-        return [];
+        return getEventDocumentPrefetch(doc, manifest, buildBase);
       }
       if (prefetchStrategy.symbolsToPrefetch === "all") {
-        return getAllPrefetchUrls(manifest, buildBase);
+        return getAllPrefetch(manifest, buildBase);
       }
       if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
         try {
@@ -11653,66 +11940,118 @@ function getPrefetchUrls(doc, opts) {
   }
   return [];
 }
-function getAllPrefetchUrls(manifest, buildBase) {
-  const urls = [];
-  for (const symbolName in manifest.mapping) {
-    addBundle(manifest, urls, manifest.mapping[symbolName]);
-  }
-  return urls.map((url) => buildBase + url);
+function getEventDocumentPrefetch(doc, manifest, buildBase) {
+  const eventQrls = /* @__PURE__ */ new Set();
+  const findQwikEvent = (elm) => {
+    if (elm && elm.nodeType === 1) {
+      const attrs = elm.attributes;
+      if (attrs) {
+        const attrLen = attrs.length;
+        for (let i = 0; i < attrLen; i++) {
+          const nodeName = attrs[i].nodeName;
+          if (nodeName && nodeName.startsWith("on:")) {
+            const qrlValue = attrs[i].nodeValue;
+            if (qrlValue) {
+              const qrls = qrlValue.split(" ");
+              for (const qrl of qrls) {
+                const q = parseQRL(qrl);
+                if (q && q.symbol) {
+                  eventQrls.add(q.symbol);
+                }
+              }
+            }
+          }
+        }
+      }
+      const childNodes = elm.childNodes;
+      if (childNodes) {
+        const childNodesLen = childNodes.length;
+        for (let i = 0; i < childNodesLen; i++) {
+          findQwikEvent(childNodes[i]);
+        }
+      }
+    }
+  };
+  findQwikEvent(doc.body);
+  const prefetchResources = [];
+  const urls = /* @__PURE__ */ new Set();
+  eventQrls.forEach((eventSymbolName) => {
+    for (const prioritizedSymbolName in manifest.mapping) {
+      if (eventSymbolName === prioritizedSymbolName) {
+        addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
+        break;
+      }
+    }
+  });
+  return prefetchResources;
 }
-function addBundle(manifest, urls, url) {
-  if (!urls.includes(url)) {
-    urls.push(url);
-    const bundle = manifest.bundles[url];
+function getAllPrefetch(manifest, buildBase) {
+  const prefetchResources = [];
+  const urls = /* @__PURE__ */ new Set();
+  for (const prioritizedSymbolName in manifest.mapping) {
+    addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
+  }
+  return prefetchResources;
+}
+function addBundle(manifest, urls, prefetchResources, buildBase, fileName) {
+  const url = buildBase + fileName;
+  if (!urls.has(url)) {
+    urls.add(url);
+    prefetchResources.push({
+      url,
+      imports: []
+    });
+    const bundle = manifest.bundles[fileName];
     if (bundle && bundle.imports) {
-      for (const bundleUrl of bundle.imports) {
-        addBundle(manifest, urls, bundleUrl);
+      for (const importedFilename of bundle.imports) {
+        addBundle(manifest, urls, prefetchResources, buildBase, importedFilename);
       }
     }
   }
 }
-function applyPrefetchImplementation(doc, opts, prefetchUrls) {
+function applyPrefetchImplementation(doc, opts, prefetchResources) {
   const prefetchStrategy = opts.prefetchStrategy;
   if (prefetchStrategy !== null) {
     const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "link-prefetch";
     if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
-      link(doc, prefetchUrls, prefetchImpl);
+      link(doc, prefetchResources, prefetchImpl);
     } else if (prefetchImpl === "qrl-import") {
-      qrlImport2(doc, prefetchUrls);
+      qrlImport2(doc, prefetchResources);
     } else if (prefetchImpl === "worker-fetch") {
-      workerFetch(doc, prefetchUrls);
+      workerFetch(doc, prefetchResources);
     }
   }
 }
-function link(doc, prefetchUrls, prefetchImpl) {
-  for (const prefetchUrl of prefetchUrls) {
-    const link2 = doc.createElement("link");
-    link2.setAttribute("href", prefetchUrl);
+function link(doc, prefetchResources, prefetchImpl) {
+  for (const prefetchResource of prefetchResources) {
+    const linkElm = doc.createElement("link");
+    linkElm.setAttribute("href", prefetchResource.url);
     if (prefetchImpl === "link-modulepreload") {
-      link2.setAttribute("rel", "modulepreload");
+      linkElm.setAttribute("rel", "modulepreload");
     } else if (prefetchImpl === "link-preload") {
-      link2.setAttribute("rel", "preload");
-      link2.setAttribute("as", "script");
+      linkElm.setAttribute("rel", "preload");
+      linkElm.setAttribute("as", "script");
     } else {
-      link2.setAttribute("rel", "prefetch");
-      link2.setAttribute("as", "script");
+      linkElm.setAttribute("rel", "prefetch");
+      linkElm.setAttribute("as", "script");
     }
-    doc.body.appendChild(link2);
+    doc.body.appendChild(linkElm);
+    link(doc, prefetchResource.imports, prefetchImpl);
   }
 }
-function qrlImport2(doc, urls) {
+function qrlImport2(doc, prefetchResources) {
   const script = doc.createElement("script");
   script.setAttribute("type", "qwik/prefetch");
-  script.innerHTML = JSON.stringify(urls);
+  script.innerHTML = JSON.stringify(prefetchResources);
   doc.body.appendChild(script);
 }
-function workerFetch(doc, urls) {
+function workerFetch(doc, prefetchResources) {
   const fetch = `Promise.all(e.data.map(u=>fetch(u))).finally(()=>{setTimeout(postMessage({}),999)})`;
   const workerBody = `onmessage=(e)=>{${fetch}}`;
   const blob = `new Blob(['${workerBody}'],{type:"text/javascript"})`;
   const url = `URL.createObjectURL(${blob})`;
   let s = `const w=new Worker(${url});`;
-  s += `w.postMessage(${JSON.stringify(urls)}.map(u=>new URL(u,origin)+''));`;
+  s += `w.postMessage(${JSON.stringify(prefetchResources.map((p) => p.url))}.map(u=>new URL(u,origin)+''));`;
   s += `w.onmessage=()=>{w.terminate();document.getElementById('qwik-worker-fetch').remove()}`;
   const script = doc.createElement("script");
   script.setAttribute("type", "module");
@@ -11772,15 +12111,15 @@ async function renderToString(rootNode, opts = {}) {
     doc.body.appendChild(rootEl);
   }
   await renderToDocument(rootEl, rootNode, opts);
-  const prefetchUrls = getPrefetchUrls(doc, opts);
-  if (prefetchUrls.length > 0) {
-    applyPrefetchImplementation(doc, opts, prefetchUrls);
+  const prefetchResources = getPrefetchResources(doc, opts);
+  if (prefetchResources.length > 0) {
+    applyPrefetchImplementation(doc, opts, prefetchResources);
   }
   const renderDocTime = renderDocTimer();
   const docToStringTimer = createTimer();
   const result = {
     html: serializeDocument(rootEl, opts),
-    prefetchUrls,
+    prefetchResources,
     timing: {
       createDocument: createDocTime,
       render: renderDocTime,
