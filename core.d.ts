@@ -1364,7 +1364,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function pauseContainer(elmOrDoc: Element | Document): void;
+export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotState;
 
 declare interface PerfEvent {
     name: string;
@@ -2009,6 +2009,14 @@ export declare const Slot: FunctionComponent<{
 
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
+}
+
+/**
+ * @public
+ */
+export declare interface SnapshotState {
+    objs: any[];
+    subs: any[];
 }
 
 declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {

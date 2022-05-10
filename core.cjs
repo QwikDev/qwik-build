@@ -1575,6 +1575,7 @@
         script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
         parentJSON.appendChild(script);
         containerEl.setAttribute(QContainerAttr, 'paused');
+        return data;
     }
 
     Error.stackTraceLimit = 9999;

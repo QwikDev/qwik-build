@@ -816,6 +816,54 @@ globalThis.qwikOptimizer = function(module) {
     }
     return;
   }
+  function generateManifestFromBundles(path, hooks, injections, outputBundles) {
+    const manifest = {
+      symbols: {},
+      mapping: {},
+      bundles: {},
+      injections: injections,
+      version: "1"
+    };
+    for (const hook of hooks) {
+      const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
+      const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
+      if (outputBundle) {
+        const symbolName = hook.name;
+        const bundleFileName = path.basename(outputBundle.fileName);
+        manifest.mapping[symbolName] = bundleFileName;
+        manifest.symbols[symbolName] = {
+          origin: hook.origin,
+          displayName: hook.displayName,
+          canonicalFilename: hook.canonicalFilename,
+          hash: hook.hash,
+          ctxKind: hook.ctxKind,
+          ctxName: hook.ctxName,
+          captures: hook.captures,
+          parent: hook.parent
+        };
+        addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+      }
+    }
+    for (const outputBundle of outputBundles) {
+      const bundleFileName = path.basename(outputBundle.fileName);
+      addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+    }
+    return updateSortAndPriorities(manifest);
+  }
+  function addBundleToManifest(path, manifest, outputBundle, bundleFileName) {
+    if (!manifest.bundles[bundleFileName]) {
+      const buildDirName = path.dirname(outputBundle.fileName);
+      const bundle = {
+        size: outputBundle.size,
+        symbols: []
+      };
+      const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+      bundleImports.length > 0 && (bundle.imports = bundleImports);
+      const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+      bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
+      manifest.bundles[bundleFileName] = bundle;
+    }
+  }
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
@@ -1077,58 +1125,13 @@ globalThis.qwikOptimizer = function(module) {
       const generateManifest = async () => {
         const optimizer2 = await getOptimizer();
         const path = optimizer2.sys.path;
-        const manifest = {
-          symbols: {},
-          mapping: {},
-          bundles: {},
-          injections: injections,
-          version: "1"
-        };
         const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-        for (const hook of hooks) {
-          const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
-          const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
-          if (outputBundle) {
-            const symbolName = hook.name;
-            const bundleFileName = path.basename(outputBundle.fileName);
-            manifest.mapping[symbolName] = bundleFileName;
-            manifest.symbols[symbolName] = {
-              origin: hook.origin,
-              displayName: hook.displayName,
-              canonicalFilename: hook.canonicalFilename,
-              hash: hook.hash,
-              ctxKind: hook.ctxKind,
-              ctxName: hook.ctxName,
-              captures: hook.captures,
-              parent: hook.parent
-            };
-            addBundleToManifest(path, manifest, outputBundle, bundleFileName);
-          }
-        }
-        for (const outputBundle of outputBundles) {
-          const bundleFileName = path.basename(outputBundle.fileName);
-          addBundleToManifest(path, manifest, outputBundle, bundleFileName);
-        }
-        return updateSortAndPriorities(manifest);
+        return generateManifestFromBundles(path, hooks, injections, outputBundles);
       };
       return {
         addBundle: addBundle,
         generateManifest: generateManifest
       };
-    };
-    const addBundleToManifest = (path, manifest, outputBundle, bundleFileName) => {
-      if (!manifest.bundles[bundleFileName]) {
-        const buildDirName = path.dirname(outputBundle.fileName);
-        const bundle = {
-          size: outputBundle.size,
-          symbols: []
-        };
-        const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
-        bundleImports.length > 0 && (bundle.imports = bundleImports);
-        const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
-        bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
-        manifest.bundles[bundleFileName] = bundle;
-      }
     };
     const getOptions = () => opts;
     const getTransformedOutputs = () => {

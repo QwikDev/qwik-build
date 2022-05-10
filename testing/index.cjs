@@ -2794,6 +2794,7 @@ function pauseContainer(elmOrDoc) {
   script.textContent = JSON.stringify(data, void 0, qDev ? "  " : void 0);
   parentJSON.appendChild(script);
   containerEl.setAttribute(QContainerAttr, "paused");
+  return data;
 }
 
 // packages/qwik/src/core/props/props.ts
