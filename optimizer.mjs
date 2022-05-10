@@ -517,8 +517,7 @@ async function loadPlatformBinding(sys) {
       if (triples) {
         for (const triple of triples) {
           try {
-            const platformBindingPath = sys.path.join("bindings", triple.platformArchABI);
-            const mod = await sys.dynamicImport("./" + platformBindingPath);
+            const mod = await sys.dynamicImport(`./bindings/${triple.platformArchABI}`);
             return mod;
           } catch (e) {
             logWarn(e);
@@ -529,8 +528,7 @@ async function loadPlatformBinding(sys) {
   }
   false;
   {
-    const mjsWasmPath = sys.path.join("bindings", "qwik.wasm.mjs");
-    const module = await sys.dynamicImport("./" + mjsWasmPath);
+    const module = await sys.dynamicImport("./bindings/qwik.wasm.mjs");
     await module.default();
     return module;
   }

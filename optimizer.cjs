@@ -585,8 +585,7 @@ globalThis.qwikOptimizer = function(module) {
         if (triples) {
           for (const triple of triples) {
             try {
-              const platformBindingPath = sys.path.join("bindings", triple.platformArchABI);
-              const mod = await sys.dynamicImport("./" + platformBindingPath);
+              const mod = await sys.dynamicImport(`./bindings/${triple.platformArchABI}`);
               return mod;
             } catch (e) {
               logWarn(e);
@@ -596,9 +595,8 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
     if ("node" === sysEnv) {
-      const cjsWasmPath = sys.path.join("bindings", "qwik.wasm.cjs");
       const wasmPath = sys.path.join(__dirname, "bindings", "qwik_wasm_bg.wasm");
-      const mod = await sys.dynamicImport("./" + cjsWasmPath);
+      const mod = await sys.dynamicImport("./bindings/qwik.wasm.cjs");
       const fs = await sys.dynamicImport("fs");
       return new Promise(((resolve, reject) => {
         fs.readFile(wasmPath, ((err, buf) => {
