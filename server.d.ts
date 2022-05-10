@@ -79,7 +79,7 @@ declare interface JSXNode<T = any> {
 /**
  * @alpha
  */
-export declare type PrefetchImplementation = 'link-prefetch' | 'link-preload' | 'link-modulepreload' | 'qrl-import' | 'worker-fetch' | 'none';
+export declare type PrefetchImplementation = 'link-prefetch-html' | 'link-prefetch' | 'link-preload-html' | 'link-preload' | 'link-modulepreload-html' | 'link-modulepreload' | 'worker-fetch' | 'none';
 
 /**
  * @alpha
@@ -174,7 +174,7 @@ export declare interface QwikWindow extends WindowProxy {
  * @param rootNode - The root JSX node to apply onto the `document`.
  * @public
  */
-export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderToDocumentOptions): Promise<void>;
+export declare function renderToDocument(docOrElm: Document | Element, rootNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderToDocumentOptions): Promise<RenderToDocumentResult>;
 
 /**
  * @public
@@ -196,6 +196,15 @@ export declare interface RenderToDocumentOptions extends SerializeDocumentOption
         events?: string[];
         include?: boolean;
     };
+    prefetchStrategy?: PrefetchStrategy;
+}
+
+/**
+ * @public
+ */
+declare interface RenderToDocumentResult {
+    prefetchResources: PrefetchResource[];
+    snapshotState: SnapshotState | null;
 }
 
 /**
@@ -214,15 +223,13 @@ export declare interface RenderToStringOptions extends RenderToDocumentOptions {
      * Defaults to `undefined`
      */
     fragmentTagName?: string;
-    prefetchStrategy?: PrefetchStrategy;
 }
 
 /**
  * @public
  */
-export declare interface RenderToStringResult {
+export declare interface RenderToStringResult extends RenderToDocumentResult {
     html: string;
-    prefetchResources: PrefetchResource[];
     timing: {
         createDocument: number;
         render: number;
@@ -250,6 +257,14 @@ declare interface SerializeDocumentOptions extends DocumentOptions {
  * @public
  */
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
+
+/**
+ * @public
+ */
+declare interface SnapshotState {
+    objs: any[];
+    subs: any[];
+}
 
 /**
  * all: Prefetch all QRLs used by the app.

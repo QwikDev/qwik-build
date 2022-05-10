@@ -11089,6 +11089,7 @@ function pauseContainer(elmOrDoc) {
   script.textContent = JSON.stringify(data, void 0, qDev ? "  " : void 0);
   parentJSON.appendChild(script);
   containerEl.setAttribute(QContainerAttr, "paused");
+  return data;
 }
 
 // packages/qwik/src/core/props/props.ts
@@ -11916,15 +11917,111 @@ function getQwikLoaderScript(opts = {}) {
   return opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED;
 }
 
-// packages/qwik/src/server/prefetch.ts
-function getPrefetchResources(doc, opts) {
+// packages/qwik/src/server/prefetch-implementation.ts
+function applyPrefetchImplementation(doc, opts, prefetchResources) {
+  const prefetchStrategy = opts.prefetchStrategy;
+  if (prefetchStrategy !== null) {
+    const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "link-prefetch";
+    if (prefetchImpl === "link-prefetch-html" || prefetchImpl === "link-preload-html" || prefetchImpl === "link-modulepreload-html") {
+      linkHtmlImplementation(doc, prefetchResources, prefetchImpl);
+    } else if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
+      linkJsImplementation(doc, prefetchResources, prefetchImpl);
+    } else if (prefetchImpl === "worker-fetch") {
+      workerFetchImplementation(doc, prefetchResources);
+    }
+  }
+}
+function linkHtmlImplementation(doc, prefetchResources, prefetchImpl) {
+  const urls = flattenPrefetchResources(prefetchResources);
+  for (const url of urls) {
+    const linkElm = doc.createElement("link");
+    linkElm.setAttribute("href", url);
+    if (prefetchImpl === "link-modulepreload-html") {
+      linkElm.setAttribute("rel", "modulepreload");
+    } else if (prefetchImpl === "link-preload-html") {
+      linkElm.setAttribute("rel", "preload");
+      if (url.endsWith(".js")) {
+        linkElm.setAttribute("as", "script");
+      }
+    } else {
+      linkElm.setAttribute("rel", "prefetch");
+      if (url.endsWith(".js")) {
+        linkElm.setAttribute("as", "script");
+      }
+    }
+    doc.body.appendChild(linkElm);
+  }
+}
+function linkJsImplementation(doc, prefetchResources, prefetchImpl) {
+  const urls = flattenPrefetchResources(prefetchResources);
+  const rel = prefetchImpl === "link-modulepreload" ? "modulepreload" : prefetchImpl === "link-preload" ? "preload" : "prefetch";
+  let s = `let supportsLinkRel = true;`;
+  s += `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
+  s += `u.map((u,i)=>{`;
+  s += `const l=document.createElement('link');`;
+  s += `l.setAttribute("href",u);`;
+  s += `l.setAttribute("rel","${rel}");`;
+  if (rel === "prefetch" || rel === "preload") {
+    s += `l.setAttribute("as","script");`;
+  }
+  s += `if(i===0){`;
+  s += `try{`;
+  s += `supportsLinkRel=l.relList.supports("${rel}");`;
+  s += `}catch(e){}`;
+  s += `}`;
+  s += `document.body.appendChild(l);`;
+  s += `});`;
+  s += `if(!supportsLinkRel){`;
+  s += workerFetchScript();
+  s += `}`;
+  const script = doc.createElement("script");
+  script.setAttribute("type", "module");
+  script.innerHTML = s;
+  doc.body.appendChild(script);
+}
+function workerFetchScript() {
+  const fetch = `Promise.all(e.data.map(u=>fetch(u))).finally(()=>{setTimeout(postMessage({}),999)})`;
+  const workerBody = `onmessage=(e)=>{${fetch}}`;
+  const blob = `new Blob(['${workerBody}'],{type:"text/javascript"})`;
+  const url = `URL.createObjectURL(${blob})`;
+  let s = `const w=new Worker(${url});`;
+  s += `w.postMessage(u.map(u=>new URL(u,origin)+''));`;
+  s += `w.onmessage=()=>{w.terminate()};`;
+  return s;
+}
+function workerFetchImplementation(doc, prefetchResources) {
+  let s = `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
+  s += workerFetchScript();
+  const script = doc.createElement("script");
+  script.setAttribute("type", "module");
+  script.innerHTML = s;
+  doc.body.appendChild(script);
+}
+function flattenPrefetchResources(prefetchResources) {
+  const urls = [];
+  const addPrefetchResource = (prefetchResources2) => {
+    if (Array.isArray(prefetchResources2)) {
+      for (const prefetchResource of prefetchResources2) {
+        if (!urls.includes(prefetchResource.url)) {
+          urls.push(prefetchResource.url);
+          addPrefetchResource(prefetchResource.imports);
+        }
+      }
+    }
+  };
+  addPrefetchResource(prefetchResources);
+  return urls;
+}
+
+// packages/qwik/src/server/prefetch-strategy.ts
+function getPrefetchResources(doc, snapshotState2, opts) {
   const manifest = getValidManifest(opts.manifest);
   if (manifest) {
     const prefetchStrategy = opts.prefetchStrategy;
     const buildBase = getBuildBase(opts);
     if (prefetchStrategy !== null && buildBase != null) {
       if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "events-document") {
-        return getEventDocumentPrefetch(doc, manifest, buildBase);
+        return getEventDocumentPrefetch(doc, snapshotState2, manifest, buildBase);
       }
       if (prefetchStrategy.symbolsToPrefetch === "all") {
         return getAllPrefetch(manifest, buildBase);
@@ -11940,23 +12037,25 @@ function getPrefetchResources(doc, opts) {
   }
   return [];
 }
-function getEventDocumentPrefetch(doc, manifest, buildBase) {
+function getEventDocumentPrefetch(doc, snapshotState2, manifest, buildBase) {
   const eventQrls = /* @__PURE__ */ new Set();
-  const findQwikEvent = (elm) => {
+  const findQrls = (elm) => {
     if (elm && elm.nodeType === 1) {
       const attrs = elm.attributes;
       if (attrs) {
         const attrLen = attrs.length;
         for (let i = 0; i < attrLen; i++) {
-          const nodeName = attrs[i].nodeName;
-          if (nodeName && nodeName.startsWith("on:")) {
-            const qrlValue = attrs[i].nodeValue;
-            if (qrlValue) {
-              const qrls = qrlValue.split(" ");
-              for (const qrl of qrls) {
-                const q = parseQRL(qrl);
-                if (q && q.symbol) {
-                  eventQrls.add(q.symbol);
+          const attrName = attrs[i].nodeName;
+          if (attrName) {
+            if (attrName.startsWith("on:")) {
+              const qrlValue = attrs[i].nodeValue;
+              if (qrlValue) {
+                const qrls = qrlValue.split(" ");
+                for (const qrl of qrls) {
+                  const q = parseQRL(qrl);
+                  if (q && q.symbol) {
+                    eventQrls.add(q.symbol);
+                  }
                 }
               }
             }
@@ -11967,12 +12066,12 @@ function getEventDocumentPrefetch(doc, manifest, buildBase) {
       if (childNodes) {
         const childNodesLen = childNodes.length;
         for (let i = 0; i < childNodesLen; i++) {
-          findQwikEvent(childNodes[i]);
+          findQrls(childNodes[i]);
         }
       }
     }
   };
-  findQwikEvent(doc.body);
+  findQrls(doc.body);
   const prefetchResources = [];
   const urls = /* @__PURE__ */ new Set();
   eventQrls.forEach((eventSymbolName) => {
@@ -11983,6 +12082,16 @@ function getEventDocumentPrefetch(doc, manifest, buildBase) {
       }
     }
   });
+  if (snapshotState2 && Array.isArray(snapshotState2.objs)) {
+    for (const obj of snapshotState2.objs) {
+      if (typeof obj === "string" && obj.startsWith(QRL_PREFIX)) {
+        const q = parseQRL(obj);
+        if (q && q.symbol) {
+          addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[q.symbol]);
+        }
+      }
+    }
+  }
   return prefetchResources;
 }
 function getAllPrefetch(manifest, buildBase) {
@@ -11997,67 +12106,25 @@ function addBundle(manifest, urls, prefetchResources, buildBase, fileName) {
   const url = buildBase + fileName;
   if (!urls.has(url)) {
     urls.add(url);
-    prefetchResources.push({
+    const prefetchResource = {
       url,
       imports: []
-    });
+    };
+    prefetchResources.push(prefetchResource);
     const bundle = manifest.bundles[fileName];
-    if (bundle && bundle.imports) {
-      for (const importedFilename of bundle.imports) {
-        addBundle(manifest, urls, prefetchResources, buildBase, importedFilename);
+    if (bundle) {
+      if (Array.isArray(bundle.imports)) {
+        for (const importedFilename of bundle.imports) {
+          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
+        }
+      }
+      if (Array.isArray(bundle.dynamicImports)) {
+        for (const importedFilename of bundle.dynamicImports) {
+          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
+        }
       }
     }
   }
-}
-function applyPrefetchImplementation(doc, opts, prefetchResources) {
-  const prefetchStrategy = opts.prefetchStrategy;
-  if (prefetchStrategy !== null) {
-    const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "link-prefetch";
-    if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
-      link(doc, prefetchResources, prefetchImpl);
-    } else if (prefetchImpl === "qrl-import") {
-      qrlImport2(doc, prefetchResources);
-    } else if (prefetchImpl === "worker-fetch") {
-      workerFetch(doc, prefetchResources);
-    }
-  }
-}
-function link(doc, prefetchResources, prefetchImpl) {
-  for (const prefetchResource of prefetchResources) {
-    const linkElm = doc.createElement("link");
-    linkElm.setAttribute("href", prefetchResource.url);
-    if (prefetchImpl === "link-modulepreload") {
-      linkElm.setAttribute("rel", "modulepreload");
-    } else if (prefetchImpl === "link-preload") {
-      linkElm.setAttribute("rel", "preload");
-      linkElm.setAttribute("as", "script");
-    } else {
-      linkElm.setAttribute("rel", "prefetch");
-      linkElm.setAttribute("as", "script");
-    }
-    doc.body.appendChild(linkElm);
-    link(doc, prefetchResource.imports, prefetchImpl);
-  }
-}
-function qrlImport2(doc, prefetchResources) {
-  const script = doc.createElement("script");
-  script.setAttribute("type", "qwik/prefetch");
-  script.innerHTML = JSON.stringify(prefetchResources);
-  doc.body.appendChild(script);
-}
-function workerFetch(doc, prefetchResources) {
-  const fetch = `Promise.all(e.data.map(u=>fetch(u))).finally(()=>{setTimeout(postMessage({}),999)})`;
-  const workerBody = `onmessage=(e)=>{${fetch}}`;
-  const blob = `new Blob(['${workerBody}'],{type:"text/javascript"})`;
-  const url = `URL.createObjectURL(${blob})`;
-  let s = `const w=new Worker(${url});`;
-  s += `w.postMessage(${JSON.stringify(prefetchResources.map((p) => p.url))}.map(u=>new URL(u,origin)+''));`;
-  s += `w.onmessage=()=>{w.terminate();document.getElementById('qwik-worker-fetch').remove()}`;
-  const script = doc.createElement("script");
-  script.setAttribute("type", "module");
-  script.setAttribute("id", "qwik-worker-fetch");
-  script.innerHTML = s;
-  doc.body.appendChild(script);
 }
 
 // packages/qwik/src/server/document.ts
@@ -12081,8 +12148,16 @@ async function renderToDocument(docOrElm, rootNode, opts = {}) {
     const containerEl = getElement(docOrElm);
     containerEl.setAttribute("q:base", buildBase);
   }
+  let snapshotState2 = null;
   if (opts.snapshot !== false) {
-    (0, import_qwik2.pauseContainer)(docOrElm);
+    snapshotState2 = (0, import_qwik2.pauseContainer)(docOrElm);
+  }
+  const result = {
+    prefetchResources: getPrefetchResources(doc, snapshotState2, opts),
+    snapshotState: snapshotState2
+  };
+  if (result.prefetchResources.length > 0) {
+    applyPrefetchImplementation(doc, opts, result.prefetchResources);
   }
   if (!opts.qwikLoader || opts.qwikLoader.include !== false) {
     const qwikLoaderScript = getQwikLoaderScript({
@@ -12094,6 +12169,7 @@ async function renderToDocument(docOrElm, rootNode, opts = {}) {
     scriptElm.innerHTML = qwikLoaderScript;
     doc.head.appendChild(scriptElm);
   }
+  return result;
 }
 async function renderToString(rootNode, opts = {}) {
   const createDocTimer = createTimer();
@@ -12110,22 +12186,17 @@ async function renderToString(rootNode, opts = {}) {
     rootEl = doc.createElement(opts.fragmentTagName);
     doc.body.appendChild(rootEl);
   }
-  await renderToDocument(rootEl, rootNode, opts);
-  const prefetchResources = getPrefetchResources(doc, opts);
-  if (prefetchResources.length > 0) {
-    applyPrefetchImplementation(doc, opts, prefetchResources);
-  }
+  const docResult = await renderToDocument(rootEl, rootNode, opts);
   const renderDocTime = renderDocTimer();
   const docToStringTimer = createTimer();
-  const result = {
+  const result = __spreadProps(__spreadValues({}, docResult), {
     html: serializeDocument(rootEl, opts),
-    prefetchResources,
     timing: {
       createDocument: createDocTime,
       render: renderDocTime,
       toString: docToStringTimer()
     }
-  };
+  });
   return result;
 }
 // Annotate the CommonJS export names for ESM import in node:

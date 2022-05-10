@@ -146,6 +146,7 @@ export declare interface OptimizerOptions {
 export declare interface OptimizerSystem {
     cwd: () => string;
     env: () => SystemEnvironment;
+    os: string;
     dynamicImport: (path: string) => Promise<any>;
     getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;

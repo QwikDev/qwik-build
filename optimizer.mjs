@@ -97,7 +97,7 @@ function createPath(opts = {}) {
       if (i >= 0) {
         path = paths[i];
       } else {
-        void 0 === cwd && (cwd = "undefined" !== typeof process && "function" === typeof process.cwd ? process.cwd() : "/");
+        void 0 === cwd && (cwd = opts && "function" === typeof opts.cwd ? opts.cwd() : "undefined" !== typeof process && "function" === typeof process.cwd ? process.cwd() : "/");
         path = cwd;
       }
       assertPath(path);
@@ -451,6 +451,7 @@ async function getSystem() {
     },
     path: null,
     cwd: () => "/",
+    os: "unknown",
     env: env
   };
   const sysEnv = env();
@@ -460,6 +461,7 @@ async function getSystem() {
   if ("node" === sysEnv) {
     sys.path = await sys.dynamicImport("path");
     sys.cwd = () => process.cwd();
+    sys.os = process.platform;
   }
   return sys;
 }
@@ -734,6 +736,56 @@ function getValidManifest(manifest) {
   return;
 }
 
+function generateManifestFromBundles(path, hooks, injections, outputBundles) {
+  const manifest = {
+    symbols: {},
+    mapping: {},
+    bundles: {},
+    injections: injections,
+    version: "1"
+  };
+  for (const hook of hooks) {
+    const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
+    const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
+    if (outputBundle) {
+      const symbolName = hook.name;
+      const bundleFileName = path.basename(outputBundle.fileName);
+      manifest.mapping[symbolName] = bundleFileName;
+      manifest.symbols[symbolName] = {
+        origin: hook.origin,
+        displayName: hook.displayName,
+        canonicalFilename: hook.canonicalFilename,
+        hash: hook.hash,
+        ctxKind: hook.ctxKind,
+        ctxName: hook.ctxName,
+        captures: hook.captures,
+        parent: hook.parent
+      };
+      addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+    }
+  }
+  for (const outputBundle of outputBundles) {
+    const bundleFileName = path.basename(outputBundle.fileName);
+    addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+  }
+  return updateSortAndPriorities(manifest);
+}
+
+function addBundleToManifest(path, manifest, outputBundle, bundleFileName) {
+  if (!manifest.bundles[bundleFileName]) {
+    const buildDirName = path.dirname(outputBundle.fileName);
+    const bundle = {
+      size: outputBundle.size,
+      symbols: []
+    };
+    const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+    bundleImports.length > 0 && (bundle.imports = bundleImports);
+    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
+    bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
+    manifest.bundles[bundleFileName] = bundle;
+  }
+}
+
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
   const results = new Map;
@@ -779,10 +831,10 @@ function createPlugin(optimizerOptions = {}) {
     });
     "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
     "string" !== typeof opts.rootDir && (opts.rootDir = optimizer2.sys.cwd());
-    opts.rootDir = optimizer2.sys.path.resolve(optimizer2.sys.cwd(), opts.rootDir);
-    let srcDir = optimizer2.sys.path.resolve(opts.rootDir, SRC_DIR_DEFAULT);
+    opts.rootDir = normalizePath(optimizer2.sys.path.resolve(optimizer2.sys.cwd(), opts.rootDir));
+    let srcDir = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, SRC_DIR_DEFAULT));
     if ("string" === typeof updatedOpts.srcDir) {
-      opts.srcDir = optimizer2.sys.path.resolve(opts.rootDir, updatedOpts.srcDir);
+      opts.srcDir = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, updatedOpts.srcDir));
       srcDir = opts.srcDir;
       opts.srcInputs = null;
     } else if (Array.isArray(updatedOpts.srcInputs)) {
@@ -801,17 +853,17 @@ function createPlugin(optimizerOptions = {}) {
       opts.forceFullBuild = true;
     }
     Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
-      i.path = optimizer2.sys.path.resolve(opts.rootDir, i.path);
-    })) : "string" === typeof opts.srcDir && (opts.srcDir = optimizer2.sys.path.resolve(opts.rootDir, opts.srcDir));
+      i.path = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, i.path));
+    })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, opts.srcDir)));
     "string" === typeof updatedOpts.srcRootInput ? opts.srcRootInput = [ updatedOpts.srcRootInput ] : Array.isArray(updatedOpts.srcRootInput) ? opts.srcRootInput = [ ...updatedOpts.srcRootInput ] : opts.srcRootInput = [ ROOT_FILENAME_DEFAULT ];
-    opts.srcRootInput = opts.srcRootInput.map((p => optimizer2.sys.path.resolve(srcDir, p)));
-    "string" === typeof updatedOpts.srcEntryServerInput ? opts.srcEntryServerInput = optimizer2.sys.path.resolve(srcDir, updatedOpts.srcEntryServerInput) : opts.srcEntryServerInput = optimizer2.sys.path.resolve(srcDir, ENTRY_SERVER_FILENAME_DEFAULT);
+    opts.srcRootInput = opts.srcRootInput.map((p => normalizePath(optimizer2.sys.path.resolve(srcDir, p))));
+    "string" === typeof updatedOpts.srcEntryServerInput ? opts.srcEntryServerInput = normalizePath(optimizer2.sys.path.resolve(srcDir, updatedOpts.srcEntryServerInput)) : opts.srcEntryServerInput = normalizePath(optimizer2.sys.path.resolve(srcDir, ENTRY_SERVER_FILENAME_DEFAULT));
     "string" === typeof updatedOpts.outClientDir && (opts.outClientDir = updatedOpts.outClientDir);
     "string" !== typeof opts.outClientDir && (opts.outClientDir = DIST_DIR_DEFAULT);
-    opts.outClientDir = optimizer2.sys.path.resolve(opts.rootDir, opts.outClientDir);
+    opts.outClientDir = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, opts.outClientDir));
     "string" === typeof updatedOpts.outServerDir && (opts.outServerDir = updatedOpts.outServerDir);
     "string" !== typeof opts.outServerDir && (opts.outServerDir = SERVER_DIR_DEFAULT);
-    opts.outServerDir = optimizer2.sys.path.resolve(opts.rootDir, opts.outServerDir);
+    opts.outServerDir = normalizePath(optimizer2.sys.path.resolve(opts.rootDir, opts.outServerDir));
     const manifestInput = getValidManifest(updatedOpts.manifestInput);
     manifestInput && (opts.manifestInput = manifestInput);
     "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
@@ -845,12 +897,12 @@ function createPlugin(optimizerOptions = {}) {
       const optimizer2 = await getOptimizer();
       let rootDir = "/";
       if ("string" === typeof opts.srcDir) {
-        rootDir = opts.srcDir;
+        rootDir = normalizePath(opts.srcDir);
         log("buildStart() srcDir", opts.srcDir);
       } else if (Array.isArray(opts.srcInputs)) {
         optimizer2.sys.getInputFiles = async rootDir2 => opts.srcInputs.map((i => {
           const relInput = {
-            path: optimizer2.sys.path.relative(rootDir2, i.path),
+            path: normalizePath(optimizer2.sys.path.relative(rootDir2, i.path)),
             code: i.code
           };
           return relInput;
@@ -869,7 +921,7 @@ function createPlugin(optimizerOptions = {}) {
       };
       const result = await optimizer2.transformFs(transformOpts);
       for (const output of result.modules) {
-        const key = optimizer2.sys.path.join(rootDir, output.path);
+        const key = normalizePath(optimizer2.sys.path.join(rootDir, output.path));
         log("buildStart() add transformedOutput", key);
         transformedOutputs.set(key, [ output, key ]);
       }
@@ -887,12 +939,13 @@ function createPlugin(optimizerOptions = {}) {
     }
     const optimizer2 = await getOptimizer();
     const parsedId = parseId(id2);
-    let importeePathId = parsedId.pathId;
+    let importeePathId = normalizePath(parsedId.pathId);
     if (importer) {
+      importer = normalizePath(importer);
       log(`resolveId("${importeePathId}", "${importer}")`);
       const parsedImporterId = parseId(importer);
       const dir = optimizer2.sys.path.dirname(parsedImporterId.pathId);
-      importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? optimizer2.sys.path.join(dir, importeePathId) : optimizer2.sys.path.resolve(dir, importeePathId);
+      importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(optimizer2.sys.path.join(dir, importeePathId)) : normalizePath(optimizer2.sys.path.resolve(dir, importeePathId));
     } else {
       log(`resolveId("${importeePathId}"), No importer`);
     }
@@ -921,6 +974,7 @@ function createPlugin(optimizerOptions = {}) {
       };
     }
     opts.forceFullBuild && (id2 = forceJSExtension(optimizer2.sys.path, id2));
+    id2 = normalizePath(id2);
     const transformedModule = transformedOutputs.get(id2);
     if (transformedModule) {
       log("load()", "Found", id2);
@@ -936,6 +990,7 @@ function createPlugin(optimizerOptions = {}) {
     if (opts.forceFullBuild) {
       return null;
     }
+    id2 = normalizePath(id2);
     const pregenerated = transformedOutputs.get(id2);
     if (pregenerated) {
       log("transform() pregenerated, addWatchFile", id2, pregenerated[1]);
@@ -953,6 +1008,7 @@ function createPlugin(optimizerOptions = {}) {
       log("transform()", "Transforming", pathId);
       let path = base;
       opts.srcDir && (path = optimizer2.sys.path.relative(opts.srcDir, pathId));
+      path = normalizePath(path);
       const newOutput = optimizer2.transformModulesSync({
         input: [ {
           code: code,
@@ -965,17 +1021,17 @@ function createPlugin(optimizerOptions = {}) {
         sourceMaps: false,
         transpile: true,
         explicityExtensions: true,
-        rootDir: dir,
+        rootDir: normalizePath(dir),
         dev: "development" === opts.buildMode
       });
       diagnosticsCallback(newOutput.diagnostics, optimizer2);
-      results.set(pathId, newOutput);
+      results.set(normalizePath(pathId), newOutput);
       for (const [id3, output] of results.entries()) {
         const justChanged = newOutput === output;
-        const dir2 = opts.srcDir || optimizer2.sys.path.dirname(id3);
+        const dir2 = normalizePath(opts.srcDir || optimizer2.sys.path.dirname(id3));
         for (const mod of output.modules) {
           if (mod.isEntry) {
-            const key = optimizer2.sys.path.join(dir2, mod.path);
+            const key = normalizePath(optimizer2.sys.path.join(dir2, mod.path));
             transformedOutputs.set(key, [ mod, id3 ]);
             log("transform()", "emitting", justChanged, key);
           }
@@ -999,58 +1055,13 @@ function createPlugin(optimizerOptions = {}) {
     const generateManifest = async () => {
       const optimizer2 = await getOptimizer();
       const path = optimizer2.sys.path;
-      const manifest = {
-        symbols: {},
-        mapping: {},
-        bundles: {},
-        injections: injections,
-        version: "1"
-      };
       const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-      for (const hook of hooks) {
-        const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
-        const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
-        if (outputBundle) {
-          const symbolName = hook.name;
-          const bundleFileName = path.basename(outputBundle.fileName);
-          manifest.mapping[symbolName] = bundleFileName;
-          manifest.symbols[symbolName] = {
-            origin: hook.origin,
-            displayName: hook.displayName,
-            canonicalFilename: hook.canonicalFilename,
-            hash: hook.hash,
-            ctxKind: hook.ctxKind,
-            ctxName: hook.ctxName,
-            captures: hook.captures,
-            parent: hook.parent
-          };
-          addBundleToManifest(path, manifest, outputBundle, bundleFileName);
-        }
-      }
-      for (const outputBundle of outputBundles) {
-        const bundleFileName = path.basename(outputBundle.fileName);
-        addBundleToManifest(path, manifest, outputBundle, bundleFileName);
-      }
-      return updateSortAndPriorities(manifest);
+      return generateManifestFromBundles(path, hooks, injections, outputBundles);
     };
     return {
       addBundle: addBundle,
       generateManifest: generateManifest
     };
-  };
-  const addBundleToManifest = (path, manifest, outputBundle, bundleFileName) => {
-    if (!manifest.bundles[bundleFileName]) {
-      const buildDirName = path.dirname(outputBundle.fileName);
-      const bundle = {
-        size: outputBundle.size,
-        symbols: []
-      };
-      const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
-      bundleImports.length > 0 && (bundle.imports = bundleImports);
-      const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
-      bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
-      manifest.bundles[bundleFileName] = bundle;
-    }
   };
   const getOptions = () => opts;
   const getTransformedOutputs = () => {
@@ -1070,6 +1081,23 @@ function createPlugin(optimizerOptions = {}) {
   const onDiagnostics = cb => {
     diagnosticsCallback = cb;
   };
+  const normalizePath = id2 => {
+    if ("string" === typeof id2) {
+      if (optimizer) {
+        if ("win32" === optimizer.sys.os) {
+          const isExtendedLengthPath = /^\\\\\?\\/.test(id2);
+          if (!isExtendedLengthPath) {
+            const hasNonAscii = /[^\u0000-\u0080]+/.test(id2);
+            hasNonAscii || (id2 = id2.replace(/\\/g, "/"));
+          }
+          return optimizer.sys.path.posix.normalize(id2);
+        }
+        return optimizer.sys.path.normalize(id2);
+      }
+      throw new Error(`Cannot normalizePath("${id2}"), Optimizer sys.path has not been initialized`);
+    }
+    return id2;
+  };
   return {
     buildStart: buildStart,
     createOutputAnalyzer: createOutputAnalyzer,
@@ -1079,6 +1107,7 @@ function createPlugin(optimizerOptions = {}) {
     load: load,
     log: log,
     normalizeOptions: normalizeOptions,
+    normalizePath: normalizePath,
     onAddWatchFile: onAddWatchFile,
     onDiagnostics: onDiagnostics,
     resolveId: resolveId,
