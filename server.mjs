@@ -164,7 +164,7 @@ function getBuildBase(opts) {
   }
   return null;
 }
-var versions = {
+var versions2 = {
   qwik: "0.0.20-2",
   qwikDom: "2.1.14"
 };
@@ -12148,7 +12148,7 @@ export {
   renderToString,
   serializeDocument,
   setServerPlatform,
-  versions
+  versions2 as versions
 };
 /*!
 Parser-Lib

@@ -80,7 +80,7 @@ __export(server_exports, {
   renderToString: () => renderToString,
   serializeDocument: () => serializeDocument,
   setServerPlatform: () => setServerPlatform,
-  versions: () => versions
+  versions: () => versions2
 });
 module.exports = __toCommonJS(server_exports);
 
@@ -230,7 +230,7 @@ function getBuildBase(opts) {
   }
   return null;
 }
-var versions = {
+var versions2 = {
   qwik: "0.0.20-2",
   qwikDom: "2.1.14"
 };

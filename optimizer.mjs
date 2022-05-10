@@ -734,13 +734,20 @@ function getValidManifest(manifest) {
   return;
 }
 
-function generateManifestFromBundles(path, hooks, injections, outputBundles) {
+function generateManifestFromBundles(path, hooks, injections, outputBundles, opts) {
   const manifest = {
     symbols: {},
     mapping: {},
     bundles: {},
     injections: injections,
-    version: "1"
+    version: "1",
+    options: {
+      target: opts.target,
+      buildMode: opts.buildMode,
+      forceFullBuild: opts.forceFullBuild,
+      entryStrategy: opts.entryStrategy,
+      versions: versions
+    }
   };
   for (const hook of hooks) {
     const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
@@ -1054,7 +1061,7 @@ function createPlugin(optimizerOptions = {}) {
       const optimizer2 = await getOptimizer();
       const path = optimizer2.sys.path;
       const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-      return generateManifestFromBundles(path, hooks, injections, outputBundles);
+      return generateManifestFromBundles(path, hooks, injections, outputBundles, opts);
     };
     return {
       addBundle: addBundle,
@@ -1326,6 +1333,7 @@ function qwikVite(qwikViteOpts = {}) {
       const optimizer = await qwikPlugin.getOptimizer();
       const opts = await qwikPlugin.normalizeOptions(pluginOpts);
       srcEntryDevInput = "string" === typeof qwikViteOpts.srcEntryDevInput ? optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, qwikViteOpts.srcEntryDevInput) : optimizer.sys.path.resolve(opts.srcDir ? opts.srcDir : opts.rootDir, ENTRY_DEV_FILENAME_DEFAULT);
+      srcEntryDevInput = qwikPlugin.normalizePath(srcEntryDevInput);
       const outputOptions = {};
       if ("ssr" === opts.target) {
         outputOptions.assetFileNames = "[name].[ext]";
@@ -1495,8 +1503,8 @@ function qwikVite(qwikViteOpts = {}) {
         try {
           if (isClientOnly) {
             qwikPlugin.log(`handleClientEntry("${url}")`);
-            let entryUrl = optimizer.sys.path.relative(opts.rootDir, srcEntryDevInput);
-            entryUrl = "/" + entryUrl.replace(/\\/g, "/");
+            const relPath = optimizer.sys.path.relative(opts.rootDir, srcEntryDevInput);
+            const entryUrl = "/" + qwikPlugin.normalizePath(relPath);
             let html = getViteDevIndexHtml(entryUrl);
             html = await server.transformIndexHtml(pathname, html);
             res.setHeader("Content-Type", "text/html; charset=utf-8");
