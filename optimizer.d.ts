@@ -214,16 +214,15 @@ export declare interface QwikManifest {
     injections?: GlobalInjections[];
     version: string;
     options?: {
-        target: string;
-        buildMode: string;
-        forceFullBuild: boolean;
-        entryStrategy: {
-            type: string;
+        target?: string;
+        buildMode?: string;
+        forceFullBuild?: boolean;
+        entryStrategy?: {
             [key: string]: any;
         };
-        versions: {
-            [name: string]: string;
-        };
+    };
+    platform?: {
+        [name: string]: string;
     };
 }
 

@@ -12,7 +12,9 @@ if ("undefined" == typeof globalThis) {
 
 globalThis.qwikOptimizer = function(module) {
   var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __getOwnPropSymbols = Object.getOwnPropertySymbols;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -34,6 +36,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     return a;
   };
+  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
   var __export = (target, all) => {
     for (var name in all) {
       __defProp(target, name, {
@@ -827,8 +830,7 @@ globalThis.qwikOptimizer = function(module) {
         target: opts.target,
         buildMode: opts.buildMode,
         forceFullBuild: opts.forceFullBuild,
-        entryStrategy: opts.entryStrategy,
-        versions: versions
+        entryStrategy: opts.entryStrategy
       }
     };
     for (const hook of hooks) {
@@ -1265,7 +1267,7 @@ globalThis.qwikOptimizer = function(module) {
         if ("ssr" === opts.target) {
           outputOpts.dir || (outputOpts.dir = opts.outServerDir);
           outputOpts.format || (outputOpts.format = "cjs");
-        } else {
+        } else if ("client" === opts.target) {
           outputOpts.dir || (outputOpts.dir = opts.outClientDir);
           outputOpts.format || (outputOpts.format = "es");
         }
@@ -1301,7 +1303,7 @@ globalThis.qwikOptimizer = function(module) {
       },
       async generateBundle(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
-        if ("production" === opts.buildMode || "development" === opts.buildMode) {
+        if ("client" === opts.target) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
           for (const fileName in rollupBundle) {
             const b = rollupBundle[fileName];
@@ -1314,6 +1316,11 @@ globalThis.qwikOptimizer = function(module) {
             });
           }
           const manifest = await outputAnalyzer.generateManifest();
+          manifest.platform = __spreadProps(__spreadValues({}, versions), {
+            node: process.versions.node,
+            os: process.platform,
+            rollup: ""
+          });
           "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           this.emitFile({
             type: "asset",
@@ -1321,7 +1328,7 @@ globalThis.qwikOptimizer = function(module) {
             source: JSON.stringify(manifest, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-        } else if ("ssr" === opts.buildMode) {
+        } else if ("ssr" === opts.target) {
           const manifestInput = getValidManifest(opts.manifestInput);
           if (manifestInput) {
             const manifestStr = JSON.stringify(opts.manifestInput);
@@ -1396,14 +1403,16 @@ globalThis.qwikOptimizer = function(module) {
           outputOptions.assetFileNames = "[name].[ext]";
           outputOptions.entryFileNames = "[name].js";
           outputOptions.chunkFileNames = "[name].js";
-        } else if ("production" === opts.buildMode) {
-          outputOptions.assetFileNames = "build/q-[hash].[ext]";
-          outputOptions.entryFileNames = "build/q-[hash].js";
-          outputOptions.chunkFileNames = "build/q-[hash].js";
-        } else {
-          outputOptions.assetFileNames = "build/[name].[ext]";
-          outputOptions.entryFileNames = "build/[name].js";
-          outputOptions.chunkFileNames = "build/[name].js";
+        } else if ("client" === opts.target) {
+          if ("production" === opts.buildMode) {
+            outputOptions.assetFileNames = "build/q-[hash].[ext]";
+            outputOptions.entryFileNames = "build/q-[hash].js";
+            outputOptions.chunkFileNames = "build/q-[hash].js";
+          } else {
+            outputOptions.assetFileNames = "build/[name].[ext]";
+            outputOptions.entryFileNames = "build/[name].js";
+            outputOptions.chunkFileNames = "build/[name].js";
+          }
         }
         const updatedViteConfig = {
           esbuild: {
@@ -1503,15 +1512,20 @@ globalThis.qwikOptimizer = function(module) {
           });
         }
         const manifest = await outputAnalyzer.generateManifest();
+        manifest.platform = __spreadProps(__spreadValues({}, versions), {
+          node: process.versions.node,
+          os: process.platform,
+          vite: ""
+        });
         "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-        if ("production" === opts.buildMode || "development" === opts.buildMode) {
+        if ("client" === opts.target) {
           this.emitFile({
             type: "asset",
             fileName: Q_MANIFEST_FILENAME,
             source: JSON.stringify(manifest, null, 2)
           });
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-        } else if ("ssr" === opts.buildMode) {
+        } else if ("ssr" === opts.target) {
           let clientManifestInput = opts.manifestInput;
           if (!clientManifestInput && "node" === optimizer.sys.env()) {
             try {
