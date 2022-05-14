@@ -674,7 +674,6 @@ var QRL = class {
     this.symbolFn = symbolFn;
     this.capture = capture;
     this.captureRef = captureRef;
-    this.canonicalChunk = chunk.replace(FIND_EXT, "");
   }
   setContainer(el) {
     if (!this.el) {
@@ -718,8 +717,17 @@ var QRL = class {
     return stringifyQRL(this, options);
   }
 };
+var getCanonicalSymbol = (symbolName) => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
+var isSameQRL = (a, b) => {
+  return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+};
 var QRLInternal = QRL;
-var FIND_EXT = /\?[\w=&]+$/;
 
 // packages/qwik/src/core/json/q-json.ts
 function qDeflate(obj, hostCtx) {
@@ -750,14 +758,10 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
   if (!value) {
     return;
   }
-  if (typeof value == "string") {
-    value = parseQRL(value, ctx.element);
-  }
   const existingQRLs = getExistingQRLs(ctx, prop);
-  if (Array.isArray(value)) {
-    value.forEach((value2) => qPropWriteQRL(rctx, ctx, prop, value2));
-  } else if (isQrl(value)) {
-    const cp = value.copy();
+  const newQRLs = Array.isArray(value) ? value : [value];
+  for (const value2 of newQRLs) {
+    const cp = value2.copy();
     cp.setContainer(ctx.element);
     const capture = cp.capture;
     if (capture == null) {
@@ -766,21 +770,12 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
     }
     for (let i = 0; i < existingQRLs.length; i++) {
       const qrl = existingQRLs[i];
-      if (!isPromise(qrl) && qrl.canonicalChunk === cp.canonicalChunk && qrl.symbol === cp.symbol) {
+      if (isSameQRL(qrl, cp)) {
         existingQRLs.splice(i, 1);
         i--;
       }
     }
     existingQRLs.push(cp);
-  } else if (isPromise(value)) {
-    const writePromise = value.then((qrl) => {
-      existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-      qPropWriteQRL(rctx, ctx, prop, qrl);
-      return qrl;
-    });
-    existingQRLs.push(writePromise);
-  } else {
-    throw qError(0 /* TODO */, `Not QRLInternal: prop: ${prop}; value: ` + value);
   }
   const kebabProp = fromCamelToKebabCase(prop);
   const newValue = serializeQRLs(existingQRLs, ctx);
@@ -1085,10 +1080,6 @@ function useVisibleQrl(resumeFn) {
   useOn("qvisible", resumeFn);
 }
 var useVisible$ = implicit$FirstArg(useVisibleQrl);
-function usePauseQrl(dehydrateFn) {
-  throw new Error("IMPLEMENT: onPause" + dehydrateFn);
-}
-var usePause$ = implicit$FirstArg(usePauseQrl);
 function useOn(event, eventFn) {
   const el = useHostElement();
   const ctx = getContext(el);

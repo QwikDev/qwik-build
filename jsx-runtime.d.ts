@@ -23,6 +23,9 @@ declare interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     target?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface AriaAttributes {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string | undefined;
@@ -375,6 +378,9 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
     children?: JSXChildren;
     key?: string | number;
@@ -387,6 +393,9 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type EventHandler<Type = Event> = (event: Type, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -431,6 +440,9 @@ declare type HTMLAttributeReferrerPolicy =
 | 'strict-origin-when-cross-origin'
 | 'unsafe-url';
 
+/**
+ * @public
+ */
 declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
     className?: string | undefined;
@@ -782,6 +794,9 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
+/**
+ * @public
+ */
 declare interface InvokeContext {
     url: URL | null;
     seq: number;
@@ -992,7 +1007,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * Creating `QRL` is done using `$(...)` function. `$(...)` is a special marker for the Qwik
  * Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
  *
- * ```typescript
+ * ```tsx
  * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
@@ -1001,7 +1016,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * In the above code the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
  *
- * ```typescript
+ * ```tsx
  * // FILE: <current file>
  * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
@@ -1018,7 +1033,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * Use `QRL` type in your application when you want to get a lazy-loadable reference to a
  * resource (most likely a function).
  *
- * ```typescript
+ * ```tsx
  * // Example of declaring a custom functions which takes callback as QRL.
  * export function useMyFunction(callback: QRL<() => void>) {
  *   doExtraStuff();
@@ -1037,7 +1052,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * At times it may be necessary to resolve a `QRL` reference to the actual value. This can be
  * performed using `qrlImport(..)` function.
  *
- * ```typescript
+ * ```tsx
  * // Assume you have QRL reference to a greet function
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
@@ -1092,7 +1107,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
- * See: `$`
+ * @see `$`
  *
  * @public
  */
@@ -1113,6 +1128,9 @@ declare interface QRL<TYPE = any> {
     : never;
 }
 
+/**
+ * @public
+ */
 declare type QrlEvent<Type = Event> = QRL<EventHandler<Type>>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1125,6 +1143,9 @@ declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface QwikCustomHTMLElement extends HTMLElement {}
 
+/**
+ * @public
+ */
 declare interface QwikEvents {
     // Clipboard Events
     onCopy$?: (event: ClipboardEvent, el: Element) => void;
@@ -1357,6 +1378,9 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare type Subscriber = WatchDescriptor | Element;
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -1701,8 +1725,8 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
  * Any changes to the `state.count` property will cause the `watchFn` to re-run.
  *
- * ```typescript
- * export const MyComp = component$(() => {
+ * ```tsx
+ * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
  *   useWatch$((track) => {
  *     const count = track(store, 'count');
@@ -1719,50 +1743,12 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * });
  * ```
  *
- * See: `useWatch`
+ * @see `useWatch`
  *
  * @public
  */
 // </docs>
 declare interface Tracker {
-    // <docs markdown="./watch.public.md#Tracker">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./watch.public.md#Tracker instead)
-    /**
-     * Used to signal to Qwik which state should be watched for changes.
-     *
-     * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
-     * state objects in a read proxy which signals to Qwik which properties should be watched for
-     * changes. A change to any of the properties cause the `watchFn` to re-run.
-     *
-     * ## Example
-     *
-     * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
-     * Any changes to the `state.count` property will cause the `watchFn` to re-run.
-     *
-     * ```typescript
-     * export const MyComp = component$(() => {
-     *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((track) => {
-     *     const count = track(store, 'count');
-     *     store.doubleCount = 2 * count;
-     *   });
-     *   return (
-     *     <div>
-     *       <span>
-     *         {store.count} / {store.doubleCount}
-     *       </span>
-     *       <button onClick$={() => store.count++}>+</button>
-     *     </div>
-     *   );
-     * });
-     * ```
-     *
-     * See: `useWatch`
-     *
-     * @public
-     */
-    // </docs>
     <T extends {}>(obj: T): T;
     <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
 }
@@ -1790,6 +1776,9 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disableRemotePlayback?: boolean | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare interface WatchDescriptor {
     qrl: QRL<WatchFn>;
     el: Element;
