@@ -769,6 +769,11 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare function immutable<T extends {}>(input: T): Readonly<T>;
+
+/**
  * Create a `____$(...)` convenience method from `___(...)`.
  *
  * It is very common for functions to take a lazy-loadable resource as a first argument. For this
@@ -1211,7 +1216,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @alpha
  */
-export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotState;
+export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotResult;
 
 /**
  * @alpha
@@ -1725,6 +1730,19 @@ export declare const Slot: FunctionComponent<{
 
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
+}
+
+declare interface SnapshotListener {
+    key: string;
+    qrl: QRL<any>;
+}
+
+/**
+ * @public
+ */
+declare interface SnapshotResult {
+    state: SnapshotState;
+    listeners: SnapshotListener[];
 }
 
 /**
