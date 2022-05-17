@@ -3309,6 +3309,9 @@
             if (isQrl(value)) {
                 return value;
             }
+            if (Object.isFrozen(value)) {
+                return value;
+            }
             const nakedValue = unwrapProxy(value);
             if (nakedValue !== value) {
                 // already a proxy return;
@@ -3530,6 +3533,12 @@
     function noSerialize(input) {
         noSerializeSet.add(input);
         return input;
+    }
+    /**
+     * @alpha
+     */
+    function immutable(input) {
+        return Object.freeze(input);
     }
     function isConnected(sub) {
         if (isElement(sub)) {
@@ -4362,6 +4371,7 @@
     exports.getPlatform = getPlatform;
     exports.h = h;
     exports.handleWatch = handleWatch;
+    exports.immutable = immutable;
     exports.implicit$FirstArg = implicit$FirstArg;
     exports.jsx = jsx;
     exports.jsxDEV = jsx;

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
 // packages/qwik/src/testing/document.ts
-import { createWindow as createServerWindow } from "../server.mjs";
+import { _createDocument } from "../server.mjs";
 
 // packages/qwik/src/testing/platform.ts
 import { getPlatform, setPlatform } from "../core.mjs";
@@ -272,12 +272,14 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // packages/qwik/src/testing/document.ts
 function createWindow(opts = {}) {
-  const win = createServerWindow(opts);
+  const win = _createDocument(opts).defaultView;
   setTestPlatform(win.document);
   return win;
 }
 function createDocument(opts = {}) {
-  return createWindow(opts).document;
+  const doc = _createDocument(opts);
+  setTestPlatform(doc);
+  return doc;
 }
 
 // packages/qwik/src/core/util/types.ts
@@ -2542,6 +2544,9 @@ function unwrapProxy(proxy) {
 function wrap(value, proxyMap) {
   if (value && typeof value === "object") {
     if (isQrl(value)) {
+      return value;
+    }
+    if (Object.isFrozen(value)) {
       return value;
     }
     const nakedValue = unwrapProxy(value);

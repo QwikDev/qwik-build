@@ -330,12 +330,14 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // packages/qwik/src/testing/document.ts
 function createWindow(opts = {}) {
-  const win = (0, import_server.createWindow)(opts);
+  const win = (0, import_server._createDocument)(opts).defaultView;
   setTestPlatform(win.document);
   return win;
 }
 function createDocument(opts = {}) {
-  return createWindow(opts).document;
+  const doc = (0, import_server._createDocument)(opts);
+  setTestPlatform(doc);
+  return doc;
 }
 
 // packages/qwik/src/core/util/types.ts
@@ -2611,6 +2613,9 @@ function unwrapProxy(proxy) {
 function wrap(value, proxyMap) {
   if (value && typeof value === "object") {
     if (isQrl(value)) {
+      return value;
+    }
+    if (Object.isFrozen(value)) {
       return value;
     }
     const nakedValue = unwrapProxy(value);
