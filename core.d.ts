@@ -4,14 +4,14 @@
  * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
  * resource referenced by `QRL`.
  *
- * See: `implicit$FirstArg` for additional `____$(...)` rules.
+ * @see `implicit$FirstArg` for additional `____$(...)` rules.
  *
  * In this example `$(...)` is used to capture the callback function of `onmousemove` into
  * lazy-loadable reference. This allows the code to refer to the function without actually
  * loading the function. In this example, the callback function does not get loaded until
  * `mousemove` event fires.
  *
- * ```typescript
+ * ```tsx
  * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
@@ -20,7 +20,7 @@
  *
  * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
  *
- * ```typescript
+ * ```tsx
  * // FILE: <current file>
  * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
@@ -41,8 +41,8 @@
  * all captured variables are constants.)
  *    - Must be runtime serializable.
  *
- * ```typescript
- * import { importedFn } from './example';
+ * ```tsx
+ * import { importedFn } from './import/example';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}
@@ -98,7 +98,10 @@ declare interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     target?: string | undefined;
 }
 
-declare interface AriaAttributes {
+/**
+ * @public
+ */
+export declare interface AriaAttributes {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string | undefined;
     /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
@@ -287,171 +290,6 @@ declare interface AriaAttributes {
 
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-/**
- * Use to render asynchronous (`Promise`) values.
- *
- * A `Promise` does not allow a synchronous examination of its state. For this reason
- * `<Async>` provides a mechanism to render pending, resolved and error state of a `Promise`.
- * `<Async>` provides that mechanism by registering a `then` method with the `Promise` and
- * providing callbacks hooks for `pending`, `resolved` and `rejected` state of the promise.
- *
- * Additionally, `<Async>` automatically re-renders the portion of the view when the status
- * of the `Promise` changes.
- *
- * `<Async>` provides three callbacks:
- * - `onPending`: invoked initially to provide a way for the template to provide output while
- *   waiting for the `promise` to resolve.
- * - `onResolved`: invoked when the `promise` is `resolved` allowing the template to generate
- *   output using the `resolved` value.
- * - `onError`: invoked when the `promise` is `rejected` allowing the template to generate
- *   error output describing the problem.
- *
- * The `<Async>` can be used in two ways, which are semantically equivalent and are provided
- * based on the developer needs/preferences.
- *
- * ### Using multiple callbacks
- *
- * ```typescript
- * <Async
- *   resolve={Promise.resolve('some value')}
- *   onPending={() => <span>loading...</span>}
- *   onResolved={(value) => <span>{value}</span>}
- *   onError={(rejection) => <pre>{rejection}</pre>}
- * />
- * ```
- *
- * ### Using single callbacks
- *
- * ```typescript
- * <Async resolve={Promise.resolve('some value')}>
- *   {(response) => {
- *     if (response.isPending) return <span>loading...</span>;
- *     if (response.isResolved) return <span>{response.value}</span>;
- *     if (response.isRejected) return <pre>{response.rejection}</pre>;
- *   }}
- * </Async>
- * ```
- *
- * @param onPending - invoked initially to provide a way for the template to provide output while
- *   waiting for the `promise` to resolve.
- * @param onResolved - invoked when the `promise` is `resolved` allowing the template to generate
- *   output using the `resolved` value.
- * @param onError - invoked when the `promise` is `rejected` allowing the template to generate
- *   error output describing the problem.
- * @param children -  a single callback function for `onPending`, `onResolved` and `onError`.
- *   (Use either `children` or `onPending`, `onResolved` and `onError`, but not both.)
- *   See "Using multiple callbacks" vs "Using single callbacks" above.
- *
- * @public
- */
-export declare function Async<T>(props: AsyncProps<T>): JSXNode<any>;
-
-declare type AsyncProps<T> = AsyncResolve<T> | AsyncWithChildren<T>;
-
-declare interface AsyncResolve<T> {
-    /**
-     * A `Promise` to await resolution on.
-     *
-     * The `resolved`/`rejected` value is that communicated to `onResolved`/`onRejected`
-     * respectively. While `<Async>` waits for resolution `onPending` is invoked.
-     *
-     * ```typescript
-     * <Async
-     *   resolve={Promise.resolve('some value')}
-     *   onPending={() => <span>loading...</span>}
-     *   onResolved={(value) => <span>{value}</span>}
-     *   onError={(rejection) => <pre>{rejection}</pre>}
-     * />
-     * ```
-     */
-    resolve: ValueOrPromise<T>;
-    /**
-     * Callback invoked allowing the view to render UI communicating to the user that
-     * application is waiting on data.
-     *
-     * ```typescript
-     * <Async
-     *   resolve={Promise.resolve('some value')}
-     *   onPending={() => <span>loading...</span>}
-     *   onResolved={(value) => <span>{value}</span>}
-     *   onError={(rejection) => <pre>{rejection}</pre>}
-     * />
-     * ```
-     */
-    onPending?: () => any;
-    /**
-     * Callback invoked allowing the view to render UI with the resolved value of the `Promise`.
-     *
-     * ```typescript
-     * <Async
-     *   resolve={Promise.resolve('some value')}
-     *   onPending={() => <span>loading...</span>}
-     *   onResolved={(value) => <span>{value}</span>}
-     *   onError={(rejection) => <pre>{rejection}</pre>}
-     * />
-     * ```
-     */
-    onResolved: (value: T) => any;
-    /**
-     * Callback invoked allowing the view to render UI when the `Promise` has been rejected.
-     *
-     * ```typescript
-     * <Async
-     *   resolve={Promise.resolve('some value')}
-     *   onPending={() => <span>loading...</span>}
-     *   onResolved={(value) => <span>{value}</span>}
-     *   onError={(rejection) => <pre>{rejection}</pre>}
-     * />
-     * ```
-     */
-    onError?: (error: any) => any;
-}
-
-declare interface AsyncWithChildren<T> {
-    /**
-     * A `Promise` to await resolution on.
-     *
-     * The `resolved`/`rejected` value is that communicated to a single callback.
-     *
-     * The `callback` is invoked twice:
-     * 1. First with pending `PromiseValue` allowing the view to render text
-     *    communicating that application is waiting on some data to resolve.
-     * 2. Second with either `resolved` or `rejected` value allowing the view
-     *    to communicate the `resolved` value or the `error`.
-     *
-     * ```typescript
-     * <Async resolve={Promise.resolve('some value')}>
-     *   {(response) => {
-     *     if (response.isPending) return <span>loading...</span>;
-     *     if (response.isResolved) return <span>{response.value}</span>;
-     *     if (response.isRejected) return <pre>{response.rejection}</pre>;
-     *   }}
-     * </Async>
-     * ```
-     */
-    resolve: ValueOrPromise<T>;
-    /**
-     * A single callback which is invoke before `Promise` resolution and after it is `resolved`.
-     *
-     * The `callback` is invoked twice:
-     * 1. First with pending `PromiseValue` allowing the view to render text
-     *    communicating that application is waiting on some data to resolve.
-     * 2. Second with either `resolved` or `rejected` value allowing the view
-     *    to communicate the `resolved` value or the `error`.
-     *
-     * ```typescript
-     * <Async resolve={Promise.resolve('some value')}>
-     *   {(response) => {
-     *     if (response.isPending) return <span>loading...</span>;
-     *     if (response.isResolved) return <span>{response.value}</span>;
-     *     if (response.isRejected) return <pre>{response.rejection}</pre>;
-     *   }}
-     * </Async>
-     * ```
-     */
-    children: (observablePromise: PromiseValue<T>) => any;
-}
-
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
@@ -508,10 +346,9 @@ export { Comment_2 as Comment }
 /**
  * Declare a Qwik component that can be used to create UI.
  *
- * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
- * kind of component that allows the Qwik framework to lazy load and execute the component
- * independently of other Qwik components as well as lazy load the component's life-cycle hooks
- * and event handlers.
+ * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+ * that allows the Qwik framework to lazy load and execute the component independently of other
+ * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
  *
  * Side note: You can also declare regular (standard JSX) components that will have standard
  * synchronous behavior.
@@ -519,16 +356,17 @@ export { Comment_2 as Comment }
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * - Component `onMount` method, which needs to return an
- * - `onRender` closure which constructs the component's JSX.
- *
  * ### Example:
  *
  * An example showing how to create a counter component:
  *
- * ```typescript
- * export const Counter = component$((props: { value?: number; step?: number }) => {
- *   const state = useStore({ count: props.value || 0 });
+ * ```tsx
+ * export interface CounterProps {
+ *   initialValue?: number;
+ *   step?: number;
+ * }
+ * export const Counter = component$((props: CounterProps) => {
+ *   const state = useStore({ count: props.initialValue || 0 });
  *   return (
  *     <div>
  *       <span>{state.count}</span>
@@ -541,23 +379,17 @@ export { Comment_2 as Comment }
  * - `component$` is how a component gets declared.
  * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
  * - `{ count: number }` declares the private (state) interface of the component.
- * - `onMount` closure: is used to create the data store (see: `useStore`);
- * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
  *
  * The above can then be used like so:
  *
- * ```typescript
+ * ```tsx
  * export const OtherComponent = component$(() => {
- *   return <Counter value={100} />;
+ *   return <Counter initialValue={100} />;
  * });
  * ```
  *
  * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
  * `useOnWindow`, `useStyles`, `useScopedStyles`
- *
- * @param onMount - Initialization closure used when the component is first created.
- * @param tagName - Optional components options. It can be used to set a custom tag-name to be
- * used for the component's host element.
  *
  * @public
  */
@@ -566,8 +398,11 @@ export declare function component$<PROPS extends {}>(onMount: OnRenderFn<PROPS>,
 /**
  * @public
  */
-declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
+export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
 
+/**
+ * @public
+ */
 declare interface ComponentBaseProps {
     class?: string | {
         [className: string]: boolean;
@@ -598,7 +433,10 @@ export declare type ComponentChild = JSXNode<any> | object | string | number | b
  */
 export declare type ComponentChildren = ComponentChild[] | ComponentChild;
 
-declare interface ComponentCtx {
+/**
+ * @alpha
+ */
+export declare interface ComponentCtx {
     hostElement: HTMLElement;
     styleId: string | undefined;
     styleClass: string | undefined;
@@ -616,10 +454,9 @@ export declare interface ComponentOptions {
 /**
  * Declare a Qwik component that can be used to create UI.
  *
- * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
- * kind of component that allows the Qwik framework to lazy load and execute the component
- * independently of other Qwik components as well as lazy load the component's life-cycle hooks
- * and event handlers.
+ * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+ * that allows the Qwik framework to lazy load and execute the component independently of other
+ * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
  *
  * Side note: You can also declare regular (standard JSX) components that will have standard
  * synchronous behavior.
@@ -627,16 +464,17 @@ export declare interface ComponentOptions {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * - Component `onMount` method, which needs to return an
- * - `onRender` closure which constructs the component's JSX.
- *
  * ### Example:
  *
  * An example showing how to create a counter component:
  *
- * ```typescript
- * export const Counter = component$((props: { value?: number; step?: number }) => {
- *   const state = useStore({ count: props.value || 0 });
+ * ```tsx
+ * export interface CounterProps {
+ *   initialValue?: number;
+ *   step?: number;
+ * }
+ * export const Counter = component$((props: CounterProps) => {
+ *   const state = useStore({ count: props.initialValue || 0 });
  *   return (
  *     <div>
  *       <span>{state.count}</span>
@@ -649,23 +487,17 @@ export declare interface ComponentOptions {
  * - `component$` is how a component gets declared.
  * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
  * - `{ count: number }` declares the private (state) interface of the component.
- * - `onMount` closure: is used to create the data store (see: `useStore`);
- * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
  *
  * The above can then be used like so:
  *
- * ```typescript
+ * ```tsx
  * export const OtherComponent = component$(() => {
- *   return <Counter value={100} />;
+ *   return <Counter initialValue={100} />;
  * });
  * ```
  *
  * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
  * `useOnWindow`, `useStyles`, `useScopedStyles`
- *
- * @param onMount - Initialization closure used when the component is first created.
- * @param tagName - Optional components options. It can be used to set a custom tag-name to be
- * used for the component's host element.
  *
  * @public
  */
@@ -720,7 +552,10 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
-declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
+/**
+ * @public
+ */
+export declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
     children?: JSXChildren;
     key?: string | number;
 }
@@ -737,6 +572,9 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare type EventHandler<T> = QRL<(value: T) => any>;
 
+/**
+ * @public
+ */
 declare type EventHandler_2<Type = Event> = (event: Type, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -830,7 +668,10 @@ declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top'
 
 declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
 
-declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+/**
+ * @public
+ */
+export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
     className?: string | undefined;
     contentEditable?: Booleanish | 'inherit' | undefined;
@@ -928,6 +769,11 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+export declare function immutable<T extends {}>(input: T): Readonly<T>;
+
+/**
  * Create a `____$(...)` convenience method from `___(...)`.
  *
  * It is very common for functions to take a lazy-loadable resource as a first argument. For this
@@ -941,7 +787,7 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * - `component$(() => {...})` is same as `onRender($(() => {...}))`
  *
- * ```typescript
+ * ```tsx
  * export function myApi(callback: QRL<() => void>): void {
  *   // ...
  * }
@@ -961,7 +807,7 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```
  *
  * @param fn - function that should have its first argument automatically `$`.
- * @public
+ * @alpha
  */
 export declare function implicit$FirstArg<FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET): (first: FIRST, ...rest: REST) => RET;
 
@@ -1183,7 +1029,10 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
-declare interface InvokeContext {
+/**
+ * @public
+ */
+export declare interface InvokeContext {
     url: URL | null;
     seq: number;
     doc?: Document;
@@ -1327,7 +1176,10 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
 
-declare type On$Props<T extends {}> = {
+/**
+ * @public
+ */
+export declare type On$Props<T extends {}> = {
     [K in keyof T as K extends `${infer A}Qrl` ? NonNullable<T[K]> extends QRL ? `${A}$` : never : never]?: NonNullable<T[K]> extends QRL<infer B> ? B : never;
 };
 
@@ -1362,11 +1214,14 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Serialize the current state of the application into DOM
  *
- * @public
+ * @alpha
  */
-export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotState;
+export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotResult;
 
-declare interface PerfEvent {
+/**
+ * @alpha
+ */
+export declare interface PerfEvent {
     name: string;
     timeStart: number;
     timeEnd: number;
@@ -1376,158 +1231,6 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
-
-/**
- * Represents queryable status of a `Promise`.
- *
- * The `PromiseValue` is intended to be used with `<Async>`.
- * A `Promise` can't be examined for its status in a synchronous way.
- * When rendering it is desirable to check on the status of the promise and
- * determine if it is pending, resolved or rejected in a synchronous way
- * so that its status can be used in the rendering output.
- *
- * ### Example
- * ```typescript
- * <Async resolve={Promise.resolve('some value')}>
- *   {(response: PromiseValue<string>) => {
- *     if (response.isPending) return <span>loading...</span>;
- *     if (response.isResolved) return <span>{response.value}</span>;
- *     if (response.isRejected) return <pre>{response.rejection}</pre>;
- *   }}
- * </Async>
- * ```
- *
- * See: `<Async>` for more context.
- *
- * @public
- */
-export declare type PromiseValue<T> = {
-    /**
-     * Flag indicating if the `Promise` is in pending state (has not been resolved).
-     *
-     * If `true` then `value` and `rejection` are both undefined.
-     * if `false` then either `value` or `rejection` contains value.
-     *
-     * See: `isResolved` and `isRejection`
-     */
-    readonly isPending: true;
-    /**
-     * Flag indicating if the `Promise` has been resolved.
-     *
-     * If `true` then `value` contains the resolution of the `Promise`.
-     *
-     * See: `value`.
-     */
-    readonly isResolved: false;
-    /**
-     * Flag indicating if the `Promise` has been rejected.
-     *
-     * If `true` then `rejection` contains the rejection of the `Promise`.
-     *
-     * See: `rejection`.
-     */
-    readonly isRejected: false;
-    /**
-     * Value of the resolved `Promise`.
-     *
-     * `value` is set only if `isResolved` is `true`.
-     *
-     * See: `isResolved`.
-     */
-    readonly value: undefined;
-    /**
-     * Value of the rejected `Promise`.
-     *
-     * `rejection` is set only if `isRejected` is `true`.
-     *
-     * See: `isRejected`.
-     */
-    readonly rejection: undefined;
-} | {
-    /**
-     * Flag indicating if the `Promise` is in pending state (has not been resolved).
-     *
-     * If `true` then `value` and `rejection` are both undefined.
-     * if `false` then either `value` or `rejection` contains value.
-     *
-     * See: `isResolved` and `isRejection`
-     */
-    readonly isPending: false;
-    /**
-     * Flag indicating if the `Promise` has been resolved.
-     *
-     * If `true` then `value` contains the resolution of the `Promise`.
-     *
-     * See: `value`.
-     */
-    readonly isResolved: true;
-    /**
-     * Flag indicating if the `Promise` has been rejected.
-     *
-     * If `true` then `rejection` contains the rejection of the `Promise`.
-     *
-     * See: `rejection`.
-     */
-    readonly isRejected: false;
-    /**
-     * Value of the resolved `Promise`.
-     *
-     * `value` is set only if `isResolved` is `true`.
-     *
-     * See: `isResolved`.
-     */
-    readonly value: T;
-    /**
-     * Value of the rejected `Promise`.
-     *
-     * `rejection` is set only if `isRejected` is `true`.
-     *
-     * See: `isRejected`.
-     */
-    readonly rejection: undefined;
-} | {
-    /**
-     * Flag indicating if the `Promise` is in pending state (has not been resolved).
-     *
-     * If `true` then `value` and `rejection` are both undefined.
-     * if `false` then either `value` or `rejection` contains value.
-     *
-     * See: `isResolved` and `isRejection`
-     */
-    readonly isPending: false;
-    /**
-     * Flag indicating if the `Promise` has been resolved.
-     *
-     * If `true` then `value` contains the resolution of the `Promise`.
-     *
-     * See: `value`.
-     */
-    readonly isResolved: false;
-    /**
-     * Flag indicating if the `Promise` has been rejected.
-     *
-     * If `true` then `rejection` contains the rejection of the `Promise`.
-     *
-     * See: `rejection`.
-     */
-    readonly isRejected: true;
-    /**
-     * Value of the resolved `Promise`.
-     *
-     * `value` is set only if `isResolved` is `true`.
-     *
-     * See: `isResolved`.
-     */
-    readonly value: undefined;
-    /**
-     * Value of the rejected `Promise`.
-     *
-     * `rejection` is set only if `isRejected` is `true`.
-     *
-     * See: `isRejected`.
-     */
-    readonly rejection: any;
-};
 
 /**
  * @public
@@ -1547,7 +1250,10 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  */
 export declare type PropsOf<COMP extends (props: any) => JSXNode<any> | null> = COMP extends (props: infer PROPS) => JSXNode<any> | null ? NonNullable<PROPS> : never;
 
-declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
+/**
+ * @public
+ */
+export declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -1566,7 +1272,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * Creating `QRL` is done using `$(...)` function. `$(...)` is a special marker for the Qwik
  * Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
  *
- * ```typescript
+ * ```tsx
  * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
@@ -1575,7 +1281,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  *
  * In the above code the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
  *
- * ```typescript
+ * ```tsx
  * // FILE: <current file>
  * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
@@ -1592,7 +1298,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * Use `QRL` type in your application when you want to get a lazy-loadable reference to a
  * resource (most likely a function).
  *
- * ```typescript
+ * ```tsx
  * // Example of declaring a custom functions which takes callback as QRL.
  * export function useMyFunction(callback: QRL<() => void>) {
  *   doExtraStuff();
@@ -1611,7 +1317,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  * At times it may be necessary to resolve a `QRL` reference to the actual value. This can be
  * performed using `qrlImport(..)` function.
  *
- * ```typescript
+ * ```tsx
  * // Assume you have QRL reference to a greet function
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
@@ -1666,7 +1372,7 @@ declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Component
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
- * See: `$`
+ * @see `$`
  *
  * @public
  */
@@ -1683,15 +1389,18 @@ export declare interface QRL<TYPE = any> {
  * This function should be used by the Qwik Optimizer only. The function should not be directly
  * referred to in the source code of the application.
  *
- * See: `QRL`, `$(...)`
+ * @see `QRL`, `$(...)`
  *
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @public
+ * @alpha
  */
 export declare function qrl<T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null): QRL<T>;
 
+/**
+ * @public
+ */
 declare type QrlEvent<Type = Event> = QRL<EventHandler_2<Type>>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1711,6 +1420,9 @@ declare interface QwikCustomHTMLElement extends HTMLElement {
 export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
 
+/**
+ * @public
+ */
 declare interface QwikEvents {
     onCopy$?: (event: ClipboardEvent, el: Element) => void;
     onCopyCapture$?: (event: ClipboardEvent, el: Element) => void;
@@ -1914,7 +1626,7 @@ export declare interface Ref<T> {
  * @param parent - Element which will act as a parent to `jsxNode`. When
  *     possible the rendering will try to reuse existing nodes.
  * @param jsxNode - JSX to render
- * @public
+ * @alpha
  */
 export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): Promise<RenderContext | undefined>;
 
@@ -1925,7 +1637,10 @@ export declare type RenderableProps<P, RefType = any> = P & Readonly<{
     children?: ComponentChildren;
 }>;
 
-declare interface RenderContext {
+/**
+ * @alpha
+ */
+export declare interface RenderContext {
     doc: Document;
     roots: Element[];
     hostElements: Set<Element>;
@@ -1936,7 +1651,10 @@ declare interface RenderContext {
     perf: RenderPerf;
 }
 
-declare interface RenderingState {
+/**
+ * @alpha
+ */
+export declare interface RenderingState {
     watchRunning: Set<Promise<WatchDescriptor>>;
     watchNext: Set<WatchDescriptor>;
     watchStaging: Set<WatchDescriptor>;
@@ -1946,7 +1664,10 @@ declare interface RenderingState {
     renderPromise: Promise<RenderContext> | undefined;
 }
 
-declare interface RenderOperation {
+/**
+ * @alpha
+ */
+export declare interface RenderOperation {
     el: Node;
     operation: string;
     args: any[];
@@ -2011,6 +1732,19 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+declare interface SnapshotListener {
+    key: string;
+    qrl: QRL<any>;
+}
+
+/**
+ * @public
+ */
+export declare interface SnapshotResult {
+    state: SnapshotState;
+    listeners: SnapshotListener[];
+}
+
 /**
  * @public
  */
@@ -2036,6 +1770,9 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare type Subscriber = WatchDescriptor | Element;
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -2367,8 +2104,8 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
  * Any changes to the `state.count` property will cause the `watchFn` to re-run.
  *
- * ```typescript
- * export const MyComp = component$(() => {
+ * ```tsx
+ * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
  *   useWatch$((track) => {
  *     const count = track(store, 'count');
@@ -2385,45 +2122,11 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * });
  * ```
  *
- * See: `useWatch`
+ * @see `useWatch`
  *
  * @public
  */
 export declare interface Tracker {
-    /**
-     * Used to signal to Qwik which state should be watched for changes.
-     *
-     * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
-     * state objects in a read proxy which signals to Qwik which properties should be watched for
-     * changes. A change to any of the properties cause the `watchFn` to re-run.
-     *
-     * ## Example
-     *
-     * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
-     * Any changes to the `state.count` property will cause the `watchFn` to re-run.
-     *
-     * ```typescript
-     * export const MyComp = component$(() => {
-     *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((track) => {
-     *     const count = track(store, 'count');
-     *     store.doubleCount = 2 * count;
-     *   });
-     *   return (
-     *     <div>
-     *       <span>
-     *         {store.count} / {store.doubleCount}
-     *       </span>
-     *       <button onClick$={() => store.count++}>+</button>
-     *     </div>
-     *   );
-     * });
-     * ```
-     *
-     * See: `useWatch`
-     *
-     * @public
-     */
     <T extends {}>(obj: T): T;
     <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
 }
@@ -2447,35 +2150,109 @@ export declare function untrack<T>(proxy: T): T;
 export declare function unwrapSubscriber<T extends {}>(obj: T): any;
 
 /**
- * A lazy-loadable reference to a component's destroy hook.
+ * A lazy-loadable reference to a component's cleanup hook.
  *
- * Invoked when the component is destroyed (removed from render tree).
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
  *
- * @public
+ * Can be used to release resouces, abort network requets, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 export declare const useCleanup$: (first: () => void) => void;
 
 /**
- * A lazy-loadable reference to a component's destroy hook.
+ * A lazy-loadable reference to a component's cleanup hook.
  *
- * Invoked when the component is destroyed (removed from render tree).
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
  *
- * @public
+ * Can be used to release resouces, abort network requets, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 export declare function useCleanupQrl(unmountFn: QRL<() => void>): void;
 
 /**
- * @alpha
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
  */
 export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
 
 /**
- * @alpha
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
  */
 export declare function useClientEffectQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
 
 /**
- * @public
+ * Retrieves the document of the current element. It's important to use this method instead of
+ * accessing `document` directly, because during SSR, the global document might not exist.
+ *
+ * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
+ * any `await` statements.)
+ *
+ * @alpha
  */
 export declare function useDocument(): Document;
 
@@ -2497,6 +2274,20 @@ export declare type UseEffectRunOptions = 'visible' | 'load';
  * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
  * (before any `await` statements.)
  *
+ * ```tsx
+ * const Section = component$(
+ *   () => {
+ *     const hostElement = useHostElement();
+ *     console.log(hostElement); // hostElement is a HTMLSectionElement
+ *
+ *     return <Host>I am a section</Host>;
+ *   },
+ *   {
+ *     tagName: 'section',
+ *   }
+ * );
+ * ```
+ *
  * @public
  */
 export declare function useHostElement(): Element;
@@ -2517,11 +2308,11 @@ export declare function useLexicalScope<VARS extends any[]>(): VARS;
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
+ * have access to the JSX. Otherwise it's adding a JSX listener in the `<Host>` is a better idea.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
+ * @alpha
  */
 export declare function useOn(event: string, eventFn: QRL<() => void>): void;
 
@@ -2531,11 +2322,27 @@ export declare function useOn(event: string, eventFn: QRL<() => void>): void;
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
+ * ```tsx
+ * function useScroll() {
+ *   useOnDocument(
+ *     'scroll',
+ *     $(() => {
+ *       console.log('body scrolled');
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useScroll();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
+ *
+ * @alpha
  */
-export declare function useOnDocument(event: string, eventFn: QRL<() => void>): void;
+export declare function useOnDocument(event: string, eventQrl: QRL<() => void>): void;
 
 /**
  * Register a listener on `window`.
@@ -2543,38 +2350,60 @@ export declare function useOnDocument(event: string, eventFn: QRL<() => void>): 
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
+ * ```tsx
+ * function useAnalytics() {
+ *   useOnWindow(
+ *     'popstate',
+ *     $(() => {
+ *       console.log('navigation happened');
+ *       // report to analytics
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useAnalytics();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 export declare function useOnWindow(event: string, eventFn: QRL<() => void>): void;
 
 /**
- * A lazy-loadable reference to a component's on pause hook.
+ * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+ * to the `ref` property in JSX.
  *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
+ * ```tsx
+ * export function useRef<T = Element>(current?: T): Ref<T> {
+ *   return useStore({ current });
+ * }
+ * ```
  *
- * Typically used with transient state.
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const input = useRef<HTMLInputElement>();
+ *
+ *   useClientEffect$((track) => {
+ *     const el = track(input, 'current')!;
+ *     el.focus();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <input type="text" ref={input} />
+ *     </Host>
+ *   );
+ * });
+ *
+ * ```
  *
  * @public
- */
-export declare const usePause$: (first: () => void) => void;
-
-/**
- * A lazy-loadable reference to a component's on pause hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-export declare function usePauseQrl(dehydrateFn: QRL<() => void>): void;
-
-/**
- * @alpha
  */
 export declare function useRef<T = Element>(current?: T): Ref<T>;
 
@@ -2584,7 +2413,22 @@ export declare function useRef<T = Element>(current?: T): Ref<T>;
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
  * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
- * @public
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
  */
 export declare const useResume$: (first: () => void) => void;
 
@@ -2594,27 +2438,168 @@ export declare const useResume$: (first: () => void) => void;
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
  * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
- * @public
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
  */
 export declare function useResumeQrl(resumeFn: QRL<() => void>): void;
 
 /**
+ * @see `useStyles`.
+ *
  * @alpha
  */
 export declare const useScopedStyles$: (first: string) => void;
 
 /**
+ * @see `useStyles`.
+ *
  * @alpha
  */
 export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
- * @alpha
+ * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+ * state changes.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @public
  */
 export declare const useServerMount$: (first: ServerFn) => void;
 
 /**
- * @alpha
+ * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+ * state changes.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @public
  */
 export declare function useServerMountQrl(watchQrl: QRL<ServerFn>): void;
 
@@ -2628,11 +2613,51 @@ export declare function useServerMountQrl(watchQrl: QRL<ServerFn>): void;
  *
  * Example showing how `useStore` is used in Counter example to keep track of count.
  *
- * ```typescript
- * export const Counter = component$(() => {
- *   const store = useStore({ count: 0 });
- *   return <button onClick$={() => store.count++}>{store.count}</button>;
+ * ```tsx
+ * const Stores = component$(() => {
+ *   const counter = useCounter(1);
+ *
+ *   // Reactivity happens even for nested objects and arrays
+ *   const userData = useStore({
+ *     name: 'Manu',
+ *     address: {
+ *       address: '',
+ *       city: '',
+ *     },
+ *     orgs: [],
+ *   });
+ *
+ *   // useStore() can also accept a function to calculate the initial value
+ *   const state = useStore(() => {
+ *     return {
+ *       value: expensiveInitialValue(),
+ *     };
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <div>Counter: {counter.value}</div>
+ *       <Child userData={userData} state={state} />
+ *     </Host>
+ *   );
  * });
+ *
+ * function useCounter(step: number) {
+ *   // Multiple stores can be created in custom hooks for convenience and composability
+ *   const counterStore = useStore({
+ *     value: 0,
+ *   });
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       counterStore.value += step;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *   return counterStore;
+ * }
  * ```
  *
  * @public
@@ -2640,16 +2665,46 @@ export declare function useServerMountQrl(watchQrl: QRL<ServerFn>): void;
 export declare function useStore<STATE extends object>(initialState: STATE | (() => STATE)): STATE;
 
 /**
- * Refer to component styles.
+ * A lazy-loadable reference to a component's styles.
  *
- * @alpha
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useScopedStyles`.
+ *
+ * @public
  */
 export declare const useStyles$: (first: string) => void;
 
 /**
- * Refer to component styles.
+ * A lazy-loadable reference to a component's styles.
  *
- * @alpha
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useScopedStyles`.
+ *
+ * @public
  */
 export declare function useStylesQrl(styles: QRL<string>): void;
 
@@ -2659,12 +2714,122 @@ export declare function useStylesQrl(styles: QRL<string>): void;
 export declare function useSubscriber<T extends {}>(obj: T): T;
 
 /**
- * @alpha
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
  */
 export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
 
 /**
- * @alpha
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
  */
 export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
 
@@ -2675,7 +2840,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.20-2
+ * 0.0.20-3
  * @public
  */
 export declare const version: string;
@@ -2689,6 +2854,9 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disableRemotePlayback?: boolean | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare interface WatchDescriptor {
     qrl: QRL<WatchFn>;
     el: Element;

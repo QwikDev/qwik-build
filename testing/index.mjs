@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
 // packages/qwik/src/testing/document.ts
-import { createWindow as createServerWindow } from "../server.mjs";
+import { _createDocument } from "../server.mjs";
 
 // packages/qwik/src/testing/platform.ts
 import { getPlatform, setPlatform } from "../core.mjs";
@@ -36,7 +36,7 @@ function assertDefined(value, text) {
   if (qDev) {
     if (value != null)
       return;
-    throw newError(text || "Expected defined value.");
+    throw newError(text || "Expected defined value");
   }
 }
 function assertEqual(value1, value2, text) {
@@ -272,12 +272,14 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // packages/qwik/src/testing/document.ts
 function createWindow(opts = {}) {
-  const win = createServerWindow(opts);
+  const win = _createDocument(opts).defaultView;
   setTestPlatform(win.document);
   return win;
 }
 function createDocument(opts = {}) {
-  return createWindow(opts).document;
+  const doc = _createDocument(opts);
+  setTestPlatform(doc);
+  return doc;
 }
 
 // packages/qwik/src/core/util/types.ts
@@ -617,7 +619,6 @@ var QRL = class {
     this.symbolFn = symbolFn;
     this.capture = capture;
     this.captureRef = captureRef;
-    this.canonicalChunk = chunk.replace(FIND_EXT, "");
   }
   setContainer(el) {
     if (!this.el) {
@@ -662,8 +663,17 @@ var QRL = class {
     return stringifyQRL(this, options);
   }
 };
+var getCanonicalSymbol = (symbolName) => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
+var isSameQRL = (a, b) => {
+  return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+};
 var QRLInternal = QRL;
-var FIND_EXT = /\?[\w=&]+$/;
 
 // packages/qwik/src/core/json/q-json.ts
 function qDeflate(obj, hostCtx) {
@@ -694,40 +704,31 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
   if (!value) {
     return;
   }
-  if (typeof value == "string") {
-    value = parseQRL(value, ctx.element);
+  if (!ctx.listeners) {
+    ctx.listeners = getDomListeners(ctx.element);
   }
-  const existingQRLs = getExistingQRLs(ctx, prop);
-  if (Array.isArray(value)) {
-    value.forEach((value2) => qPropWriteQRL(rctx, ctx, prop, value2));
-  } else if (isQrl(value)) {
-    const cp = value.copy();
+  const kebabProp = fromCamelToKebabCase(prop);
+  const existingListeners = ctx.listeners.get(kebabProp) || [];
+  const newQRLs = Array.isArray(value) ? value : [value];
+  for (const value2 of newQRLs) {
+    const cp = value2.copy();
     cp.setContainer(ctx.element);
     const capture = cp.capture;
     if (capture == null) {
       const captureRef = cp.captureRef;
       cp.capture = captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
     }
-    for (let i = 0; i < existingQRLs.length; i++) {
-      const qrl = existingQRLs[i];
-      if (!isPromise(qrl) && qrl.canonicalChunk === cp.canonicalChunk && qrl.symbol === cp.symbol) {
-        existingQRLs.splice(i, 1);
+    for (let i = 0; i < existingListeners.length; i++) {
+      const qrl = existingListeners[i];
+      if (isSameQRL(qrl, cp)) {
+        existingListeners.splice(i, 1);
         i--;
       }
     }
-    existingQRLs.push(cp);
-  } else if (isPromise(value)) {
-    const writePromise = value.then((qrl) => {
-      existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-      qPropWriteQRL(rctx, ctx, prop, qrl);
-      return qrl;
-    });
-    existingQRLs.push(writePromise);
-  } else {
-    throw qError(0 /* TODO */, `Not QRLInternal: prop: ${prop}; value: ` + value);
+    existingListeners.push(cp);
   }
-  const kebabProp = fromCamelToKebabCase(prop);
-  const newValue = serializeQRLs(existingQRLs, ctx);
+  ctx.listeners.set(kebabProp, existingListeners);
+  const newValue = serializeQRLs(existingListeners, ctx);
   if (ctx.element.getAttribute(kebabProp) !== newValue) {
     if (rctx) {
       setAttribute(rctx, ctx.element, kebabProp, newValue);
@@ -736,20 +737,20 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
     }
   }
 }
-function getExistingQRLs(ctx, prop) {
-  const key = "event:" + prop;
-  let parts = ctx.cache.get(key);
-  if (!parts) {
-    const attrName = fromCamelToKebabCase(prop);
-    parts = [];
-    (ctx.element.getAttribute(attrName) || "").split("\n").forEach((qrl) => {
-      if (qrl) {
-        parts.push(parseQRL(qrl, ctx.element));
+function getDomListeners(el) {
+  const attributes = el.attributes;
+  const listeners = /* @__PURE__ */ new Map();
+  for (let i = 0; i < attributes.length; i++) {
+    const attr = attributes.item(i);
+    if (attr.name.startsWith("on:") || attr.name.startsWith("on-window:") || attr.name.startsWith("on-document:")) {
+      let array = listeners.get(attr.name);
+      if (!array) {
+        listeners.set(attr.name, array = []);
       }
-    });
-    ctx.cache.set(key, parts);
+      array.push(parseQRL(attr.value, el));
+    }
   }
-  return parts;
+  return listeners;
 }
 function serializeQRLs(existingQRLs, ctx) {
   const platform = getPlatform2(getDocument(ctx.element));
@@ -1028,10 +1029,6 @@ function useVisibleQrl(resumeFn) {
   useOn("qvisible", resumeFn);
 }
 var useVisible$ = implicit$FirstArg(useVisibleQrl);
-function usePauseQrl(dehydrateFn) {
-  throw new Error("IMPLEMENT: onPause" + dehydrateFn);
-}
-var usePause$ = implicit$FirstArg(usePauseQrl);
 function useOn(event, eventFn) {
   const el = useHostElement();
   const ctx = getContext(el);
@@ -1070,6 +1067,9 @@ function _useStyles(styles, scoped) {
 // packages/qwik/src/core/watch/watch.public.ts
 var isWatchDescriptor = (obj) => {
   return obj && typeof obj === "object" && "qrl" in obj && "f" in obj;
+};
+var isWatchCleanup = (obj) => {
+  return isWatchDescriptor(obj) && !!(obj.f & 2 /* IsCleanup */);
 };
 function handleWatch() {
   const [watch] = useLexicalScope();
@@ -1215,7 +1215,7 @@ function resumeContainer(containerEl) {
     return;
   }
   script.remove();
-  const map = getProxyMap(doc);
+  const proxyMap = getProxyMap(doc);
   const meta = JSON.parse(script.textContent || "{}");
   const elements = /* @__PURE__ */ new Map();
   getNodesInScope(containerEl, hasQId).forEach((el) => {
@@ -1223,14 +1223,17 @@ function resumeContainer(containerEl) {
     elements.set(ELEMENT_ID_PREFIX + id, el);
   });
   const getObject = (id) => {
-    return getObjectImpl(id, elements, meta.objs, map);
+    return getObjectImpl(id, elements, meta.objs, proxyMap);
   };
-  reviveValues(meta.objs, meta.subs, getObject, map, parentJSON);
+  reviveValues(meta.objs, meta.subs, getObject, proxyMap, parentJSON);
   for (const obj of meta.objs) {
     reviveNestedObjects(obj, getObject);
   }
   getNodesInScope(containerEl, hasQObj).forEach((el) => {
     const qobj = el.getAttribute(QObjAttr);
+    if (qobj === "") {
+      return;
+    }
     const seq = el.getAttribute(QSeqAttr);
     const host = el.getAttribute(QHostAttr);
     const ctx = getContext(el);
@@ -1257,21 +1260,28 @@ function resumeContainer(containerEl) {
 function snapshotState(containerEl) {
   const doc = getDocument(containerEl);
   const proxyMap = getProxyMap(doc);
-  const objSet = /* @__PURE__ */ new Set();
   const platform = getPlatform2(doc);
   const elementToIndex = /* @__PURE__ */ new Map();
-  const elements = getNodesInScope(containerEl, hasQObj);
-  elements.forEach((node) => {
+  const collector = createCollector(doc, proxyMap);
+  getNodesInScope(containerEl, hasQObj).forEach((node) => {
     const ctx = getContext(node);
-    const qMap = ctx.refMap;
-    qMap.array.forEach((v) => {
-      collectValue(v, objSet, doc);
-    });
+    const hasListeners = ctx.listeners && ctx.listeners.size > 0;
+    const hasWatch = ctx.refMap.array.some(isWatchCleanup);
+    if (hasListeners || hasWatch) {
+      collectElement(node, collector);
+    }
   });
-  const objs = Array.from(objSet);
+  const objs = Array.from(collector.objSet);
+  function hasSubscriptions(a) {
+    const proxy = proxyMap.get(a);
+    if (proxy) {
+      return proxy[QOjectSubsSymbol].size > 0;
+    }
+    return false;
+  }
   objs.sort((a, b) => {
-    const isProxyA = proxyMap.has(a) ? 0 : 1;
-    const isProxyB = proxyMap.has(b) ? 0 : 1;
+    const isProxyA = hasSubscriptions(a) ? 0 : 1;
+    const isProxyB = hasSubscriptions(b) ? 0 : 1;
     return isProxyA - isProxyB;
   });
   const objToId = /* @__PURE__ */ new Map();
@@ -1331,7 +1341,7 @@ function snapshotState(containerEl) {
   }
   const subs = objs.map((obj) => {
     const subs2 = proxyMap.get(obj)?.[QOjectSubsSymbol];
-    if (subs2) {
+    if (subs2 && subs2.size > 0) {
       return Object.fromEntries(Array.from(subs2.entries()).map(([sub, set]) => {
         const id = getObjId(sub);
         if (id !== null) {
@@ -1366,7 +1376,8 @@ function snapshotState(containerEl) {
     }
     return obj;
   });
-  elements.forEach((node) => {
+  const listeners = [];
+  collector.elements.forEach((node) => {
     const ctx = getContext(node);
     assertDefined(ctx);
     const props = ctx.props;
@@ -1386,6 +1397,16 @@ function snapshotState(containerEl) {
       }
       node.setAttribute(QHostAttr, objs2.map((obj) => ctx.refMap.indexOf(obj)).join(" "));
     }
+    if (ctx.listeners) {
+      ctx.listeners.forEach((qrls, key) => {
+        qrls.forEach((qrl) => {
+          listeners.push({
+            key,
+            qrl
+          });
+        });
+      });
+    }
   });
   if (qDev) {
     elementToIndex.forEach((value, el) => {
@@ -1398,8 +1419,11 @@ function snapshotState(containerEl) {
     });
   }
   return {
-    objs: convertedObjs,
-    subs
+    state: {
+      objs: convertedObjs,
+      subs
+    },
+    listeners
   };
 }
 function getQwikJSON(parentElm) {
@@ -1429,7 +1453,7 @@ function walkNodes(nodes, parent, predicate) {
     child = child.nextElementSibling;
   }
 }
-function reviveValues(objs, subs, getObject, map, containerEl) {
+function reviveValues(objs, subs, getObject, proxyMap, containerEl) {
   for (let i = 0; i < objs.length; i++) {
     const value = objs[i];
     if (typeof value === "string") {
@@ -1453,7 +1477,7 @@ function reviveValues(objs, subs, getObject, map, containerEl) {
           const set = entry[1] === null ? null : new Set(entry[1]);
           converted.set(el, set);
         });
-        _restoreQObject(value, map, converted);
+        _restoreQObject(value, proxyMap, converted);
       }
     }
   }
@@ -1489,7 +1513,7 @@ function reviveNestedObjects(obj, getObject) {
     }
   }
 }
-function getObjectImpl(id, elements, objs, map) {
+function getObjectImpl(id, elements, objs, proxyMap) {
   if (id.startsWith(ELEMENT_ID_PREFIX)) {
     assertEqual(elements.has(id), true);
     return elements.get(id);
@@ -1499,9 +1523,7 @@ function getObjectImpl(id, elements, objs, map) {
   const obj = objs[index];
   const needsProxy = id.endsWith("!");
   if (needsProxy) {
-    const finalObj = map.get(obj);
-    assertDefined(finalObj);
-    return finalObj;
+    return proxyMap.get(obj) ?? readWriteProxy(obj, proxyMap);
   }
   return obj;
 }
@@ -1518,49 +1540,100 @@ function normalizeObj(obj, doc) {
   }
   return obj;
 }
-function collectValue(obj, seen, doc) {
-  const handled = collectQObjects(obj, seen, doc);
+function collectValue(obj, collector) {
+  const handled = collectQObjects(obj, collector);
   if (!handled) {
-    seen.add(normalizeObj(obj, doc));
+    collector.objSet.add(normalizeObj(obj, collector.doc));
   }
 }
-function collectQrl(obj, seen, doc) {
-  seen.add(normalizeObj(obj, doc));
+function createCollector(doc, proxyMap) {
+  return {
+    seen: /* @__PURE__ */ new Set(),
+    objSet: /* @__PURE__ */ new Set(),
+    elements: [],
+    proxyMap,
+    doc
+  };
+}
+function collectQrl(obj, collector) {
+  if (collector.seen.has(obj)) {
+    return true;
+  }
+  collector.seen.add(obj);
+  collector.objSet.add(normalizeObj(obj, collector.doc));
   if (obj.captureRef) {
-    obj.captureRef.forEach((obj2) => collectValue(obj2, seen, doc));
+    obj.captureRef.forEach((obj2) => collectValue(obj2, collector));
   }
 }
-function collectQObjects(obj, seen, doc) {
+function collectElement(el, collector) {
+  if (collector.seen.has(el)) {
+    return;
+  }
+  collector.seen.add(el);
+  const captured = tryGetContext(el)?.refMap.array;
+  if (captured) {
+    collector.elements.push(el);
+    captured.forEach((sub) => {
+      collectValue(sub, collector);
+    });
+  }
+}
+function collectSubscriptions(subs, collector) {
+  if (collector.seen.has(subs)) {
+    return;
+  }
+  collector.seen.add(subs);
+  Array.from(subs.keys()).forEach((key) => {
+    if (isElement(key)) {
+      collectElement(key, collector);
+    } else {
+      collectValue(key, collector);
+    }
+  });
+}
+function collectQObjects(obj, collector) {
   if (obj != null) {
     if (typeof obj === "object") {
-      if (!obj[QOjectTargetSymbol] && isNode(obj)) {
-        return obj.nodeType === 1;
+      const hasTarget = !!obj[QOjectTargetSymbol];
+      if (!hasTarget && isNode(obj)) {
+        if (obj.nodeType === 1) {
+          collectElement(obj, collector);
+          return true;
+        }
+        return false;
       }
       if (isQrl(obj)) {
-        collectQrl(obj, seen, doc);
+        collectQrl(obj, collector);
         return true;
       }
-      obj = normalizeObj(obj, doc);
+      const proxied = hasTarget ? obj : collector.proxyMap.get(obj);
+      const subs = proxied?.[QOjectSubsSymbol];
+      if (subs) {
+        collectSubscriptions(subs, collector);
+      }
+      obj = normalizeObj(obj, collector.doc);
     }
     if (typeof obj === "object") {
-      if (seen.has(obj))
+      if (collector.seen.has(obj)) {
         return true;
-      seen.add(obj);
+      }
+      collector.seen.add(obj);
+      collector.objSet.add(obj);
       if (Array.isArray(obj)) {
         for (let i = 0; i < obj.length; i++) {
-          collectQObjects(obj[i], seen, doc);
+          collectQObjects(obj[i], collector);
         }
       } else {
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            collectQObjects(obj[key], seen, doc);
+            collectQObjects(obj[key], collector);
           }
         }
       }
       return true;
     }
     if (typeof obj === "string") {
-      seen.add(obj);
+      collector.objSet.add(obj);
       return true;
     }
   }
@@ -2473,6 +2546,9 @@ function wrap(value, proxyMap) {
     if (isQrl(value)) {
       return value;
     }
+    if (Object.isFrozen(value)) {
+      return value;
+    }
     const nakedValue = unwrapProxy(value);
     if (nakedValue !== value) {
       return value;
@@ -2724,7 +2800,7 @@ function pauseContainer(elmOrDoc) {
   const data = snapshotState(containerEl);
   const script = doc.createElement("script");
   script.setAttribute("type", "qwik/json");
-  script.textContent = JSON.stringify(data, void 0, qDev ? "  " : void 0);
+  script.textContent = JSON.stringify(data.state, void 0, qDev ? "  " : void 0);
   parentJSON.appendChild(script);
   containerEl.setAttribute(QContainerAttr, "paused");
   return data;
