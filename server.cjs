@@ -10445,9 +10445,6 @@ function wrap(value, proxyMap) {
     if (isQrl(value)) {
       return value;
     }
-    if (Object.isFrozen(value)) {
-      return value;
-    }
     const nakedValue = unwrapProxy(value);
     if (nakedValue !== value) {
       return value;

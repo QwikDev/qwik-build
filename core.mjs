@@ -3297,9 +3297,6 @@ function wrap(value, proxyMap) {
         if (isQrl(value)) {
             return value;
         }
-        if (Object.isFrozen(value)) {
-            return value;
-        }
         const nakedValue = unwrapProxy(value);
         if (nakedValue !== value) {
             // already a proxy return;
@@ -3521,12 +3518,6 @@ function shouldSerialize(obj) {
 function noSerialize(input) {
     noSerializeSet.add(input);
     return input;
-}
-/**
- * @alpha
- */
-function immutable(input) {
-    return Object.freeze(input);
 }
 function isConnected(sub) {
     if (isElement(sub)) {
@@ -4348,5 +4339,5 @@ function injectQContainer(containerEl) {
     containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
-export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, handleWatch, immutable, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
+export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, getPlatform, h, handleWatch, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapProxy as untrack, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useSubscriber, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map
