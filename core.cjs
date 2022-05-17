@@ -94,6 +94,7 @@
     const QSlotAttr = 'q:slot';
     const QObjAttr = 'q:obj';
     const QSeqAttr = 'q:seq';
+    const QCtxAttr = 'q:ctx';
     const QContainerAttr = 'q:container';
     const QObjSelector = '[q\\:obj]';
     const QContainerSelector = '[q\\:container]';
@@ -1348,7 +1349,6 @@
                 cleanupWatch(watch);
                 const el = watch.el;
                 const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
-                invokationContext.watch = watch;
                 const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
                     const captureRef = watch.qrl.captureRef;
                     if (Array.isArray(captureRef)) {
@@ -1456,6 +1456,7 @@
             }
             const seq = el.getAttribute(QSeqAttr);
             const host = el.getAttribute(QHostAttr);
+            const contexts = el.getAttribute(QCtxAttr);
             const ctx = getContext(el);
             // Restore captured objets
             qobj.split(' ').forEach((part) => {
@@ -1476,6 +1477,15 @@
                 ctx.props = ctx.refMap.get(props);
                 ctx.renderQrl = ctx.refMap.get(renderQrl);
             }
+            if (contexts) {
+                contexts.split(' ').map((part) => {
+                    const [key, value] = part.split('=');
+                    if (!ctx.contexts) {
+                        ctx.contexts = new Map();
+                    }
+                    ctx.contexts.set(key, ctx.refMap.get(strToInt(value)));
+                });
+            }
         });
         containerEl.setAttribute(QContainerAttr, 'resumed');
         logDebug('Container resumed');
@@ -1489,9 +1499,11 @@
         // Collect all qObjected around the DOM
         getNodesInScope(containerEl, hasQObj).forEach((node) => {
             const ctx = getContext(node);
+            // TODO: improve serialization, get rid of refMap
             const hasListeners = ctx.listeners && ctx.listeners.size > 0;
             const hasWatch = ctx.refMap.array.some(isWatchCleanup);
-            if (hasListeners || hasWatch) {
+            const hasContext = !!ctx.contexts;
+            if (hasListeners || hasWatch || hasContext) {
                 collectElement(node, collector);
             }
         });
@@ -1615,6 +1627,7 @@
             const ctx = getContext(node);
             assertDefined(ctx);
             const props = ctx.props;
+            const contexts = ctx.contexts;
             const renderQrl = ctx.renderQrl;
             const attribute = ctx.refMap.array
                 .map((obj) => {
@@ -1642,6 +1655,13 @@
                         });
                     });
                 });
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach((value, key) => {
+                    serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+                });
+                node.setAttribute(QCtxAttr, serializedContexts.join(' '));
             }
         });
         // Sanity check of serialized element
@@ -2285,9 +2305,14 @@
         assertDefined(onRenderQRL);
         // Component is not dirty any more
         rctx.globalState.hostsStaging.delete(hostElement);
+        const newCtx = {
+            ...rctx,
+            components: [...rctx.components],
+        };
         // Invoke render hook
         const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
         invocatinContext.subscriber = hostElement;
+        invocatinContext.renderCtx = newCtx;
         const waitOn = (invocatinContext.waitOn = []);
         // Clean current subscription before render
         ctx.refMap.array.forEach((obj) => {
@@ -2328,10 +2353,7 @@
                     }
                 }
                 componentCtx.slots = [];
-                const newCtx = {
-                    ...rctx,
-                    component: componentCtx,
-                };
+                newCtx.components.push(componentCtx);
                 return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
             });
         });
@@ -2521,7 +2543,10 @@
             isSvg = false;
         }
         else if (isSlot) {
-            rctx.component.slots.push(vnode);
+            const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
+            if (currentComponent) {
+                currentComponent.slots.push(vnode);
+            }
         }
         const isComponent = isComponentNode(vnode);
         if (dirty) {
@@ -2689,7 +2714,7 @@
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
         }
-        const currentComponent = rctx.component;
+        const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
         if (currentComponent) {
             const styleTag = currentComponent.styleClass;
             if (styleTag) {
@@ -2697,7 +2722,7 @@
             }
             if (tag === 'q:slot') {
                 setSlotRef(rctx, currentComponent.hostElement, elm);
-                rctx.component.slots.push(vnode);
+                currentComponent.slots.push(vnode);
             }
         }
         let wait;
@@ -3175,7 +3200,7 @@
             operations: [],
             roots: [],
             containerEl,
-            component: undefined,
+            components: [],
             perf: {
                 visited: 0,
                 timing: [],
@@ -3549,19 +3574,6 @@
         }
     }
 
-    /**
-     * @alpha
-     */
-    function useSubscriber(obj) {
-        const ctx = getInvokeContext();
-        let subscriber = ctx.watch;
-        if (!subscriber) {
-            assertEqual(ctx.event, RenderEvent);
-            subscriber = ctx.hostElement;
-        }
-        assertDefined(subscriber);
-        return wrapSubscriber(obj, subscriber);
-    }
     /**
      * @alpha
      */
@@ -4314,7 +4326,7 @@
             hostElements: new Set(),
             operations: [],
             roots: [parent],
-            component: undefined,
+            components: [],
             containerEl,
             perf: {
                 visited: 0,
@@ -4360,6 +4372,75 @@
         containerEl.setAttribute(QContainerAttr, 'resumed');
     }
 
+    /**
+     * @alpha
+     */
+    function createContext(name) {
+        return Object.freeze({
+            id: fromCamelToKebabCase(name),
+        });
+    }
+    /**
+     * @alpha
+     */
+    function useContextProvider(context, newValue) {
+        const [value, setValue] = useSequentialScope();
+        if (!value) {
+            const invokeContext = getInvokeContext();
+            const hostElement = invokeContext.hostElement;
+            const renderCtx = invokeContext.renderCtx;
+            const ctx = getContext(hostElement);
+            let contexts = ctx.contexts;
+            if (!contexts) {
+                ctx.contexts = contexts = new Map();
+            }
+            newValue = unwrapSubscriber(newValue);
+            contexts.set(context.id, newValue);
+            const serializedContexts = [];
+            contexts.forEach((value, key) => {
+                serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+            });
+            setAttribute(renderCtx, hostElement, QCtxAttr, serializedContexts.join(' '));
+            setValue(newValue);
+        }
+    }
+    /**
+     * @alpha
+     */
+    function useContext(context) {
+        const value = _useContext(context);
+        return wrapSubscriber(value, useHostElement());
+    }
+    function _useContext(context) {
+        const [value, setValue] = useSequentialScope();
+        if (!value) {
+            const invokeContext = getInvokeContext();
+            let hostElement = invokeContext.hostElement;
+            const components = invokeContext.renderCtx.components;
+            for (let i = components.length - 1; i >= 0; i--) {
+                hostElement = components[i].hostElement;
+                const ctx = getContext(components[i].hostElement);
+                if (ctx.contexts) {
+                    const found = ctx.contexts.get(context.id);
+                    if (found) {
+                        setValue(found);
+                        return found;
+                    }
+                }
+            }
+            const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}="]`);
+            if (foundEl) {
+                const value = getContext(foundEl).contexts.get(context.id);
+                if (value) {
+                    setValue(value);
+                    return value;
+                }
+            }
+            throw new Error(`not found state for useContext: ${context.id}`);
+        }
+        return value;
+    }
+
     exports.$ = $;
     exports.Comment = Comment;
     exports.Fragment = Fragment;
@@ -4368,6 +4449,7 @@
     exports.Slot = Slot;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
+    exports.createContext = createContext;
     exports.getPlatform = getPlatform;
     exports.h = h;
     exports.handleWatch = handleWatch;
@@ -4381,12 +4463,13 @@
     exports.qrl = qrl;
     exports.render = render;
     exports.setPlatform = setPlatform;
-    exports.untrack = unwrapProxy;
     exports.unwrapSubscriber = unwrapSubscriber;
     exports.useCleanup$ = useCleanup$;
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
     exports.useClientEffectQrl = useClientEffectQrl;
+    exports.useContext = useContext;
+    exports.useContextProvider = useContextProvider;
     exports.useDocument = useDocument;
     exports.useHostElement = useHostElement;
     exports.useLexicalScope = useLexicalScope;
@@ -4403,7 +4486,6 @@
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
     exports.useStylesQrl = useStylesQrl;
-    exports.useSubscriber = useSubscriber;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;

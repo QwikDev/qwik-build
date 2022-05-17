@@ -504,6 +504,14 @@ export declare interface ComponentOptions {
 export declare function componentQrl<PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
 
 /**
+ * @alpha
+ */
+export declare interface Context<STATE extends object> {
+    readonly id: string;
+    readonly _value: STATE;
+}
+
+/**
  * @public
  */
 export declare interface CorePlatform {
@@ -526,6 +534,11 @@ export declare interface CorePlatform {
      */
     chunkForSymbol: (symbolName: string) => string | undefined;
 }
+
+/**
+ * @alpha
+ */
+export declare function createContext<STATE extends object>(name: string): Context<STATE>;
 
 declare interface CSSProperties {
     [key: string]: string | number;
@@ -1043,7 +1056,7 @@ export declare interface InvokeContext {
     waitOn?: ValueOrPromise<any>[];
     props?: Props;
     subscriber?: Subscriber | null;
-    watch?: WatchDescriptor;
+    renderCtx?: RenderContext;
 }
 
 /**
@@ -1645,7 +1658,7 @@ export declare interface RenderContext {
     roots: Element[];
     hostElements: Set<Element>;
     operations: RenderOperation[];
-    component: ComponentCtx | undefined;
+    components: ComponentCtx[];
     globalState: RenderingState;
     containerEl: Element;
     perf: RenderPerf;
@@ -2142,11 +2155,6 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function untrack<T>(proxy: T): T;
-
-/**
- * @alpha
- */
 export declare function unwrapSubscriber<T extends {}>(obj: T): any;
 
 /**
@@ -2244,6 +2252,16 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  * @public
  */
 export declare function useClientEffectQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
+
+/**
+ * @alpha
+ */
+export declare function useContext<STATE extends object>(context: Context<STATE>): STATE;
+
+/**
+ * @alpha
+ */
+export declare function useContextProvider<STATE extends object>(context: Context<STATE>, newValue: STATE): void;
 
 /**
  * Retrieves the document of the current element. It's important to use this method instead of
@@ -2707,11 +2725,6 @@ export declare const useStyles$: (first: string) => void;
  * @public
  */
 export declare function useStylesQrl(styles: QRL<string>): void;
-
-/**
- * @alpha
- */
-export declare function useSubscriber<T extends {}>(obj: T): T;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.

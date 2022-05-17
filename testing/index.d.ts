@@ -1,4 +1,15 @@
 /**
+ * @alpha
+ */
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
+}
+
+/**
  * Create emulated `Document` for server environment. Does not implement the full browser
  * `document` and `window` API. This api may be removed in the future.
  * @internal
@@ -48,7 +59,7 @@ declare interface InvokeContext {
     waitOn?: ValueOrPromise<any>[];
     props?: Props;
     subscriber?: Subscriber | null;
-    watch?: WatchDescriptor;
+    renderCtx?: RenderContext;
 }
 
 /**
@@ -64,11 +75,32 @@ declare interface JSXNode<T = any> {
 }
 
 /**
+ * @public
+ */
+declare interface JSXNode_2<T = any> {
+    type: T;
+    props: Record<string, any> | null;
+    children: JSXNode_2[];
+    key: string | null;
+    elm?: Node;
+    text?: string;
+}
+
+/**
  * @alpha
  */
 declare type NoSerialize<T> = (T & {
     __no_serialize__: true;
 }) | undefined;
+
+/**
+ * @alpha
+ */
+declare interface PerfEvent {
+    name: string;
+    timeStart: number;
+    timeEnd: number;
+}
 
 /**
  * @alpha
@@ -282,11 +314,53 @@ export declare interface QwikSymbol {
 }
 
 /**
+ * @alpha
+ */
+declare interface RenderContext {
+    doc: Document;
+    roots: Element[];
+    hostElements: Set<Element>;
+    operations: RenderOperation[];
+    components: ComponentCtx[];
+    globalState: RenderingState;
+    containerEl: Element;
+    perf: RenderPerf;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderingState {
+    watchRunning: Set<Promise<WatchDescriptor>>;
+    watchNext: Set<WatchDescriptor>;
+    watchStaging: Set<WatchDescriptor>;
+    hostsNext: Set<Element>;
+    hostsStaging: Set<Element>;
+    hostsRendering: Set<Element> | undefined;
+    renderPromise: Promise<RenderContext> | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderOperation {
+    el: Node;
+    operation: string;
+    args: any[];
+    fn: () => void;
+}
+
+declare interface RenderPerf {
+    timing: PerfEvent[];
+    visited: number;
+}
+
+/**
  * Creates a server-side `document`, renders to root node to the document,
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: JSXNode, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: JSXNode_2, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public

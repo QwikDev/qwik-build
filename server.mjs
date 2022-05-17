@@ -199,6 +199,7 @@ var ComponentStylesPrefixContent = "\u2B50\uFE0F";
 var QSlotAttr = "q:slot";
 var QObjAttr = "q:obj";
 var QSeqAttr = "q:seq";
+var QCtxAttr = "q:ctx";
 var QContainerAttr = "q:container";
 var QObjSelector = "[q\\:obj]";
 var QContainerSelector = "[q\\:container]";
@@ -893,8 +894,13 @@ var renderComponent = (rctx, ctx) => {
   const onRenderQRL = ctx.renderQrl;
   assertDefined(onRenderQRL);
   rctx.globalState.hostsStaging.delete(hostElement);
+  const newCtx = {
+    ...rctx,
+    components: [...rctx.components]
+  };
   const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
   invocatinContext.subscriber = hostElement;
+  invocatinContext.renderCtx = newCtx;
   const waitOn = invocatinContext.waitOn = [];
   ctx.refMap.array.forEach((obj) => {
     removeSub(obj, hostElement);
@@ -933,10 +939,7 @@ var renderComponent = (rctx, ctx) => {
         }
       }
       componentCtx.slots = [];
-      const newCtx = {
-        ...rctx,
-        component: componentCtx
-      };
+      newCtx.components.push(componentCtx);
       return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
     });
   });
@@ -1232,7 +1235,6 @@ function runWatch(watch) {
       cleanupWatch(watch);
       const el = watch.el;
       const invokationContext = newInvokeContext(getDocument(el), el, el, "WatchEvent");
-      invokationContext.watch = watch;
       const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
         const captureRef = watch.qrl.captureRef;
         if (Array.isArray(captureRef)) {
@@ -1358,7 +1360,7 @@ async function renderMarked(containerEl, state) {
     operations: [],
     roots: [],
     containerEl,
-    component: void 0,
+    components: [],
     perf: {
       visited: 0,
       timing: []
@@ -1725,6 +1727,7 @@ function resumeContainer(containerEl) {
     }
     const seq = el.getAttribute(QSeqAttr);
     const host = el.getAttribute(QHostAttr);
+    const contexts = el.getAttribute(QCtxAttr);
     const ctx = getContext(el);
     qobj.split(" ").forEach((part) => {
       if (part !== "") {
@@ -1742,6 +1745,15 @@ function resumeContainer(containerEl) {
       ctx.props = ctx.refMap.get(props);
       ctx.renderQrl = ctx.refMap.get(renderQrl);
     }
+    if (contexts) {
+      contexts.split(" ").map((part) => {
+        const [key, value] = part.split("=");
+        if (!ctx.contexts) {
+          ctx.contexts = /* @__PURE__ */ new Map();
+        }
+        ctx.contexts.set(key, ctx.refMap.get(strToInt(value)));
+      });
+    }
   });
   containerEl.setAttribute(QContainerAttr, "resumed");
   logDebug("Container resumed");
@@ -1756,7 +1768,8 @@ function snapshotState(containerEl) {
     const ctx = getContext(node);
     const hasListeners = ctx.listeners && ctx.listeners.size > 0;
     const hasWatch = ctx.refMap.array.some(isWatchCleanup);
-    if (hasListeners || hasWatch) {
+    const hasContext = !!ctx.contexts;
+    if (hasListeners || hasWatch || hasContext) {
       collectElement(node, collector);
     }
   });
@@ -1872,6 +1885,7 @@ function snapshotState(containerEl) {
     const ctx = getContext(node);
     assertDefined(ctx);
     const props = ctx.props;
+    const contexts = ctx.contexts;
     const renderQrl = ctx.renderQrl;
     const attribute = ctx.refMap.array.map((obj) => {
       const id = getObjId(obj);
@@ -1897,6 +1911,13 @@ function snapshotState(containerEl) {
           });
         });
       });
+    }
+    if (contexts) {
+      const serializedContexts = [];
+      contexts.forEach((value, key) => {
+        serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+      });
+      node.setAttribute(QCtxAttr, serializedContexts.join(" "));
     }
   });
   if (qDev) {
@@ -2445,7 +2466,10 @@ function patchVnode(rctx, elm, vnode, isSvg) {
   if (isSvg && vnode.type === "foreignObject") {
     isSvg = false;
   } else if (isSlot) {
-    rctx.component.slots.push(vnode);
+    const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : void 0;
+    if (currentComponent) {
+      currentComponent.slots.push(vnode);
+    }
   }
   const isComponent = isComponentNode(vnode);
   if (dirty) {
@@ -2610,7 +2634,7 @@ function createElm(rctx, vnode, isSvg) {
   if (isSvg && tag === "foreignObject") {
     isSvg = false;
   }
-  const currentComponent = rctx.component;
+  const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : void 0;
   if (currentComponent) {
     const styleTag = currentComponent.styleClass;
     if (styleTag) {
@@ -2618,7 +2642,7 @@ function createElm(rctx, vnode, isSvg) {
     }
     if (tag === "q:slot") {
       setSlotRef(rctx, currentComponent.hostElement, elm);
-      rctx.component.slots.push(vnode);
+      currentComponent.slots.push(vnode);
     }
   }
   let wait;

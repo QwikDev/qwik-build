@@ -357,6 +357,17 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @alpha
+ */
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
+}
+
 declare interface CSSProperties {
     [key: string]: string | number;
 }
@@ -808,7 +819,7 @@ declare interface InvokeContext {
     waitOn?: ValueOrPromise<any>[];
     props?: Props;
     subscriber?: Subscriber | null;
-    watch?: WatchDescriptor;
+    renderCtx?: RenderContext;
 }
 
 /**
@@ -978,6 +989,15 @@ declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface PerfEvent {
+    name: string;
+    timeStart: number;
+    timeEnd: number;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1329,6 +1349,49 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  */
 declare interface Ref<T> {
     current?: T;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderContext {
+    doc: Document;
+    roots: Element[];
+    hostElements: Set<Element>;
+    operations: RenderOperation[];
+    components: ComponentCtx[];
+    globalState: RenderingState;
+    containerEl: Element;
+    perf: RenderPerf;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderingState {
+    watchRunning: Set<Promise<WatchDescriptor>>;
+    watchNext: Set<WatchDescriptor>;
+    watchStaging: Set<WatchDescriptor>;
+
+    hostsNext: Set<Element>;
+    hostsStaging: Set<Element>;
+    hostsRendering: Set<Element> | undefined;
+    renderPromise: Promise<RenderContext> | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderOperation {
+    el: Node;
+    operation: string;
+    args: any[];
+    fn: () => void;
+}
+
+declare interface RenderPerf {
+    timing: PerfEvent[];
+    visited: number;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
