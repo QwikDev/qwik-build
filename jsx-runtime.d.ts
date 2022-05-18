@@ -23,6 +23,9 @@ declare interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     target?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface AriaAttributes {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string | undefined;
@@ -61,16 +64,7 @@ declare interface AriaAttributes {
      */
     'aria-controls'?: string | undefined;
     /** Indicates the element that represents the current item within a container or set of related elements. */
-    'aria-current'?:
-    | boolean
-    | 'false'
-    | 'true'
-    | 'page'
-    | 'step'
-    | 'location'
-    | 'date'
-    | 'time'
-    | undefined;
+    'aria-current'?: boolean | 'false' | 'true' | 'page' | 'step' | 'location' | 'date' | 'time' | undefined;
     /**
      * Identifies the element (or elements) that describes the object.
      * @see aria-labelledby
@@ -109,16 +103,7 @@ declare interface AriaAttributes {
      */
     'aria-grabbed'?: Booleanish | undefined;
     /** Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element. */
-    'aria-haspopup'?:
-    | boolean
-    | 'false'
-    | 'true'
-    | 'menu'
-    | 'listbox'
-    | 'tree'
-    | 'grid'
-    | 'dialog'
-    | undefined;
+    'aria-haspopup'?: boolean | 'false' | 'true' | 'menu' | 'listbox' | 'tree' | 'grid' | 'dialog' | undefined;
     /**
      * Indicates whether the element is exposed to an accessibility API.
      * @see aria-disabled.
@@ -183,18 +168,7 @@ declare interface AriaAttributes {
      * Indicates what notifications the user agent will trigger when the accessibility tree within a live region is modified.
      * @see aria-atomic.
      */
-    'aria-relevant'?:
-    | 'additions'
-    | 'additions removals'
-    | 'additions text'
-    | 'all'
-    | 'removals'
-    | 'removals additions'
-    | 'removals text'
-    | 'text'
-    | 'text additions'
-    | 'text removals'
-    | undefined;
+    'aria-relevant'?: 'additions' | 'additions removals' | 'additions text' | 'all' | 'removals' | 'removals additions' | 'removals text' | 'text' | 'text additions' | 'text removals' | undefined;
     /** Indicates that user input is required on the element before a form may be submitted. */
     'aria-required'?: Booleanish | undefined;
     /** Defines a human-readable, author-localized description for the role of an element. */
@@ -239,79 +213,10 @@ declare interface AriaAttributes {
     'aria-valuetext'?: string | undefined;
 }
 
-declare type AriaRole =
-| 'alert'
-| 'alertdialog'
-| 'application'
-| 'article'
-| 'banner'
-| 'button'
-| 'cell'
-| 'checkbox'
-| 'columnheader'
-| 'combobox'
-| 'complementary'
-| 'contentinfo'
-| 'definition'
-| 'dialog'
-| 'directory'
-| 'document'
-| 'feed'
-| 'figure'
-| 'form'
-| 'grid'
-| 'gridcell'
-| 'group'
-| 'heading'
-| 'img'
-| 'link'
-| 'list'
-| 'listbox'
-| 'listitem'
-| 'log'
-| 'main'
-| 'marquee'
-| 'math'
-| 'menu'
-| 'menubar'
-| 'menuitem'
-| 'menuitemcheckbox'
-| 'menuitemradio'
-| 'navigation'
-| 'none'
-| 'note'
-| 'option'
-| 'presentation'
-| 'progressbar'
-| 'radio'
-| 'radiogroup'
-| 'region'
-| 'row'
-| 'rowgroup'
-| 'rowheader'
-| 'scrollbar'
-| 'search'
-| 'searchbox'
-| 'separator'
-| 'slider'
-| 'spinbutton'
-| 'status'
-| 'switch'
-| 'tab'
-| 'table'
-| 'tablist'
-| 'tabpanel'
-| 'term'
-| 'textbox'
-| 'timer'
-| 'toolbar'
-| 'tooltip'
-| 'tree'
-| 'treegrid'
-| 'treeitem'
-| (string & {});
+declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
+declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
+}
 
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
@@ -343,7 +248,8 @@ declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
-declare interface ClassAttributes<T> {}
+declare interface ClassAttributes<T> {
+}
 
 declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
@@ -352,6 +258,17 @@ declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: number | string | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface ComponentCtx {
+    hostElement: HTMLElement;
+    styleId: string | undefined;
+    styleClass: string | undefined;
+    styleHostClass: string | undefined;
+    slots: JSXNode[];
 }
 
 declare interface CSSProperties {
@@ -375,6 +292,9 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
     children?: JSXChildren;
     key?: string | number;
@@ -387,6 +307,9 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type EventHandler<Type = Event> = (event: Type, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -409,28 +332,24 @@ declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare const Fragment: FunctionComponent<{ children?: any }> = (props) => props.children as any;
+export declare const Fragment: FunctionComponent<{
+    children?: any;
+}>;
 
 /**
  * @public
  */
-declare interface FunctionComponent<P = {}> {
+export declare interface FunctionComponent<P = {}> {
     (props: P, key?: string): JSXNode | null;
 }
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
-declare type HTMLAttributeReferrerPolicy =
-| ''
-| 'no-referrer'
-| 'no-referrer-when-downgrade'
-| 'origin'
-| 'origin-when-cross-origin'
-| 'same-origin'
-| 'strict-origin'
-| 'strict-origin-when-cross-origin'
-| 'unsafe-url';
+declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
 
+/**
+ * @public
+ */
 declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
     className?: string | undefined;
@@ -448,11 +367,8 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
-
-    radioGroup?: string | undefined; // <command>, <menuitem>
-
+    radioGroup?: string | undefined;
     role?: AriaRole | undefined;
-
     about?: string | undefined;
     datatype?: string | undefined;
     inlist?: any;
@@ -461,7 +377,6 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     resource?: string | undefined;
     typeof?: string | undefined;
     vocab?: string | undefined;
-
     autoCapitalize?: string | undefined;
     autoCorrect?: string | undefined;
     autoSave?: string | undefined;
@@ -474,21 +389,11 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     results?: number | undefined;
     security?: string | undefined;
     unselectable?: 'on' | 'off' | undefined;
-
     /**
      * Hints at the type of data that might be entered by the user while editing the element or its contents
      * @see https://html.spec.whatwg.org/multipage/interaction.html#input-modalities:-the-inputmode-attribute
      */
-    inputMode?:
-    | 'none'
-    | 'text'
-    | 'tel'
-    | 'url'
-    | 'email'
-    | 'numeric'
-    | 'decimal'
-    | 'search'
-    | undefined;
+    inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search' | undefined;
     /**
      * Specify that a standard HTML element should behave like a defined custom built-in element
      * @see https://html.spec.whatwg.org/multipage/custom-elements.html#attr-is
@@ -500,32 +405,10 @@ declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
-declare type HTMLInputTypeAttribute =
-| 'button'
-| 'checkbox'
-| 'color'
-| 'date'
-| 'datetime-local'
-| 'email'
-| 'file'
-| 'hidden'
-| 'image'
-| 'month'
-| 'number'
-| 'password'
-| 'radio'
-| 'range'
-| 'reset'
-| 'search'
-| 'submit'
-| 'tel'
-| 'text'
-| 'time'
-| 'url'
-| 'week'
-| (string & {});
+declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
-declare interface HTMLWebViewElement extends HTMLElement {}
+declare interface HTMLWebViewElement extends HTMLElement {
+}
 
 declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: string | undefined;
@@ -569,7 +452,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
     autoComplete?: string | undefined;
     autoFocus?: boolean | undefined;
-    capture?: boolean | 'user' | 'environment' | undefined; // https://www.w3.org/TR/html-media-capture/#the-capture-attribute
+    capture?: boolean | 'user' | 'environment' | undefined;
     checked?: boolean | undefined;
     crossOrigin?: string | undefined;
     disabled?: boolean | undefined;
@@ -782,6 +665,9 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
+/**
+ * @public
+ */
 declare interface InvokeContext {
     url: URL | null;
     seq: number;
@@ -793,51 +679,38 @@ declare interface InvokeContext {
     waitOn?: ValueOrPromise<any>[];
     props?: Props;
     subscriber?: Subscriber | null;
-    watch?: WatchDescriptor;
+    renderCtx?: RenderContext;
 }
 
 /**
  * @public
  */
 export declare namespace JSX {
-    export interface Element extends JSXNode {}
-    export interface IntrinsicAttributes extends QwikIntrinsicAttributes {}
+    export interface Element extends JSXNode {
+    }
+    export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
+    }
     export interface ElementChildrenAttribute {
         children: any;
     }
-    export interface IntrinsicElements extends QwikIntrinsicElements {}
+    export interface IntrinsicElements extends QwikIntrinsicElements {
+    }
 }
 
 /**
  * @public
  */
-declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(
-type: T,
-props: PROPS,
-key?: string | number
-): JSXNode<T> {
-    return new JSXNodeImpl(type, props, key) as any;
-}
+declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number): JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
 
-declare type JSXChildren =
-| string
-| number
-| boolean
-| null
-| undefined
-| Function
-| RegExp
-| JSXChildren[]
-| Promise<JSXChildren>
-| JSXNode<any>;
+declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
 
 /**
  * @public
  */
-declare interface JSXNode<T = any> {
+export declare interface JSXNode<T = any> {
     type: T;
     props: Record<string, any> | null;
     children: JSXNode[];
@@ -922,7 +795,9 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-declare type NoSerialize<T> = (T & { __no_serialize__: true }) | undefined;
+declare type NoSerialize<T> = (T & {
+    __no_serialize__: true;
+}) | undefined;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
@@ -965,6 +840,15 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+/**
+ * @alpha
+ */
+declare interface PerfEvent {
+    name: string;
+    timeStart: number;
+    timeEnd: number;
+}
+
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -992,7 +876,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * Creating `QRL` is done using `$(...)` function. `$(...)` is a special marker for the Qwik
  * Optimizer that marks that the code should be extracted into a lazy-loaded symbol.
  *
- * ```typescript
+ * ```tsx
  * useOnDocument(
  *   'mousemove',
  *   $(() => console.log('mousemove'))
@@ -1001,7 +885,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * In the above code the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
  *
- * ```typescript
+ * ```tsx
  * // FILE: <current file>
  * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
  *
@@ -1018,7 +902,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * Use `QRL` type in your application when you want to get a lazy-loadable reference to a
  * resource (most likely a function).
  *
- * ```typescript
+ * ```tsx
  * // Example of declaring a custom functions which takes callback as QRL.
  * export function useMyFunction(callback: QRL<() => void>) {
  *   doExtraStuff();
@@ -1037,7 +921,7 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  * At times it may be necessary to resolve a `QRL` reference to the actual value. This can be
  * performed using `qrlImport(..)` function.
  *
- * ```typescript
+ * ```tsx
  * // Assume you have QRL reference to a greet function
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
@@ -1092,27 +976,20 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
- * See: `$`
+ * @see `$`
  *
  * @public
  */
-// </docs>
 declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     resolve(container?: Element): Promise<TYPE>;
-    invoke(
-    ...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never
-    ): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
-
-    invokeFn(
-    el?: Element,
-    context?: InvokeContext,
-    beforeFn?: () => void
-    ): TYPE extends (...args: infer ARGS) => infer RETURN
-    ? (...args: ARGS) => ValueOrPromise<RETURN>
-    : never;
+    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
+    invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
+/**
+ * @public
+ */
 declare type QrlEvent<Type = Event> = QRL<EventHandler<Type>>;
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1123,10 +1000,13 @@ declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
     [key: string]: any;
 }
 
-declare interface QwikCustomHTMLElement extends HTMLElement {}
+declare interface QwikCustomHTMLElement extends HTMLElement {
+}
 
+/**
+ * @public
+ */
 declare interface QwikEvents {
-    // Clipboard Events
     onCopy$?: (event: ClipboardEvent, el: Element) => void;
     onCopyCapture$?: (event: ClipboardEvent, el: Element) => void;
     onCut$?: (event: ClipboardEvent, el: Element) => void;
@@ -1159,8 +1039,8 @@ declare interface QwikEvents {
     onInvalidCapture$?: (event: Event, el: Element) => void;
     onLoad$?: (event: Event, el: Element) => void;
     onLoadCapture$?: (event: Event, el: Element) => void;
-    onError$?: (event: Event, el: Element) => void; // also a Media Event
-    onErrorCapture$?: (event: Event, el: Element) => void; // also a Media Event
+    onError$?: (event: Event, el: Element) => void;
+    onErrorCapture$?: (event: Event, el: Element) => void;
     onKeyDown$?: (event: KeyboardEvent, el: Element) => void;
     onKeyDownCapture$?: (event: KeyboardEvent, el: Element) => void;
     onKeyPress$?: (event: KeyboardEvent, el: Element) => void;
@@ -1242,25 +1122,18 @@ declare interface QwikEvents {
     onAnimationIterationCapture$?: (event: AnimationEvent, el: Element) => void;
     onTransitionEnd$?: (event: TransitionEvent, el: Element) => void;
     onTransitionEndCapture$?: (event: TransitionEvent, el: Element) => void;
-
     'document:onLoad$'?: (event: Event, el: Element) => any;
     'document:onLoadQrl'?: QRL<(event: Event, el: Element) => any>;
-
     'document:onScroll$'?: (event: Event, el: Element) => any;
     'document:onScrollQrl'?: QRL<(event: Event, el: Element) => any>;
-
     'document:onVisible$'?: (event: Event, el: Element) => any;
     'document:onVisible'?: QRL<(event: Event, el: Element) => any>;
-
     'document:onVisibilityChange$'?: (event: Event, el: Element) => any;
     'document:onVisibilityChangeQrl'?: QRL<(event: Event, el: Element) => any>;
-
     [key: `on${string}$`]: EventHandler<any> | undefined;
     [key: `on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
-
     [key: `document:on${string}$`]: EventHandler<any> | undefined;
     [key: `document:on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
-
     [key: `window:on${string}$`]: EventHandler<any> | undefined;
     [key: `window:on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
 }
@@ -1268,7 +1141,8 @@ declare interface QwikEvents {
 /**
  * @public
  */
-declare interface QwikIntrinsicAttributes {}
+declare interface QwikIntrinsicAttributes {
+}
 
 /**
  * @public
@@ -1279,16 +1153,16 @@ declare interface QwikIntrinsicElements extends IntrinsicElements {
 }
 
 declare interface QwikProps {
-    class?: string | { [className: string]: boolean };
+    class?: string | {
+        [className: string]: boolean;
+    };
     innerHTML?: string;
     dangerouslySetInnerHTML?: string;
     ref?: Ref<Element>;
-
     /**
      *
      */
     'q:slot'?: string;
-
     /**
      * URL against which relative QRLs should be resolved to.
      */
@@ -1308,6 +1182,48 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  */
 declare interface Ref<T> {
     current?: T;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderContext {
+    doc: Document;
+    roots: Element[];
+    hostElements: Set<Element>;
+    operations: RenderOperation[];
+    components: ComponentCtx[];
+    globalState: RenderingState;
+    containerEl: Element;
+    perf: RenderPerf;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderingState {
+    watchRunning: Set<Promise<WatchDescriptor>>;
+    watchNext: Set<WatchDescriptor>;
+    watchStaging: Set<WatchDescriptor>;
+    hostsNext: Set<Element>;
+    hostsStaging: Set<Element>;
+    hostsRendering: Set<Element> | undefined;
+    renderPromise: Promise<RenderContext> | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderOperation {
+    el: Node;
+    operation: string;
+    args: any[];
+    fn: () => void;
+}
+
+declare interface RenderPerf {
+    timing: PerfEvent[];
+    visited: number;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1357,10 +1273,15 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare type Subscriber = WatchDescriptor | Element;
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    class?: string | { [className: string]: boolean } | undefined;
+    class?: string | {
+        [className: string]: boolean;
+    } | undefined;
     className?: string;
     color?: string | undefined;
     height?: number | string | undefined;
@@ -1375,29 +1296,13 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     target?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
-
     role?: string | undefined;
     tabindex?: number | undefined;
     crossOrigin?: 'anonymous' | 'use-credentials' | '' | undefined;
-
     'accent-height'?: number | string | undefined;
     accumulate?: 'none' | 'sum' | undefined;
     additive?: 'replace' | 'sum' | undefined;
-    'alignment-baseline'?:
-    | 'auto'
-    | 'baseline'
-    | 'before-edge'
-    | 'text-before-edge'
-    | 'middle'
-    | 'central'
-    | 'after-edge'
-    | 'text-after-edge'
-    | 'ideographic'
-    | 'alphabetic'
-    | 'hanging'
-    | 'mathematical'
-    | 'inherit'
-    | undefined;
+    'alignment-baseline'?: 'auto' | 'baseline' | 'before-edge' | 'text-before-edge' | 'middle' | 'central' | 'after-edge' | 'text-after-edge' | 'ideographic' | 'alphabetic' | 'hanging' | 'mathematical' | 'inherit' | undefined;
     allowReorder?: 'no' | 'yes' | undefined;
     alphabetic?: number | string | undefined;
     amplitude?: number | string | undefined;
@@ -1637,7 +1542,8 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     zoomAndPan?: string | undefined;
 }
 
-declare interface SVGProps<T> extends SVGAttributes<T>, ClassAttributes<T> {}
+declare interface SVGProps<T> extends SVGAttributes<T>, ClassAttributes<T> {
+}
 
 declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
@@ -1701,8 +1607,8 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
  * Any changes to the `state.count` property will cause the `watchFn` to re-run.
  *
- * ```typescript
- * export const MyComp = component$(() => {
+ * ```tsx
+ * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
  *   useWatch$((track) => {
  *     const count = track(store, 'count');
@@ -1719,50 +1625,11 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * });
  * ```
  *
- * See: `useWatch`
+ * @see `useWatch`
  *
  * @public
  */
-// </docs>
 declare interface Tracker {
-    // <docs markdown="./watch.public.md#Tracker">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./watch.public.md#Tracker instead)
-    /**
-     * Used to signal to Qwik which state should be watched for changes.
-     *
-     * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
-     * state objects in a read proxy which signals to Qwik which properties should be watched for
-     * changes. A change to any of the properties cause the `watchFn` to re-run.
-     *
-     * ## Example
-     *
-     * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
-     * Any changes to the `state.count` property will cause the `watchFn` to re-run.
-     *
-     * ```typescript
-     * export const MyComp = component$(() => {
-     *   const store = useStore({ count: 0, doubleCount: 0 });
-     *   useWatch$((track) => {
-     *     const count = track(store, 'count');
-     *     store.doubleCount = 2 * count;
-     *   });
-     *   return (
-     *     <div>
-     *       <span>
-     *         {store.count} / {store.doubleCount}
-     *       </span>
-     *       <button onClick$={() => store.count++}>+</button>
-     *     </div>
-     *   );
-     * });
-     * ```
-     *
-     * See: `useWatch`
-     *
-     * @public
-     */
-    // </docs>
     <T extends {}>(obj: T): T;
     <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
 }
@@ -1790,6 +1657,9 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disableRemotePlayback?: boolean | undefined;
 }
 
+/**
+ * @alpha
+ */
 declare interface WatchDescriptor {
     qrl: QRL<WatchFn>;
     el: Element;

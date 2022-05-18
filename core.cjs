@@ -51,7 +51,7 @@
         if (qDev) {
             if (value != null)
                 return;
-            throw newError(text || 'Expected defined value.');
+            throw newError(text || 'Expected defined value');
         }
     }
     function assertEqual(value1, value2, text) {
@@ -94,6 +94,7 @@
     const QSlotAttr = 'q:slot';
     const QObjAttr = 'q:obj';
     const QSeqAttr = 'q:seq';
+    const QCtxAttr = 'q:ctx';
     const QContainerAttr = 'q:container';
     const QObjSelector = '[q\\:obj]';
     const QContainerSelector = '[q\\:container]';
@@ -249,7 +250,6 @@
             this.symbolFn = symbolFn;
             this.capture = capture;
             this.captureRef = captureRef;
-            this.canonicalChunk = chunk.replace(FIND_EXT, '');
         }
         setContainer(el) {
             if (!this.el) {
@@ -294,9 +294,17 @@
             return stringifyQRL(this, options);
         }
     }
+    const getCanonicalSymbol = (symbolName) => {
+        const index = symbolName.lastIndexOf('_');
+        if (index > -1) {
+            return symbolName.slice(index + 1);
+        }
+        return symbolName;
+    };
+    const isSameQRL = (a, b) => {
+        return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+    };
     const QRLInternal = QRL;
-    // https://regexr.com/6enjv
-    const FIND_EXT = /\?[\w=&]+$/;
 
     const createPlatform = (doc) => {
         const moduleCache = new Map();
@@ -587,23 +595,23 @@
         return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
     }
 
-    // <docs markdown="./qrl.public.md#$">
+    // <docs markdown="../readme.md#$">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./qrl.public.md#$ instead)
+    // (edit ../readme.md#$ instead)
     /**
      * Qwik Optimizer marker function.
      *
      * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
      * resource referenced by `QRL`.
      *
-     * See: `implicit$FirstArg` for additional `____$(...)` rules.
+     * @see `implicit$FirstArg` for additional `____$(...)` rules.
      *
      * In this example `$(...)` is used to capture the callback function of `onmousemove` into
      * lazy-loadable reference. This allows the code to refer to the function without actually
      * loading the function. In this example, the callback function does not get loaded until
      * `mousemove` event fires.
      *
-     * ```typescript
+     * ```tsx
      * useOnDocument(
      *   'mousemove',
      *   $(() => console.log('mousemove'))
@@ -612,7 +620,7 @@
      *
      * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
      *
-     * ```typescript
+     * ```tsx
      * // FILE: <current file>
      * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
      *
@@ -633,8 +641,8 @@
      * all captured variables are constants.)
      *    - Must be runtime serializable.
      *
-     * ```typescript
-     * import { importedFn } from './example';
+     * ```tsx
+     * import { importedFn } from './import/example';
      *
      * export const greet = () => console.log('greet');
      * function topLevelFn() {}
@@ -667,9 +675,9 @@
     function $(expression) {
         return runtimeQrl(expression);
     }
-    // <docs markdown="./qrl.public.md#implicit$FirstArg">
+    // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./qrl.public.md#implicit$FirstArg instead)
+    // (edit ../readme.md#implicit$FirstArg instead)
     /**
      * Create a `____$(...)` convenience method from `___(...)`.
      *
@@ -684,7 +692,7 @@
      *
      * - `component$(() => {...})` is same as `onRender($(() => {...}))`
      *
-     * ```typescript
+     * ```tsx
      * export function myApi(callback: QRL<() => void>): void {
      *   // ...
      * }
@@ -704,7 +712,7 @@
      * ```
      *
      * @param fn - function that should have its first argument automatically `$`.
-     * @public
+     * @alpha
      */
     // </docs>
     function implicit$FirstArg(fn) {
@@ -713,14 +721,28 @@
         };
     }
 
-    // <docs markdown="./use-store.public.md#useHostElement">
+    // <docs markdown="../readme.md#useHostElement">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-store.public.md#useHostElement instead)
+    // (edit ../readme.md#useHostElement instead)
     /**
      * Retrieves the Host Element of the current component.
      *
      * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
      * (before any `await` statements.)
+     *
+     * ```tsx
+     * const Section = component$(
+     *   () => {
+     *     const hostElement = useHostElement();
+     *     console.log(hostElement); // hostElement is a HTMLSectionElement
+     *
+     *     return <Host>I am a section</Host>;
+     *   },
+     *   {
+     *     tagName: 'section',
+     *   }
+     * );
+     * ```
      *
      * @public
      */
@@ -731,9 +753,19 @@
         return element;
     }
 
+    // <docs markdown="../readme.md#useDocument">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useDocument instead)
     /**
-     * @public
+     * Retrieves the document of the current element. It's important to use this method instead of
+     * accessing `document` directly, because during SSR, the global document might not exist.
+     *
+     * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
+     * any `await` statements.)
+     *
+     * @alpha
      */
+    // </docs>
     function useDocument() {
         const doc = getInvokeContext().doc;
         if (!doc) {
@@ -742,9 +774,9 @@
         return doc;
     }
 
-    // <docs markdown="./use-store.public.md#useStore">
+    // <docs markdown="../readme.md#useStore">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-store.public.md#useStore instead)
+    // (edit ../readme.md#useStore instead)
     /**
      * Creates a object that Qwik can track across serializations.
      *
@@ -755,11 +787,51 @@
      *
      * Example showing how `useStore` is used in Counter example to keep track of count.
      *
-     * ```typescript
-     * export const Counter = component$(() => {
-     *   const store = useStore({ count: 0 });
-     *   return <button onClick$={() => store.count++}>{store.count}</button>;
+     * ```tsx
+     * const Stores = component$(() => {
+     *   const counter = useCounter(1);
+     *
+     *   // Reactivity happens even for nested objects and arrays
+     *   const userData = useStore({
+     *     name: 'Manu',
+     *     address: {
+     *       address: '',
+     *       city: '',
+     *     },
+     *     orgs: [],
+     *   });
+     *
+     *   // useStore() can also accept a function to calculate the initial value
+     *   const state = useStore(() => {
+     *     return {
+     *       value: expensiveInitialValue(),
+     *     };
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <div>Counter: {counter.value}</div>
+     *       <Child userData={userData} state={state} />
+     *     </Host>
+     *   );
      * });
+     *
+     * function useCounter(step: number) {
+     *   // Multiple stores can be created in custom hooks for convenience and composability
+     *   const counterStore = useStore({
+     *     value: 0,
+     *   });
+     *   useClientEffect$(() => {
+     *     // Only runs in the client
+     *     const timer = setInterval(() => {
+     *       counterStore.value += step;
+     *     }, 500);
+     *     return () => {
+     *       clearInterval(timer);
+     *     };
+     *   });
+     *   return counterStore;
+     * }
      * ```
      *
      * @public
@@ -776,9 +848,42 @@
         setStore(newStore);
         return wrapSubscriber(newStore, hostElement);
     }
+    // <docs markdown="../readme.md#useRef">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useRef instead)
     /**
-     * @alpha
+     * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+     * to the `ref` property in JSX.
+     *
+     * ```tsx
+     * export function useRef<T = Element>(current?: T): Ref<T> {
+     *   return useStore({ current });
+     * }
+     * ```
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const input = useRef<HTMLInputElement>();
+     *
+     *   useClientEffect$((track) => {
+     *     const el = track(input, 'current')!;
+     *     el.focus();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <input type="text" ref={input} />
+     *     </Host>
+     *   );
+     * });
+     *
+     * ```
+     *
+     * @public
      */
+    // </docs>
     function useRef(current) {
         return useStore({ current });
     }
@@ -819,9 +924,9 @@
         return url;
     }
 
-    // <docs markdown="./use-store.public.md#useLexicalScope">
+    // <docs markdown="../readme.md#useLexicalScope">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-store.public.md#useLexicalScope instead)
+    // (edit ../readme.md#useLexicalScope instead)
     /**
      * Used by the Qwik Optimizer to restore the lexical scoped variables.
      *
@@ -860,6 +965,9 @@
     const isWatchDescriptor = (obj) => {
         return obj && typeof obj === 'object' && 'qrl' in obj && 'f' in obj;
     };
+    const isWatchCleanup = (obj) => {
+        return isWatchDescriptor(obj) && !!(obj.f & WatchFlags.IsCleanup);
+    };
     /**
      * @alpha
      */
@@ -867,9 +975,68 @@
         const [watch] = useLexicalScope();
         notifyWatch(watch);
     }
+    // <docs markdown="../readme.md#useWatch">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useWatch instead)
     /**
-     * @alpha
+     * Reruns the `watchFn` when the observed inputs change.
+     *
+     * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+     * those inputs change.
+     *
+     * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+     * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+     * to re-run.
+     *
+     * @see `Tracker`
+     *
+     * @public
+     *
+     * ## Example
+     *
+     * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+     * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+     * the double of `state.count`.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     count: 0,
+     *     doubleCount: 0,
+     *     debounced: 0,
+     *   });
+     *
+     *   // Double count watch
+     *   useWatch$((track) => {
+     *     const count = track(store, 'count');
+     *     store.doubleCount = 2 * count;
+     *   });
+     *
+     *   // Debouncer watch
+     *   useWatch$((track) => {
+     *     const doubleCount = track(store, 'doubleCount');
+     *     const timer = setTimeout(() => {
+     *       store.debounced = doubleCount;
+     *     }, 2000);
+     *     return () => {
+     *       clearTimeout(timer);
+     *     };
+     *   });
+     *   return (
+     *     <Host>
+     *       <div>
+     *         {store.count} / {store.doubleCount}
+     *       </div>
+     *       <div>{store.debounced}</div>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @param watch - Function which should be re-executed when changes to the inputs are detected
+     * @public
      */
+    // </docs>
     function useWatchQrl(qrl, opts) {
         const [watch, setWatch] = useSequentialScope();
         if (!watch) {
@@ -888,13 +1055,96 @@
             }
         }
     }
+    // <docs markdown="../readme.md#useWatch">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useWatch instead)
     /**
-     * @alpha
+     * Reruns the `watchFn` when the observed inputs change.
+     *
+     * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+     * those inputs change.
+     *
+     * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+     * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+     * to re-run.
+     *
+     * @see `Tracker`
+     *
+     * @public
+     *
+     * ## Example
+     *
+     * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+     * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+     * the double of `state.count`.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     count: 0,
+     *     doubleCount: 0,
+     *     debounced: 0,
+     *   });
+     *
+     *   // Double count watch
+     *   useWatch$((track) => {
+     *     const count = track(store, 'count');
+     *     store.doubleCount = 2 * count;
+     *   });
+     *
+     *   // Debouncer watch
+     *   useWatch$((track) => {
+     *     const doubleCount = track(store, 'doubleCount');
+     *     const timer = setTimeout(() => {
+     *       store.debounced = doubleCount;
+     *     }, 2000);
+     *     return () => {
+     *       clearTimeout(timer);
+     *     };
+     *   });
+     *   return (
+     *     <Host>
+     *       <div>
+     *         {store.count} / {store.doubleCount}
+     *       </div>
+     *       <div>{store.debounced}</div>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @param watch - Function which should be re-executed when changes to the inputs are detected
+     * @public
      */
+    // </docs>
     const useWatch$ = implicit$FirstArg(useWatchQrl);
+    // <docs markdown="../readme.md#useClientEffect">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useClientEffect instead)
     /**
-     * @alpha
+     * ```tsx
+     * const Timer = component$(() => {
+     *   const store = useStore({
+     *     count: 0,
+     *   });
+     *
+     *   useClientEffect$(() => {
+     *     // Only runs in the client
+     *     const timer = setInterval(() => {
+     *       store.count++;
+     *     }, 500);
+     *     return () => {
+     *       clearInterval(timer);
+     *     };
+     *   });
+     *
+     *   return <Host>{store.count}</Host>;
+     * });
+     * ```
+     *
+     * @public
      */
+    // </docs>
     function useClientEffectQrl(qrl, opts) {
         const [watch, setWatch] = useSequentialScope();
         if (!watch) {
@@ -913,13 +1163,102 @@
             }
         }
     }
+    // <docs markdown="../readme.md#useClientEffect">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useClientEffect instead)
     /**
-     * @alpha
+     * ```tsx
+     * const Timer = component$(() => {
+     *   const store = useStore({
+     *     count: 0,
+     *   });
+     *
+     *   useClientEffect$(() => {
+     *     // Only runs in the client
+     *     const timer = setInterval(() => {
+     *       store.count++;
+     *     }, 500);
+     *     return () => {
+     *       clearInterval(timer);
+     *     };
+     *   });
+     *
+     *   return <Host>{store.count}</Host>;
+     * });
+     * ```
+     *
+     * @public
      */
+    // </docs>
     const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+    // <docs markdown="../readme.md#useServerMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useServerMount instead)
     /**
-     * @alpha
+     * Register's a server mount hook, that runs only in server when the component is first mounted.
+     * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+     * state changes.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     users: [],
+     *   });
+     *
+     *   // Double count watch
+     *   useServerMount$(async () => {
+     *     // This code will ONLY run once in the server, when the component is mounted
+     *     store.users = await db.requestUsers();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       {store.users.map((user) => (
+     *         <User user={user} />
+     *       ))}
+     *     </Host>
+     *   );
+     * });
+     *
+     * interface User {
+     *   name: string;
+     * }
+     * function User(props: { user: User }) {
+     *   return <div>Name: {props.user.name}</div>;
+     * }
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     users: [],
+     *   });
+     *
+     *   // Double count watch
+     *   useServerMount$(async () => {
+     *     // This code will ONLY run once in the server, when the component is mounted
+     *     store.users = await db.requestUsers();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       {store.users.map((user) => (
+     *         <User user={user} />
+     *       ))}
+     *     </Host>
+     *   );
+     * });
+     *
+     * interface User {
+     *   name: string;
+     * }
+     * function User(props: { user: User }) {
+     *   return <div>Name: {props.user.name}</div>;
+     * }
+     * ```
+     *
+     * @public
      */
+    // </docs>
     function useServerMountQrl(watchQrl) {
         const [watch, setWatch] = useSequentialScope();
         if (!watch) {
@@ -930,9 +1269,74 @@
             }
         }
     }
+    // <docs markdown="../readme.md#useServerMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useServerMount instead)
     /**
-     * @alpha
+     * Register's a server mount hook, that runs only in server when the component is first mounted.
+     * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+     * state changes.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     users: [],
+     *   });
+     *
+     *   // Double count watch
+     *   useServerMount$(async () => {
+     *     // This code will ONLY run once in the server, when the component is mounted
+     *     store.users = await db.requestUsers();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       {store.users.map((user) => (
+     *         <User user={user} />
+     *       ))}
+     *     </Host>
+     *   );
+     * });
+     *
+     * interface User {
+     *   name: string;
+     * }
+     * function User(props: { user: User }) {
+     *   return <div>Name: {props.user.name}</div>;
+     * }
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     users: [],
+     *   });
+     *
+     *   // Double count watch
+     *   useServerMount$(async () => {
+     *     // This code will ONLY run once in the server, when the component is mounted
+     *     store.users = await db.requestUsers();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       {store.users.map((user) => (
+     *         <User user={user} />
+     *       ))}
+     *     </Host>
+     *   );
+     * });
+     *
+     * interface User {
+     *   name: string;
+     * }
+     * function User(props: { user: User }) {
+     *   return <div>Name: {props.user.name}</div>;
+     * }
+     * ```
+     *
+     * @public
      */
+    // </docs>
     const useServerMount$ = implicit$FirstArg(useServerMountQrl);
     function runWatch(watch) {
         if (!(watch.f & WatchFlags.IsDirty)) {
@@ -945,7 +1349,6 @@
                 cleanupWatch(watch);
                 const el = watch.el;
                 const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
-                invokationContext.watch = watch;
                 const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
                     const captureRef = watch.qrl.captureRef;
                     if (Array.isArray(captureRef)) {
@@ -1028,7 +1431,7 @@
             return;
         }
         script.remove();
-        const map = getProxyMap(doc);
+        const proxyMap = getProxyMap(doc);
         const meta = JSON.parse(script.textContent || '{}');
         // Collect all elements
         const elements = new Map();
@@ -1037,10 +1440,10 @@
             elements.set(ELEMENT_ID_PREFIX + id, el);
         });
         const getObject = (id) => {
-            return getObjectImpl(id, elements, meta.objs, map);
+            return getObjectImpl(id, elements, meta.objs, proxyMap);
         };
         // Revive proxies with subscriptions into the proxymap
-        reviveValues(meta.objs, meta.subs, getObject, map, parentJSON);
+        reviveValues(meta.objs, meta.subs, getObject, proxyMap, parentJSON);
         // Rebuild target objects
         for (const obj of meta.objs) {
             reviveNestedObjects(obj, getObject);
@@ -1048,8 +1451,12 @@
         // Walk all elements with q:obj and resume their state
         getNodesInScope(containerEl, hasQObj).forEach((el) => {
             const qobj = el.getAttribute(QObjAttr);
+            if (qobj === '') {
+                return;
+            }
             const seq = el.getAttribute(QSeqAttr);
             const host = el.getAttribute(QHostAttr);
+            const contexts = el.getAttribute(QCtxAttr);
             const ctx = getContext(el);
             // Restore captured objets
             qobj.split(' ').forEach((part) => {
@@ -1070,6 +1477,15 @@
                 ctx.props = ctx.refMap.get(props);
                 ctx.renderQrl = ctx.refMap.get(renderQrl);
             }
+            if (contexts) {
+                contexts.split(' ').map((part) => {
+                    const [key, value] = part.split('=');
+                    if (!ctx.contexts) {
+                        ctx.contexts = new Map();
+                    }
+                    ctx.contexts.set(key, ctx.refMap.get(strToInt(value)));
+                });
+            }
         });
         containerEl.setAttribute(QContainerAttr, 'resumed');
         logDebug('Container resumed');
@@ -1077,23 +1493,32 @@
     function snapshotState(containerEl) {
         const doc = getDocument(containerEl);
         const proxyMap = getProxyMap(doc);
-        const objSet = new Set();
         const platform = getPlatform(doc);
         const elementToIndex = new Map();
+        const collector = createCollector(doc, proxyMap);
         // Collect all qObjected around the DOM
-        const elements = getNodesInScope(containerEl, hasQObj);
-        elements.forEach((node) => {
+        getNodesInScope(containerEl, hasQObj).forEach((node) => {
             const ctx = getContext(node);
-            const qMap = ctx.refMap;
-            qMap.array.forEach((v) => {
-                collectValue(v, objSet, doc);
-            });
+            // TODO: improve serialization, get rid of refMap
+            const hasListeners = ctx.listeners && ctx.listeners.size > 0;
+            const hasWatch = ctx.refMap.array.some(isWatchCleanup);
+            const hasContext = !!ctx.contexts;
+            if (hasListeners || hasWatch || hasContext) {
+                collectElement(node, collector);
+            }
         });
         // Convert objSet to array
-        const objs = Array.from(objSet);
+        const objs = Array.from(collector.objSet);
+        function hasSubscriptions(a) {
+            const proxy = proxyMap.get(a);
+            if (proxy) {
+                return proxy[QOjectSubsSymbol].size > 0;
+            }
+            return false;
+        }
         objs.sort((a, b) => {
-            const isProxyA = proxyMap.has(a) ? 0 : 1;
-            const isProxyB = proxyMap.has(b) ? 0 : 1;
+            const isProxyA = hasSubscriptions(a) ? 0 : 1;
+            const isProxyB = hasSubscriptions(b) ? 0 : 1;
             return isProxyA - isProxyB;
         });
         const objToId = new Map();
@@ -1157,7 +1582,7 @@
         const subs = objs
             .map((obj) => {
             const subs = proxyMap.get(obj)?.[QOjectSubsSymbol];
-            if (subs) {
+            if (subs && subs.size > 0) {
                 return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
                     const id = getObjId(sub);
                     if (id !== null) {
@@ -1196,11 +1621,13 @@
             }
             return obj;
         });
+        const listeners = [];
         // Write back to the dom
-        elements.forEach((node) => {
+        collector.elements.forEach((node) => {
             const ctx = getContext(node);
             assertDefined(ctx);
             const props = ctx.props;
+            const contexts = ctx.contexts;
             const renderQrl = ctx.renderQrl;
             const attribute = ctx.refMap.array
                 .map((obj) => {
@@ -1219,6 +1646,23 @@
                 }
                 node.setAttribute(QHostAttr, objs.map((obj) => ctx.refMap.indexOf(obj)).join(' '));
             }
+            if (ctx.listeners) {
+                ctx.listeners.forEach((qrls, key) => {
+                    qrls.forEach((qrl) => {
+                        listeners.push({
+                            key,
+                            qrl,
+                        });
+                    });
+                });
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach((value, key) => {
+                    serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+                });
+                node.setAttribute(QCtxAttr, serializedContexts.join(' '));
+            }
         });
         // Sanity check of serialized element
         if (qDev) {
@@ -1232,8 +1676,12 @@
             });
         }
         return {
-            objs: convertedObjs,
-            subs,
+            state: {
+                objs: convertedObjs,
+                subs,
+            },
+            objs,
+            listeners,
         };
     }
     function getQwikJSON(parentElm) {
@@ -1263,7 +1711,7 @@
             child = child.nextElementSibling;
         }
     }
-    function reviveValues(objs, subs, getObject, map, containerEl) {
+    function reviveValues(objs, subs, getObject, proxyMap, containerEl) {
         for (let i = 0; i < objs.length; i++) {
             const value = objs[i];
             if (typeof value === 'string') {
@@ -1290,7 +1738,7 @@
                         const set = entry[1] === null ? null : new Set(entry[1]);
                         converted.set(el, set);
                     });
-                    _restoreQObject(value, map, converted);
+                    _restoreQObject(value, proxyMap, converted);
                 }
             }
         }
@@ -1330,7 +1778,7 @@
             }
         }
     }
-    function getObjectImpl(id, elements, objs, map) {
+    function getObjectImpl(id, elements, objs, proxyMap) {
         if (id.startsWith(ELEMENT_ID_PREFIX)) {
             assertEqual(elements.has(id), true);
             return elements.get(id);
@@ -1340,9 +1788,7 @@
         const obj = objs[index];
         const needsProxy = id.endsWith('!');
         if (needsProxy) {
-            const finalObj = map.get(obj);
-            assertDefined(finalObj);
-            return finalObj;
+            return proxyMap.get(obj) ?? readWriteProxy(obj, proxyMap);
         }
         return obj;
     }
@@ -1359,50 +1805,102 @@
         }
         return obj;
     }
-    function collectValue(obj, seen, doc) {
-        const handled = collectQObjects(obj, seen, doc);
+    function collectValue(obj, collector) {
+        const handled = collectQObjects(obj, collector);
         if (!handled) {
-            seen.add(normalizeObj(obj, doc));
+            collector.objSet.add(normalizeObj(obj, collector.doc));
         }
     }
-    function collectQrl(obj, seen, doc) {
-        seen.add(normalizeObj(obj, doc));
+    function createCollector(doc, proxyMap) {
+        return {
+            seen: new Set(),
+            objSet: new Set(),
+            elements: [],
+            proxyMap,
+            doc,
+        };
+    }
+    function collectQrl(obj, collector) {
+        if (collector.seen.has(obj)) {
+            return true;
+        }
+        collector.seen.add(obj);
+        collector.objSet.add(normalizeObj(obj, collector.doc));
         if (obj.captureRef) {
-            obj.captureRef.forEach((obj) => collectValue(obj, seen, doc));
+            obj.captureRef.forEach((obj) => collectValue(obj, collector));
         }
     }
-    function collectQObjects(obj, seen, doc) {
+    function collectElement(el, collector) {
+        if (collector.seen.has(el)) {
+            return;
+        }
+        collector.seen.add(el);
+        const captured = tryGetContext(el)?.refMap.array;
+        if (captured) {
+            collector.elements.push(el);
+            captured.forEach((sub) => {
+                collectValue(sub, collector);
+            });
+        }
+    }
+    function collectSubscriptions(subs, collector) {
+        if (collector.seen.has(subs)) {
+            return;
+        }
+        collector.seen.add(subs);
+        Array.from(subs.keys()).forEach((key) => {
+            if (isElement(key)) {
+                collectElement(key, collector);
+            }
+            else {
+                collectValue(key, collector);
+            }
+        });
+    }
+    function collectQObjects(obj, collector) {
         if (obj != null) {
             if (typeof obj === 'object') {
-                if (!obj[QOjectTargetSymbol] && isNode$1(obj)) {
-                    return obj.nodeType === 1;
+                const hasTarget = !!obj[QOjectTargetSymbol];
+                if (!hasTarget && isNode$1(obj)) {
+                    if (obj.nodeType === 1) {
+                        collectElement(obj, collector);
+                        return true;
+                    }
+                    return false;
                 }
                 if (isQrl(obj)) {
-                    collectQrl(obj, seen, doc);
+                    collectQrl(obj, collector);
                     return true;
                 }
-                obj = normalizeObj(obj, doc);
+                const proxied = hasTarget ? obj : collector.proxyMap.get(obj);
+                const subs = proxied?.[QOjectSubsSymbol];
+                if (subs) {
+                    collectSubscriptions(subs, collector);
+                }
+                obj = normalizeObj(obj, collector.doc);
             }
             if (typeof obj === 'object') {
-                if (seen.has(obj))
+                if (collector.seen.has(obj)) {
                     return true;
-                seen.add(obj);
+                }
+                collector.seen.add(obj);
+                collector.objSet.add(obj);
                 if (Array.isArray(obj)) {
                     for (let i = 0; i < obj.length; i++) {
-                        collectQObjects(obj[i], seen, doc);
+                        collectQObjects(obj[i], collector);
                     }
                 }
                 else {
                     for (const key in obj) {
                         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                            collectQObjects(obj[key], seen, doc);
+                            collectQObjects(obj[key], collector);
                         }
                     }
                 }
                 return true;
             }
             if (typeof obj === 'string') {
-                seen.add(obj);
+                collector.objSet.add(obj);
                 return true;
             }
         }
@@ -1482,14 +1980,13 @@
         if (!value) {
             return;
         }
-        if (typeof value == 'string') {
-            value = parseQRL(value, ctx.element);
+        if (!ctx.listeners) {
+            ctx.listeners = getDomListeners(ctx.element);
         }
-        const existingQRLs = getExistingQRLs(ctx, prop);
-        if (Array.isArray(value)) {
-            value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
-        }
-        else if (isQrl(value)) {
+        const kebabProp = fromCamelToKebabCase(prop);
+        const existingListeners = ctx.listeners.get(kebabProp) || [];
+        const newQRLs = Array.isArray(value) ? value : [value];
+        for (const value of newQRLs) {
             const cp = value.copy();
             cp.setContainer(ctx.element);
             const capture = cp.capture;
@@ -1500,29 +1997,17 @@
                     captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
             }
             // Important we modify the array as it is cached.
-            for (let i = 0; i < existingQRLs.length; i++) {
-                const qrl = existingQRLs[i];
-                if (!isPromise(qrl) && qrl.canonicalChunk === cp.canonicalChunk && qrl.symbol === cp.symbol) {
-                    existingQRLs.splice(i, 1);
+            for (let i = 0; i < existingListeners.length; i++) {
+                const qrl = existingListeners[i];
+                if (isSameQRL(qrl, cp)) {
+                    existingListeners.splice(i, 1);
                     i--;
                 }
             }
-            existingQRLs.push(cp);
+            existingListeners.push(cp);
         }
-        else if (isPromise(value)) {
-            const writePromise = value.then((qrl) => {
-                existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-                qPropWriteQRL(rctx, ctx, prop, qrl);
-                return qrl;
-            });
-            existingQRLs.push(writePromise);
-        }
-        else {
-            // TODO(misko): Test/better text
-            throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
-        }
-        const kebabProp = fromCamelToKebabCase(prop);
-        const newValue = serializeQRLs(existingQRLs, ctx);
+        ctx.listeners.set(kebabProp, existingListeners);
+        const newValue = serializeQRLs(existingListeners, ctx);
         if (ctx.element.getAttribute(kebabProp) !== newValue) {
             if (rctx) {
                 setAttribute(rctx, ctx.element, kebabProp, newValue);
@@ -1532,20 +2017,22 @@
             }
         }
     }
-    function getExistingQRLs(ctx, prop) {
-        const key = 'event:' + prop;
-        let parts = ctx.cache.get(key);
-        if (!parts) {
-            const attrName = fromCamelToKebabCase(prop);
-            parts = [];
-            (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
-                if (qrl) {
-                    parts.push(parseQRL(qrl, ctx.element));
+    function getDomListeners(el) {
+        const attributes = el.attributes;
+        const listeners = new Map();
+        for (let i = 0; i < attributes.length; i++) {
+            const attr = attributes.item(i);
+            if (attr.name.startsWith('on:') ||
+                attr.name.startsWith('on-window:') ||
+                attr.name.startsWith('on-document:')) {
+                let array = listeners.get(attr.name);
+                if (!array) {
+                    listeners.set(attr.name, (array = []));
                 }
-            });
-            ctx.cache.set(key, parts);
+                array.push(parseQRL(attr.value, el));
+            }
         }
-        return parts;
+        return listeners;
     }
     function serializeQRLs(existingQRLs, ctx) {
         const platform = getPlatform(getDocument(ctx.element));
@@ -1560,11 +2047,15 @@
             .join('\n');
     }
 
+    // <docs markdown="../readme.md#pauseContainer">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#pauseContainer instead)
     /**
      * Serialize the current state of the application into DOM
      *
-     * @public
+     * @alpha
      */
+    // </docs>
     function pauseContainer(elmOrDoc) {
         const doc = getDocument(elmOrDoc);
         const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
@@ -1572,9 +2063,10 @@
         const data = snapshotState(containerEl);
         const script = doc.createElement('script');
         script.setAttribute('type', 'qwik/json');
-        script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
+        script.textContent = JSON.stringify(data.state, undefined, qDev ? '  ' : undefined);
         parentJSON.appendChild(script);
         containerEl.setAttribute(QContainerAttr, 'paused');
+        return data;
     }
 
     Error.stackTraceLimit = 9999;
@@ -1814,9 +2306,14 @@
         assertDefined(onRenderQRL);
         // Component is not dirty any more
         rctx.globalState.hostsStaging.delete(hostElement);
+        const newCtx = {
+            ...rctx,
+            components: [...rctx.components],
+        };
         // Invoke render hook
         const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
         invocatinContext.subscriber = hostElement;
+        invocatinContext.renderCtx = newCtx;
         const waitOn = (invocatinContext.waitOn = []);
         // Clean current subscription before render
         ctx.refMap.array.forEach((obj) => {
@@ -1857,10 +2354,7 @@
                     }
                 }
                 componentCtx.slots = [];
-                const newCtx = {
-                    ...rctx,
-                    component: componentCtx,
-                };
+                newCtx.components.push(componentCtx);
                 return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
             });
         });
@@ -2050,7 +2544,10 @@
             isSvg = false;
         }
         else if (isSlot) {
-            rctx.component.slots.push(vnode);
+            const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
+            if (currentComponent) {
+                currentComponent.slots.push(vnode);
+            }
         }
         const isComponent = isComponentNode(vnode);
         if (dirty) {
@@ -2218,7 +2715,7 @@
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
         }
-        const currentComponent = rctx.component;
+        const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
         if (currentComponent) {
             const styleTag = currentComponent.styleClass;
             if (styleTag) {
@@ -2226,7 +2723,7 @@
             }
             if (tag === 'q:slot') {
                 setSlotRef(rctx, currentComponent.hostElement, elm);
-                rctx.component.slots.push(vnode);
+                currentComponent.slots.push(vnode);
             }
         }
         let wait;
@@ -2704,7 +3201,7 @@
             operations: [],
             roots: [],
             containerEl,
-            component: undefined,
+            components: [],
             perf: {
                 visited: 0,
                 timing: [],
@@ -2836,6 +3333,9 @@
     function wrap(value, proxyMap) {
         if (value && typeof value === 'object') {
             if (isQrl(value)) {
+                return value;
+            }
+            if (Object.isFrozen(value)) {
                 return value;
             }
             const nakedValue = unwrapProxy(value);
@@ -3049,12 +3549,22 @@
         }
         return true;
     }
+    // <docs markdown="../readme.md#noSerialize">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#noSerialize instead)
     /**
      * @alpha
      */
+    // </docs>
     function noSerialize(input) {
         noSerializeSet.add(input);
         return input;
+    }
+    /**
+     * @alpha
+     */
+    function immutable(input) {
+        return Object.freeze(input);
     }
     function isConnected(sub) {
         if (isElement(sub)) {
@@ -3065,19 +3575,6 @@
         }
     }
 
-    /**
-     * @alpha
-     */
-    function useSubscriber(obj) {
-        const ctx = getInvokeContext();
-        let subscriber = ctx.watch;
-        if (!subscriber) {
-            assertEqual(ctx.event, RenderEvent);
-            subscriber = ctx.hostElement;
-        }
-        assertDefined(subscriber);
-        return wrapSubscriber(obj, subscriber);
-    }
     /**
      * @alpha
      */
@@ -3118,6 +3615,7 @@
 
     let runtimeSymbolId = 0;
     const RUNTIME_QRL = '/runtimeQRL';
+    const INLINED_QRL = '/inlinedQRL';
     // https://regexr.com/68v72
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
     // https://regexr.com/690ds
@@ -3131,7 +3629,7 @@
     /**
      * Lazy-load a `QRL` symbol and return the lazy-loaded value.
      *
-     * See: `QRL`
+     * @see `QRL`
      *
      * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
      * account.
@@ -3157,21 +3655,21 @@
             }));
         }
     }
-    // <docs markdown="./qrl.public.md#qrl">
+    // <docs markdown="../readme.md#qrl">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./qrl.public.md#qrl instead)
+    // (edit ../readme.md#qrl instead)
     /**
      * Used by Qwik Optimizer to point to lazy-loaded resources.
      *
      * This function should be used by the Qwik Optimizer only. The function should not be directly
      * referred to in the source code of the application.
      *
-     * See: `QRL`, `$(...)`
+     * @see `QRL`, `$(...)`
      *
      * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
      * @param symbol - Symbol to lazy load
      * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
-     * @public
+     * @alpha
      */
     // </docs>
     function qrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
@@ -3208,11 +3706,7 @@
             throw new Error('Q-ERROR: Unknown type argument: ' + chunkOrFn);
         }
         // Unwrap subscribers
-        if (Array.isArray(lexicalScopeCapture)) {
-            for (let i = 0; i < lexicalScopeCapture.length; i++) {
-                lexicalScopeCapture[i] = unwrapSubscriber(lexicalScopeCapture[i]);
-            }
-        }
+        unwrapLexicalScope(lexicalScopeCapture);
         const qrl = new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
         const ctx = tryGetInvokeContext();
         if (ctx && ctx.element) {
@@ -3223,13 +3717,37 @@
     function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
         return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
     }
+    /**
+     * @alpha
+     */
+    function inlinedQrl(symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) {
+        // Unwrap subscribers
+        return new QRLInternal(INLINED_QRL, symbolName, symbol, null, null, unwrapLexicalScope(lexicalScopeCapture));
+    }
+    function unwrapLexicalScope(lexicalScope) {
+        if (Array.isArray(lexicalScope)) {
+            for (let i = 0; i < lexicalScope.length; i++) {
+                lexicalScope[i] = unwrapSubscriber(lexicalScope[i]);
+            }
+        }
+        return lexicalScope;
+    }
     function stringifyQRL(qrl, opts = {}) {
         const qrl_ = toInternalQRL(qrl);
-        const symbol = qrl_.symbol;
+        let symbol = qrl_.symbol;
+        let chunk = qrl_.chunk;
         const refSymbol = qrl_.refSymbol ?? symbol;
         const platform = opts.platform;
         const element = opts.element;
-        const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
+        if (platform) {
+            const result = platform.chunkForSymbol(refSymbol);
+            if (result) {
+                chunk = result[0];
+                if (!qrl_.refSymbol) {
+                    symbol = result[1];
+                }
+            }
+        }
         const parts = [chunk];
         if (symbol && symbol !== 'default') {
             parts.push('#', symbol);
@@ -3296,15 +3814,29 @@
         return symbolOrQrl;
     }
 
-    // <docs markdown="./component.public.md#useCleanup">
+    // <docs markdown="../readme.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useCleanup instead)
+    // (edit ../readme.md#useCleanup instead)
     /**
-     * A lazy-loadable reference to a component's destroy hook.
+     * A lazy-loadable reference to a component's cleanup hook.
      *
-     * Invoked when the component is destroyed (removed from render tree).
+     * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+     * SSR serialization.
      *
-     * @public
+     * Can be used to release resouces, abort network requets, stop timers...
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   useCleanup$(() => {
+     *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+     *     // Can be used to release resouces, abort network requets, stop timers...
+     *     console.log('component is destroyed');
+     *   });
+     *   return <div>Hello world</div>;
+     * });
+     * ```
+     *
+     * @alpha
      */
     // </docs>
     function useCleanupQrl(unmountFn) {
@@ -3320,104 +3852,135 @@
             getContext(el).refMap.add(watch);
         }
     }
-    // <docs markdown="./component.public.md#useCleanup">
+    // <docs markdown="../readme.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useCleanup instead)
+    // (edit ../readme.md#useCleanup instead)
     /**
-     * A lazy-loadable reference to a component's destroy hook.
+     * A lazy-loadable reference to a component's cleanup hook.
      *
-     * Invoked when the component is destroyed (removed from render tree).
+     * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+     * SSR serialization.
      *
-     * @public
+     * Can be used to release resouces, abort network requets, stop timers...
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   useCleanup$(() => {
+     *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+     *     // Can be used to release resouces, abort network requets, stop timers...
+     *     console.log('component is destroyed');
+     *   });
+     *   return <div>Hello world</div>;
+     * });
+     * ```
+     *
+     * @alpha
      */
     // </docs>
     const useCleanup$ = implicit$FirstArg(useCleanupQrl);
-    // <docs markdown="./component.public.md#useResume">
+    // <docs markdown="../readme.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useResume instead)
+    // (edit ../readme.md#useResume instead)
     /**
      * A lazy-loadable reference to a component's on resume hook.
      *
      * The hook is eagerly invoked when the application resumes on the client. Because it is called
      * eagerly, this allows the component to resume even if no user interaction has taken place.
      *
-     * @public
+     * Only called in the client.
+     * Only called once.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   useResume$(() => {
+     *     // Eagerly invoked when the application resumes on the client
+     *     console.log('called once in client');
+     *   });
+     *   return <div>Hello world</div>;
+     * });
+     * ```
+     *
+     * @see `useVisible`, `useClientEffect`
+     *
+     * @alpha
      */
     // </docs>
     function useResumeQrl(resumeFn) {
         useOn('qresume', resumeFn);
     }
-    // <docs markdown="./component.public.md#useResume">
+    // <docs markdown="../readme.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useResume instead)
+    // (edit ../readme.md#useResume instead)
     /**
      * A lazy-loadable reference to a component's on resume hook.
      *
      * The hook is eagerly invoked when the application resumes on the client. Because it is called
      * eagerly, this allows the component to resume even if no user interaction has taken place.
      *
-     * @public
+     * Only called in the client.
+     * Only called once.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   useResume$(() => {
+     *     // Eagerly invoked when the application resumes on the client
+     *     console.log('called once in client');
+     *   });
+     *   return <div>Hello world</div>;
+     * });
+     * ```
+     *
+     * @see `useVisible`, `useClientEffect`
+     *
+     * @alpha
      */
     // </docs>
     const useResume$ = implicit$FirstArg(useResumeQrl);
-    // <docs markdown="./component.public.md#useVisible">
+    // <docs markdown="../readme.md#useVisible">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useVisible instead)
+    // (edit ../readme.md#useVisible instead)
     /**
      * A lazy-loadable reference to a component's on visible hook.
      *
-     * The hook is lazily invoked when the component becomes visible.
+     * The hook is lazily invoked when the component becomes visible in the browser viewport.
      *
-     * @public
+     * Only called in the client.
+     * Only called once.
+     *
+     * @see `useResume`, `useClientEffect`
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     isVisible: false,
+     *   });
+     *   useVisible$(() => {
+     *     // Invoked once when the component is visible in the browser's viewport
+     *     console.log('called once in client when visible');
+     *     store.isVisible = true;
+     *   });
+     *   return <div>{store.isVisible}</div>;
+     * });
+     * ```
+     *
+     * @alpha
      */
     // </docs>
     function useVisibleQrl(resumeFn) {
         useOn('qvisible', resumeFn);
     }
-    // <docs markdown="./component.public.md#usePause">
+    // <docs markdown="../readme.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#usePause instead)
-    /**
-     * A lazy-loadable reference to a component's on pause hook.
-     *
-     * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
-     * the component to do last-minute clean-up before its state is serialized.
-     *
-     * Typically used with transient state.
-     *
-     * @public
-     */
-    // </docs>
-    function usePauseQrl(dehydrateFn) {
-        throw new Error('IMPLEMENT: onPause' + dehydrateFn);
-    }
-    // <docs markdown="./component.public.md#usePause">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#usePause instead)
-    /**
-     * A lazy-loadable reference to a component's on pause hook.
-     *
-     * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
-     * the component to do last-minute clean-up before its state is serialized.
-     *
-     * Typically used with transient state.
-     *
-     * @public
-     */
-    // </docs>
-    const usePause$ = implicit$FirstArg(usePauseQrl);
-    // <docs markdown="./component.public.md#useOn">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useOn instead)
+    // (edit ../readme.md#useOn instead)
     /**
      * Register a listener on the current component's host element.
      *
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
-     * have access to the JSX.
+     * have access to the JSX. Otherwise it's adding a JSX listener in the `<Host>` is a better idea.
      *
-     * See: `on`, `onWindow`, `onDocument`.
+     * @see `useOn`, `useOnWindow`, `useOnDocument`.
      *
-     * @public
+     * @alpha
      */
     // </docs>
     function useOn(event, eventFn) {
@@ -3425,37 +3988,70 @@
         const ctx = getContext(el);
         qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
     }
-    // <docs markdown="./component.public.md#useOnDocument">
+    // <docs markdown="../readme.md#useOnDocument">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useOnDocument instead)
+    // (edit ../readme.md#useOnDocument instead)
     /**
      * Register a listener on `document`.
      *
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
      * have access to the JSX.
      *
-     * See: `on`, `onWindow`, `onDocument`.
+     * @see `useOn`, `useOnWindow`, `useOnDocument`.
      *
-     * @public
+     * ```tsx
+     * function useScroll() {
+     *   useOnDocument(
+     *     'scroll',
+     *     $(() => {
+     *       console.log('body scrolled');
+     *     })
+     *   );
+     * }
+     *
+     * const Cmp = component$(() => {
+     *   useScroll();
+     *   return <Host>Profit!</Host>;
+     * });
+     * ```
+     *
+     * @alpha
      */
     // </docs>
-    function useOnDocument(event, eventFn) {
+    function useOnDocument(event, eventQrl) {
         const el = useHostElement();
         const ctx = getContext(el);
-        qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventFn);
+        qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventQrl);
     }
-    // <docs markdown="./component.public.md#useOnWindow">
+    // <docs markdown="../readme.md#useOnWindow">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useOnWindow instead)
+    // (edit ../readme.md#useOnWindow instead)
     /**
      * Register a listener on `window`.
      *
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
      * have access to the JSX.
      *
-     * See: `on`, `onWindow`, `onDocument`.
+     * @see `useOn`, `useOnWindow`, `useOnDocument`.
      *
-     * @public
+     * ```tsx
+     * function useAnalytics() {
+     *   useOnWindow(
+     *     'popstate',
+     *     $(() => {
+     *       console.log('navigation happened');
+     *       // report to analytics
+     *     })
+     *   );
+     * }
+     *
+     * const Cmp = component$(() => {
+     *   useAnalytics();
+     *   return <Host>Profit!</Host>;
+     * });
+     * ```
+     *
+     * @alpha
      */
     // </docs>
     function useOnWindow(event, eventFn) {
@@ -3463,56 +4059,89 @@
         const ctx = getContext(el);
         qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
     }
-    // <docs markdown="./component.public.md#useStyles">
+    // <docs markdown="../readme.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useStyles instead)
+    // (edit ../readme.md#useStyles instead)
     /**
-     * Refer to component styles.
+     * A lazy-loadable reference to a component's styles.
      *
-     * @alpha
+     * Component styles allow Qwik to lazy load the style information for the component only when
+     * needed. (And avoid double loading it in case of SSR hydration.)
+     *
+     * ```tsx
+     * import styles from './code-block.css?inline';
+     *
+     * export const CmpStyles = component$(() => {
+     *   useStyles$(styles);
+     *
+     *   return <Host>Some text</Host>;
+     * });
+     * ```
+     *
+     * @see `useScopedStyles`.
+     *
+     * @public
      */
     // </docs>
     function useStylesQrl(styles) {
         _useStyles(styles, false);
     }
-    // <docs markdown="./component.public.md#useStyles">
+    // <docs markdown="../readme.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useStyles instead)
+    // (edit ../readme.md#useStyles instead)
     /**
-     * Refer to component styles.
+     * A lazy-loadable reference to a component's styles.
      *
-     * @alpha
+     * Component styles allow Qwik to lazy load the style information for the component only when
+     * needed. (And avoid double loading it in case of SSR hydration.)
+     *
+     * ```tsx
+     * import styles from './code-block.css?inline';
+     *
+     * export const CmpStyles = component$(() => {
+     *   useStyles$(styles);
+     *
+     *   return <Host>Some text</Host>;
+     * });
+     * ```
+     *
+     * @see `useScopedStyles`.
+     *
+     * @public
      */
     // </docs>
     const useStyles$ = implicit$FirstArg(useStylesQrl);
-    // <docs markdown="./component.public.md#useScopedStyles">
+    // <docs markdown="../readme.md#useScopedStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useScopedStyles instead)
+    // (edit ../readme.md#useScopedStyles instead)
     /**
+     * @see `useStyles`.
+     *
      * @alpha
      */
     // </docs>
     function useScopedStylesQrl(styles) {
         _useStyles(styles, true);
     }
-    // <docs markdown="./component.public.md#useScopedStyles">
+    // <docs markdown="../readme.md#useScopedStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#useScopedStyles instead)
+    // (edit ../readme.md#useScopedStyles instead)
     /**
+     * @see `useStyles`.
+     *
      * @alpha
      */
     // </docs>
     const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
-    // <docs markdown="./component.public.md#component">
+    // <docs markdown="../readme.md#component">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#component instead)
+    // (edit ../readme.md#component instead)
     /**
      * Declare a Qwik component that can be used to create UI.
      *
-     * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
-     * kind of component that allows the Qwik framework to lazy load and execute the component
-     * independently of other Qwik components as well as lazy load the component's life-cycle hooks
-     * and event handlers.
+     * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+     * that allows the Qwik framework to lazy load and execute the component independently of other
+     * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
      *
      * Side note: You can also declare regular (standard JSX) components that will have standard
      * synchronous behavior.
@@ -3520,16 +4149,17 @@
      * Qwik component is a facade that describes how the component should be used without forcing the
      * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
      *
-     * - Component `onMount` method, which needs to return an
-     * - `onRender` closure which constructs the component's JSX.
-     *
      * ### Example:
      *
      * An example showing how to create a counter component:
      *
-     * ```typescript
-     * export const Counter = component$((props: { value?: number; step?: number }) => {
-     *   const state = useStore({ count: props.value || 0 });
+     * ```tsx
+     * export interface CounterProps {
+     *   initialValue?: number;
+     *   step?: number;
+     * }
+     * export const Counter = component$((props: CounterProps) => {
+     *   const state = useStore({ count: props.initialValue || 0 });
      *   return (
      *     <div>
      *       <span>{state.count}</span>
@@ -3542,23 +4172,17 @@
      * - `component$` is how a component gets declared.
      * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
      * - `{ count: number }` declares the private (state) interface of the component.
-     * - `onMount` closure: is used to create the data store (see: `useStore`);
-     * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
      *
      * The above can then be used like so:
      *
-     * ```typescript
+     * ```tsx
      * export const OtherComponent = component$(() => {
-     *   return <Counter value={100} />;
+     *   return <Counter initialValue={100} />;
      * });
      * ```
      *
      * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
      * `useOnWindow`, `useStyles`, `useScopedStyles`
-     *
-     * @param onMount - Initialization closure used when the component is first created.
-     * @param tagName - Optional components options. It can be used to set a custom tag-name to be
-     * used for the component's host element.
      *
      * @public
      */
@@ -3570,16 +4194,15 @@
             return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, key);
         };
     }
-    // <docs markdown="./component.public.md#component">
+    // <docs markdown="../readme.md#component">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./component.public.md#component instead)
+    // (edit ../readme.md#component instead)
     /**
      * Declare a Qwik component that can be used to create UI.
      *
-     * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
-     * kind of component that allows the Qwik framework to lazy load and execute the component
-     * independently of other Qwik components as well as lazy load the component's life-cycle hooks
-     * and event handlers.
+     * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+     * that allows the Qwik framework to lazy load and execute the component independently of other
+     * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
      *
      * Side note: You can also declare regular (standard JSX) components that will have standard
      * synchronous behavior.
@@ -3587,16 +4210,17 @@
      * Qwik component is a facade that describes how the component should be used without forcing the
      * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
      *
-     * - Component `onMount` method, which needs to return an
-     * - `onRender` closure which constructs the component's JSX.
-     *
      * ### Example:
      *
      * An example showing how to create a counter component:
      *
-     * ```typescript
-     * export const Counter = component$((props: { value?: number; step?: number }) => {
-     *   const state = useStore({ count: props.value || 0 });
+     * ```tsx
+     * export interface CounterProps {
+     *   initialValue?: number;
+     *   step?: number;
+     * }
+     * export const Counter = component$((props: CounterProps) => {
+     *   const state = useStore({ count: props.initialValue || 0 });
      *   return (
      *     <div>
      *       <span>{state.count}</span>
@@ -3609,23 +4233,17 @@
      * - `component$` is how a component gets declared.
      * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
      * - `{ count: number }` declares the private (state) interface of the component.
-     * - `onMount` closure: is used to create the data store (see: `useStore`);
-     * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
      *
      * The above can then be used like so:
      *
-     * ```typescript
+     * ```tsx
      * export const OtherComponent = component$(() => {
-     *   return <Counter value={100} />;
+     *   return <Counter initialValue={100} />;
      * });
      * ```
      *
      * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
      * `useOnWindow`, `useStyles`, `useScopedStyles`
-     *
-     * @param onMount - Initialization closure used when the component is first created.
-     * @param tagName - Optional components options. It can be used to set a custom tag-name to be
-     * used for the component's host element.
      *
      * @public
      */
@@ -3653,96 +4271,6 @@
             };
             return task;
         }));
-    }
-
-    /**
-     * Use to render asynchronous (`Promise`) values.
-     *
-     * A `Promise` does not allow a synchronous examination of its state. For this reason
-     * `<Async>` provides a mechanism to render pending, resolved and error state of a `Promise`.
-     * `<Async>` provides that mechanism by registering a `then` method with the `Promise` and
-     * providing callbacks hooks for `pending`, `resolved` and `rejected` state of the promise.
-     *
-     * Additionally, `<Async>` automatically re-renders the portion of the view when the status
-     * of the `Promise` changes.
-     *
-     * `<Async>` provides three callbacks:
-     * - `onPending`: invoked initially to provide a way for the template to provide output while
-     *   waiting for the `promise` to resolve.
-     * - `onResolved`: invoked when the `promise` is `resolved` allowing the template to generate
-     *   output using the `resolved` value.
-     * - `onError`: invoked when the `promise` is `rejected` allowing the template to generate
-     *   error output describing the problem.
-     *
-     * The `<Async>` can be used in two ways, which are semantically equivalent and are provided
-     * based on the developer needs/preferences.
-     *
-     * ### Using multiple callbacks
-     *
-     * ```typescript
-     * <Async
-     *   resolve={Promise.resolve('some value')}
-     *   onPending={() => <span>loading...</span>}
-     *   onResolved={(value) => <span>{value}</span>}
-     *   onError={(rejection) => <pre>{rejection}</pre>}
-     * />
-     * ```
-     *
-     * ### Using single callbacks
-     *
-     * ```typescript
-     * <Async resolve={Promise.resolve('some value')}>
-     *   {(response) => {
-     *     if (response.isPending) return <span>loading...</span>;
-     *     if (response.isResolved) return <span>{response.value}</span>;
-     *     if (response.isRejected) return <pre>{response.rejection}</pre>;
-     *   }}
-     * </Async>
-     * ```
-     *
-     * @param onPending - invoked initially to provide a way for the template to provide output while
-     *   waiting for the `promise` to resolve.
-     * @param onResolved - invoked when the `promise` is `resolved` allowing the template to generate
-     *   output using the `resolved` value.
-     * @param onError - invoked when the `promise` is `rejected` allowing the template to generate
-     *   error output describing the problem.
-     * @param children -  a single callback function for `onPending`, `onResolved` and `onError`.
-     *   (Use either `children` or `onPending`, `onResolved` and `onError`, but not both.)
-     *   See "Using multiple callbacks" vs "Using single callbacks" above.
-     *
-     * @public
-     */
-    function Async(props) {
-        // TODO(misko): implement onPending/onResolved/onError
-        if (!('children' in props)) {
-            throw new Error('IMPLEMENT');
-        }
-        const children = [props.children].flat()[0];
-        const renderFn = typeof children == 'function' ? children : null;
-        const promiseValue = {
-            isPending: true,
-            isResolved: false,
-            value: undefined,
-            isRejected: false,
-            rejection: undefined,
-        };
-        let pending;
-        const jsxPromise = new Promise((resolve, reject) => {
-            pending = renderFn && renderFn(promiseValue);
-            Promise.resolve(props.resolve).then((value) => {
-                promiseValue.isPending = false;
-                promiseValue.isResolved = true;
-                promiseValue.value = value;
-                return resolve(renderFn && renderFn(promiseValue));
-            }, (error) => {
-                promiseValue.isPending = false;
-                promiseValue.isRejected = true;
-                promiseValue.rejection = error;
-                return reject(renderFn && renderFn(promiseValue));
-            });
-        });
-        jsxPromise.whilePending = pending;
-        return jsxPromise;
     }
 
     /* eslint-disable */
@@ -3788,7 +4316,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.20-2";
+    const version = "0.0.20-4";
 
     /**
      * Render JSX.
@@ -3800,7 +4328,7 @@
      * @param parent - Element which will act as a parent to `jsxNode`. When
      *     possible the rendering will try to reuse existing nodes.
      * @param jsxNode - JSX to render
-     * @public
+     * @alpha
      */
     async function render(parent, jsxNode) {
         // If input is not JSX, convert it
@@ -3820,7 +4348,7 @@
             hostElements: new Set(),
             operations: [],
             roots: [parent],
-            component: undefined,
+            components: [],
             containerEl,
             perf: {
                 visited: 0,
@@ -3866,8 +4394,76 @@
         containerEl.setAttribute(QContainerAttr, 'resumed');
     }
 
+    /**
+     * @alpha
+     */
+    function createContext(name) {
+        return Object.freeze({
+            id: fromCamelToKebabCase(name),
+        });
+    }
+    /**
+     * @alpha
+     */
+    function useContextProvider(context, newValue) {
+        const [value, setValue] = useSequentialScope();
+        if (!value) {
+            const invokeContext = getInvokeContext();
+            const hostElement = invokeContext.hostElement;
+            const renderCtx = invokeContext.renderCtx;
+            const ctx = getContext(hostElement);
+            let contexts = ctx.contexts;
+            if (!contexts) {
+                ctx.contexts = contexts = new Map();
+            }
+            newValue = unwrapSubscriber(newValue);
+            contexts.set(context.id, newValue);
+            const serializedContexts = [];
+            contexts.forEach((value, key) => {
+                serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+            });
+            setAttribute(renderCtx, hostElement, QCtxAttr, serializedContexts.join(' '));
+            setValue(newValue);
+        }
+    }
+    /**
+     * @alpha
+     */
+    function useContext(context) {
+        const value = _useContext(context);
+        return wrapSubscriber(value, useHostElement());
+    }
+    function _useContext(context) {
+        const [value, setValue] = useSequentialScope();
+        if (!value) {
+            const invokeContext = getInvokeContext();
+            let hostElement = invokeContext.hostElement;
+            const components = invokeContext.renderCtx.components;
+            for (let i = components.length - 1; i >= 0; i--) {
+                hostElement = components[i].hostElement;
+                const ctx = getContext(components[i].hostElement);
+                if (ctx.contexts) {
+                    const found = ctx.contexts.get(context.id);
+                    if (found) {
+                        setValue(found);
+                        return found;
+                    }
+                }
+            }
+            const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}="]`);
+            if (foundEl) {
+                const value = getContext(foundEl).contexts.get(context.id);
+                if (value) {
+                    setValue(value);
+                    return value;
+                }
+            }
+            throw new Error(`not found state for useContext: ${context.id}`);
+        }
+        return value;
+    }
+
     exports.$ = $;
-    exports.Async = Async;
     exports.Comment = Comment;
     exports.Fragment = Fragment;
     exports.Host = Host;
@@ -3875,10 +4471,13 @@
     exports.Slot = Slot;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
+    exports.createContext = createContext;
     exports.getPlatform = getPlatform;
     exports.h = h;
     exports.handleWatch = handleWatch;
+    exports.immutable = immutable;
     exports.implicit$FirstArg = implicit$FirstArg;
+    exports.inlinedQrl = inlinedQrl;
     exports.jsx = jsx;
     exports.jsxDEV = jsx;
     exports.jsxs = jsx;
@@ -3887,20 +4486,19 @@
     exports.qrl = qrl;
     exports.render = render;
     exports.setPlatform = setPlatform;
-    exports.untrack = unwrapProxy;
     exports.unwrapSubscriber = unwrapSubscriber;
     exports.useCleanup$ = useCleanup$;
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
     exports.useClientEffectQrl = useClientEffectQrl;
+    exports.useContext = useContext;
+    exports.useContextProvider = useContextProvider;
     exports.useDocument = useDocument;
     exports.useHostElement = useHostElement;
     exports.useLexicalScope = useLexicalScope;
     exports.useOn = useOn;
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;
-    exports.usePause$ = usePause$;
-    exports.usePauseQrl = usePauseQrl;
     exports.useRef = useRef;
     exports.useResume$ = useResume$;
     exports.useResumeQrl = useResumeQrl;
@@ -3911,7 +4509,6 @@
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
     exports.useStylesQrl = useStylesQrl;
-    exports.useSubscriber = useSubscriber;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;
