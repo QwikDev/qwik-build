@@ -174,7 +174,7 @@
         };
     }
     /**
-     * @private
+     * @alpha
      */
     function useWaitOn(promise) {
         const ctx = getInvokeContext();
@@ -4316,7 +4316,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.20-4";
+    const version = "0.0.20-5";
 
     /**
      * Render JSX.
@@ -4509,6 +4509,7 @@
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
     exports.useStylesQrl = useStylesQrl;
+    exports.useWaitOn = useWaitOn;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;

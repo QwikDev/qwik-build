@@ -77,18 +77,6 @@ declare interface JSXNode<T = any> {
 }
 
 /**
- * @public
- */
-declare interface JSXNode_2<T = any> {
-    type: T;
-    props: Record<string, any> | null;
-    children: JSXNode_2[];
-    key: string | null;
-    elm?: Node;
-    text?: string;
-}
-
-/**
  * @alpha
  */
 declare type NoSerialize<T> = (T & {
@@ -362,7 +350,7 @@ declare interface RenderPerf {
  * then serializes the document to a string.
  * @public
  */
-export declare function renderToString(rootNode: JSXNode_2, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare function renderToString(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
  * @public

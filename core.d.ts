@@ -2733,6 +2733,11 @@ export declare const useStyles$: (first: string) => void;
 export declare function useStylesQrl(styles: QRL<string>): void;
 
 /**
+ * @alpha
+ */
+export declare function useWaitOn(promise: ValueOrPromise<any>): void;
+
+/**
  * Reruns the `watchFn` when the observed inputs change.
  *
  * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
@@ -2859,7 +2864,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.20-4
+ * 0.0.20-5
  * @public
  */
 export declare const version: string;
