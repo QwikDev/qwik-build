@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.20-3",
+  qwik: "0.0.20-4",
   qwikDom: "2.1.14"
 };
 
@@ -178,7 +178,7 @@ function createPlatform(document2, opts) {
         return qrlMapper(symbolName);
       }
       if (qrlMap) {
-        return qrlMap[symbolName];
+        return [qrlMap[symbolName], symbolName];
       }
       return void 0;
     }
@@ -648,13 +648,22 @@ function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
   return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
 }
 function stringifyQRL(qrl, opts = {}) {
-  var _a, _b;
+  var _a;
   const qrl_ = toInternalQRL(qrl);
-  const symbol = qrl_.symbol;
+  let symbol = qrl_.symbol;
+  let chunk = qrl_.chunk;
   const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
   const platform = opts.platform;
   const element = opts.element;
-  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
+  if (platform) {
+    const result = platform.chunkForSymbol(refSymbol);
+    if (result) {
+      chunk = result[0];
+      if (!qrl_.refSymbol) {
+        symbol = result[1];
+      }
+    }
+  }
   const parts = [chunk];
   if (symbol && symbol !== "default") {
     parts.push("#", symbol);
@@ -1935,6 +1944,7 @@ function snapshotState(containerEl) {
       objs: convertedObjs,
       subs
     },
+    objs,
     listeners
   };
 }
@@ -3161,10 +3171,9 @@ function getPrefetchResources(snapshotResult, opts) {
   return [];
 }
 function getEventDocumentPrefetch(snapshotResult, manifest, buildBase) {
-  var _a;
   const prefetchResources = [];
   const listeners = snapshotResult == null ? void 0 : snapshotResult.listeners;
-  const stateObjs = (_a = snapshotResult == null ? void 0 : snapshotResult.state) == null ? void 0 : _a.objs;
+  const stateObjs = snapshotResult == null ? void 0 : snapshotResult.objs;
   const urls = /* @__PURE__ */ new Set();
   if (Array.isArray(listeners)) {
     for (const prioritizedSymbolName in manifest.mapping) {
@@ -3176,11 +3185,8 @@ function getEventDocumentPrefetch(snapshotResult, manifest, buildBase) {
   }
   if (Array.isArray(stateObjs)) {
     for (const obj of stateObjs) {
-      if (typeof obj === "string" && obj.startsWith(QRL_PREFIX)) {
-        const q = parseQRL(obj);
-        if (q == null ? void 0 : q.symbol) {
-          addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[q.symbol]);
-        }
+      if (isQrl(obj)) {
+        addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[obj.symbol]);
       }
     }
   }

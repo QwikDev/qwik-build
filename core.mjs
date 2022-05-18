@@ -1668,6 +1668,7 @@ function snapshotState(containerEl) {
             objs: convertedObjs,
             subs,
         },
+        objs,
         listeners,
     };
 }
@@ -3602,6 +3603,7 @@ function unwrapSubscriber(obj) {
 
 let runtimeSymbolId = 0;
 const RUNTIME_QRL = '/runtimeQRL';
+const INLINED_QRL = '/inlinedQRL';
 // https://regexr.com/68v72
 const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
 // https://regexr.com/690ds
@@ -3692,11 +3694,7 @@ function qrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
         throw new Error('Q-ERROR: Unknown type argument: ' + chunkOrFn);
     }
     // Unwrap subscribers
-    if (Array.isArray(lexicalScopeCapture)) {
-        for (let i = 0; i < lexicalScopeCapture.length; i++) {
-            lexicalScopeCapture[i] = unwrapSubscriber(lexicalScopeCapture[i]);
-        }
-    }
+    unwrapLexicalScope(lexicalScopeCapture);
     const qrl = new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
     const ctx = tryGetInvokeContext();
     if (ctx && ctx.element) {
@@ -3707,13 +3705,37 @@ function qrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
 function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
     return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
 }
+/**
+ * @alpha
+ */
+function inlinedQrl(symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) {
+    // Unwrap subscribers
+    return new QRLInternal(INLINED_QRL, symbolName, symbol, null, null, unwrapLexicalScope(lexicalScopeCapture));
+}
+function unwrapLexicalScope(lexicalScope) {
+    if (Array.isArray(lexicalScope)) {
+        for (let i = 0; i < lexicalScope.length; i++) {
+            lexicalScope[i] = unwrapSubscriber(lexicalScope[i]);
+        }
+    }
+    return lexicalScope;
+}
 function stringifyQRL(qrl, opts = {}) {
     const qrl_ = toInternalQRL(qrl);
-    const symbol = qrl_.symbol;
+    let symbol = qrl_.symbol;
+    let chunk = qrl_.chunk;
     const refSymbol = qrl_.refSymbol ?? symbol;
     const platform = opts.platform;
     const element = opts.element;
-    const chunk = platform ? platform.chunkForSymbol(refSymbol) ?? qrl_.chunk : qrl_.chunk;
+    if (platform) {
+        const result = platform.chunkForSymbol(refSymbol);
+        if (result) {
+            chunk = result[0];
+            if (!qrl_.refSymbol) {
+                symbol = result[1];
+            }
+        }
+    }
     const parts = [chunk];
     if (symbol && symbol !== 'default') {
         parts.push('#', symbol);
@@ -4282,7 +4304,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.20-3";
+const version = "0.0.20-4";
 
 /**
  * Render JSX.
@@ -4429,5 +4451,5 @@ function _useContext(context) {
     return value;
 }
 
-export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWatch$, useWatchQrl, version, wrapSubscriber };
+export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map

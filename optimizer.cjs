@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.20-3"
+    qwik: "0.0.20-4"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -515,7 +515,7 @@ globalThis.qwikOptimizer = function(module) {
     if ("node" === sysEnv) {
       sys.dynamicImport = path => require(path);
       if ("undefined" === typeof TextEncoder) {
-        const nodeUtil = sys.dynamicImport("util");
+        const nodeUtil = await sys.dynamicImport("util");
         global.TextEncoder = nodeUtil.TextEncoder;
         global.TextDecoder = nodeUtil.TextDecoder;
       }
@@ -687,6 +687,7 @@ globalThis.qwikOptimizer = function(module) {
         sourceMaps: fsOpts.sourceMaps,
         transpile: fsOpts.transpile,
         dev: fsOpts.dev,
+        scope: fsOpts.scope,
         input: input
       };
       return binding.transform_modules(convertOptions(modulesOpts));
@@ -700,7 +701,8 @@ globalThis.qwikOptimizer = function(module) {
       sourceMaps: false,
       transpile: false,
       explicityExtensions: false,
-      dev: true
+      dev: true,
+      scope: void 0
     };
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
@@ -1210,18 +1212,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     async function getQwikServerManifestModule(loadOpts) {
       const isServer = "ssr" === opts.target || !!loadOpts.ssr;
-      let manifest = opts.manifestInput;
-      if (isServer) {
-        const sys = getSys();
-        if (!manifest && "node" === sys.env) {
-          try {
-            const fs = await sys.dynamicImport("fs");
-            const qSymbolsPath = sys.path.join(opts.outDir, Q_MANIFEST_FILENAME);
-            const qSymbolsContent = fs.readFileSync(qSymbolsPath, "utf-8");
-            manifest = getValidManifest(JSON.parse(qSymbolsContent));
-          } catch (e) {}
-        }
-      }
+      const manifest = isServer ? opts.manifestInput : null;
       return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
     }
     return {
@@ -1416,8 +1407,7 @@ globalThis.qwikOptimizer = function(module) {
   function qwikVite(qwikViteOpts = {}) {
     let isClientDevOnly = false;
     let clientDevInput;
-    let serverInput;
-    let ssrInput;
+    let tmpClientManifestPath;
     const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
     const vitePlugin = {
       name: "vite-plugin-qwik",
@@ -1426,8 +1416,10 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: qwikPlugin.getOptions
       },
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i;
         await qwikPlugin.init();
+        const sys = qwikPlugin.getSys();
+        const path = qwikPlugin.getPath();
         qwikPlugin.log(`vite config(), command: ${viteEnv.command}, env.mode: ${viteEnv.mode}`);
         isClientDevOnly = "serve" === viteEnv.command && "ssr" !== viteEnv.mode;
         let target;
@@ -1453,10 +1445,19 @@ globalThis.qwikOptimizer = function(module) {
           pluginOpts.outDir = null == (_g = qwikViteOpts.client) ? void 0 : _g.outDir;
           pluginOpts.manifestOutput = null == (_h = qwikViteOpts.client) ? void 0 : _h.manifestOutput;
         }
+        if ("node" === sys.env) {
+          const nodeOs = await sys.dynamicImport("os");
+          tmpClientManifestPath = path.join(nodeOs.tmpdir(), "vite-plugin-qwik-q-manifest.json");
+          if ("ssr" === target && !pluginOpts.manifestInput) {
+            const fs = await sys.dynamicImport("fs");
+            try {
+              const clientManifestStr = await fs.promises.readFile(tmpClientManifestPath, "utf-8");
+              pluginOpts.manifestInput = JSON.parse(clientManifestStr);
+            } catch (e) {}
+          }
+        }
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
-        const path = qwikPlugin.getPath();
-        "ssr" === opts.target && ("string" === typeof (null == (_i = viteConfig.build) ? void 0 : _i.ssr) ? serverInput = opts.input[0] : ssrInput = opts.input[0]);
-        clientDevInput = "string" === typeof (null == (_j = qwikViteOpts.client) ? void 0 : _j.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
+        clientDevInput = "string" === typeof (null == (_i = qwikViteOpts.client) ? void 0 : _i.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
         clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         const updatedViteConfig = {
           esbuild: {
@@ -1534,7 +1535,6 @@ globalThis.qwikOptimizer = function(module) {
       },
       async generateBundle(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
-        qwikPlugin.getPath();
         const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
         for (const fileName in rollupBundle) {
           const b = rollupBundle[fileName];
@@ -1553,12 +1553,18 @@ globalThis.qwikOptimizer = function(module) {
           vite: ""
         });
         if ("client" === opts.target) {
+          const clientManifestStr = JSON.stringify(manifest, null, 2);
           this.emitFile({
             type: "asset",
             fileName: Q_MANIFEST_FILENAME,
-            source: JSON.stringify(manifest, null, 2)
+            source: clientManifestStr
           });
           "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+          const sys = qwikPlugin.getSys();
+          if (tmpClientManifestPath && "node" === sys.env) {
+            const fs = await sys.dynamicImport("fs");
+            await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
+          }
         }
       },
       async configureServer(server) {
@@ -1622,7 +1628,7 @@ globalThis.qwikOptimizer = function(module) {
                 }));
               }));
               qwikPlugin.log("handleSSR()", "symbols", manifest);
-              const renderInputModule = await server.moduleGraph.getModuleByUrl(ssrInput);
+              const renderInputModule = await server.moduleGraph.getModuleByUrl(opts.input[0]);
               renderInputModule && renderInputModule.importedModules.forEach((moduleNode => {
                 moduleNode.url.endsWith(".css") && manifest.injections.push({
                   tag: "link",

@@ -39,7 +39,7 @@ export declare type DiagnosticType = 'Error' | 'Warning' | 'SourceError';
 /**
  * @alpha
  */
-export declare type EntryStrategy = SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy | ManualEntryStrategy;
+export declare type EntryStrategy = InlineEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy | ManualEntryStrategy;
 
 /**
  * @alpha
@@ -75,6 +75,13 @@ export declare interface HookAnalysis {
  */
 export declare interface HookEntryStrategy {
     type: 'hook';
+}
+
+/**
+ * @alpha
+ */
+declare interface InlineEntryStrategy {
+    type: 'inline';
 }
 
 /**
@@ -444,6 +451,7 @@ declare interface TransformOptions {
     transpile?: boolean;
     explicityExtensions?: boolean;
     dev?: boolean;
+    scope?: string;
 }
 
 /**

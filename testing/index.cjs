@@ -600,13 +600,22 @@ function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
   return new QRLInternal(RUNTIME_QRL, "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
 }
 function stringifyQRL(qrl, opts = {}) {
-  var _a, _b;
+  var _a;
   const qrl_ = toInternalQRL(qrl);
-  const symbol = qrl_.symbol;
+  let symbol = qrl_.symbol;
+  let chunk = qrl_.chunk;
   const refSymbol = (_a = qrl_.refSymbol) != null ? _a : symbol;
   const platform = opts.platform;
   const element = opts.element;
-  const chunk = platform ? (_b = platform.chunkForSymbol(refSymbol)) != null ? _b : qrl_.chunk : qrl_.chunk;
+  if (platform) {
+    const result = platform.chunkForSymbol(refSymbol);
+    if (result) {
+      chunk = result[0];
+      if (!qrl_.refSymbol) {
+        symbol = result[1];
+      }
+    }
+  }
   const parts = [chunk];
   if (symbol && symbol !== "default") {
     parts.push("#", symbol);
@@ -1504,6 +1513,7 @@ function snapshotState(containerEl) {
       objs: convertedObjs,
       subs
     },
+    objs,
     listeners
   };
 }

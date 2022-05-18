@@ -532,7 +532,7 @@ export declare interface CorePlatform {
     /**
      * Takes a qrl and serializes into a string
      */
-    chunkForSymbol: (symbolName: string) => string | undefined;
+    chunkForSymbol: (symbolName: string) => [string, string] | undefined;
 }
 
 /**
@@ -823,6 +823,11 @@ export declare function immutable<T extends {}>(input: T): Readonly<T>;
  * @alpha
  */
 export declare function implicit$FirstArg<FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET): (first: FIRST, ...rest: REST) => RET;
+
+/**
+ * @alpha
+ */
+export declare function inlinedQrl<T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]): QRL<T>;
 
 declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1756,6 +1761,7 @@ declare interface SnapshotListener {
 export declare interface SnapshotResult {
     state: SnapshotState;
     listeners: SnapshotListener[];
+    objs: any[];
 }
 
 /**
@@ -2853,7 +2859,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.20-3
+ * 0.0.20-4
  * @public
  */
 export declare const version: string;

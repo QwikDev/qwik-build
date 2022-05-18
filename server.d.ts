@@ -261,7 +261,7 @@ declare interface QRL<TYPE = any> {
 /**
  * @public
  */
-export declare type QrlMapper = (symbolName: string) => string | undefined;
+export declare type QrlMapper = (symbolName: string) => [string, string] | undefined;
 
 /**
  * @alpha
@@ -441,6 +441,7 @@ declare interface SnapshotListener {
 export declare interface SnapshotResult {
     state: SnapshotState;
     listeners: SnapshotListener[];
+    objs: any[];
 }
 
 /**
