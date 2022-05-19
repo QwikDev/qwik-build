@@ -1348,10 +1348,12 @@ globalThis.qwikOptimizer = function(module) {
           }
           const manifest = await outputAnalyzer.generateManifest();
           manifest.platform = __spreadProps(__spreadValues({}, versions), {
-            node: process.versions.node,
-            os: process.platform,
             rollup: ""
           });
+          if ("undefined" !== typeof process && process.versions) {
+            manifest.platform.node = process.versions.node;
+            manifest.platform.os = process.platform;
+          }
           "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           this.emitFile({
             type: "asset",
