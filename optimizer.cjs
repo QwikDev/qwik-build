@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.20-6"
+    qwik: "0.0.20-7"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -609,25 +609,31 @@ globalThis.qwikOptimizer = function(module) {
     }
     if ("webworker" === sysEnv || "browsermain" === sysEnv) {
       const version = versions.qwik.split("-dev")[0];
-      const cdnUrl = `https://cdn.jsdelivr.net/npm/@builder.io/qwik@${version}/bindings/`;
-      const cjsModuleUrl = new URL("./qwik.wasm.cjs", cdnUrl).href;
-      const wasmUrl = new URL("./qwik_wasm_bg.wasm", cdnUrl).href;
-      const rsps = await Promise.all([ fetch(cjsModuleUrl), fetch(wasmUrl) ]);
-      for (const rsp of rsps) {
-        if (!rsp.ok) {
-          throw new Error(`Unable to fetch Qwik WASM binding from ${rsp.url}`);
+      const cachedCjsCode = `qwikWasmCjs${version}`;
+      const cachedWasmRsp = `qwikWasmRsp${version}`;
+      let cjsCode = globalThis[cachedCjsCode];
+      let wasmRsp = globalThis[cachedWasmRsp];
+      if (!cjsCode || !wasmRsp) {
+        const cdnUrl = `https://cdn.jsdelivr.net/npm/@builder.io/qwik@${version}/bindings/`;
+        const cjsModuleUrl = new URL("./qwik.wasm.cjs", cdnUrl).href;
+        const wasmUrl = new URL("./qwik_wasm_bg.wasm", cdnUrl).href;
+        const rsps = await Promise.all([ fetch(cjsModuleUrl), fetch(wasmUrl) ]);
+        for (const rsp of rsps) {
+          if (!rsp.ok) {
+            throw new Error(`Unable to fetch Qwik WASM binding from ${rsp.url}`);
+          }
         }
+        const cjsRsp = rsps[0];
+        globalThis[cachedCjsCode] = cjsCode = await cjsRsp.text();
+        globalThis[cachedWasmRsp] = wasmRsp = rsps[1];
       }
-      const cjsRsp = rsps[0];
-      const wasmRsp = rsps[1];
-      const cjsCode = await cjsRsp.text();
       const cjsModule = {
         exports: {}
       };
       const cjsRun = new Function("module", "exports", cjsCode);
       cjsRun(cjsModule, cjsModule.exports);
       const mod = cjsModule.exports;
-      await mod.default(wasmRsp);
+      await mod.default(wasmRsp.clone());
       return mod;
     }
     false;
