@@ -1420,7 +1420,7 @@ function resumeContainer(containerEl) {
     }
     script.remove();
     const proxyMap = getProxyMap(doc);
-    const meta = JSON.parse(script.textContent || '{}');
+    const meta = JSON.parse(unescapeText(script.textContent || '{}'));
     // Collect all elements
     const elements = new Map();
     getNodesInScope(containerEl, hasQId).forEach((el) => {
@@ -1831,6 +1831,12 @@ function collectElement(el, collector) {
         });
     }
 }
+function escapeText(str) {
+    return str.replace(/<(\/?script)/g, '\\x3C$1');
+}
+function unescapeText(str) {
+    return str.replace(/\\x3C(\/?script)/g, '<$1');
+}
 function collectSubscriptions(subs, collector) {
     if (collector.seen.has(subs)) {
         return;
@@ -2051,7 +2057,7 @@ function pauseContainer(elmOrDoc) {
     const data = snapshotState(containerEl);
     const script = doc.createElement('script');
     script.setAttribute('type', 'qwik/json');
-    script.textContent = JSON.stringify(data.state, undefined, qDev ? '  ' : undefined);
+    script.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
     parentJSON.appendChild(script);
     containerEl.setAttribute(QContainerAttr, 'paused');
     return data;
@@ -4304,7 +4310,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.20-5";
+const version = "0.0.20-6";
 
 /**
  * Render JSX.

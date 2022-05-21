@@ -1285,7 +1285,7 @@ function resumeContainer(containerEl) {
   }
   script.remove();
   const proxyMap = getProxyMap(doc);
-  const meta = JSON.parse(script.textContent || "{}");
+  const meta = JSON.parse(unescapeText(script.textContent || "{}"));
   const elements = /* @__PURE__ */ new Map();
   getNodesInScope(containerEl, hasQId).forEach((el) => {
     const id = el.getAttribute(ELEMENT_ID);
@@ -1671,6 +1671,12 @@ function collectElement(el, collector) {
       collectValue(sub, collector);
     });
   }
+}
+function escapeText(str) {
+  return str.replace(/<(\/?script)/g, "\\x3C$1");
+}
+function unescapeText(str) {
+  return str.replace(/\\x3C(\/?script)/g, "<$1");
 }
 function collectSubscriptions(subs, collector) {
   if (collector.seen.has(subs)) {
@@ -2903,7 +2909,7 @@ function pauseContainer(elmOrDoc) {
   const data = snapshotState(containerEl);
   const script = doc.createElement("script");
   script.setAttribute("type", "qwik/json");
-  script.textContent = JSON.stringify(data.state, void 0, qDev ? "  " : void 0);
+  script.textContent = escapeText(JSON.stringify(data.state, void 0, qDev ? "  " : void 0));
   parentJSON.appendChild(script);
   containerEl.setAttribute(QContainerAttr, "paused");
   return data;
