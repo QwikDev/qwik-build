@@ -1,14 +1,6 @@
 /**
  * @alpha
  */
-export declare interface CodeHighlight {
-    message: string | null;
-    loc: SourceLocation;
-}
-
-/**
- * @alpha
- */
 export declare interface ComponentEntryStrategy {
     type: 'component';
 }
@@ -22,19 +14,19 @@ export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => P
  * @alpha
  */
 export declare interface Diagnostic {
-    origin: string;
+    scope: string;
+    category: DiagnosticCategory;
+    code: string | null;
+    file: string;
     message: string;
-    severity: DiagnosticType;
-    code_highlights: CodeHighlight[];
-    documentation_url?: string;
-    show_environment: boolean;
-    hints?: string[];
+    highlights: SourceLocation[];
+    suggestions: string[] | null;
 }
 
 /**
  * @alpha
  */
-export declare type DiagnosticType = 'Error' | 'Warning' | 'SourceError';
+export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 
 /**
  * @alpha
@@ -392,10 +384,12 @@ export declare interface SmartEntryStrategy {
  * @alpha
  */
 export declare interface SourceLocation {
-    start_line: number;
-    start_col: number;
-    end_line: number;
-    end_col: number;
+    hi: number;
+    lo: number;
+    startLine: number;
+    startCol: number;
+    endLine: number;
+    endCol: number;
 }
 
 /**

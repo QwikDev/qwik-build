@@ -1397,7 +1397,7 @@ export declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Co
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     resolve(container?: Element): Promise<TYPE>;
-    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? ValueOrPromise<RETURN> : never;
+    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 

@@ -216,8 +216,8 @@ function flattenArray(array, dst) {
 function isPromise(value) {
     return value instanceof Promise;
 }
-const then = (promise, thenFn) => {
-    return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+const then = (promise, thenFn, rejectFn) => {
+    return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
 };
 const promiseAll = (promises) => {
     const hasPromise = promises.some(isPromise);
@@ -274,9 +274,10 @@ class QRL {
         copy.refSymbol = this.refSymbol;
         return copy;
     }
-    invoke(...args) {
+    async invoke(...args) {
         const fn = this.invokeFn();
-        return fn(...args);
+        const result = await fn(...args);
+        return result;
     }
     serialize(options) {
         return stringifyQRL(this, options);
@@ -2314,44 +2315,51 @@ const renderComponent = (rctx, ctx) => {
         removeSub(obj, hostElement);
     });
     const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
-    // Execution of the render function
-    const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
-    // Wait for results
-    return then(renderPromise, (jsxNode) => {
-        rctx.hostElements.add(hostElement);
-        const waitOnPromise = promiseAll(waitOn);
-        return then(waitOnPromise, (waitOnResolved) => {
-            waitOnResolved.forEach((task) => {
-                if (isStyleTask(task)) {
-                    appendStyle(rctx, hostElement, task);
+    try {
+        // Execution of the render function
+        const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+        // Wait for results
+        return then(renderPromise, (jsxNode) => {
+            rctx.hostElements.add(hostElement);
+            const waitOnPromise = promiseAll(waitOn);
+            return then(waitOnPromise, (waitOnResolved) => {
+                waitOnResolved.forEach((task) => {
+                    if (isStyleTask(task)) {
+                        appendStyle(rctx, hostElement, task);
+                    }
+                });
+                if (ctx.dirty) {
+                    logDebug('Dropping render. State changed during render.');
+                    return renderComponent(rctx, ctx);
                 }
+                let componentCtx = ctx.component;
+                if (!componentCtx) {
+                    componentCtx = ctx.component = {
+                        hostElement,
+                        slots: [],
+                        styleHostClass: undefined,
+                        styleClass: undefined,
+                        styleId: undefined,
+                    };
+                    const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
+                    if (scopedStyleId) {
+                        componentCtx.styleId = scopedStyleId;
+                        componentCtx.styleHostClass = styleHost(scopedStyleId);
+                        componentCtx.styleClass = styleContent(scopedStyleId);
+                        hostElement.classList.add(componentCtx.styleHostClass);
+                    }
+                }
+                componentCtx.slots = [];
+                newCtx.components.push(componentCtx);
+                return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
             });
-            if (ctx.dirty) {
-                logDebug('Dropping render. State changed during render.');
-                return renderComponent(rctx, ctx);
-            }
-            let componentCtx = ctx.component;
-            if (!componentCtx) {
-                componentCtx = ctx.component = {
-                    hostElement,
-                    slots: [],
-                    styleHostClass: undefined,
-                    styleClass: undefined,
-                    styleId: undefined,
-                };
-                const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
-                if (scopedStyleId) {
-                    componentCtx.styleId = scopedStyleId;
-                    componentCtx.styleHostClass = styleHost(scopedStyleId);
-                    componentCtx.styleClass = styleContent(scopedStyleId);
-                    hostElement.classList.add(componentCtx.styleHostClass);
-                }
-            }
-            componentCtx.slots = [];
-            newCtx.components.push(componentCtx);
-            return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+        }, (err) => {
+            logError(err);
         });
-    });
+    }
+    catch (err) {
+        logError(err);
+    }
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -3424,6 +3432,10 @@ class ReadWriteProxyHandler {
         const unwrappedNewValue = unwrapProxy(newValue);
         if (qDev) {
             verifySerializable(unwrappedNewValue);
+            const invokeCtx = tryGetInvokeContext();
+            if (invokeCtx && invokeCtx.event === RenderEvent) {
+                logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.hostElement, prop);
+            }
         }
         const isArray = Array.isArray(target);
         if (isArray) {

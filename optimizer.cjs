@@ -991,7 +991,7 @@ globalThis.qwikOptimizer = function(module) {
         }
       }
     };
-    const buildStart = async () => {
+    const buildStart = async _ctx => {
       log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build");
       if (opts.forceFullBuild) {
         const optimizer = getOptimizer();
@@ -1030,7 +1030,7 @@ globalThis.qwikOptimizer = function(module) {
         results.set("@buildStart", result);
       }
     };
-    const resolveId = async (id2, importer, _resolveIdOpts) => {
+    const resolveId = async (_ctx, id2, importer, _resolveIdOpts) => {
       const path = getPath();
       if (id2 === QWIK_BUILD_ID) {
         log("resolveId()", "Resolved", QWIK_BUILD_ID);
@@ -1065,7 +1065,7 @@ globalThis.qwikOptimizer = function(module) {
           const transformedModule = transformedOutput[0];
           const sideEffects = !transformedModule.isEntry || !transformedModule.hook;
           return {
-            id: tryId,
+            id: tryId + parsedId.query,
             moduleSideEffects: sideEffects
           };
         }
@@ -1073,7 +1073,7 @@ globalThis.qwikOptimizer = function(module) {
       }
       return null;
     };
-    const load = async (id2, loadOpts = {}) => {
+    const load = async (_ctx, id2, loadOpts = {}) => {
       if (id2 === QWIK_BUILD_ID) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
@@ -1102,25 +1102,25 @@ globalThis.qwikOptimizer = function(module) {
       log("load()", "Not Found", id2);
       return null;
     };
-    const transform = async (code, id2) => {
+    const transform = function(ctx, code, id2) {
       if (opts.forceFullBuild) {
         return null;
       }
-      id2 = normalizePath(id2);
-      const pregenerated = transformedOutputs.get(id2);
+      const optimizer = getOptimizer();
+      const path = getPath();
+      const {pathId: pathId} = parseId(id2);
+      const {ext: ext, dir: dir, base: base} = path.parse(pathId);
+      const normalizedID = normalizePath(pathId);
+      const pregenerated = transformedOutputs.get(normalizedID);
       if (pregenerated) {
-        log("transform() pregenerated, addWatchFile", id2, pregenerated[1]);
-        addWatchFileCallback(pregenerated[1]);
+        log("transform() pregenerated, addWatchFile", normalizedID, pregenerated[1]);
+        addWatchFileCallback(ctx, pregenerated[1]);
         return {
           meta: {
             hook: pregenerated[0].hook
           }
         };
       }
-      const optimizer = getOptimizer();
-      const path = getPath();
-      const {pathId: pathId} = parseId(id2);
-      const {ext: ext, dir: dir, base: base} = path.parse(pathId);
       if (TRANSFORM_EXTS[ext]) {
         log("transform()", "Transforming", pathId);
         let filePath = base;
@@ -1243,11 +1243,13 @@ globalThis.qwikOptimizer = function(module) {
     };
   }
   function parseId(originalId) {
-    const [pathId, querystrings] = originalId.split("?");
+    const [pathId, query] = originalId.split("?");
+    const queryStr = query || "";
     return {
       originalId: originalId,
       pathId: pathId,
-      params: new URLSearchParams(querystrings || "")
+      query: queryStr,
+      params: new URLSearchParams(queryStr)
     };
   }
   function forceJSExtension(id, ext) {
@@ -1311,31 +1313,33 @@ globalThis.qwikOptimizer = function(module) {
       },
       outputOptions: rollupOutputOpts => normalizeRollupOutputOptions(qwikPlugin.getPath(), qwikPlugin.getOptions(), rollupOutputOpts),
       async buildStart() {
-        qwikPlugin.onAddWatchFile((p => this.addWatchFile(p)));
+        qwikPlugin.onAddWatchFile(((ctx, path) => {
+          ctx.addWatchFile(path);
+        }));
         qwikPlugin.onDiagnostics(((diagnostics, optimizer) => {
           diagnostics.forEach((d => {
-            "Error" === d.severity ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
+            "error" === d.category ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
           }));
         }));
-        await qwikPlugin.buildStart();
+        await qwikPlugin.buildStart(this);
       },
       resolveId(id, importer) {
         if (id.startsWith("\0")) {
           return null;
         }
-        return qwikPlugin.resolveId(id, importer);
+        return qwikPlugin.resolveId(this, id, importer);
       },
       load(id) {
         if (id.startsWith("\0")) {
           return null;
         }
-        return qwikPlugin.load(id);
+        return qwikPlugin.load(this, id);
       },
       transform(code, id) {
         if (id.startsWith("\0")) {
           return null;
         }
-        return qwikPlugin.transform(code, id);
+        return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
@@ -1396,15 +1400,15 @@ globalThis.qwikOptimizer = function(module) {
     return outputOpts;
   }
   function createRollupError(optimizer, diagnostic) {
-    var _a, _b;
-    const loc = null != (_b = null == (_a = diagnostic.code_highlights[0]) ? void 0 : _a.loc) ? _b : {};
-    const id = optimizer ? optimizer.sys.path.join(optimizer.sys.cwd(), diagnostic.origin) : diagnostic.origin;
+    var _a;
+    const loc = null != (_a = diagnostic.highlights[0]) ? _a : {};
+    const id = optimizer ? optimizer.sys.path.join(optimizer.sys.cwd(), diagnostic.file) : diagnostic.file;
     const err = Object.assign(new Error(diagnostic.message), {
       id: id,
       plugin: "qwik",
       loc: {
-        column: loc.start_col,
-        line: loc.start_line
+        column: loc.startCol,
+        line: loc.startLine
       },
       stack: ""
     });
@@ -1503,13 +1507,15 @@ globalThis.qwikOptimizer = function(module) {
       },
       async buildStart() {
         await qwikPlugin.validateSource();
-        qwikPlugin.onAddWatchFile((path => this.addWatchFile(path)));
+        qwikPlugin.onAddWatchFile(((ctx, path) => {
+          ctx.addWatchFile(path);
+        }));
         qwikPlugin.onDiagnostics(((diagnostics, optimizer) => {
           diagnostics.forEach((d => {
-            "Error" === d.severity ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
+            "error" === d.category ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
           }));
         }));
-        await qwikPlugin.buildStart();
+        await qwikPlugin.buildStart(this);
       },
       resolveId(id, importer, resolveIdOpts) {
         if (id.startsWith("\0")) {
@@ -1518,7 +1524,7 @@ globalThis.qwikOptimizer = function(module) {
         if (isClientDevOnly && id === VITE_CLIENT_MODULE) {
           return id;
         }
-        return qwikPlugin.resolveId(id, importer, resolveIdOpts);
+        return qwikPlugin.resolveId(this, id, importer, resolveIdOpts);
       },
       load(id, loadOpts) {
         if (id.startsWith("\0")) {
@@ -1529,7 +1535,7 @@ globalThis.qwikOptimizer = function(module) {
         if (isClientDevOnly && id === VITE_CLIENT_MODULE) {
           return getViteDevModule(opts);
         }
-        return qwikPlugin.load(id, loadOpts);
+        return qwikPlugin.load(this, id, loadOpts);
       },
       transform(code, id) {
         if (id.startsWith("\0")) {
@@ -1539,7 +1545,7 @@ globalThis.qwikOptimizer = function(module) {
           const parsedId = parseId(id);
           parsedId.params.has(VITE_DEV_CLIENT_QS) && (code = updateEntryDev(code));
         }
-        return qwikPlugin.transform(code, id);
+        return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
@@ -1692,7 +1698,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   function getViteDevModule(opts) {
     const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
-    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n  \n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
+    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
   }
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
   var VITE_DEV_CLIENT_QS = "qwik-vite-dev-client";

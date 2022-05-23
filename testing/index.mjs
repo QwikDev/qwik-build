@@ -421,8 +421,8 @@ function codeToText(code) {
 function isPromise(value) {
   return value instanceof Promise;
 }
-var then = (promise, thenFn) => {
-  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+var then = (promise, thenFn, rejectFn) => {
+  return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
 };
 var promiseAll = (promises) => {
   const hasPromise = promises.some(isPromise);
@@ -665,9 +665,10 @@ var QRL = class {
     copy.refSymbol = this.refSymbol;
     return copy;
   }
-  invoke(...args) {
+  async invoke(...args) {
     const fn = this.invokeFn();
-    return fn(...args);
+    const result = await fn(...args);
+    return result;
   }
   serialize(options) {
     return stringifyQRL(this, options);
@@ -907,42 +908,48 @@ var renderComponent = (rctx, ctx) => {
     removeSub(obj, hostElement);
   });
   const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
-  const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
-  return then(renderPromise, (jsxNode) => {
-    rctx.hostElements.add(hostElement);
-    const waitOnPromise = promiseAll(waitOn);
-    return then(waitOnPromise, (waitOnResolved) => {
-      waitOnResolved.forEach((task) => {
-        if (isStyleTask(task)) {
-          appendStyle(rctx, hostElement, task);
+  try {
+    const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+    return then(renderPromise, (jsxNode) => {
+      rctx.hostElements.add(hostElement);
+      const waitOnPromise = promiseAll(waitOn);
+      return then(waitOnPromise, (waitOnResolved) => {
+        waitOnResolved.forEach((task) => {
+          if (isStyleTask(task)) {
+            appendStyle(rctx, hostElement, task);
+          }
+        });
+        if (ctx.dirty) {
+          logDebug("Dropping render. State changed during render.");
+          return renderComponent(rctx, ctx);
         }
+        let componentCtx = ctx.component;
+        if (!componentCtx) {
+          componentCtx = ctx.component = {
+            hostElement,
+            slots: [],
+            styleHostClass: void 0,
+            styleClass: void 0,
+            styleId: void 0
+          };
+          const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? void 0;
+          if (scopedStyleId) {
+            componentCtx.styleId = scopedStyleId;
+            componentCtx.styleHostClass = styleHost(scopedStyleId);
+            componentCtx.styleClass = styleContent(scopedStyleId);
+            hostElement.classList.add(componentCtx.styleHostClass);
+          }
+        }
+        componentCtx.slots = [];
+        newCtx.components.push(componentCtx);
+        return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
       });
-      if (ctx.dirty) {
-        logDebug("Dropping render. State changed during render.");
-        return renderComponent(rctx, ctx);
-      }
-      let componentCtx = ctx.component;
-      if (!componentCtx) {
-        componentCtx = ctx.component = {
-          hostElement,
-          slots: [],
-          styleHostClass: void 0,
-          styleClass: void 0,
-          styleId: void 0
-        };
-        const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? void 0;
-        if (scopedStyleId) {
-          componentCtx.styleId = scopedStyleId;
-          componentCtx.styleHostClass = styleHost(scopedStyleId);
-          componentCtx.styleClass = styleContent(scopedStyleId);
-          hostElement.classList.add(componentCtx.styleHostClass);
-        }
-      }
-      componentCtx.slots = [];
-      newCtx.components.push(componentCtx);
-      return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+    }, (err) => {
+      logError(err);
     });
-  });
+  } catch (err) {
+    logError(err);
+  }
 };
 
 // packages/qwik/src/core/util/element.ts
@@ -2677,6 +2684,10 @@ var ReadWriteProxyHandler = class {
     const unwrappedNewValue = unwrapProxy(newValue);
     if (qDev) {
       verifySerializable(unwrappedNewValue);
+      const invokeCtx = tryGetInvokeContext();
+      if (invokeCtx && invokeCtx.event === RenderEvent) {
+        logWarn("State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()", invokeCtx.hostElement, prop);
+      }
     }
     const isArray = Array.isArray(target);
     if (isArray) {
