@@ -11,10 +11,8 @@
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const symbolUsed = (el, symbolName) => el.dispatchEvent(new CustomEvent("qsymbol", {
-            detail: {
-                name: symbolName
-            },
+        const emitEvent = (el, eventName, detail) => el.dispatchEvent(new CustomEvent(eventName, {
+            detail: detail,
             bubbles: !0,
             composed: !0
         }));
@@ -42,7 +40,7 @@
                                     handler(ev, element, url);
                                 } finally {
                                     doc.__q_context__ = previousCtx;
-                                    symbolUsed(element, symbolName);
+                                    emitEvent(element, "qsymbol", symbolName);
                                 }
                             }
                         }
@@ -65,7 +63,7 @@
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "qresume", new CustomEvent("qresume"));
+                broadcast("", "qinit", new CustomEvent("qinit"));
                 if ("undefined" != typeof IntersectionObserver) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
