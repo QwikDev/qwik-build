@@ -514,6 +514,7 @@ var createPlatform2 = (doc) => {
         return mod[symbolName];
       }
       return Promise.resolve().then(() => __toESM(require(importURL))).then((mod2) => {
+        mod2 = findModule(mod2);
         moduleCache.set(importURL, mod2);
         return mod2[symbolName];
       });
@@ -537,6 +538,12 @@ var createPlatform2 = (doc) => {
     }
   };
 };
+function findModule(module2) {
+  return Object.values(module2).find(isModule) || module2;
+}
+function isModule(module2) {
+  return typeof module2 === "object" && module2 && module2[Symbol.toStringTag] === "Module";
+}
 function toUrl2(doc, element, url) {
   var _a;
   const containerEl = getContainer(element);

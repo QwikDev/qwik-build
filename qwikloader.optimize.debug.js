@@ -1,4 +1,10 @@
 (() => {
+    function findModule(module) {
+        return Object.values(module).find(isModule) || module;
+    }
+    function isModule(module) {
+        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
+    }
     ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
         const broadcast = (infix, type, ev) => {
@@ -28,7 +34,7 @@
                         const url = qrlResolver(element, qrl);
                         if (url) {
                             const symbolName = getSymbolName(url);
-                            const handler = (window[url.pathname] || await import(url.href.split("#")[0]))[symbolName] || error(url + " does not export " + symbolName);
+                            const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
                             const previousCtx = doc.__q_context__;
                             if (element.isConnected) {
                                 try {

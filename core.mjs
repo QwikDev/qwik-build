@@ -310,6 +310,7 @@ const createPlatform = (doc) => {
                 return mod[symbolName];
             }
             return import(/* @vite-ignore */ importURL).then((mod) => {
+                mod = findModule(mod);
                 moduleCache.set(importURL, mod);
                 return mod[symbolName];
             });
@@ -333,6 +334,12 @@ const createPlatform = (doc) => {
         },
     };
 };
+function findModule(module) {
+    return Object.values(module).find(isModule) || module;
+}
+function isModule(module) {
+    return typeof module === 'object' && module && module[Symbol.toStringTag] === 'Module';
+}
 /**
  * Convert relative base URI and relative URL into a fully qualified URL.
  *

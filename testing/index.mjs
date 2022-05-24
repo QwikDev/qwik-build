@@ -459,6 +459,7 @@ var createPlatform2 = (doc) => {
         /* @vite-ignore */
         importURL
       ).then((mod2) => {
+        mod2 = findModule(mod2);
         moduleCache.set(importURL, mod2);
         return mod2[symbolName];
       });
@@ -482,6 +483,12 @@ var createPlatform2 = (doc) => {
     }
   };
 };
+function findModule(module) {
+  return Object.values(module).find(isModule) || module;
+}
+function isModule(module) {
+  return typeof module === "object" && module && module[Symbol.toStringTag] === "Module";
+}
 function toUrl2(doc, element, url) {
   const containerEl = getContainer(element);
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
