@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.20-8",
+  qwik: "0.0.20",
   qwikDom: "2.1.18"
 };
 
@@ -934,7 +934,10 @@ var renderComponent = (rctx, ctx) => {
             appendStyle(rctx, hostElement, task);
           }
         });
-        if (ctx.dirty) {
+        if (typeof jsxNode === "function") {
+          ctx.dirty = false;
+          jsxNode = jsxNode();
+        } else if (ctx.dirty) {
           logDebug("Dropping render. State changed during render.");
           return renderComponent(rctx, ctx);
         }
@@ -1235,17 +1238,36 @@ function useClientEffectQrl(qrl, opts) {
   }
 }
 var useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-function useServerMountQrl(watchQrl) {
+function useServerMountQrl(mountQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     setWatch(true);
     const isServer = getPlatform(useDocument()).isServer;
     if (isServer) {
-      useWaitOn(watchQrl.invoke());
+      useWaitOn(mountQrl.invoke());
     }
   }
 }
 var useServerMount$ = implicit$FirstArg(useServerMountQrl);
+function useClientMountQrl(mountQrl) {
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    setWatch(true);
+    const isServer = getPlatform(useDocument()).isServer;
+    if (!isServer) {
+      useWaitOn(mountQrl.invoke());
+    }
+  }
+}
+var useClientMount$ = implicit$FirstArg(useClientMountQrl);
+function useMountQrl(mountQrl) {
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    setWatch(true);
+    useWaitOn(mountQrl.invoke());
+  }
+}
+var useMount$ = implicit$FirstArg(useMountQrl);
 function runWatch(watch) {
   if (!(watch.f & 1 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
