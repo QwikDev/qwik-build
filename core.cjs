@@ -210,6 +210,16 @@
         return container;
     }
 
+    const emitEvent = (el, eventName, detail, bubbles) => {
+        if (el && typeof CustomEvent === 'function') {
+            el.dispatchEvent(new CustomEvent(eventName, {
+                detail,
+                bubbles: bubbles,
+                composed: bubbles,
+            }));
+        }
+    };
+
     function flattenArray(array, dst) {
         // Yes this function is just Array.flat, but we need to run on old versions of Node.
         if (!dst)
@@ -1497,6 +1507,7 @@
         });
         containerEl.setAttribute(QContainerAttr, 'resumed');
         logDebug('Container resumed');
+        emitEvent(containerEl, 'qresume', undefined, true);
     }
     function snapshotState(containerEl) {
         const doc = getDocument(containerEl);
@@ -3931,7 +3942,7 @@
      */
     // </docs>
     function useResumeQrl(resumeFn) {
-        useOn('qresume', resumeFn);
+        useOn('qinit', resumeFn);
     }
     // <docs markdown="../readme.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!

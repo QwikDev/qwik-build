@@ -475,6 +475,17 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
+// packages/qwik/src/core/util/event.ts
+var emitEvent = (el, eventName, detail, bubbles) => {
+  if (el && typeof CustomEvent === "function") {
+    el.dispatchEvent(new CustomEvent(eventName, {
+      detail,
+      bubbles,
+      composed: bubbles
+    }));
+  }
+};
+
 // packages/qwik/src/core/util/promises.ts
 function isPromise(value) {
   return value instanceof Promise;
@@ -1105,7 +1116,7 @@ function useCleanupQrl(unmountFn) {
 }
 var useCleanup$ = implicit$FirstArg(useCleanupQrl);
 function useResumeQrl(resumeFn) {
-  useOn("qresume", resumeFn);
+  useOn("qinit", resumeFn);
 }
 var useResume$ = implicit$FirstArg(useResumeQrl);
 function useVisibleQrl(resumeFn) {
@@ -1349,6 +1360,7 @@ function resumeContainer(containerEl) {
   });
   containerEl.setAttribute(QContainerAttr, "resumed");
   logDebug("Container resumed");
+  emitEvent(containerEl, "qresume", void 0, true);
 }
 function snapshotState(containerEl) {
   const doc = getDocument(containerEl);
