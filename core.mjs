@@ -3099,8 +3099,13 @@ function setKey(el, key) {
 }
 function sameVnode(vnode1, vnode2) {
     const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
-    const isSameKey = vnode1.nodeType === NodeType.ELEMENT_NODE ? getKey(vnode1) === vnode2.key : true;
-    return isSameSel && isSameKey;
+    if (!isSameSel) {
+        return false;
+    }
+    if (vnode1.nodeType !== NodeType.ELEMENT_NODE) {
+        return true;
+    }
+    return getKey(vnode1) === vnode2.key;
 }
 function checkInnerHTML(props) {
     return props && ('innerHTML' in props || dangerouslySetInnerHTML in props);
@@ -4215,7 +4220,8 @@ function componentQrl(onRenderQrl, options = {}) {
     const tagName = options.tagName ?? 'div';
     // Return a QComponent Factory function.
     return function QSimpleComponent(props, key) {
-        return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, key);
+        const finalKey = onRenderQrl.symbol + ':' + (key ? key : '');
+        return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
     };
 }
 // <docs markdown="../readme.md#component">
