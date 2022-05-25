@@ -244,6 +244,12 @@ class QRL {
             this.el = el;
         }
     }
+    getSymbol() {
+        return this.refSymbol ?? this.symbol;
+    }
+    getCanonicalSymbol() {
+        return getCanonicalSymbol(this.refSymbol ?? this.symbol);
+    }
     async resolve(el) {
         if (el) {
             this.setContainer(el);
@@ -291,13 +297,7 @@ const getCanonicalSymbol = (symbolName) => {
     return symbolName;
 };
 const isSameQRL = (a, b) => {
-    return isSameSymbol(getQRLSymbol(a), getQRLSymbol(b));
-};
-const getQRLSymbol = (a) => {
-    return a.refSymbol ?? a.symbol;
-};
-const isSameSymbol = (symA, symB) => {
-    return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
+    return a.getCanonicalSymbol() === b.getCanonicalSymbol();
 };
 const QRLInternal = QRL;
 
@@ -3876,9 +3876,9 @@ function stringifyQRL(qrl, opts = {}) {
     if (platform) {
         const result = platform.chunkForSymbol(refSymbol);
         if (result) {
-            chunk = result[0];
+            chunk = result[1];
             if (!qrl_.refSymbol) {
-                symbol = result[1];
+                symbol = result[0];
             }
         }
     }
@@ -4325,7 +4325,7 @@ function componentQrl(onRenderQrl, options = {}) {
     const tagName = options.tagName ?? 'div';
     // Return a QComponent Factory function.
     return function QSimpleComponent(props, key) {
-        const finalKey = onRenderQrl.symbol + ':' + (key ? key : '');
+        const finalKey = onRenderQrl.getCanonicalSymbol() + ':' + (key ? key : '');
         return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
     };
 }

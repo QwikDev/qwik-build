@@ -617,9 +617,9 @@ function stringifyQRL(qrl, opts = {}) {
   if (platform) {
     const result = platform.chunkForSymbol(refSymbol);
     if (result) {
-      chunk = result[0];
+      chunk = result[1];
       if (!qrl_.refSymbol) {
-        symbol = result[1];
+        symbol = result[0];
       }
     }
   }
@@ -699,6 +699,14 @@ var QRL = class {
       this.el = el;
     }
   }
+  getSymbol() {
+    var _a;
+    return (_a = this.refSymbol) != null ? _a : this.symbol;
+  }
+  getCanonicalSymbol() {
+    var _a;
+    return getCanonicalSymbol((_a = this.refSymbol) != null ? _a : this.symbol);
+  }
   async resolve(el) {
     if (el) {
       this.setContainer(el);
@@ -745,14 +753,7 @@ var getCanonicalSymbol = (symbolName) => {
   return symbolName;
 };
 var isSameQRL = (a, b) => {
-  return isSameSymbol(getQRLSymbol(a), getQRLSymbol(b));
-};
-var getQRLSymbol = (a) => {
-  var _a;
-  return (_a = a.refSymbol) != null ? _a : a.symbol;
-};
-var isSameSymbol = (symA, symB) => {
-  return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
+  return a.getCanonicalSymbol() === b.getCanonicalSymbol();
 };
 var QRLInternal = QRL;
 

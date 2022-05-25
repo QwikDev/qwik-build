@@ -532,7 +532,7 @@ export declare interface CorePlatform {
     /**
      * Takes a qrl and serializes into a string
      */
-    chunkForSymbol: (symbolName: string) => [string, string] | undefined;
+    chunkForSymbol: (symbolName: string) => [symbol: string, chunk: string] | undefined;
 }
 
 /**
@@ -1396,7 +1396,8 @@ export declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & Co
  */
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
-    symbol: string;
+    getSymbol(): string;
+    getCanonicalSymbol(): string;
     resolve(container?: Element): Promise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;

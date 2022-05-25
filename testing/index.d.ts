@@ -239,7 +239,8 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
  */
 declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
-    symbol: string;
+    getSymbol(): string;
+    getCanonicalSymbol(): string;
     resolve(container?: Element): Promise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
@@ -409,7 +410,7 @@ declare interface SerializeDocumentOptions {
  * Applies NodeJS specific platform APIs to the passed in document instance.
  * @public
  */
-export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions): Promise<void>;
+export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions, mapper: SymbolMapper): Promise<void>;
 
 declare interface SnapshotListener {
     key: string;
@@ -437,6 +438,8 @@ declare interface SnapshotState {
  * @alpha
  */
 declare type Subscriber = WatchDescriptor | Element;
+
+declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
 
 /**
  * auto: Prefetch all possible QRLs used by the document. Default
