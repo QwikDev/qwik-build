@@ -1204,7 +1204,7 @@ export declare type On$Props<T extends {}> = {
 /**
  * @public
  */
-export declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null>;
+export declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null | (() => JSXNode<any>)>;
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -2261,6 +2261,66 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
 export declare function useClientEffectQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
 
 /**
+ * Register's a client mount hook, that runs only in client when the component is first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     hash: ''
+ *   });
+ *
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *     store.hash = document.location.hash
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The url hash is: ${store.hash}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useMount`
+ *
+ * @public
+ */
+export declare const useClientMount$: (first: ServerFn) => void;
+
+/**
+ * Register's a client mount hook, that runs only in client when the component is first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     hash: ''
+ *   });
+ *
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *     store.hash = document.location.hash
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The url hash is: ${store.hash}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useMount`
+ *
+ * @public
+ */
+export declare function useClientMountQrl(mountQrl: QRL<ServerFn>): void;
+
+/**
  * @alpha
  */
 export declare function useContext<STATE extends object>(context: Context<STATE>): STATE;
@@ -2328,6 +2388,70 @@ export declare function useHostElement(): Element;
  * @public
  */
 export declare function useLexicalScope<VARS extends any[]>(): VARS;
+
+/**
+ * Register's a mount hook, that runs both in the server and the client when the component is
+ * first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     temp: 0,
+ *   });
+ *
+ *   useMount$(async () => {
+ *     // This code will run once whenever a component is mounted in the server, or in the client
+ *     const res = await fetch('weather-api.example');
+ *     const json = await res.json() as any;
+ *     store.temp = json.temp;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The temperature is: ${store.temp}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useClientMount`
+ * @public
+ */
+export declare const useMount$: (first: ServerFn) => void;
+
+/**
+ * Register's a mount hook, that runs both in the server and the client when the component is
+ * first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     temp: 0,
+ *   });
+ *
+ *   useMount$(async () => {
+ *     // This code will run once whenever a component is mounted in the server, or in the client
+ *     const res = await fetch('weather-api.example');
+ *     const json = await res.json() as any;
+ *     store.temp = json.temp;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The temperature is: ${store.temp}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useClientMount`
+ * @public
+ */
+export declare function useMountQrl(mountQrl: QRL<ServerFn>): void;
 
 /**
  * Register a listener on the current component's host element.
@@ -2498,8 +2622,6 @@ export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
  * Register's a server mount hook, that runs only in server when the component is first mounted.
- * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
- * state changes.
  *
  * ## Example
  *
@@ -2509,33 +2631,6 @@ export declare function useScopedStylesQrl(styles: QRL<string>): void;
  *     users: [],
  *   });
  *
- *   // Double count watch
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <Host>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </Host>
- *   );
- * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   // Double count watch
  *   useServerMount$(async () => {
  *     // This code will ONLY run once in the server, when the component is mounted
  *     store.users = await db.requestUsers();
@@ -2558,14 +2653,13 @@ export declare function useScopedStylesQrl(styles: QRL<string>): void;
  * }
  * ```
  *
+ * @see `useClientMount` `useMount`
  * @public
  */
 export declare const useServerMount$: (first: ServerFn) => void;
 
 /**
  * Register's a server mount hook, that runs only in server when the component is first mounted.
- * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
- * state changes.
  *
  * ## Example
  *
@@ -2575,33 +2669,6 @@ export declare const useServerMount$: (first: ServerFn) => void;
  *     users: [],
  *   });
  *
- *   // Double count watch
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <Host>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </Host>
- *   );
- * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   // Double count watch
  *   useServerMount$(async () => {
  *     // This code will ONLY run once in the server, when the component is mounted
  *     store.users = await db.requestUsers();
@@ -2624,9 +2691,10 @@ export declare const useServerMount$: (first: ServerFn) => void;
  * }
  * ```
  *
+ * @see `useClientMount` `useMount`
  * @public
  */
-export declare function useServerMountQrl(watchQrl: QRL<ServerFn>): void;
+export declare function useServerMountQrl(mountQrl: QRL<ServerFn>): void;
 
 /**
  * Creates a object that Qwik can track across serializations.
@@ -2865,7 +2933,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.20-8
+ * 0.0.20
  * @public
  */
 export declare const version: string;

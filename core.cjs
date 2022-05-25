@@ -210,16 +210,6 @@
         return container;
     }
 
-    const emitEvent = (el, eventName, detail, bubbles) => {
-        if (el && typeof CustomEvent === 'function') {
-            el.dispatchEvent(new CustomEvent(eventName, {
-                detail,
-                bubbles: bubbles,
-                composed: bubbles,
-            }));
-        }
-    };
-
     function flattenArray(array, dst) {
         // Yes this function is just Array.flat, but we need to run on old versions of Node.
         if (!dst)
@@ -313,7 +303,9 @@
         return symbolName;
     };
     const isSameQRL = (a, b) => {
-        return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+        const symA = a.refSymbol ?? a.symbol;
+        const symB = b.refSymbol ?? b.symbol;
+        return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
     };
     const QRLInternal = QRL;
 
@@ -1214,8 +1206,6 @@
     // (edit ../readme.md#useServerMount instead)
     /**
      * Register's a server mount hook, that runs only in server when the component is first mounted.
-     * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
-     * state changes.
      *
      * ## Example
      *
@@ -1225,33 +1215,6 @@
      *     users: [],
      *   });
      *
-     *   // Double count watch
-     *   useServerMount$(async () => {
-     *     // This code will ONLY run once in the server, when the component is mounted
-     *     store.users = await db.requestUsers();
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       {store.users.map((user) => (
-     *         <User user={user} />
-     *       ))}
-     *     </Host>
-     *   );
-     * });
-     *
-     * interface User {
-     *   name: string;
-     * }
-     * function User(props: { user: User }) {
-     *   return <div>Name: {props.user.name}</div>;
-     * }
-     * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     users: [],
-     *   });
-     *
-     *   // Double count watch
      *   useServerMount$(async () => {
      *     // This code will ONLY run once in the server, when the component is mounted
      *     store.users = await db.requestUsers();
@@ -1274,16 +1237,17 @@
      * }
      * ```
      *
+     * @see `useClientMount` `useMount`
      * @public
      */
     // </docs>
-    function useServerMountQrl(watchQrl) {
+    function useServerMountQrl(mountQrl) {
         const [watch, setWatch] = useSequentialScope();
         if (!watch) {
             setWatch(true);
             const isServer = getPlatform(useDocument()).isServer;
             if (isServer) {
-                useWaitOn(watchQrl.invoke());
+                useWaitOn(mountQrl.invoke());
             }
         }
     }
@@ -1292,8 +1256,6 @@
     // (edit ../readme.md#useServerMount instead)
     /**
      * Register's a server mount hook, that runs only in server when the component is first mounted.
-     * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
-     * state changes.
      *
      * ## Example
      *
@@ -1303,33 +1265,6 @@
      *     users: [],
      *   });
      *
-     *   // Double count watch
-     *   useServerMount$(async () => {
-     *     // This code will ONLY run once in the server, when the component is mounted
-     *     store.users = await db.requestUsers();
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       {store.users.map((user) => (
-     *         <User user={user} />
-     *       ))}
-     *     </Host>
-     *   );
-     * });
-     *
-     * interface User {
-     *   name: string;
-     * }
-     * function User(props: { user: User }) {
-     *   return <div>Name: {props.user.name}</div>;
-     * }
-     * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     users: [],
-     *   });
-     *
-     *   // Double count watch
      *   useServerMount$(async () => {
      *     // This code will ONLY run once in the server, when the component is mounted
      *     store.users = await db.requestUsers();
@@ -1352,10 +1287,162 @@
      * }
      * ```
      *
+     * @see `useClientMount` `useMount`
      * @public
      */
     // </docs>
     const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+    // <docs markdown="../readme.md#useClientMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useClientMount instead)
+    /**
+     * Register's a client mount hook, that runs only in client when the component is first mounted.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     hash: ''
+     *   });
+     *
+     *   useClientMount$(async () => {
+     *     // This code will ONLY run once in the client, when the component is mounted
+     *     store.hash = document.location.hash
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <p>The url hash is: ${store.hash}</p>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @see `useServerMount` `useMount`
+     *
+     * @public
+     */
+    // </docs>
+    function useClientMountQrl(mountQrl) {
+        const [watch, setWatch] = useSequentialScope();
+        if (!watch) {
+            setWatch(true);
+            const isServer = getPlatform(useDocument()).isServer;
+            if (!isServer) {
+                useWaitOn(mountQrl.invoke());
+            }
+        }
+    }
+    // <docs markdown="../readme.md#useClientMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useClientMount instead)
+    /**
+     * Register's a client mount hook, that runs only in client when the component is first mounted.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     hash: ''
+     *   });
+     *
+     *   useClientMount$(async () => {
+     *     // This code will ONLY run once in the client, when the component is mounted
+     *     store.hash = document.location.hash
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <p>The url hash is: ${store.hash}</p>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @see `useServerMount` `useMount`
+     *
+     * @public
+     */
+    // </docs>
+    const useClientMount$ = implicit$FirstArg(useClientMountQrl);
+    // <docs markdown="../readme.md#useMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useMount instead)
+    /**
+     * Register's a mount hook, that runs both in the server and the client when the component is
+     * first mounted.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     temp: 0,
+     *   });
+     *
+     *   useMount$(async () => {
+     *     // This code will run once whenever a component is mounted in the server, or in the client
+     *     const res = await fetch('weather-api.example');
+     *     const json = await res.json() as any;
+     *     store.temp = json.temp;
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <p>The temperature is: ${store.temp}</p>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @see `useServerMount` `useClientMount`
+     * @public
+     */
+    // </docs>
+    function useMountQrl(mountQrl) {
+        const [watch, setWatch] = useSequentialScope();
+        if (!watch) {
+            setWatch(true);
+            useWaitOn(mountQrl.invoke());
+        }
+    }
+    // <docs markdown="../readme.md#useMount">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useMount instead)
+    /**
+     * Register's a mount hook, that runs both in the server and the client when the component is
+     * first mounted.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     temp: 0,
+     *   });
+     *
+     *   useMount$(async () => {
+     *     // This code will run once whenever a component is mounted in the server, or in the client
+     *     const res = await fetch('weather-api.example');
+     *     const json = await res.json() as any;
+     *     store.temp = json.temp;
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <p>The temperature is: ${store.temp}</p>
+     *     </Host>
+     *   );
+     * });
+     * ```
+     *
+     * @see `useServerMount` `useClientMount`
+     * @public
+     */
+    // </docs>
+    const useMount$ = implicit$FirstArg(useMountQrl);
     function runWatch(watch) {
         if (!(watch.f & WatchFlags.IsDirty)) {
             logDebug('Watch is not dirty, skipping run', watch);
@@ -1430,6 +1517,16 @@
         const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
         watchHandler.refSymbol = watchQrl.symbol;
         return watchHandler;
+    };
+
+    const emitEvent = (el, eventName, detail, bubbles) => {
+        if (el && typeof CustomEvent === 'function') {
+            el.dispatchEvent(new CustomEvent(eventName, {
+                detail,
+                bubbles: bubbles,
+                composed: bubbles,
+            }));
+        }
     };
 
     const UNDEFINED_PREFIX = '\u0010';
@@ -2358,7 +2455,11 @@
                             appendStyle(rctx, hostElement, task);
                         }
                     });
-                    if (ctx.dirty) {
+                    if (typeof jsxNode === 'function') {
+                        ctx.dirty = false;
+                        jsxNode = jsxNode();
+                    }
+                    else if (ctx.dirty) {
                         logDebug('Dropping render. State changed during render.');
                         return renderComponent(rctx, ctx);
                     }
@@ -4358,7 +4459,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.20-8";
+    const version = "0.0.20";
 
     /**
      * Render JSX.
@@ -4533,11 +4634,15 @@
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
     exports.useClientEffectQrl = useClientEffectQrl;
+    exports.useClientMount$ = useClientMount$;
+    exports.useClientMountQrl = useClientMountQrl;
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
     exports.useDocument = useDocument;
     exports.useHostElement = useHostElement;
     exports.useLexicalScope = useLexicalScope;
+    exports.useMount$ = useMount$;
+    exports.useMountQrl = useMountQrl;
     exports.useOn = useOn;
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;

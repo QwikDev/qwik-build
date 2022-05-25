@@ -475,17 +475,6 @@ function codeToText(code) {
   return `${area}(Q-${textCode}): ${text}`;
 }
 
-// packages/qwik/src/core/util/event.ts
-var emitEvent = (el, eventName, detail, bubbles) => {
-  if (el && typeof CustomEvent === "function") {
-    el.dispatchEvent(new CustomEvent(eventName, {
-      detail,
-      bubbles,
-      composed: bubbles
-    }));
-  }
-};
-
 // packages/qwik/src/core/util/promises.ts
 function isPromise(value) {
   return value instanceof Promise;
@@ -756,7 +745,10 @@ var getCanonicalSymbol = (symbolName) => {
   return symbolName;
 };
 var isSameQRL = (a, b) => {
-  return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+  var _a, _b;
+  const symA = (_a = a.refSymbol) != null ? _a : a.symbol;
+  const symB = (_b = b.refSymbol) != null ? _b : b.symbol;
+  return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
 };
 var QRLInternal = QRL;
 
@@ -993,7 +985,10 @@ var renderComponent = (rctx, ctx) => {
             appendStyle(rctx, hostElement, task);
           }
         });
-        if (ctx.dirty) {
+        if (typeof jsxNode === "function") {
+          ctx.dirty = false;
+          jsxNode = jsxNode();
+        } else if (ctx.dirty) {
           logDebug("Dropping render. State changed during render.");
           return renderComponent(rctx, ctx);
         }
@@ -1208,17 +1203,36 @@ function useClientEffectQrl(qrl, opts) {
   }
 }
 var useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-function useServerMountQrl(watchQrl) {
+function useServerMountQrl(mountQrl) {
   const [watch, setWatch] = useSequentialScope();
   if (!watch) {
     setWatch(true);
     const isServer = getPlatform2(useDocument()).isServer;
     if (isServer) {
-      useWaitOn(watchQrl.invoke());
+      useWaitOn(mountQrl.invoke());
     }
   }
 }
 var useServerMount$ = implicit$FirstArg(useServerMountQrl);
+function useClientMountQrl(mountQrl) {
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    setWatch(true);
+    const isServer = getPlatform2(useDocument()).isServer;
+    if (!isServer) {
+      useWaitOn(mountQrl.invoke());
+    }
+  }
+}
+var useClientMount$ = implicit$FirstArg(useClientMountQrl);
+function useMountQrl(mountQrl) {
+  const [watch, setWatch] = useSequentialScope();
+  if (!watch) {
+    setWatch(true);
+    useWaitOn(mountQrl.invoke());
+  }
+}
+var useMount$ = implicit$FirstArg(useMountQrl);
 function runWatch(watch) {
   if (!(watch.f & 1 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
@@ -1289,6 +1303,17 @@ var getWatchHandlerQrl = (watch) => {
   const watchHandler = new QRLInternal(watchQrl.chunk, "handleWatch", handleWatch, null, null, [watch]);
   watchHandler.refSymbol = watchQrl.symbol;
   return watchHandler;
+};
+
+// packages/qwik/src/core/util/event.ts
+var emitEvent = (el, eventName, detail, bubbles) => {
+  if (el && typeof CustomEvent === "function") {
+    el.dispatchEvent(new CustomEvent(eventName, {
+      detail,
+      bubbles,
+      composed: bubbles
+    }));
+  }
 };
 
 // packages/qwik/src/core/object/store.ts
