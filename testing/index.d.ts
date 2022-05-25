@@ -246,11 +246,6 @@ declare interface QRL<TYPE = any> {
 }
 
 /**
- * @public
- */
-export declare type QrlMapper = (symbolName: string) => [string, string] | undefined;
-
-/**
  * @alpha
  */
 export declare interface QwikBundle {
@@ -405,7 +400,6 @@ export declare function serializeDocument(docOrEl: Document | Element, opts?: Se
  */
 declare interface SerializeDocumentOptions {
     manifest?: QwikManifest;
-    qrlMapper?: QrlMapper;
     url?: URL | string;
     html?: string;
     debug?: boolean;
@@ -445,13 +439,11 @@ declare interface SnapshotState {
 declare type Subscriber = WatchDescriptor | Element;
 
 /**
- * all: Prefetch all QRLs used by the app.
- * all-document: Prefetch all QRLs used by the document.
- * events-document: Prefetch event QRLs used by the document. Default
+ * auto: Prefetch all possible QRLs used by the document. Default
  *
  * @alpha
  */
-declare type SymbolsToPrefetch = 'all' | 'events-document' | ((opts: {
+declare type SymbolsToPrefetch = 'auto' | ((opts: {
     manifest: QwikManifest;
 }) => PrefetchResource[]);
 

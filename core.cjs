@@ -303,8 +303,12 @@
         return symbolName;
     };
     const isSameQRL = (a, b) => {
-        const symA = a.refSymbol ?? a.symbol;
-        const symB = b.refSymbol ?? b.symbol;
+        return isSameSymbol(getQRLSymbol(a), getQRLSymbol(b));
+    };
+    const getQRLSymbol = (a) => {
+        return a.refSymbol ?? a.symbol;
+    };
+    const isSameSymbol = (symA, symB) => {
         return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
     };
     const QRLInternal = QRL;

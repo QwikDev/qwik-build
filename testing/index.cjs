@@ -745,9 +745,13 @@ var getCanonicalSymbol = (symbolName) => {
   return symbolName;
 };
 var isSameQRL = (a, b) => {
-  var _a, _b;
-  const symA = (_a = a.refSymbol) != null ? _a : a.symbol;
-  const symB = (_b = b.refSymbol) != null ? _b : b.symbol;
+  return isSameSymbol(getQRLSymbol(a), getQRLSymbol(b));
+};
+var getQRLSymbol = (a) => {
+  var _a;
+  return (_a = a.refSymbol) != null ? _a : a.symbol;
+};
+var isSameSymbol = (symA, symB) => {
   return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
 };
 var QRLInternal = QRL;

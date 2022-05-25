@@ -196,15 +196,10 @@ function createPlatform(document2, opts) {
     throw new Error(`Invalid Document implementation`);
   }
   const doc = document2;
-  let qrlMapper = void 0;
   let qrlMap = void 0;
-  if (typeof opts.qrlMapper === "function") {
-    qrlMapper = opts.qrlMapper;
-  } else {
-    const manifest = getValidManifest(opts.manifest);
-    if (manifest) {
-      qrlMap = manifest.mapping;
-    }
+  const manifest = getValidManifest(opts.manifest);
+  if (manifest) {
+    qrlMap = manifest.mapping;
   }
   if (opts == null ? void 0 : opts.url) {
     doc.location.href = normalizeUrl(opts.url).href;
@@ -238,9 +233,6 @@ function createPlatform(document2, opts) {
       });
     },
     chunkForSymbol(symbolName) {
-      if (qrlMapper) {
-        return qrlMapper(symbolName);
-      }
       if (qrlMap) {
         return [qrlMap[symbolName], symbolName];
       }
@@ -250,7 +242,7 @@ function createPlatform(document2, opts) {
   return serverPlatform;
 }
 async function setServerPlatform(document2, opts) {
-  const platform = await createPlatform(document2, opts);
+  const platform = createPlatform(document2, opts);
   (0, import_qwik.setPlatform)(document2, platform);
 }
 
@@ -854,9 +846,13 @@ var getCanonicalSymbol = (symbolName) => {
   return symbolName;
 };
 var isSameQRL = (a, b) => {
-  var _a, _b;
-  const symA = (_a = a.refSymbol) != null ? _a : a.symbol;
-  const symB = (_b = b.refSymbol) != null ? _b : b.symbol;
+  return isSameSymbol(getQRLSymbol(a), getQRLSymbol(b));
+};
+var getQRLSymbol = (a) => {
+  var _a;
+  return (_a = a.refSymbol) != null ? _a : a.symbol;
+};
+var isSameSymbol = (symA, symB) => {
   return getCanonicalSymbol(symA) === getCanonicalSymbol(symB);
 };
 var QRLInternal = QRL;
@@ -3278,11 +3274,8 @@ function getPrefetchResources(snapshotResult, opts) {
     const prefetchStrategy = opts.prefetchStrategy;
     const buildBase = getBuildBase(opts);
     if (prefetchStrategy !== null) {
-      if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "events-document") {
-        return getEventDocumentPrefetch(snapshotResult, manifest, buildBase);
-      }
-      if (prefetchStrategy.symbolsToPrefetch === "all") {
-        return getAllPrefetch(manifest, buildBase);
+      if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "auto") {
+        return getAutoPrefetch(snapshotResult, manifest, buildBase);
       }
       if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
         try {
@@ -3295,14 +3288,17 @@ function getPrefetchResources(snapshotResult, opts) {
   }
   return [];
 }
-function getEventDocumentPrefetch(snapshotResult, manifest, buildBase) {
+function getAutoPrefetch(snapshotResult, manifest, buildBase) {
   const prefetchResources = [];
   const listeners = snapshotResult == null ? void 0 : snapshotResult.listeners;
   const stateObjs = snapshotResult == null ? void 0 : snapshotResult.objs;
   const urls = /* @__PURE__ */ new Set();
   if (Array.isArray(listeners)) {
     for (const prioritizedSymbolName in manifest.mapping) {
-      const hasSymbol = listeners.some((l) => l.key === prioritizedSymbolName);
+      const hasSymbol = listeners.some((l) => {
+        const qrlSymbol = getQRLSymbol(l.qrl);
+        return isSameSymbol(prioritizedSymbolName, qrlSymbol);
+      });
       if (hasSymbol) {
         addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
       }
@@ -3311,17 +3307,10 @@ function getEventDocumentPrefetch(snapshotResult, manifest, buildBase) {
   if (Array.isArray(stateObjs)) {
     for (const obj of stateObjs) {
       if (isQrl(obj)) {
-        addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[obj.symbol]);
+        const qrlSymbolName = getQRLSymbol(obj);
+        addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[qrlSymbolName]);
       }
     }
-  }
-  return prefetchResources;
-}
-function getAllPrefetch(manifest, buildBase) {
-  const prefetchResources = [];
-  const urls = /* @__PURE__ */ new Set();
-  for (const prioritizedSymbolName in manifest.mapping) {
-    addBundle(manifest, urls, prefetchResources, buildBase, manifest.mapping[prioritizedSymbolName]);
   }
   return prefetchResources;
 }
