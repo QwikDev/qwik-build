@@ -1,45 +1,55 @@
-!function() {
-    const qrlResolver = (doc, element, eventUrl, _url, _base) => {
-        if (void 0 === eventUrl) {
-            if (element) {
-                _url = element.getAttribute("q:base");
-                _base = qrlResolver(doc, element.parentNode && element.parentNode.closest("[q\\:base]"));
-            } else {
-                _url = doc.baseURI;
-            }
-        } else if (eventUrl) {
-            _url = eventUrl;
-            _base = qrlResolver(doc, element.closest("[q\\:base]"));
-        }
-        return _url ? new URL(_url, _base) : void 0;
-    };
-    ((doc, hasInitialized) => {
+(() => {
+    function findModule(module) {
+        return Object.values(module).find(isModule) || module;
+    }
+    function isModule(module) {
+        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
+    }
+    ((doc, hasInitialized, prefetchWorker) => {
         const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
-        const broadcast = async (infix, type, event) => {
+        const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
-            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, event)));
+            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
         };
-        const dispatch = async (element, eventName, ev, url, previousCtx, attrValue) => {
-            for (const on of ON_PREFIXES) {
-                attrValue = element.getAttribute(on + eventName) || "";
-                for (const qrl of attrValue.split("\n")) {
-                    if (url = qrlResolver(doc, element, qrl)) {
-                        const handler = getModuleExport(url, window[url.pathname] || await import(String(url).split("#")[0]));
-                        previousCtx = document.__q_context__;
-                        try {
-                            document.__q_context__ = [ element, ev, url ];
-                            handler(element, ev, url);
-                        } finally {
-                            document.__q_context__ = previousCtx;
+        const emitEvent = (el, eventName, detail) => el.dispatchEvent(new CustomEvent(eventName, {
+            detail: detail,
+            bubbles: !0,
+            composed: !0
+        }));
+        const error = msg => {
+            throw new Error("QWIK " + msg);
+        };
+        const qrlResolver = (element, qrl) => {
+            element = element.closest("[q\\:container]");
+            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
+        };
+        const dispatch = async (element, eventName, ev) => {
+            for (const onPrefix of ON_PREFIXES) {
+                const attrValue = element.getAttribute(onPrefix + eventName);
+                if (attrValue) {
+                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
+                    for (const qrl of attrValue.split("\n")) {
+                        const url = qrlResolver(element, qrl);
+                        if (url) {
+                            const symbolName = getSymbolName(url);
+                            const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
+                            const previousCtx = doc.__q_context__;
+                            if (element.isConnected) {
+                                try {
+                                    doc.__q_context__ = [ element, ev, url ];
+                                    handler(ev, element, url);
+                                } finally {
+                                    doc.__q_context__ = previousCtx;
+                                    emitEvent(element, "qsymbol", symbolName);
+                                }
+                            }
                         }
                     }
                 }
             }
         };
-        const getModuleExport = (url, module, exportName) => module[exportName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default"] || (msg => {
-            throw new Error("QWIK: " + msg);
-        })(url + " does not export " + exportName);
-        const processEvent = async (ev, element) => {
+        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
+        const processEvent = (ev, element) => {
             if ((element = ev.target) == doc) {
                 setTimeout((() => broadcast("-document", ev.type, ev)));
             } else {
@@ -49,29 +59,53 @@
                 }
             }
         };
-        const addEventListener = eventName => doc.addEventListener(eventName, processEvent, {
-            capture: !0
-        });
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "q-init", new CustomEvent("qInit"));
+                broadcast("", "qinit", new CustomEvent("qinit"));
+                if ("undefined" != typeof IntersectionObserver) {
+                    const observer = new IntersectionObserver((entries => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                observer.unobserve(entry.target);
+                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {
+                                    bubbles: !1,
+                                    detail: entry
+                                }));
+                            }
+                        }
+                    }));
+                    doc.qO = observer;
+                    new MutationObserver((mutations => {
+                        for (const mutation2 of mutations) {
+                            observer.observe(mutation2.target);
+                        }
+                    })).observe(document.documentElement, {
+                        attributeFilter: [ "on:qvisible" ],
+                        subtree: !0
+                    });
+                    doc.querySelectorAll("[on\\:qvisible]").forEach((el => observer.observe(el)));
+                }
             }
         };
-        {
-            const scriptTag = doc.querySelector("script[events]");
-            if (scriptTag) {
-                (scriptTag.getAttribute("events") || "").split(/[\s,;]+/).forEach(addEventListener);
-            } else {
-                for (const key in doc) {
-                    if (0 == key.indexOf("on")) {
-                        addEventListener(key.substring(2));
+        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {
+            capture: !0
+        });
+        if (!doc.qR) {
+            doc.qR = 1;
+            {
+                const scriptTag = doc.querySelector("script[events]");
+                if (scriptTag) {
+                    scriptTag.getAttribute("events").split(/[\s,;]+/).forEach(addDocEventListener);
+                } else {
+                    for (const key in doc) {
+                        key.startsWith("on") && addDocEventListener(key.slice(2));
                     }
                 }
             }
+            doc.addEventListener("readystatechange", processReadyStateChange);
+            processReadyStateChange();
         }
-        doc.addEventListener("readystatechange", processReadyStateChange);
-        processReadyStateChange();
     })(document);
-}();
+})();
