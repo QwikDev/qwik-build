@@ -1,21 +1,15 @@
 /**
  * @license
+ * @builder.io/qwik
  * Copyright Builder.io, Inc. All Rights Reserved.
- *
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
 // minification can replace the `globalThis.qDev` with `false`
 // which will remove all dev code within from the build
 const qDev = true;
+const qTest = globalThis.describe !== undefined;
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 const EMPTY_ARRAY = [];
 const EMPTY_OBJ = {};
 if (qDev) {
@@ -23,53 +17,29 @@ if (qDev) {
     Object.freeze(EMPTY_OBJ);
 }
 
-function isQrl(value) {
-    return value instanceof QRLInternal;
-}
-class QRL {
-    constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef, guard) {
-        this.chunk = chunk;
-        this.symbol = symbol;
-        this.symbolRef = symbolRef;
-        this.symbolFn = symbolFn;
-        this.capture = capture;
-        this.captureRef = captureRef;
-        this.guard = guard;
-        this.canonicalChunk = chunk.replace(FIND_EXT, '');
-    }
-}
-const QRLInternal = QRL;
-// https://regexr.com/6enjv
-const FIND_EXT = /\.[\w?=&]+$/;
-
 const STYLE = qDev
     ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
     : '';
 const logError = (message, ...optionalParams) => {
     // eslint-disable-next-line no-console
-    console.error('%cQWIK', STYLE, message, ...optionalParams);
+    console.error('%cQWIK ERROR', STYLE, message, ...optionalParams);
 };
 const logWarn = (message, ...optionalParams) => {
     // eslint-disable-next-line no-console
-    console.warn('%cQWIK', STYLE, message, ...optionalParams);
+    console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
 };
 const logDebug = (message, ...optionalParams) => {
-    // eslint-disable-next-line no-console
-    console.debug('%cQWIK', STYLE, message, ...optionalParams);
+    if (qDev) {
+        // eslint-disable-next-line no-console
+        console.debug('%cQWIK', STYLE, message, ...optionalParams);
+    }
 };
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 function assertDefined(value, text) {
     if (qDev) {
         if (value != null)
             return;
-        throw newError(text || 'Expected defined value.');
+        throw newError(text || 'Expected defined value');
     }
 }
 function assertEqual(value1, value2, text) {
@@ -87,15 +57,45 @@ function newError(text) {
 }
 
 /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * State factory of the component.
  */
+/**
+ * State factory of the component.
+ */
+const QHostAttr = 'q:host';
+const OnRenderProp = 'q:renderFn';
+/**
+ * Component Styles.
+ */
+const ComponentScopedStyles = 'q:sstyle';
+/**
+ * Component style host prefix
+ */
+const ComponentStylesPrefixHost = '💎';
+/**
+ * Component style content prefix
+ */
+const ComponentStylesPrefixContent = '⭐️';
+/**
+ * `<some-element q:slot="...">`
+ */
+const QSlotAttr = 'q:slot';
+const QObjAttr = 'q:obj';
+const QSeqAttr = 'q:seq';
+const QCtxAttr = 'q:ctx';
+const QContainerAttr = 'q:container';
+const QObjSelector = '[q\\:obj]';
+const QContainerSelector = '[q\\:container]';
+const RenderEvent = 'qRender';
+const ELEMENT_ID = 'q:id';
+const ELEMENT_ID_PREFIX = '#';
+
 function getDocument(node) {
     if (typeof document !== 'undefined') {
         return document;
+    }
+    if (node.nodeType === 9) {
+        return node;
     }
     let doc = node.ownerDocument;
     while (doc && doc.nodeType !== 9) {
@@ -105,513 +105,33 @@ function getDocument(node) {
     return doc;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-let runtimeSymbolId = 0;
-const RUNTIME_QRL = '/runtimeQRL';
-// https://regexr.com/68v72
-const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
-// https://regexr.com/690ds
-const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
-// https://regexr.com/6a83h
-const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-function toInternalQRL(qrl) {
-    assertEqual(isQrl(qrl), true);
-    return qrl;
+const CONTAINER = Symbol('container');
+function isStyleTask(obj) {
+    return obj && typeof obj === 'object' && obj.type === 'style';
 }
-function staticQrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
-    let chunk;
-    let symbolFn = null;
-    if (typeof chunkOrFn === 'string') {
-        chunk = chunkOrFn;
-    }
-    else if (typeof chunkOrFn === 'function') {
-        symbolFn = chunkOrFn;
-        let match;
-        const srcCode = String(chunkOrFn);
-        if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
-            chunk = match[2];
-        }
-        else if ((match = srcCode.match(EXTRACT_SELF_IMPORT))) {
-            const ref = 'QWIK-SELF';
-            const frames = new Error(ref).stack.split('\n');
-            const start = frames.findIndex((f) => f.includes(ref));
-            const frame = frames[start + 2];
-            match = frame.match(EXTRACT_FILE_NAME);
-            if (!match) {
-                chunk = 'main';
-            }
-            else {
-                chunk = match[1];
-            }
-        }
-        else {
-            throw new Error('Q-ERROR: Dynamic import not found: ' + srcCode);
-        }
-    }
-    else {
-        throw new Error('Q-ERROR: Unknown type argument: ' + chunkOrFn);
-    }
-    return new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
-}
-function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
-    return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null);
-}
-function stringifyQRL(qrl, element, platform) {
-    var _a;
-    const qrl_ = toInternalQRL(qrl);
-    const symbol = qrl_.symbol;
-    const chunk = platform ? (_a = platform.chunkForSymbol(symbol)) !== null && _a !== void 0 ? _a : qrl_.chunk : qrl_.chunk;
-    const parts = [chunk];
-    if (symbol && symbol !== 'default') {
-        parts.push('#', symbol);
-    }
-    const guard = qrl_.guard;
-    guard === null || guard === void 0 ? void 0 : guard.forEach((value, key) => parts.push('|', key, value && value.length ? '.' + value.join('.') : ''));
-    const capture = qrl_.capture;
-    if (capture && capture.length > 0) {
-        parts.push(JSON.stringify(capture));
-    }
-    const qrlString = parts.join('');
-    if (qrl_.chunk === RUNTIME_QRL && element) {
-        const qrls = element.__qrls__ || (element.__qrls__ = new Set());
-        qrls.add(qrl);
-    }
-    return qrlString;
-}
-/**
- * `./chunk#symbol|symbol.propA.propB|[captures]
- */
-function parseQRL(qrl, element) {
-    if (element) {
-        const qrls = element.__qrls__;
-        if (qrls) {
-            for (const runtimeQrl of qrls) {
-                if (stringifyQRL(runtimeQrl) == qrl) {
-                    return runtimeQrl;
-                }
-            }
-        }
-    }
-    const endIdx = qrl.length;
-    const hashIdx = indexOf(qrl, 0, '#');
-    const guardIdx = indexOf(qrl, hashIdx, '|');
-    const captureIdx = indexOf(qrl, guardIdx, '[');
-    const chunkEndIdx = Math.min(hashIdx, guardIdx, captureIdx);
-    const chunk = qrl.substring(0, chunkEndIdx);
-    const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-    const symbolEndIdx = Math.min(guardIdx, captureIdx);
-    const symbol = symbolStartIdx == symbolEndIdx ? 'default' : qrl.substring(symbolStartIdx, symbolEndIdx);
-    const guardStartIdx = guardIdx;
-    const guardEndIdx = captureIdx;
-    const guard = guardStartIdx < guardEndIdx ? parseGuard(qrl.substring(guardStartIdx, guardEndIdx)) : null;
-    const captureStartIdx = captureIdx;
-    const captureEndIdx = endIdx;
-    const capture = captureStartIdx === captureEndIdx
-        ? EMPTY_ARRAY
-        : JSONparse(qrl.substring(captureStartIdx, captureEndIdx));
-    if (chunk === RUNTIME_QRL) {
-        logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
-    }
-    return new QRLInternal(chunk, symbol, null, null, capture, null, guard);
-}
-function JSONparse(json) {
-    try {
-        return JSON.parse(json);
-    }
-    catch (e) {
-        logError('JSON:', json);
-        throw e;
-    }
-}
-function parseGuard(text) {
-    let map = null;
-    if (text) {
-        text.split('|').forEach((obj) => {
-            if (obj) {
-                const parts = obj.split('.');
-                const id = parts.shift();
-                if (!map)
-                    map = new Map();
-                map.set(id, parts);
-            }
-        });
-    }
-    return map;
-}
-function indexOf(text, startIdx, char) {
-    const endIdx = text.length;
-    const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-    return charIdx == -1 ? endIdx : charIdx;
-}
-function toQrlOrError(symbolOrQrl) {
-    if (!isQrl(symbolOrQrl)) {
-        if (typeof symbolOrQrl == 'function' || typeof symbolOrQrl == 'string') {
-            symbolOrQrl = runtimeQrl(symbolOrQrl);
-        }
-        else {
-            // TODO(misko): centralize
-            throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
-        }
-    }
-    return symbolOrQrl;
-}
-
-/**
- * @license
- * Copyright Builder.io; Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-/**
- * State factory of the component.
- */
-const QHostAttr = 'q:host';
-const OnRenderProp = 'on:qRender';
-/**
- * State factory of the component.
- */
-const OnRenderSelector = '[q\\:host]';
-/**
- * Component Styles.
- */
-const ComponentScopedStyles = 'q:sstyle';
-/**
- * Component style host prefix
- */
-const ComponentStylesPrefixHost = '📦';
-/**
- * Component style content prefix
- */
-const ComponentStylesPrefixContent = '🏷️';
-/**
- * `<some-element q:slot="...">`
- */
-const QSlotAttr = 'q:slot';
-const QObjAttr = 'q:obj';
-const QObjSelector = '[q\\:obj]';
-const ELEMENT_ID = 'q:id';
-const ELEMENT_ID_SELECTOR = '[q\\:id]';
-const ELEMENT_ID_PREFIX = '#';
-
-/**
- * @private
- */
-function isHtmlElement(node) {
-    return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
-}
-/**
- * `Node.type` enumeration
- */
-var NodeType;
-(function (NodeType) {
-    NodeType[NodeType["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
-    NodeType[NodeType["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
-    NodeType[NodeType["TEXT_NODE"] = 3] = "TEXT_NODE";
-    NodeType[NodeType["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
-    NodeType[NodeType["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
-    // document, such as <?xml-stylesheet … ?>.
-    NodeType[NodeType["COMMENT_NODE"] = 8] = "COMMENT_NODE";
-    NodeType[NodeType["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
-    NodeType[NodeType["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
-    NodeType[NodeType["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
-})(NodeType || (NodeType = {}));
-
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-function isNode$1(value) {
-    return value && typeof value.nodeType == 'number';
-}
-function isDocument(value) {
-    return value && value.nodeType == NodeType.DOCUMENT_NODE;
-}
-function isElement(value) {
-    return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
-}
-
-const createPlatform = (doc) => {
-    const moduleCache = new Map();
-    return {
-        importSymbol(element, url, symbolName) {
-            const urlDoc = toUrl(doc, element, url).toString();
-            const urlCopy = new URL(urlDoc);
-            urlCopy.hash = '';
-            urlCopy.search = '';
-            const importURL = urlCopy.href;
-            const mod = moduleCache.get(importURL);
-            if (mod) {
-                return mod[symbolName];
-            }
-            return import(/* @vite-ignore */ importURL).then((mod) => {
-                moduleCache.set(importURL, mod);
-                return mod[symbolName];
-            });
-        },
-        raf: (fn) => {
-            return new Promise((resolve) => {
-                requestAnimationFrame(() => {
-                    resolve(fn());
-                });
-            });
-        },
-        nextTick: (fn) => {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(fn());
-                });
-            });
-        },
-        chunkForSymbol() {
-            return undefined;
-        },
-    };
-};
-/**
- * Convert relative base URI and relative URL into a fully qualified URL.
- *
- * @param base -`QRL`s are relative, and therefore they need a base for resolution.
- *    - `Element` use `base.ownerDocument.baseURI`
- *    - `Document` use `base.baseURI`
- *    - `string` use `base` as is
- *    - `QConfig` use `base.baseURI`
- * @param url - relative URL
- * @returns fully qualified URL.
- */
-function toUrl(doc, element, url) {
-    let _url;
-    let _base = undefined;
-    if (url === undefined) {
-        //  recursive call
-        if (element) {
-            _url = element.getAttribute('q:base');
-            _base = toUrl(doc, element.parentNode && element.parentNode.closest('[q\\:base]'));
-        }
-        else {
-            _url = doc.baseURI;
-        }
-    }
-    else if (url) {
-        (_url = url), (_base = toUrl(doc, element.closest('[q\\:base]')));
-    }
-    else {
-        throw new Error('INTERNAL ERROR');
-    }
-    return new URL(String(_url), _base);
-}
-/**
- * @public
- */
-const setPlatform = (doc, plt) => (doc[DocumentPlatform] = plt);
-/**
- * @public
- */
-const getPlatform = (docOrNode) => {
-    const doc = (isDocument(docOrNode) ? docOrNode : getDocument(docOrNode));
-    return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
-};
-const DocumentPlatform = /*@__PURE__*/ Symbol();
-
-// <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#qrlImport">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#qrlImport instead)
-/**
- * Lazy-load a `QRL` symbol and return the lazy-loaded value.
- *
- * See: `QRL`
- *
- * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
- * account.
- * @param qrl - QRL to load.
- * @returns A resolved QRL value as a Promise.
- * @public
- */
-// </docs>
-async function qrlImport(element, qrl) {
-    const qrl_ = toInternalQRL(qrl);
-    if (qrl_.symbolRef)
-        return qrl_.symbolRef;
-    if (qrl_.symbolFn) {
-        return (qrl_.symbolRef = qrl_.symbolFn().then((module) => module[qrl_.symbol]));
-    }
-    else {
-        return (qrl_.symbolRef = await getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol));
-    }
-}
-// <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#$">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#$ instead)
-/**
- * Qwik Optimizer marker function.
- *
- * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
- * resource referenced by `QRL`.
- *
- * See: `implicit$FirstArg` for additional `____$(...)` rules.
- *
- * In this example `$(...)` is used to capture the callback function of `onmousemove` into
- * lazy-loadable reference. This allows the code to refer to the function without actually
- * loading the function. In this example, the callback function does not get loaded until
- * `mousemove` event fires.
- *
- * ```typescript
- * onDocument(
- *   'mousemove',
- *   $(() => console.log('mousemove'))
- * );
- * ```
- *
- * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
- *
- * ```typescript
- * // FILE: <current file>
- * onDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
- *
- * // FILE: chunk-abc.js
- * export const onMousemove = () => console.log('mousemove');
- * ```
- *
- * ## Special Rules
- *
- * The Qwik Optimizer places special rules on functions that can be lazy-loaded.
- *
- * 1. The expression of the `$(expression)` function must be importable by the system.
- * (expression shows up in `import` or has `export`)
- * 2. If inlined function then all lexically captured values must be:
- *    - importable (vars shows up in `import` or has `export`)
- *    - const (The capturing process differs from JS capturing in that writing to captured
- * variables does not update them, and therefore writes are forbidden. The best practice is that
- * all captured variables are constants.)
- *    - Must be runtime serializable.
- *
- * ```typescript
- * import { importedFn } from './example';
- *
- * export const greet = () => console.log('greet');
- * function topLevelFn() {}
- *
- * function myCode() {
- *   const store = useStore({});
- *   function localFn() {}
- *   // Valid Examples
- *   $(greet); // greet is importable
- *   $(importedFn); // importedFn is importable
- *   $(() => greet()); // greet is importable;
- *   $(() => importedFn()); // importedFn is importable
- *   $(() => console.log(store)); // store is serializable.
- *
- *   // Compile time errors
- *   $(topLevelFn); // ERROR: `topLevelFn` not importable
- *   $(() => topLevelFn()); // ERROR: `topLevelFn` not importable
- *
- *   // Runtime errors
- *   $(localFn); // ERROR: `localFn` fails serialization
- *   $(() => localFn()); // ERROR: `localFn` fails serialization
- * }
- *
- * ```
- *
- * @param expression - Expression which should be lazy loaded
- * @public
- */
-// </docs>
-function $(expression) {
-    return runtimeQrl(expression);
-}
-// <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#implicit$FirstArg">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#implicit$FirstArg instead)
-/**
- * Create a `____$(...)` convenience method from `___(...)`.
- *
- * It is very common for functions to take a lazy-loadable resource as a first argument. For this
- * reason, the Qwik Optimizer automatically extracts the first argument from any function which
- * ends in `$`.
- *
- * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
- * The former is just a shorthand for the latter.
- *
- * For example these function call are equivalent:
- *
- * - `component$(() => {...})` is same as `onRender($(() => {...}))`
- *
- * ```typescript
- * export function myApi(callback: QRL<() => void>): void {
- *   // ...
- * }
- *
- * export const myApi$ = implicit$FirstArg(myApi);
- * // type of myApi$: (callback: () => void): void
- *
- * // can be used as:
- * myApi$(() => console.log('callback'));
- *
- * // will be transpiled to:
- * // FILE: <current file>
- * myApi(qrl('./chunk-abc.js', 'callback'));
- *
- * // FILE: chunk-abc.js
- * export const callback = () => console.log('callback');
- * ```
- *
- * @param fn - function that should have its first argument automatically `$`.
- * @public
- */
-// </docs>
-function implicit$FirstArg(fn) {
-    return function (first, ...rest) {
-        return fn.call(null, $(first), ...rest);
-    };
-}
-// <docs markdown="https://hackmd.io/m5DzCi5MTa26LuUj5t3HpQ#qrl">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fm5DzCi5MTa26LuUj5t3HpQ%3Fboth#qrl instead)
-/**
- * Used by Qwik Optimizer to point to lazy-loaded resources.
- *
- * This function should be used by the Qwik Optimizer only. The function should not be directly
- * referred to in the source code of the application.
- *
- * See: `QRL`, `$(...)`
- *
- * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
- * @param symbol - Symbol to lazy load
- * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @public
- */
-// </docs>
-const qrl = staticQrl;
-
 let _context;
 function tryGetInvokeContext() {
-    return _context;
-}
-function getInvokeContext() {
     if (!_context) {
         const context = typeof document !== 'undefined' && document && document.__q_context__;
         if (!context) {
-            // TODO(misko): centralize
-            throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+            return undefined;
         }
         if (Array.isArray(context)) {
             const element = context[0];
             const hostElement = getHostElement(element);
             assertDefined(element);
-            return (document.__q_context__ = newInvokeContext(hostElement, element, context[1], context[2]));
+            return (document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]));
         }
         return context;
     }
     return _context;
+}
+function getInvokeContext() {
+    const ctx = tryGetInvokeContext();
+    if (!ctx) {
+        throw new Error("Q-ERROR: invoking 'use*()' method outside of invocation context.");
+    }
+    return ctx;
 }
 function useInvoke(context, fn, ...args) {
     const previousContext = _context;
@@ -630,18 +150,19 @@ function useInvoke(context, fn, ...args) {
     }
     return returnValue;
 }
-function newInvokeContext(hostElement, element, event, url) {
+function newInvokeContext(doc, hostElement, element, event, url) {
     return {
+        seq: 0,
+        doc,
         hostElement,
         element,
         event: event,
         url: url || null,
         qrl: undefined,
-        subscriptions: event === 'qRender',
     };
 }
 /**
- * @private
+ * @alpha
  */
 function useWaitOn(promise) {
     const ctx = getInvokeContext();
@@ -668,53 +189,219 @@ function getHostElement(el) {
     }
     return node;
 }
+function getContainer(el) {
+    let container = el[CONTAINER];
+    if (!container) {
+        container = el.closest(QContainerSelector);
+        el[CONTAINER] = container;
+    }
+    return container;
+}
 
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useHostElement instead)
+const emitEvent = (el, eventName, detail, bubbles) => {
+    if (el && typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent(eventName, {
+            detail,
+            bubbles: bubbles,
+            composed: bubbles,
+        }));
+    }
+};
+
+function flattenArray(array, dst) {
+    // Yes this function is just Array.flat, but we need to run on old versions of Node.
+    if (!dst)
+        dst = [];
+    for (const item of array) {
+        if (Array.isArray(item)) {
+            flattenArray(item, dst);
+        }
+        else {
+            dst.push(item);
+        }
+    }
+    return dst;
+}
+
+function isPromise(value) {
+    return value instanceof Promise;
+}
+const then = (promise, thenFn, rejectFn) => {
+    return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
+};
+const promiseAll = (promises) => {
+    const hasPromise = promises.some(isPromise);
+    if (hasPromise) {
+        return Promise.all(promises);
+    }
+    return promises;
+};
+
+function isQrl(value) {
+    return value instanceof QRLInternal;
+}
+class QRL {
+    constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
+        this.chunk = chunk;
+        this.symbol = symbol;
+        this.symbolRef = symbolRef;
+        this.symbolFn = symbolFn;
+        this.capture = capture;
+        this.captureRef = captureRef;
+    }
+    setContainer(el) {
+        if (!this.el) {
+            this.el = el;
+        }
+    }
+    async resolve(el) {
+        if (el) {
+            this.setContainer(el);
+        }
+        return qrlImport(this.el, this);
+    }
+    invokeFn(el, currentCtx, beforeFn) {
+        return ((...args) => {
+            const fn = (typeof this.symbolRef === 'function' ? this.symbolRef : this.resolve(el));
+            return then(fn, (fn) => {
+                if (typeof fn === 'function') {
+                    const baseContext = currentCtx ?? newInvokeContext();
+                    const context = {
+                        ...baseContext,
+                        qrl: this,
+                    };
+                    if (beforeFn) {
+                        beforeFn();
+                    }
+                    return useInvoke(context, fn, ...args);
+                }
+                throw new Error('QRL is not a function');
+            });
+        });
+    }
+    copy() {
+        const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
+        copy.refSymbol = this.refSymbol;
+        return copy;
+    }
+    async invoke(...args) {
+        const fn = this.invokeFn();
+        const result = await fn(...args);
+        return result;
+    }
+    serialize(options) {
+        return stringifyQRL(this, options);
+    }
+}
+const getCanonicalSymbol = (symbolName) => {
+    const index = symbolName.lastIndexOf('_');
+    if (index > -1) {
+        return symbolName.slice(index + 1);
+    }
+    return symbolName;
+};
+const isSameQRL = (a, b) => {
+    return getCanonicalSymbol(a.symbol) === getCanonicalSymbol(b.symbol);
+};
+const QRLInternal = QRL;
+
+const createPlatform = (doc) => {
+    const moduleCache = new Map();
+    return {
+        isServer: false,
+        importSymbol(element, url, symbolName) {
+            const urlDoc = toUrl(doc, element, url).toString();
+            const urlCopy = new URL(urlDoc);
+            urlCopy.hash = '';
+            urlCopy.search = '';
+            const importURL = urlCopy.href;
+            const mod = moduleCache.get(importURL);
+            if (mod) {
+                return mod[symbolName];
+            }
+            return import(/* @vite-ignore */ importURL).then((mod) => {
+                mod = findModule(mod);
+                moduleCache.set(importURL, mod);
+                return mod[symbolName];
+            });
+        },
+        raf: (fn) => {
+            return new Promise((resolve) => {
+                requestAnimationFrame(() => {
+                    resolve(fn());
+                });
+            });
+        },
+        nextTick: (fn) => {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve(fn());
+                });
+            });
+        },
+        chunkForSymbol() {
+            return undefined;
+        },
+    };
+};
+function findModule(module) {
+    return Object.values(module).find(isModule) || module;
+}
+function isModule(module) {
+    return typeof module === 'object' && module && module[Symbol.toStringTag] === 'Module';
+}
 /**
- * Retrieves the Host Element of the current component.
+ * Convert relative base URI and relative URL into a fully qualified URL.
  *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
+ * @param base -`QRL`s are relative, and therefore they need a base for resolution.
+ *    - `Element` use `base.ownerDocument.baseURI`
+ *    - `Document` use `base.baseURI`
+ *    - `string` use `base` as is
+ *    - `QConfig` use `base.baseURI`
+ * @param url - relative URL
+ * @returns fully qualified URL.
+ */
+function toUrl(doc, element, url) {
+    const containerEl = getContainer(element);
+    const base = new URL(containerEl?.getAttribute('q:base') ?? doc.baseURI, doc.baseURI);
+    return new URL(url, base);
+}
+/**
  * @public
  */
-// </docs>
-function useHostElement() {
-    const element = getInvokeContext().hostElement;
-    assertDefined(element);
-    return element;
-}
-
-function hashCode(text, hash = 0) {
-    if (text.length === 0)
-        return hash;
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-}
-
-function styleKey(qStyles) {
-    return qStyles && String(hashCode(qStyles.symbol));
-}
-function styleHost(styleId) {
-    return styleId && ComponentStylesPrefixHost + styleId;
-}
-function styleContent(styleId) {
-    return styleId && ComponentStylesPrefixContent + styleId;
-}
+const setPlatform = (doc, plt) => (doc[DocumentPlatform] = plt);
+/**
+ * @public
+ */
+const getPlatform = (docOrNode) => {
+    const doc = getDocument(docOrNode);
+    return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
+};
+const DocumentPlatform = /*@__PURE__*/ Symbol();
 
 /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * @private
  */
+function isHtmlElement(node) {
+    return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
+}
+/**
+ * `Node.type` enumeration
+ */
+var NodeType;
+(function (NodeType) {
+    NodeType[NodeType["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
+    NodeType[NodeType["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
+    NodeType[NodeType["TEXT_NODE"] = 3] = "TEXT_NODE";
+    NodeType[NodeType["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
+    NodeType[NodeType["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
+    // document, such as <?xml-stylesheet … ?>.
+    NodeType[NodeType["COMMENT_NODE"] = 8] = "COMMENT_NODE";
+    NodeType[NodeType["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
+    NodeType[NodeType["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
+    NodeType[NodeType["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
+})(NodeType || (NodeType = {}));
+
 function stringifyDebug(value) {
     if (value == null)
         return String(value);
@@ -743,7 +430,7 @@ function stringifyElement(element) {
     for (let i = 0; i < names.length; i++) {
         const name = names[i];
         let value = element.getAttribute(name);
-        if (value === null || value === void 0 ? void 0 : value.startsWith('file:/')) {
+        if (value?.startsWith('file:/')) {
             value = value.replace(/(file:\/\/).*(\/.*)$/, (all, protocol, file) => protocol + '...' + file);
         }
         html +=
@@ -752,13 +439,6 @@ function stringifyElement(element) {
     return html + '>';
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 var QError;
 (function (QError) {
     // core 000-099
@@ -907,300 +587,964 @@ function codeToText(code) {
         [QError.Event_emitEventCouldNotFindListener_event_element]: "Re-emitting event '{}' but no listener found at '{}' or any of its parents.",
     }[code];
     let textCode = '000' + code;
-    textCode = textCode.substr(textCode.length - 3);
+    textCode = textCode.slice(-3);
     return `${area}(Q-${textCode}): ${text}`;
+}
+
+function isNode$1(value) {
+    return value && typeof value.nodeType == 'number';
+}
+function isDocument(value) {
+    return value && value.nodeType == NodeType.DOCUMENT_NODE;
+}
+function isElement(value) {
+    return isNode$1(value) && value.nodeType == NodeType.ELEMENT_NODE;
+}
+
+// <docs markdown="../readme.md#$">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#$ instead)
+/**
+ * Qwik Optimizer marker function.
+ *
+ * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
+ * resource referenced by `QRL`.
+ *
+ * @see `implicit$FirstArg` for additional `____$(...)` rules.
+ *
+ * In this example `$(...)` is used to capture the callback function of `onmousemove` into
+ * lazy-loadable reference. This allows the code to refer to the function without actually
+ * loading the function. In this example, the callback function does not get loaded until
+ * `mousemove` event fires.
+ *
+ * ```tsx
+ * useOnDocument(
+ *   'mousemove',
+ *   $(() => console.log('mousemove'))
+ * );
+ * ```
+ *
+ * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
+ *
+ * ```tsx
+ * // FILE: <current file>
+ * useOnDocument('mousemove', qrl('./chunk-abc.js', 'onMousemove'));
+ *
+ * // FILE: chunk-abc.js
+ * export const onMousemove = () => console.log('mousemove');
+ * ```
+ *
+ * ## Special Rules
+ *
+ * The Qwik Optimizer places special rules on functions that can be lazy-loaded.
+ *
+ * 1. The expression of the `$(expression)` function must be importable by the system.
+ * (expression shows up in `import` or has `export`)
+ * 2. If inlined function then all lexically captured values must be:
+ *    - importable (vars shows up in `import` or has `export`)
+ *    - const (The capturing process differs from JS capturing in that writing to captured
+ * variables does not update them, and therefore writes are forbidden. The best practice is that
+ * all captured variables are constants.)
+ *    - Must be runtime serializable.
+ *
+ * ```tsx
+ * import { importedFn } from './import/example';
+ *
+ * export const greet = () => console.log('greet');
+ * function topLevelFn() {}
+ *
+ * function myCode() {
+ *   const store = useStore({});
+ *   function localFn() {}
+ *   // Valid Examples
+ *   $(greet); // greet is importable
+ *   $(importedFn); // importedFn is importable
+ *   $(() => greet()); // greet is importable;
+ *   $(() => importedFn()); // importedFn is importable
+ *   $(() => console.log(store)); // store is serializable.
+ *
+ *   // Compile time errors
+ *   $(topLevelFn); // ERROR: `topLevelFn` not importable
+ *   $(() => topLevelFn()); // ERROR: `topLevelFn` not importable
+ *
+ *   // Runtime errors
+ *   $(localFn); // ERROR: `localFn` fails serialization
+ *   $(() => localFn()); // ERROR: `localFn` fails serialization
+ * }
+ *
+ * ```
+ *
+ * @param expression - Expression which should be lazy loaded
+ * @public
+ */
+// </docs>
+function $(expression) {
+    return runtimeQrl(expression);
+}
+// <docs markdown="../readme.md#implicit$FirstArg">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#implicit$FirstArg instead)
+/**
+ * Create a `____$(...)` convenience method from `___(...)`.
+ *
+ * It is very common for functions to take a lazy-loadable resource as a first argument. For this
+ * reason, the Qwik Optimizer automatically extracts the first argument from any function which
+ * ends in `$`.
+ *
+ * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
+ * The former is just a shorthand for the latter.
+ *
+ * For example these function call are equivalent:
+ *
+ * - `component$(() => {...})` is same as `onRender($(() => {...}))`
+ *
+ * ```tsx
+ * export function myApi(callback: QRL<() => void>): void {
+ *   // ...
+ * }
+ *
+ * export const myApi$ = implicit$FirstArg(myApi);
+ * // type of myApi$: (callback: () => void): void
+ *
+ * // can be used as:
+ * myApi$(() => console.log('callback'));
+ *
+ * // will be transpiled to:
+ * // FILE: <current file>
+ * myApi(qrl('./chunk-abc.js', 'callback'));
+ *
+ * // FILE: chunk-abc.js
+ * export const callback = () => console.log('callback');
+ * ```
+ *
+ * @param fn - function that should have its first argument automatically `$`.
+ * @alpha
+ */
+// </docs>
+function implicit$FirstArg(fn) {
+    return function (first, ...rest) {
+        return fn.call(null, $(first), ...rest);
+    };
+}
+
+// <docs markdown="../readme.md#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * ```tsx
+ * const Section = component$(
+ *   () => {
+ *     const hostElement = useHostElement();
+ *     console.log(hostElement); // hostElement is a HTMLSectionElement
+ *
+ *     return <Host>I am a section</Host>;
+ *   },
+ *   {
+ *     tagName: 'section',
+ *   }
+ * );
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useHostElement() {
+    const element = getInvokeContext().hostElement;
+    assertDefined(element);
+    return element;
+}
+
+// <docs markdown="../readme.md#useDocument">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useDocument instead)
+/**
+ * Retrieves the document of the current element. It's important to use this method instead of
+ * accessing `document` directly, because during SSR, the global document might not exist.
+ *
+ * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
+ * any `await` statements.)
+ *
+ * @alpha
+ */
+// </docs>
+function useDocument() {
+    const doc = getInvokeContext().doc;
+    if (!doc) {
+        throw new Error('Cant access document for existing context');
+    }
+    return doc;
+}
+
+// <docs markdown="../readme.md#useStore">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStore instead)
+/**
+ * Creates a object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ## Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of count.
+ *
+ * ```tsx
+ * const Stores = component$(() => {
+ *   const counter = useCounter(1);
+ *
+ *   // Reactivity happens even for nested objects and arrays
+ *   const userData = useStore({
+ *     name: 'Manu',
+ *     address: {
+ *       address: '',
+ *       city: '',
+ *     },
+ *     orgs: [],
+ *   });
+ *
+ *   // useStore() can also accept a function to calculate the initial value
+ *   const state = useStore(() => {
+ *     return {
+ *       value: expensiveInitialValue(),
+ *     };
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <div>Counter: {counter.value}</div>
+ *       <Child userData={userData} state={state} />
+ *     </Host>
+ *   );
+ * });
+ *
+ * function useCounter(step: number) {
+ *   // Multiple stores can be created in custom hooks for convenience and composability
+ *   const counterStore = useStore({
+ *     value: 0,
+ *   });
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       counterStore.value += step;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *   return counterStore;
+ * }
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useStore(initialState) {
+    const [store, setStore] = useSequentialScope();
+    const hostElement = useHostElement();
+    if (store != null) {
+        return wrapSubscriber(store, hostElement);
+    }
+    const value = typeof initialState === 'function' ? initialState() : initialState;
+    const newStore = qObject(value, getProxyMap(useDocument()));
+    setStore(newStore);
+    return wrapSubscriber(newStore, hostElement);
+}
+// <docs markdown="../readme.md#useRef">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useRef instead)
+/**
+ * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+ * to the `ref` property in JSX.
+ *
+ * ```tsx
+ * export function useRef<T = Element>(current?: T): Ref<T> {
+ *   return useStore({ current });
+ * }
+ * ```
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const input = useRef<HTMLInputElement>();
+ *
+ *   useClientEffect$((track) => {
+ *     const el = track(input, 'current')!;
+ *     el.focus();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <input type="text" ref={input} />
+ *     </Host>
+ *   );
+ * });
+ *
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useRef(current) {
+    return useStore({ current });
+}
+function useSequentialScope() {
+    const ctx = getInvokeContext();
+    assertEqual(ctx.event, RenderEvent);
+    const index = ctx.seq;
+    const hostElement = useHostElement();
+    const elementCtx = getContext(hostElement);
+    ctx.seq++;
+    const updateFn = (value) => {
+        elementCtx.seq[index] = elementCtx.refMap.add(value);
+    };
+    const seqIndex = elementCtx.seq[index];
+    if (typeof seqIndex === 'number') {
+        return [elementCtx.refMap.get(seqIndex), updateFn];
+    }
+    return [undefined, updateFn];
 }
 
 // TODO(misko): need full object parsing /serializing
 function qDeflate(obj, hostCtx) {
-    return hostCtx.refMap.add(obj);
+    return String(hostCtx.refMap.add(obj));
 }
 function qInflate(ref, hostCtx) {
-    const obj = hostCtx.refMap.get(ref);
-    assertDefined(obj);
+    const int = parseInt(ref, 10);
+    const obj = hostCtx.refMap.get(int);
+    assertEqual(hostCtx.refMap.array.length > int, true);
     return obj;
 }
 
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-function fromCamelToKebabCase(text) {
-    return text.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-}
-
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
-function flattenArray(array, dst) {
-    // Yes this function is just Array.flat, but we need to run on old versions of Node.
-    if (!dst)
-        dst = [];
-    for (const item of array) {
-        if (Array.isArray(item)) {
-            flattenArray(item, dst);
-        }
-        else {
-            dst.push(item);
-        }
+function useURL() {
+    const url = getInvokeContext().url;
+    if (!url) {
+        // TODO(misko): centralize
+        throw new Error('Q-ERROR: no URL is associated with the execution context');
     }
-    return dst;
+    return url;
 }
 
+// <docs markdown="../readme.md#useLexicalScope">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useLexicalScope instead)
 /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * Used by the Qwik Optimizer to restore the lexical scoped variables.
  *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * This method should not be present in the application source code.
+ *
+ * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * @public
  */
-function isPromise(value) {
-    return value instanceof Promise;
+// </docs>
+function useLexicalScope() {
+    const context = getInvokeContext();
+    const hostElement = context.hostElement;
+    const qrl = (context.qrl ??
+        parseQRL(decodeURIComponent(String(useURL())), hostElement));
+    if (qrl.captureRef == null) {
+        const el = context.element;
+        assertDefined(el);
+        resumeIfNeeded(getContainer(el));
+        const ctx = getContext(el);
+        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
+    }
+    const subscriber = context.subscriber;
+    if (subscriber) {
+        return qrl.captureRef.map((obj) => wrapSubscriber(obj, subscriber));
+    }
+    return qrl.captureRef;
 }
-const then = (promise, thenFn) => {
-    return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+
+var WatchFlags;
+(function (WatchFlags) {
+    WatchFlags[WatchFlags["IsDirty"] = 1] = "IsDirty";
+    WatchFlags[WatchFlags["IsCleanup"] = 2] = "IsCleanup";
+})(WatchFlags || (WatchFlags = {}));
+const isWatchDescriptor = (obj) => {
+    return obj && typeof obj === 'object' && 'qrl' in obj && 'f' in obj;
 };
-const promiseAll = (promises) => {
-    const hasPromise = promises.some(isPromise);
-    if (hasPromise) {
-        return Promise.all(promises);
-    }
-    return promises;
+const isWatchCleanup = (obj) => {
+    return isWatchDescriptor(obj) && !!(obj.f & WatchFlags.IsCleanup);
 };
-
 /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * @alpha
  */
-function debugStringify(value) {
-    if (value != null && typeof value == 'object') {
-        return String(value.constructor.name) + '\n' + safeJSONStringify(value);
-    }
-    return String(value);
+function handleWatch() {
+    const [watch] = useLexicalScope();
+    notifyWatch(watch);
 }
-function safeJSONStringify(value) {
-    try {
-        return JSON.stringify(value, null, '  ');
-    }
-    catch (e) {
-        return String(e);
+// <docs markdown="../readme.md#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+function useWatchQrl(qrl, opts) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl,
+            el,
+            f: WatchFlags.IsDirty,
+        };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
+        useWaitOn(Promise.resolve().then(() => runWatch(watch)));
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useRunWatch(watch, opts?.run);
+        }
     }
 }
-
-const ON_WATCH = 'on:qWatch';
-function registerOnWatch(element, props, watchFnQrl) {
-    props[ON_WATCH] = watchFnQrl;
-    invokeWatchFn(element, watchFnQrl);
+// <docs markdown="../readme.md#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
+ * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
+ * to re-run.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+const useWatch$ = implicit$FirstArg(useWatchQrl);
+// <docs markdown="../readme.md#useClientEffect">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientEffect instead)
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useClientEffectQrl(qrl, opts) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl,
+            el,
+            f: 0,
+        };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
+        useRunWatch(watch, opts?.run ?? 'visible');
+        const doc = useDocument();
+        if (doc['qO']) {
+            doc['qO'].observe(el);
+        }
+    }
 }
-const cleanupFnMap = new Map();
-async function invokeWatchFn(element, watchFnQrl) {
-    const watchFn = await qrlImport(element, watchFnQrl);
-    const previousCleanupFn = cleanupFnMap.get(watchFn);
-    cleanupFnMap.delete(watchFn);
-    if (isCleanupFn(previousCleanupFn)) {
+// <docs markdown="../readme.md#useClientEffect">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientEffect instead)
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+ * state changes.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @public
+ */
+// </docs>
+function useServerMountQrl(watchQrl) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        setWatch(true);
+        const isServer = getPlatform(useDocument()).isServer;
+        if (isServer) {
+            useWaitOn(watchQrl.invoke());
+        }
+    }
+}
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * `useWatch` will run once in the server, and N-times in the client, only when the **tracked**
+ * state changes.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   // Double count watch
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+function runWatch(watch) {
+    if (!(watch.f & WatchFlags.IsDirty)) {
+        logDebug('Watch is not dirty, skipping run', watch);
+        return Promise.resolve(watch);
+    }
+    watch.f &= ~WatchFlags.IsDirty;
+    const promise = new Promise((resolve) => {
+        then(watch.running, () => {
+            cleanupWatch(watch);
+            const el = watch.el;
+            const invokationContext = newInvokeContext(getDocument(el), el, el, 'WatchEvent');
+            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+                const captureRef = watch.qrl.captureRef;
+                if (Array.isArray(captureRef)) {
+                    captureRef.forEach((obj) => {
+                        removeSub(obj, watch);
+                    });
+                }
+            });
+            const tracker = (obj, prop) => {
+                obj[SetSubscriber] = watch;
+                if (prop) {
+                    return obj[prop];
+                }
+                else {
+                    return obj[QOjectAllSymbol];
+                }
+            };
+            return then(watchFn(tracker), (returnValue) => {
+                if (typeof returnValue === 'function') {
+                    watch.destroy = noSerialize(returnValue);
+                }
+                resolve(watch);
+            });
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+}
+const cleanupWatch = (watch) => {
+    const destroy = watch.destroy;
+    if (destroy) {
+        watch.destroy = undefined;
         try {
-            previousCleanupFn();
+            destroy();
         }
-        catch (e) {
-            // TODO(misko): Centralize error handling
-            logError(e);
+        catch (err) {
+            logError(err);
         }
     }
-    throw new Error('TO IMPLEMENT');
-}
-function isCleanupFn(value) {
-    return typeof value === 'function';
-}
+};
+const destroyWatch = (watch) => {
+    if (watch.f & WatchFlags.IsCleanup) {
+        watch.f &= ~WatchFlags.IsCleanup;
+        const cleanup = watch.qrl.invokeFn(watch.el);
+        cleanup();
+    }
+    else {
+        cleanupWatch(watch);
+    }
+};
+const useRunWatch = (watch, run) => {
+    if (run === 'load') {
+        useResumeQrl(getWatchHandlerQrl(watch));
+    }
+    else if (run === 'visible') {
+        useVisibleQrl(getWatchHandlerQrl(watch));
+    }
+};
+const getWatchHandlerQrl = (watch) => {
+    const watchQrl = watch.qrl;
+    const watchHandler = new QRLInternal(watchQrl.chunk, 'handleWatch', handleWatch, null, null, [watch]);
+    watchHandler.refSymbol = watchQrl.symbol;
+    return watchHandler;
+};
 
-const ON_PROP_REGEX = /on(Document|Window)?:/;
-const ON$_PROP_REGEX = /on(Document|Window)?\$:/;
-function isOnProp(prop) {
-    return ON_PROP_REGEX.test(prop);
-}
-function isOn$Prop(prop) {
-    return ON$_PROP_REGEX.test(prop);
-}
-function isQrlFactory(value) {
-    return typeof value === 'function' && value.__brand__ === 'QRLFactory';
-}
-function qPropReadQRL(ctx, prop) {
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (existingQRLs.length === 0) {
-        return null;
-    }
-    return () => {
-        const context = getInvokeContext();
-        const qrls = getExistingQRLs(ctx, prop);
-        return Promise.all(qrls.map(async (qrlOrPromise) => {
-            const qrl = await qrlOrPromise;
-            const qrlGuard = context.qrlGuard;
-            if (qrlGuard && !qrlGuard(qrl))
-                return;
-            if (!qrl.symbolRef) {
-                qrl.symbolRef = await qrlImport(ctx.element, qrl);
-            }
-            context.qrl = qrl;
-            if (qrlGuard) {
-                return invokeWatchFn(ctx.element, qrl);
-            }
-            else {
-                return useInvoke(context, qrl.symbolRef);
-            }
-        }));
-    };
-}
-function qPropWriteQRL(rctx, ctx, prop, value) {
-    if (!value) {
+const UNDEFINED_PREFIX = '\u0010';
+const QRL_PREFIX = '\u0011';
+const DOCUMENT_PREFIX = '\u0012';
+function resumeContainer(containerEl) {
+    if (!isContainer(containerEl)) {
+        logWarn('Skipping hydration because parent element is not q:container');
         return;
     }
-    prop = prop.replace('$:', ':');
-    if (typeof value == 'string') {
-        value = parseQRL(value);
+    const doc = getDocument(containerEl);
+    const isDocElement = containerEl === doc.documentElement;
+    const parentJSON = isDocElement ? doc.body : containerEl;
+    const script = getQwikJSON(parentJSON);
+    if (!script) {
+        logWarn('Skipping hydration qwik/json metadata was not found.');
+        return;
     }
-    const existingQRLs = getExistingQRLs(ctx, prop);
-    if (Array.isArray(value)) {
-        value.forEach((value) => qPropWriteQRL(rctx, ctx, prop, value));
+    script.remove();
+    const proxyMap = getProxyMap(doc);
+    const meta = JSON.parse(unescapeText(script.textContent || '{}'));
+    // Collect all elements
+    const elements = new Map();
+    getNodesInScope(containerEl, hasQId).forEach((el) => {
+        const id = el.getAttribute(ELEMENT_ID);
+        elements.set(ELEMENT_ID_PREFIX + id, el);
+    });
+    const getObject = (id) => {
+        return getObjectImpl(id, elements, meta.objs, proxyMap);
+    };
+    // Revive proxies with subscriptions into the proxymap
+    reviveValues(meta.objs, meta.subs, getObject, proxyMap, parentJSON);
+    // Rebuild target objects
+    for (const obj of meta.objs) {
+        reviveNestedObjects(obj, getObject);
     }
-    else if (isQrl(value)) {
-        const capture = value.capture;
-        if (capture == null) {
-            // we need to serialize the lexical scope references
-            const captureRef = value.captureRef;
-            value.capture =
-                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+    // Walk all elements with q:obj and resume their state
+    getNodesInScope(containerEl, hasQObj).forEach((el) => {
+        const qobj = el.getAttribute(QObjAttr);
+        if (qobj === '') {
+            return;
         }
-        // Important we modify the array as it is cached.
-        for (let i = 0; i < existingQRLs.length; i++) {
-            const qrl = existingQRLs[i];
-            if (!isPromise(qrl) &&
-                qrl.canonicalChunk === value.canonicalChunk &&
-                qrl.symbol === value.symbol) {
-                existingQRLs.splice(i, 1);
-                i--;
-            }
-        }
-        existingQRLs.push(value);
-    }
-    else if (isQrlFactory(value)) {
-        if (existingQRLs.length === 0) {
-            // if we don't have any than we use the `qrlFactory` to create a QRLInternal
-            // (otherwise ignore the factory)
-            qPropWriteQRL(rctx, ctx, prop, value(ctx.element));
-        }
-    }
-    else if (isPromise(value)) {
-        const writePromise = value.then((qrl) => {
-            existingQRLs.splice(existingQRLs.indexOf(writePromise), 1);
-            qPropWriteQRL(rctx, ctx, prop, qrl);
-            return qrl;
-        });
-        existingQRLs.push(writePromise);
-    }
-    else {
-        // TODO(misko): Test/better text
-        throw qError(QError.TODO, `Not QRLInternal: prop: ${prop}; value: ` + value);
-    }
-    if (prop.startsWith('on:q')) {
-        getEvents(ctx)[prop] = serializeQRLs(existingQRLs, ctx);
-    }
-    else {
-        const kebabProp = fromCamelToKebabCase(prop);
-        const newValue = serializeQRLs(existingQRLs, ctx);
-        if (ctx.element.getAttribute(kebabProp) !== newValue) {
-            setAttribute(rctx, ctx.element, kebabProp, newValue);
-        }
-    }
-}
-function getExistingQRLs(ctx, prop) {
-    let parts = ctx.cache.get(prop);
-    if (!parts) {
-        if (prop.startsWith('on:q')) {
-            parts = [];
-            const qrls = getEvents(ctx)[prop];
-            if (qrls) {
-                qrls.split('\n').forEach((qrl) => {
-                    if (qrl) {
-                        parts.push(parseQRL(qrl, ctx.element));
-                    }
-                });
-                ctx.cache.set(prop, parts);
-                return parts;
-            }
-        }
-        const attrName = fromCamelToKebabCase(prop);
-        parts = [];
-        (ctx.element.getAttribute(attrName) || '').split('\n').forEach((qrl) => {
-            if (qrl) {
-                parts.push(parseQRL(qrl, ctx.element));
-            }
-        });
-        ctx.cache.set(prop, parts);
-    }
-    return parts;
-}
-function serializeQRLs(existingQRLs, ctx) {
-    const platform = getPlatform(getDocument(ctx.element));
-    const element = ctx.element;
-    return existingQRLs
-        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, element, platform)))
-        .filter((v) => !!v)
-        .join('\n');
-}
-
-function QStore_hydrate(doc) {
-    const script = doc.querySelector('script[type="qwik/json"]');
-    doc.qDehydrate = () => QStore_dehydrate(doc);
-    const map = getProxyMap(doc);
-    if (script) {
-        script.parentElement.removeChild(script);
-        const meta = JSON.parse(script.textContent || '{}');
-        const elements = new Map();
-        doc.querySelectorAll(ELEMENT_ID_SELECTOR).forEach((el) => {
-            const id = el.getAttribute(ELEMENT_ID);
-            elements.set(ELEMENT_ID_PREFIX + id, el);
-        });
-        for (const obj of meta.objs) {
-            reviveNestedQObjects(obj, meta.objs);
-        }
-        reviveQObjects(meta.objs, meta.subs, elements, map);
-        doc.querySelectorAll(QObjSelector).forEach((el) => {
-            const qobj = el.getAttribute(QObjAttr);
-            const host = el.getAttribute(QHostAttr);
-            const ctx = getContext(el);
-            qobj.split(' ').forEach((part) => {
-                const obj = part[0] === ELEMENT_ID_PREFIX ? elements.get(part) : meta.objs[strToInt(part)];
-                assertDefined(obj);
+        const seq = el.getAttribute(QSeqAttr);
+        const host = el.getAttribute(QHostAttr);
+        const contexts = el.getAttribute(QCtxAttr);
+        const ctx = getContext(el);
+        // Restore captured objets
+        qobj.split(' ').forEach((part) => {
+            if (part !== '') {
+                const obj = getObject(part);
                 ctx.refMap.add(obj);
-            });
-            if (host) {
-                const [props, events] = host.split(' ').map(strToInt);
-                assertDefined(props);
-                assertDefined(events);
-                ctx.props = ctx.refMap.get(props);
-                ctx.events = ctx.refMap.get(events);
+            }
+            else if (qDev) {
+                logError('QObj contains empty ref');
             }
         });
-    }
+        // Restore sequence scoping
+        ctx.seq = seq.split(' ').map((part) => strToInt(part));
+        if (host) {
+            const [props, renderQrl] = host.split(' ').map(strToInt);
+            assertDefined(props);
+            assertDefined(renderQrl);
+            ctx.props = ctx.refMap.get(props);
+            ctx.renderQrl = ctx.refMap.get(renderQrl);
+        }
+        if (contexts) {
+            contexts.split(' ').map((part) => {
+                const [key, value] = part.split('=');
+                if (!ctx.contexts) {
+                    ctx.contexts = new Map();
+                }
+                ctx.contexts.set(key, ctx.refMap.get(strToInt(value)));
+            });
+        }
+    });
+    containerEl.setAttribute(QContainerAttr, 'resumed');
+    logDebug('Container resumed');
+    emitEvent(containerEl, 'qresume', undefined, true);
 }
-/**
- * Serialize the current state of the application into DOM
- *
- * @param doc
- */
-function QStore_dehydrate(doc) {
-    const objSet = new Set();
-    // Element to index
+function snapshotState(containerEl) {
+    const doc = getDocument(containerEl);
+    const proxyMap = getProxyMap(doc);
+    const platform = getPlatform(doc);
     const elementToIndex = new Map();
+    const collector = createCollector(doc, proxyMap);
+    // Collect all qObjected around the DOM
+    getNodesInScope(containerEl, hasQObj).forEach((node) => {
+        const ctx = getContext(node);
+        // TODO: improve serialization, get rid of refMap
+        const hasListeners = ctx.listeners && ctx.listeners.size > 0;
+        const hasWatch = ctx.refMap.array.some(isWatchCleanup);
+        const hasContext = !!ctx.contexts;
+        if (hasListeners || hasWatch || hasContext) {
+            collectElement(node, collector);
+        }
+    });
+    // Convert objSet to array
+    const objs = Array.from(collector.objSet);
+    function hasSubscriptions(a) {
+        const proxy = proxyMap.get(a);
+        if (proxy) {
+            return proxy[QOjectSubsSymbol].size > 0;
+        }
+        return false;
+    }
+    objs.sort((a, b) => {
+        const isProxyA = hasSubscriptions(a) ? 0 : 1;
+        const isProxyB = hasSubscriptions(b) ? 0 : 1;
+        return isProxyA - isProxyB;
+    });
+    const objToId = new Map();
+    let count = 0;
+    for (const obj of objs) {
+        if (isWatchDescriptor(obj)) {
+            destroyWatch(obj);
+            if (qDev) {
+                if (obj.f & WatchFlags.IsDirty) {
+                    logWarn('Serializing dirty watch. Looks like an internal error.');
+                }
+                if (!isConnected(obj)) {
+                    logWarn('Serializing disconneted watch. Looks like an internal error.');
+                }
+            }
+        }
+        objToId.set(obj, count);
+        count++;
+    }
     function getElementID(el) {
         let id = elementToIndex.get(el);
         if (id === undefined) {
@@ -1216,34 +1560,40 @@ function QStore_dehydrate(doc) {
         }
         return id;
     }
-    // Find all Elements which have qObjects attached to them
-    const elements = doc.querySelectorAll(QObjSelector);
-    elements.forEach((node) => {
-        const props = getContext(node);
-        const qMap = props.refMap;
-        qMap.array.forEach((v) => {
-            collectQObjects(v, objSet);
-        });
-    });
-    // Convert objSet to array
-    const objArray = Array.from(objSet);
-    objArray.sort((a, b) => {
-        const isProxyA = a[QOjectTargetSymbol] !== undefined ? 0 : 1;
-        const isProxyB = b[QOjectTargetSymbol] !== undefined ? 0 : 1;
-        return isProxyA - isProxyB;
-    });
-    const objs = objArray.map((a) => {
-        var _a;
-        return (_a = a[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : a;
-    });
-    const subs = objArray
-        .map((a) => {
-        const subs = a[QOjectSubsSymbol];
-        if (subs) {
-            return Object.fromEntries(Array.from(subs.entries()).map(([el, set]) => {
-                const id = getElementID(el);
+    function getObjId(obj) {
+        if (obj !== null && typeof obj === 'object') {
+            const target = obj[QOjectTargetSymbol];
+            const id = objToId.get(normalizeObj(target ?? obj, doc));
+            if (id !== undefined) {
+                const proxySuffix = target ? '!' : '';
+                return intToStr(id) + proxySuffix;
+            }
+            if (!target && isNode$1(obj)) {
+                if (obj.nodeType === 1) {
+                    return getElementID(obj);
+                }
+                else {
+                    logError('Can not serialize a HTML Node that is not an Element', obj);
+                    return null;
+                }
+            }
+        }
+        else {
+            const id = objToId.get(normalizeObj(obj, doc));
+            if (id !== undefined) {
+                return intToStr(id);
+            }
+        }
+        return null;
+    }
+    const subs = objs
+        .map((obj) => {
+        const subs = proxyMap.get(obj)?.[QOjectSubsSymbol];
+        if (subs && subs.size > 0) {
+            return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
+                const id = getObjId(sub);
                 if (id !== null) {
-                    return [id, Array.from(set)];
+                    return [id, set ? Array.from(set) : null];
                 }
                 else {
                     return [undefined, undefined];
@@ -1255,63 +1605,70 @@ function QStore_dehydrate(doc) {
         }
     })
         .filter((a) => !!a);
-    const objToId = new Map();
-    let count = 0;
-    for (const obj of objs) {
-        objToId.set(obj, count);
-        count++;
-    }
-    const convert = (value) => {
-        var _a, _b;
-        if (value && typeof value === 'object') {
-            value = (_a = value[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : value;
-        }
-        const idx = objToId.get(value);
-        if (idx !== undefined) {
-            return intToStr(idx);
-        }
-        return (_b = elementToIndex.get(value)) !== null && _b !== void 0 ? _b : value;
+    const serialize = (value) => {
+        return getObjId(value) ?? value;
+    };
+    const qrlSerializeOptions = {
+        platform,
+        getObjId,
     };
     const convertedObjs = objs.map((obj) => {
         if (Array.isArray(obj)) {
-            return obj.map(convert);
+            return obj.map(serialize);
         }
-        else if (typeof obj === 'object') {
+        else if (obj && typeof obj === 'object') {
+            if (isQrl(obj)) {
+                return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
+            }
             const output = {};
             Object.entries(obj).forEach(([key, value]) => {
-                output[key] = convert(value);
+                output[key] = serialize(value);
             });
             return output;
         }
         return obj;
     });
-    const data = {
-        objs: convertedObjs,
-        subs,
-    };
+    const listeners = [];
     // Write back to the dom
-    elements.forEach((node) => {
+    collector.elements.forEach((node) => {
         const ctx = getContext(node);
+        assertDefined(ctx);
         const props = ctx.props;
-        const events = ctx.events;
+        const contexts = ctx.contexts;
+        const renderQrl = ctx.renderQrl;
         const attribute = ctx.refMap.array
             .map((obj) => {
-            var _a;
-            if (isElement(obj)) {
-                return getElementID(obj);
-            }
-            const idx = typeof obj === 'object' ? objToId.get((_a = obj[QOjectTargetSymbol]) !== null && _a !== void 0 ? _a : obj) : objToId.get(obj);
-            assertDefined(idx);
-            return intToStr(idx);
+            const id = getObjId(obj);
+            assertDefined(id);
+            return id;
         })
             .join(' ');
         node.setAttribute(QObjAttr, attribute);
+        const seq = ctx.seq.map((index) => intToStr(index)).join(' ');
+        node.setAttribute(QSeqAttr, seq);
         if (props) {
             const objs = [props];
-            if (events) {
-                objs.push(events);
+            if (renderQrl) {
+                objs.push(renderQrl);
             }
             node.setAttribute(QHostAttr, objs.map((obj) => ctx.refMap.indexOf(obj)).join(' '));
+        }
+        if (ctx.listeners) {
+            ctx.listeners.forEach((qrls, key) => {
+                qrls.forEach((qrl) => {
+                    listeners.push({
+                        key,
+                        qrl,
+                    });
+                });
+            });
+        }
+        if (contexts) {
+            const serializedContexts = [];
+            contexts.forEach((value, key) => {
+                serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+            });
+            node.setAttribute(QCtxAttr, serializedContexts.join(' '));
         }
     });
     // Sanity check of serialized element
@@ -1325,86 +1682,251 @@ function QStore_dehydrate(doc) {
             }
         });
     }
-    // Serialize
-    const script = doc.createElement('script');
-    script.setAttribute('type', 'qwik/json');
-    script.textContent = JSON.stringify(data, undefined, qDev ? '  ' : undefined);
-    doc.body.appendChild(script);
+    return {
+        state: {
+            objs: convertedObjs,
+            subs,
+        },
+        objs,
+        listeners,
+    };
 }
-function reviveQObjects(objs, subs, elementMap, map) {
-    for (let i = 0; i < objs.length; i++) {
-        const sub = subs[i];
-        if (sub) {
-            const value = objs[i];
-            const converted = new Map();
-            Object.entries(sub).forEach((entry) => {
-                const el = elementMap.get(entry[0]);
-                if (!el) {
-                    logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
-                    return;
-                }
-                const set = new Set(entry[1]);
-                converted.set(el, set);
-            });
-            objs[i] = _restoreQObject(value, map, converted);
+function getQwikJSON(parentElm) {
+    let child = parentElm.lastElementChild;
+    while (child) {
+        if (child.tagName === 'SCRIPT' && child.getAttribute('type') === 'qwik/json') {
+            return child;
         }
+        child = child.previousElementSibling;
+    }
+    return undefined;
+}
+function getNodesInScope(parent, predicate) {
+    const nodes = [];
+    walkNodes(nodes, parent, predicate);
+    return nodes;
+}
+function walkNodes(nodes, parent, predicate) {
+    let child = parent.firstElementChild;
+    while (child) {
+        if (!isContainer(child)) {
+            if (predicate(child)) {
+                nodes.push(child);
+            }
+            walkNodes(nodes, child, predicate);
+        }
+        child = child.nextElementSibling;
     }
 }
-function reviveNestedQObjects(obj, map) {
-    if (obj && typeof obj == 'object') {
-        if (Array.isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                const value = obj[i];
-                if (typeof value == 'string') {
-                    obj[i] = map[strToInt(value)];
-                }
-                else {
-                    reviveNestedQObjects(value, map);
-                }
+function reviveValues(objs, subs, getObject, proxyMap, containerEl) {
+    for (let i = 0; i < objs.length; i++) {
+        const value = objs[i];
+        if (typeof value === 'string') {
+            if (value === UNDEFINED_PREFIX) {
+                objs[i] = undefined;
+            }
+            else if (value === DOCUMENT_PREFIX) {
+                objs[i] = getDocument(containerEl);
+            }
+            else if (value.startsWith(QRL_PREFIX)) {
+                objs[i] = parseQRL(value.slice(1), containerEl);
             }
         }
         else {
+            const sub = subs[i];
+            if (sub) {
+                const converted = new Map();
+                Object.entries(sub).forEach((entry) => {
+                    const el = getObject(entry[0]);
+                    if (!el) {
+                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
+                        return;
+                    }
+                    const set = entry[1] === null ? null : new Set(entry[1]);
+                    converted.set(el, set);
+                });
+                _restoreQObject(value, proxyMap, converted);
+            }
+        }
+    }
+}
+function reviveNestedObjects(obj, getObject) {
+    if (obj && typeof obj == 'object') {
+        if (isQrl(obj)) {
+            if (obj.capture && obj.capture.length > 0) {
+                obj.captureRef = obj.capture.map(getObject);
+                obj.capture = null;
+            }
+            return;
+        }
+        else if (Array.isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                const value = obj[i];
+                if (typeof value == 'string') {
+                    obj[i] = getObject(value);
+                }
+                else {
+                    reviveNestedObjects(value, getObject);
+                }
+            }
+        }
+        else if (Object.getPrototypeOf(obj) === Object.prototype) {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
                     if (typeof value == 'string') {
-                        obj[key] = map[strToInt(value)];
+                        obj[key] = getObject(value);
                     }
                     else {
-                        reviveNestedQObjects(value, map);
+                        reviveNestedObjects(value, getObject);
                     }
                 }
             }
         }
     }
 }
-function collectQObjects(obj, seen) {
+function getObjectImpl(id, elements, objs, proxyMap) {
+    if (id.startsWith(ELEMENT_ID_PREFIX)) {
+        assertEqual(elements.has(id), true);
+        return elements.get(id);
+    }
+    const index = strToInt(id);
+    assertEqual(objs.length > index, true);
+    const obj = objs[index];
+    const needsProxy = id.endsWith('!');
+    if (needsProxy) {
+        return proxyMap.get(obj) ?? readWriteProxy(obj, proxyMap);
+    }
+    return obj;
+}
+function normalizeObj(obj, doc) {
+    if (obj === doc) {
+        return DOCUMENT_PREFIX;
+    }
+    if (obj === undefined || !shouldSerialize(obj)) {
+        return UNDEFINED_PREFIX;
+    }
+    if (obj && typeof obj === 'object') {
+        const value = obj[QOjectTargetSymbol] ?? obj;
+        return value;
+    }
+    return obj;
+}
+function collectValue(obj, collector) {
+    const handled = collectQObjects(obj, collector);
+    if (!handled) {
+        collector.objSet.add(normalizeObj(obj, collector.doc));
+    }
+}
+function createCollector(doc, proxyMap) {
+    return {
+        seen: new Set(),
+        objSet: new Set(),
+        elements: [],
+        proxyMap,
+        doc,
+    };
+}
+function collectQrl(obj, collector) {
+    if (collector.seen.has(obj)) {
+        return true;
+    }
+    collector.seen.add(obj);
+    collector.objSet.add(normalizeObj(obj, collector.doc));
+    if (obj.captureRef) {
+        obj.captureRef.forEach((obj) => collectValue(obj, collector));
+    }
+}
+function collectElement(el, collector) {
+    if (collector.seen.has(el)) {
+        return;
+    }
+    collector.seen.add(el);
+    const captured = tryGetContext(el)?.refMap.array;
+    if (captured) {
+        collector.elements.push(el);
+        captured.forEach((sub) => {
+            collectValue(sub, collector);
+        });
+    }
+}
+function escapeText(str) {
+    return str.replace(/<(\/?script)/g, '\\x3C$1');
+}
+function unescapeText(str) {
+    return str.replace(/\\x3C(\/?script)/g, '<$1');
+}
+function collectSubscriptions(subs, collector) {
+    if (collector.seen.has(subs)) {
+        return;
+    }
+    collector.seen.add(subs);
+    Array.from(subs.keys()).forEach((key) => {
+        if (isElement(key)) {
+            collectElement(key, collector);
+        }
+        else {
+            collectValue(key, collector);
+        }
+    });
+}
+function collectQObjects(obj, collector) {
     if (obj != null) {
-        if (isElement(obj)) {
-            return;
-        }
-        if (typeof obj === 'boolean') {
-            return;
-        }
-        if (seen.has(obj))
-            return;
-        seen.add(obj);
         if (typeof obj === 'object') {
+            const hasTarget = !!obj[QOjectTargetSymbol];
+            if (!hasTarget && isNode$1(obj)) {
+                if (obj.nodeType === 1) {
+                    collectElement(obj, collector);
+                    return true;
+                }
+                return false;
+            }
+            if (isQrl(obj)) {
+                collectQrl(obj, collector);
+                return true;
+            }
+            const proxied = hasTarget ? obj : collector.proxyMap.get(obj);
+            const subs = proxied?.[QOjectSubsSymbol];
+            if (subs) {
+                collectSubscriptions(subs, collector);
+            }
+            obj = normalizeObj(obj, collector.doc);
+        }
+        if (typeof obj === 'object') {
+            if (collector.seen.has(obj)) {
+                return true;
+            }
+            collector.seen.add(obj);
+            collector.objSet.add(obj);
             if (Array.isArray(obj)) {
                 for (let i = 0; i < obj.length; i++) {
-                    collectQObjects(obj[i], seen);
+                    collectQObjects(obj[i], collector);
                 }
             }
             else {
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        collectQObjects(value, seen);
+                        collectQObjects(obj[key], collector);
                     }
                 }
             }
+            return true;
+        }
+        if (typeof obj === 'string') {
+            collector.objSet.add(obj);
+            return true;
         }
     }
+    return false;
+}
+function isContainer(el) {
+    return el.hasAttribute(QContainerAttr);
+}
+function hasQObj(el) {
+    return el.hasAttribute(QObjAttr);
+}
+function hasQId(el) {
+    return el.hasAttribute(ELEMENT_ID);
 }
 const intToStr = (nu) => {
     return nu.toString(36);
@@ -1413,13 +1935,237 @@ const strToInt = (nu) => {
     return parseInt(nu, 36);
 };
 
+function newQObjectMap(element) {
+    const array = [];
+    let added = element.hasAttribute(QObjAttr);
+    return {
+        array,
+        get(index) {
+            return array[index];
+        },
+        indexOf(obj) {
+            const index = array.indexOf(obj);
+            return index === -1 ? undefined : index;
+        },
+        add(object) {
+            const index = array.indexOf(object);
+            if (index === -1) {
+                array.push(object);
+                if (!added) {
+                    element.setAttribute(QObjAttr, '');
+                    added = true;
+                }
+                return array.length - 1;
+            }
+            return index;
+        },
+    };
+}
+
+function fromCamelToKebabCase(text) {
+    return text.replace(/([A-Z])/g, '-$1').toLowerCase();
+}
+
+function debugStringify(value) {
+    if (value != null && typeof value == 'object') {
+        return String(value.constructor.name) + '\n' + safeJSONStringify(value);
+    }
+    return String(value);
+}
+function safeJSONStringify(value) {
+    try {
+        return JSON.stringify(value, null, '  ');
+    }
+    catch (e) {
+        return String(e);
+    }
+}
+
+const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*Qrl$/;
+const ON$_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
+function isOnProp(prop) {
+    return ON_PROP_REGEX.test(prop);
+}
+function isOn$Prop(prop) {
+    return ON$_PROP_REGEX.test(prop);
+}
+function qPropWriteQRL(rctx, ctx, prop, value) {
+    if (!value) {
+        return;
+    }
+    if (!ctx.listeners) {
+        ctx.listeners = getDomListeners(ctx.element);
+    }
+    const kebabProp = fromCamelToKebabCase(prop);
+    const existingListeners = ctx.listeners.get(kebabProp) || [];
+    const newQRLs = Array.isArray(value) ? value : [value];
+    for (const value of newQRLs) {
+        const cp = value.copy();
+        cp.setContainer(ctx.element);
+        const capture = cp.capture;
+        if (capture == null) {
+            // we need to serialize the lexical scope references
+            const captureRef = cp.captureRef;
+            cp.capture =
+                captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+        }
+        // Important we modify the array as it is cached.
+        for (let i = 0; i < existingListeners.length; i++) {
+            const qrl = existingListeners[i];
+            if (isSameQRL(qrl, cp)) {
+                existingListeners.splice(i, 1);
+                i--;
+            }
+        }
+        existingListeners.push(cp);
+    }
+    ctx.listeners.set(kebabProp, existingListeners);
+    const newValue = serializeQRLs(existingListeners, ctx);
+    if (ctx.element.getAttribute(kebabProp) !== newValue) {
+        if (rctx) {
+            setAttribute(rctx, ctx.element, kebabProp, newValue);
+        }
+        else {
+            ctx.element.setAttribute(kebabProp, newValue);
+        }
+    }
+}
+function getDomListeners(el) {
+    const attributes = el.attributes;
+    const listeners = new Map();
+    for (let i = 0; i < attributes.length; i++) {
+        const attr = attributes.item(i);
+        if (attr.name.startsWith('on:') ||
+            attr.name.startsWith('on-window:') ||
+            attr.name.startsWith('on-document:')) {
+            let array = listeners.get(attr.name);
+            if (!array) {
+                listeners.set(attr.name, (array = []));
+            }
+            array.push(parseQRL(attr.value, el));
+        }
+    }
+    return listeners;
+}
+function serializeQRLs(existingQRLs, ctx) {
+    const platform = getPlatform(getDocument(ctx.element));
+    const element = ctx.element;
+    const opts = {
+        platform,
+        element,
+    };
+    return existingQRLs
+        .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, opts)))
+        .filter((v) => !!v)
+        .join('\n');
+}
+
+// <docs markdown="../readme.md#pauseContainer">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#pauseContainer instead)
 /**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
+ * Serialize the current state of the application into DOM
  *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * @alpha
  */
+// </docs>
+function pauseContainer(elmOrDoc) {
+    const doc = getDocument(elmOrDoc);
+    const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
+    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
+    const data = snapshotState(containerEl);
+    const script = doc.createElement('script');
+    script.setAttribute('type', 'qwik/json');
+    script.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
+    parentJSON.appendChild(script);
+    containerEl.setAttribute(QContainerAttr, 'paused');
+    return data;
+}
+
+Error.stackTraceLimit = 9999;
+const Q_CTX = '__ctx__';
+function resumeIfNeeded(containerEl) {
+    const isResumed = containerEl.getAttribute(QContainerAttr);
+    if (isResumed === 'paused') {
+        resumeContainer(containerEl);
+        if (qDev) {
+            appendQwikDevTools(containerEl);
+        }
+    }
+}
+function appendQwikDevTools(containerEl) {
+    containerEl['qwik'] = {
+        pause: () => pauseContainer(containerEl),
+        renderState: getRenderingState(containerEl),
+    };
+}
+function tryGetContext(element) {
+    return element[Q_CTX];
+}
+function getContext(element) {
+    let ctx = tryGetContext(element);
+    if (!ctx) {
+        const cache = new Map();
+        element[Q_CTX] = ctx = {
+            element,
+            cache,
+            refMap: newQObjectMap(element),
+            dirty: false,
+            seq: [],
+            props: undefined,
+            renderQrl: undefined,
+            component: undefined,
+        };
+    }
+    return ctx;
+}
+function cleanupContext(ctx) {
+    const el = ctx.element;
+    ctx.refMap.array.forEach((obj) => {
+        if (isWatchDescriptor(obj)) {
+            if (obj.el === el) {
+                destroyWatch(obj);
+            }
+        }
+        ctx.component = undefined;
+        ctx.renderQrl = undefined;
+        ctx.seq = [];
+        ctx.cache.clear();
+        ctx.dirty = false;
+        ctx.refMap.array.length = 0;
+    });
+    el[Q_CTX] = undefined;
+}
+const PREFIXES = ['document:on', 'window:on', 'on'];
+const SCOPED = ['on-document', 'on-window', 'on'];
+function normalizeOnProp(prop) {
+    let scope = 'on';
+    for (let i = 0; i < PREFIXES.length; i++) {
+        const prefix = PREFIXES[i];
+        if (prop.startsWith(prefix)) {
+            scope = SCOPED[i];
+            prop = prop.slice(prefix.length);
+        }
+    }
+    if (prop.startsWith('-')) {
+        prop = prop.slice(1);
+    }
+    else {
+        prop = prop.toLowerCase();
+    }
+    return `${scope}:${prop}`;
+}
+function setEvent(rctx, ctx, prop, value) {
+    qPropWriteQRL(rctx, ctx, normalizeOnProp(prop), value);
+}
+function getProps(ctx) {
+    if (!ctx.props) {
+        ctx.props = readWriteProxy({}, getProxyMap(getDocument(ctx.element)));
+        ctx.refMap.add(ctx.props);
+    }
+    return ctx.props;
+}
+
 /**
  * Place at the root of the component View to allow binding of attributes on the Host element.
  *
@@ -1441,6 +2187,199 @@ const Host = { __brand__: 'host' };
  */
 const SkipRerender = { __brand__: 'skip' };
 
+function visitJsxNode(ctx, elm, jsxNode, isSvg) {
+    if (jsxNode === undefined) {
+        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
+    }
+    if (Array.isArray(jsxNode)) {
+        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
+    }
+    else if (jsxNode.type === Host) {
+        updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
+        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
+    }
+    else {
+        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
+    }
+}
+
+function hashCode(text, hash = 0) {
+    if (text.length === 0)
+        return hash;
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Number(Math.abs(hash)).toString(36);
+}
+
+function styleKey(qStyles) {
+    return qStyles && String(hashCode(qStyles.symbol));
+}
+function styleHost(styleId) {
+    return styleId && ComponentStylesPrefixHost + styleId;
+}
+function styleContent(styleId) {
+    return styleId && ComponentStylesPrefixContent + styleId;
+}
+
+/**
+ * @public
+ */
+function jsx(type, props, key) {
+    return new JSXNodeImpl(type, props, key);
+}
+class JSXNodeImpl {
+    constructor(type, props, key = null) {
+        this.type = type;
+        this.props = props;
+        this.children = EMPTY_ARRAY;
+        this.text = undefined;
+        this.key = null;
+        if (key != null) {
+            this.key = String(key);
+        }
+        if (props) {
+            const children = processNode(props.children);
+            if (children !== undefined) {
+                if (Array.isArray(children)) {
+                    this.children = children;
+                }
+                else {
+                    this.children = [children];
+                }
+            }
+        }
+    }
+}
+function processNode(node) {
+    if (node == null || typeof node === 'boolean') {
+        return undefined;
+    }
+    if (isJSXNode(node)) {
+        if (node.type === Host || node.type === SkipRerender) {
+            return node;
+        }
+        else if (typeof node.type === 'function') {
+            return processNode(node.type({ ...node.props, children: node.children }, node.key));
+        }
+        else {
+            return node;
+        }
+    }
+    else if (Array.isArray(node)) {
+        return node.flatMap(processNode).filter((e) => e != null);
+    }
+    else if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
+        const newNode = new JSXNodeImpl('#text', null, null);
+        newNode.text = String(node);
+        return newNode;
+    }
+    else {
+        logWarn('Unvalid node, skipping');
+        return undefined;
+    }
+}
+const isJSXNode = (n) => {
+    if (qDev) {
+        if (n instanceof JSXNodeImpl) {
+            return true;
+        }
+        if (n && typeof n === 'object' && n.constructor.name === JSXNodeImpl.name) {
+            throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+        }
+        return false;
+    }
+    else {
+        return n instanceof JSXNodeImpl;
+    }
+};
+/**
+ * @public
+ */
+const Comment = (props) => {
+    const newNode = new JSXNodeImpl('#comment', null, null);
+    newNode.text = props.text || '';
+    return newNode;
+};
+/**
+ * @public
+ */
+const Fragment = (props) => props.children;
+
+const firstRenderComponent = (rctx, ctx) => {
+    ctx.element.setAttribute(QHostAttr, '');
+    return renderComponent(rctx, ctx);
+};
+const renderComponent = (rctx, ctx) => {
+    ctx.dirty = false;
+    const hostElement = ctx.element;
+    const onRenderQRL = ctx.renderQrl;
+    assertDefined(onRenderQRL);
+    // Component is not dirty any more
+    rctx.globalState.hostsStaging.delete(hostElement);
+    const newCtx = {
+        ...rctx,
+        components: [...rctx.components],
+    };
+    // Invoke render hook
+    const invocatinContext = newInvokeContext(rctx.doc, hostElement, hostElement, RenderEvent);
+    invocatinContext.subscriber = hostElement;
+    invocatinContext.renderCtx = newCtx;
+    const waitOn = (invocatinContext.waitOn = []);
+    // Clean current subscription before render
+    ctx.refMap.array.forEach((obj) => {
+        removeSub(obj, hostElement);
+    });
+    const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
+    try {
+        // Execution of the render function
+        const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+        // Wait for results
+        return then(renderPromise, (jsxNode) => {
+            rctx.hostElements.add(hostElement);
+            const waitOnPromise = promiseAll(waitOn);
+            return then(waitOnPromise, (waitOnResolved) => {
+                waitOnResolved.forEach((task) => {
+                    if (isStyleTask(task)) {
+                        appendStyle(rctx, hostElement, task);
+                    }
+                });
+                if (ctx.dirty) {
+                    logDebug('Dropping render. State changed during render.');
+                    return renderComponent(rctx, ctx);
+                }
+                let componentCtx = ctx.component;
+                if (!componentCtx) {
+                    componentCtx = ctx.component = {
+                        hostElement,
+                        slots: [],
+                        styleHostClass: undefined,
+                        styleClass: undefined,
+                        styleId: undefined,
+                    };
+                    const scopedStyleId = hostElement.getAttribute(ComponentScopedStyles) ?? undefined;
+                    if (scopedStyleId) {
+                        componentCtx.styleId = scopedStyleId;
+                        componentCtx.styleHostClass = styleHost(scopedStyleId);
+                        componentCtx.styleClass = styleContent(scopedStyleId);
+                        hostElement.classList.add(componentCtx.styleHostClass);
+                    }
+                }
+                componentCtx.slots = [];
+                newCtx.components.push(componentCtx);
+                return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+            });
+        }, (err) => {
+            logError(err);
+        });
+    }
+    catch (err) {
+        logError(err);
+    }
+};
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
     if (ch.length === 1 && ch[0].type === SkipRerender) {
@@ -1454,7 +2393,7 @@ function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
         return updateChildren(ctx, elm, oldCh, ch, isSvg);
     }
     else if (ch.length > 0) {
-        return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
+        return addVnodes(ctx, elm, undefined, ch, 0, ch.length - 1, isSvg);
     }
     else if (oldCh.length > 0) {
         return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
@@ -1472,7 +2411,6 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
     let oldKeyToIdx;
     let idxInOld;
     let elmToMove;
-    let before;
     const results = [];
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
         if (oldStartVnode == null) {
@@ -1541,7 +2479,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
         }
     }
     if (newStartIdx <= newEndIdx) {
-        before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
+        const before = newCh[newEndIdx + 1] == null ? undefined : newCh[newEndIdx + 1].elm;
         results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
     }
     let wait = promiseAll(results);
@@ -1571,7 +2509,8 @@ function getChildren(elm, mode) {
     }
 }
 function isNode(elm) {
-    return elm.nodeType === 1 || elm.nodeType === 3;
+    const type = elm.nodeType;
+    return type === 1 || type === 3 || type === 8;
 }
 function isFallback(node) {
     return node.nodeName === 'Q:FALLBACK';
@@ -1586,21 +2525,27 @@ function isChildComponent(node) {
     return node.nodeName !== 'TEMPLATE' || !node.hasAttribute(QSlotAttr);
 }
 function splitBy(input, condition) {
-    var _a;
     const output = {};
     for (const item of input) {
         const key = condition(item);
-        const array = (_a = output[key]) !== null && _a !== void 0 ? _a : (output[key] = []);
+        const array = output[key] ?? (output[key] = []);
         array.push(item);
     }
     return output;
 }
-function patchVnode(ctx, elm, vnode, isSvg) {
-    ctx.perf.visited++;
+function patchVnode(rctx, elm, vnode, isSvg) {
+    rctx.perf.visited++;
+    vnode.elm = elm;
     const tag = vnode.type;
     if (tag === '#text') {
         if (elm.data !== vnode.text) {
-            setProperty(ctx, elm, 'data', vnode.text);
+            setProperty(rctx, elm, 'data', vnode.text);
+        }
+        return;
+    }
+    if (tag === '#comment') {
+        if (elm.data !== vnode.text) {
+            setProperty(rctx, elm, 'data', vnode.text);
         }
         return;
     }
@@ -1611,25 +2556,27 @@ function patchVnode(ctx, elm, vnode, isSvg) {
         isSvg = tag === 'svg';
     }
     let promise;
-    const dirty = updateProperties(ctx, elm, vnode.props, isSvg);
+    const props = vnode.props;
+    const ctx = getContext(elm);
+    const dirty = updateProperties(rctx, ctx, props, isSvg);
     const isSlot = tag === 'q:slot';
     if (isSvg && vnode.type === 'foreignObject') {
         isSvg = false;
     }
     else if (isSlot) {
-        ctx.component.slots.push(vnode);
+        const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
+        if (currentComponent) {
+            currentComponent.slots.push(vnode);
+        }
     }
     const isComponent = isComponentNode(vnode);
-    let componentCtx;
     if (dirty) {
-        assertEqual(isComponent, true);
-        componentCtx = getQComponent(elm);
-        promise = componentCtx.render(ctx);
+        promise = renderComponent(rctx, ctx);
     }
     const ch = vnode.children;
     if (isComponent) {
         return then(promise, () => {
-            const slotMaps = getSlots(componentCtx, elm);
+            const slotMaps = getSlots(ctx.component, elm);
             const splittedChidren = splitBy(ch, getSlotName);
             const promises = [];
             // Mark empty slots and remove content
@@ -1637,23 +2584,37 @@ function patchVnode(ctx, elm, vnode, isSvg) {
                 if (slotEl && !splittedChidren[key]) {
                     const oldCh = getChildren(slotEl, 'slot');
                     if (oldCh.length > 0) {
-                        removeVnodes(ctx, slotEl, oldCh, 0, oldCh.length - 1);
+                        removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
                     }
+                }
+            });
+            // Mark empty slots and remove content
+            Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
+                if (templateEl && !splittedChidren[key]) {
+                    removeNode(rctx, templateEl);
+                    slotMaps.templates[key] = undefined;
                 }
             });
             // Render into slots
             Object.entries(splittedChidren).forEach(([key, ch]) => {
-                const slotElm = getSlotElement(ctx, slotMaps, elm, key);
-                promises.push(smartUpdateChildren(ctx, slotElm, ch, 'slot', isSvg));
+                const slotElm = getSlotElement(rctx, slotMaps, elm, key);
+                promises.push(smartUpdateChildren(rctx, slotElm, ch, 'slot', isSvg));
             });
             return then(promiseAll(promises), () => {
-                removeTemplates(ctx, slotMaps);
+                removeTemplates(rctx, slotMaps);
             });
         });
     }
+    const setsInnerHTML = checkInnerHTML(props);
+    if (setsInnerHTML) {
+        if (qDev && ch.length > 0) {
+            logWarn('Node can not have children when innerHTML is set');
+        }
+        return;
+    }
     return then(promise, () => {
         const mode = isSlot ? 'fallback' : 'default';
-        return smartUpdateChildren(ctx, elm, ch, mode, isSvg);
+        return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
     });
 }
 function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
@@ -1673,14 +2634,13 @@ function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = nodes[startIdx];
         assertDefined(ch);
-        removeNode(ctx, parentElm, ch);
+        removeNode(ctx, ch);
     }
 }
 let refCount = 0;
 const RefSymbol = Symbol();
 function setSlotRef(ctx, hostElm, slotEl) {
-    var _a;
-    let ref = (_a = hostElm[RefSymbol]) !== null && _a !== void 0 ? _a : hostElm.getAttribute('q:sref');
+    let ref = hostElm[RefSymbol] ?? hostElm.getAttribute('q:sref');
     if (ref === null) {
         ref = intToStr(refCount++);
         hostElm[RefSymbol] = ref;
@@ -1711,7 +2671,7 @@ function removeTemplates(ctx, slotMaps) {
     Object.keys(slotMaps.templates).forEach((key) => {
         const template = slotMaps.templates[key];
         if (template && slotMaps.slots[key] !== undefined) {
-            removeNode(ctx, template.parentNode, template);
+            removeNode(ctx, template);
             slotMaps.templates[key] = undefined;
         }
     });
@@ -1752,47 +2712,56 @@ function resolveSlotProjection(ctx, hostElm, before, after) {
     });
 }
 function getSlotName(node) {
-    var _a, _b;
-    return (_b = (_a = node.props) === null || _a === void 0 ? void 0 : _a['q:slot']) !== null && _b !== void 0 ? _b : '';
+    return node.props?.['q:slot'] ?? '';
 }
-function createElm(ctx, vnode, isSvg) {
-    ctx.perf.visited++;
+function createElm(rctx, vnode, isSvg) {
+    rctx.perf.visited++;
     const tag = vnode.type;
     if (tag === '#text') {
-        return (vnode.elm = createTextNode(ctx, vnode.text));
+        return (vnode.elm = createTextNode(rctx, vnode.text));
+    }
+    if (tag === '#comment') {
+        return (vnode.elm = createCommentNode(rctx, vnode.text));
     }
     if (!isSvg) {
         isSvg = tag === 'svg';
     }
-    const data = vnode.props;
-    const elm = (vnode.elm = createElement(ctx, tag, isSvg));
+    const props = vnode.props;
+    const elm = (vnode.elm = createElement(rctx, tag, isSvg));
     const isComponent = isComponentNode(vnode);
+    const ctx = getContext(elm);
     setKey(elm, vnode.key);
-    updateProperties(ctx, elm, data, isSvg);
+    updateProperties(rctx, ctx, props, isSvg);
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
-    const currentComponent = ctx.component;
+    const currentComponent = rctx.components.length > 0 ? rctx.components[rctx.components.length - 1] : undefined;
     if (currentComponent) {
         const styleTag = currentComponent.styleClass;
         if (styleTag) {
-            classlistAdd(ctx, elm, styleTag);
+            classlistAdd(rctx, elm, styleTag);
         }
         if (tag === 'q:slot') {
-            setSlotRef(ctx, currentComponent.hostElement, elm);
-            ctx.component.slots.push(vnode);
+            setSlotRef(rctx, currentComponent.hostElement, elm);
+            currentComponent.slots.push(vnode);
         }
     }
     let wait;
-    let componentCtx;
     if (isComponent) {
-        componentCtx = getQComponent(elm);
-        const hostStyleTag = componentCtx.styleHostClass;
-        elm.setAttribute(QHostAttr, '');
-        if (hostStyleTag) {
-            classlistAdd(ctx, elm, hostStyleTag);
+        // Run mount hook
+        const renderQRL = props[OnRenderProp];
+        ctx.renderQrl = renderQRL;
+        ctx.refMap.add(renderQRL);
+        wait = firstRenderComponent(rctx, ctx);
+    }
+    else {
+        const setsInnerHTML = checkInnerHTML(props);
+        if (setsInnerHTML) {
+            if (qDev && vnode.children.length > 0) {
+                logWarn('Node can not have children when innerHTML is set');
+            }
+            return elm;
         }
-        wait = componentCtx.render(ctx);
     }
     return then(wait, () => {
         let children = vnode.children;
@@ -1800,13 +2769,13 @@ function createElm(ctx, vnode, isSvg) {
             if (children.length === 1 && children[0].type === SkipRerender) {
                 children = children[0].children;
             }
-            const slotMap = isComponent ? getSlots(componentCtx, elm) : undefined;
-            const promises = children.map((ch) => createElm(ctx, ch, isSvg));
+            const slotMap = isComponent ? getSlots(ctx.component, elm) : undefined;
+            const promises = children.map((ch) => createElm(rctx, ch, isSvg));
             return then(promiseAll(promises), () => {
                 let parent = elm;
                 for (const node of children) {
                     if (slotMap) {
-                        parent = getSlotElement(ctx, slotMap, elm, getSlotName(node));
+                        parent = getSlotElement(rctx, slotMap, elm, getSlotName(node));
                     }
                     parent.appendChild(node.elm);
                 }
@@ -1817,55 +2786,32 @@ function createElm(ctx, vnode, isSvg) {
     });
 }
 const getSlots = (componentCtx, hostElm) => {
-    var _a, _b, _c, _d, _e;
     const slots = {};
     const templates = {};
     const slotRef = hostElm.getAttribute('q:sref');
     const existingSlots = Array.from(hostElm.querySelectorAll(`q\\:slot[q\\:sref="${slotRef}"]`));
-    const newSlots = (_a = componentCtx === null || componentCtx === void 0 ? void 0 : componentCtx.slots) !== null && _a !== void 0 ? _a : EMPTY_ARRAY;
-    const t = Array.from(hostElm.childNodes).filter(isSlotTemplate);
+    const newSlots = componentCtx?.slots ?? EMPTY_ARRAY;
+    const t = Array.from(hostElm.children).filter(isSlotTemplate);
     // Map slots
     for (const elm of existingSlots) {
-        slots[(_b = elm.getAttribute('name')) !== null && _b !== void 0 ? _b : ''] = elm;
+        slots[elm.getAttribute('name') ?? ''] = elm;
     }
     // Map virtual slots
     for (const vnode of newSlots) {
-        slots[(_d = (_c = vnode.props) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : ''] = vnode.elm;
+        slots[vnode.props?.name ?? ''] = vnode.elm;
     }
     // Map templates
     for (const elm of t) {
-        templates[(_e = elm.getAttribute('name')) !== null && _e !== void 0 ? _e : ''] = elm;
+        templates[elm.getAttribute('q:slot') ?? ''] = elm;
     }
     return { slots, templates };
 };
-const handleStyle = (ctx, elm, _, newValue, oldValue) => {
-    // TODO, needs reimplementation
-    if (typeof newValue == 'string') {
-        elm.style.cssText = newValue;
-    }
-    else {
-        for (const prop in oldValue) {
-            if (!newValue || newValue[prop] == null) {
-                if (prop.includes('-')) {
-                    styleSetProperty(ctx, elm, prop, null);
-                }
-                else {
-                    setProperty(ctx, elm.style, prop, '');
-                }
-            }
-        }
-        for (const prop in newValue) {
-            const value = newValue[prop];
-            if (!oldValue || value !== oldValue[prop]) {
-                if (prop.includes('-')) {
-                    styleSetProperty(ctx, elm, prop, value);
-                }
-                else {
-                    setProperty(ctx, elm.style, prop, value);
-                }
-            }
-        }
-    }
+const handleStyle = (ctx, elm, _, newValue) => {
+    setAttribute(ctx, elm, 'style', stringifyClassOrStyle(newValue, false));
+    return true;
+};
+const handleClass = (ctx, elm, _, newValue) => {
+    setAttribute(ctx, elm, 'class', stringifyClassOrStyle(newValue, true));
     return true;
 };
 const checkBeforeAssign = (ctx, elm, prop, newValue) => {
@@ -1876,46 +2822,40 @@ const checkBeforeAssign = (ctx, elm, prop, newValue) => {
     }
     return true;
 };
-const setInnerHTML = (ctx, elm, prop, newValue) => {
-    setProperty(ctx, elm, prop, newValue);
-    setAttribute(ctx, elm, 'q:static', '');
+const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+const setInnerHTML = (ctx, elm, _, newValue) => {
+    if (dangerouslySetInnerHTML in elm) {
+        setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+    }
+    else if ('innerHTML' in elm) {
+        setProperty(ctx, elm, 'innerHTML', newValue);
+    }
     return true;
 };
 const PROP_HANDLER_MAP = {
     style: handleStyle,
+    class: handleClass,
+    className: handleClass,
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
-    innerHTML: setInnerHTML,
+    [dangerouslySetInnerHTML]: setInnerHTML,
 };
-const ALLOWS_PROPS = ['className', 'style', 'id', 'q:slot'];
-function updateProperties(rctx, node, expectProps, isSvg) {
+const ALLOWS_PROPS = ['class', 'className', 'style', 'id', 'q:slot'];
+const HOST_PREFIX = 'host:';
+const SCOPE_PREFIX = /^(host|window|document):/;
+function updateProperties(rctx, ctx, expectProps, isSvg) {
     if (!expectProps) {
         return false;
     }
-    const ctx = getContext(node);
+    const elm = ctx.element;
     const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : undefined;
-    if ('class' in expectProps) {
-        const className = expectProps.class;
-        expectProps.className =
-            className && typeof className == 'object'
-                ? Object.keys(className)
-                    .filter((k) => className[k])
-                    .join(' ')
-                : className;
-    }
-    // TODO
-    // when a proper disappears, we cant reset the value
     for (let key of Object.keys(expectProps)) {
-        if (key === 'children' || key === 'class') {
+        if (key === 'children' || key === OnRenderProp) {
             continue;
         }
         const newValue = expectProps[key];
-        if (isOnProp(key)) {
-            setEvent(rctx, ctx, key, newValue);
-            continue;
-        }
-        if (isOn$Prop(key)) {
-            setEvent(rctx, ctx, key.replace('$', ''), $(newValue));
+        if (key === 'ref') {
+            newValue.current = elm;
             continue;
         }
         // Early exit if value didnt change
@@ -1925,36 +2865,49 @@ function updateProperties(rctx, node, expectProps, isSvg) {
         }
         ctx.cache.set(key, newValue);
         // Check of data- or aria-
-        if (key.startsWith('data-') || key.startsWith('aria-') || isSvg) {
-            setAttribute(rctx, node, key, newValue);
+        if (key.startsWith('data-') || key.startsWith('aria-')) {
+            setAttribute(rctx, elm, key, newValue);
             continue;
         }
         if (qwikProps) {
             const skipProperty = ALLOWS_PROPS.includes(key);
-            const hPrefixed = key.startsWith('h:');
-            if (!skipProperty && !hPrefixed) {
+            const hasPrefix = SCOPE_PREFIX.test(key);
+            if (!skipProperty && !hasPrefix) {
                 // Qwik props
                 qwikProps[key] = newValue;
                 continue;
             }
+            const hPrefixed = key.startsWith(HOST_PREFIX);
             if (hPrefixed) {
-                key = key.slice(2);
+                key = key.slice(HOST_PREFIX.length);
             }
+        }
+        else if (qDev && key.startsWith(HOST_PREFIX)) {
+            logWarn(`${HOST_PREFIX} prefix can not be used in non components`);
+            continue;
+        }
+        if (isOnProp(key)) {
+            setEvent(rctx, ctx, key.slice(0, -3), newValue);
+            continue;
+        }
+        if (isOn$Prop(key)) {
+            setEvent(rctx, ctx, key.slice(0, -1), $(newValue));
+            continue;
         }
         // Check if its an exception
         const exception = PROP_HANDLER_MAP[key];
         if (exception) {
-            if (exception(rctx, node, key, newValue, oldValue)) {
+            if (exception(rctx, elm, key, newValue, oldValue)) {
                 continue;
             }
         }
         // Check if property in prototype
-        if (key in node) {
-            setProperty(rctx, node, key, newValue);
+        if (!isSvg && key in elm) {
+            setProperty(rctx, elm, key, newValue);
             continue;
         }
         // Fallback to render attribute
-        setAttribute(rctx, node, key, newValue);
+        setAttribute(rctx, elm, key, newValue);
     }
     return ctx.dirty;
 }
@@ -1970,22 +2923,6 @@ function setAttribute(ctx, el, prop, value) {
     ctx.operations.push({
         el,
         operation: 'set-attribute',
-        args: [prop, value],
-        fn,
-    });
-}
-function styleSetProperty(ctx, el, prop, value) {
-    const fn = () => {
-        if (value == null) {
-            el.style.removeProperty(prop);
-        }
-        else {
-            el.style.setProperty(prop, String(value));
-        }
-    };
-    ctx.operations.push({
-        el,
-        operation: 'style-set-property',
         args: [prop, value],
         fn,
     });
@@ -2019,6 +2956,7 @@ function setProperty(ctx, node, key, value) {
 }
 function createElement(ctx, expectTag, isSvg) {
     const el = isSvg ? ctx.doc.createElementNS(SVG_NS, expectTag) : ctx.doc.createElement(expectTag);
+    el[CONTAINER] = ctx.containerEl;
     ctx.operations.push({
         el,
         operation: 'create-element',
@@ -2039,6 +2977,24 @@ function insertBefore(ctx, parent, newChild, refChild) {
     });
     return newChild;
 }
+function appendStyle(ctx, hostElement, styleTask) {
+    const fn = () => {
+        const containerEl = ctx.containerEl;
+        const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head ?? containerEl : containerEl;
+        if (!stylesParent.querySelector(`style[q\\:style="${styleTask.styleId}"]`)) {
+            const style = ctx.doc.createElement('style');
+            style.setAttribute('q:style', styleTask.styleId);
+            style.textContent = styleTask.content;
+            stylesParent.insertBefore(style, stylesParent.firstChild);
+        }
+    };
+    ctx.operations.push({
+        el: hostElement,
+        operation: 'append-style',
+        args: [styleTask],
+        fn,
+    });
+}
 function prepend(ctx, parent, newChild) {
     const fn = () => {
         parent.insertBefore(newChild, parent.firstChild);
@@ -2050,10 +3006,18 @@ function prepend(ctx, parent, newChild) {
         fn,
     });
 }
-function removeNode(ctx, parent, el) {
+function removeNode(ctx, el) {
     const fn = () => {
-        if (el.parentNode === parent) {
+        const parent = el.parentNode;
+        if (parent) {
+            if (el.nodeType === 1) {
+                cleanupElement(el);
+                el.querySelectorAll(QObjSelector).forEach(cleanupElement);
+            }
             parent.removeChild(el);
+        }
+        else if (qDev) {
+            logWarn('Trying to remove component already removed', el);
         }
     };
     ctx.operations.push({
@@ -2063,8 +3027,17 @@ function removeNode(ctx, parent, el) {
         fn,
     });
 }
+function cleanupElement(el) {
+    const ctx = tryGetContext(el);
+    if (ctx) {
+        cleanupContext(ctx);
+    }
+}
 function createTextNode(ctx, text) {
     return ctx.doc.createTextNode(text);
+}
+function createCommentNode(ctx, text) {
+    return ctx.doc.createComment(text);
 }
 function executeContextWithSlots(ctx) {
     const before = ctx.roots.map((elm) => getSlots(undefined, elm));
@@ -2081,10 +3054,9 @@ function executeContext(ctx) {
     }
 }
 function printRenderStats(ctx) {
-    var _a;
     const byOp = {};
     for (const op of ctx.operations) {
-        byOp[op.operation] = ((_a = byOp[op.operation]) !== null && _a !== void 0 ? _a : 0) + 1;
+        byOp[op.operation] = (byOp[op.operation] ?? 0) + 1;
     }
     const affectedElements = Array.from(new Set(ctx.operations.map((a) => a.el)));
     const stats = {
@@ -2127,145 +3099,50 @@ function setKey(el, key) {
 }
 function sameVnode(vnode1, vnode2) {
     const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
-    const isSameKey = vnode1.nodeType === NodeType.ELEMENT_NODE ? getKey(vnode1) === vnode2.key : true;
-    return isSameSel && isSameKey;
-}
-
-function visitJsxNode(ctx, elm, jsxNode, isSvg) {
-    if (jsxNode === undefined) {
-        return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
-    }
-    if (Array.isArray(jsxNode)) {
-        return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
-    }
-    else if (jsxNode.type === Host) {
-        updateProperties(ctx, elm, jsxNode.props, isSvg);
-        return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
-    }
-    else {
-        return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
-    }
-}
-
-/**
- * @public
- */
-function jsx(type, props, key) {
-    return new JSXNodeImpl(type, props, key);
-}
-class JSXNodeImpl {
-    constructor(type, props, key = null) {
-        this.type = type;
-        this.props = props;
-        this.children = EMPTY_ARRAY;
-        this.text = undefined;
-        this.key = null;
-        if (key != null) {
-            this.key = String(key);
-        }
-        if (props) {
-            const children = processNode(props.children);
-            if (children !== undefined) {
-                if (Array.isArray(children)) {
-                    this.children = children;
-                }
-                else {
-                    this.children = [children];
-                }
-            }
-        }
-    }
-}
-function processNode(node) {
-    if (node == null || typeof node === 'boolean') {
-        return undefined;
-    }
-    if (isJSXNode(node)) {
-        if (node.type === Host || node.type === SkipRerender) {
-            return node;
-        }
-        else if (typeof node.type === 'function') {
-            return processNode(node.type(Object.assign(Object.assign({}, node.props), { children: node.children }), node.key));
-        }
-        else {
-            return node;
-        }
-    }
-    else if (Array.isArray(node)) {
-        return node.flatMap(processNode).filter((e) => e != null);
-    }
-    else if (typeof node === 'string' || typeof node === 'number' || typeof node === 'boolean') {
-        const newNode = new JSXNodeImpl('#text', null, null);
-        newNode.text = String(node);
-        return newNode;
-    }
-    else {
-        logWarn('Unvalid node, skipping');
-        return undefined;
-    }
-}
-const isJSXNode = (n) => {
-    if (qDev) {
-        if (n instanceof JSXNodeImpl) {
-            return true;
-        }
-        if (n && typeof n === 'object' && n.constructor.name === JSXNodeImpl.name) {
-            throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-        }
+    if (!isSameSel) {
         return false;
     }
-    else {
-        return n instanceof JSXNodeImpl;
+    if (vnode1.nodeType !== NodeType.ELEMENT_NODE) {
+        return true;
     }
-};
-/**
- * @public
- */
-const Fragment = (props) => props.children;
-
-// TODO(misko): Can we get rid of this whole file, and instead teach getProps to know how to render
-// the advantage will be that the render capability would then be exposed to the outside world as well.
-class QComponentCtx {
-    constructor(hostElement) {
-        this.styleId = undefined;
-        this.styleClass = null;
-        this.styleHostClass = null;
-        this.slots = [];
-        this.hostElement = hostElement;
-        this.ctx = getContext(hostElement);
-    }
-    render(ctx) {
-        const hostElement = this.hostElement;
-        const onRender = getEvent(this.ctx, OnRenderProp);
-        assertDefined(onRender);
-        const event = 'qRender';
-        this.ctx.dirty = false;
-        ctx.globalState.hostsStaging.delete(hostElement);
-        const promise = useInvoke(newInvokeContext(hostElement, hostElement, event), onRender);
-        return then(promise, (jsxNode) => {
-            // Types are wrong here
-            jsxNode = jsxNode[0];
-            if (this.styleId === undefined) {
-                const scopedStyleId = (this.styleId = hostElement.getAttribute(ComponentScopedStyles));
-                if (scopedStyleId) {
-                    this.styleHostClass = styleHost(scopedStyleId);
-                    this.styleClass = styleContent(scopedStyleId);
+    return getKey(vnode1) === vnode2.key;
+}
+function checkInnerHTML(props) {
+    return props && ('innerHTML' in props || dangerouslySetInnerHTML in props);
+}
+function stringifyClassOrStyle(obj, isClass) {
+    if (obj == null)
+        return '';
+    if (typeof obj == 'object') {
+        let text = '';
+        let sep = '';
+        if (Array.isArray(obj)) {
+            if (!isClass) {
+                throw qError(QError.Render_unsupportedFormat_obj_attr, obj, 'style');
+            }
+            for (let i = 0; i < obj.length; i++) {
+                text += sep + obj[i];
+                sep = ' ';
+            }
+        }
+        else {
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    if (value) {
+                        text += isClass
+                            ? value
+                                ? sep + key
+                                : ''
+                            : sep + fromCamelToKebabCase(key) + ':' + value;
+                        sep = isClass ? ' ' : ';';
+                    }
                 }
             }
-            ctx.hostElements.add(hostElement);
-            this.slots = [];
-            const newCtx = Object.assign(Object.assign({}, ctx), { component: this });
-            return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
-        });
+        }
+        return text;
     }
-}
-const COMPONENT_PROP = '__qComponent__';
-function getQComponent(hostElement) {
-    const element = hostElement;
-    let component = element[COMPONENT_PROP];
-    if (!component)
-        component = element[COMPONENT_PROP] = new QComponentCtx(hostElement);
-    return component;
+    return String(obj);
 }
 
 /**
@@ -2282,13 +3159,13 @@ function getQComponent(hostElement) {
  * @returns A promise which is resolved when the component has been rendered.
  * @public
  */
-// TODO(misko): tests
-// TODO(misko): this should take QComponent as well.
 function notifyRender(hostElement) {
     assertDefined(hostElement.getAttribute(QHostAttr));
+    const containerEl = getContainer(hostElement);
+    assertDefined(containerEl);
+    resumeIfNeeded(containerEl);
     const ctx = getContext(hostElement);
-    const doc = getDocument(hostElement);
-    const state = getRenderingState(doc);
+    const state = getRenderingState(containerEl);
     if (ctx.dirty) {
         // TODO
         return state.renderPromise;
@@ -2309,20 +3186,23 @@ function notifyRender(hostElement) {
     }
     else {
         state.hostsNext.add(hostElement);
-        return scheduleFrame(doc, state);
+        return scheduleFrame(containerEl, state);
     }
 }
-function scheduleFrame(doc, state) {
+function scheduleFrame(containerEl, state) {
     if (state.renderPromise === undefined) {
-        state.renderPromise = getPlatform(doc).nextTick(() => renderMarked(doc, state));
+        state.renderPromise = getPlatform(containerEl).nextTick(() => renderMarked(containerEl, state));
     }
     return state.renderPromise;
 }
-const SCHEDULE = Symbol();
-function getRenderingState(doc) {
-    let set = doc[SCHEDULE];
+const SCHEDULE = Symbol('Render state');
+function getRenderingState(containerEl) {
+    let set = containerEl[SCHEDULE];
     if (!set) {
-        doc[SCHEDULE] = set = {
+        containerEl[SCHEDULE] = set = {
+            watchNext: new Set(),
+            watchStaging: new Set(),
+            watchRunning: new Set(),
             hostsNext: new Set(),
             hostsStaging: new Set(),
             renderPromise: undefined,
@@ -2331,34 +3211,47 @@ function getRenderingState(doc) {
     }
     return set;
 }
-async function renderMarked(doc, state) {
+async function renderMarked(containerEl, state) {
+    await waitForWatches(state);
     state.hostsRendering = new Set(state.hostsNext);
     state.hostsNext.clear();
-    const platform = getPlatform(doc);
+    const doc = getDocument(containerEl);
+    const platform = getPlatform(containerEl);
     const renderingQueue = Array.from(state.hostsRendering);
     sortNodes(renderingQueue);
     const ctx = {
         doc,
+        globalState: state,
+        hostElements: new Set(),
         operations: [],
         roots: [],
-        hostElements: new Set(),
-        globalState: state,
+        containerEl,
+        components: [],
         perf: {
             visited: 0,
             timing: [],
         },
-        component: undefined,
     };
     for (const el of renderingQueue) {
         if (!ctx.hostElements.has(el)) {
             ctx.roots.push(el);
-            const cmp = getQComponent(el);
-            await cmp.render(ctx);
+            try {
+                await renderComponent(ctx, getContext(el));
+            }
+            catch (e) {
+                logError('Render failed', e, el);
+            }
         }
     }
     // Early exist, no dom operations
     if (ctx.operations.length === 0) {
-        postRendering(doc, state);
+        if (qDev) {
+            if (typeof window !== 'undefined' && window.document != null) {
+                logDebug('Render stats. No operations.');
+                printRenderStats(ctx);
+            }
+        }
+        postRendering(containerEl, state, ctx);
         return ctx;
     }
     return platform.raf(() => {
@@ -2368,21 +3261,43 @@ async function renderMarked(doc, state) {
                 printRenderStats(ctx);
             }
         }
-        postRendering(doc, state);
+        postRendering(containerEl, state, ctx);
         return ctx;
     });
 }
-function postRendering(doc, state) {
-    // Move elements from staging to nextRender
+async function postRendering(containerEl, state, ctx) {
+    // Run useEffect() watch
+    const promises = [];
+    state.watchNext.forEach((watch) => {
+        promises.push(runWatch(watch));
+    });
+    state.watchNext.clear();
+    // Run staging effected
+    state.watchStaging.forEach((watch) => {
+        if (ctx.hostElements.has(watch.el)) {
+            promises.push(runWatch(watch));
+        }
+        else {
+            state.watchNext.add(watch);
+        }
+    });
+    state.watchStaging.clear();
+    // Wait for all promises
+    await Promise.all(promises);
+    // Clear staging
     state.hostsStaging.forEach((el) => {
         state.hostsNext.add(el);
     });
-    // Clear staging
     state.hostsStaging.clear();
+    // Clear staging
+    state.watchStaging.forEach((watch) => {
+        state.watchNext.add(watch);
+    });
+    state.watchStaging.clear();
     state.hostsRendering = undefined;
     state.renderPromise = undefined;
-    if (state.hostsNext.size > 0) {
-        scheduleFrame(doc, state);
+    if (state.hostsNext.size + state.watchNext.size > 0) {
+        scheduleFrame(containerEl, state);
     }
 }
 function sortNodes(elements) {
@@ -2406,19 +3321,10 @@ function qObject(obj, proxyMap) {
     if (obj.constructor !== Object) {
         throw new Error(`Q-ERROR: Only objects literals can be wrapped in 'QObject', got ` + debugStringify(obj));
     }
-    const proxy = readWriteProxy(obj, proxyMap);
-    Object.assign(proxy[QOjectTargetSymbol], obj);
-    return proxy;
+    return readWriteProxy(obj, proxyMap);
 }
 function _restoreQObject(obj, map, subs) {
     return readWriteProxy(obj, map, subs);
-}
-function getTransient(obj, key) {
-    return obj[QOjectTransientsSymbol].get(key);
-}
-function setTransient(obj, key, value) {
-    obj[QOjectTransientsSymbol].set(key, value);
-    return value;
 }
 /**
  * Creates a proxy which notifies of any writes.
@@ -2434,8 +3340,13 @@ function readWriteProxy(target, proxyMap, subs) {
     return proxy;
 }
 const QOjectTargetSymbol = ':target:';
+const QOjectAllSymbol = ':all:';
 const QOjectSubsSymbol = ':subs:';
-const QOjectTransientsSymbol = ':transients:';
+const QOjectOriginalProxy = ':proxy:';
+const SetSubscriber = Symbol('SetSubscriber');
+/**
+ * @alpha
+ */
 function unwrapProxy(proxy) {
     if (proxy && typeof proxy == 'object') {
         const value = proxy[QOjectTargetSymbol];
@@ -2446,12 +3357,26 @@ function unwrapProxy(proxy) {
 }
 function wrap(value, proxyMap) {
     if (value && typeof value === 'object') {
+        if (isQrl(value)) {
+            return value;
+        }
+        if (Object.isFrozen(value)) {
+            return value;
+        }
         const nakedValue = unwrapProxy(value);
         if (nakedValue !== value) {
             // already a proxy return;
             return value;
         }
-        verifySerializable(value);
+        if (isNode$1(nakedValue)) {
+            return value;
+        }
+        if (!shouldSerialize(nakedValue)) {
+            return value;
+        }
+        if (qDev) {
+            verifySerializable(value);
+        }
         const proxy = proxyMap.get(value);
         return proxy ? proxy : readWriteProxy(value, proxyMap);
     }
@@ -2460,53 +3385,105 @@ function wrap(value, proxyMap) {
     }
 }
 class ReadWriteProxyHandler {
-    constructor(proxy, subs = new Map()) {
-        this.proxy = proxy;
+    constructor(proxyMap, subs = new Map()) {
+        this.proxyMap = proxyMap;
         this.subs = subs;
-        this.transients = null;
     }
     getSub(el) {
         let sub = this.subs.get(el);
-        if (!sub) {
+        if (sub === undefined) {
             this.subs.set(el, (sub = new Set()));
         }
         return sub;
     }
     get(target, prop) {
+        let subscriber = this.subscriber;
+        this.subscriber = undefined;
+        if (typeof prop === 'symbol') {
+            return target[prop];
+        }
         if (prop === QOjectTargetSymbol)
             return target;
         if (prop === QOjectSubsSymbol)
             return this.subs;
-        if (prop === QOjectTransientsSymbol) {
-            return this.transients || (this.transients = new WeakMap());
-        }
-        const value = target[prop];
+        if (prop === QOjectOriginalProxy)
+            return this.proxyMap.get(target);
         const invokeCtx = tryGetInvokeContext();
-        if (invokeCtx && invokeCtx.subscriptions) {
-            const isArray = Array.isArray(target);
-            const sub = this.getSub(invokeCtx.hostElement);
-            if (!isArray) {
-                sub.add(prop);
+        if (invokeCtx) {
+            if (invokeCtx.subscriber === null) {
+                subscriber = undefined;
+            }
+            else if (!subscriber) {
+                subscriber = invokeCtx.subscriber;
             }
         }
-        return wrap(value, this.proxy);
+        if (prop === QOjectAllSymbol) {
+            if (subscriber) {
+                this.subs.set(subscriber, null);
+            }
+            return target;
+        }
+        const value = target[prop];
+        if (typeof prop === 'symbol') {
+            return value;
+        }
+        if (subscriber) {
+            const isArray = Array.isArray(target);
+            if (isArray) {
+                this.subs.set(subscriber, null);
+            }
+            else {
+                const sub = this.getSub(subscriber);
+                if (sub) {
+                    sub.add(prop);
+                }
+            }
+        }
+        return wrap(value, this.proxyMap);
     }
     set(target, prop, newValue) {
+        if (typeof prop === 'symbol') {
+            if (prop === SetSubscriber) {
+                this.subscriber = newValue;
+            }
+            else {
+                target[prop] = newValue;
+            }
+            return true;
+        }
+        const subs = this.subs;
         const unwrappedNewValue = unwrapProxy(newValue);
+        if (qDev) {
+            verifySerializable(unwrappedNewValue);
+            const invokeCtx = tryGetInvokeContext();
+            if (invokeCtx && invokeCtx.event === RenderEvent) {
+                logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.hostElement, prop);
+            }
+        }
         const isArray = Array.isArray(target);
         if (isArray) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((_, el) => {
-                notifyRender(el);
+            subs.forEach((_, sub) => {
+                if (isConnected(sub)) {
+                    notifyChange(sub);
+                }
+                else {
+                    subs.delete(sub);
+                }
             });
             return true;
         }
         const oldValue = target[prop];
         if (oldValue !== unwrappedNewValue) {
             target[prop] = unwrappedNewValue;
-            this.subs.forEach((propSets, el) => {
-                if (propSets.has(prop)) {
-                    notifyRender(el);
+            subs.forEach((propSets, sub) => {
+                if (isConnected(sub)) {
+                    if (propSets === null || propSets.has(prop)) {
+                        notifyChange(sub);
+                    }
+                }
+                else {
+                    subs.delete(sub);
                 }
             });
         }
@@ -2515,336 +3492,685 @@ class ReadWriteProxyHandler {
     has(target, property) {
         if (property === QOjectTargetSymbol)
             return true;
+        if (property === QOjectSubsSymbol)
+            return true;
         return Object.prototype.hasOwnProperty.call(target, property);
     }
     ownKeys(target) {
+        let subscriber = this.subscriber;
+        const invokeCtx = tryGetInvokeContext();
+        if (invokeCtx) {
+            if (invokeCtx.subscriber === null) {
+                subscriber = undefined;
+            }
+            else if (!subscriber) {
+                subscriber = invokeCtx.subscriber;
+            }
+        }
+        if (subscriber) {
+            this.subs.set(subscriber, null);
+        }
         return Object.getOwnPropertyNames(target);
     }
 }
-function verifySerializable(value) {
-    if (typeof value == 'object' && value !== null) {
-        if (Array.isArray(value))
-            return;
-        if (Object.getPrototypeOf(value) !== Object.prototype) {
-            throw qError(QError.TODO, 'Only primitive and object literals can be serialized.');
+function removeSub(obj, subscriber) {
+    if (obj && typeof obj === 'object') {
+        const subs = obj[QOjectSubsSymbol];
+        if (subs) {
+            subs.delete(subscriber);
         }
     }
 }
+function notifyChange(subscriber) {
+    if (isElement(subscriber)) {
+        notifyRender(subscriber);
+    }
+    else {
+        notifyWatch(subscriber);
+    }
+}
+function notifyWatch(watch) {
+    const containerEl = getContainer(watch.el);
+    const state = getRenderingState(containerEl);
+    watch.f |= WatchFlags.IsDirty;
+    const activeRendering = state.hostsRendering !== undefined;
+    if (activeRendering) {
+        state.watchStaging.add(watch);
+    }
+    else {
+        state.watchNext.add(watch);
+        scheduleFrame(containerEl, state);
+    }
+}
+async function waitForWatches(state) {
+    while (state.watchRunning.size > 0) {
+        await Promise.all(state.watchRunning);
+    }
+}
+function verifySerializable(value) {
+    if (value == null) {
+        return null;
+    }
+    if (shouldSerialize(value)) {
+        const type = typeof value;
+        if (type === 'object') {
+            if (Array.isArray(value))
+                return;
+            if (Object.getPrototypeOf(value) === Object.prototype)
+                return;
+            if (isQrl(value))
+                return;
+            if (isElement(value))
+                return;
+            if (isDocument(value))
+                return;
+        }
+        if (['boolean', 'string', 'number'].includes(type)) {
+            return;
+        }
+        throw qError(QError.TODO, 'Only primitive and object literals can be serialized', value);
+    }
+}
+const noSerializeSet = /*#__PURE__*/ new WeakSet();
+function shouldSerialize(obj) {
+    if (obj !== null && (typeof obj == 'object' || typeof obj === 'function')) {
+        return !noSerializeSet.has(obj);
+    }
+    return true;
+}
+// <docs markdown="../readme.md#noSerialize">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#noSerialize instead)
+/**
+ * @alpha
+ */
+// </docs>
+function noSerialize(input) {
+    noSerializeSet.add(input);
+    return input;
+}
+/**
+ * @alpha
+ */
+function immutable(input) {
+    return Object.freeze(input);
+}
+function isConnected(sub) {
+    if (isElement(sub)) {
+        return !!tryGetContext(sub);
+    }
+    else {
+        return isConnected(sub.el);
+    }
+}
 
-function newQObjectMap(element) {
-    const map = new Map();
-    const array = [];
-    let added = element.hasAttribute(QObjAttr);
-    return {
-        array,
-        get(index) {
-            return array[index];
-        },
-        indexOf(obj) {
-            return map.get(obj);
-        },
-        add(object) {
-            const index = map.get(object);
-            if (index === undefined) {
-                map.set(object, array.length);
-                array.push(object);
-                if (!added) {
-                    element.setAttribute(QObjAttr, '');
-                    added = true;
+/**
+ * @alpha
+ */
+function wrapSubscriber(obj, subscriber) {
+    if (obj && typeof obj === 'object') {
+        const target = obj[QOjectTargetSymbol];
+        if (!target) {
+            return obj;
+        }
+        return new Proxy(obj, {
+            get(target, prop) {
+                if (prop === QOjectOriginalProxy) {
+                    return target;
                 }
-                return array.length - 1;
+                target[SetSubscriber] = subscriber;
+                return target[prop];
+            },
+            ownKeys(target) {
+                target[SetSubscriber] = subscriber;
+                return Reflect.ownKeys(target);
+            },
+        });
+    }
+    return obj;
+}
+/**
+ * @alpha
+ */
+function unwrapSubscriber(obj) {
+    if (obj && typeof obj === 'object') {
+        const proxy = obj[QOjectOriginalProxy];
+        if (proxy) {
+            return proxy;
+        }
+    }
+    return obj;
+}
+
+let runtimeSymbolId = 0;
+const RUNTIME_QRL = '/runtimeQRL';
+const INLINED_QRL = '/inlinedQRL';
+// https://regexr.com/68v72
+const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
+// https://regexr.com/690ds
+const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
+// https://regexr.com/6a83h
+const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
+function toInternalQRL(qrl) {
+    assertEqual(isQrl(qrl), true);
+    return qrl;
+}
+/**
+ * Lazy-load a `QRL` symbol and return the lazy-loaded value.
+ *
+ * @see `QRL`
+ *
+ * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
+ * account.
+ * @param qrl - QRL to load.
+ * @returns A resolved QRL value as a Promise.
+ */
+function qrlImport(element, qrl) {
+    const qrl_ = toInternalQRL(qrl);
+    if (qrl_.symbolRef)
+        return qrl_.symbolRef;
+    if (qrl_.symbolFn) {
+        return (qrl_.symbolRef = qrl_
+            .symbolFn()
+            .then((module) => (qrl_.symbolRef = module[qrl_.symbol])));
+    }
+    else {
+        if (!element) {
+            throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || 'default'}' does not have an attached container`);
+        }
+        const symbol = getPlatform(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+        return (qrl_.symbolRef = then(symbol, (ref) => {
+            return (qrl_.symbolRef = ref);
+        }));
+    }
+}
+// <docs markdown="../readme.md#qrl">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#qrl instead)
+/**
+ * Used by Qwik Optimizer to point to lazy-loaded resources.
+ *
+ * This function should be used by the Qwik Optimizer only. The function should not be directly
+ * referred to in the source code of the application.
+ *
+ * @see `QRL`, `$(...)`
+ *
+ * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
+ * @param symbol - Symbol to lazy load
+ * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
+ * @alpha
+ */
+// </docs>
+function qrl(chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+    let chunk;
+    let symbolFn = null;
+    if (typeof chunkOrFn === 'string') {
+        chunk = chunkOrFn;
+    }
+    else if (typeof chunkOrFn === 'function') {
+        symbolFn = chunkOrFn;
+        let match;
+        const srcCode = String(chunkOrFn);
+        if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
+            chunk = match[2];
+        }
+        else if ((match = srcCode.match(EXTRACT_SELF_IMPORT))) {
+            const ref = 'QWIK-SELF';
+            const frames = new Error(ref).stack.split('\n');
+            const start = frames.findIndex((f) => f.includes(ref));
+            const frame = frames[start + 2];
+            match = frame.match(EXTRACT_FILE_NAME);
+            if (!match) {
+                chunk = 'main';
             }
-            return index;
-        },
-    };
+            else {
+                chunk = match[1];
+            }
+        }
+        else {
+            throw new Error('Q-ERROR: Dynamic import not found: ' + srcCode);
+        }
+    }
+    else {
+        throw new Error('Q-ERROR: Unknown type argument: ' + chunkOrFn);
+    }
+    // Unwrap subscribers
+    unwrapLexicalScope(lexicalScopeCapture);
+    const qrl = new QRLInternal(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
+    const ctx = tryGetInvokeContext();
+    if (ctx && ctx.element) {
+        qrl.setContainer(ctx.element);
+    }
+    return qrl;
+}
+function runtimeQrl(symbol, lexicalScopeCapture = EMPTY_ARRAY) {
+    return new QRLInternal(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+}
+/**
+ * @alpha
+ */
+function inlinedQrl(symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) {
+    // Unwrap subscribers
+    return new QRLInternal(INLINED_QRL, symbolName, symbol, null, null, unwrapLexicalScope(lexicalScopeCapture));
+}
+function unwrapLexicalScope(lexicalScope) {
+    if (Array.isArray(lexicalScope)) {
+        for (let i = 0; i < lexicalScope.length; i++) {
+            lexicalScope[i] = unwrapSubscriber(lexicalScope[i]);
+        }
+    }
+    return lexicalScope;
+}
+function stringifyQRL(qrl, opts = {}) {
+    const qrl_ = toInternalQRL(qrl);
+    let symbol = qrl_.symbol;
+    let chunk = qrl_.chunk;
+    const refSymbol = qrl_.refSymbol ?? symbol;
+    const platform = opts.platform;
+    const element = opts.element;
+    if (platform) {
+        const result = platform.chunkForSymbol(refSymbol);
+        if (result) {
+            chunk = result[0];
+            if (!qrl_.refSymbol) {
+                symbol = result[1];
+            }
+        }
+    }
+    const parts = [chunk];
+    if (symbol && symbol !== 'default') {
+        parts.push('#', symbol);
+    }
+    const capture = qrl_.capture;
+    const captureRef = qrl_.captureRef;
+    if (opts.getObjId) {
+        if (captureRef && captureRef.length) {
+            const capture = captureRef.map(opts.getObjId);
+            parts.push(`[${capture.join(' ')}]`);
+        }
+    }
+    else if (capture && capture.length > 0) {
+        parts.push(`[${capture.join(' ')}]`);
+    }
+    const qrlString = parts.join('');
+    if (qrl_.chunk === RUNTIME_QRL && element) {
+        const qrls = element.__qrls__ || (element.__qrls__ = new Set());
+        qrls.add(qrl);
+    }
+    return qrlString;
+}
+/**
+ * `./chunk#symbol|symbol.propA.propB|[captures]
+ */
+function parseQRL(qrl, el) {
+    const endIdx = qrl.length;
+    const hashIdx = indexOf(qrl, 0, '#');
+    const captureIdx = indexOf(qrl, hashIdx, '[');
+    const chunkEndIdx = Math.min(hashIdx, captureIdx);
+    const chunk = qrl.substring(0, chunkEndIdx);
+    const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+    const symbolEndIdx = captureIdx;
+    const symbol = symbolStartIdx == symbolEndIdx ? 'default' : qrl.substring(symbolStartIdx, symbolEndIdx);
+    const captureStartIdx = captureIdx;
+    const captureEndIdx = endIdx;
+    const capture = captureStartIdx === captureEndIdx
+        ? EMPTY_ARRAY
+        : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(' ');
+    if (chunk === RUNTIME_QRL) {
+        logError(`Q-ERROR: '${qrl}' is runtime but no instance found on element.`);
+    }
+    const iQrl = new QRLInternal(chunk, symbol, null, null, capture, null);
+    if (el) {
+        iQrl.setContainer(el);
+    }
+    return iQrl;
+}
+function indexOf(text, startIdx, char) {
+    const endIdx = text.length;
+    const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+    return charIdx == -1 ? endIdx : charIdx;
+}
+function toQrlOrError(symbolOrQrl) {
+    if (!isQrl(symbolOrQrl)) {
+        if (typeof symbolOrQrl == 'function' || typeof symbolOrQrl == 'string') {
+            symbolOrQrl = runtimeQrl(symbolOrQrl);
+        }
+        else {
+            // TODO(misko): centralize
+            throw new Error(`Q-ERROR Only 'function's and 'string's are supported.`);
+        }
+    }
+    return symbolOrQrl;
 }
 
-Error.stackTraceLimit = 9999;
-// TODO(misko): For better debugger experience the getProps should never store Proxy, always naked objects to make it easier to traverse in the debugger.
-const Q_IS_HYDRATED = '__isHydrated__';
-const Q_CTX = '__ctx__';
-function hydrateIfNeeded(element) {
-    const doc = getDocument(element);
-    const isHydrated = doc[Q_IS_HYDRATED];
-    if (!isHydrated) {
-        doc[Q_IS_HYDRATED] = true;
-        QStore_hydrate(doc);
-    }
-}
-function getContext(element) {
-    hydrateIfNeeded(element);
-    let ctx = element[Q_CTX];
-    if (!ctx) {
-        const cache = new Map();
-        element[Q_CTX] = ctx = {
-            element,
-            cache,
-            refMap: newQObjectMap(element),
-            dirty: false,
-            props: undefined,
-            events: undefined,
+// <docs markdown="../readme.md#useCleanup">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useCleanup instead)
+/**
+ * A lazy-loadable reference to a component's cleanup hook.
+ *
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
+ *
+ * Can be used to release resouces, abort network requets, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+function useCleanupQrl(unmountFn) {
+    const [watch, setWatch] = useSequentialScope();
+    if (!watch) {
+        const el = useHostElement();
+        const watch = {
+            qrl: unmountFn,
+            el,
+            f: WatchFlags.IsCleanup,
         };
+        setWatch(watch);
+        getContext(el).refMap.add(watch);
     }
-    return ctx;
 }
-function setEvent(rctx, ctx, prop, value) {
-    qPropWriteQRL(rctx, ctx, prop, value);
-}
-function getEvent(ctx, prop) {
-    return qPropReadQRL(ctx, prop);
-}
-function getProps(ctx) {
-    if (!ctx.props) {
-        ctx.props = readWriteProxy({}, getProxyMap(getDocument(ctx.element)));
-        ctx.refMap.add(ctx.props);
-    }
-    return ctx.props;
-}
-function getEvents(ctx) {
-    let events = ctx.events;
-    if (!events) {
-        events = ctx.events = {};
-        ctx.refMap.add(ctx.events);
-    }
-    return events;
-}
-
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
+// <docs markdown="../readme.md#useCleanup">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
+// (edit ../readme.md#useCleanup instead)
 /**
- * A lazy-loadable reference to a component's destroy hook.
+ * A lazy-loadable reference to a component's cleanup hook.
  *
- * Invoked when the component is destroyed (removed from render tree).
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
  *
- * @public
+ * Can be used to release resouces, abort network requets, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 // </docs>
-function onUnmount(unmountFn) {
-    throw new Error('IMPLEMENT: onUnmount' + unmountFn);
-}
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onUnmount">
+const useCleanup$ = implicit$FirstArg(useCleanupQrl);
+// <docs markdown="../readme.md#useResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onUnmount instead)
-/**
- * A lazy-loadable reference to a component's destroy hook.
- *
- * Invoked when the component is destroyed (removed from render tree).
- *
- * @public
- */
-// </docs>
-const onUnmount$ = implicit$FirstArg(onUnmount);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
+// (edit ../readme.md#useResume instead)
 /**
  * A lazy-loadable reference to a component's on resume hook.
  *
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
- * @public
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
  */
 // </docs>
-function onResume(resumeFn) {
-    throw new Error('IMPLEMENT: onRender' + resumeFn);
+function useResumeQrl(resumeFn) {
+    useOn('qinit', resumeFn);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onResume">
+// <docs markdown="../readme.md#useResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onResume instead)
+// (edit ../readme.md#useResume instead)
 /**
  * A lazy-loadable reference to a component's on resume hook.
  *
  * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to hydrate even if no user interaction has taken place.
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
  *
- * @public
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
  */
 // </docs>
-const onResume$ = implicit$FirstArg(onResume);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
+const useResume$ = implicit$FirstArg(useResumeQrl);
+// <docs markdown="../readme.md#useVisible">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
+// (edit ../readme.md#useVisible instead)
 /**
- * A lazy-loadable reference to a component's on hydrate hook.
+ * A lazy-loadable reference to a component's on visible hook.
  *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
- * component to do any work to re-activate itself.
+ * The hook is lazily invoked when the component becomes visible in the browser viewport.
  *
- * @public
+ * Only called in the client.
+ * Only called once.
+ *
+ * @see `useResume`, `useClientEffect`
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     isVisible: false,
+ *   });
+ *   useVisible$(() => {
+ *     // Invoked once when the component is visible in the browser's viewport
+ *     console.log('called once in client when visible');
+ *     store.isVisible = true;
+ *   });
+ *   return <div>{store.isVisible}</div>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 // </docs>
-function onHydrate(hydrateFn) {
-    throw new Error('IMPLEMENT: onHydrate' + hydrateFn);
+function useVisibleQrl(resumeFn) {
+    useOn('qvisible', resumeFn);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onHydrate">
+// <docs markdown="../readme.md#useOn">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onHydrate instead)
-/**
- * A lazy-loadable reference to a component's on hydrate hook.
- *
- * Invoked when the component's state is re-hydrated from serialization. This allows the
- * component to do any work to re-activate itself.
- *
- * @public
- */
-// </docs>
-const onHydrate$ = implicit$FirstArg(onHydrate);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDehydrate instead)
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-// </docs>
-function onDehydrate(dehydrateFn) {
-    throw new Error('IMPLEMENT: onDehydrate' + dehydrateFn);
-}
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDehydrate">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDehydrate instead)
-/**
- * A lazy-loadable reference to a component's on dehydrate hook.
- *
- * Invoked when the component's state is being serialized (dehydrated) into the DOM. This allows
- * the component to do last-minute clean-up before its state is serialized.
- *
- * Typically used with transient state.
- *
- * @public
- */
-// </docs>
-const onDehydrate$ = implicit$FirstArg(onDehydrate);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#on">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#on instead)
+// (edit ../readme.md#useOn instead)
 /**
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
+ * have access to the JSX. Otherwise it's adding a JSX listener in the `<Host>` is a better idea.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
+ * @alpha
  */
 // </docs>
-function on(event, eventFn) {
-    throw new Error('IMPLEMENT: on' + eventFn);
+function useOn(event, eventFn) {
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onDocument">
+// <docs markdown="../readme.md#useOnDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onDocument instead)
+// (edit ../readme.md#useOnDocument instead)
 /**
  * Register a listener on `document`.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
+ * ```tsx
+ * function useScroll() {
+ *   useOnDocument(
+ *     'scroll',
+ *     $(() => {
+ *       console.log('body scrolled');
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useScroll();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
+ *
+ * @alpha
  */
 // </docs>
-function onDocument(event, eventFn) {
-    throw new Error('IMPLEMENT: onDocument' + eventFn);
+function useOnDocument(event, eventQrl) {
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventQrl);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#onWindow">
+// <docs markdown="../readme.md#useOnWindow">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#onWindow instead)
+// (edit ../readme.md#useOnWindow instead)
 /**
  * Register a listener on `window`.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
- * See: `on`, `onWindow`, `onDocument`.
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @public
- */
-// </docs>
-function onWindow(event, eventFn) {
-    throw new Error('IMPLEMENT: onWindow' + eventFn);
-}
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useStyles instead)
-/**
- * Refer to component styles.
+ * ```tsx
+ * function useAnalytics() {
+ *   useOnWindow(
+ *     'popstate',
+ *     $(() => {
+ *       console.log('navigation happened');
+ *       // report to analytics
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useAnalytics();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
  *
  * @alpha
  */
 // </docs>
-function useStyles(styles) {
+function useOnWindow(event, eventFn) {
+    const el = useHostElement();
+    const ctx = getContext(el);
+    qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
+}
+// <docs markdown="../readme.md#useStyles">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStyles instead)
+/**
+ * A lazy-loadable reference to a component's styles.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useScopedStyles`.
+ *
+ * @public
+ */
+// </docs>
+function useStylesQrl(styles) {
     _useStyles(styles, false);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useStyles">
+// <docs markdown="../readme.md#useStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useStyles instead)
+// (edit ../readme.md#useStyles instead)
 /**
- * Refer to component styles.
+ * A lazy-loadable reference to a component's styles.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useScopedStyles`.
+ *
+ * @public
+ */
+// </docs>
+const useStyles$ = implicit$FirstArg(useStylesQrl);
+// <docs markdown="../readme.md#useScopedStyles">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useScopedStyles instead)
+/**
+ * @see `useStyles`.
  *
  * @alpha
  */
 // </docs>
-const useStyles$ = implicit$FirstArg(useStyles);
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
-/**
- * @alpha
- */
-// </docs>
-function useScopedStyles(styles) {
+function useScopedStylesQrl(styles) {
     _useStyles(styles, true);
 }
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#useScopedStyles">
+// <docs markdown="../readme.md#useScopedStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#useScopedStyles instead)
+// (edit ../readme.md#useScopedStyles instead)
 /**
+ * @see `useStyles`.
+ *
  * @alpha
  */
 // </docs>
-const useScopedStyles$ = implicit$FirstArg(useScopedStyles);
-/**
- * @public
- */
-function component(onMount, options = {}) {
-    var _a;
-    const tagName = (_a = options.tagName) !== null && _a !== void 0 ? _a : 'div';
-    // Return a QComponent Factory function.
-    return function QComponent(props, key) {
-        const onRenderFactory = async (hostElement) => {
-            // Turn function into QRL
-            const onMountQrl = toQrlOrError(onMount);
-            const onMountFn = await resolveQrl(hostElement, onMountQrl);
-            const ctx = getContext(hostElement);
-            const props = getProps(ctx);
-            const invokeCtx = newInvokeContext(hostElement, hostElement);
-            return useInvoke(invokeCtx, onMountFn, props);
-        };
-        onRenderFactory.__brand__ = 'QRLFactory';
-        return jsx(tagName, Object.assign({ [OnRenderProp]: onRenderFactory }, props), key);
-    };
-}
-// <docs markdown="https://hackmd.io/c_nNpiLZSYugTU0c5JATJA#component">
+const useScopedStyles$ = implicit$FirstArg(useScopedStylesQrl);
+// <docs markdown="../readme.md#component">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2Fc_nNpiLZSYugTU0c5JATJA%3Fboth#component instead)
+// (edit ../readme.md#component instead)
 /**
  * Declare a Qwik component that can be used to create UI.
  *
- * Use `component` (and `component$`) to declare a Qwik component. A Qwik component is a special
- * kind of component that allows the Qwik framework to lazy load and execute the component
- * independently of other Qwik components as well as lazy load the component's life-cycle hooks
- * and event handlers.
+ * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+ * that allows the Qwik framework to lazy load and execute the component independently of other
+ * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
  *
  * Side note: You can also declare regular (standard JSX) components that will have standard
  * synchronous behavior.
@@ -2852,299 +4178,129 @@ function component(onMount, options = {}) {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * - Component `onMount` method, which needs to return an
- * - `onRender` closure which constructs the component's JSX.
- *
  * ### Example:
  *
  * An example showing how to create a counter component:
  *
- * ```typescript
- * export const Counter = component$((props: { value?: number; step?: number }) => {
- *   const state = useStore({ count: props.value || 0 });
- *   return $(() => (
+ * ```tsx
+ * export interface CounterProps {
+ *   initialValue?: number;
+ *   step?: number;
+ * }
+ * export const Counter = component$((props: CounterProps) => {
+ *   const state = useStore({ count: props.initialValue || 0 });
+ *   return (
  *     <div>
  *       <span>{state.count}</span>
- *       <button on$:click={() => (state.count += props.step || 1)}>+</button>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
  *     </div>
- *   ));
+ *   );
  * });
  * ```
  *
  * - `component$` is how a component gets declared.
  * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
  * - `{ count: number }` declares the private (state) interface of the component.
- * - `onMount` closure: is used to create the data store (see: `useStore`);
- * - `$`: mark which parts of the component will be lazy-loaded. (see `$` for details.)
  *
  * The above can then be used like so:
  *
- * ```typescript
+ * ```tsx
  * export const OtherComponent = component$(() => {
- *   return $(() => <Counter value={100} />);
+ *   return <Counter initialValue={100} />;
  * });
  * ```
  *
- * See also: `component`, `onUnmount`, `onHydrate`, `onDehydrate`, `onHalt`, `onResume`, `on`,
- * `onDocument`, `onWindow`, `useStyles`, `useScopedStyles`
+ * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+ * `useOnWindow`, `useStyles`, `useScopedStyles`
  *
- * @param onMount - Initialization closure used when the component is first created.
- * @param tagName - Optional components options. It can be used to set a custom tag-name to be
- * used for the component's host element.
+ * @public
+ */
+// </docs>
+function componentQrl(onRenderQrl, options = {}) {
+    const tagName = options.tagName ?? 'div';
+    // Return a QComponent Factory function.
+    return function QSimpleComponent(props, key) {
+        const finalKey = onRenderQrl.symbol + ':' + (key ? key : '');
+        return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
+    };
+}
+// <docs markdown="../readme.md#component">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#component instead)
+/**
+ * Declare a Qwik component that can be used to create UI.
+ *
+ * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
+ * that allows the Qwik framework to lazy load and execute the component independently of other
+ * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+ *
+ * Side note: You can also declare regular (standard JSX) components that will have standard
+ * synchronous behavior.
+ *
+ * Qwik component is a facade that describes how the component should be used without forcing the
+ * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
+ *
+ * ### Example:
+ *
+ * An example showing how to create a counter component:
+ *
+ * ```tsx
+ * export interface CounterProps {
+ *   initialValue?: number;
+ *   step?: number;
+ * }
+ * export const Counter = component$((props: CounterProps) => {
+ *   const state = useStore({ count: props.initialValue || 0 });
+ *   return (
+ *     <div>
+ *       <span>{state.count}</span>
+ *       <button onClick$={() => (state.count += props.step || 1)}>+</button>
+ *     </div>
+ *   );
+ * });
+ * ```
+ *
+ * - `component$` is how a component gets declared.
+ * - `{ value?: number; step?: number }` declares the public (props) interface of the component.
+ * - `{ count: number }` declares the private (state) interface of the component.
+ *
+ * The above can then be used like so:
+ *
+ * ```tsx
+ * export const OtherComponent = component$(() => {
+ *   return <Counter initialValue={100} />;
+ * });
+ * ```
+ *
+ * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
+ * `useOnWindow`, `useStyles`, `useScopedStyles`
  *
  * @public
  */
 // </docs>
 function component$(onMount, options) {
-    return component($(onMount), options);
-}
-function resolveQrl(hostElement, onMountQrl) {
-    return onMountQrl.symbolRef
-        ? Promise.resolve(onMountQrl.symbolRef)
-        : Promise.resolve(null).then(() => {
-            return qrlImport(hostElement, onMountQrl);
-        });
+    return componentQrl($(onMount), options);
 }
 function _useStyles(styles, scoped) {
+    const [style, setStyle] = useSequentialScope();
+    if (style === true) {
+        return;
+    }
+    setStyle(true);
     const styleQrl = toQrlOrError(styles);
     const styleId = styleKey(styleQrl);
     const hostElement = useHostElement();
     if (scoped) {
         hostElement.setAttribute(ComponentScopedStyles, styleId);
     }
-    useWaitOn(qrlImport(hostElement, styleQrl).then((styleText) => {
-        const document = getDocument(hostElement);
-        const head = document.querySelector('head');
-        if (head && !head.querySelector(`style[q\\:style="${styleId}"]`)) {
-            const style = document.createElement('style');
-            style.setAttribute('q:style', styleId);
-            style.textContent = scoped ? styleText.replace(/�/g, styleId) : styleText;
-            head.appendChild(style);
-        }
+    useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
+        const task = {
+            type: 'style',
+            styleId,
+            content: scoped ? styleText.replace(/�/g, styleId) : styleText,
+        };
+        return task;
     }));
-}
-
-function _bubble(eventType, payload) {
-    let node = useHostElement();
-    payload = Object.assign({ type: eventType }, payload);
-    const eventName = 'on:' + eventType;
-    while (node) {
-        const ctx = getContext(node);
-        const listener = getEvent(ctx, eventName);
-        const hostElement = node.closest(OnRenderSelector);
-        listener && useInvoke(newInvokeContext(hostElement, node, payload), listener);
-        node = node.parentElement;
-    }
-}
-
-/**
- * @public
- */
-function bubble(eventType, payload) {
-    return _bubble(eventType, payload || {});
-}
-
-//TODO(misko): Add public DOCS.
-//TODO(misko): Rename to dehydrate
-/**
- * @public
- */
-function dehydrate(document) {
-    QStore_dehydrate(document);
-}
-
-function useProps() {
-    const ctx = getInvokeContext();
-    let props = ctx.props;
-    if (!props) {
-        props = ctx.props = getProps(getContext(useHostElement()));
-    }
-    return props;
-}
-
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#onWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button on$:click={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-function onWatch(watchFn) {
-    registerOnWatch(useHostElement(), useProps(), watchFn);
-}
-// <docs markdown="https://hackmd.io/_Kl9br9tT8OB-1Dv8uR4Kg#onWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2F_Kl9br9tT8OB-1Dv8uR4Kg%3Fboth#onWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `onWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
- *
- * See: `Observer`
- *
- * @public
- *
- * ## Example
- *
- * The `onWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```typescript
- * export const MyComp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   onWatch$((obs) => {
- *     store.doubleCount = 2 * obs(store).count;
- *   });
- *   return $(() => (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button on$:click={() => store.count++}>+</button>
- *     </div>
- *   ));
- * });
- * ```
- *
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const onWatch$ = implicit$FirstArg(onWatch);
-
-/**
- * Use to render asynchronous (`Promise`) values.
- *
- * A `Promise` does not allow a synchronous examination of its state. For this reason
- * `<Async>` provides a mechanism to render pending, resolved and error state of a `Promise`.
- * `<Async>` provides that mechanism by registering a `then` method with the `Promise` and
- * providing callbacks hooks for `pending`, `resolved` and `rejected` state of the promise.
- *
- * Additionally, `<Async>` automatically re-renders the portion of the view when the status
- * of the `Promise` changes.
- *
- * `<Async>` provides three callbacks:
- * - `onPending`: invoked initially to provide a way for the template to provide output while
- *   waiting for the `promise` to resolve.
- * - `onResolved`: invoked when the `promise` is `resolved` allowing the template to generate
- *   output using the `resolved` value.
- * - `onError`: invoked when the `promise` is `rejected` allowing the template to generate
- *   error output describing the problem.
- *
- * The `<Async>` can be used in two ways, which are semantically equivalent and are provided
- * based on the developer needs/preferences.
- *
- * ### Using multiple callbacks
- *
- * ```typescript
- * <Async
- *   resolve={Promise.resolve('some value')}
- *   onPending={() => <span>loading...</span>}
- *   onResolved={(value) => <span>{value}</span>}
- *   onError={(rejection) => <pre>{rejection}</pre>}
- * />
- * ```
- *
- * ### Using single callbacks
- *
- * ```typescript
- * <Async resolve={Promise.resolve('some value')}>
- *   {(response) => {
- *     if (response.isPending) return <span>loading...</span>;
- *     if (response.isResolved) return <span>{response.value}</span>;
- *     if (response.isRejected) return <pre>{response.rejection}</pre>;
- *   }}
- * </Async>
- * ```
- *
- * @param onPending - invoked initially to provide a way for the template to provide output while
- *   waiting for the `promise` to resolve.
- * @param onResolved - invoked when the `promise` is `resolved` allowing the template to generate
- *   output using the `resolved` value.
- * @param onError - invoked when the `promise` is `rejected` allowing the template to generate
- *   error output describing the problem.
- * @param children -  a single callback function for `onPending`, `onResolved` and `onError`.
- *   (Use either `children` or `onPending`, `onResolved` and `onError`, but not both.)
- *   See "Using multiple callbacks" vs "Using single callbacks" above.
- *
- * @public
- */
-function Async(props) {
-    // TODO(misko): implement onPending/onResolved/onError
-    if (!('children' in props)) {
-        throw new Error('IMPLEMENT');
-    }
-    const children = [props.children].flat()[0];
-    const renderFn = typeof children == 'function' ? children : null;
-    const promiseValue = {
-        isPending: true,
-        isResolved: false,
-        value: undefined,
-        isRejected: false,
-        rejection: undefined,
-    };
-    let pending;
-    const jsxPromise = new Promise((resolve, reject) => {
-        pending = renderFn && renderFn(promiseValue);
-        Promise.resolve(props.resolve).then((value) => {
-            promiseValue.isPending = false;
-            promiseValue.isResolved = true;
-            promiseValue.value = value;
-            return resolve(renderFn && renderFn(promiseValue));
-        }, (error) => {
-            promiseValue.isPending = false;
-            promiseValue.isRejected = true;
-            promiseValue.rejection = error;
-            return reject(renderFn && renderFn(promiseValue));
-        });
-    });
-    jsxPromise.whilePending = pending;
-    return jsxPromise;
 }
 
 /* eslint-disable */
@@ -3187,6 +4343,12 @@ const Slot = (props) => {
 };
 
 /**
+ * QWIK_VERSION
+ * @public
+ */
+const version = "0.0.20-8";
+
+/**
  * Render JSX.
  *
  * Use this method to render JSX. This function does reconciling which means
@@ -3196,159 +4358,140 @@ const Slot = (props) => {
  * @param parent - Element which will act as a parent to `jsxNode`. When
  *     possible the rendering will try to reuse existing nodes.
  * @param jsxNode - JSX to render
- * @public
+ * @alpha
  */
-function render(parent, jsxNode) {
+async function render(parent, jsxNode) {
     // If input is not JSX, convert it
     if (!isJSXNode(jsxNode)) {
         jsxNode = jsx(jsxNode, null);
     }
-    const doc = isDocument(parent) ? parent : getDocument(parent);
-    const elm = parent;
-    const stylesParent = isDocument(parent) ? parent.head : parent.parentElement;
+    const doc = getDocument(parent);
+    const containerEl = getElement(parent);
+    if (qDev && containerEl.hasAttribute('q:container')) {
+        logError('You can render over a existing q:container. Skipping render().');
+        return;
+    }
+    injectQContainer(containerEl);
     const ctx = {
-        operations: [],
         doc,
-        component: undefined,
+        globalState: getRenderingState(containerEl),
         hostElements: new Set(),
-        globalState: getRenderingState(doc),
-        roots: [elm],
+        operations: [],
+        roots: [parent],
+        components: [],
+        containerEl,
         perf: {
             visited: 0,
             timing: [],
         },
     };
-    return then(visitJsxNode(ctx, elm, processNode(jsxNode), false), () => {
-        executeContext(ctx);
-        if (stylesParent) {
-            injectQwikSlotCSS(stylesParent);
+    await visitJsxNode(ctx, parent, processNode(jsxNode), false);
+    executeContext(ctx);
+    if (!qTest) {
+        injectQwikSlotCSS(parent);
+    }
+    if (qDev) {
+        appendQwikDevTools(containerEl);
+        if (typeof window !== 'undefined' && window.document != null) {
+            printRenderStats(ctx);
         }
-        if (qDev) {
-            if (typeof window !== 'undefined' && window.document != null) {
-                printRenderStats(ctx);
+    }
+    const promises = [];
+    ctx.hostElements.forEach((host) => {
+        const elCtx = getContext(host);
+        elCtx.refMap.array.filter(isWatchDescriptor).forEach((watch) => {
+            if (watch.f & WatchFlags.IsDirty) {
+                promises.push(runWatch(watch));
             }
-        }
-        return ctx;
+        });
     });
+    await Promise.all(promises);
+    return ctx;
 }
-function injectQwikSlotCSS(parent) {
-    const style = parent.ownerDocument.createElement('style');
+function injectQwikSlotCSS(docOrElm) {
+    const doc = getDocument(docOrElm);
+    const element = isDocument(docOrElm) ? docOrElm.head : docOrElm;
+    const style = doc.createElement('style');
     style.setAttribute('id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
-    parent.insertBefore(style, parent.firstChild);
+    element.insertBefore(style, element.firstChild);
+}
+function getElement(docOrElm) {
+    return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
+}
+function injectQContainer(containerEl) {
+    containerEl.setAttribute('q:version', version || '');
+    containerEl.setAttribute(QContainerAttr, 'resumed');
 }
 
-/**
- * @public
- */
-function useDocument() {
-    return getDocument(useHostElement());
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useEvent">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useEvent instead)
-/**
- * Retrieves the current event which triggered the action.
- *
- * NOTE: The `useEvent` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useEvent(expectEventType) {
-    const event = getInvokeContext().event;
-    expectEventType && assertEqual(event.type, expectEventType);
-    return event;
-}
-
-function useURL() {
-    const url = getInvokeContext().url;
-    if (!url) {
-        // TODO(misko): centralize
-        throw new Error('Q-ERROR: no URL is associated with the execution context');
-    }
-    return url;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useLexicalScope">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useLexicalScope instead)
-/**
- * Used by the Qwik Optimizer to restore the lexical scoped variables.
- *
- * This method should not be present in the application source code.
- *
- * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * @public
- */
-// </docs>
-function useLexicalScope() {
-    var _a;
-    const context = getInvokeContext();
-    const qrl = (_a = context.qrl) !== null && _a !== void 0 ? _a : parseQRL(decodeURIComponent(String(useURL())));
-    if (qrl.captureRef == null) {
-        const el = context.element;
-        const ctx = getContext(el);
-        assertDefined(qrl.capture);
-        qrl.captureRef = qrl.capture.map((idx) => qInflate(idx, ctx));
-    }
-    return qrl.captureRef;
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useStore">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useStore instead)
-/**
- * Creates a object that Qwik can track across serializations.
- *
- * Use `useStore` to create state for your application. The return object is a proxy which has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ## Example
- *
- * Example showing how `useStore` is used in Counter example to keep track of count.
- *
- * ```typescript
- * export const Counter = component$(() => {
- *   const store = useStore({ count: 0 });
- *   return $(() => <button on$:click={() => store.count++}>{store.count}</button>);
- * });
- * ```
- *
- * @public
- */
-// </docs>
-function useStore(initialState) {
-    return qObject(initialState, getProxyMap(useDocument()));
-}
-
-// <docs markdown="https://hackmd.io/lQ8v7fyhR-WD3b-2aRUpyw#useTransient">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit https://hackmd.io/@qwik-docs/BkxpSz80Y/%2FlQ8v7fyhR-WD3b-2aRUpyw%3Fboth#useTransient instead)
-/**
- * @public
- */
-// </docs>
-function useTransient(obj, factory, ...args) {
-    const existing = getTransient(obj, factory);
-    return existing || setTransient(obj, factory, factory.apply(obj, args));
-}
-
-/**
- * @license
- * Copyright Builder.io, Inc. All Rights Reserved.
- *
- * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
- */
 /**
  * @alpha
  */
-const version = "0.0.18-0-dev20220311014644";
+function createContext(name) {
+    return Object.freeze({
+        id: fromCamelToKebabCase(name),
+    });
+}
+/**
+ * @alpha
+ */
+function useContextProvider(context, newValue) {
+    const [value, setValue] = useSequentialScope();
+    if (!value) {
+        const invokeContext = getInvokeContext();
+        const hostElement = invokeContext.hostElement;
+        const renderCtx = invokeContext.renderCtx;
+        const ctx = getContext(hostElement);
+        let contexts = ctx.contexts;
+        if (!contexts) {
+            ctx.contexts = contexts = new Map();
+        }
+        newValue = unwrapSubscriber(newValue);
+        contexts.set(context.id, newValue);
+        const serializedContexts = [];
+        contexts.forEach((value, key) => {
+            serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
+        });
+        setAttribute(renderCtx, hostElement, QCtxAttr, serializedContexts.join(' '));
+        setValue(newValue);
+    }
+}
+/**
+ * @alpha
+ */
+function useContext(context) {
+    const value = _useContext(context);
+    return wrapSubscriber(value, useHostElement());
+}
+function _useContext(context) {
+    const [value, setValue] = useSequentialScope();
+    if (!value) {
+        const invokeContext = getInvokeContext();
+        let hostElement = invokeContext.hostElement;
+        const components = invokeContext.renderCtx.components;
+        for (let i = components.length - 1; i >= 0; i--) {
+            hostElement = components[i].hostElement;
+            const ctx = getContext(components[i].hostElement);
+            if (ctx.contexts) {
+                const found = ctx.contexts.get(context.id);
+                if (found) {
+                    setValue(found);
+                    return found;
+                }
+            }
+        }
+        const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}="]`);
+        if (foundEl) {
+            const value = getContext(foundEl).contexts.get(context.id);
+            if (value) {
+                setValue(value);
+                return value;
+            }
+        }
+        throw new Error(`not found state for useContext: ${context.id}`);
+    }
+    return value;
+}
 
-export { $, Async, Fragment, Host, SkipRerender, Slot, bubble, component, component$, dehydrate, getPlatform, h, implicit$FirstArg, jsx, jsx as jsxDEV, jsx as jsxs, notifyRender, on, onDehydrate, onDehydrate$, onDocument, onHydrate, onHydrate$, onResume, onResume$, onUnmount, onUnmount$, onWatch, onWatch$, onWindow, qrl, qrlImport, render, setPlatform, useDocument, useEvent, useHostElement, useLexicalScope, useScopedStyles, useScopedStyles$, useStore, useStyles, useStyles$, useTransient, version };
+export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map
