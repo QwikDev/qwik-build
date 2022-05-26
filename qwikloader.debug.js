@@ -77,14 +77,6 @@
                         }
                     }));
                     doc.qO = observer;
-                    new MutationObserver((mutations => {
-                        for (const mutation2 of mutations) {
-                            observer.observe(mutation2.target);
-                        }
-                    })).observe(document.documentElement, {
-                        attributeFilter: [ "on:qvisible" ],
-                        subtree: !0
-                    });
                     doc.querySelectorAll("[on\\:qvisible]").forEach((el => observer.observe(el)));
                 }
             }

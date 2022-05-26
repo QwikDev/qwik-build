@@ -367,9 +367,9 @@ export declare interface RenderToStringOptions extends SerializeDocumentOptions 
      */
     qwikLoader?: {
         events?: string[];
-        include?: boolean;
+        include?: boolean | 'body' | 'head';
     };
-    prefetchStrategy?: PrefetchStrategy;
+    prefetchStrategy?: PrefetchStrategy | null;
     /**
      * When set, the app is serialized into a fragment. And the returned html is not a complete document.
      * Defaults to `undefined`
