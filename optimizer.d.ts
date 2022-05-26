@@ -273,6 +273,11 @@ export declare interface QwikRollupPluginOptions {
      */
     manifestInput?: QwikManifest;
     optimizerOptions?: OptimizerOptions;
+    /**
+     * Hook that's called after the build and provides all of the transformed
+     * modules that were used before bundling.
+     */
+    transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
 }
 
 /**
@@ -364,6 +369,11 @@ export declare interface QwikVitePluginOptions {
         manifestInput?: QwikManifest;
     };
     optimizerOptions?: OptimizerOptions;
+    /**
+     * Hook that's called after the build and provides all of the transformed
+     * modules that were used before bundling.
+     */
+    transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
 }
 
 /**

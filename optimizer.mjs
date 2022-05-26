@@ -812,9 +812,9 @@ function createPlugin(optimizerOptions = {}) {
     entryStrategy: null,
     srcDir: null,
     srcInputs: null,
-    transformedModuleOutput: null,
     manifestInput: null,
-    manifestOutput: null
+    manifestOutput: null,
+    transformedModuleOutput: null
   };
   const init = async () => {
     internalOptimizer || (internalOptimizer = await createOptimizer(optimizerOptions));
@@ -877,9 +877,10 @@ function createPlugin(optimizerOptions = {}) {
     Array.isArray(updatedOpts.input) ? opts.input = updatedOpts.input : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : opts.input = [ path.resolve(srcDir, "components", "app", "app.tsx") ];
     opts.input = opts.input.map((input => normalizePath(path.resolve(opts.rootDir, input))));
     "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : "ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR));
-    "function" === typeof updatedOpts.manifestOutput ? opts.manifestOutput = updatedOpts.manifestOutput : opts.manifestOutput = null;
+    "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
     const clientManifest = getValidManifest(updatedOpts.manifestInput);
-    opts.manifestInput = clientManifest || null;
+    clientManifest && (opts.manifestInput = clientManifest);
+    "function" === typeof updatedOpts.transformedModuleOutput && (opts.transformedModuleOutput = updatedOpts.transformedModuleOutput);
     return {
       ...opts
     };
@@ -1096,13 +1097,7 @@ function createPlugin(optimizerOptions = {}) {
     };
   };
   const getOptions = () => opts;
-  const getTransformedOutputs = () => {
-    const to = {};
-    for (const [v, id2] of transformedOutputs.values()) {
-      to[id2] = v;
-    }
-    return to;
-  };
+  const getTransformedOutputs = () => Array.from(transformedOutputs.values()).map((t => t[0]));
   const log = (...str) => {
     opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
   };
@@ -1232,7 +1227,8 @@ function qwikRollup(qwikRollupOpts = {}) {
         srcInputs: qwikRollupOpts.srcInputs,
         input: inputOpts.input,
         manifestOutput: qwikRollupOpts.manifestOutput,
-        manifestInput: qwikRollupOpts.manifestInput
+        manifestInput: qwikRollupOpts.manifestInput,
+        transformedModuleOutput: qwikRollupOpts.transformedModuleOutput
       };
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       inputOpts.input || (inputOpts.input = opts.input);
@@ -1271,7 +1267,6 @@ function qwikRollup(qwikRollupOpts = {}) {
     },
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
-      qwikPlugin.getPath();
       if ("client" === opts.target) {
         const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
         for (const fileName in rollupBundle) {
@@ -1284,22 +1279,21 @@ function qwikRollup(qwikRollupOpts = {}) {
             size: b.code.length
           });
         }
+        const optimizer = qwikPlugin.getOptimizer();
         const manifest = await outputAnalyzer.generateManifest();
         manifest.platform = {
           ...versions,
-          rollup: ""
+          rollup: "",
+          env: optimizer.sys.env,
+          os: optimizer.sys.os
         };
-        if ("undefined" !== typeof process && process.versions) {
-          manifest.platform.node = process.versions.node;
-          manifest.platform.os = process.platform;
-        }
         "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+        "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         this.emitFile({
           type: "asset",
           fileName: Q_MANIFEST_FILENAME,
           source: JSON.stringify(manifest, null, 2)
         });
-        "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
       }
     }
   };
@@ -1363,7 +1357,8 @@ function qwikVite(qwikViteOpts = {}) {
     name: "vite-plugin-qwik",
     enforce: "pre",
     api: {
-      getOptions: qwikPlugin.getOptions
+      getOptimizer: () => qwikPlugin.getOptimizer(),
+      getOptions: () => qwikPlugin.getOptions()
     },
     async config(viteConfig, viteEnv) {
       var _a, _b, _c, _d, _e, _f, _g, _h, _i;
@@ -1385,7 +1380,8 @@ function qwikVite(qwikViteOpts = {}) {
         buildMode: buildMode,
         debug: qwikViteOpts.debug,
         entryStrategy: qwikViteOpts.entryStrategy,
-        rootDir: viteConfig.root
+        rootDir: viteConfig.root,
+        transformedModuleOutput: qwikViteOpts.transformedModuleOutput
       };
       if ("ssr" === target) {
         "string" === typeof (null == (_b = viteConfig.build) ? void 0 : _b.ssr) ? pluginOpts.input = viteConfig.build.ssr : pluginOpts.input = null == (_c = qwikViteOpts.ssr) ? void 0 : _c.input;
@@ -1494,25 +1490,26 @@ function qwikVite(qwikViteOpts = {}) {
     },
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
-      const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-      for (const fileName in rollupBundle) {
-        const b = rollupBundle[fileName];
-        "chunk" === b.type && outputAnalyzer.addBundle({
-          fileName: fileName,
-          modules: b.modules,
-          imports: b.imports,
-          dynamicImports: b.dynamicImports,
-          size: b.code.length
-        });
-      }
-      const manifest = await outputAnalyzer.generateManifest();
-      manifest.platform = {
-        ...versions,
-        node: process.versions.node,
-        os: process.platform,
-        vite: ""
-      };
       if ("client" === opts.target) {
+        const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+        for (const fileName in rollupBundle) {
+          const b = rollupBundle[fileName];
+          "chunk" === b.type && outputAnalyzer.addBundle({
+            fileName: fileName,
+            modules: b.modules,
+            imports: b.imports,
+            dynamicImports: b.dynamicImports,
+            size: b.code.length
+          });
+        }
+        const optimizer = qwikPlugin.getOptimizer();
+        const manifest = await outputAnalyzer.generateManifest();
+        manifest.platform = {
+          ...versions,
+          vite: "",
+          env: optimizer.sys.env,
+          os: optimizer.sys.os
+        };
         const clientManifestStr = JSON.stringify(manifest, null, 2);
         this.emitFile({
           type: "asset",
@@ -1520,6 +1517,7 @@ function qwikVite(qwikViteOpts = {}) {
           source: clientManifestStr
         });
         "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+        "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         const sys = qwikPlugin.getSys();
         if (tmpClientManifestPath && "node" === sys.env) {
           const fs = await sys.dynamicImport("fs");
