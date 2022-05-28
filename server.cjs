@@ -117,7 +117,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.21",
+  qwik: "0.0.21-0",
   qwikDom: "2.1.18"
 };
 
@@ -688,7 +688,7 @@ function hashCode(text, hash = 0) {
 
 // packages/qwik/src/core/component/qrl-styles.ts
 function styleKey(qStyles) {
-  return qStyles && String(hashCode(qStyles.symbol));
+  return qStyles && String(hashCode(qStyles.getCanonicalSymbol()));
 }
 function styleHost(styleId) {
   return styleId && ComponentStylesPrefixHost + styleId;
@@ -3011,6 +3011,55 @@ var isSameQRL = (a, b) => {
 };
 var QRLInternal2 = QRL4;
 
+// packages/qwik/src/server/platform.ts
+var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
+function createPlatform2(document2, opts, mapper) {
+  if (!document2 || document2.nodeType !== 9) {
+    throw new Error(`Invalid Document implementation`);
+  }
+  const doc = document2;
+  if (opts == null ? void 0 : opts.url) {
+    doc.location.href = normalizeUrl(opts.url).href;
+  }
+  const serverPlatform = {
+    isServer: true,
+    async importSymbol(_element, qrl, symbolName) {
+      let [modulePath] = String(qrl).split("#");
+      if (!modulePath.endsWith(".js")) {
+        modulePath += ".js";
+      }
+      const module2 = require(modulePath);
+      const symbol = module2[symbolName];
+      if (!symbol) {
+        throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${modulePath}'.`);
+      }
+      return symbol;
+    },
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        _setImmediate(() => {
+          resolve(fn());
+        });
+      });
+    },
+    nextTick: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
+        });
+      });
+    },
+    chunkForSymbol(symbolName) {
+      return mapper[getCanonicalSymbol(symbolName)];
+    }
+  };
+  return serverPlatform;
+}
+async function setServerPlatform(document2, opts, mapper) {
+  const platform = createPlatform2(document2, opts, mapper);
+  (0, import_qwik.setPlatform)(document2, platform);
+}
+
 // packages/qwik/src/optimizer/src/manifest.ts
 var EVENT_PRIORITY = [
   "onClick$",
@@ -3071,55 +3120,6 @@ function getValidManifest(manifest) {
     return manifest;
   }
   return void 0;
-}
-
-// packages/qwik/src/server/platform.ts
-var _setImmediate = typeof setImmediate === "function" ? setImmediate : setTimeout;
-function createPlatform2(document2, opts, mapper) {
-  if (!document2 || document2.nodeType !== 9) {
-    throw new Error(`Invalid Document implementation`);
-  }
-  const doc = document2;
-  if (opts == null ? void 0 : opts.url) {
-    doc.location.href = normalizeUrl(opts.url).href;
-  }
-  const serverPlatform = {
-    isServer: true,
-    async importSymbol(_element, qrl, symbolName) {
-      let [modulePath] = String(qrl).split("#");
-      if (!modulePath.endsWith(".js")) {
-        modulePath += ".js";
-      }
-      const module2 = require(modulePath);
-      const symbol = module2[symbolName];
-      if (!symbol) {
-        throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${modulePath}'.`);
-      }
-      return symbol;
-    },
-    raf: (fn) => {
-      return new Promise((resolve) => {
-        _setImmediate(() => {
-          resolve(fn());
-        });
-      });
-    },
-    nextTick: (fn) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(fn());
-        });
-      });
-    },
-    chunkForSymbol(symbolName) {
-      return mapper[getCanonicalSymbol(symbolName)];
-    }
-  };
-  return serverPlatform;
-}
-async function setServerPlatform(document2, opts, mapper) {
-  const platform = createPlatform2(document2, opts, mapper);
-  (0, import_qwik.setPlatform)(document2, platform);
 }
 
 // packages/qwik/src/server/serialize.ts
@@ -3200,7 +3200,6 @@ function linkHtmlImplementation(doc, prefetchResources, prefetchImpl) {
   }
 }
 function linkJsImplementation(doc, prefetchResources, prefetchImpl) {
-  const urls = flattenPrefetchResources(prefetchResources);
   const rel = prefetchImpl === "link-modulepreload" ? "modulepreload" : prefetchImpl === "link-preload" ? "preload" : "prefetch";
   let s = `let supportsLinkRel = true;`;
   s += `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;

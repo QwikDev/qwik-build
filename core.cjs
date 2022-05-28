@@ -901,6 +901,9 @@
     function useRef(current) {
         return useStore({ current });
     }
+    /**
+     * @alpha
+     */
     function useSequentialScope() {
         const ctx = getInvokeContext();
         assertEqual(ctx.event, RenderEvent);
@@ -2328,7 +2331,7 @@
     }
 
     function styleKey(qStyles) {
-        return qStyles && String(hashCode(qStyles.symbol));
+        return qStyles && String(hashCode(qStyles.getCanonicalSymbol()));
     }
     function styleHost(styleId) {
         return styleId && ComponentStylesPrefixHost + styleId;
@@ -4463,7 +4466,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.21";
+    const version = "0.0.21-0";
 
     /**
      * Render JSX.
@@ -4655,6 +4658,7 @@
     exports.useResumeQrl = useResumeQrl;
     exports.useScopedStyles$ = useScopedStyles$;
     exports.useScopedStylesQrl = useScopedStylesQrl;
+    exports.useSequentialScope = useSequentialScope;
     exports.useServerMount$ = useServerMount$;
     exports.useServerMountQrl = useServerMountQrl;
     exports.useStore = useStore;

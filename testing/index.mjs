@@ -829,7 +829,7 @@ function hashCode(text, hash = 0) {
 
 // packages/qwik/src/core/component/qrl-styles.ts
 function styleKey(qStyles) {
-  return qStyles && String(hashCode(qStyles.symbol));
+  return qStyles && String(hashCode(qStyles.getCanonicalSymbol()));
 }
 function styleHost(styleId) {
   return styleId && ComponentStylesPrefixHost + styleId;

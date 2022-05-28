@@ -2622,6 +2622,11 @@ export declare const useScopedStyles$: (first: string) => void;
 export declare function useScopedStylesQrl(styles: QRL<string>): void;
 
 /**
+ * @alpha
+ */
+export declare function useSequentialScope(): [any, (prop: any) => void];
+
+/**
  * Register's a server mount hook, that runs only in server when the component is first mounted.
  *
  * ## Example
@@ -2934,7 +2939,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.21
+ * 0.0.21-0
  * @public
  */
 export declare const version: string;

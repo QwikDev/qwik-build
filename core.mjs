@@ -889,6 +889,9 @@ function useStore(initialState) {
 function useRef(current) {
     return useStore({ current });
 }
+/**
+ * @alpha
+ */
 function useSequentialScope() {
     const ctx = getInvokeContext();
     assertEqual(ctx.event, RenderEvent);
@@ -2316,7 +2319,7 @@ function hashCode(text, hash = 0) {
 }
 
 function styleKey(qStyles) {
-    return qStyles && String(hashCode(qStyles.symbol));
+    return qStyles && String(hashCode(qStyles.getCanonicalSymbol()));
 }
 function styleHost(styleId) {
     return styleId && ComponentStylesPrefixHost + styleId;
@@ -4451,7 +4454,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.21";
+const version = "0.0.21-0";
 
 /**
  * Render JSX.
@@ -4598,5 +4601,5 @@ function _useContext(context) {
     return value;
 }
 
-export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version, wrapSubscriber };
+export { $, Comment, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, noSerialize, pauseContainer, qrl, render, setPlatform, unwrapSubscriber, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useSequentialScope, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version, wrapSubscriber };
 //# sourceMappingURL=core.mjs.map
