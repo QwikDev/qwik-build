@@ -1338,6 +1338,7 @@ globalThis.qwikOptimizer = function(module) {
         return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
+        var _a;
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
@@ -1354,10 +1355,11 @@ globalThis.qwikOptimizer = function(module) {
           const optimizer = qwikPlugin.getOptimizer();
           const manifest = await outputAnalyzer.generateManifest();
           manifest.platform = __spreadProps(__spreadValues({}, versions), {
-            rollup: "",
+            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
             env: optimizer.sys.env,
             os: optimizer.sys.os
           });
+          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
           "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
           "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
           this.emitFile({
@@ -1554,6 +1556,7 @@ globalThis.qwikOptimizer = function(module) {
         return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
+        var _a;
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
@@ -1571,9 +1574,11 @@ globalThis.qwikOptimizer = function(module) {
           const manifest = await outputAnalyzer.generateManifest();
           manifest.platform = __spreadProps(__spreadValues({}, versions), {
             vite: "",
+            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
             env: optimizer.sys.env,
             os: optimizer.sys.os
           });
+          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
           const clientManifestStr = JSON.stringify(manifest, null, 2);
           this.emitFile({
             type: "asset",
