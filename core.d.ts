@@ -336,14 +336,6 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @public
- */
-declare const Comment_2: FunctionComponent<{
-    text?: string;
-}>;
-export { Comment_2 as Comment }
-
-/**
  * Declare a Qwik component that can be used to create UI.
  *
  * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
@@ -437,7 +429,7 @@ export declare type ComponentChildren = ComponentChild[] | ComponentChild;
  * @alpha
  */
 export declare interface ComponentCtx {
-    hostElement: HTMLElement;
+    hostElement: Element;
     styleId: string | undefined;
     styleClass: string | undefined;
     styleHostClass: string | undefined;
@@ -1125,6 +1117,12 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     charSet?: string | undefined;
 }
 
+declare interface LocalSubscriptionManager {
+    subs: SubscriberMap;
+    notifySubs: (key?: string | undefined) => void;
+    addSub: (subscriber: Subscriber, key?: string) => void;
+}
+
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
@@ -1164,6 +1162,25 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+declare const MUTABLE: unique symbol;
+
+/**
+ * @alpha
+ */
+export declare function mutable<T>(v: T): MutableWrapper<T>;
+
+/**
+ * @public
+ */
+declare type MutableProps<PROPS extends {}> = {
+    [K in keyof PROPS]: PROPS[K] | MutableWrapper<PROPS[K]>;
+};
+
+declare interface MutableWrapper<T> {
+    [MUTABLE]: true;
+    v: T;
+}
+
 /**
  * @alpha
  */
@@ -1187,6 +1204,8 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
     wmode?: string | undefined;
 }
+
+declare type ObjToProxyMap = WeakMap<any, any>;
 
 declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
@@ -1266,12 +1285,12 @@ export declare type Props<T extends {} = {}> = Record<string, any> & T;
  *
  * @public
  */
-export declare type PropsOf<COMP extends (props: any) => JSXNode<any> | null> = COMP extends (props: infer PROPS) => JSXNode<any> | null ? NonNullable<PROPS> : never;
+export declare type PropsOf<COMP extends Component<any>> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : never;
 
 /**
  * @public
  */
-export declare type PublicProps<PROPS extends {}> = PROPS & On$Props<PROPS> & ComponentBaseProps;
+export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & On$Props<PROPS> & ComponentBaseProps;
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -1399,6 +1418,7 @@ export declare interface QRL<TYPE = any> {
     getSymbol(): string;
     getCanonicalSymbol(): string;
     resolve(container?: Element): Promise<TYPE>;
+    resolveIfNeeded(container?: Element): ValueOrPromise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
@@ -1666,7 +1686,7 @@ export declare interface RenderContext {
     hostElements: Set<Element>;
     operations: RenderOperation[];
     components: ComponentCtx[];
-    globalState: RenderingState;
+    containerState: RenderingState;
     containerEl: Element;
     perf: RenderPerf;
 }
@@ -1675,7 +1695,9 @@ export declare interface RenderContext {
  * @alpha
  */
 export declare interface RenderingState {
-    watchRunning: Set<Promise<WatchDescriptor>>;
+    proxyMap: ObjToProxyMap;
+    subsManager: SubscriptionManager;
+    platform: CorePlatform;
     watchNext: Set<WatchDescriptor>;
     watchStaging: Set<WatchDescriptor>;
     hostsNext: Set<Element>;
@@ -1757,6 +1779,16 @@ declare interface SnapshotListener {
     qrl: QRL<any>;
 }
 
+declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
+
+declare interface SnapshotMetaValue {
+    r?: string;
+    w?: string;
+    s?: string;
+    h?: string;
+    c?: string;
+}
+
 /**
  * @public
  */
@@ -1770,6 +1802,7 @@ export declare interface SnapshotResult {
  * @public
  */
 export declare interface SnapshotState {
+    ctx: SnapshotMeta;
     objs: any[];
     subs: any[];
 }
@@ -1795,6 +1828,14 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 declare type Subscriber = WatchDescriptor | Element;
+
+declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
+
+declare interface SubscriptionManager {
+    tryGetLocal(obj: any): LocalSubscriptionManager | undefined;
+    getLocal(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    clearSub: (sub: Subscriber) => void;
+}
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     class?: string | {
@@ -2624,7 +2665,7 @@ export declare function useScopedStylesQrl(styles: QRL<string>): void;
 /**
  * @alpha
  */
-export declare function useSequentialScope(): [any, (prop: any) => void];
+export declare function useSequentialScope(): [any, (prop: any) => void, number];
 
 /**
  * Register's a server mount hook, that runs only in server when the component is first mounted.
@@ -2939,7 +2980,7 @@ export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions):
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.21
+ * 0.0.22
  * @public
  */
 export declare const version: string;
@@ -2960,6 +3001,7 @@ declare interface WatchDescriptor {
     qrl: QRL<WatchFn>;
     el: Element;
     f: number;
+    i: number;
     destroy?: NoSerialize<() => void>;
     running?: NoSerialize<Promise<WatchDescriptor>>;
 }

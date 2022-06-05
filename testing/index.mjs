@@ -56,15 +56,12 @@ function newError(text) {
 // packages/qwik/src/core/util/markers.ts
 var QHostAttr = "q:host";
 var OnRenderProp = "q:renderFn";
+var QHostSelector = "[q\\:host]";
 var ComponentScopedStyles = "q:sstyle";
 var ComponentStylesPrefixHost = "\u{1F48E}";
 var ComponentStylesPrefixContent = "\u2B50\uFE0F";
 var QSlotAttr = "q:slot";
-var QObjAttr = "q:obj";
-var QSeqAttr = "q:seq";
-var QCtxAttr = "q:ctx";
 var QContainerAttr = "q:container";
-var QObjSelector = "[q\\:obj]";
 var QContainerSelector = "[q\\:container]";
 var RenderEvent = "qRender";
 var ELEMENT_ID = "q:id";
@@ -172,6 +169,14 @@ function getContainer(el) {
     el[CONTAINER] = container;
   }
   return container;
+}
+function useContainerState() {
+  const ctx = getInvokeContext();
+  const containerState = ctx.renderCtx?.containerState;
+  if (!containerState) {
+    throw new Error("Cant access containerState for existing context");
+  }
+  return containerState;
 }
 
 // packages/qwik/src/testing/platform.ts
@@ -285,20 +290,8 @@ function createDocument(opts = {}) {
 
 // packages/qwik/src/core/util/types.ts
 function isHtmlElement(node) {
-  return node ? node.nodeType === NodeType.ELEMENT_NODE : false;
+  return node ? node.nodeType === 1 : false;
 }
-var NodeType = /* @__PURE__ */ ((NodeType2) => {
-  NodeType2[NodeType2["ELEMENT_NODE"] = 1] = "ELEMENT_NODE";
-  NodeType2[NodeType2["ATTRIBUTE_NODE"] = 2] = "ATTRIBUTE_NODE";
-  NodeType2[NodeType2["TEXT_NODE"] = 3] = "TEXT_NODE";
-  NodeType2[NodeType2["CDATA_SECTION_NODE"] = 4] = "CDATA_SECTION_NODE";
-  NodeType2[NodeType2["PROCESSING_INSTRUCTION_NODE"] = 7] = "PROCESSING_INSTRUCTION_NODE";
-  NodeType2[NodeType2["COMMENT_NODE"] = 8] = "COMMENT_NODE";
-  NodeType2[NodeType2["DOCUMENT_NODE"] = 9] = "DOCUMENT_NODE";
-  NodeType2[NodeType2["DOCUMENT_TYPE_NODE"] = 10] = "DOCUMENT_TYPE_NODE";
-  NodeType2[NodeType2["DOCUMENT_FRAGMENT_NODE"] = 11] = "DOCUMENT_FRAGMENT_NODE";
-  return NodeType2;
-})(NodeType || {});
 
 // packages/qwik/src/core/error/stringify.ts
 function stringifyDebug(value) {
@@ -523,6 +516,15 @@ function wrapSubscriber(obj, subscriber) {
   }
   return obj;
 }
+function unwrapSubscriber(obj) {
+  if (obj && typeof obj === "object") {
+    const proxy = obj[QOjectOriginalProxy];
+    if (proxy) {
+      return proxy;
+    }
+  }
+  return obj;
+}
 
 // packages/qwik/src/core/import/qrl.ts
 var runtimeSymbolId = 0;
@@ -541,7 +543,7 @@ function qrlImport(element, qrl) {
     if (!element) {
       throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
     }
-    const symbol = getPlatform2(getDocument(element)).importSymbol(element, qrl_.chunk, qrl_.symbol);
+    const symbol = getPlatform2(element).importSymbol(element, qrl_.chunk, qrl_.symbol);
     return qrl_.symbolRef = then(symbol, (ref) => {
       return qrl_.symbolRef = ref;
     });
@@ -654,9 +656,12 @@ var QRL = class {
     }
     return qrlImport(this.el, this);
   }
+  resolveIfNeeded(el) {
+    return typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+  }
   invokeFn(el, currentCtx, beforeFn) {
     return (...args) => {
-      const fn = typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+      const fn = this.resolveIfNeeded(el);
       return then(fn, (fn2) => {
         if (typeof fn2 === "function") {
           const baseContext = currentCtx ?? newInvokeContext();
@@ -699,17 +704,6 @@ var isSameQRL = (a, b) => {
 };
 var QRLInternal = QRL;
 
-// packages/qwik/src/core/json/q-json.ts
-function qDeflate(obj, hostCtx) {
-  return String(hostCtx.refMap.add(obj));
-}
-function qInflate(ref, hostCtx) {
-  const int = parseInt(ref, 10);
-  const obj = hostCtx.refMap.get(int);
-  assertEqual(hostCtx.refMap.array.length > int, true);
-  return obj;
-}
-
 // packages/qwik/src/core/util/case.ts
 function fromCamelToKebabCase(text) {
   return text.replace(/([A-Z])/g, "-$1").toLowerCase();
@@ -740,7 +734,7 @@ function qPropWriteQRL(rctx, ctx, prop, value) {
     const capture = cp.capture;
     if (capture == null) {
       const captureRef = cp.captureRef;
-      cp.capture = captureRef && captureRef.length ? captureRef.map((ref) => qDeflate(ref, ctx)) : EMPTY_ARRAY;
+      cp.capture = captureRef && captureRef.length ? captureRef.map((ref) => String(ctx.refMap.add(ref))) : EMPTY_ARRAY;
     }
     for (let i = 0; i < existingListeners.length; i++) {
       const qrl = existingListeners[i];
@@ -777,7 +771,7 @@ function getDomListeners(el) {
   return listeners;
 }
 function serializeQRLs(existingQRLs, ctx) {
-  const platform = getPlatform2(getDocument(ctx.element));
+  const platform = getPlatform2(ctx.element);
   const element = ctx.element;
   const opts = {
     platform,
@@ -908,7 +902,9 @@ var renderComponent = (rctx, ctx) => {
   const hostElement = ctx.element;
   const onRenderQRL = ctx.renderQrl;
   assertDefined(onRenderQRL);
-  rctx.globalState.hostsStaging.delete(hostElement);
+  const props = ctx.props;
+  assertDefined(props);
+  rctx.containerState.hostsStaging.delete(hostElement);
   const newCtx = {
     ...rctx,
     components: [...rctx.components]
@@ -917,12 +913,10 @@ var renderComponent = (rctx, ctx) => {
   invocatinContext.subscriber = hostElement;
   invocatinContext.renderCtx = newCtx;
   const waitOn = invocatinContext.waitOn = [];
-  ctx.refMap.array.forEach((obj) => {
-    removeSub(obj, hostElement);
-  });
+  rctx.containerState.subsManager.clearSub(hostElement);
   const onRenderFn = onRenderQRL.invokeFn(rctx.containerEl, invocatinContext);
   try {
-    const renderPromise = onRenderFn(wrapSubscriber(getProps(ctx), hostElement));
+    const renderPromise = onRenderFn(props);
     return then(renderPromise, (jsxNode) => {
       rctx.hostElements.add(hostElement);
       const waitOnPromise = promiseAll(waitOn);
@@ -973,26 +967,19 @@ function isNode(value) {
   return value && typeof value.nodeType == "number";
 }
 function isDocument(value) {
-  return value && value.nodeType == 9 /* DOCUMENT_NODE */;
+  return value && value.nodeType == 9;
 }
 function isElement(value) {
-  return isNode(value) && value.nodeType == 1 /* ELEMENT_NODE */;
+  return isNode(value) && value.nodeType === 1;
 }
 
 // packages/qwik/src/core/use/use-host-element.public.ts
 function useHostElement() {
-  const element = getInvokeContext().hostElement;
+  const ctx = getInvokeContext();
+  assertEqual(ctx.event, RenderEvent);
+  const element = ctx.hostElement;
   assertDefined(element);
   return element;
-}
-
-// packages/qwik/src/core/use/use-document.public.ts
-function useDocument() {
-  const doc = getInvokeContext().doc;
-  if (!doc) {
-    throw new Error("Cant access document for existing context");
-  }
-  return doc;
 }
 
 // packages/qwik/src/core/use/use-store.public.ts
@@ -1004,29 +991,16 @@ function useSequentialScope() {
   const elementCtx = getContext(hostElement);
   ctx.seq++;
   const updateFn = (value) => {
-    elementCtx.seq[index] = elementCtx.refMap.add(value);
+    elementCtx.seq[index] = value;
   };
-  const seqIndex = elementCtx.seq[index];
-  if (typeof seqIndex === "number") {
-    return [elementCtx.refMap.get(seqIndex), updateFn];
-  }
-  return [void 0, updateFn];
-}
-
-// packages/qwik/src/core/use/use-url.public.ts
-function useURL() {
-  const url = getInvokeContext().url;
-  if (!url) {
-    throw new Error("Q-ERROR: no URL is associated with the execution context");
-  }
-  return url;
+  return [elementCtx.seq[index], updateFn, index];
 }
 
 // packages/qwik/src/core/use/use-lexical-scope.public.ts
 function useLexicalScope() {
   const context = getInvokeContext();
   const hostElement = context.hostElement;
-  const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(useURL())), hostElement);
+  const qrl = context.qrl ?? parseQRL(decodeURIComponent(String(context.url)), hostElement);
   if (qrl.captureRef == null) {
     const el = context.element;
     assertDefined(el);
@@ -1040,19 +1014,37 @@ function useLexicalScope() {
   }
   return qrl.captureRef;
 }
+function qInflate(ref, hostCtx) {
+  const int = parseInt(ref, 10);
+  const obj = hostCtx.refMap.get(int);
+  assertEqual(hostCtx.refMap.array.length > int, true);
+  return obj;
+}
+
+// packages/qwik/src/core/use/use-document.public.ts
+function useDocument() {
+  const ctx = getInvokeContext();
+  assertEqual(ctx.event, RenderEvent);
+  const doc = ctx.doc;
+  if (!doc) {
+    throw new Error("Cant access document for existing context");
+  }
+  return doc;
+}
 
 // packages/qwik/src/core/component/component.public.ts
 function useCleanupQrl(unmountFn) {
-  const [watch, setWatch] = useSequentialScope();
+  const [watch, setWatch, i] = useSequentialScope();
   if (!watch) {
     const el = useHostElement();
     const watch2 = {
       qrl: unmountFn,
       el,
-      f: 2 /* IsCleanup */
+      f: 8 /* IsCleanup */,
+      i
     };
-    setWatch(watch2);
-    getContext(el).refMap.add(watch2);
+    setWatch(true);
+    getContext(el).watches.push(watch2);
   }
 }
 var useCleanup$ = implicit$FirstArg(useCleanupQrl);
@@ -1100,29 +1092,25 @@ function _useStyles(styles, scoped) {
 }
 
 // packages/qwik/src/core/watch/watch.public.ts
-var isWatchDescriptor = (obj) => {
-  return obj && typeof obj === "object" && "qrl" in obj && "f" in obj;
-};
-var isWatchCleanup = (obj) => {
-  return isWatchDescriptor(obj) && !!(obj.f & 2 /* IsCleanup */);
-};
 function handleWatch() {
   const [watch] = useLexicalScope();
   notifyWatch(watch);
 }
 function useWatchQrl(qrl, opts) {
-  const [watch, setWatch] = useSequentialScope();
+  const [watch, setWatch, i] = useSequentialScope();
   if (!watch) {
     const el = useHostElement();
+    const containerState = useContainerState();
     const watch2 = {
       qrl,
       el,
-      f: 1 /* IsDirty */
+      f: 4 /* IsDirty */ | 2 /* IsWatch */,
+      i
     };
-    setWatch(watch2);
-    getContext(el).refMap.add(watch2);
-    useWaitOn(Promise.resolve().then(() => runWatch(watch2)));
-    const isServer = getPlatform2(useDocument()).isServer;
+    setWatch(true);
+    getContext(el).watches.push(watch2);
+    useWaitOn(Promise.resolve().then(() => runWatch(watch2, containerState)));
+    const isServer = containerState.platform.isServer;
     if (isServer) {
       useRunWatch(watch2, opts?.run);
     }
@@ -1130,16 +1118,17 @@ function useWatchQrl(qrl, opts) {
 }
 var useWatch$ = implicit$FirstArg(useWatchQrl);
 function useClientEffectQrl(qrl, opts) {
-  const [watch, setWatch] = useSequentialScope();
+  const [watch, setWatch, i] = useSequentialScope();
   if (!watch) {
     const el = useHostElement();
     const watch2 = {
       qrl,
       el,
-      f: 0
+      f: 1 /* IsEffect */,
+      i
     };
-    setWatch(watch2);
-    getContext(el).refMap.add(watch2);
+    setWatch(true);
+    getContext(el).watches.push(watch2);
     useRunWatch(watch2, opts?.run ?? "visible");
     const doc = useDocument();
     if (doc["qO"]) {
@@ -1178,34 +1167,32 @@ function useMountQrl(mountQrl) {
   }
 }
 var useMount$ = implicit$FirstArg(useMountQrl);
-function runWatch(watch) {
-  if (!(watch.f & 1 /* IsDirty */)) {
+function runWatch(watch, containerState) {
+  if (!(watch.f & 4 /* IsDirty */)) {
     logDebug("Watch is not dirty, skipping run", watch);
     return Promise.resolve(watch);
   }
-  watch.f &= ~1 /* IsDirty */;
+  watch.f &= ~4 /* IsDirty */;
   const promise = new Promise((resolve) => {
     then(watch.running, () => {
       cleanupWatch(watch);
       const el = watch.el;
-      const invokationContext = newInvokeContext(getDocument(el), el, el, "WatchEvent");
+      const doc = getDocument(el);
+      const invokationContext = newInvokeContext(doc, el, el, "WatchEvent");
+      const { subsManager } = containerState;
       const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
-        const captureRef = watch.qrl.captureRef;
-        if (Array.isArray(captureRef)) {
-          captureRef.forEach((obj) => {
-            removeSub(obj, watch);
-          });
-        }
+        subsManager.clearSub(watch);
       });
-      const tracker = (obj, prop) => {
-        obj[SetSubscriber] = watch;
+      const track = (obj, prop) => {
+        const manager = subsManager.getLocal(getProxyTarget(obj) ?? obj);
+        manager.addSub(watch, prop);
         if (prop) {
           return obj[prop];
         } else {
-          return obj[QOjectAllSymbol];
+          return obj;
         }
       };
-      return then(watchFn(tracker), (returnValue) => {
+      return then(watchFn(track), (returnValue) => {
         if (typeof returnValue === "function") {
           watch.destroy = noSerialize(returnValue);
         }
@@ -1228,8 +1215,8 @@ var cleanupWatch = (watch) => {
   }
 };
 var destroyWatch = (watch) => {
-  if (watch.f & 2 /* IsCleanup */) {
-    watch.f &= ~2 /* IsCleanup */;
+  if (watch.f & 8 /* IsCleanup */) {
+    watch.f &= ~8 /* IsCleanup */;
     const cleanup = watch.qrl.invokeFn(watch.el);
     cleanup();
   } else {
@@ -1279,7 +1266,7 @@ function resumeContainer(containerEl) {
     return;
   }
   script.remove();
-  const proxyMap = getProxyMap(doc);
+  const containerState = getContainerState(containerEl);
   const meta = JSON.parse(unescapeText(script.textContent || "{}"));
   const elements = /* @__PURE__ */ new Map();
   getNodesInScope(containerEl, hasQId).forEach((el) => {
@@ -1287,36 +1274,29 @@ function resumeContainer(containerEl) {
     elements.set(ELEMENT_ID_PREFIX + id, el);
   });
   const getObject = (id) => {
-    return getObjectImpl(id, elements, meta.objs, proxyMap);
+    return getObjectImpl(id, elements, meta.objs, containerState);
   };
-  reviveValues(meta.objs, meta.subs, getObject, proxyMap, parentJSON);
+  reviveValues(meta.objs, meta.subs, getObject, containerState, parentJSON);
   for (const obj of meta.objs) {
     reviveNestedObjects(obj, getObject);
   }
-  getNodesInScope(containerEl, hasQObj).forEach((el) => {
-    const qobj = el.getAttribute(QObjAttr);
-    if (qobj === "") {
-      return;
-    }
-    const seq = el.getAttribute(QSeqAttr);
-    const host = el.getAttribute(QHostAttr);
-    const contexts = el.getAttribute(QCtxAttr);
+  Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
+    const el = getObject(elementID);
+    assertDefined(el);
     const ctx = getContext(el);
-    qobj.split(" ").forEach((part) => {
-      if (part !== "") {
-        const obj = getObject(part);
-        ctx.refMap.add(obj);
-      } else if (qDev) {
-        logError("QObj contains empty ref");
-      }
-    });
-    ctx.seq = seq.split(" ").map((part) => strToInt(part));
-    if (host) {
-      const [props, renderQrl] = host.split(" ").map(strToInt);
-      assertDefined(props);
-      assertDefined(renderQrl);
-      ctx.props = ctx.refMap.get(props);
-      ctx.renderQrl = ctx.refMap.get(renderQrl);
+    const qobj = ctxMeta.r;
+    const seq = ctxMeta.s;
+    const host = ctxMeta.h;
+    const contexts = ctxMeta.c;
+    const watches = ctxMeta.w;
+    if (qobj) {
+      ctx.refMap.array.push(...qobj.split(" ").map((part) => getObject(part)));
+    }
+    if (seq) {
+      ctx.seq = seq.split(" ").map((part) => getObject(part));
+    }
+    if (watches) {
+      ctx.watches = watches.split(" ").map((part) => getObject(part));
     }
     if (contexts) {
       contexts.split(" ").map((part) => {
@@ -1324,34 +1304,53 @@ function resumeContainer(containerEl) {
         if (!ctx.contexts) {
           ctx.contexts = /* @__PURE__ */ new Map();
         }
-        ctx.contexts.set(key, ctx.refMap.get(strToInt(value)));
+        ctx.contexts.set(key, getObject(value));
       });
+    }
+    if (host) {
+      const [props, renderQrl] = host.split(" ");
+      assertDefined(props);
+      assertDefined(renderQrl);
+      ctx.props = createProps(getObject(props), ctx.element, containerState);
+      ctx.renderQrl = getObject(renderQrl);
     }
   });
   containerEl.setAttribute(QContainerAttr, "resumed");
   logDebug("Container resumed");
   emitEvent(containerEl, "qresume", void 0, true);
 }
+function hasContext(el) {
+  return !!tryGetContext(el);
+}
 function snapshotState(containerEl) {
   const doc = getDocument(containerEl);
-  const proxyMap = getProxyMap(doc);
-  const platform = getPlatform2(doc);
+  const { subsManager, proxyMap, platform } = getContainerState(containerEl);
   const elementToIndex = /* @__PURE__ */ new Map();
   const collector = createCollector(doc, proxyMap);
-  getNodesInScope(containerEl, hasQObj).forEach((node) => {
-    const ctx = getContext(node);
-    const hasListeners = ctx.listeners && ctx.listeners.size > 0;
-    const hasWatch = ctx.refMap.array.some(isWatchCleanup);
-    const hasContext = !!ctx.contexts;
-    if (hasListeners || hasWatch || hasContext) {
-      collectElement(node, collector);
-    }
+  const elements = getNodesInScope(containerEl, hasContext);
+  elements.forEach((node) => {
+    const ctx = tryGetContext(node);
+    collectProps(node, ctx.props, collector);
+    ctx.contexts?.forEach((ctx2) => {
+      collectValue(ctx2, collector);
+    });
+    ctx.listeners?.forEach((listeners2) => {
+      for (const l of listeners2) {
+        const captured = l.captureRef;
+        if (captured) {
+          captured.forEach((obj) => collectValue(obj, collector));
+        }
+      }
+    });
+    ctx.watches.forEach((watch) => {
+      collector.watches.push(watch);
+    });
   });
   const objs = Array.from(collector.objSet);
   function hasSubscriptions(a) {
-    const proxy = proxyMap.get(a);
-    if (proxy) {
-      return proxy[QOjectSubsSymbol].size > 0;
+    const manager = subsManager.tryGetLocal(a);
+    if (manager) {
+      return manager.subs.size > 0;
     }
     return false;
   }
@@ -1363,17 +1362,6 @@ function snapshotState(containerEl) {
   const objToId = /* @__PURE__ */ new Map();
   let count = 0;
   for (const obj of objs) {
-    if (isWatchDescriptor(obj)) {
-      destroyWatch(obj);
-      if (qDev) {
-        if (obj.f & 1 /* IsDirty */) {
-          logWarn("Serializing dirty watch. Looks like an internal error.");
-        }
-        if (!isConnected(obj)) {
-          logWarn("Serializing disconneted watch. Looks like an internal error.");
-        }
-      }
-    }
     objToId.set(obj, count);
     count++;
   }
@@ -1415,8 +1403,13 @@ function snapshotState(containerEl) {
     }
     return null;
   }
+  function mustGetObjId(obj) {
+    const id = getObjId(obj);
+    assertDefined(id);
+    return id;
+  }
   const subs = objs.map((obj) => {
-    const subs2 = proxyMap.get(obj)?.[QOjectSubsSymbol];
+    const subs2 = subsManager.tryGetLocal(obj)?.subs;
     if (subs2 && subs2.size > 0) {
       return Object.fromEntries(Array.from(subs2.entries()).map(([sub, set]) => {
         const id = getObjId(sub);
@@ -1453,26 +1446,66 @@ function snapshotState(containerEl) {
     return obj;
   });
   const listeners = [];
-  collector.elements.forEach((node) => {
+  const meta = {};
+  elements.forEach((node) => {
     const ctx = getContext(node);
     assertDefined(ctx);
+    const ref = ctx.refMap;
     const props = ctx.props;
     const contexts = ctx.contexts;
+    const watches = ctx.watches;
     const renderQrl = ctx.renderQrl;
-    const attribute = ctx.refMap.array.map((obj) => {
-      const id = getObjId(obj);
-      assertDefined(id);
-      return id;
-    }).join(" ");
-    node.setAttribute(QObjAttr, attribute);
-    const seq = ctx.seq.map((index) => intToStr(index)).join(" ");
-    node.setAttribute(QSeqAttr, seq);
-    if (props) {
-      const objs2 = [props];
+    const seq = ctx.seq;
+    const metaValue = {};
+    const elementCaptured = collector.elements.includes(node);
+    let add = false;
+    if (ref.array.length > 0) {
+      const value = ref.array.map((obj) => mustGetObjId(obj)).join(" ");
+      if (value) {
+        metaValue.r = value;
+        add = true;
+      }
+    }
+    if (elementCaptured && props) {
+      const objs2 = [getProxyTarget(props)];
       if (renderQrl) {
         objs2.push(renderQrl);
       }
-      node.setAttribute(QHostAttr, objs2.map((obj) => ctx.refMap.indexOf(obj)).join(" "));
+      const value = objs2.map((obj) => mustGetObjId(obj)).join(" ");
+      if (value) {
+        metaValue.h = value;
+        add = true;
+      }
+    }
+    if (watches.length > 0) {
+      const value = watches.map((watch) => getObjId(watch)).filter((obj) => obj != null).join(" ");
+      if (value) {
+        metaValue.w = value;
+        add = true;
+      }
+    }
+    if (elementCaptured && seq.length > 0) {
+      const value = seq.map((obj) => mustGetObjId(obj)).join(" ");
+      if (value) {
+        metaValue.s = value;
+        add = true;
+      }
+    }
+    if (contexts) {
+      const serializedContexts = [];
+      contexts.forEach((value2, key) => {
+        serializedContexts.push(`${key}=${mustGetObjId(value2)}`);
+      });
+      const value = serializedContexts.join(" ");
+      if (value) {
+        metaValue.c = value;
+        add = true;
+      }
+    }
+    if (add) {
+      const elementID = getElementID(node);
+      assertDefined(elementID);
+      meta[elementID] = metaValue;
     }
     if (ctx.listeners) {
       ctx.listeners.forEach((qrls, key) => {
@@ -1484,14 +1517,18 @@ function snapshotState(containerEl) {
         });
       });
     }
-    if (contexts) {
-      const serializedContexts = [];
-      contexts.forEach((value, key) => {
-        serializedContexts.push(`${key}=${ctx.refMap.indexOf(value)}`);
-      });
-      node.setAttribute(QCtxAttr, serializedContexts.join(" "));
-    }
   });
+  for (const watch of collector.watches) {
+    destroyWatch(watch);
+    if (qDev) {
+      if (watch.f & 4 /* IsDirty */) {
+        logWarn("Serializing dirty watch. Looks like an internal error.");
+      }
+      if (!isConnected(watch)) {
+        logWarn("Serializing disconneted watch. Looks like an internal error.");
+      }
+    }
+  }
   if (qDev) {
     elementToIndex.forEach((value, el) => {
       if (getDocument(el) !== doc) {
@@ -1504,6 +1541,7 @@ function snapshotState(containerEl) {
   }
   return {
     state: {
+      ctx: meta,
       objs: convertedObjs,
       subs
     },
@@ -1538,7 +1576,7 @@ function walkNodes(nodes, parent, predicate) {
     child = child.nextElementSibling;
   }
 }
-function reviveValues(objs, subs, getObject, proxyMap, containerEl) {
+function reviveValues(objs, subs, getObject, containerState, containerEl) {
   for (let i = 0; i < objs.length; i++) {
     const value = objs[i];
     if (typeof value === "string") {
@@ -1562,7 +1600,7 @@ function reviveValues(objs, subs, getObject, proxyMap, containerEl) {
           const set = entry[1] === null ? null : new Set(entry[1]);
           converted.set(el, set);
         });
-        _restoreQObject(value, proxyMap, converted);
+        _restoreQObject(value, containerState, converted);
       }
     }
   }
@@ -1598,7 +1636,7 @@ function reviveNestedObjects(obj, getObject) {
     }
   }
 }
-function getObjectImpl(id, elements, objs, proxyMap) {
+function getObjectImpl(id, elements, objs, containerState) {
   if (id.startsWith(ELEMENT_ID_PREFIX)) {
     assertEqual(elements.has(id), true);
     return elements.get(id);
@@ -1607,8 +1645,8 @@ function getObjectImpl(id, elements, objs, proxyMap) {
   assertEqual(objs.length > index, true);
   const obj = objs[index];
   const needsProxy = id.endsWith("!");
-  if (needsProxy) {
-    return proxyMap.get(obj) ?? readWriteProxy(obj, proxyMap);
+  if (needsProxy && containerState) {
+    return containerState.proxyMap.get(obj) ?? readWriteProxy(obj, containerState);
   }
   return obj;
 }
@@ -1619,11 +1657,7 @@ function normalizeObj(obj, doc) {
   if (obj === void 0 || !shouldSerialize(obj)) {
     return UNDEFINED_PREFIX;
   }
-  if (obj && typeof obj === "object") {
-    const value = obj[QOjectTargetSymbol] ?? obj;
-    return value;
-  }
-  return obj;
+  return getProxyTarget(obj) ?? obj;
 }
 function collectValue(obj, collector) {
   const handled = collectQObjects(obj, collector);
@@ -1631,11 +1665,18 @@ function collectValue(obj, collector) {
     collector.objSet.add(normalizeObj(obj, collector.doc));
   }
 }
+function collectProps(el, props, collector) {
+  const subs = props && typeof props === "object" && props[QOjectSubsSymbol];
+  if (subs && subs.has(el)) {
+    collectElement(el, collector);
+  }
+}
 function createCollector(doc, proxyMap) {
   return {
     seen: /* @__PURE__ */ new Set(),
     objSet: /* @__PURE__ */ new Set(),
     elements: [],
+    watches: [],
     proxyMap,
     doc
   };
@@ -1655,12 +1696,29 @@ function collectElement(el, collector) {
     return;
   }
   collector.seen.add(el);
-  const captured = tryGetContext(el)?.refMap.array;
-  if (captured) {
+  const ctx = tryGetContext(el);
+  if (ctx) {
     collector.elements.push(el);
-    captured.forEach((sub) => {
-      collectValue(sub, collector);
+    if (ctx.props) {
+      collectValue(ctx.props, collector);
+    }
+    if (ctx.renderQrl) {
+      collectValue(ctx.renderQrl, collector);
+    }
+    ctx.seq.forEach((obj) => {
+      collectValue(obj, collector);
     });
+    ctx.refMap.array.forEach((obj) => {
+      collectValue(obj, collector);
+    });
+    ctx.watches.forEach((watch) => {
+      collectValue(watch, collector);
+    });
+    if (ctx.contexts) {
+      ctx.contexts.forEach((obj) => {
+        collectValue(obj, collector);
+      });
+    }
   }
 }
 function escapeText(str) {
@@ -1688,7 +1746,6 @@ function collectQObjects(obj, collector) {
       const hasTarget = !!obj[QOjectTargetSymbol];
       if (!hasTarget && isNode(obj)) {
         if (obj.nodeType === 1) {
-          collectElement(obj, collector);
           return true;
         }
         return false;
@@ -1730,11 +1787,14 @@ function collectQObjects(obj, collector) {
   }
   return false;
 }
+function getProxyTarget(obj) {
+  if (obj !== null && typeof obj === "object") {
+    return obj[QOjectTargetSymbol];
+  }
+  return void 0;
+}
 function isContainer(el) {
   return el.hasAttribute(QContainerAttr);
-}
-function hasQObj(el) {
-  return el.hasAttribute(QObjAttr);
 }
 function hasQId(el) {
   return el.hasAttribute(ELEMENT_ID);
@@ -1761,7 +1821,7 @@ function smartUpdateChildren(ctx, elm, ch, mode, isSvg) {
   } else if (ch.length > 0) {
     return addVnodes(ctx, elm, void 0, ch, 0, ch.length - 1, isSvg);
   } else if (oldCh.length > 0) {
-    return removeVnodes(ctx, elm, oldCh, 0, oldCh.length - 1);
+    return removeVnodes(ctx, oldCh, 0, oldCh.length - 1);
   }
 }
 function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
@@ -1816,7 +1876,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
         }));
       } else {
         elmToMove = oldCh[idxInOld];
-        if (elmToMove.nodeName !== newStartVnode.type) {
+        if (!isTagName(elmToMove, newStartVnode.type)) {
           const newElm = createElm(ctx, newStartVnode, isSvg);
           results.push(then(newElm, (newElm2) => {
             insertBefore(ctx, parentElm, newElm2, oldStartVnode);
@@ -1837,7 +1897,7 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
   let wait = promiseAll(results);
   if (oldStartIdx <= oldEndIdx) {
     wait = then(wait, () => {
-      removeVnodes(ctx, parentElm, oldCh, oldStartIdx, oldEndIdx);
+      removeVnodes(ctx, oldCh, oldStartIdx, oldEndIdx);
     });
   }
   return wait;
@@ -1862,7 +1922,7 @@ function getChildren(elm, mode) {
 }
 function isNode2(elm) {
   const type = elm.nodeType;
-  return type === 1 || type === 3 || type === 8;
+  return type === 1 || type === 3;
 }
 function isFallback(node) {
   return node.nodeName === "Q:FALLBACK";
@@ -1934,7 +1994,7 @@ function patchVnode(rctx, elm, vnode, isSvg) {
         if (slotEl && !splittedChidren[key]) {
           const oldCh = getChildren(slotEl, "slot");
           if (oldCh.length > 0) {
-            removeVnodes(rctx, slotEl, oldCh, 0, oldCh.length - 1);
+            removeVnodes(rctx, oldCh, 0, oldCh.length - 1);
           }
         }
       });
@@ -1978,11 +2038,12 @@ function addVnodes(ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) {
     }
   });
 }
-function removeVnodes(ctx, parentElm, nodes, startIdx, endIdx) {
+function removeVnodes(ctx, nodes, startIdx, endIdx) {
   for (; startIdx <= endIdx; ++startIdx) {
     const ch = nodes[startIdx];
-    assertDefined(ch);
-    removeNode(ctx, ch);
+    if (ch) {
+      removeNode(ctx, ch);
+    }
   }
 }
 var refCount = 0;
@@ -2066,9 +2127,6 @@ function createElm(rctx, vnode, isSvg) {
   if (tag === "#text") {
     return vnode.elm = createTextNode(rctx, vnode.text);
   }
-  if (tag === "#comment") {
-    return vnode.elm = createCommentNode(rctx, vnode.text);
-  }
   if (!isSvg) {
     isSvg = tag === "svg";
   }
@@ -2096,7 +2154,6 @@ function createElm(rctx, vnode, isSvg) {
   if (isComponent) {
     const renderQRL = props[OnRenderProp];
     ctx.renderQrl = renderQRL;
-    ctx.refMap.add(renderQRL);
     wait = firstRenderComponent(rctx, ctx);
   } else {
     const setsInnerHTML = checkInnerHTML(props);
@@ -2188,7 +2245,8 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
     return false;
   }
   const elm = ctx.element;
-  const qwikProps = OnRenderProp in expectProps ? getProps(ctx) : void 0;
+  const isCmp = OnRenderProp in expectProps;
+  const qwikProps = isCmp ? getPropsMutator(ctx, rctx.containerState) : void 0;
   for (let key of Object.keys(expectProps)) {
     if (key === "children" || key === OnRenderProp) {
       continue;
@@ -2211,7 +2269,7 @@ function updateProperties(rctx, ctx, expectProps, isSvg) {
       const skipProperty = ALLOWS_PROPS.includes(key);
       const hasPrefix = SCOPE_PREFIX.test(key);
       if (!skipProperty && !hasPrefix) {
-        qwikProps[key] = newValue;
+        qwikProps.set(key, newValue);
         continue;
       }
       const hPrefixed = key.startsWith(HOST_PREFIX);
@@ -2343,8 +2401,9 @@ function removeNode(ctx, el) {
     const parent = el.parentNode;
     if (parent) {
       if (el.nodeType === 1) {
-        cleanupElement(el);
-        el.querySelectorAll(QObjSelector).forEach(cleanupElement);
+        const subsManager = ctx.containerState.subsManager;
+        cleanupElement(el, subsManager);
+        el.querySelectorAll(QHostSelector).forEach((el2) => cleanupElement(el2, subsManager));
       }
       parent.removeChild(el);
     } else if (qDev) {
@@ -2358,17 +2417,14 @@ function removeNode(ctx, el) {
     fn
   });
 }
-function cleanupElement(el) {
+function cleanupElement(el, subsManager) {
   const ctx = tryGetContext(el);
   if (ctx) {
-    cleanupContext(ctx);
+    cleanupContext(ctx, subsManager);
   }
 }
 function createTextNode(ctx, text) {
   return ctx.doc.createTextNode(text);
-}
-function createCommentNode(ctx, text) {
-  return ctx.doc.createComment(text);
 }
 function executeContextWithSlots(ctx) {
   const before = ctx.roots.map((elm) => getSlots(void 0, elm));
@@ -2398,16 +2454,17 @@ function printRenderStats(ctx) {
     visitedNodes: ctx.perf.visited,
     operations: ctx.operations.map((v) => [v.operation, v.el, ...v.args])
   };
-  logDebug("Render stats", stats);
+  const noOps = ctx.operations.length === 0;
+  logDebug("Render stats.", noOps ? "No operations" : "", stats);
   return stats;
 }
 function createKeyToOldIdx(children, beginIdx, endIdx) {
   const map = {};
   for (let i = beginIdx; i <= endIdx; ++i) {
     const child = children[i];
-    if (child.nodeType == 1 /* ELEMENT_NODE */) {
+    if (child.nodeType === 1) {
       const key = getKey(child);
-      if (key !== void 0) {
+      if (key != null) {
         map[key] = i;
       }
     }
@@ -2428,15 +2485,22 @@ function setKey(el, key) {
   }
   el[KEY_SYMBOL] = key;
 }
-function sameVnode(vnode1, vnode2) {
-  const isSameSel = vnode1.nodeName.toLowerCase() === vnode2.type;
-  if (!isSameSel) {
-    return false;
+function sameVnode(elm, vnode2) {
+  const isElement2 = elm.nodeType === 1;
+  if (isElement2) {
+    const isSameSel = elm.localName === vnode2.type;
+    if (!isSameSel) {
+      return false;
+    }
+    return getKey(elm) === vnode2.key;
   }
-  if (vnode1.nodeType !== 1 /* ELEMENT_NODE */) {
-    return true;
+  return elm.nodeName === vnode2.type;
+}
+function isTagName(elm, tagName) {
+  if (elm.nodeType === 1) {
+    return elm.localName === tagName;
   }
-  return getKey(vnode1) === vnode2.key;
+  return elm.nodeName === tagName;
 }
 function checkInnerHTML(props) {
   return props && ("innerHTML" in props || dangerouslySetInnerHTML in props);
@@ -2472,13 +2536,18 @@ function stringifyClassOrStyle(obj, isClass) {
 }
 
 // packages/qwik/src/core/render/notify-render.ts
-function notifyRender(hostElement) {
+async function notifyRender(hostElement) {
   assertDefined(hostElement.getAttribute(QHostAttr));
   const containerEl = getContainer(hostElement);
   assertDefined(containerEl);
+  const state = getContainerState(containerEl);
+  if (state.platform.isServer && !qTest) {
+    logWarn("Can not rerender in server platform");
+    return void 0;
+  }
   resumeIfNeeded(containerEl);
   const ctx = getContext(hostElement);
-  const state = getRenderingState(containerEl);
+  assertDefined(ctx.renderQrl);
   if (ctx.dirty) {
     return state.renderPromise;
   }
@@ -2498,20 +2567,22 @@ function notifyRender(hostElement) {
     return scheduleFrame(containerEl, state);
   }
 }
-function scheduleFrame(containerEl, state) {
-  if (state.renderPromise === void 0) {
-    state.renderPromise = getPlatform2(containerEl).nextTick(() => renderMarked(containerEl, state));
+function scheduleFrame(containerEl, containerState) {
+  if (containerState.renderPromise === void 0) {
+    containerState.renderPromise = containerState.platform.nextTick(() => renderMarked(containerEl, containerState));
   }
-  return state.renderPromise;
+  return containerState.renderPromise;
 }
-var SCHEDULE = Symbol("Render state");
-function getRenderingState(containerEl) {
-  let set = containerEl[SCHEDULE];
+var CONTAINER_STATE = Symbol("ContainerState");
+function getContainerState(containerEl) {
+  let set = containerEl[CONTAINER_STATE];
   if (!set) {
-    containerEl[SCHEDULE] = set = {
+    containerEl[CONTAINER_STATE] = set = {
+      proxyMap: /* @__PURE__ */ new WeakMap(),
+      subsManager: createSubscriptionManager(),
+      platform: getPlatform2(containerEl),
       watchNext: /* @__PURE__ */ new Set(),
       watchStaging: /* @__PURE__ */ new Set(),
-      watchRunning: /* @__PURE__ */ new Set(),
       hostsNext: /* @__PURE__ */ new Set(),
       hostsStaging: /* @__PURE__ */ new Set(),
       renderPromise: void 0,
@@ -2520,17 +2591,23 @@ function getRenderingState(containerEl) {
   }
   return set;
 }
-async function renderMarked(containerEl, state) {
-  await waitForWatches(state);
-  state.hostsRendering = new Set(state.hostsNext);
-  state.hostsNext.clear();
+async function renderMarked(containerEl, containerState) {
+  const hostsRendering = containerState.hostsRendering = new Set(containerState.hostsNext);
+  containerState.hostsNext.clear();
+  await executeWatches(containerState, (watch) => {
+    return (watch.f & 2 /* IsWatch */) !== 0;
+  });
+  containerState.hostsStaging.forEach((host) => {
+    hostsRendering.add(host);
+  });
+  containerState.hostsStaging.clear();
   const doc = getDocument(containerEl);
-  const platform = getPlatform2(containerEl);
-  const renderingQueue = Array.from(state.hostsRendering);
+  const platform = containerState.platform;
+  const renderingQueue = Array.from(hostsRendering);
   sortNodes(renderingQueue);
   const ctx = {
     doc,
-    globalState: state,
+    containerState,
     hostElements: /* @__PURE__ */ new Set(),
     operations: [],
     roots: [],
@@ -2547,18 +2624,17 @@ async function renderMarked(containerEl, state) {
       try {
         await renderComponent(ctx, getContext(el));
       } catch (e) {
-        logError("Render failed", e, el);
+        logError("Render error", e);
       }
     }
   }
   if (ctx.operations.length === 0) {
     if (qDev) {
       if (typeof window !== "undefined" && window.document != null) {
-        logDebug("Render stats. No operations.");
         printRenderStats(ctx);
       }
     }
-    postRendering(containerEl, state, ctx);
+    postRendering(containerEl, containerState, ctx);
     return ctx;
   }
   return platform.raf(() => {
@@ -2568,62 +2644,82 @@ async function renderMarked(containerEl, state) {
         printRenderStats(ctx);
       }
     }
-    postRendering(containerEl, state, ctx);
+    postRendering(containerEl, containerState, ctx);
     return ctx;
   });
 }
-async function postRendering(containerEl, state, ctx) {
-  const promises = [];
-  state.watchNext.forEach((watch) => {
-    promises.push(runWatch(watch));
+async function postRendering(containerEl, containerState, ctx) {
+  await executeWatches(containerState, (watch, stage) => {
+    if ((watch.f & 1 /* IsEffect */) === 0) {
+      return false;
+    }
+    if (stage) {
+      return ctx.hostElements.has(watch.el);
+    }
+    return true;
   });
-  state.watchNext.clear();
-  state.watchStaging.forEach((watch) => {
-    if (ctx.hostElements.has(watch.el)) {
-      promises.push(runWatch(watch));
-    } else {
-      state.watchNext.add(watch);
+  containerState.hostsStaging.forEach((el) => {
+    containerState.hostsNext.add(el);
+  });
+  containerState.hostsStaging.clear();
+  containerState.hostsRendering = void 0;
+  containerState.renderPromise = void 0;
+  if (containerState.hostsNext.size + containerState.watchNext.size > 0) {
+    scheduleFrame(containerEl, containerState);
+  }
+}
+async function executeWatches(containerState, watchPred) {
+  const watchPromises = [];
+  containerState.watchNext.forEach((watch) => {
+    if (watchPred(watch, false)) {
+      watchPromises.push(then(watch.qrl.resolveIfNeeded(watch.el), () => watch));
+      containerState.watchNext.delete(watch);
     }
   });
-  state.watchStaging.clear();
-  await Promise.all(promises);
-  state.hostsStaging.forEach((el) => {
-    state.hostsNext.add(el);
-  });
-  state.hostsStaging.clear();
-  state.watchStaging.forEach((watch) => {
-    state.watchNext.add(watch);
-  });
-  state.watchStaging.clear();
-  state.hostsRendering = void 0;
-  state.renderPromise = void 0;
-  if (state.hostsNext.size + state.watchNext.size > 0) {
-    scheduleFrame(containerEl, state);
-  }
+  do {
+    containerState.watchStaging.forEach((watch) => {
+      if (watchPred(watch, true)) {
+        watchPromises.push(then(watch.qrl.resolveIfNeeded(watch.el), () => watch));
+      } else {
+        containerState.watchNext.add(watch);
+      }
+    });
+    containerState.watchStaging.clear();
+    if (watchPromises.length > 0) {
+      const watches = await Promise.all(watchPromises);
+      sortWatches(watches);
+      await Promise.all(watches.map((watch) => {
+        return runWatch(watch, containerState);
+      }));
+      watchPromises.length = 0;
+    }
+  } while (containerState.watchStaging.size > 0);
 }
 function sortNodes(elements) {
   elements.sort((a, b) => a.compareDocumentPosition(b) & 2 ? 1 : -1);
 }
+function sortWatches(watches) {
+  watches.sort((a, b) => {
+    if (a.el === b.el) {
+      return a.i < b.i ? -1 : 1;
+    }
+    return (a.el.compareDocumentPosition(b.el) & 2) !== 0 ? 1 : -1;
+  });
+}
 
 // packages/qwik/src/core/object/q-object.ts
-var ProxyMapSymbol = Symbol("ProxyMapSymbol");
-function getProxyMap(doc) {
-  let map = doc[ProxyMapSymbol];
-  if (!map) {
-    map = doc[ProxyMapSymbol] = /* @__PURE__ */ new WeakMap();
-  }
-  return map;
+function _restoreQObject(obj, containerState, subs) {
+  return readWriteProxy(obj, containerState, subs);
 }
-function _restoreQObject(obj, map, subs) {
-  return readWriteProxy(obj, map, subs);
-}
-function readWriteProxy(target, proxyMap, subs) {
+function readWriteProxy(target, containerState, subs) {
   if (!target || typeof target !== "object")
     return target;
+  const proxyMap = containerState.proxyMap;
   let proxy = proxyMap.get(target);
   if (proxy)
     return proxy;
-  proxy = new Proxy(target, new ReadWriteProxyHandler(proxyMap, subs));
+  const manager = containerState.subsManager.getLocal(target, subs);
+  proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
   proxyMap.set(target, proxy);
   return proxy;
 }
@@ -2633,14 +2729,9 @@ var QOjectSubsSymbol = ":subs:";
 var QOjectOriginalProxy = ":proxy:";
 var SetSubscriber = Symbol("SetSubscriber");
 function unwrapProxy(proxy) {
-  if (proxy && typeof proxy == "object") {
-    const value = proxy[QOjectTargetSymbol];
-    if (value)
-      return value;
-  }
-  return proxy;
+  return getProxyTarget(proxy) ?? proxy;
 }
-function wrap(value, proxyMap) {
+function wrap(value, containerState) {
   if (value && typeof value === "object") {
     if (isQrl(value)) {
       return value;
@@ -2661,23 +2752,82 @@ function wrap(value, proxyMap) {
     if (qDev) {
       verifySerializable(value);
     }
-    const proxy = proxyMap.get(value);
-    return proxy ? proxy : readWriteProxy(value, proxyMap);
+    const proxy = containerState.proxyMap.get(value);
+    return proxy ? proxy : readWriteProxy(value, containerState);
   } else {
     return value;
   }
 }
-var ReadWriteProxyHandler = class {
-  constructor(proxyMap, subs = /* @__PURE__ */ new Map()) {
-    this.proxyMap = proxyMap;
-    this.subs = subs;
-  }
-  getSub(el) {
-    let sub = this.subs.get(el);
-    if (sub === void 0) {
-      this.subs.set(el, sub = /* @__PURE__ */ new Set());
+var createSubscriptionManager = () => {
+  const objToSubs = /* @__PURE__ */ new Map();
+  const subsToObjs = /* @__PURE__ */ new Map();
+  function clearSub(sub) {
+    const subs = subsToObjs.get(sub);
+    if (subs) {
+      subs.forEach((s) => {
+        s.delete(sub);
+      });
+      subsToObjs.delete(sub);
+      subs.clear();
     }
-    return sub;
+  }
+  function tryGetLocal(obj) {
+    assertEqual(getProxyTarget(obj), void 0);
+    return objToSubs.get(obj);
+  }
+  function trackSubToObj(subscriber, map) {
+    let set = subsToObjs.get(subscriber);
+    if (!set) {
+      subsToObjs.set(subscriber, set = /* @__PURE__ */ new Set());
+    }
+    set.add(map);
+  }
+  function getLocal(obj, initialMap) {
+    let local = tryGetLocal(obj);
+    if (!local) {
+      const map = !initialMap ? /* @__PURE__ */ new Map() : initialMap;
+      map.forEach((_, key) => {
+        trackSubToObj(key, map);
+      });
+      objToSubs.set(obj, local = {
+        subs: map,
+        addSub(subscriber, key) {
+          if (key == null) {
+            map.set(subscriber, null);
+          } else {
+            let sub = map.get(subscriber);
+            if (sub === void 0) {
+              map.set(subscriber, sub = /* @__PURE__ */ new Set());
+            }
+            if (sub) {
+              sub.add(key);
+            }
+          }
+          trackSubToObj(subscriber, map);
+        },
+        notifySubs(key) {
+          map.forEach((value, subscriber) => {
+            if (value === null || !key) {
+              notifyChange(subscriber);
+            } else if (value.has(key)) {
+              notifyChange(subscriber);
+            }
+          });
+        }
+      });
+    }
+    return local;
+  }
+  return {
+    tryGetLocal,
+    getLocal,
+    clearSub
+  };
+};
+var ReadWriteProxyHandler = class {
+  constructor(containerState, manager) {
+    this.containerState = containerState;
+    this.manager = manager;
   }
   get(target, prop) {
     let subscriber = this.subscriber;
@@ -2688,9 +2838,9 @@ var ReadWriteProxyHandler = class {
     if (prop === QOjectTargetSymbol)
       return target;
     if (prop === QOjectSubsSymbol)
-      return this.subs;
+      return this.manager.subs;
     if (prop === QOjectOriginalProxy)
-      return this.proxyMap.get(target);
+      return this.containerState.proxyMap.get(target);
     const invokeCtx = tryGetInvokeContext();
     if (invokeCtx) {
       if (invokeCtx.subscriber === null) {
@@ -2702,7 +2852,7 @@ var ReadWriteProxyHandler = class {
     }
     if (prop === QOjectAllSymbol) {
       if (subscriber) {
-        this.subs.set(subscriber, null);
+        this.manager.addSub(subscriber);
       }
       return target;
     }
@@ -2712,16 +2862,9 @@ var ReadWriteProxyHandler = class {
     }
     if (subscriber) {
       const isArray = Array.isArray(target);
-      if (isArray) {
-        this.subs.set(subscriber, null);
-      } else {
-        const sub = this.getSub(subscriber);
-        if (sub) {
-          sub.add(prop);
-        }
-      }
+      this.manager.addSub(subscriber, isArray ? void 0 : prop);
     }
-    return wrap(value, this.proxyMap);
+    return wrap(value, this.containerState);
   }
   set(target, prop, newValue) {
     if (typeof prop === "symbol") {
@@ -2732,7 +2875,6 @@ var ReadWriteProxyHandler = class {
       }
       return true;
     }
-    const subs = this.subs;
     const unwrappedNewValue = unwrapProxy(newValue);
     if (qDev) {
       verifySerializable(unwrappedNewValue);
@@ -2744,27 +2886,13 @@ var ReadWriteProxyHandler = class {
     const isArray = Array.isArray(target);
     if (isArray) {
       target[prop] = unwrappedNewValue;
-      subs.forEach((_, sub) => {
-        if (isConnected(sub)) {
-          notifyChange(sub);
-        } else {
-          subs.delete(sub);
-        }
-      });
+      this.manager.notifySubs();
       return true;
     }
     const oldValue = target[prop];
     if (oldValue !== unwrappedNewValue) {
       target[prop] = unwrappedNewValue;
-      subs.forEach((propSets, sub) => {
-        if (isConnected(sub)) {
-          if (propSets === null || propSets.has(prop)) {
-            notifyChange(sub);
-          }
-        } else {
-          subs.delete(sub);
-        }
-      });
+      this.manager.notifySubs(prop);
     }
     return true;
   }
@@ -2787,19 +2915,11 @@ var ReadWriteProxyHandler = class {
     } else if (qDev && !qTest && !subscriber) {
     }
     if (subscriber) {
-      this.subs.set(subscriber, null);
+      this.manager.addSub(subscriber);
     }
     return Object.getOwnPropertyNames(target);
   }
 };
-function removeSub(obj, subscriber) {
-  if (obj && typeof obj === "object") {
-    const subs = obj[QOjectSubsSymbol];
-    if (subs) {
-      subs.delete(subscriber);
-    }
-  }
-}
 function notifyChange(subscriber) {
   if (isElement(subscriber)) {
     notifyRender(subscriber);
@@ -2809,19 +2929,14 @@ function notifyChange(subscriber) {
 }
 function notifyWatch(watch) {
   const containerEl = getContainer(watch.el);
-  const state = getRenderingState(containerEl);
-  watch.f |= 1 /* IsDirty */;
+  const state = getContainerState(containerEl);
+  watch.f |= 4 /* IsDirty */;
   const activeRendering = state.hostsRendering !== void 0;
   if (activeRendering) {
     state.watchStaging.add(watch);
   } else {
     state.watchNext.add(watch);
     scheduleFrame(containerEl, state);
-  }
-}
-async function waitForWatches(state) {
-  while (state.watchRunning.size > 0) {
-    await Promise.all(state.watchRunning);
   }
 }
 function verifySerializable(value) {
@@ -2861,16 +2976,19 @@ function noSerialize(input) {
 }
 function isConnected(sub) {
   if (isElement(sub)) {
-    return !!tryGetContext(sub);
+    return !!tryGetContext(sub) || sub.isConnected;
   } else {
     return isConnected(sub.el);
   }
 }
+var MUTABLE = Symbol("mutable");
+var isMutable = (v) => {
+  return v && typeof v === "object" && v[MUTABLE] === true;
+};
 
 // packages/qwik/src/core/props/props-obj-map.ts
-function newQObjectMap(element) {
+function newQObjectMap() {
   const array = [];
-  let added = element.hasAttribute(QObjAttr);
   return {
     array,
     get(index) {
@@ -2884,10 +3002,6 @@ function newQObjectMap(element) {
       const index = array.indexOf(object);
       if (index === -1) {
         array.push(object);
-        if (!added) {
-          element.setAttribute(QObjAttr, "");
-          added = true;
-        }
         return array.length - 1;
       }
       return index;
@@ -2924,7 +3038,7 @@ function resumeIfNeeded(containerEl) {
 function appendQwikDevTools(containerEl) {
   containerEl["qwik"] = {
     pause: () => pauseContainer(containerEl),
-    renderState: getRenderingState(containerEl)
+    state: getContainerState(containerEl)
   };
 }
 function tryGetContext(element) {
@@ -2937,9 +3051,10 @@ function getContext(element) {
     element[Q_CTX] = ctx = {
       element,
       cache,
-      refMap: newQObjectMap(element),
+      refMap: newQObjectMap(),
       dirty: false,
       seq: [],
+      watches: [],
       props: void 0,
       renderQrl: void 0,
       component: void 0
@@ -2947,21 +3062,22 @@ function getContext(element) {
   }
   return ctx;
 }
-function cleanupContext(ctx) {
+function cleanupContext(ctx, subsManager) {
   const el = ctx.element;
-  ctx.refMap.array.forEach((obj) => {
-    if (isWatchDescriptor(obj)) {
-      if (obj.el === el) {
-        destroyWatch(obj);
-      }
-    }
-    ctx.component = void 0;
-    ctx.renderQrl = void 0;
-    ctx.seq = [];
-    ctx.cache.clear();
-    ctx.dirty = false;
-    ctx.refMap.array.length = 0;
+  ctx.watches.forEach((watch) => {
+    subsManager.clearSub(watch);
+    destroyWatch(watch);
   });
+  if (ctx.renderQrl) {
+    subsManager.clearSub(el);
+  }
+  ctx.component = void 0;
+  ctx.renderQrl = void 0;
+  ctx.seq.length = 0;
+  ctx.watches.length = 0;
+  ctx.cache.clear();
+  ctx.dirty = false;
+  ctx.refMap.array.length = 0;
   el[Q_CTX] = void 0;
 }
 var PREFIXES = ["document:on", "window:on", "on"];
@@ -2985,13 +3101,89 @@ function normalizeOnProp(prop) {
 function setEvent(rctx, ctx, prop, value) {
   qPropWriteQRL(rctx, ctx, normalizeOnProp(prop), value);
 }
-function getProps(ctx) {
-  if (!ctx.props) {
-    ctx.props = readWriteProxy({}, getProxyMap(getDocument(ctx.element)));
-    ctx.refMap.add(ctx.props);
-  }
-  return ctx.props;
+function createProps(target, el, containerState) {
+  const manager = containerState.subsManager.getLocal(target);
+  return new Proxy(target, new PropsProxyHandler(el, containerState, manager));
 }
+function getPropsMutator(ctx, containerState) {
+  let props = ctx.props;
+  if (!ctx.props) {
+    ctx.props = props = createProps({}, ctx.element, containerState);
+  }
+  const target = getProxyTarget(props);
+  const manager = containerState.subsManager.getLocal(target);
+  return {
+    set(prop, value) {
+      const didSet = prop in target;
+      let oldValue = target[prop];
+      let mut = false;
+      if (isMutable(oldValue)) {
+        oldValue = oldValue.v;
+      }
+      value = unwrapSubscriber(value);
+      target[prop] = value;
+      if (isMutable(value)) {
+        value = value.v;
+        mut = true;
+      }
+      if (oldValue !== value) {
+        if (qDev) {
+          if (didSet && !mut && !isQrl(value)) {
+            const displayName = ctx.renderQrl?.getSymbol() ?? ctx.element.localName;
+            logError(`Props are immutable by default. If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, "\n - Component:", displayName, "\n - Prop:", prop, "\n - Old value:", oldValue, "\n - New value:", value);
+          }
+        }
+        manager.notifySubs(prop);
+      }
+    }
+  };
+}
+var PropsProxyHandler = class {
+  constructor(hostElement, containerState, manager) {
+    this.hostElement = hostElement;
+    this.containerState = containerState;
+    this.manager = manager;
+  }
+  get(target, prop) {
+    if (typeof prop === "symbol") {
+      return target[prop];
+    }
+    if (prop === QOjectTargetSymbol)
+      return target;
+    if (prop === QOjectSubsSymbol)
+      return this.manager.subs;
+    if (prop === QOjectOriginalProxy)
+      return readWriteProxy(target, this.containerState);
+    if (prop === QOjectAllSymbol) {
+      this.manager.addSub(this.hostElement);
+      return target;
+    }
+    const value = target[prop];
+    if (typeof prop === "symbol") {
+      return value;
+    }
+    if (isMutable(value)) {
+      this.manager.addSub(this.hostElement, prop);
+      return value.v;
+    }
+    return value;
+  }
+  set() {
+    throw new Error("props are inmutable");
+  }
+  has(target, property) {
+    if (property === QOjectTargetSymbol)
+      return true;
+    if (property === QOjectSubsSymbol)
+      return true;
+    return Object.prototype.hasOwnProperty.call(target, property);
+  }
+  ownKeys(target) {
+    const subscriber = this.hostElement;
+    this.manager.addSub(subscriber);
+    return Object.getOwnPropertyNames(target);
+  }
+};
 
 // packages/qwik/src/testing/util.ts
 import { pathToFileURL } from "url";

@@ -264,11 +264,50 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 declare interface ComponentCtx {
-    hostElement: HTMLElement;
+    hostElement: Element;
     styleId: string | undefined;
     styleClass: string | undefined;
     styleHostClass: string | undefined;
     slots: JSXNode[];
+}
+
+/**
+ * @alpha
+ */
+declare interface ContainerState {
+    proxyMap: ObjToProxyMap;
+    subsManager: SubscriptionManager;
+    platform: CorePlatform;
+    watchNext: Set<WatchDescriptor>;
+    watchStaging: Set<WatchDescriptor>;
+    hostsNext: Set<Element>;
+    hostsStaging: Set<Element>;
+    hostsRendering: Set<Element> | undefined;
+    renderPromise: Promise<RenderContext> | undefined;
+}
+
+/**
+ * @public
+ */
+declare interface CorePlatform {
+    /**
+     * Dynamic import()
+     */
+    isServer: boolean;
+    /**
+     * Dynamic import()
+     */
+    importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
+    /**
+     * Platform specific queue, such as process.nextTick() for Node
+     * and requestAnimationFrame() for the browser.
+     */
+    raf: (fn: () => any) => Promise<any>;
+    nextTick: (fn: () => any) => Promise<any>;
+    /**
+     * Takes a qrl and serializes into a string
+     */
+    chunkForSymbol: (symbolName: string) => [symbol: string, chunk: string] | undefined;
 }
 
 declare interface CSSProperties {
@@ -753,6 +792,12 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     charSet?: string | undefined;
 }
 
+declare interface LocalSubscriptionManager {
+    subs: SubscriberMap;
+    notifySubs: (key?: string | undefined) => void;
+    addSub: (subscriber: Subscriber, key?: string) => void;
+}
+
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
@@ -810,6 +855,8 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
     wmode?: string | undefined;
 }
+
+declare type ObjToProxyMap = WeakMap<any, any>;
 
 declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
@@ -985,6 +1032,7 @@ declare interface QRL<TYPE = any> {
     getSymbol(): string;
     getCanonicalSymbol(): string;
     resolve(container?: Element): Promise<TYPE>;
+    resolveIfNeeded(container?: Element): ValueOrPromise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
@@ -1195,22 +1243,9 @@ declare interface RenderContext {
     hostElements: Set<Element>;
     operations: RenderOperation[];
     components: ComponentCtx[];
-    globalState: RenderingState;
+    containerState: ContainerState;
     containerEl: Element;
     perf: RenderPerf;
-}
-
-/**
- * @alpha
- */
-declare interface RenderingState {
-    watchRunning: Set<Promise<WatchDescriptor>>;
-    watchNext: Set<WatchDescriptor>;
-    watchStaging: Set<WatchDescriptor>;
-    hostsNext: Set<Element>;
-    hostsStaging: Set<Element>;
-    hostsRendering: Set<Element> | undefined;
-    renderPromise: Promise<RenderContext> | undefined;
 }
 
 /**
@@ -1279,6 +1314,14 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 declare type Subscriber = WatchDescriptor | Element;
+
+declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
+
+declare interface SubscriptionManager {
+    tryGetLocal(obj: any): LocalSubscriptionManager | undefined;
+    getLocal(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    clearSub: (sub: Subscriber) => void;
+}
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     class?: string | {
@@ -1666,6 +1709,7 @@ declare interface WatchDescriptor {
     qrl: QRL<WatchFn>;
     el: Element;
     f: number;
+    i: number;
     destroy?: NoSerialize<() => void>;
     running?: NoSerialize<Promise<WatchDescriptor>>;
 }
