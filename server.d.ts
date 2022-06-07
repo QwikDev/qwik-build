@@ -402,7 +402,7 @@ export declare interface RenderToStringOptions extends SerializeDocumentOptions 
      */
     qwikLoader?: {
         events?: string[];
-        include?: boolean | 'body' | 'head';
+        include?: boolean | 'top' | 'bottom';
     };
     prefetchStrategy?: PrefetchStrategy | null;
     /**
