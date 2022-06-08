@@ -65,10 +65,6 @@ function newError(text) {
 const QHostAttr = 'q:host';
 const OnRenderProp = 'q:renderFn';
 /**
- * State factory of the component.
- */
-const QHostSelector = '[q\\:host]';
-/**
  * Component Styles.
  */
 const ComponentScopedStyles = 'q:sstyle';
@@ -2720,19 +2716,19 @@ function updateChildren(ctx, parentElm, oldCh, newCh, isSvg) {
 function isComponentNode(node) {
     return node.props && OnRenderProp in node.props;
 }
-function getCh(elm) {
-    return Array.from(elm.childNodes).filter(isNode);
+function getCh(elm, filter) {
+    return Array.from(elm.childNodes).filter(filter);
 }
 function getChildren(elm, mode) {
     switch (mode) {
         case 'default':
-            return getCh(elm);
+            return getCh(elm, isNode);
         case 'slot':
-            return getCh(elm).filter(isChildSlot);
+            return getCh(elm, isChildSlot);
         case 'root':
-            return getCh(elm).filter(isChildComponent);
+            return getCh(elm, isChildComponent);
         case 'fallback':
-            return getCh(elm).filter(isFallback);
+            return getCh(elm, isFallback);
     }
 }
 function isNode(elm) {
@@ -2743,13 +2739,13 @@ function isFallback(node) {
     return node.nodeName === 'Q:FALLBACK';
 }
 function isChildSlot(node) {
-    return node.nodeName !== 'Q:FALLBACK' && isChildComponent(node);
+    return isNode(node) && node.nodeName !== 'Q:FALLBACK' && node.nodeName !== 'Q:TEMPLATE';
 }
 function isSlotTemplate(node) {
-    return node.nodeName === 'TEMPLATE' && node.hasAttribute(QSlotAttr);
+    return node.nodeName === 'Q:TEMPLATE';
 }
 function isChildComponent(node) {
-    return node.nodeName !== 'TEMPLATE' || !node.hasAttribute(QSlotAttr);
+    return isNode(node) && node.nodeName !== 'Q:TEMPLATE';
 }
 function splitBy(input, condition) {
     const output = {};
@@ -2883,16 +2879,18 @@ function getSlotElement(ctx, slotMaps, parentEl, slotName) {
     }
     const templateEl = slotMaps.templates[slotName];
     if (templateEl) {
-        return templateEl.content;
+        return templateEl;
     }
     const template = createTemplate(ctx, slotName);
     prepend(ctx, parentEl, template);
     slotMaps.templates[slotName] = template;
-    return template.content;
+    return template;
 }
 function createTemplate(ctx, slotName) {
-    const template = createElement(ctx, 'template', false);
+    const template = createElement(ctx, 'q:template', false);
     template.setAttribute(QSlotAttr, slotName);
+    template.setAttribute('hidden', '');
+    template.setAttribute('aria-hidden', 'true');
     return template;
 }
 function removeTemplates(ctx, slotMaps) {
@@ -2911,7 +2909,7 @@ function resolveSlotProjection(ctx, hostElm, before, after) {
             // Move slot to template
             const template = createTemplate(ctx, key);
             const slotChildren = getChildren(slotEl, 'slot');
-            template.content.append(...slotChildren);
+            template.append(...slotChildren);
             hostElm.insertBefore(template, hostElm.firstChild);
             ctx.operations.push({
                 el: template,
@@ -2927,7 +2925,7 @@ function resolveSlotProjection(ctx, hostElm, before, after) {
             // Move template to slot
             const template = before.templates[key];
             if (template) {
-                slotEl.appendChild(template.content);
+                slotEl.append(...getChildren(template, 'default'));
                 template.remove();
                 ctx.operations.push({
                     el: slotEl,
@@ -3236,11 +3234,7 @@ function removeNode(ctx, el) {
         const parent = el.parentNode;
         if (parent) {
             if (el.nodeType === 1) {
-                const subsManager = ctx.containerState.subsManager;
-                cleanupElement(el, subsManager);
-                el
-                    .querySelectorAll(QHostSelector)
-                    .forEach((el) => cleanupElement(el, subsManager));
+                cleanupTree(el, ctx.containerState.subsManager);
             }
             parent.removeChild(el);
         }
@@ -3254,6 +3248,19 @@ function removeNode(ctx, el) {
         args: [],
         fn,
     });
+}
+function cleanupTree(parent, subsManager) {
+    if (parent.nodeName === 'Q:SLOT') {
+        return;
+    }
+    if (parent.hasAttribute(QHostAttr)) {
+        cleanupElement(parent, subsManager);
+    }
+    let child = parent.firstElementChild;
+    while (child) {
+        cleanupTree(child, subsManager);
+        child = child.nextElementSibling;
+    }
 }
 function cleanupElement(el, subsManager) {
     const ctx = tryGetContext(el);
@@ -4640,7 +4647,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.22";
+const version = "0.0.24";
 
 /**
  * Render JSX.
@@ -4708,7 +4715,7 @@ function injectQwikSlotCSS(docOrElm) {
     const element = isDocument(docOrElm) ? docOrElm.head : docOrElm;
     const style = doc.createElement('style');
     style.setAttribute('id', 'qwik/base-styles');
-    style.textContent = `q\\:slot{display:contents}q\\:fallback{display:none}q\\:fallback:last-child{display:contents}`;
+    style.textContent = `q\\:slot{display:contents}q\\:fallback,q\\:template{display:none}q\\:fallback:last-child{display:contents}`;
     element.insertBefore(style, element.firstChild);
 }
 function getElement(docOrElm) {

@@ -441,7 +441,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.22"
+  qwik: "0.0.24"
 };
 
 async function getSystem() {
@@ -978,11 +978,9 @@ function createPlugin(optimizerOptions = {}) {
       const transformedOutput = transformedOutputs.get(tryId);
       if (transformedOutput) {
         log(`resolveId() Resolved ${tryId} from transformedOutputs`);
-        const transformedModule = transformedOutput[0];
-        const sideEffects = !transformedModule.isEntry || !transformedModule.hook;
         return {
           id: tryId + parsedId.query,
-          moduleSideEffects: sideEffects
+          moduleSideEffects: false
         };
       }
       log(`resolveId() id ${tryId} not found in transformedOutputs`);
@@ -993,12 +991,14 @@ function createPlugin(optimizerOptions = {}) {
     if (id2 === QWIK_BUILD_ID) {
       log("load()", QWIK_BUILD_ID, opts.buildMode);
       return {
+        moduleSideEffects: false,
         code: getQwikBuildModule(loadOpts)
       };
     }
     if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
       log("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
       return {
+        moduleSideEffects: false,
         code: await getQwikServerManifestModule(loadOpts)
       };
     }
@@ -1012,7 +1012,8 @@ function createPlugin(optimizerOptions = {}) {
       "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID))));
       return {
         code: code,
-        map: transformedModule[0].map
+        map: transformedModule[0].map,
+        moduleSideEffects: false
       };
     }
     log("load()", "Not Found", id2);
@@ -1032,6 +1033,7 @@ function createPlugin(optimizerOptions = {}) {
       log("transform() pregenerated, addWatchFile", normalizedID, pregenerated[1]);
       addWatchFileCallback(ctx, pregenerated[1]);
       return {
+        moduleSideEffects: false,
         meta: {
           hook: pregenerated[0].hook
         }
@@ -1074,6 +1076,7 @@ function createPlugin(optimizerOptions = {}) {
       return {
         code: module.code,
         map: module.map,
+        moduleSideEffects: false,
         meta: {
           hook: module.hook
         }
@@ -1422,6 +1425,9 @@ function qwikVite(qwikViteOpts = {}) {
             input: opts.input,
             preserveEntrySignatures: "exports-only",
             output: normalizeRollupOutputOptions(path, opts, {}),
+            treeshake: {
+              moduleSideEffects: false
+            },
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                 return;

@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.22"
+    qwik: "0.0.24"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1063,11 +1063,9 @@ globalThis.qwikOptimizer = function(module) {
         const transformedOutput = transformedOutputs.get(tryId);
         if (transformedOutput) {
           log(`resolveId() Resolved ${tryId} from transformedOutputs`);
-          const transformedModule = transformedOutput[0];
-          const sideEffects = !transformedModule.isEntry || !transformedModule.hook;
           return {
             id: tryId + parsedId.query,
-            moduleSideEffects: sideEffects
+            moduleSideEffects: false
           };
         }
         log(`resolveId() id ${tryId} not found in transformedOutputs`);
@@ -1078,12 +1076,14 @@ globalThis.qwikOptimizer = function(module) {
       if (id2 === QWIK_BUILD_ID) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
+          moduleSideEffects: false,
           code: getQwikBuildModule(loadOpts)
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
         log("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
         return {
+          moduleSideEffects: false,
           code: await getQwikServerManifestModule(loadOpts)
         };
       }
@@ -1097,7 +1097,8 @@ globalThis.qwikOptimizer = function(module) {
         "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID))));
         return {
           code: code,
-          map: transformedModule[0].map
+          map: transformedModule[0].map,
+          moduleSideEffects: false
         };
       }
       log("load()", "Not Found", id2);
@@ -1117,6 +1118,7 @@ globalThis.qwikOptimizer = function(module) {
         log("transform() pregenerated, addWatchFile", normalizedID, pregenerated[1]);
         addWatchFileCallback(ctx, pregenerated[1]);
         return {
+          moduleSideEffects: false,
           meta: {
             hook: pregenerated[0].hook
           }
@@ -1159,6 +1161,7 @@ globalThis.qwikOptimizer = function(module) {
         return {
           code: module2.code,
           map: module2.map,
+          moduleSideEffects: false,
           meta: {
             hook: module2.hook
           }
@@ -1487,6 +1490,9 @@ globalThis.qwikOptimizer = function(module) {
               input: opts.input,
               preserveEntrySignatures: "exports-only",
               output: normalizeRollupOutputOptions(path, opts, {}),
+              treeshake: {
+                moduleSideEffects: false
+              },
               onwarn: (warning, warn) => {
                 if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                   return;
