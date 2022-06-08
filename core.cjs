@@ -206,13 +206,13 @@
         }
         return container;
     }
-    function useContainerState() {
+    function useRenderContext() {
         const ctx = getInvokeContext();
-        const containerState = ctx.renderCtx?.containerState;
-        if (!containerState) {
-            throw new Error('Cant access containerState for existing context');
+        const renderCtx = ctx.renderCtx;
+        if (!renderCtx) {
+            throw new Error('Cant access renderCtx for existing context');
         }
-        return containerState;
+        return renderCtx;
     }
 
     function flattenArray(array, dst) {
@@ -830,7 +830,7 @@
         if (store != null) {
             return wrapSubscriber(store, hostElement);
         }
-        const containerState = useContainerState();
+        const containerState = useRenderContext().containerState;
         const value = typeof initialState === 'function' ? initialState() : initialState;
         const newStore = qObject(value, containerState);
         setStore(newStore);
@@ -1033,7 +1033,7 @@
         const [watch, setWatch, i] = useSequentialScope();
         if (!watch) {
             const el = useHostElement();
-            const containerState = useContainerState();
+            const containerState = useRenderContext().containerState;
             const watch = {
                 qrl,
                 el,
@@ -2452,14 +2452,23 @@
         return Number(Math.abs(hash)).toString(36);
     }
 
-    function styleKey(qStyles) {
-        return qStyles && String(hashCode(qStyles.getCanonicalSymbol()));
+    /**
+     * @public
+     */
+    function styleKey(qStyles, index) {
+        return `${hashCode(qStyles.getCanonicalSymbol())}-${index}`;
     }
+    /**
+     * @public
+     */
     function styleHost(styleId) {
-        return styleId && ComponentStylesPrefixHost + styleId;
+        return ComponentStylesPrefixHost + styleId;
     }
+    /**
+     * @public
+     */
     function styleContent(styleId) {
-        return styleId && ComponentStylesPrefixContent + styleId;
+        return ComponentStylesPrefixContent + styleId;
     }
 
     /**
@@ -2571,12 +2580,7 @@
             return then(renderPromise, (jsxNode) => {
                 rctx.hostElements.add(hostElement);
                 const waitOnPromise = promiseAll(waitOn);
-                return then(waitOnPromise, (waitOnResolved) => {
-                    waitOnResolved.forEach((task) => {
-                        if (isStyleTask(task)) {
-                            appendStyle(rctx, hostElement, task);
-                        }
-                    });
+                return then(waitOnPromise, () => {
                     if (typeof jsxNode === 'function') {
                         ctx.dirty = false;
                         jsxNode = jsxNode();
@@ -3216,12 +3220,10 @@
         const fn = () => {
             const containerEl = ctx.containerEl;
             const stylesParent = ctx.doc.documentElement === containerEl ? ctx.doc.head ?? containerEl : containerEl;
-            if (!stylesParent.querySelector(`style[q\\:style="${styleTask.styleId}"]`)) {
-                const style = ctx.doc.createElement('style');
-                style.setAttribute('q:style', styleTask.styleId);
-                style.textContent = styleTask.content;
-                stylesParent.insertBefore(style, stylesParent.firstChild);
-            }
+            const style = ctx.doc.createElement('style');
+            style.setAttribute('q:style', styleTask.styleId);
+            style.textContent = styleTask.content;
+            stylesParent.insertBefore(style, stylesParent.firstChild);
         };
         ctx.operations.push({
             el: hostElement,
@@ -3229,6 +3231,24 @@
             args: [styleTask],
             fn,
         });
+    }
+    function hasStyle(ctx, styleId) {
+        const containerEl = ctx.containerEl;
+        const doc = getDocument(containerEl);
+        const hasOperation = ctx.operations.some((op) => {
+            if (op.operation === 'append-style') {
+                const s = op.args[0];
+                if (isStyleTask(s)) {
+                    return s.styleId === styleId;
+                }
+            }
+            return false;
+        });
+        if (hasOperation) {
+            return true;
+        }
+        const stylesParent = doc.documentElement === containerEl ? doc.head ?? containerEl : containerEl;
+        return !!stylesParent.querySelector(`style[q\\:style="${styleId}"]`);
     }
     function prepend(ctx, parent, newChild) {
         const fn = () => {
@@ -4595,25 +4615,29 @@
         return componentQrl($(onMount), options);
     }
     function _useStyles(styles, scoped) {
-        const [style, setStyle] = useSequentialScope();
+        const [style, setStyle, index] = useSequentialScope();
         if (style === true) {
             return;
         }
         setStyle(true);
+        const renderCtx = useRenderContext();
         const styleQrl = toQrlOrError(styles);
-        const styleId = styleKey(styleQrl);
+        const styleId = styleKey(styleQrl, index);
         const hostElement = useHostElement();
         if (scoped) {
             hostElement.setAttribute(ComponentScopedStyles, styleId);
         }
-        useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
-            const task = {
-                type: 'style',
-                styleId,
-                content: scoped ? styleText.replace(/�/g, styleId) : styleText,
-            };
-            return task;
-        }));
+        if (!hasStyle(renderCtx, styleId)) {
+            useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
+                if (!hasStyle(renderCtx, styleId)) {
+                    appendStyle(renderCtx, hostElement, {
+                        type: 'style',
+                        styleId,
+                        content: scoped ? styleText.replace(/�/g, styleId) : styleText,
+                    });
+                }
+            }));
+        }
     }
 
     /* eslint-disable */
