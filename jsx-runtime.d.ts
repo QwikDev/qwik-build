@@ -264,26 +264,26 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 declare interface ComponentCtx {
-    hostElement: Element;
-    styleId: string | undefined;
-    styleClass: string | undefined;
-    styleHostClass: string | undefined;
-    slots: JSXNode[];
+    $hostElement$: Element;
+    $styleId$: string | undefined;
+    $styleClass$: string | undefined;
+    $styleHostClass$: string | undefined;
+    $slots$: JSXNode[];
 }
 
 /**
  * @alpha
  */
 declare interface ContainerState {
-    proxyMap: ObjToProxyMap;
-    subsManager: SubscriptionManager;
-    platform: CorePlatform;
-    watchNext: Set<WatchDescriptor>;
-    watchStaging: Set<WatchDescriptor>;
-    hostsNext: Set<Element>;
-    hostsStaging: Set<Element>;
-    hostsRendering: Set<Element> | undefined;
-    renderPromise: Promise<RenderContext> | undefined;
+    $proxyMap$: ObjToProxyMap;
+    $subsManager$: SubscriptionManager;
+    $platform$: CorePlatform;
+    $watchNext$: Set<WatchDescriptor>;
+    $watchStaging$: Set<WatchDescriptor>;
+    $hostsNext$: Set<Element>;
+    $hostsStaging$: Set<Element>;
+    $hostsRendering$: Set<Element> | undefined;
+    $renderPromise$: Promise<RenderContext> | undefined;
 }
 
 /**
@@ -708,17 +708,17 @@ declare interface IntrinsicElements {
  * @public
  */
 declare interface InvokeContext {
-    url: URL | null;
-    seq: number;
-    doc?: Document;
-    hostElement?: Element;
-    element?: Element;
-    event: any;
-    qrl?: QRL<any>;
-    waitOn?: ValueOrPromise<any>[];
-    props?: Props;
-    subscriber?: Subscriber | null;
-    renderCtx?: RenderContext;
+    $url$: URL | null;
+    $seq$: number;
+    $doc$?: Document;
+    $hostElement$?: Element;
+    $element$?: Element;
+    $event$: any;
+    $qrl$?: QRL<any>;
+    $waitOn$?: ValueOrPromise<any>[];
+    $props$?: Props;
+    $subscriber$?: Subscriber | null;
+    $renderCtx$?: RenderContext;
 }
 
 /**
@@ -739,7 +739,7 @@ export declare namespace JSX {
 /**
  * @public
  */
-declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number): JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -793,9 +793,9 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface LocalSubscriptionManager {
-    subs: SubscriberMap;
-    notifySubs: (key?: string | undefined) => void;
-    addSub: (subscriber: Subscriber, key?: string) => void;
+    $subs$: SubscriberMap;
+    $notifySubs$: (key?: string | undefined) => void;
+    $addSub$: (subscriber: Subscriber, key?: string) => void;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -885,15 +885,6 @@ declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
-}
-
-/**
- * @alpha
- */
-declare interface PerfEvent {
-    name: string;
-    timeStart: number;
-    timeEnd: number;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1030,9 +1021,9 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
 declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     getSymbol(): string;
-    getCanonicalSymbol(): string;
+    getHash(): string;
     resolve(container?: Element): Promise<TYPE>;
-    resolveIfNeeded(container?: Element): ValueOrPromise<TYPE>;
+    resolveLazy(container?: Element): ValueOrPromise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
@@ -1238,29 +1229,31 @@ declare interface Ref<T> {
  * @alpha
  */
 declare interface RenderContext {
-    doc: Document;
-    roots: Element[];
-    hostElements: Set<Element>;
-    operations: RenderOperation[];
-    components: ComponentCtx[];
-    containerState: ContainerState;
-    containerEl: Element;
-    perf: RenderPerf;
+    $doc$: Document;
+    $roots$: Element[];
+    $hostElements$: Set<Element>;
+    $operations$: RenderOperation[];
+    $components$: ComponentCtx[];
+    $containerState$: ContainerState;
+    $containerEl$: Element;
+    $perf$: RenderPerf;
 }
 
 /**
  * @alpha
  */
 declare interface RenderOperation {
-    el: Node;
-    operation: string;
-    args: any[];
-    fn: () => void;
+    $el$: Node;
+    $operation$: string;
+    $args$: any[];
+    $fn$: () => void;
 }
 
+/**
+ * @alpha
+ */
 declare interface RenderPerf {
-    timing: PerfEvent[];
-    visited: number;
+    $visited$: number;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1318,9 +1311,9 @@ declare type Subscriber = WatchDescriptor | Element;
 declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
 
 declare interface SubscriptionManager {
-    tryGetLocal(obj: any): LocalSubscriptionManager | undefined;
-    getLocal(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
-    clearSub: (sub: Subscriber) => void;
+    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
+    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    $clearSub$: (sub: Subscriber) => void;
 }
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {

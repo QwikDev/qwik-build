@@ -71,7 +71,7 @@
  * @param expression - Expression which should be lazy loaded
  * @public
  */
-export declare function $<T>(expression: T): QRL<T>;
+export declare const $: <T>(expression: T) => QRL<T>;
 
 declare interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: any;
@@ -385,7 +385,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare function component$<PROPS extends {}>(onMount: OnRenderFn<PROPS>, options?: ComponentOptions): Component<PROPS>;
+export declare const component$: <PROPS extends {}>(onMount: OnRenderFn<PROPS>, options?: ComponentOptions) => Component<PROPS>;
 
 /**
  * @public
@@ -429,11 +429,11 @@ export declare type ComponentChildren = ComponentChild[] | ComponentChild;
  * @alpha
  */
 export declare interface ComponentCtx {
-    hostElement: Element;
-    styleId: string | undefined;
-    styleClass: string | undefined;
-    styleHostClass: string | undefined;
-    slots: JSXNode[];
+    $hostElement$: Element;
+    $styleId$: string | undefined;
+    $styleClass$: string | undefined;
+    $styleHostClass$: string | undefined;
+    $slots$: JSXNode[];
 }
 
 /**
@@ -493,14 +493,29 @@ export declare interface ComponentOptions {
  *
  * @public
  */
-export declare function componentQrl<PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions): Component<PROPS>;
+export declare const componentQrl: <PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions) => Component<PROPS>;
+
+/**
+ * @alpha
+ */
+declare interface ContainerState {
+    $proxyMap$: ObjToProxyMap;
+    $subsManager$: SubscriptionManager;
+    $platform$: CorePlatform;
+    $watchNext$: Set<WatchDescriptor>;
+    $watchStaging$: Set<WatchDescriptor>;
+    $hostsNext$: Set<Element>;
+    $hostsStaging$: Set<Element>;
+    $hostsRendering$: Set<Element> | undefined;
+    $renderPromise$: Promise<RenderContext> | undefined;
+}
 
 /**
  * @alpha
  */
 export declare interface Context<STATE extends object> {
     readonly id: string;
-    readonly _value: STATE;
+    readonly _v: STATE;
 }
 
 /**
@@ -530,7 +545,7 @@ export declare interface CorePlatform {
 /**
  * @alpha
  */
-export declare function createContext<STATE extends object>(name: string): Context<STATE>;
+export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
 
 declare interface CSSProperties {
     [key: string]: string | number;
@@ -650,7 +665,7 @@ export declare namespace h {
 /**
  * @alpha
  */
-export declare function handleWatch(): void;
+export declare const handleWatch: () => void;
 
 /**
  * Place at the root of the component View to allow binding of attributes on the Host element.
@@ -776,7 +791,7 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function immutable<T extends {}>(input: T): Readonly<T>;
+export declare const immutable: <T extends {}>(input: T) => Readonly<T>;
 
 /**
  * Create a `____$(...)` convenience method from `___(...)`.
@@ -814,12 +829,12 @@ export declare function immutable<T extends {}>(input: T): Readonly<T>;
  * @param fn - function that should have its first argument automatically `$`.
  * @alpha
  */
-export declare function implicit$FirstArg<FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET): (first: FIRST, ...rest: REST) => RET;
+export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
 
 /**
  * @alpha
  */
-export declare function inlinedQrl<T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]): QRL<T>;
+export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
 declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1043,23 +1058,23 @@ declare interface IntrinsicElements {
  * @public
  */
 export declare interface InvokeContext {
-    url: URL | null;
-    seq: number;
-    doc?: Document;
-    hostElement?: Element;
-    element?: Element;
-    event: any;
-    qrl?: QRL<any>;
-    waitOn?: ValueOrPromise<any>[];
-    props?: Props;
-    subscriber?: Subscriber | null;
-    renderCtx?: RenderContext;
+    $url$: URL | null;
+    $seq$: number;
+    $doc$?: Document;
+    $hostElement$?: Element;
+    $element$?: Element;
+    $event$: any;
+    $qrl$?: QRL<any>;
+    $waitOn$?: ValueOrPromise<any>[];
+    $props$?: Props;
+    $subscriber$?: Subscriber | null;
+    $renderCtx$?: RenderContext;
 }
 
 /**
  * @public
  */
-declare function jsx<T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number): JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -1118,9 +1133,9 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface LocalSubscriptionManager {
-    subs: SubscriberMap;
-    notifySubs: (key?: string | undefined) => void;
-    addSub: (subscriber: Subscriber, key?: string) => void;
+    $subs$: SubscriberMap;
+    $notifySubs$: (key?: string | undefined) => void;
+    $addSub$: (subscriber: Subscriber, key?: string) => void;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1167,7 +1182,7 @@ declare const MUTABLE: unique symbol;
 /**
  * @alpha
  */
-export declare function mutable<T>(v: T): MutableWrapper<T>;
+export declare const mutable: <T>(v: T) => MutableWrapper<T>;
 
 /**
  * @public
@@ -1176,6 +1191,9 @@ declare type MutableProps<PROPS extends {}> = {
     [K in keyof PROPS]: PROPS[K] | MutableWrapper<PROPS[K]>;
 };
 
+/**
+ * @public
+ */
 declare interface MutableWrapper<T> {
     [MUTABLE]: true;
     v: T;
@@ -1191,7 +1209,7 @@ export declare type NoSerialize<T> = (T & {
 /**
  * @alpha
  */
-export declare function noSerialize<T extends {}>(input: T): NoSerialize<T>;
+export declare const noSerialize: <T extends {}>(input: T) => NoSerialize<T>;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
@@ -1253,16 +1271,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @alpha
  */
-export declare function pauseContainer(elmOrDoc: Element | Document): SnapshotResult;
-
-/**
- * @alpha
- */
-export declare interface PerfEvent {
-    name: string;
-    timeStart: number;
-    timeEnd: number;
-}
+export declare const pauseContainer: (elmOrDoc: Element | Document) => SnapshotResult;
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
@@ -1416,9 +1425,9 @@ export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & On$Pro
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     getSymbol(): string;
-    getCanonicalSymbol(): string;
+    getHash(): string;
     resolve(container?: Element): Promise<TYPE>;
-    resolveIfNeeded(container?: Element): ValueOrPromise<TYPE>;
+    resolveLazy(container?: Element): ValueOrPromise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
@@ -1436,7 +1445,7 @@ export declare interface QRL<TYPE = any> {
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
  * @alpha
  */
-export declare function qrl<T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null): QRL<T>;
+export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null) => QRL<T>;
 
 /**
  * @public
@@ -1668,7 +1677,7 @@ export declare interface Ref<T> {
  * @param jsxNode - JSX to render
  * @alpha
  */
-export declare function render(parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>): Promise<RenderContext | undefined>;
+export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>) => Promise<void>;
 
 /**
  * @public
@@ -1681,44 +1690,31 @@ export declare type RenderableProps<P, RefType = any> = P & Readonly<{
  * @alpha
  */
 export declare interface RenderContext {
-    doc: Document;
-    roots: Element[];
-    hostElements: Set<Element>;
-    operations: RenderOperation[];
-    components: ComponentCtx[];
-    containerState: RenderingState;
-    containerEl: Element;
-    perf: RenderPerf;
-}
-
-/**
- * @alpha
- */
-export declare interface RenderingState {
-    proxyMap: ObjToProxyMap;
-    subsManager: SubscriptionManager;
-    platform: CorePlatform;
-    watchNext: Set<WatchDescriptor>;
-    watchStaging: Set<WatchDescriptor>;
-    hostsNext: Set<Element>;
-    hostsStaging: Set<Element>;
-    hostsRendering: Set<Element> | undefined;
-    renderPromise: Promise<RenderContext> | undefined;
+    $doc$: Document;
+    $roots$: Element[];
+    $hostElements$: Set<Element>;
+    $operations$: RenderOperation[];
+    $components$: ComponentCtx[];
+    $containerState$: ContainerState;
+    $containerEl$: Element;
+    $perf$: RenderPerf;
 }
 
 /**
  * @alpha
  */
 export declare interface RenderOperation {
-    el: Node;
-    operation: string;
-    args: any[];
-    fn: () => void;
+    $el$: Node;
+    $operation$: string;
+    $args$: any[];
+    $fn$: () => void;
 }
 
+/**
+ * @alpha
+ */
 declare interface RenderPerf {
-    timing: PerfEvent[];
-    visited: number;
+    $visited$: number;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1774,6 +1770,9 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
@@ -1781,6 +1780,9 @@ declare interface SnapshotListener {
 
 declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
 
+/**
+ * @public
+ */
 declare interface SnapshotMetaValue {
     r?: string;
     w?: string;
@@ -1832,9 +1834,9 @@ declare type Subscriber = WatchDescriptor | Element;
 declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
 
 declare interface SubscriptionManager {
-    tryGetLocal(obj: any): LocalSubscriptionManager | undefined;
-    getLocal(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
-    clearSub: (sub: Subscriber) => void;
+    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
+    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    $clearSub$: (sub: Subscriber) => void;
 }
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -2204,7 +2206,7 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function unwrapSubscriber<T extends {}>(obj: T): any;
+export declare const unwrapSubscriber: <T extends {}>(obj: T) => any;
 
 /**
  * A lazy-loadable reference to a component's cleanup hook.
@@ -2250,7 +2252,7 @@ export declare const useCleanup$: (first: () => void) => void;
  *
  * @alpha
  */
-export declare function useCleanupQrl(unmountFn: QRL<() => void>): void;
+export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
 
 /**
  * ```tsx
@@ -2300,7 +2302,7 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  *
  * @public
  */
-export declare function useClientEffectQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
+export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
 /**
  * Register's a client mount hook, that runs only in client when the component is first mounted.
@@ -2360,17 +2362,17 @@ export declare const useClientMount$: (first: ServerFn) => void;
  *
  * @public
  */
-export declare function useClientMountQrl(mountQrl: QRL<ServerFn>): void;
+export declare const useClientMountQrl: (mountQrl: QRL<ServerFn>) => void;
 
 /**
  * @alpha
  */
-export declare function useContext<STATE extends object>(context: Context<STATE>): STATE;
+export declare const useContext: <STATE extends object>(context: Context<STATE>) => STATE;
 
 /**
  * @alpha
  */
-export declare function useContextProvider<STATE extends object>(context: Context<STATE>, newValue: STATE): void;
+export declare const useContextProvider: <STATE extends object>(context: Context<STATE>, newValue: STATE) => void;
 
 /**
  * Retrieves the document of the current element. It's important to use this method instead of
@@ -2381,7 +2383,7 @@ export declare function useContextProvider<STATE extends object>(context: Contex
  *
  * @alpha
  */
-export declare function useDocument(): Document;
+export declare const useDocument: () => Document;
 
 /**
  * @alpha
@@ -2417,7 +2419,7 @@ export declare type UseEffectRunOptions = 'visible' | 'load';
  *
  * @public
  */
-export declare function useHostElement(): Element;
+export declare const useHostElement: () => Element;
 
 /**
  * Used by the Qwik Optimizer to restore the lexical scoped variables.
@@ -2429,7 +2431,7 @@ export declare function useHostElement(): Element;
  *
  * @public
  */
-export declare function useLexicalScope<VARS extends any[]>(): VARS;
+export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
 /**
  * Register's a mount hook, that runs both in the server and the client when the component is
@@ -2493,7 +2495,7 @@ export declare const useMount$: (first: ServerFn) => void;
  * @see `useServerMount` `useClientMount`
  * @public
  */
-export declare function useMountQrl(mountQrl: QRL<ServerFn>): void;
+export declare const useMountQrl: (mountQrl: QRL<ServerFn>) => void;
 
 /**
  * Register a listener on the current component's host element.
@@ -2505,7 +2507,7 @@ export declare function useMountQrl(mountQrl: QRL<ServerFn>): void;
  *
  * @alpha
  */
-export declare function useOn(event: string, eventFn: QRL<() => void>): void;
+export declare const useOn: (event: string, eventFn: QRL<() => void>) => void;
 
 /**
  * Register a listener on `document`.
@@ -2533,7 +2535,7 @@ export declare function useOn(event: string, eventFn: QRL<() => void>): void;
  *
  * @alpha
  */
-export declare function useOnDocument(event: string, eventQrl: QRL<() => void>): void;
+export declare const useOnDocument: (event: string, eventQrl: QRL<() => void>) => void;
 
 /**
  * Register a listener on `window`.
@@ -2562,7 +2564,7 @@ export declare function useOnDocument(event: string, eventQrl: QRL<() => void>):
  *
  * @alpha
  */
-export declare function useOnWindow(event: string, eventFn: QRL<() => void>): void;
+export declare const useOnWindow: (event: string, eventFn: QRL<() => void>) => void;
 
 /**
  * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
@@ -2596,7 +2598,7 @@ export declare function useOnWindow(event: string, eventFn: QRL<() => void>): vo
  *
  * @public
  */
-export declare function useRef<T = Element>(current?: T): Ref<T>;
+export declare const useRef: <T = Element>(current?: T | undefined) => Ref<T>;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -2646,7 +2648,7 @@ export declare const useResume$: (first: () => void) => void;
  *
  * @alpha
  */
-export declare function useResumeQrl(resumeFn: QRL<() => void>): void;
+export declare const useResumeQrl: (resumeFn: QRL<() => void>) => void;
 
 /**
  * @see `useStyles`.
@@ -2660,12 +2662,12 @@ export declare const useScopedStyles$: (first: string) => void;
  *
  * @alpha
  */
-export declare function useScopedStylesQrl(styles: QRL<string>): void;
+export declare const useScopedStylesQrl: (styles: QRL<string>) => void;
 
 /**
  * @alpha
  */
-export declare function useSequentialScope(): [any, (prop: any) => void, number];
+export declare const useSequentialScope: () => [any, (prop: any) => void, number];
 
 /**
  * Register's a server mount hook, that runs only in server when the component is first mounted.
@@ -2741,7 +2743,7 @@ export declare const useServerMount$: (first: ServerFn) => void;
  * @see `useClientMount` `useMount`
  * @public
  */
-export declare function useServerMountQrl(mountQrl: QRL<ServerFn>): void;
+export declare const useServerMountQrl: (mountQrl: QRL<ServerFn>) => void;
 
 /**
  * Creates a object that Qwik can track across serializations.
@@ -2802,7 +2804,7 @@ export declare function useServerMountQrl(mountQrl: QRL<ServerFn>): void;
  *
  * @public
  */
-export declare function useStore<STATE extends object>(initialState: STATE | (() => STATE)): STATE;
+export declare const useStore: <STATE extends object>(initialState: STATE | (() => STATE)) => STATE;
 
 /**
  * A lazy-loadable reference to a component's styles.
@@ -2846,12 +2848,12 @@ export declare const useStyles$: (first: string) => void;
  *
  * @public
  */
-export declare function useStylesQrl(styles: QRL<string>): void;
+export declare const useStylesQrl: (styles: QRL<string>) => void;
 
 /**
  * @alpha
  */
-export declare function useWaitOn(promise: ValueOrPromise<any>): void;
+export declare const useWaitOn: (promise: ValueOrPromise<any>) => void;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -2971,7 +2973,7 @@ export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undef
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare function useWatchQrl(qrl: QRL<WatchFn>, opts?: UseEffectOptions): void;
+export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -3034,6 +3036,6 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare function wrapSubscriber<T extends {}>(obj: T, subscriber: Subscriber): any;
+export declare const wrapSubscriber: <T extends {}>(obj: T, subscriber: Subscriber) => any;
 
 export { }

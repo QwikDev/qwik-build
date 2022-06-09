@@ -13,6 +13,14 @@ import { getPlatform, setPlatform } from "../core.mjs";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 
+// packages/qwik/src/core/util/types.ts
+var isObject = (v) => {
+  return v && typeof v === "object";
+};
+var isFunction = (v) => {
+  return typeof v === "function";
+};
+
 // packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
@@ -24,50 +32,75 @@ var logError = (message, ...optionalParams) => {
 };
 
 // packages/qwik/src/core/assert/assert.ts
-function assertDefined(value, text) {
+var assertDefined = (value, text) => {
   if (qDev) {
     if (value != null)
       return;
     throw newError(text || "Expected defined value");
   }
-}
-function assertEqual(value1, value2, text) {
-  if (qDev) {
-    if (value1 === value2)
-      return;
-    throw newError(text || `Expected '${value1}' === '${value2}'.`);
-  }
-}
-function newError(text) {
+};
+var newError = (text) => {
   debugger;
   const error = new Error(text);
   logError(error);
   return error;
-}
+};
 
 // packages/qwik/src/core/util/markers.ts
 var QContainerSelector = "[q\\:container]";
 
 // packages/qwik/src/core/util/dom.ts
-function getDocument(node) {
+var getDocument = (node) => {
   if (typeof document !== "undefined") {
     return document;
   }
   if (node.nodeType === 9) {
     return node;
   }
-  let doc = node.ownerDocument;
-  while (doc && doc.nodeType !== 9) {
-    doc = doc.parentNode;
-  }
+  const doc = node.ownerDocument;
   assertDefined(doc);
   return doc;
-}
+};
+
+// packages/qwik/src/core/error/error.ts
+var QError_qrlIsNotFunction = 10;
+var qError = (code, ...parts) => {
+  const text = codeToText(code);
+  const error = text + parts.join(" ");
+  debugger;
+  return new Error(error);
+};
+var codeToText = (code) => {
+  if (qDev) {
+    const MAP = [
+      "Can not serialize a HTML Node that is not an Element",
+      "Rruntime but no instance found on element.",
+      "Only primitive and object literals can be serialized",
+      "Crash while rendering",
+      "You can render over a existing q:container. Skipping render().",
+      "Set property",
+      "Only function's and 'string's are supported.",
+      "Only objects can be wrapped in 'QObject'",
+      `Only objects literals can be wrapped in 'QObject'`,
+      "QRL is not a function",
+      "Dynamic import not found",
+      "Unknown type argument",
+      "not found state for useContext",
+      "Q-ERROR: invoking 'use*()' method outside of invocation context.",
+      "Cant access renderCtx for existing context",
+      "Cant access document for existing context",
+      "props are inmutable"
+    ];
+    return `Code(${code}): ${MAP[code] ?? ""}`;
+  } else {
+    return `Code(${code})`;
+  }
+};
 
 // packages/qwik/src/core/use/use-core.ts
 var CONTAINER = Symbol("container");
 var _context;
-function useInvoke(context, fn, ...args) {
+var useInvoke = (context, fn, ...args) => {
   const previousContext = _context;
   let returnValue;
   try {
@@ -76,31 +109,31 @@ function useInvoke(context, fn, ...args) {
   } finally {
     const currentCtx = _context;
     _context = previousContext;
-    if (currentCtx.waitOn && currentCtx.waitOn.length > 0) {
-      return Promise.all(currentCtx.waitOn).then(() => returnValue);
+    if (currentCtx.$waitOn$ && currentCtx.$waitOn$.length > 0) {
+      return Promise.all(currentCtx.$waitOn$).then(() => returnValue);
     }
   }
   return returnValue;
-}
-function newInvokeContext(doc, hostElement, element, event, url) {
+};
+var newInvokeContext = (doc, hostElement, element, event, url) => {
   return {
-    seq: 0,
-    doc,
-    hostElement,
-    element,
-    event,
-    url: url || null,
-    qrl: void 0
+    $seq$: 0,
+    $doc$: doc,
+    $hostElement$: hostElement,
+    $element$: element,
+    $event$: event,
+    $url$: url || null,
+    $qrl$: void 0
   };
-}
-function getContainer(el) {
+};
+var getContainer = (el) => {
   let container = el[CONTAINER];
   if (!container) {
     container = el.closest(QContainerSelector);
     el[CONTAINER] = container;
   }
   return container;
-}
+};
 
 // packages/qwik/src/testing/platform.ts
 function createPlatform(document2) {
@@ -212,9 +245,9 @@ function createDocument(opts = {}) {
 }
 
 // packages/qwik/src/core/util/promises.ts
-function isPromise(value) {
+var isPromise = (value) => {
   return value instanceof Promise;
-}
+};
 var then = (promise, thenFn, rejectFn) => {
   return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
 };
@@ -262,17 +295,17 @@ var createPlatform2 = (doc) => {
     }
   };
 };
-function findModule(module) {
+var findModule = (module) => {
   return Object.values(module).find(isModule) || module;
-}
-function isModule(module) {
-  return typeof module === "object" && module && module[Symbol.toStringTag] === "Module";
-}
-function toUrl2(doc, element, url) {
+};
+var isModule = (module) => {
+  return isObject(module) && module[Symbol.toStringTag] === "Module";
+};
+var toUrl2 = (doc, element, url) => {
   const containerEl = getContainer(element);
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
-}
+};
 var getPlatform2 = (docOrNode) => {
   const doc = getDocument(docOrNode);
   return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
@@ -281,38 +314,34 @@ var DocumentPlatform = /* @__PURE__ */ Symbol();
 
 // packages/qwik/src/core/import/qrl.ts
 var RUNTIME_QRL = "/runtimeQRL";
-function toInternalQRL(qrl) {
-  assertEqual(isQrl(qrl), true);
-  return qrl;
-}
-function qrlImport(element, qrl) {
-  const qrl_ = toInternalQRL(qrl);
-  if (qrl_.symbolRef)
-    return qrl_.symbolRef;
-  if (qrl_.symbolFn) {
-    return qrl_.symbolRef = qrl_.symbolFn().then((module) => qrl_.symbolRef = module[qrl_.symbol]);
+var qrlImport = (element, qrl) => {
+  const qrl_ = qrl;
+  if (qrl_.$symbolRef$)
+    return qrl_.$symbolRef$;
+  if (qrl_.$symbolFn$) {
+    return qrl_.$symbolRef$ = qrl_.$symbolFn$().then((module) => qrl_.$symbolRef$ = module[qrl_.$symbol$]);
   } else {
     if (!element) {
-      throw new Error(`QRL '${qrl_.chunk}#${qrl_.symbol || "default"}' does not have an attached container`);
+      throw new Error(`QRL '${qrl_.$chunk$}#${qrl_.$symbol$ || "default"}' does not have an attached container`);
     }
-    const symbol = getPlatform2(element).importSymbol(element, qrl_.chunk, qrl_.symbol);
-    return qrl_.symbolRef = then(symbol, (ref) => {
-      return qrl_.symbolRef = ref;
+    const symbol = getPlatform2(element).importSymbol(element, qrl_.$chunk$, qrl_.$symbol$);
+    return qrl_.$symbolRef$ = then(symbol, (ref) => {
+      return qrl_.$symbolRef$ = ref;
     });
   }
-}
-function stringifyQRL(qrl, opts = {}) {
-  const qrl_ = toInternalQRL(qrl);
-  let symbol = qrl_.symbol;
-  let chunk = qrl_.chunk;
-  const refSymbol = qrl_.refSymbol ?? symbol;
-  const platform = opts.platform;
-  const element = opts.element;
+};
+var stringifyQRL = (qrl, opts = {}) => {
+  const qrl_ = qrl;
+  let symbol = qrl_.$symbol$;
+  let chunk = qrl_.$chunk$;
+  const refSymbol = qrl_.$refSymbol$ ?? symbol;
+  const platform = opts.$platform$;
+  const element = opts.$element$;
   if (platform) {
     const result = platform.chunkForSymbol(refSymbol);
     if (result) {
       chunk = result[1];
-      if (!qrl_.refSymbol) {
+      if (!qrl_.$refSymbol$) {
         symbol = result[0];
       }
     }
@@ -321,79 +350,79 @@ function stringifyQRL(qrl, opts = {}) {
   if (symbol && symbol !== "default") {
     parts.push("#", symbol);
   }
-  const capture = qrl_.capture;
-  const captureRef = qrl_.captureRef;
-  if (opts.getObjId) {
+  const capture = qrl_.$capture$;
+  const captureRef = qrl_.$captureRef$;
+  if (opts.$getObjId$) {
     if (captureRef && captureRef.length) {
-      const capture2 = captureRef.map(opts.getObjId);
+      const capture2 = captureRef.map(opts.$getObjId$);
       parts.push(`[${capture2.join(" ")}]`);
     }
   } else if (capture && capture.length > 0) {
     parts.push(`[${capture.join(" ")}]`);
   }
   const qrlString = parts.join("");
-  if (qrl_.chunk === RUNTIME_QRL && element) {
+  if (qrl_.$chunk$ === RUNTIME_QRL && element) {
     const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
     qrls.add(qrl);
   }
   return qrlString;
-}
+};
 
 // packages/qwik/src/core/import/qrl-class.ts
-function isQrl(value) {
-  return value instanceof QRLInternal;
-}
+var isQrl = (value) => {
+  return value instanceof QRL;
+};
 var QRL = class {
-  constructor(chunk, symbol, symbolRef, symbolFn, capture, captureRef) {
-    this.chunk = chunk;
-    this.symbol = symbol;
-    this.symbolRef = symbolRef;
-    this.symbolFn = symbolFn;
-    this.capture = capture;
-    this.captureRef = captureRef;
+  constructor($chunk$, $symbol$, $symbolRef$, $symbolFn$, $capture$, $captureRef$) {
+    this.$chunk$ = $chunk$;
+    this.$symbol$ = $symbol$;
+    this.$symbolRef$ = $symbolRef$;
+    this.$symbolFn$ = $symbolFn$;
+    this.$capture$ = $capture$;
+    this.$captureRef$ = $captureRef$;
   }
   setContainer(el) {
-    if (!this.el) {
-      this.el = el;
+    if (!this.$el$) {
+      this.$el$ = el;
     }
   }
   getSymbol() {
-    return this.refSymbol ?? this.symbol;
+    return this.$refSymbol$ ?? this.$symbol$;
   }
-  getCanonicalSymbol() {
-    return getCanonicalSymbol(this.refSymbol ?? this.symbol);
+  getHash() {
+    return getSymbolHash(this.$refSymbol$ ?? this.$symbol$);
   }
   async resolve(el) {
     if (el) {
       this.setContainer(el);
     }
-    return qrlImport(this.el, this);
+    return qrlImport(this.$el$, this);
   }
-  resolveIfNeeded(el) {
-    return typeof this.symbolRef === "function" ? this.symbolRef : this.resolve(el);
+  resolveLazy(el) {
+    return isFunction(this.$symbolRef$) ? this.$symbolRef$ : this.resolve(el);
   }
   invokeFn(el, currentCtx, beforeFn) {
     return (...args) => {
-      const fn = this.resolveIfNeeded(el);
+      const fn = this.resolveLazy(el);
       return then(fn, (fn2) => {
-        if (typeof fn2 === "function") {
+        if (isFunction(fn2)) {
           const baseContext = currentCtx ?? newInvokeContext();
           const context = {
             ...baseContext,
-            qrl: this
+            $qrl$: this
           };
           if (beforeFn) {
             beforeFn();
           }
           return useInvoke(context, fn2, ...args);
         }
-        throw new Error("QRL is not a function");
+        throw qError(QError_qrlIsNotFunction);
       });
     };
   }
   copy() {
-    const copy = new QRLInternal(this.chunk, this.symbol, this.symbolRef, this.symbolFn, null, this.captureRef);
-    copy.refSymbol = this.refSymbol;
+    const copy = new QRL(this.$chunk$, this.$symbol$, this.$symbolRef$, this.$symbolFn$, null, this.$captureRef$);
+    copy.$refSymbol$ = this.$refSymbol$;
     return copy;
   }
   async invoke(...args) {
@@ -405,14 +434,13 @@ var QRL = class {
     return stringifyQRL(this, options);
   }
 };
-var getCanonicalSymbol = (symbolName) => {
+var getSymbolHash = (symbolName) => {
   const index = symbolName.lastIndexOf("_");
   if (index > -1) {
     return symbolName.slice(index + 1);
   }
   return symbolName;
 };
-var QRLInternal = QRL;
 
 // packages/qwik/src/testing/util.ts
 import { pathToFileURL } from "url";
@@ -463,7 +491,7 @@ function toDOM(jsx, parent) {
   for (const attrName in jsx.props) {
     if (attrName !== "children") {
       const jsxValue = jsx.props[attrName];
-      element.setAttribute(attrName, isQrl(jsxValue) ? stringifyQRL(jsxValue, { element }) : jsxValue);
+      element.setAttribute(attrName, isQrl(jsxValue) ? stringifyQRL(jsxValue, { $element$: element }) : jsxValue);
     }
   }
   if (parent) {

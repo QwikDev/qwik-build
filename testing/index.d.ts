@@ -2,26 +2,26 @@
  * @alpha
  */
 declare interface ComponentCtx {
-    hostElement: Element;
-    styleId: string | undefined;
-    styleClass: string | undefined;
-    styleHostClass: string | undefined;
-    slots: JSXNode[];
+    $hostElement$: Element;
+    $styleId$: string | undefined;
+    $styleClass$: string | undefined;
+    $styleHostClass$: string | undefined;
+    $slots$: JSXNode[];
 }
 
 /**
  * @alpha
  */
 declare interface ContainerState {
-    proxyMap: ObjToProxyMap;
-    subsManager: SubscriptionManager;
-    platform: CorePlatform;
-    watchNext: Set<WatchDescriptor>;
-    watchStaging: Set<WatchDescriptor>;
-    hostsNext: Set<Element>;
-    hostsStaging: Set<Element>;
-    hostsRendering: Set<Element> | undefined;
-    renderPromise: Promise<RenderContext> | undefined;
+    $proxyMap$: ObjToProxyMap;
+    $subsManager$: SubscriptionManager;
+    $platform$: CorePlatform;
+    $watchNext$: Set<WatchDescriptor>;
+    $watchStaging$: Set<WatchDescriptor>;
+    $hostsNext$: Set<Element>;
+    $hostsStaging$: Set<Element>;
+    $hostsRendering$: Set<Element> | undefined;
+    $renderPromise$: Promise<RenderContext> | undefined;
 }
 
 /**
@@ -88,17 +88,17 @@ export declare interface GlobalInjections {
  * @public
  */
 declare interface InvokeContext {
-    url: URL | null;
-    seq: number;
-    doc?: Document;
-    hostElement?: Element;
-    element?: Element;
-    event: any;
-    qrl?: QRL<any>;
-    waitOn?: ValueOrPromise<any>[];
-    props?: Props;
-    subscriber?: Subscriber | null;
-    renderCtx?: RenderContext;
+    $url$: URL | null;
+    $seq$: number;
+    $doc$?: Document;
+    $hostElement$?: Element;
+    $element$?: Element;
+    $event$: any;
+    $qrl$?: QRL<any>;
+    $waitOn$?: ValueOrPromise<any>[];
+    $props$?: Props;
+    $subscriber$?: Subscriber | null;
+    $renderCtx$?: RenderContext;
 }
 
 /**
@@ -114,9 +114,9 @@ declare interface JSXNode<T = any> {
 }
 
 declare interface LocalSubscriptionManager {
-    subs: SubscriberMap;
-    notifySubs: (key?: string | undefined) => void;
-    addSub: (subscriber: Subscriber, key?: string) => void;
+    $subs$: SubscriberMap;
+    $notifySubs$: (key?: string | undefined) => void;
+    $addSub$: (subscriber: Subscriber, key?: string) => void;
 }
 
 /**
@@ -127,15 +127,6 @@ declare type NoSerialize<T> = (T & {
 }) | undefined;
 
 declare type ObjToProxyMap = WeakMap<any, any>;
-
-/**
- * @alpha
- */
-declare interface PerfEvent {
-    name: string;
-    timeStart: number;
-    timeEnd: number;
-}
 
 /**
  * @alpha
@@ -287,9 +278,9 @@ declare type Props<T extends {} = {}> = Record<string, any> & T;
 declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     getSymbol(): string;
-    getCanonicalSymbol(): string;
+    getHash(): string;
     resolve(container?: Element): Promise<TYPE>;
-    resolveIfNeeded(container?: Element): ValueOrPromise<TYPE>;
+    resolveLazy(container?: Element): ValueOrPromise<TYPE>;
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
     invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
@@ -350,29 +341,31 @@ export declare interface QwikSymbol {
  * @alpha
  */
 declare interface RenderContext {
-    doc: Document;
-    roots: Element[];
-    hostElements: Set<Element>;
-    operations: RenderOperation[];
-    components: ComponentCtx[];
-    containerState: ContainerState;
-    containerEl: Element;
-    perf: RenderPerf;
+    $doc$: Document;
+    $roots$: Element[];
+    $hostElements$: Set<Element>;
+    $operations$: RenderOperation[];
+    $components$: ComponentCtx[];
+    $containerState$: ContainerState;
+    $containerEl$: Element;
+    $perf$: RenderPerf;
 }
 
 /**
  * @alpha
  */
 declare interface RenderOperation {
-    el: Node;
-    operation: string;
-    args: any[];
-    fn: () => void;
+    $el$: Node;
+    $operation$: string;
+    $args$: any[];
+    $fn$: () => void;
 }
 
+/**
+ * @alpha
+ */
 declare interface RenderPerf {
-    timing: PerfEvent[];
-    visited: number;
+    $visited$: number;
 }
 
 /**
@@ -447,6 +440,9 @@ declare interface SerializeDocumentOptions {
  */
 export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions, mapper: SymbolMapper): Promise<void>;
 
+/**
+ * @public
+ */
 declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
@@ -454,6 +450,9 @@ declare interface SnapshotListener {
 
 declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
 
+/**
+ * @public
+ */
 declare interface SnapshotMetaValue {
     r?: string;
     w?: string;
@@ -488,9 +487,9 @@ declare type Subscriber = WatchDescriptor | Element;
 declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
 
 declare interface SubscriptionManager {
-    tryGetLocal(obj: any): LocalSubscriptionManager | undefined;
-    getLocal(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
-    clearSub: (sub: Subscriber) => void;
+    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
+    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    $clearSub$: (sub: Subscriber) => void;
 }
 
 declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;

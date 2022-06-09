@@ -71,7 +71,7 @@ globalThis.qwikOptimizer = function(module) {
   globalThis.describe;
   var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
   var logWarn = (message, ...optionalParams) => {
-    console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
+    qDev && console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
   };
   function createPath(opts = {}) {
     function assertPath(path) {
