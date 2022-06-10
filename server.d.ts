@@ -440,7 +440,7 @@ declare interface SerializeDocumentOptions {
  * Applies NodeJS specific platform APIs to the passed in document instance.
  * @public
  */
-export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions, mapper: SymbolMapper): Promise<void>;
+export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions, mapper: SymbolMapper | undefined): Promise<void>;
 
 /**
  * @public

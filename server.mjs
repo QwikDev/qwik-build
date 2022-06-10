@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.24",
+  qwik: "0.0.25",
   qwikDom: "2.1.18"
 };
 
@@ -115,6 +115,11 @@ var isFunction = (v) => {
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
 var logError = (message, ...optionalParams) => {
   console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
+};
+var logWarn = (message, ...optionalParams) => {
+  if (qDev) {
+    console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
+  }
 };
 
 // packages/qwik/src/core/assert/assert.ts
@@ -427,7 +432,14 @@ function createPlatform2(document2, opts, mapper) {
       });
     },
     chunkForSymbol(symbolName) {
-      return mapper[getSymbolHash(symbolName)];
+      if (mapper) {
+        const hash = getSymbolHash(symbolName);
+        const result = mapper[hash];
+        if (!result) {
+          logError("Cannot resolved symbol", symbolName, "in", mapper);
+        }
+        return result;
+      }
     }
   };
   return serverPlatform;
@@ -639,7 +651,7 @@ function flattenPrefetchResources(prefetchResources) {
 // packages/qwik/src/server/prefetch-strategy.ts
 function getPrefetchResources(snapshotResult, opts, mapper) {
   const manifest = getValidManifest(opts.manifest);
-  if (manifest) {
+  if (manifest && mapper) {
     const prefetchStrategy = opts.prefetchStrategy;
     const buildBase = getBuildBase(opts);
     if (prefetchStrategy !== null) {
@@ -9650,6 +9662,9 @@ async function renderToString(rootNode, opts = {}) {
     root = doc.createElement(opts.fragmentTagName);
     doc.body.appendChild(root);
   }
+  if (!opts.manifest) {
+    logWarn("Missing client manifest, loading symbols in the client might 404");
+  }
   const isFullDocument = isDocument(root);
   const mapper = computeSymbolMapper(opts.manifest);
   await setServerPlatform(doc, opts, mapper);
@@ -9698,13 +9713,14 @@ async function renderToString(rootNode, opts = {}) {
   return result;
 }
 function computeSymbolMapper(manifest) {
-  const mapper = {};
   if (manifest) {
+    const mapper = {};
     Object.entries(manifest.mapping).forEach(([key, value]) => {
       mapper[getSymbolHash(key)] = [key, value];
     });
+    return mapper;
   }
-  return mapper;
+  return void 0;
 }
 export {
   _createDocument,

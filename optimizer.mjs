@@ -441,7 +441,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.24"
+  qwik: "0.0.25"
 };
 
 async function getSystem() {
@@ -876,7 +876,7 @@ function createPlugin(optimizerOptions = {}) {
     Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
       i.path = normalizePath(path.resolve(opts.rootDir, i.path));
     })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
-    Array.isArray(updatedOpts.input) ? opts.input = updatedOpts.input : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : opts.input = [ path.resolve(srcDir, "components", "app", "app.tsx") ];
+    Array.isArray(updatedOpts.input) ? opts.input = updatedOpts.input : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : opts.input = [ path.resolve(srcDir, "root.tsx") ];
     opts.input = opts.input.map((input => normalizePath(path.resolve(opts.rootDir, input))));
     "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : "ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR));
     "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);

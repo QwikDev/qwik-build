@@ -4416,7 +4416,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.24";
+const version = "0.0.25";
 
 /**
  * Render JSX.
