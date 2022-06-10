@@ -845,6 +845,8 @@ function createPlugin(optimizerOptions = {}) {
     });
     opts.entryStrategy || ("development" === opts.buildMode ? opts.entryStrategy = {
       type: "hook"
+    } : "ssr" === opts.target ? opts.entryStrategy = {
+      type: "inline"
     } : opts.entryStrategy = {
       type: "smart"
     });

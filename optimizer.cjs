@@ -932,6 +932,8 @@ globalThis.qwikOptimizer = function(module) {
       updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = __spreadValues({}, updatedOpts.entryStrategy));
       opts.entryStrategy || ("development" === opts.buildMode ? opts.entryStrategy = {
         type: "hook"
+      } : "ssr" === opts.target ? opts.entryStrategy = {
+        type: "inline"
       } : opts.entryStrategy = {
         type: "smart"
       });

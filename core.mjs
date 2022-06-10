@@ -3436,7 +3436,10 @@ const notifyRender = async (hostElement) => {
     const containerEl = getContainer(hostElement);
     assertDefined(containerEl);
     const state = getContainerState(containerEl);
-    if (state.$platform$.isServer && !qTest) {
+    if (qDev &&
+        !qTest &&
+        state.$platform$.isServer &&
+        directGetAttribute(containerEl, QContainerAttr) === 'paused') {
         logWarn('Can not rerender in server platform');
         return undefined;
     }
