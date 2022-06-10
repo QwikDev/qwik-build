@@ -441,7 +441,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.25"
+  qwik: "0.0.26"
 };
 
 async function getSystem() {

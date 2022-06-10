@@ -3861,29 +3861,34 @@ const verifySerializable = (value) => {
     if (value == null) {
         return;
     }
-    const type = typeof value;
-    if (type === 'object') {
-        if (isArray(value))
-            return;
-        if (Object.getPrototypeOf(value) === Object.prototype)
-            return;
-        if (shouldSerialize(value))
-            return;
-        if (isQrl(value))
-            return;
-        if (isElement(value))
-            return;
-        if (isDocument(value))
-            return;
+    if (shouldSerialize(value)) {
+        switch (typeof value) {
+            case 'object':
+                if (isArray(value))
+                    return;
+                if (Object.getPrototypeOf(value) === Object.prototype)
+                    return;
+                if (isQrl(value))
+                    return;
+                if (isElement(value))
+                    return;
+                if (isDocument(value))
+                    return;
+                break;
+            case 'boolean':
+            case 'string':
+            case 'number':
+                return;
+        }
+        throw qError(QError_verifySerializable, value);
     }
-    if (['boolean', 'string', 'number'].includes(type)) {
-        return;
-    }
-    throw qError(QError_verifySerializable);
 };
 const noSerializeSet = /*#__PURE__*/ new WeakSet();
 const shouldSerialize = (obj) => {
-    return !noSerializeSet.has(obj);
+    if (isObject(obj) || isFunction(obj)) {
+        return !noSerializeSet.has(obj);
+    }
+    return true;
 };
 // <docs markdown="../readme.md#noSerialize">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4073,6 +4078,9 @@ const unwrapLexicalScope = (lexicalScope) => {
     if (isArray(lexicalScope)) {
         for (let i = 0; i < lexicalScope.length; i++) {
             lexicalScope[i] = unwrapSubscriber(lexicalScope[i]);
+            if (qDev) {
+                verifySerializable(getProxyTarget(lexicalScope[i]) ?? lexicalScope[i]);
+            }
         }
     }
     return lexicalScope;
@@ -4416,7 +4424,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.25";
+const version = "0.0.26";
 
 /**
  * Render JSX.
