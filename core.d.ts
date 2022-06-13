@@ -1301,6 +1301,31 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
  */
 export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & On$Props<PROPS> & ComponentBaseProps;
 
+declare interface QContext {
+    $cache$: Map<string, any>;
+    $refMap$: QObjectMap;
+    $element$: Element;
+    $dirty$: boolean;
+    $props$: Record<string, any> | undefined;
+    $renderQrl$: QRL<OnRenderFn<any>> | undefined;
+    $component$: ComponentCtx | undefined;
+    $listeners$?: Map<string, QRL<any>[]>;
+    $seq$: any[];
+    $watches$: WatchDescriptor[];
+    $contexts$?: Map<string, any>;
+}
+
+declare type QObject<T extends {}> = T & {
+    __brand__: 'QObject';
+};
+
+declare interface QObjectMap {
+    $add$(qObject: QObject<any>): number;
+    $get$(index: number): QObject<any> | undefined;
+    $indexOf$(object: QObject<any>): number | undefined;
+    readonly $array$: QObject<any>[];
+}
+
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
  *
@@ -1670,7 +1695,7 @@ export declare interface Ref<T> {
  *
  * Use this method to render JSX. This function does reconciling which means
  * it always tries to reuse what is already in the DOM (rather then destroy and
- * recrate content.)
+ * recreate content.)
  *
  * @param parent - Element which will act as a parent to `jsxNode`. When
  *     possible the rendering will try to reuse existing nodes.
@@ -1689,12 +1714,13 @@ export declare type RenderableProps<P, RefType = any> = P & Readonly<{
 /**
  * @alpha
  */
-export declare interface RenderContext {
+declare interface RenderContext {
     $doc$: Document;
     $roots$: Element[];
     $hostElements$: Set<Element>;
     $operations$: RenderOperation[];
-    $components$: ComponentCtx[];
+    $contexts$: QContext[];
+    $currentComponent$: ComponentCtx | undefined;
     $containerState$: ContainerState;
     $containerEl$: Element;
     $perf$: RenderPerf;
@@ -1703,7 +1729,7 @@ export declare interface RenderContext {
 /**
  * @alpha
  */
-export declare interface RenderOperation {
+declare interface RenderOperation {
     $el$: Node;
     $operation$: string;
     $args$: any[];

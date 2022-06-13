@@ -864,6 +864,11 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
 
+/**
+ * @public
+ */
+declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null | (() => JSXNode<any>)>;
+
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
@@ -896,6 +901,31 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
  * @public
  */
 declare type Props<T extends {} = {}> = Record<string, any> & T;
+
+declare interface QContext {
+    $cache$: Map<string, any>;
+    $refMap$: QObjectMap;
+    $element$: Element;
+    $dirty$: boolean;
+    $props$: Record<string, any> | undefined;
+    $renderQrl$: QRL<OnRenderFn<any>> | undefined;
+    $component$: ComponentCtx | undefined;
+    $listeners$?: Map<string, QRL<any>[]>;
+    $seq$: any[];
+    $watches$: WatchDescriptor[];
+    $contexts$?: Map<string, any>;
+}
+
+declare type QObject<T extends {}> = T & {
+    __brand__: 'QObject';
+};
+
+declare interface QObjectMap {
+    $add$(qObject: QObject<any>): number;
+    $get$(index: number): QObject<any> | undefined;
+    $indexOf$(object: QObject<any>): number | undefined;
+    readonly $array$: QObject<any>[];
+}
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -1233,7 +1263,8 @@ declare interface RenderContext {
     $roots$: Element[];
     $hostElements$: Set<Element>;
     $operations$: RenderOperation[];
-    $components$: ComponentCtx[];
+    $contexts$: QContext[];
+    $currentComponent$: ComponentCtx | undefined;
     $containerState$: ContainerState;
     $containerEl$: Element;
     $perf$: RenderPerf;

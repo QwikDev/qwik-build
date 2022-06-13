@@ -2556,10 +2556,7 @@ const renderComponent = (rctx, ctx) => {
     assertDefined(props);
     // Component is not dirty any more
     rctx.$containerState$.$hostsStaging$.delete(hostElement);
-    const newCtx = {
-        ...rctx,
-        $components$: [...rctx.$components$],
-    };
+    const newCtx = copyRenderContext(rctx);
     // Invoke render hook
     const invocatinContext = newInvokeContext(rctx.$doc$, hostElement, hostElement, RenderEvent);
     invocatinContext.$subscriber$ = hostElement;
@@ -2603,7 +2600,8 @@ const renderComponent = (rctx, ctx) => {
                     }
                 }
                 componentCtx.$slots$ = [];
-                newCtx.$components$.push(componentCtx);
+                newCtx.$contexts$.push(ctx);
+                newCtx.$currentComponent$ = componentCtx;
                 return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
             });
         }, (err) => {
@@ -2798,13 +2796,14 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
         isSvg = false;
     }
     else if (isSlot) {
-        const currentComponent = rctx.$components$.length > 0 ? rctx.$components$[rctx.$components$.length - 1] : undefined;
+        const currentComponent = rctx.$currentComponent$;
         if (currentComponent) {
             currentComponent.$slots$.push(vnode);
         }
     }
     const isComponent = isComponentNode(vnode);
     if (dirty) {
+        assertEqual(isComponent, true);
         promise = renderComponent(rctx, ctx);
     }
     const ch = vnode.children;
@@ -2813,29 +2812,31 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
             const slotMaps = getSlots(ctx.$component$, elm);
             const splittedChidren = splitBy(ch, getSlotName);
             const promises = [];
+            const slotRctx = copyRenderContext(rctx);
+            slotRctx.$contexts$.push(ctx);
             // Mark empty slots and remove content
             Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
                 if (slotEl && !splittedChidren[key]) {
                     const oldCh = getChildren(slotEl, 'slot');
                     if (oldCh.length > 0) {
-                        removeVnodes(rctx, oldCh, 0, oldCh.length - 1);
+                        removeVnodes(slotRctx, oldCh, 0, oldCh.length - 1);
                     }
                 }
             });
             // Mark empty slots and remove content
             Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
                 if (templateEl && !splittedChidren[key]) {
-                    removeNode(rctx, templateEl);
+                    removeNode(slotRctx, templateEl);
                     slotMaps.templates[key] = undefined;
                 }
             });
             // Render into slots
             Object.entries(splittedChidren).forEach(([key, ch]) => {
-                const slotElm = getSlotElement(rctx, slotMaps, elm, key);
-                promises.push(smartUpdateChildren(rctx, slotElm, ch, 'slot', isSvg));
+                const slotElm = getSlotElement(slotRctx, slotMaps, elm, key);
+                promises.push(smartUpdateChildren(slotRctx, slotElm, ch, 'slot', isSvg));
             });
             return then(promiseAll(promises), () => {
-                removeTemplates(rctx, slotMaps);
+                removeTemplates(slotRctx, slotMaps);
             });
         });
     }
@@ -2969,7 +2970,7 @@ const createElm = (rctx, vnode, isSvg) => {
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
-    const currentComponent = rctx.$components$.length > 0 ? rctx.$components$[rctx.$components$.length - 1] : undefined;
+    const currentComponent = rctx.$currentComponent$;
     if (currentComponent) {
         const styleTag = currentComponent.$styleClass$;
         if (styleTag) {
@@ -3002,13 +3003,15 @@ const createElm = (rctx, vnode, isSvg) => {
             if (children.length === 1 && children[0].type === SkipRerender) {
                 children = children[0].children;
             }
+            const slotRctx = copyRenderContext(rctx);
+            slotRctx.$contexts$.push(ctx);
             const slotMap = isComponent ? getSlots(ctx.$component$, elm) : undefined;
-            const promises = children.map((ch) => createElm(rctx, ch, isSvg));
+            const promises = children.map((ch) => createElm(slotRctx, ch, isSvg));
             return then(promiseAll(promises), () => {
                 let parent = elm;
                 for (const node of children) {
                     if (slotMap) {
-                        parent = getSlotElement(rctx, slotMap, elm, getSlotName(node));
+                        parent = getSlotElement(slotRctx, slotMap, elm, getSlotName(node));
                     }
                     parent.appendChild(node.elm);
                 }
@@ -3144,6 +3147,29 @@ const updateProperties = (rctx, ctx, expectProps, isSvg) => {
         setAttribute(rctx, elm, key, newValue);
     }
     return ctx.$dirty$;
+};
+const createRenderContext = (doc, containerState, containerEl) => {
+    const ctx = {
+        $doc$: doc,
+        $containerState$: containerState,
+        $containerEl$: containerEl,
+        $hostElements$: new Set(),
+        $operations$: [],
+        $roots$: [],
+        $contexts$: [],
+        $currentComponent$: undefined,
+        $perf$: {
+            $visited$: 0,
+        },
+    };
+    return ctx;
+};
+const copyRenderContext = (ctx) => {
+    const newCtx = {
+        ...ctx,
+        $contexts$: [...ctx.$contexts$],
+    };
+    return newCtx;
 };
 const setAttribute = (ctx, el, prop, value) => {
     const fn = () => {
@@ -3506,18 +3532,7 @@ const renderMarked = async (containerEl, containerState) => {
     const platform = containerState.$platform$;
     const renderingQueue = Array.from(hostsRendering);
     sortNodes(renderingQueue);
-    const ctx = {
-        $doc$: doc,
-        $containerState$: containerState,
-        $hostElements$: new Set(),
-        $operations$: [],
-        $roots$: [],
-        $containerEl$: containerEl,
-        $components$: [],
-        $perf$: {
-            $visited$: 0,
-        },
-    };
+    const ctx = createRenderContext(doc, containerState, containerEl);
     for (const el of renderingQueue) {
         if (!ctx.$hostElements$.has(el)) {
             ctx.$roots$.push(el);
@@ -4431,7 +4446,7 @@ const version = "0.0.26";
  *
  * Use this method to render JSX. This function does reconciling which means
  * it always tries to reuse what is already in the DOM (rather then destroy and
- * recrate content.)
+ * recreate content.)
  *
  * @param parent - Element which will act as a parent to `jsxNode`. When
  *     possible the rendering will try to reuse existing nodes.
@@ -4451,18 +4466,8 @@ const render = async (parent, jsxNode) => {
     }
     injectQContainer(containerEl);
     const containerState = getContainerState(containerEl);
-    const ctx = {
-        $doc$: doc,
-        $containerState$: containerState,
-        $hostElements$: new Set(),
-        $operations$: [],
-        $roots$: [parent],
-        $components$: [],
-        $containerEl$: containerEl,
-        $perf$: {
-            $visited$: 0,
-        },
-    };
+    const ctx = createRenderContext(doc, containerState, containerEl);
+    ctx.$roots$.push(parent);
     await visitJsxNode(ctx, parent, processNode(jsxNode), false);
     executeContext(ctx);
     if (!qTest) {
@@ -4544,10 +4549,10 @@ const _useContext = (context) => {
     if (!value) {
         const invokeContext = getInvokeContext();
         let hostElement = invokeContext.$hostElement$;
-        const components = invokeContext.$renderCtx$.$components$;
-        for (let i = components.length - 1; i >= 0; i--) {
-            hostElement = components[i].$hostElement$;
-            const ctx = getContext(components[i].$hostElement$);
+        const contexts = invokeContext.$renderCtx$.$contexts$;
+        for (let i = contexts.length - 1; i >= 0; i--) {
+            const ctx = contexts[i];
+            hostElement = ctx.$element$;
             if (ctx.$contexts$) {
                 const found = ctx.$contexts$.get(context.id);
                 if (found) {
