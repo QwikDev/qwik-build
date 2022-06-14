@@ -48,6 +48,7 @@
     const QError_missingRenderCtx = 15;
     const QError_missingDoc = 16;
     const QError_immutableProps = 17;
+    const QError_hostCanOnlyBeAtRoot = 18;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         const error = text + parts.join(' ');
@@ -57,6 +58,7 @@
     const codeToText = (code) => {
         if (qDev) {
             const MAP = [
+                'Error while serializing class attribute',
                 'Can not serialize a HTML Node that is not an Element',
                 'Rruntime but no instance found on element.',
                 'Only primitive and object literals can be serialized',
@@ -70,10 +72,11 @@
                 'Dynamic import not found',
                 'Unknown type argument',
                 'not found state for useContext',
-                "Q-ERROR: invoking 'use*()' method outside of invocation context.",
+                "Invoking 'use*()' method outside of invocation context.",
                 'Cant access renderCtx for existing context',
                 'Cant access document for existing context',
                 'props are inmutable',
+                '<Host> component can only be used at the root of a Qwik component$()', // 18
             ];
             return `Code(${code}): ${MAP[code] ?? ''}`;
         }
@@ -295,6 +298,9 @@
             return Promise.all(promises);
         }
         return promises;
+    };
+    const isNotNullable = (v) => {
+        return v != null;
     };
 
     const isQrl = (value) => {
@@ -554,17 +560,18 @@
      * @public
      */
     // </docs>
-    const useStore = (initialState) => {
+    const useStore = (initialState, opts) => {
         const [store, setStore] = useSequentialScope();
-        const hostElement = useHostElement();
         if (store != null) {
-            return wrapSubscriber(store, hostElement);
+            return store;
         }
         const containerState = useRenderContext().$containerState$;
         const value = isFunction(initialState) ? initialState() : initialState;
-        const newStore = qObject(value, containerState);
+        const recursive = opts?.recursive ?? false;
+        const flags = recursive ? QObjectRecursive : 0;
+        const newStore = createProxy(value, containerState, flags, undefined);
         setStore(newStore);
-        return wrapSubscriber(newStore, hostElement);
+        return newStore;
     };
     // <docs markdown="../readme.md#useRef">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -619,45 +626,6 @@
             elementCtx.$seq$[index] = value;
         };
         return [elementCtx.$seq$[index], updateFn, index];
-    };
-
-    // <docs markdown="../readme.md#useLexicalScope">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useLexicalScope instead)
-    /**
-     * Used by the Qwik Optimizer to restore the lexical scoped variables.
-     *
-     * This method should not be present in the application source code.
-     *
-     * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
-     * (before any `await` statements.)
-     *
-     * @public
-     */
-    // </docs>
-    const useLexicalScope = () => {
-        const context = getInvokeContext();
-        const hostElement = context.$hostElement$;
-        const qrl = (context.$qrl$ ??
-            parseQRL(decodeURIComponent(String(context.$url$)), hostElement));
-        if (qrl.$captureRef$ == null) {
-            const el = context.$element$;
-            assertDefined(el);
-            resumeIfNeeded(getContainer(el));
-            const ctx = getContext(el);
-            qrl.$captureRef$ = qrl.$capture$.map((idx) => qInflate(idx, ctx));
-        }
-        const subscriber = context.$subscriber$;
-        if (subscriber) {
-            return qrl.$captureRef$.map((obj) => wrapSubscriber(obj, subscriber));
-        }
-        return qrl.$captureRef$;
-    };
-    const qInflate = (ref, hostCtx) => {
-        const int = parseInt(ref, 10);
-        const obj = hostCtx.$refMap$.$get$(int);
-        assertEqual(hostCtx.$refMap$.$array$.length > int, true);
-        return obj;
     };
 
     // <docs markdown="../readme.md#useDocument">
@@ -767,10 +735,7 @@
             $platform$: getPlatform(ctx.$element$),
             $element$: ctx.$element$,
         };
-        return existingQRLs
-            .map((qrl) => (isPromise(qrl) ? '' : stringifyQRL(qrl, opts)))
-            .filter((v) => !!v)
-            .join('\n');
+        return existingQRLs.map((qrl) => stringifyQRL(qrl, opts)).join('\n');
     };
 
     // <docs markdown="../readme.md#implicit$FirstArg">
@@ -1070,13 +1035,6 @@
     const WatchFlagsIsWatch = 1 << 1;
     const WatchFlagsIsDirty = 1 << 2;
     const WatchFlagsIsCleanup = 1 << 3;
-    /**
-     * @alpha
-     */
-    const handleWatch = () => {
-        const [watch] = useLexicalScope();
-        notifyWatch(watch);
-    };
     // <docs markdown="../readme.md#useWatch">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useWatch instead)
@@ -1555,7 +1513,9 @@
                     subsManager.$clearSub$(watch);
                 });
                 const track = (obj, prop) => {
-                    const manager = subsManager.$getLocal$(getProxyTarget(obj) ?? obj);
+                    const target = getProxyTarget(obj);
+                    assertDefined(target, 'Expected a Proxy object to track');
+                    const manager = subsManager.$getLocal$(target);
                     manager.$addSub$(watch, prop);
                     if (prop) {
                         return obj[prop];
@@ -1709,7 +1669,7 @@
                 const [props, renderQrl] = host.split(' ');
                 assertDefined(props);
                 assertDefined(renderQrl);
-                ctx.$props$ = createProps(getObject(props), ctx.$element$, containerState);
+                ctx.$props$ = getObject(props);
                 ctx.$renderQrl$ = getObject(renderQrl);
             }
         });
@@ -1721,10 +1681,10 @@
         return !!tryGetContext(el);
     };
     const snapshotState = (containerEl) => {
-        const { $subsManager$: subsManager, $proxyMap$: proxyMap, $platform$: platform, } = getContainerState(containerEl);
+        const containerState = getContainerState(containerEl);
         const doc = getDocument(containerEl);
         const elementToIndex = new Map();
-        const collector = createCollector(doc, proxyMap);
+        const collector = createCollector(doc, containerState);
         // Collect all qObjected around the DOM
         const elements = getNodesInScope(containerEl, hasContext);
         elements.forEach((node) => {
@@ -1749,7 +1709,11 @@
         const objs = Array.from(collector.$objSet$);
         const objToId = new Map();
         const hasSubscriptions = (a) => {
-            const manager = subsManager.$tryGetLocal$(a);
+            const flags = getProxyFlags(containerState.$proxyMap$.get(a));
+            if (typeof flags === 'number' && flags > 0) {
+                return true;
+            }
+            const manager = containerState.$subsManager$.$tryGetLocal$(a);
             if (manager) {
                 return manager.$subs$.size > 0;
             }
@@ -1772,7 +1736,7 @@
         };
         const getObjId = (obj) => {
             if (isObject(obj)) {
-                const target = obj[QOjectTargetSymbol];
+                const target = getProxyTarget(obj);
                 const id = objToId.get(normalizeObj(target ?? obj, doc));
                 if (id !== undefined) {
                     const proxySuffix = target ? '!' : '';
@@ -1816,25 +1780,32 @@
         }
         const subs = objs
             .map((obj) => {
-            const subs = subsManager.$tryGetLocal$(obj)?.$subs$;
-            if (subs && subs.size > 0) {
-                return Object.fromEntries(Array.from(subs.entries()).map(([sub, set]) => {
-                    const id = getObjId(sub);
-                    if (id !== null) {
-                        return [id, set ? Array.from(set) : null];
-                    }
-                    else {
-                        return [undefined, undefined];
-                    }
-                }));
+            const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
+            if (flags === undefined) {
+                return null;
+            }
+            const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
+            if ((subs && subs.size > 0) || flags !== 0) {
+                const subsObj = {};
+                if (flags > 0) {
+                    subsObj['$'] = flags;
+                }
+                subs &&
+                    subs.forEach((set, key) => {
+                        const id = getObjId(key);
+                        if (id !== null) {
+                            subsObj[id] = set ? Array.from(set) : null;
+                        }
+                    });
+                return subsObj;
             }
             else {
                 return null;
             }
         })
-            .filter((a) => !!a);
+            .filter(isNotNullable);
         const qrlSerializeOptions = {
-            $platform$: platform,
+            $platform$: containerState.$platform$,
             $getObjId$: getObjId,
         };
         const convertedObjs = objs.map((obj) => {
@@ -1876,7 +1847,7 @@
                 }
             }
             if (elementCaptured && props) {
-                const objs = [getProxyTarget(props)];
+                const objs = [props];
                 if (renderQrl) {
                     objs.push(renderQrl);
                 }
@@ -1889,7 +1860,7 @@
             if (watches.length > 0) {
                 const value = watches
                     .map((watch) => getObjId(watch))
-                    .filter((obj) => obj != null)
+                    .filter(isNotNullable)
                     .join(' ');
                 if (value) {
                     metaValue.w = value;
@@ -2007,7 +1978,12 @@
                 const sub = subs[i];
                 if (sub) {
                     const converted = new Map();
+                    let flags = 0;
                     Object.entries(sub).forEach((entry) => {
+                        if (entry[0] === '$') {
+                            flags = entry[1];
+                            return;
+                        }
                         const el = getObject(entry[0]);
                         if (!el) {
                             logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
@@ -2016,7 +1992,7 @@
                         const set = entry[1] === null ? null : new Set(entry[1]);
                         converted.set(el, set);
                     });
-                    _restoreQObject(value, containerState, converted);
+                    createProxy(value, containerState, flags, converted);
                 }
             }
         }
@@ -2066,7 +2042,7 @@
         const obj = objs[index];
         const needsProxy = id.endsWith('!');
         if (needsProxy && containerState) {
-            return containerState.$proxyMap$.get(obj) ?? readWriteProxy(obj, containerState);
+            return containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
         }
         return obj;
     };
@@ -2086,19 +2062,19 @@
         }
     };
     const collectProps = (el, props, collector) => {
-        const subs = isObject(props) && props[QOjectSubsSymbol];
+        const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(getProxyTarget(props))?.$subs$;
         if (subs && subs.has(el)) {
             // The host element read the props
             collectElement(el, collector);
         }
     };
-    const createCollector = (doc, proxyMap) => {
+    const createCollector = (doc, containerState) => {
         return {
             $seen$: new Set(),
             $objSet$: new Set(),
             $elements$: [],
             $watches$: [],
-            $proxyMap$: proxyMap,
+            $containerState$: containerState,
             $doc$: doc,
         };
     };
@@ -2165,8 +2141,8 @@
     const collectQObjects = (obj, collector) => {
         if (obj != null) {
             if (typeof obj === 'object') {
-                const hasTarget = !!obj[QOjectTargetSymbol];
-                if (!hasTarget && isNode$1(obj)) {
+                const target = getProxyTarget(obj);
+                if (!target && isNode$1(obj)) {
                     if (obj.nodeType === 1) {
                         return true;
                     }
@@ -2176,8 +2152,7 @@
                     collectQrl(obj, collector);
                     return true;
                 }
-                const proxied = hasTarget ? obj : collector.$proxyMap$.get(obj);
-                const subs = proxied?.[QOjectSubsSymbol];
+                const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
                 if (subs) {
                     collectSubscriptions(subs, collector);
                 }
@@ -2209,12 +2184,6 @@
             }
         }
         return false;
-    };
-    const getProxyTarget = (obj) => {
-        if (isObject(obj)) {
-            return obj[QOjectTargetSymbol];
-        }
-        return undefined;
     };
     const isContainer = (el) => {
         return el.hasAttribute(QContainerAttr);
@@ -2328,16 +2297,16 @@
     const setEvent = (rctx, ctx, prop, value) => {
         qPropWriteQRL(rctx, ctx, normalizeOnProp(prop), value);
     };
-    const createProps = (target, el, containerState) => {
-        const manager = containerState.$subsManager$.$getLocal$(target);
-        return new Proxy(target, new PropsProxyHandler(el, containerState, manager));
+    const createProps = (target, containerState) => {
+        return createProxy(target, containerState, QObjectImmutable);
     };
     const getPropsMutator = (ctx, containerState) => {
         let props = ctx.$props$;
         if (!ctx.$props$) {
-            ctx.$props$ = props = createProps({}, ctx.$element$, containerState);
+            ctx.$props$ = props = createProps({}, containerState);
         }
         const target = getProxyTarget(props);
+        assertDefined(target);
         const manager = containerState.$subsManager$.$getLocal$(target);
         return {
             set(prop, value) {
@@ -2347,7 +2316,6 @@
                 if (isMutable(oldValue)) {
                     oldValue = oldValue.v;
                 }
-                value = unwrapSubscriber(value);
                 target[prop] = value;
                 if (isMutable(value)) {
                     value = value.v;
@@ -2365,52 +2333,6 @@
             },
         };
     };
-    class PropsProxyHandler {
-        constructor($hostElement$, $containerState$, $manager$) {
-            this.$hostElement$ = $hostElement$;
-            this.$containerState$ = $containerState$;
-            this.$manager$ = $manager$;
-        }
-        get(target, prop) {
-            if (typeof prop === 'symbol') {
-                return target[prop];
-            }
-            if (prop === QOjectTargetSymbol)
-                return target;
-            if (prop === QOjectSubsSymbol)
-                return this.$manager$.$subs$;
-            if (prop === QOjectOriginalProxy)
-                return readWriteProxy(target, this.$containerState$);
-            if (prop === QOjectAllSymbol) {
-                this.$manager$.$addSub$(this.$hostElement$);
-                return target;
-            }
-            const value = target[prop];
-            if (typeof prop === 'symbol') {
-                return value;
-            }
-            if (isMutable(value)) {
-                this.$manager$.$addSub$(this.$hostElement$, prop);
-                return value.v;
-            }
-            return value;
-        }
-        set() {
-            throw qError(QError_immutableProps);
-        }
-        has(target, property) {
-            if (property === QOjectTargetSymbol)
-                return true;
-            if (property === QOjectSubsSymbol)
-                return true;
-            return Object.prototype.hasOwnProperty.call(target, property);
-        }
-        ownKeys(target) {
-            const subscriber = this.$hostElement$;
-            this.$manager$.$addSub$(subscriber);
-            return Object.getOwnPropertyNames(target);
-        }
-    }
 
     /**
      * Place at the root of the component View to allow binding of attributes on the Host element.
@@ -2433,6 +2355,109 @@
      */
     const SkipRerender = { __brand__: 'skip' };
 
+    /**
+     * @public
+     */
+    const jsx = (type, props, key) => {
+        return new JSXNodeImpl(type, props, key);
+    };
+    const HOST_TYPE = ':host';
+    const SKIP_RENDER_TYPE = ':skipRender';
+    class JSXNodeImpl {
+        constructor(type, props, key = null) {
+            this.type = type;
+            this.props = props;
+            this.key = key;
+        }
+    }
+    class ProcessedJSXNodeImpl {
+        constructor($type$, $props$, $children$, $key$) {
+            this.$type$ = $type$;
+            this.$props$ = $props$;
+            this.$children$ = $children$;
+            this.$key$ = $key$;
+            this.$elm$ = null;
+            this.$text$ = '';
+        }
+    }
+    const processNode = (node, invocationContext) => {
+        const key = node.key != null ? String(node.key) : null;
+        let textType = '';
+        if (node.type === Host) {
+            textType = HOST_TYPE;
+        }
+        else if (node.type === SkipRerender) {
+            textType = SKIP_RENDER_TYPE;
+        }
+        else if (isFunction(node.type)) {
+            const res = invocationContext
+                ? useInvoke(invocationContext, () => node.type(node.props, node.key))
+                : node.type(node.props, node.key);
+            return processData(res, invocationContext);
+        }
+        else if (isString(node.type)) {
+            textType = node.type;
+        }
+        let children = EMPTY_ARRAY;
+        if (node.props) {
+            const mightPromise = processData(node.props.children, invocationContext);
+            return then(mightPromise, (result) => {
+                if (result !== undefined) {
+                    if (isArray(result)) {
+                        children = result;
+                    }
+                    else {
+                        children = [result];
+                    }
+                }
+                return new ProcessedJSXNodeImpl(textType, node.props, children, key);
+            });
+        }
+        return new ProcessedJSXNodeImpl(textType, node.props, children, key);
+    };
+    const processData = (node, invocationContext) => {
+        if (node == null || typeof node === 'boolean') {
+            return undefined;
+        }
+        if (isJSXNode(node)) {
+            return processNode(node, invocationContext);
+        }
+        else if (isPromise(node)) {
+            return node.then((node) => processData(node, invocationContext));
+        }
+        else if (isArray(node)) {
+            const output = promiseAll(node.flatMap((n) => processData(n, invocationContext)));
+            return then(output, (array) => array.flat(100).filter(isNotNullable));
+        }
+        else if (isString(node) || typeof node === 'number') {
+            const newNode = new ProcessedJSXNodeImpl('#text', null, EMPTY_ARRAY, null);
+            newNode.$text$ = String(node);
+            return newNode;
+        }
+        else {
+            logWarn('Unvalid node, skipping');
+            return undefined;
+        }
+    };
+    const isJSXNode = (n) => {
+        if (qDev) {
+            if (n instanceof JSXNodeImpl) {
+                return true;
+            }
+            if (isObject(n) && n.constructor.name === JSXNodeImpl.name) {
+                throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+            }
+            return false;
+        }
+        else {
+            return n instanceof JSXNodeImpl;
+        }
+    };
+    /**
+     * @public
+     */
+    const Fragment = (props) => props.children;
+
     const visitJsxNode = (ctx, elm, jsxNode, isSvg) => {
         if (jsxNode === undefined) {
             return smartUpdateChildren(ctx, elm, [], 'root', isSvg);
@@ -2440,9 +2465,9 @@
         if (isArray(jsxNode)) {
             return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
         }
-        else if (jsxNode.type === Host) {
-            updateProperties(ctx, getContext(elm), jsxNode.props, isSvg);
-            return smartUpdateChildren(ctx, elm, jsxNode.children || [], 'root', isSvg);
+        else if (jsxNode.$type$ === HOST_TYPE) {
+            updateProperties(ctx, getContext(elm), jsxNode.$props$, isSvg);
+            return smartUpdateChildren(ctx, elm, jsxNode.$children$ || [], 'root', isSvg);
         }
         else {
             return smartUpdateChildren(ctx, elm, [jsxNode], 'root', isSvg);
@@ -2478,82 +2503,6 @@
     const styleContent = (styleId) => {
         return ComponentStylesPrefixContent + styleId;
     };
-
-    /**
-     * @public
-     */
-    const jsx = (type, props, key) => {
-        return new JSXNodeImpl(type, props, key);
-    };
-    class JSXNodeImpl {
-        constructor(type, props, key = null) {
-            this.type = type;
-            this.props = props;
-            this.children = EMPTY_ARRAY;
-            this.text = undefined;
-            this.key = null;
-            if (key != null) {
-                this.key = String(key);
-            }
-            if (props) {
-                const children = processNode(props.children);
-                if (children !== undefined) {
-                    if (isArray(children)) {
-                        this.children = children;
-                    }
-                    else {
-                        this.children = [children];
-                    }
-                }
-            }
-        }
-    }
-    const processNode = (node) => {
-        if (node == null || typeof node === 'boolean') {
-            return undefined;
-        }
-        if (isJSXNode(node)) {
-            if (node.type === Host || node.type === SkipRerender) {
-                return node;
-            }
-            else if (isFunction(node.type)) {
-                return processNode(node.type({ ...node.props, children: node.children }, node.key));
-            }
-            else {
-                return node;
-            }
-        }
-        else if (isArray(node)) {
-            return node.flatMap(processNode).filter((e) => e != null);
-        }
-        else if (isString(node) || typeof node === 'number') {
-            const newNode = new JSXNodeImpl('#text', null, null);
-            newNode.text = String(node);
-            return newNode;
-        }
-        else {
-            logWarn('Unvalid node, skipping');
-            return undefined;
-        }
-    };
-    const isJSXNode = (n) => {
-        if (qDev) {
-            if (n instanceof JSXNodeImpl) {
-                return true;
-            }
-            if (isObject(n) && n.constructor.name === JSXNodeImpl.name) {
-                throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
-            }
-            return false;
-        }
-        else {
-            return n instanceof JSXNodeImpl;
-        }
-    };
-    /**
-     * @public
-     */
-    const Fragment = (props) => props.children;
 
     const firstRenderComponent = (rctx, ctx) => {
         directSetAttribute(ctx.$element$, QHostAttr, '');
@@ -2614,7 +2563,13 @@
                     componentCtx.$slots$ = [];
                     newCtx.$contexts$.push(ctx);
                     newCtx.$currentComponent$ = componentCtx;
-                    return visitJsxNode(newCtx, hostElement, processNode(jsxNode), false);
+                    const invocatinContext = newInvokeContext(rctx.$doc$, hostElement, hostElement);
+                    invocatinContext.$subscriber$ = hostElement;
+                    invocatinContext.$renderCtx$ = newCtx;
+                    const processedJSXNode = processData(jsxNode, invocatinContext);
+                    return then(processedJSXNode, (processedJSXNode) => {
+                        return visitJsxNode(newCtx, hostElement, processedJSXNode, false);
+                    });
                 });
             }, (err) => {
                 logError(err);
@@ -2627,18 +2582,18 @@
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const smartUpdateChildren = (ctx, elm, ch, mode, isSvg) => {
-        if (ch.length === 1 && ch[0].type === SkipRerender) {
+        if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
             if (elm.firstChild !== null) {
                 return;
             }
-            ch = ch[0].children;
+            ch = ch[0].$children$;
         }
         const oldCh = getChildren(elm, mode);
         if (oldCh.length > 0 && ch.length > 0) {
             return updateChildren(ctx, elm, oldCh, ch, isSvg);
         }
         else if (ch.length > 0) {
-            return addVnodes(ctx, elm, undefined, ch, 0, ch.length - 1, isSvg);
+            return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
         }
         else if (oldCh.length > 0) {
             return removeVnodes(ctx, oldCh, 0, oldCh.length - 1);
@@ -2698,7 +2653,7 @@
                 if (oldKeyToIdx === undefined) {
                     oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
                 }
-                idxInOld = oldKeyToIdx[newStartVnode.key];
+                idxInOld = oldKeyToIdx[newStartVnode.$key$];
                 if (idxInOld === undefined) {
                     // New element
                     const newElm = createElm(ctx, newStartVnode, isSvg);
@@ -2708,7 +2663,7 @@
                 }
                 else {
                     elmToMove = oldCh[idxInOld];
-                    if (!isTagName(elmToMove, newStartVnode.type)) {
+                    if (!isTagName(elmToMove, newStartVnode.$type$)) {
                         const newElm = createElm(ctx, newStartVnode, isSvg);
                         results.push(then(newElm, (newElm) => {
                             insertBefore(ctx, parentElm, newElm, oldStartVnode);
@@ -2724,7 +2679,7 @@
             }
         }
         if (newStartIdx <= newEndIdx) {
-            const before = newCh[newEndIdx + 1] == null ? undefined : newCh[newEndIdx + 1].elm;
+            const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
             results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
         }
         let wait = promiseAll(results);
@@ -2736,7 +2691,7 @@
         return wait;
     };
     const isComponentNode = (node) => {
-        return node.props && OnRenderProp in node.props;
+        return node.$props$ && OnRenderProp in node.$props$;
     };
     const getCh = (elm, filter) => {
         return Array.from(elm.childNodes).filter(filter);
@@ -2779,32 +2734,35 @@
         return output;
     };
     const patchVnode = (rctx, elm, vnode, isSvg) => {
-        vnode.elm = elm;
-        const tag = vnode.type;
+        vnode.$elm$ = elm;
+        const tag = vnode.$type$;
         if (tag === '#text') {
-            if (elm.data !== vnode.text) {
-                setProperty(rctx, elm, 'data', vnode.text);
+            if (elm.data !== vnode.$text$) {
+                setProperty(rctx, elm, 'data', vnode.$text$);
             }
             return;
         }
         if (tag === '#comment') {
-            if (elm.data !== vnode.text) {
-                setProperty(rctx, elm, 'data', vnode.text);
+            if (elm.data !== vnode.$text$) {
+                setProperty(rctx, elm, 'data', vnode.$text$);
             }
             return;
         }
-        if (tag === Host || tag === SkipRerender) {
+        if (tag === HOST_TYPE) {
+            throw qError(QError_hostCanOnlyBeAtRoot);
+        }
+        if (tag === SKIP_RENDER_TYPE) {
             return;
         }
         if (!isSvg) {
             isSvg = tag === 'svg';
         }
         let promise;
-        const props = vnode.props;
+        const props = vnode.$props$;
         const ctx = getContext(elm);
         const dirty = updateProperties(rctx, ctx, props, isSvg);
         const isSlot = tag === 'q:slot';
-        if (isSvg && vnode.type === 'foreignObject') {
+        if (isSvg && vnode.$type$ === 'foreignObject') {
             isSvg = false;
         }
         else if (isSlot) {
@@ -2818,7 +2776,7 @@
             assertEqual(isComponent, true);
             promise = renderComponent(rctx, ctx);
         }
-        const ch = vnode.children;
+        const ch = vnode.$children$;
         if (isComponent) {
             return then(promise, () => {
                 const slotMaps = getSlots(ctx.$component$, elm);
@@ -2962,22 +2920,25 @@
         });
     };
     const getSlotName = (node) => {
-        return node.props?.['q:slot'] ?? '';
+        return node.$props$?.['q:slot'] ?? '';
     };
     const createElm = (rctx, vnode, isSvg) => {
         rctx.$perf$.$visited$++;
-        const tag = vnode.type;
+        const tag = vnode.$type$;
         if (tag === '#text') {
-            return (vnode.elm = createTextNode(rctx, vnode.text));
+            return (vnode.$elm$ = createTextNode(rctx, vnode.$text$));
+        }
+        if (tag === HOST_TYPE) {
+            throw qError(QError_hostCanOnlyBeAtRoot);
         }
         if (!isSvg) {
             isSvg = tag === 'svg';
         }
-        const props = vnode.props;
-        const elm = (vnode.elm = createElement(rctx, tag, isSvg));
+        const props = vnode.$props$;
+        const elm = (vnode.$elm$ = createElement(rctx, tag, isSvg));
         const isComponent = isComponentNode(vnode);
         const ctx = getContext(elm);
-        setKey(elm, vnode.key);
+        setKey(elm, vnode.$key$);
         updateProperties(rctx, ctx, props, isSvg);
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
@@ -3003,17 +2964,17 @@
         else {
             const setsInnerHTML = checkInnerHTML(props);
             if (setsInnerHTML) {
-                if (qDev && vnode.children.length > 0) {
+                if (qDev && vnode.$children$.length > 0) {
                     logWarn('Node can not have children when innerHTML is set');
                 }
                 return elm;
             }
         }
         return then(wait, () => {
-            let children = vnode.children;
+            let children = vnode.$children$;
             if (children.length > 0) {
-                if (children.length === 1 && children[0].type === SkipRerender) {
-                    children = children[0].children;
+                if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
+                    children = children[0].$children$;
                 }
                 const slotRctx = copyRenderContext(rctx);
                 slotRctx.$contexts$.push(ctx);
@@ -3025,7 +2986,7 @@
                         if (slotMap) {
                             parent = getSlotElement(slotRctx, slotMap, elm, getSlotName(node));
                         }
-                        parent.appendChild(node.elm);
+                        parent.appendChild(node.$elm$);
                     }
                     return elm;
                 });
@@ -3046,7 +3007,7 @@
         }
         // Map virtual slots
         for (const vnode of newSlots) {
-            slots[vnode.props?.name ?? ''] = vnode.elm;
+            slots[vnode.$props$?.name ?? ''] = vnode.$elm$;
         }
         // Map templates
         for (const elm of t) {
@@ -3403,13 +3364,13 @@
     const sameVnode = (elm, vnode2) => {
         const isElement = elm.nodeType === 1;
         if (isElement) {
-            const isSameSel = elm.localName === vnode2.type;
+            const isSameSel = elm.localName === vnode2.$type$;
             if (!isSameSel) {
                 return false;
             }
-            return getKey(elm) === vnode2.key;
+            return getKey(elm) === vnode2.$key$;
         }
-        return elm.nodeName === vnode2.type;
+        return elm.nodeName === vnode2.$type$;
     };
     const isTagName = (elm, tagName) => {
         if (elm.nodeType === 1) {
@@ -3455,6 +3416,71 @@
         return String(obj);
     };
 
+    // <docs markdown="../readme.md#useLexicalScope">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useLexicalScope instead)
+    /**
+     * Used by the Qwik Optimizer to restore the lexical scoped variables.
+     *
+     * This method should not be present in the application source code.
+     *
+     * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
+     * (before any `await` statements.)
+     *
+     * @public
+     */
+    // </docs>
+    const useLexicalScope = () => {
+        const context = getInvokeContext();
+        const hostElement = context.$hostElement$;
+        const qrl = (context.$qrl$ ??
+            parseQRL(decodeURIComponent(String(context.$url$)), hostElement));
+        if (qrl.$captureRef$ == null) {
+            const el = context.$element$;
+            assertDefined(el);
+            resumeIfNeeded(getContainer(el));
+            const ctx = getContext(el);
+            qrl.$captureRef$ = qrl.$capture$.map((idx) => qInflate(idx, ctx));
+        }
+        const subscriber = context.$subscriber$;
+        if (subscriber) {
+            return qrl.$captureRef$;
+        }
+        return qrl.$captureRef$;
+    };
+    const qInflate = (ref, hostCtx) => {
+        const int = parseInt(ref, 10);
+        const obj = hostCtx.$refMap$.$get$(int);
+        assertEqual(hostCtx.$refMap$.$array$.length > int, true);
+        return obj;
+    };
+
+    const CONTAINER_STATE = Symbol('ContainerState');
+    const getContainerState = (containerEl) => {
+        let set = containerEl[CONTAINER_STATE];
+        if (!set) {
+            containerEl[CONTAINER_STATE] = set = {
+                $proxyMap$: new WeakMap(),
+                $subsManager$: createSubscriptionManager(),
+                $platform$: getPlatform(containerEl),
+                $watchNext$: new Set(),
+                $watchStaging$: new Set(),
+                $hostsNext$: new Set(),
+                $hostsStaging$: new Set(),
+                $renderPromise$: undefined,
+                $hostsRendering$: undefined,
+            };
+        }
+        return set;
+    };
+    const notifyChange = (subscriber) => {
+        if (isElement(subscriber)) {
+            notifyRender(subscriber);
+        }
+        else {
+            notifyWatch(subscriber);
+        }
+    };
     /**
      * Mark component for rendering.
      *
@@ -3506,29 +3532,31 @@
             return scheduleFrame(containerEl, state);
         }
     };
+    const notifyWatch = (watch) => {
+        const containerEl = getContainer(watch.el);
+        const state = getContainerState(containerEl);
+        watch.f |= WatchFlagsIsDirty;
+        const activeRendering = state.$hostsRendering$ !== undefined;
+        if (activeRendering) {
+            state.$watchStaging$.add(watch);
+        }
+        else {
+            state.$watchNext$.add(watch);
+            scheduleFrame(containerEl, state);
+        }
+    };
     const scheduleFrame = (containerEl, containerState) => {
         if (containerState.$renderPromise$ === undefined) {
             containerState.$renderPromise$ = containerState.$platform$.nextTick(() => renderMarked(containerEl, containerState));
         }
         return containerState.$renderPromise$;
     };
-    const CONTAINER_STATE = Symbol('ContainerState');
-    const getContainerState = (containerEl) => {
-        let set = containerEl[CONTAINER_STATE];
-        if (!set) {
-            containerEl[CONTAINER_STATE] = set = {
-                $proxyMap$: new WeakMap(),
-                $subsManager$: createSubscriptionManager(),
-                $platform$: getPlatform(containerEl),
-                $watchNext$: new Set(),
-                $watchStaging$: new Set(),
-                $hostsNext$: new Set(),
-                $hostsStaging$: new Set(),
-                $renderPromise$: undefined,
-                $hostsRendering$: undefined,
-            };
-        }
-        return set;
+    /**
+     * @alpha
+     */
+    const handleWatch = () => {
+        const [watch] = useLexicalScope();
+        notifyWatch(watch);
     };
     const renderMarked = async (containerEl, containerState) => {
         const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
@@ -3632,75 +3660,34 @@
         });
     };
 
-    const qObject = (obj, proxyMap) => {
-        assertEqual(unwrapProxy(obj), obj, 'Unexpected proxy at this location');
-        if (obj == null || typeof obj !== 'object') {
-            // TODO(misko): centralize
-            throw qError(QError_onlyObjectWrapped, obj);
-        }
-        if (obj.constructor !== Object) {
-            throw qError(QError_onlyLiteralWrapped, obj);
-        }
-        return readWriteProxy(obj, proxyMap);
-    };
-    const _restoreQObject = (obj, containerState, subs) => {
-        return readWriteProxy(obj, containerState, subs);
-    };
+    const QObjectRecursive = 1 << 0;
+    const QObjectImmutable = 1 << 1;
     /**
      * Creates a proxy which notifies of any writes.
      */
-    const readWriteProxy = (target, containerState, subs) => {
-        if (!target || typeof target !== 'object')
-            return target;
-        const proxyMap = containerState.$proxyMap$;
-        let proxy = proxyMap.get(target);
-        if (proxy)
+    const getOrCreateProxy = (target, containerState, flags = 0) => {
+        const proxy = containerState.$proxyMap$.get(target);
+        if (proxy) {
             return proxy;
+        }
+        return createProxy(target, containerState, flags, undefined);
+    };
+    const createProxy = (target, containerState, flags, subs) => {
+        assertEqual(unwrapProxy(target), target, 'Unexpected proxy at this location');
+        assertEqual(containerState.$proxyMap$.has(target), false, 'Proxy was already created');
+        if (!isObject(target)) {
+            throw qError(QError_onlyObjectWrapped, target);
+        }
+        if (target.constructor !== Object && !isArray(target)) {
+            throw qError(QError_onlyLiteralWrapped, target);
+        }
         const manager = containerState.$subsManager$.$getLocal$(target, subs);
-        proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
-        proxyMap.set(target, proxy);
+        const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager, flags));
+        containerState.$proxyMap$.set(target, proxy);
         return proxy;
     };
-    const QOjectTargetSymbol = ':target:';
-    const QOjectAllSymbol = ':all:';
-    const QOjectSubsSymbol = ':subs:';
-    const QOjectOriginalProxy = ':proxy:';
-    const SetSubscriber = Symbol('SetSubscriber');
-    /**
-     * @alpha
-     */
-    const unwrapProxy = (proxy) => {
-        return getProxyTarget(proxy) ?? proxy;
-    };
-    const wrap = (value, containerState) => {
-        if (isObject(value)) {
-            if (isQrl(value)) {
-                return value;
-            }
-            if (Object.isFrozen(value)) {
-                return value;
-            }
-            const nakedValue = unwrapProxy(value);
-            if (nakedValue !== value) {
-                // already a proxy return;
-                return value;
-            }
-            if (isNode$1(nakedValue)) {
-                return value;
-            }
-            if (!shouldSerialize(nakedValue)) {
-                return value;
-            }
-            if (qDev) {
-                verifySerializable(value);
-            }
-            const proxy = containerState.$proxyMap$.get(value);
-            return proxy ? proxy : readWriteProxy(value, containerState);
-        }
-        else {
-            return value;
-        }
-    };
+    const QOjectTargetSymbol = Symbol();
+    const QOjectFlagsSymbol = Symbol();
     const createSubscriptionManager = () => {
         const objToSubs = new Map();
         const subsToObjs = new Map();
@@ -3727,7 +3714,10 @@
         };
         const getLocal = (obj, initialMap) => {
             let local = tryGetLocal(obj);
-            if (!local) {
+            if (local) {
+                assertEqual(initialMap, undefined);
+            }
+            else {
                 const map = !initialMap ? new Map() : initialMap;
                 map.forEach((_, key) => {
                     trackSubToObj(key, map);
@@ -3770,55 +3760,50 @@
         };
     };
     class ReadWriteProxyHandler {
-        constructor($containerState$, $manager$) {
+        constructor($containerState$, $manager$, $flags$) {
             this.$containerState$ = $containerState$;
             this.$manager$ = $manager$;
+            this.$flags$ = $flags$;
         }
         get(target, prop) {
-            let subscriber = this.$subscriber$;
-            this.$subscriber$ = undefined;
             if (typeof prop === 'symbol') {
+                if (prop === QOjectTargetSymbol)
+                    return target;
+                if (prop === QOjectFlagsSymbol)
+                    return this.$flags$;
                 return target[prop];
             }
-            if (prop === QOjectTargetSymbol)
-                return target;
-            if (prop === QOjectSubsSymbol)
-                return this.$manager$.$subs$;
-            if (prop === QOjectOriginalProxy)
-                return this.$containerState$.$proxyMap$.get(target);
+            let subscriber;
             const invokeCtx = tryGetInvokeContext();
+            const recursive = (this.$flags$ & QObjectRecursive) !== 0;
+            const immutable = (this.$flags$ & QObjectImmutable) !== 0;
             if (invokeCtx) {
-                if (invokeCtx.$subscriber$ === null) {
-                    subscriber = undefined;
-                }
-                else if (!subscriber) {
-                    subscriber = invokeCtx.$subscriber$;
-                }
+                subscriber = invokeCtx.$subscriber$;
             }
-            if (prop === QOjectAllSymbol) {
-                if (subscriber) {
-                    this.$manager$.$addSub$(subscriber);
-                }
-                return target;
+            let value = target[prop];
+            if (isMutable(value)) {
+                value = value.v;
             }
-            const value = target[prop];
+            else if (immutable) {
+                subscriber = null;
+            }
             if (subscriber) {
                 const isA = isArray(target);
                 this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
             }
-            return wrap(value, this.$containerState$);
+            return recursive ? wrap(value, this.$containerState$) : value;
         }
         set(target, prop, newValue) {
             if (typeof prop === 'symbol') {
-                if (prop === SetSubscriber) {
-                    this.$subscriber$ = newValue;
-                }
-                else {
-                    target[prop] = newValue;
-                }
+                target[prop] = newValue;
                 return true;
             }
-            const unwrappedNewValue = unwrapProxy(newValue);
+            const immutable = (this.$flags$ & QObjectImmutable) !== 0;
+            if (immutable) {
+                throw qError(QError_immutableProps);
+            }
+            const recursive = (this.$flags$ & QObjectRecursive) !== 0;
+            const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
             if (qDev) {
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
@@ -3842,20 +3827,15 @@
         has(target, property) {
             if (property === QOjectTargetSymbol)
                 return true;
-            if (property === QOjectSubsSymbol)
+            if (property === QOjectFlagsSymbol)
                 return true;
             return Object.prototype.hasOwnProperty.call(target, property);
         }
         ownKeys(target) {
-            let subscriber = this.$subscriber$;
+            let subscriber = null;
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx) {
-                if (invokeCtx.$subscriber$ === null) {
-                    subscriber = undefined;
-                }
-                else if (!subscriber) {
-                    subscriber = invokeCtx.$subscriber$;
-                }
+                subscriber = invokeCtx.$subscriber$;
             }
             if (subscriber) {
                 this.$manager$.$addSub$(subscriber);
@@ -3863,25 +3843,33 @@
             return Object.getOwnPropertyNames(target);
         }
     }
-    const notifyChange = (subscriber) => {
-        if (isElement(subscriber)) {
-            notifyRender(subscriber);
+    const wrap = (value, containerState) => {
+        if (isObject(value)) {
+            if (isQrl(value)) {
+                return value;
+            }
+            if (Object.isFrozen(value)) {
+                return value;
+            }
+            const nakedValue = unwrapProxy(value);
+            if (nakedValue !== value) {
+                // already a proxy return;
+                return value;
+            }
+            if (isNode$1(nakedValue)) {
+                return value;
+            }
+            if (!shouldSerialize(nakedValue)) {
+                return value;
+            }
+            if (qDev) {
+                verifySerializable(value);
+            }
+            const proxy = containerState.$proxyMap$.get(value);
+            return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
         }
         else {
-            notifyWatch(subscriber);
-        }
-    };
-    const notifyWatch = (watch) => {
-        const containerEl = getContainer(watch.el);
-        const state = getContainerState(containerEl);
-        watch.f |= WatchFlagsIsDirty;
-        const activeRendering = state.$hostsRendering$ !== undefined;
-        if (activeRendering) {
-            state.$watchStaging$.add(watch);
-        }
-        else {
-            state.$watchNext$.add(watch);
-            scheduleFrame(containerEl, state);
+            return value;
         }
     };
     const verifySerializable = (value) => {
@@ -3940,7 +3928,7 @@
     const mutable = (v) => {
         return {
             [MUTABLE]: true,
-            v: unwrapSubscriber(v),
+            v,
         };
     };
     const isConnected = (sub) => {
@@ -3955,43 +3943,23 @@
     const isMutable = (v) => {
         return isObject(v) && v[MUTABLE] === true;
     };
-
     /**
      * @alpha
      */
-    const wrapSubscriber = (obj, subscriber) => {
-        if (isObject(obj)) {
-            const target = obj[QOjectTargetSymbol];
-            if (!target) {
-                return obj;
-            }
-            return new Proxy(obj, {
-                get(target, prop) {
-                    if (prop === QOjectOriginalProxy) {
-                        return target;
-                    }
-                    target[SetSubscriber] = subscriber;
-                    return target[prop];
-                },
-                ownKeys(target) {
-                    target[SetSubscriber] = subscriber;
-                    return Reflect.ownKeys(target);
-                },
-            });
-        }
-        return obj;
+    const unwrapProxy = (proxy) => {
+        return getProxyTarget(proxy) ?? proxy;
     };
-    /**
-     * @alpha
-     */
-    const unwrapSubscriber = (obj) => {
+    const getProxyTarget = (obj) => {
         if (isObject(obj)) {
-            const proxy = obj[QOjectOriginalProxy];
-            if (proxy) {
-                return proxy;
-            }
+            return obj[QOjectTargetSymbol];
         }
-        return obj;
+        return undefined;
+    };
+    const getProxyFlags = (obj) => {
+        if (isObject(obj)) {
+            return obj[QOjectFlagsSymbol];
+        }
+        return undefined;
     };
 
     let runtimeSymbolId = 0;
@@ -4104,7 +4072,6 @@
     const unwrapLexicalScope = (lexicalScope) => {
         if (isArray(lexicalScope)) {
             for (let i = 0; i < lexicalScope.length; i++) {
-                lexicalScope[i] = unwrapSubscriber(lexicalScope[i]);
                 if (qDev) {
                     verifySerializable(getProxyTarget(lexicalScope[i]) ?? lexicalScope[i]);
                 }
@@ -4480,7 +4447,8 @@
         const containerState = getContainerState(containerEl);
         const ctx = createRenderContext(doc, containerState, containerEl);
         ctx.$roots$.push(parent);
-        await visitJsxNode(ctx, parent, processNode(jsxNode), false);
+        const processedNodes = await processData(jsxNode);
+        await visitJsxNode(ctx, parent, processedNodes, false);
         executeContext(ctx);
         if (!qTest) {
             injectQwikSlotCSS(parent);
@@ -4540,7 +4508,6 @@
         if (!contexts) {
             ctx.$contexts$ = contexts = new Map();
         }
-        newValue = unwrapSubscriber(newValue);
         contexts.set(context.id, newValue);
         const serializedContexts = [];
         contexts.forEach((_, key) => {
@@ -4553,10 +4520,6 @@
      * @alpha
      */
     const useContext = (context) => {
-        const value = _useContext(context);
-        return wrapSubscriber(value, useHostElement());
-    };
-    const _useContext = (context) => {
         const [value, setValue] = useSequentialScope();
         if (!value) {
             const invokeContext = getInvokeContext();
@@ -4709,7 +4672,6 @@
     exports.qrl = qrl;
     exports.render = render;
     exports.setPlatform = setPlatform;
-    exports.unwrapSubscriber = unwrapSubscriber;
     exports.useCleanup$ = useCleanup$;
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
@@ -4741,7 +4703,6 @@
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;
-    exports.wrapSubscriber = wrapSubscriber;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

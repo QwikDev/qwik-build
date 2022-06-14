@@ -12,27 +12,10 @@ if (typeof globalThis == 'undefined') {
 
 var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -57,7 +40,6 @@ __export(testing_exports, {
   createWindow: () => createWindow,
   getTestPlatform: () => getTestPlatform,
   isPromise: () => isPromise,
-  toDOM: () => toDOM,
   toFileUrl: () => toFileUrl
 });
 module.exports = __toCommonJS(testing_exports);
@@ -70,120 +52,11 @@ var import_qwik = require("../core.cjs");
 var import_fs = require("fs");
 var import_url = require("url");
 
-// packages/qwik/src/core/util/types.ts
-var isObject = (v) => {
-  return v && typeof v === "object";
-};
-var isFunction = (v) => {
-  return typeof v === "function";
-};
-
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev !== false;
-var qTest = globalThis.describe !== void 0;
-
-// packages/qwik/src/core/util/log.ts
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
-};
-
-// packages/qwik/src/core/assert/assert.ts
-var assertDefined = (value, text) => {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw newError(text || "Expected defined value");
-  }
-};
-var newError = (text) => {
-  debugger;
-  const error = new Error(text);
-  logError(error);
-  return error;
-};
-
 // packages/qwik/src/core/util/markers.ts
 var QContainerSelector = "[q\\:container]";
 
-// packages/qwik/src/core/util/dom.ts
-var getDocument = (node) => {
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  if (node.nodeType === 9) {
-    return node;
-  }
-  const doc = node.ownerDocument;
-  assertDefined(doc);
-  return doc;
-};
-
-// packages/qwik/src/core/error/error.ts
-var QError_qrlIsNotFunction = 10;
-var qError = (code, ...parts) => {
-  const text = codeToText(code);
-  const error = text + parts.join(" ");
-  debugger;
-  return new Error(error);
-};
-var codeToText = (code) => {
-  var _a;
-  if (qDev) {
-    const MAP = [
-      "Can not serialize a HTML Node that is not an Element",
-      "Rruntime but no instance found on element.",
-      "Only primitive and object literals can be serialized",
-      "Crash while rendering",
-      "You can render over a existing q:container. Skipping render().",
-      "Set property",
-      "Only function's and 'string's are supported.",
-      "Only objects can be wrapped in 'QObject'",
-      `Only objects literals can be wrapped in 'QObject'`,
-      "QRL is not a function",
-      "Dynamic import not found",
-      "Unknown type argument",
-      "not found state for useContext",
-      "Q-ERROR: invoking 'use*()' method outside of invocation context.",
-      "Cant access renderCtx for existing context",
-      "Cant access document for existing context",
-      "props are inmutable"
-    ];
-    return `Code(${code}): ${(_a = MAP[code]) != null ? _a : ""}`;
-  } else {
-    return `Code(${code})`;
-  }
-};
-
 // packages/qwik/src/core/use/use-core.ts
 var CONTAINER = Symbol("container");
-var _context;
-var useInvoke = (context, fn, ...args) => {
-  const previousContext = _context;
-  let returnValue;
-  try {
-    _context = context;
-    returnValue = fn.apply(null, args);
-  } finally {
-    const currentCtx = _context;
-    _context = previousContext;
-    if (currentCtx.$waitOn$ && currentCtx.$waitOn$.length > 0) {
-      return Promise.all(currentCtx.$waitOn$).then(() => returnValue);
-    }
-  }
-  return returnValue;
-};
-var newInvokeContext = (doc, hostElement, element, event, url) => {
-  return {
-    $seq$: 0,
-    $doc$: doc,
-    $hostElement$: hostElement,
-    $element$: element,
-    $event$: event,
-    $url$: url || null,
-    $qrl$: void 0
-  };
-};
 var getContainer = (el) => {
   let container = el[CONTAINER];
   if (!container) {
@@ -307,199 +180,6 @@ function createDocument(opts = {}) {
 var isPromise = (value) => {
   return value instanceof Promise;
 };
-var then = (promise, thenFn, rejectFn) => {
-  return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
-};
-
-// packages/qwik/src/core/platform/platform.ts
-var createPlatform2 = (doc) => {
-  const moduleCache = /* @__PURE__ */ new Map();
-  return {
-    isServer: false,
-    importSymbol(element, url, symbolName) {
-      const urlDoc = toUrl2(doc, element, url).toString();
-      const urlCopy = new URL(urlDoc);
-      urlCopy.hash = "";
-      urlCopy.search = "";
-      const importURL = urlCopy.href;
-      const mod = moduleCache.get(importURL);
-      if (mod) {
-        return mod[symbolName];
-      }
-      return Promise.resolve().then(() => __toESM(require(importURL))).then((mod2) => {
-        mod2 = findModule(mod2);
-        moduleCache.set(importURL, mod2);
-        return mod2[symbolName];
-      });
-    },
-    raf: (fn) => {
-      return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          resolve(fn());
-        });
-      });
-    },
-    nextTick: (fn) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(fn());
-        });
-      });
-    },
-    chunkForSymbol() {
-      return void 0;
-    }
-  };
-};
-var findModule = (module2) => {
-  return Object.values(module2).find(isModule) || module2;
-};
-var isModule = (module2) => {
-  return isObject(module2) && module2[Symbol.toStringTag] === "Module";
-};
-var toUrl2 = (doc, element, url) => {
-  var _a;
-  const containerEl = getContainer(element);
-  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
-  return new URL(url, base);
-};
-var getPlatform2 = (docOrNode) => {
-  const doc = getDocument(docOrNode);
-  return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform2(doc));
-};
-var DocumentPlatform = /* @__PURE__ */ Symbol();
-
-// packages/qwik/src/core/import/qrl.ts
-var RUNTIME_QRL = "/runtimeQRL";
-var qrlImport = (element, qrl) => {
-  const qrl_ = qrl;
-  if (qrl_.$symbolRef$)
-    return qrl_.$symbolRef$;
-  if (qrl_.$symbolFn$) {
-    return qrl_.$symbolRef$ = qrl_.$symbolFn$().then((module2) => qrl_.$symbolRef$ = module2[qrl_.$symbol$]);
-  } else {
-    if (!element) {
-      throw new Error(`QRL '${qrl_.$chunk$}#${qrl_.$symbol$ || "default"}' does not have an attached container`);
-    }
-    const symbol = getPlatform2(element).importSymbol(element, qrl_.$chunk$, qrl_.$symbol$);
-    return qrl_.$symbolRef$ = then(symbol, (ref) => {
-      return qrl_.$symbolRef$ = ref;
-    });
-  }
-};
-var stringifyQRL = (qrl, opts = {}) => {
-  var _a;
-  const qrl_ = qrl;
-  let symbol = qrl_.$symbol$;
-  let chunk = qrl_.$chunk$;
-  const refSymbol = (_a = qrl_.$refSymbol$) != null ? _a : symbol;
-  const platform = opts.$platform$;
-  const element = opts.$element$;
-  if (platform) {
-    const result = platform.chunkForSymbol(refSymbol);
-    if (result) {
-      chunk = result[1];
-      if (!qrl_.$refSymbol$) {
-        symbol = result[0];
-      }
-    }
-  }
-  const parts = [chunk];
-  if (symbol && symbol !== "default") {
-    parts.push("#", symbol);
-  }
-  const capture = qrl_.$capture$;
-  const captureRef = qrl_.$captureRef$;
-  if (opts.$getObjId$) {
-    if (captureRef && captureRef.length) {
-      const capture2 = captureRef.map(opts.$getObjId$);
-      parts.push(`[${capture2.join(" ")}]`);
-    }
-  } else if (capture && capture.length > 0) {
-    parts.push(`[${capture.join(" ")}]`);
-  }
-  const qrlString = parts.join("");
-  if (qrl_.$chunk$ === RUNTIME_QRL && element) {
-    const qrls = element.__qrls__ || (element.__qrls__ = /* @__PURE__ */ new Set());
-    qrls.add(qrl);
-  }
-  return qrlString;
-};
-
-// packages/qwik/src/core/import/qrl-class.ts
-var isQrl = (value) => {
-  return value instanceof QRL;
-};
-var QRL = class {
-  constructor($chunk$, $symbol$, $symbolRef$, $symbolFn$, $capture$, $captureRef$) {
-    this.$chunk$ = $chunk$;
-    this.$symbol$ = $symbol$;
-    this.$symbolRef$ = $symbolRef$;
-    this.$symbolFn$ = $symbolFn$;
-    this.$capture$ = $capture$;
-    this.$captureRef$ = $captureRef$;
-  }
-  setContainer(el) {
-    if (!this.$el$) {
-      this.$el$ = el;
-    }
-  }
-  getSymbol() {
-    var _a;
-    return (_a = this.$refSymbol$) != null ? _a : this.$symbol$;
-  }
-  getHash() {
-    var _a;
-    return getSymbolHash((_a = this.$refSymbol$) != null ? _a : this.$symbol$);
-  }
-  async resolve(el) {
-    if (el) {
-      this.setContainer(el);
-    }
-    return qrlImport(this.$el$, this);
-  }
-  resolveLazy(el) {
-    return isFunction(this.$symbolRef$) ? this.$symbolRef$ : this.resolve(el);
-  }
-  invokeFn(el, currentCtx, beforeFn) {
-    return (...args) => {
-      const fn = this.resolveLazy(el);
-      return then(fn, (fn2) => {
-        if (isFunction(fn2)) {
-          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
-          const context = __spreadProps(__spreadValues({}, baseContext), {
-            $qrl$: this
-          });
-          if (beforeFn) {
-            beforeFn();
-          }
-          return useInvoke(context, fn2, ...args);
-        }
-        throw qError(QError_qrlIsNotFunction);
-      });
-    };
-  }
-  copy() {
-    const copy = new QRL(this.$chunk$, this.$symbol$, this.$symbolRef$, this.$symbolFn$, null, this.$captureRef$);
-    copy.$refSymbol$ = this.$refSymbol$;
-    return copy;
-  }
-  async invoke(...args) {
-    const fn = this.invokeFn();
-    const result = await fn(...args);
-    return result;
-  }
-  serialize(options) {
-    return stringifyQRL(this, options);
-  }
-};
-var getSymbolHash = (symbolName) => {
-  const index = symbolName.lastIndexOf("_");
-  if (index > -1) {
-    return symbolName.slice(index + 1);
-  }
-  return symbolName;
-};
 
 // packages/qwik/src/testing/util.ts
 var import_url2 = require("url");
@@ -542,39 +222,6 @@ var ElementFixture = class {
     applyDocumentConfig(this.document, options);
   }
 };
-
-// packages/qwik/src/testing/jsx.ts
-function toDOM(jsx, parent) {
-  const doc = parent ? parent.ownerDocument : createDocument();
-  let element = doc.createElement(jsx.type);
-  for (const attrName in jsx.props) {
-    if (attrName !== "children") {
-      const jsxValue = jsx.props[attrName];
-      element.setAttribute(attrName, isQrl(jsxValue) ? stringifyQRL(jsxValue, { $element$: element }) : jsxValue);
-    }
-  }
-  if (parent) {
-    parent.appendChild(element);
-    if (isTemplate(element)) {
-      element = element.content;
-    }
-  }
-  jsx.children.forEach((child) => {
-    if (isJSXNode(child)) {
-      toDOM(child, element);
-    } else {
-      element.appendChild(doc.createTextNode(String(child)));
-    }
-  });
-  return element;
-}
-var isJSXNode = (n) => {
-  return n && typeof n === "object" && n.constructor.name === "JSXNodeImpl";
-};
-function isTemplate(node) {
-  const tagName = node && node.tagName || "";
-  return tagName.toUpperCase() == "TEMPLATE";
-}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ElementFixture,
@@ -583,6 +230,5 @@ function isTemplate(node) {
   createWindow,
   getTestPlatform,
   isPromise,
-  toDOM,
   toFileUrl
 });

@@ -79,6 +79,7 @@ var codeToText = (code) => {
   var _a;
   if (qDev) {
     const MAP = [
+      "Error while serializing class attribute",
       "Can not serialize a HTML Node that is not an Element",
       "Rruntime but no instance found on element.",
       "Only primitive and object literals can be serialized",
@@ -92,10 +93,11 @@ var codeToText = (code) => {
       "Dynamic import not found",
       "Unknown type argument",
       "not found state for useContext",
-      "Q-ERROR: invoking 'use*()' method outside of invocation context.",
+      "Invoking 'use*()' method outside of invocation context.",
       "Cant access renderCtx for existing context",
       "Cant access document for existing context",
-      "props are inmutable"
+      "props are inmutable",
+      "<Host> component can only be used at the root of a Qwik component$()"
     ];
     return `Code(${code}): ${(_a = MAP[code]) != null ? _a : ""}`;
   } else {

@@ -268,7 +268,7 @@ declare interface ComponentCtx {
     $styleId$: string | undefined;
     $styleClass$: string | undefined;
     $styleHostClass$: string | undefined;
-    $slots$: JSXNode[];
+    $slots$: ProcessedJSXNode[];
 }
 
 /**
@@ -752,10 +752,7 @@ declare type JSXChildren = string | number | boolean | null | undefined | Functi
 export declare interface JSXNode<T = any> {
     type: T;
     props: Record<string, any> | null;
-    children: JSXNode[];
-    key: string | null;
-    elm?: Node;
-    text?: string;
+    key: string | number | null;
 }
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -867,7 +864,7 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null | (() => JSXNode<any>)>;
+declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null | (() => JSXNode<any>);
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -890,6 +887,15 @@ declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+}
+
+declare interface ProcessedJSXNode {
+    $type$: string;
+    $props$: Record<string, any> | null;
+    $children$: ProcessedJSXNode[];
+    $key$: string | null;
+    $elm$: Node | null;
+    $text$: string;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {

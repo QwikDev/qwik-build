@@ -6,7 +6,7 @@ declare interface ComponentCtx {
     $styleId$: string | undefined;
     $styleClass$: string | undefined;
     $styleHostClass$: string | undefined;
-    $slots$: JSXNode[];
+    $slots$: ProcessedJSXNode[];
 }
 
 /**
@@ -107,10 +107,7 @@ declare interface InvokeContext {
 declare interface JSXNode<T = any> {
     type: T;
     props: Record<string, any> | null;
-    children: JSXNode[];
-    key: string | null;
-    elm?: Node;
-    text?: string;
+    key: string | number | null;
 }
 
 declare interface LocalSubscriptionManager {
@@ -131,7 +128,7 @@ declare type ObjToProxyMap = WeakMap<any, any>;
 /**
  * @public
  */
-declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null | (() => JSXNode<any>)>;
+declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null | (() => JSXNode<any>);
 
 /**
  * @alpha
@@ -152,6 +149,15 @@ export declare interface PrefetchResource {
 export declare interface PrefetchStrategy {
     implementation?: PrefetchImplementation;
     symbolsToPrefetch?: SymbolsToPrefetch;
+}
+
+declare interface ProcessedJSXNode {
+    $type$: string;
+    $props$: Record<string, any> | null;
+    $children$: ProcessedJSXNode[];
+    $key$: string | null;
+    $elm$: Node | null;
+    $text$: string;
 }
 
 /**

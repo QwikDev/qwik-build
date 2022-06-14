@@ -416,16 +416,6 @@ declare interface ComponentBaseProps {
 }
 
 /**
- * @public
- */
-export declare type ComponentChild = JSXNode<any> | object | string | number | bigint | boolean | null | undefined;
-
-/**
- * @public
- */
-export declare type ComponentChildren = ComponentChild[] | ComponentChild;
-
-/**
  * @alpha
  */
 export declare interface ComponentCtx {
@@ -433,7 +423,7 @@ export declare interface ComponentCtx {
     $styleId$: string | undefined;
     $styleClass$: string | undefined;
     $styleHostClass$: string | undefined;
-    $slots$: JSXNode[];
+    $slots$: ProcessedJSXNode[];
 }
 
 /**
@@ -1084,18 +1074,10 @@ declare type JSXChildren = string | number | boolean | null | undefined | Functi
 /**
  * @public
  */
-export declare type JSXFactory<T, PROPS extends {} = any> = (props: PROPS, state?: any) => JSXNode<T>;
-
-/**
- * @public
- */
 export declare interface JSXNode<T = any> {
     type: T;
     props: Record<string, any> | null;
-    children: JSXNode[];
-    key: string | null;
-    elm?: Node;
-    text?: string;
+    key: string | number | null;
 }
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1241,7 +1223,7 @@ export declare type On$Props<T extends {}> = {
 /**
  * @public
  */
-export declare type OnRenderFn<PROPS> = (props: PROPS) => ValueOrPromise<JSXNode<any> | null | (() => JSXNode<any>)>;
+export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null | (() => JSXNode<any>);
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1272,6 +1254,15 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 export declare const pauseContainer: (elmOrDoc: Element | Document) => SnapshotResult;
+
+declare interface ProcessedJSXNode {
+    $type$: string;
+    $props$: Record<string, any> | null;
+    $children$: ProcessedJSXNode[];
+    $key$: string | null;
+    $elm$: Node | null;
+    $text$: string;
+}
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
@@ -1703,13 +1694,6 @@ export declare interface Ref<T> {
  * @alpha
  */
 export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>) => Promise<void>;
-
-/**
- * @public
- */
-export declare type RenderableProps<P, RefType = any> = P & Readonly<{
-    children?: ComponentChildren;
-}>;
 
 /**
  * @alpha
@@ -2228,11 +2212,6 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     srcLang?: string | undefined;
 }
-
-/**
- * @alpha
- */
-export declare const unwrapSubscriber: <T extends {}>(obj: T) => any;
 
 /**
  * A lazy-loadable reference to a component's cleanup hook.
@@ -2830,7 +2809,11 @@ export declare const useServerMountQrl: (mountQrl: QRL<ServerFn>) => void;
  *
  * @public
  */
-export declare const useStore: <STATE extends object>(initialState: STATE | (() => STATE)) => STATE;
+export declare const useStore: <STATE extends object>(initialState: STATE | (() => STATE), opts?: UseStoreOptions) => STATE;
+
+declare interface UseStoreOptions {
+    recursive?: boolean;
+}
 
 /**
  * A lazy-loadable reference to a component's styles.
@@ -3058,10 +3041,5 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 }
-
-/**
- * @alpha
- */
-export declare const wrapSubscriber: <T extends {}>(obj: T, subscriber: Subscriber) => any;
 
 export { }
