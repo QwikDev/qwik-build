@@ -1735,16 +1735,23 @@
             return id;
         };
         const getObjId = (obj) => {
+            let suffix = '';
+            if (isMutable(obj)) {
+                obj = obj.v;
+                suffix = '%';
+            }
             if (isObject(obj)) {
                 const target = getProxyTarget(obj);
+                if (target) {
+                    suffix += '!';
+                }
                 const id = objToId.get(normalizeObj(target ?? obj, doc));
                 if (id !== undefined) {
-                    const proxySuffix = target ? '!' : '';
-                    return intToStr(id) + proxySuffix;
+                    return intToStr(id) + suffix;
                 }
                 if (!target && isNode$1(obj)) {
                     if (obj.nodeType === 1) {
-                        return getElementID(obj);
+                        return getElementID(obj) + suffix;
                     }
                     else {
                         logError(codeToText(QError_cannotSerializeNode), obj);
@@ -1755,7 +1762,7 @@
             else {
                 const id = objToId.get(normalizeObj(obj, doc));
                 if (id !== undefined) {
-                    return intToStr(id);
+                    return intToStr(id) + suffix;
                 }
             }
             return null;
@@ -2039,10 +2046,14 @@
         }
         const index = strToInt(id);
         assertEqual(objs.length > index, true);
-        const obj = objs[index];
+        let obj = objs[index];
         const needsProxy = id.endsWith('!');
         if (needsProxy && containerState) {
-            return containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
+            id = id.slice(0, -1);
+            obj = containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
+        }
+        if (id.endsWith('%')) {
+            obj = mutable(obj);
         }
         return obj;
     };
