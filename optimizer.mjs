@@ -1617,8 +1617,14 @@ function qwikVite(qwikViteOpts = {}) {
             const renderToStringOpts = {
               url: url.href,
               debug: true,
-              manifest: isClientDevOnly ? void 0 : manifest,
               snapshot: !isClientDevOnly,
+              manifest: isClientDevOnly ? void 0 : manifest,
+              symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
+                if (mapper) {
+                  const hash = getSymbolHash(symbolName);
+                  return mapper[hash];
+                }
+              },
               prefetchStrategy: null
             };
             const result = await render(renderToStringOpts);
@@ -1665,6 +1671,14 @@ function getViteDevModule(opts) {
   const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
   return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
 }
+
+var getSymbolHash = symbolName => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
 
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
 

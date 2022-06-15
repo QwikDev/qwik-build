@@ -469,6 +469,16 @@ function createPlatform2(document2, opts, mapper) {
   if (opts == null ? void 0 : opts.url) {
     doc.location.href = normalizeUrl(opts.url).href;
   }
+  const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
+    if (mapper) {
+      const hash = getSymbolHash(symbolName);
+      const result = mapper[hash];
+      if (!result) {
+        logError("Cannot resolved symbol", symbolName, "in", mapper);
+      }
+      return result;
+    }
+  };
   const serverPlatform = {
     isServer: true,
     async importSymbol(_element, qrl, symbolName) {
@@ -494,14 +504,7 @@ function createPlatform2(document2, opts, mapper) {
       });
     },
     chunkForSymbol(symbolName) {
-      if (mapper) {
-        const hash = getSymbolHash(symbolName);
-        const result = mapper[hash];
-        if (!result) {
-          logError("Cannot resolved symbol", symbolName, "in", mapper);
-        }
-        return result;
-      }
+      return mapperFn(symbolName, mapper);
     }
   };
   return serverPlatform;
@@ -750,7 +753,10 @@ function getAutoPrefetch(snapshotResult, manifest, mapper, buildBase) {
     for (const obj of stateObjs) {
       if (isQrl(obj)) {
         const qrlSymbolName = obj.getHash();
-        addBundle(manifest, urls, prefetchResources, buildBase, mapper[qrlSymbolName][0]);
+        const resolvedSymbol = mapper[qrlSymbolName];
+        if (resolvedSymbol) {
+          addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[0]);
+        }
       }
     }
   }

@@ -468,6 +468,7 @@ export declare function serializeDocument(docOrEl: Document | Element, opts?: Se
  */
 declare interface SerializeDocumentOptions {
     manifest?: QwikManifest;
+    symbolMapper?: SymbolMapperFn;
     url?: URL | string;
     html?: string;
     debug?: boolean;
@@ -532,6 +533,11 @@ declare interface SubscriptionManager {
 }
 
 declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
+
+/**
+ * @alpha
+ */
+declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => [symbol: string, chunk: string] | undefined;
 
 /**
  * auto: Prefetch all possible QRLs used by the document. Default
