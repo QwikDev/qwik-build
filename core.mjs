@@ -479,7 +479,6 @@ const isElement = (value) => {
 // </docs>
 const useHostElement = () => {
     const ctx = getInvokeContext();
-    assertEqual(ctx.$event$, RenderEvent);
     const element = ctx.$hostElement$;
     assertDefined(element);
     return element;
