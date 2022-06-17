@@ -1038,14 +1038,14 @@ globalThis.qwikOptimizer = function(module) {
       if (id2 === QWIK_BUILD_ID) {
         log("resolveId()", "Resolved", QWIK_BUILD_ID);
         return {
-          id: path.resolve(opts.rootDir, QWIK_BUILD_ID),
+          id: normalizePath(path.resolve(opts.rootDir, QWIK_BUILD_ID)),
           moduleSideEffects: false
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
         log("resolveId()", "Resolved", QWIK_CLIENT_MANIFEST_ID);
         return {
-          id: path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID),
+          id: normalizePath(path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID)),
           moduleSideEffects: false
         };
       }
@@ -1075,7 +1075,7 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const load = async (_ctx, id2, loadOpts = {}) => {
-      if (id2 === QWIK_BUILD_ID) {
+      if (id2.endsWith(QWIK_BUILD_ID)) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
@@ -1484,7 +1484,7 @@ globalThis.qwikOptimizer = function(module) {
           },
           optimizeDeps: {
             include: [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ],
-            exclude: [ "@vite/client", "@vite/env" ]
+            exclude: [ "@vite/client", "@vite/env", QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID ]
           },
           build: {
             outDir: opts.outDir,
