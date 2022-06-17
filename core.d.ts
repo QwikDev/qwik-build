@@ -412,6 +412,8 @@ declare interface ComponentBaseProps {
     [key: `document:on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
     [key: `window:on${string}$`]: EventHandler_2 | undefined;
     [key: `window:on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
+    [key: `preventDefault:${string}`]: boolean;
+    [key: `preventdefault:${string}`]: boolean;
     children?: JSXChildren;
 }
 
@@ -1668,6 +1670,7 @@ declare interface QwikProps {
     'q:version'?: string;
     'q:container'?: '';
     [key: `preventDefault:${string}`]: boolean;
+    [key: `preventdefault:${string}`]: boolean;
 }
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
@@ -2991,7 +2994,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.26
+ * 0.0.27
  * @public
  */
 export declare const version: string;

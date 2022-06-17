@@ -1248,6 +1248,7 @@ declare interface QwikProps {
     'q:version'?: string;
     'q:container'?: '';
     [key: `preventDefault:${string}`]: boolean;
+    [key: `preventdefault:${string}`]: boolean;
 }
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {

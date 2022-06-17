@@ -169,7 +169,7 @@ export declare interface Path {
 
 declare type QwikBuildMode = 'production' | 'development';
 
-declare type QwikBuildTarget = 'client' | 'ssr';
+declare type QwikBuildTarget = 'client' | 'ssr' | 'lib';
 
 /**
  * @alpha
@@ -416,6 +416,7 @@ export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browser
  * @alpha
  */
 export declare interface TransformFsOptions extends TransformOptions {
+    vendorRoots: string[];
 }
 
 /**
@@ -448,7 +449,7 @@ export declare interface TransformModulesOptions extends TransformOptions {
  * @alpha
  */
 declare interface TransformOptions {
-    rootDir: string;
+    srcDir: string;
     entryStrategy?: EntryStrategy;
     minify?: MinifyMode;
     sourceMaps?: boolean;

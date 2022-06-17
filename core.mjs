@@ -3049,7 +3049,7 @@ const PROP_HANDLER_MAP = {
 };
 const ALLOWS_PROPS = ['class', 'className', 'style', 'id', 'q:slot'];
 const HOST_PREFIX = 'host:';
-const SCOPE_PREFIX = /^(host|window|document):/;
+const SCOPE_PREFIX = /^(host|window|document|prevent(d|D)efault):/;
 const updateProperties = (rctx, ctx, expectProps, isSvg) => {
     if (!expectProps) {
         return false;
@@ -4416,7 +4416,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.26";
+const version = "0.0.27";
 
 /**
  * Render JSX.
