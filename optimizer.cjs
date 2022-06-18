@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.27"
+    qwik: "0.0.28"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -546,15 +546,20 @@ globalThis.qwikOptimizer = function(module) {
       const fs = await sys.dynamicImport("fs");
       return async rootDir => {
         const getChildFilePaths = async dir => {
-          const dirItems = await fs.promises.readdir(dir);
-          const files = await Promise.all(dirItems.map((async subdir => {
-            const resolvedPath = sys.path.resolve(dir, subdir);
-            const stats = await fs.promises.stat(resolvedPath);
-            return stats.isDirectory() ? getChildFilePaths(resolvedPath) : [ resolvedPath ];
-          })));
+          const stats = await fs.promises.stat(dir);
           const flatted = [];
-          for (const file of files) {
-            flatted.push(...file);
+          if (stats.isDirectory()) {
+            const dirItems = await fs.promises.readdir(dir);
+            const files = await Promise.all(dirItems.map((async subdir => {
+              const resolvedPath = sys.path.resolve(dir, subdir);
+              const stats2 = await fs.promises.stat(resolvedPath);
+              return stats2.isDirectory() ? getChildFilePaths(resolvedPath) : [ resolvedPath ];
+            })));
+            for (const file of files) {
+              flatted.push(...file);
+            }
+          } else {
+            flatted.push(dir);
           }
           return flatted.filter((a => extensions[sys.path.extname(a)]));
         };
@@ -1481,7 +1486,8 @@ globalThis.qwikOptimizer = function(module) {
         } else {
           forceFullBuild = true;
         }
-        const vendorRoots = "client" === target ? await findQwikRoots(sys, path.join(sys.cwd(), "package.json")) : [];
+        const shouldFindVendors = "client" === target || "serve" === viteCommand;
+        const vendorRoots = shouldFindVendors ? await findQwikRoots(sys, path.join(sys.cwd(), "package.json")) : [];
         const pluginOpts = {
           target: target,
           buildMode: buildMode,
@@ -1508,21 +1514,18 @@ globalThis.qwikOptimizer = function(module) {
           pluginOpts.outDir = null == (_k = viteConfig.build) ? void 0 : _k.outDir;
         }
         if ("node" === sys.env) {
-          const rootDir = null != (_l = pluginOpts.rootDir) ? _l : sys.cwd();
-          const packageJsonPath = sys.path.join(rootDir, "package.json");
           const fs = await sys.dynamicImport("fs");
-          const pkgString = fs.readFileSync(packageJsonPath, {
-            encoding: "utf-8"
-          });
-          if (pkgString) {
+          try {
+            const rootDir = null != (_l = pluginOpts.rootDir) ? _l : sys.cwd();
+            const packageJsonPath = sys.path.join(rootDir, "package.json");
+            const pkgString = await fs.promises.readFile(packageJsonPath, "utf-8");
             try {
               const data = JSON.parse(pkgString);
               "string" === typeof data.name && (pluginOpts.scope = data.name);
-              "ssr" === target && "string" !== typeof data.qwik && console.warn('Missing package.qwik. When building a qwik library, make sure your package.json includes the "qwik" property pointing to the main ESM entry point.');
             } catch (e) {
               console.error(e);
             }
-          }
+          } catch (e) {}
           const nodeOs = await sys.dynamicImport("os");
           tmpClientManifestPath = path.join(nodeOs.tmpdir(), "vite-plugin-qwik-q-manifest.json");
           if ("ssr" === target && !pluginOpts.manifestInput) {
@@ -1535,13 +1538,15 @@ globalThis.qwikOptimizer = function(module) {
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
         clientDevInput = "string" === typeof (null == (_m = qwikViteOpts.client) ? void 0 : _m.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
         clientDevInput = qwikPlugin.normalizePath(clientDevInput);
+        const vendorIds = vendorRoots.map((v => v.id));
         const updatedViteConfig = {
-          esbuild: {
-            include: /\.js$/
+          esbuild: false,
+          resolve: {
+            dedupe: [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, ...vendorIds ]
           },
           optimizeDeps: {
             include: [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ],
-            exclude: [ "@vite/client", "@vite/env", QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorRoots.map((v => v.id)) ]
+            exclude: [ "@vite/client", "@vite/env", QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
           },
           build: {
             outDir: opts.outDir,
@@ -1568,6 +1573,9 @@ globalThis.qwikOptimizer = function(module) {
         if ("ssr" === opts.target) {
           updatedViteConfig.build.ssr = true;
           updatedViteConfig.publicDir = false;
+          "serve" === viteCommand && (updatedViteConfig.ssr = {
+            noExternal: vendorIds
+          });
         } else {
           "client" === opts.target && isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
         }
@@ -1760,7 +1768,6 @@ globalThis.qwikOptimizer = function(module) {
               next();
             }
           } catch (e) {
-            server.ssrFixStacktrace(e);
             next(e);
           }
         }));
