@@ -2694,9 +2694,12 @@
         }
         let wait = promiseAll(results);
         if (oldStartIdx <= oldEndIdx) {
-            wait = then(wait, () => {
-                removeVnodes(ctx, oldCh, oldStartIdx, oldEndIdx);
-            });
+            const canRemove = !(parentElm.nodeName === 'HEAD' && ctx.$currentComponent$ === undefined);
+            if (canRemove) {
+                wait = then(wait, () => {
+                    removeVnodes(ctx, oldCh, oldStartIdx, oldEndIdx);
+                });
+            }
         }
         return wait;
     };
