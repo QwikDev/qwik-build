@@ -740,7 +740,7 @@ declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
-declare interface HTMLWebViewElement extends HTMLElement {
+declare interface HTMLWebViewElement_2 extends HTMLElement {
 }
 
 declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -985,7 +985,7 @@ declare interface IntrinsicElements {
     ul: HTMLAttributes<HTMLUListElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
-    webview: WebViewHTMLAttributes<HTMLWebViewElement>;
+    webview: WebViewHTMLAttributes<HTMLWebViewElement_2>;
     svg: SVGProps<SVGSVGElement>;
     animate: SVGProps<SVGElement>;
     animateMotion: SVGProps<SVGElement>;
@@ -3003,7 +3003,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.29
+ * 0.0.30
  * @public
  */
 export declare const version: string;

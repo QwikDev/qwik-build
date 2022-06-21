@@ -376,6 +376,11 @@ export declare interface QwikSymbol {
 }
 
 /**
+ * @public
+ */
+export declare type Render = (opts: RenderOptions) => Promise<RenderToStringResult>;
+
+/**
  * @alpha
  */
 declare interface RenderContext {
@@ -398,6 +403,12 @@ declare interface RenderOperation {
     $operation$: string;
     $args$: any[];
     $fn$: () => void;
+}
+
+/**
+ * @public
+ */
+export declare interface RenderOptions extends RenderToStringOptions {
 }
 
 /**

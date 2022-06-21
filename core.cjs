@@ -2582,7 +2582,7 @@
         }
         let wait = promiseAll(results);
         if (oldStartIdx <= oldEndIdx) {
-            const canRemove = !(parentElm.nodeName === 'HEAD' && ctx.$currentComponent$ === undefined);
+            const canRemove = parentElm.nodeName !== 'HEAD';
             if (canRemove) {
                 wait = then(wait, () => {
                     removeVnodes(ctx, oldCh, oldStartIdx, oldEndIdx);
@@ -4395,7 +4395,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.29";
+    const version = "0.0.30";
 
     /**
      * Render JSX.

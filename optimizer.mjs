@@ -441,7 +441,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.29"
+  qwik: "0.0.30"
 };
 
 async function getSystem() {
@@ -974,7 +974,7 @@ function createPlugin(optimizerOptions = {}) {
         id: id2
       };
     }
-    if (id2 === QWIK_BUILD_ID) {
+    if ("production" === opts.buildMode && id2 === QWIK_BUILD_ID) {
       log("resolveId()", "Resolved", QWIK_BUILD_ID);
       return {
         id: normalizePath(path.resolve(opts.rootDir, QWIK_BUILD_ID)),
@@ -1021,7 +1021,7 @@ function createPlugin(optimizerOptions = {}) {
     return null;
   };
   const load = async (_ctx, id2, loadOpts = {}) => {
-    if (id2.endsWith(QWIK_BUILD_ID)) {
+    if ("production" === opts.buildMode && id2.endsWith(QWIK_BUILD_ID)) {
       log("load()", QWIK_BUILD_ID, opts.buildMode);
       return {
         moduleSideEffects: false,

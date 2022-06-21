@@ -446,7 +446,7 @@ declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
-declare interface HTMLWebViewElement extends HTMLElement {
+declare interface HTMLWebViewElement_2 extends HTMLElement {
 }
 
 declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -643,7 +643,7 @@ declare interface IntrinsicElements {
     ul: HTMLAttributes<HTMLUListElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
-    webview: WebViewHTMLAttributes<HTMLWebViewElement>;
+    webview: WebViewHTMLAttributes<HTMLWebViewElement_2>;
     svg: SVGProps<SVGSVGElement>;
     animate: SVGProps<SVGElement>;
     animateMotion: SVGProps<SVGElement>;
@@ -724,25 +724,26 @@ declare interface InvokeContext {
 /**
  * @public
  */
-export declare namespace JSX {
-    export interface Element extends JSXNode {
-    }
-    export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
-    }
-    export interface ElementChildrenAttribute {
-        children: any;
-    }
-    export interface IntrinsicElements extends QwikIntrinsicElements {
-    }
-}
-
-/**
- * @public
- */
 declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
+
+/**
+ * @public
+ */
+declare namespace JSX_2 {
+    interface Element extends JSXNode {
+    }
+    interface IntrinsicAttributes extends QwikIntrinsicAttributes {
+    }
+    interface ElementChildrenAttribute {
+        children: any;
+    }
+    interface IntrinsicElements extends QwikIntrinsicElements {
+    }
+}
+export { JSX_2 as JSX }
 
 declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
 

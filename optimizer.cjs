@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.29"
+    qwik: "0.0.30"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1059,7 +1059,7 @@ globalThis.qwikOptimizer = function(module) {
           id: id2
         };
       }
-      if (id2 === QWIK_BUILD_ID) {
+      if ("production" === opts.buildMode && id2 === QWIK_BUILD_ID) {
         log("resolveId()", "Resolved", QWIK_BUILD_ID);
         return {
           id: normalizePath(path.resolve(opts.rootDir, QWIK_BUILD_ID)),
@@ -1106,7 +1106,7 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const load = async (_ctx, id2, loadOpts = {}) => {
-      if (id2.endsWith(QWIK_BUILD_ID)) {
+      if ("production" === opts.buildMode && id2.endsWith(QWIK_BUILD_ID)) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
