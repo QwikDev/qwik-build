@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.28",
+  qwik: "0.0.29",
   qwikDom: "2.1.18"
 };
 
@@ -434,7 +434,8 @@ function createPlatform2(document2, opts, mapper) {
       return symbol;
     },
     raf: () => {
-      return Promise.reject("server can not rerender");
+      logError("server can not rerender");
+      return Promise.resolve();
     },
     nextTick: (fn) => {
       return new Promise((resolve) => {
