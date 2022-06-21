@@ -68,6 +68,7 @@ var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
 
 // packages/qwik/src/core/error/error.ts
+var QError_verifySerializable = 3;
 var QError_qrlIsNotFunction = 10;
 var qError = (code, ...parts) => {
   const text = codeToText(code);
@@ -97,7 +98,9 @@ var codeToText = (code) => {
       "Cant access renderCtx for existing context",
       "Cant access document for existing context",
       "props are inmutable",
-      "<Host> component can only be used at the root of a Qwik component$()"
+      "<Host> component can only be used at the root of a Qwik component$()",
+      "Props are immutable by default.",
+      "use- method must be called only at the root level of a component$()"
     ];
     return `Code(${code}): ${(_a = MAP[code]) != null ? _a : ""}`;
   } else {
@@ -105,18 +108,16 @@ var codeToText = (code) => {
   }
 };
 
-// packages/qwik/src/core/util/types.ts
-var isObject = (v) => {
-  return v && typeof v === "object";
-};
-var isFunction = (v) => {
-  return typeof v === "function";
-};
-
 // packages/qwik/src/core/util/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
 var logError = (message, ...optionalParams) => {
-  console.error("%cQWIK ERROR", STYLE, message, ...optionalParams);
+  const err = message instanceof Error ? message : new Error(message);
+  console.error("%cQWIK ERROR", STYLE, err, ...optionalParams);
+  return err;
+};
+var logErrorAndStop = (message, ...optionalParams) => {
+  logError(message, ...optionalParams);
+  debugger;
 };
 var logWarn = (message, ...optionalParams) => {
   if (qDev) {
@@ -124,19 +125,24 @@ var logWarn = (message, ...optionalParams) => {
   }
 };
 
+// packages/qwik/src/core/util/types.ts
+var isObject = (v) => {
+  return v && typeof v === "object";
+};
+var isArray = (v) => {
+  return Array.isArray(v);
+};
+var isFunction = (v) => {
+  return typeof v === "function";
+};
+
 // packages/qwik/src/core/assert/assert.ts
 var assertDefined = (value, text) => {
   if (qDev) {
     if (value != null)
       return;
-    throw newError(text || "Expected defined value");
+    throw logErrorAndStop(text || "Expected defined value");
   }
-};
-var newError = (text) => {
-  debugger;
-  const error = new Error(text);
-  logError(error);
-  return error;
 };
 
 // packages/qwik/src/core/util/markers.ts
@@ -155,9 +161,17 @@ var getDocument = (node) => {
   return doc;
 };
 
+// packages/qwik/src/core/util/promises.ts
+var isPromise = (value) => {
+  return value instanceof Promise;
+};
+var then = (promise, thenFn, rejectFn) => {
+  return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
+};
+
 // packages/qwik/src/core/use/use-core.ts
-var CONTAINER = Symbol("container");
 var _context;
+var CONTAINER = Symbol("container");
 var useInvoke = (context, fn, ...args) => {
   const previousContext = _context;
   let returnValue;
@@ -191,14 +205,6 @@ var getContainer = (el) => {
     el[CONTAINER] = container;
   }
   return container;
-};
-
-// packages/qwik/src/core/util/promises.ts
-var isPromise = (value) => {
-  return value instanceof Promise;
-};
-var then = (promise, thenFn, rejectFn) => {
-  return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
 };
 
 // packages/qwik/src/core/platform/platform.ts
@@ -262,11 +268,6 @@ var getPlatform = (docOrNode) => {
 };
 var DocumentPlatform = /* @__PURE__ */ Symbol();
 
-// packages/qwik/src/core/util/element.ts
-var isDocument = (value) => {
-  return value && value.nodeType == 9;
-};
-
 // packages/qwik/src/core/import/qrl.ts
 var RUNTIME_QRL = "/runtimeQRL";
 var qrlImport = (element, qrl) => {
@@ -324,6 +325,77 @@ var stringifyQRL = (qrl, opts = {}) => {
   return qrlString;
 };
 
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType == "number";
+};
+var isDocument = (value) => {
+  return value && value.nodeType == 9;
+};
+var isElement = (value) => {
+  return isNode(value) && value.nodeType === 1;
+};
+
+// packages/qwik/src/core/object/q-object.ts
+var QObjectRecursive = 1 << 0;
+var QObjectImmutable = 1 << 1;
+var QOjectTargetSymbol = Symbol();
+var QOjectFlagsSymbol = Symbol();
+var verifySerializable = (value) => {
+  const unwrapped = unwrapProxy(value);
+  if (unwrapped == null) {
+    return value;
+  }
+  if (shouldSerialize(unwrapped)) {
+    switch (typeof unwrapped) {
+      case "object":
+        if (isArray(unwrapped)) {
+          for (const item of unwrapped) {
+            verifySerializable(item);
+          }
+          return value;
+        }
+        if (Object.getPrototypeOf(unwrapped) === Object.prototype) {
+          for (const item of Object.values(unwrapped)) {
+            verifySerializable(item);
+          }
+          return value;
+        }
+        if (isQrl(unwrapped))
+          return value;
+        if (isElement(unwrapped))
+          return value;
+        if (isDocument(unwrapped))
+          return value;
+        break;
+      case "boolean":
+      case "string":
+      case "number":
+        return value;
+    }
+    throw qError(QError_verifySerializable, unwrapped);
+  }
+  return value;
+};
+var noSerializeSet = /* @__PURE__ */ new WeakSet();
+var shouldSerialize = (obj) => {
+  if (isObject(obj) || isFunction(obj)) {
+    return !noSerializeSet.has(obj);
+  }
+  return true;
+};
+var MUTABLE = Symbol("mutable");
+var unwrapProxy = (proxy) => {
+  var _a;
+  return (_a = getProxyTarget(proxy)) != null ? _a : proxy;
+};
+var getProxyTarget = (obj) => {
+  if (isObject(obj)) {
+    return obj[QOjectTargetSymbol];
+  }
+  return void 0;
+};
+
 // packages/qwik/src/core/import/qrl-class.ts
 var isQrl = (value) => {
   return value instanceof QRL;
@@ -336,6 +408,9 @@ var QRL = class {
     this.$symbolFn$ = $symbolFn$;
     this.$capture$ = $capture$;
     this.$captureRef$ = $captureRef$;
+    if (qDev) {
+      verifySerializable($captureRef$);
+    }
   }
   setContainer(el) {
     if (!this.$el$) {

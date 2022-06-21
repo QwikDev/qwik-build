@@ -302,7 +302,7 @@ declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-declare type Booleanish = boolean | 'true' | 'false';
+declare type Booleanish = 'true' | 'false';
 
 declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
@@ -1463,7 +1463,7 @@ export declare interface QRL<TYPE = any> {
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
  * @alpha
  */
-export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[] | null) => QRL<T>;
+export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
 /**
  * @public
@@ -1713,6 +1713,8 @@ declare interface RenderContext {
     $perf$: RenderPerf;
 }
 
+declare type RenderInvokeContext = Required<InvokeContext>;
+
 /**
  * @alpha
  */
@@ -1754,6 +1756,13 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     required?: boolean | undefined;
     size?: number | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+}
+
+declare interface SequentialScope<T> {
+    readonly get: T | undefined;
+    readonly set: (v: T) => void;
+    readonly i: number;
+    readonly ctx: RenderInvokeContext;
 }
 
 /**
@@ -2515,7 +2524,7 @@ export declare const useMountQrl: (mountQrl: QRL<ServerFn>) => void;
  *
  * @alpha
  */
-export declare const useOn: (event: string, eventFn: QRL<() => void>) => void;
+export declare const useOn: (event: string, eventQrl: QRL<() => void>) => void;
 
 /**
  * Register a listener on `document`.
@@ -2572,7 +2581,7 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<() => void>) =
  *
  * @alpha
  */
-export declare const useOnWindow: (event: string, eventFn: QRL<() => void>) => void;
+export declare const useOnWindow: (event: string, eventQrl: QRL<() => void>) => void;
 
 /**
  * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
@@ -2675,7 +2684,7 @@ export declare const useScopedStylesQrl: (styles: QRL<string>) => void;
 /**
  * @alpha
  */
-export declare const useSequentialScope: () => [any, (prop: any) => void, number];
+export declare const useSequentialScope: <T>() => SequentialScope<T>;
 
 /**
  * Register's a server mount hook, that runs only in server when the component is first mounted.

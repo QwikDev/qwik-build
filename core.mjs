@@ -33,10 +33,10 @@ const QError_dynamicImportFailed = 11;
 const QError_unknownTypeArgument = 12;
 const QError_notFoundContext = 13;
 const QError_useMethodOutsideContext = 14;
-const QError_missingRenderCtx = 15;
-const QError_missingDoc = 16;
 const QError_immutableProps = 17;
 const QError_hostCanOnlyBeAtRoot = 18;
+const QError_immutableJsxProps = 19;
+const QError_useInvokeContext = 20;
 const qError = (code, ...parts) => {
     const text = codeToText(code);
     const error = text + parts.join(' ');
@@ -64,12 +64,41 @@ const codeToText = (code) => {
             'Cant access renderCtx for existing context',
             'Cant access document for existing context',
             'props are inmutable',
-            '<Host> component can only be used at the root of a Qwik component$()', // 18
+            '<Host> component can only be used at the root of a Qwik component$()',
+            'Props are immutable by default.',
+            'use- method must be called only at the root level of a component$()',
         ];
         return `Code(${code}): ${MAP[code] ?? ''}`;
     }
     else {
         return `Code(${code})`;
+    }
+};
+
+const STYLE = qDev
+    ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
+    : '';
+const logError = (message, ...optionalParams) => {
+    const err = message instanceof Error ? message : new Error(message);
+    // eslint-disable-next-line no-console
+    console.error('%cQWIK ERROR', STYLE, err, ...optionalParams);
+    return err;
+};
+const logErrorAndStop = (message, ...optionalParams) => {
+    logError(message, ...optionalParams);
+    // eslint-disable-next-line no-debugger
+    debugger;
+};
+const logWarn = (message, ...optionalParams) => {
+    // eslint-disable-next-line no-console
+    if (qDev) {
+        console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
+    }
+};
+const logDebug = (message, ...optionalParams) => {
+    if (qDev) {
+        // eslint-disable-next-line no-console
+        console.debug('%cQWIK', STYLE, message, ...optionalParams);
     }
 };
 
@@ -89,45 +118,19 @@ const isFunction = (v) => {
     return typeof v === 'function';
 };
 
-const STYLE = qDev
-    ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
-    : '';
-const logError = (message, ...optionalParams) => {
-    // eslint-disable-next-line no-console
-    console.error('%cQWIK ERROR', STYLE, message, ...optionalParams);
-};
-const logWarn = (message, ...optionalParams) => {
-    // eslint-disable-next-line no-console
-    if (qDev) {
-        console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
-    }
-};
-const logDebug = (message, ...optionalParams) => {
-    if (qDev) {
-        // eslint-disable-next-line no-console
-        console.debug('%cQWIK', STYLE, message, ...optionalParams);
-    }
-};
-
 const assertDefined = (value, text) => {
     if (qDev) {
         if (value != null)
             return;
-        throw newError(text || 'Expected defined value');
+        throw logErrorAndStop(text || 'Expected defined value');
     }
 };
 const assertEqual = (value1, value2, text) => {
     if (qDev) {
         if (value1 === value2)
             return;
-        throw newError(text || `Expected '${value1}' === '${value2}'.`);
+        throw logErrorAndStop(text || `Expected '${value1}' === '${value2}'.`);
     }
-};
-const newError = (text) => {
-    debugger; // eslint-disable-line no-debugger
-    const error = new Error(text);
-    logError(error); // eslint-disable-line no-console
-    return error;
 };
 
 /**
@@ -173,11 +176,21 @@ const getDocument = (node) => {
     return doc;
 };
 
+const isNode$1 = (value) => {
+    return value && typeof value.nodeType == 'number';
+};
+const isDocument = (value) => {
+    return value && value.nodeType == 9;
+};
+const isElement = (value) => {
+    return isNode$1(value) && value.nodeType === 1;
+};
+
+let _context;
 const CONTAINER = Symbol('container');
 const isStyleTask = (obj) => {
     return isObject(obj) && obj.type === 'style';
 };
-let _context;
 const tryGetInvokeContext = () => {
     if (!_context) {
         const context = typeof document !== 'undefined' && document && document.__q_context__;
@@ -199,6 +212,18 @@ const getInvokeContext = () => {
     if (!ctx) {
         throw qError(QError_useMethodOutsideContext);
     }
+    return ctx;
+};
+const useInvokeContext = () => {
+    const ctx = getInvokeContext();
+    if (ctx.$event$ !== RenderEvent) {
+        throw qError(QError_useInvokeContext);
+    }
+    assertDefined(ctx.$hostElement$);
+    assertDefined(ctx.$waitOn$);
+    assertDefined(ctx.$renderCtx$);
+    assertDefined(ctx.$doc$);
+    assertDefined(ctx.$subscriber$);
     return ctx;
 };
 const useInvoke = (context, fn, ...args) => {
@@ -233,8 +258,8 @@ const newInvokeContext = (doc, hostElement, element, event, url) => {
  * @alpha
  */
 const useWaitOn = (promise) => {
-    const ctx = getInvokeContext();
-    (ctx.$waitOn$ || (ctx.$waitOn$ = [])).push(promise);
+    const ctx = useInvokeContext();
+    ctx.$waitOn$.push(promise);
 };
 const getHostElement = (el) => {
     let foundSlot = false;
@@ -265,14 +290,6 @@ const getContainer = (el) => {
     }
     return container;
 };
-const useRenderContext = () => {
-    const ctx = getInvokeContext();
-    const renderCtx = ctx.$renderCtx$;
-    if (!renderCtx) {
-        throw qError(QError_missingRenderCtx);
-    }
-    return renderCtx;
-};
 
 const isPromise = (value) => {
     return value instanceof Promise;
@@ -291,80 +308,139 @@ const isNotNullable = (v) => {
     return v != null;
 };
 
-const isQrl = (value) => {
-    return value instanceof QRL;
+// <docs markdown="../readme.md#useStore">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStore instead)
+/**
+ * Creates a object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create state for your application. The return object is a proxy which has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ## Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of count.
+ *
+ * ```tsx
+ * const Stores = component$(() => {
+ *   const counter = useCounter(1);
+ *
+ *   // Reactivity happens even for nested objects and arrays
+ *   const userData = useStore({
+ *     name: 'Manu',
+ *     address: {
+ *       address: '',
+ *       city: '',
+ *     },
+ *     orgs: [],
+ *   });
+ *
+ *   // useStore() can also accept a function to calculate the initial value
+ *   const state = useStore(() => {
+ *     return {
+ *       value: expensiveInitialValue(),
+ *     };
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <div>Counter: {counter.value}</div>
+ *       <Child userData={userData} state={state} />
+ *     </Host>
+ *   );
+ * });
+ *
+ * function useCounter(step: number) {
+ *   // Multiple stores can be created in custom hooks for convenience and composability
+ *   const counterStore = useStore({
+ *     value: 0,
+ *   });
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       counterStore.value += step;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *   return counterStore;
+ * }
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useStore = (initialState, opts) => {
+    const { get, set, ctx } = useSequentialScope();
+    if (get != null) {
+        return get;
+    }
+    const containerState = ctx.$renderCtx$.$containerState$;
+    const value = isFunction(initialState) ? initialState() : initialState;
+    const recursive = opts?.recursive ?? false;
+    const flags = recursive ? QObjectRecursive : 0;
+    const newStore = createProxy(value, containerState, flags, undefined);
+    set(newStore);
+    return newStore;
 };
-class QRL {
-    constructor($chunk$, $symbol$, $symbolRef$, $symbolFn$, $capture$, $captureRef$) {
-        this.$chunk$ = $chunk$;
-        this.$symbol$ = $symbol$;
-        this.$symbolRef$ = $symbolRef$;
-        this.$symbolFn$ = $symbolFn$;
-        this.$capture$ = $capture$;
-        this.$captureRef$ = $captureRef$;
-    }
-    setContainer(el) {
-        if (!this.$el$) {
-            this.$el$ = el;
-        }
-    }
-    getSymbol() {
-        return this.$refSymbol$ ?? this.$symbol$;
-    }
-    getHash() {
-        return getSymbolHash(this.$refSymbol$ ?? this.$symbol$);
-    }
-    async resolve(el) {
-        if (el) {
-            this.setContainer(el);
-        }
-        return qrlImport(this.$el$, this);
-    }
-    resolveLazy(el) {
-        return isFunction(this.$symbolRef$) ? this.$symbolRef$ : this.resolve(el);
-    }
-    invokeFn(el, currentCtx, beforeFn) {
-        return ((...args) => {
-            const fn = this.resolveLazy(el);
-            return then(fn, (fn) => {
-                if (isFunction(fn)) {
-                    const baseContext = currentCtx ?? newInvokeContext();
-                    const context = {
-                        ...baseContext,
-                        $qrl$: this,
-                    };
-                    if (beforeFn) {
-                        beforeFn();
-                    }
-                    return useInvoke(context, fn, ...args);
-                }
-                throw qError(QError_qrlIsNotFunction);
-            });
-        });
-    }
-    copy() {
-        const copy = new QRL(this.$chunk$, this.$symbol$, this.$symbolRef$, this.$symbolFn$, null, this.$captureRef$);
-        copy.$refSymbol$ = this.$refSymbol$;
-        return copy;
-    }
-    async invoke(...args) {
-        const fn = this.invokeFn();
-        const result = await fn(...args);
-        return result;
-    }
-    serialize(options) {
-        return stringifyQRL(this, options);
-    }
-}
-const getSymbolHash = (symbolName) => {
-    const index = symbolName.lastIndexOf('_');
-    if (index > -1) {
-        return symbolName.slice(index + 1);
-    }
-    return symbolName;
+// <docs markdown="../readme.md#useRef">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useRef instead)
+/**
+ * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+ * to the `ref` property in JSX.
+ *
+ * ```tsx
+ * export function useRef<T = Element>(current?: T): Ref<T> {
+ *   return useStore({ current });
+ * }
+ * ```
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const input = useRef<HTMLInputElement>();
+ *
+ *   useClientEffect$((track) => {
+ *     const el = track(input, 'current')!;
+ *     el.focus();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <input type="text" ref={input} />
+ *     </Host>
+ *   );
+ * });
+ *
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useRef = (current) => {
+    return useStore({ current });
 };
-const isSameQRL = (a, b) => {
-    return a.getHash() === b.getHash();
+/**
+ * @alpha
+ */
+const useSequentialScope = () => {
+    const ctx = useInvokeContext();
+    const i = ctx.$seq$;
+    const hostElement = ctx.$hostElement$;
+    const elementCtx = getContext(hostElement);
+    ctx.$seq$++;
+    const set = (value) => {
+        elementCtx.$seq$[i] = value;
+    };
+    return {
+        get: elementCtx.$seq$[i],
+        set,
+        i,
+        ctx,
+    };
 };
 
 const createPlatform = (doc) => {
@@ -441,180 +517,6 @@ const getPlatform = (docOrNode) => {
 };
 const DocumentPlatform = /*#__PURE__*/ Symbol();
 
-const isNode$1 = (value) => {
-    return value && typeof value.nodeType == 'number';
-};
-const isDocument = (value) => {
-    return value && value.nodeType == 9;
-};
-const isElement = (value) => {
-    return isNode$1(value) && value.nodeType === 1;
-};
-
-// <docs markdown="../readme.md#useHostElement">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useHostElement instead)
-/**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * ```tsx
- * const Section = component$(
- *   () => {
- *     const hostElement = useHostElement();
- *     console.log(hostElement); // hostElement is a HTMLSectionElement
- *
- *     return <Host>I am a section</Host>;
- *   },
- *   {
- *     tagName: 'section',
- *   }
- * );
- * ```
- *
- * @public
- */
-// </docs>
-const useHostElement = () => {
-    const ctx = getInvokeContext();
-    const element = ctx.$hostElement$;
-    assertDefined(element);
-    return element;
-};
-
-// <docs markdown="../readme.md#useStore">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStore instead)
-/**
- * Creates a object that Qwik can track across serializations.
- *
- * Use `useStore` to create state for your application. The return object is a proxy which has a
- * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ## Example
- *
- * Example showing how `useStore` is used in Counter example to keep track of count.
- *
- * ```tsx
- * const Stores = component$(() => {
- *   const counter = useCounter(1);
- *
- *   // Reactivity happens even for nested objects and arrays
- *   const userData = useStore({
- *     name: 'Manu',
- *     address: {
- *       address: '',
- *       city: '',
- *     },
- *     orgs: [],
- *   });
- *
- *   // useStore() can also accept a function to calculate the initial value
- *   const state = useStore(() => {
- *     return {
- *       value: expensiveInitialValue(),
- *     };
- *   });
- *
- *   return (
- *     <Host>
- *       <div>Counter: {counter.value}</div>
- *       <Child userData={userData} state={state} />
- *     </Host>
- *   );
- * });
- *
- * function useCounter(step: number) {
- *   // Multiple stores can be created in custom hooks for convenience and composability
- *   const counterStore = useStore({
- *     value: 0,
- *   });
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       counterStore.value += step;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *   return counterStore;
- * }
- * ```
- *
- * @public
- */
-// </docs>
-const useStore = (initialState, opts) => {
-    const [store, setStore] = useSequentialScope();
-    if (store != null) {
-        return store;
-    }
-    const containerState = useRenderContext().$containerState$;
-    const value = isFunction(initialState) ? initialState() : initialState;
-    const recursive = opts?.recursive ?? false;
-    const flags = recursive ? QObjectRecursive : 0;
-    const newStore = createProxy(value, containerState, flags, undefined);
-    setStore(newStore);
-    return newStore;
-};
-// <docs markdown="../readme.md#useRef">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useRef instead)
-/**
- * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
- * to the `ref` property in JSX.
- *
- * ```tsx
- * export function useRef<T = Element>(current?: T): Ref<T> {
- *   return useStore({ current });
- * }
- * ```
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const input = useRef<HTMLInputElement>();
- *
- *   useClientEffect$((track) => {
- *     const el = track(input, 'current')!;
- *     el.focus();
- *   });
- *
- *   return (
- *     <Host>
- *       <input type="text" ref={input} />
- *     </Host>
- *   );
- * });
- *
- * ```
- *
- * @public
- */
-// </docs>
-const useRef = (current) => {
-    return useStore({ current });
-};
-/**
- * @alpha
- */
-const useSequentialScope = () => {
-    const ctx = getInvokeContext();
-    assertEqual(ctx.$event$, RenderEvent);
-    const index = ctx.$seq$;
-    const hostElement = useHostElement();
-    const elementCtx = getContext(hostElement);
-    ctx.$seq$++;
-    const updateFn = (value) => {
-        elementCtx.$seq$[index] = value;
-    };
-    return [elementCtx.$seq$[index], updateFn, index];
-};
-
 // <docs markdown="../readme.md#useDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useDocument instead)
@@ -629,13 +531,8 @@ const useSequentialScope = () => {
  */
 // </docs>
 const useDocument = () => {
-    const ctx = getInvokeContext();
-    assertEqual(ctx.$event$, RenderEvent);
-    const doc = ctx.$doc$;
-    if (!doc) {
-        throw qError(QError_missingDoc);
-    }
-    return doc;
+    const ctx = useInvokeContext();
+    return ctx.$doc$;
 };
 
 const fromCamelToKebabCase = (text) => {
@@ -649,13 +546,9 @@ const directGetAttribute = (el, prop) => {
     return el.getAttribute(prop);
 };
 
-const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*Qrl$/;
-const ON$_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
+const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*(Qrl|\$)$/;
 const isOnProp = (prop) => {
     return ON_PROP_REGEX.test(prop);
-};
-const isOn$Prop = (prop) => {
-    return ON$_PROP_REGEX.test(prop);
 };
 const qPropWriteQRL = (rctx, ctx, prop, value) => {
     if (!value) {
@@ -692,12 +585,7 @@ const qPropWriteQRL = (rctx, ctx, prop, value) => {
     ctx.$listeners$.set(kebabProp, existingListeners);
     const newValue = serializeQRLs(existingListeners, ctx);
     if (directGetAttribute(ctx.$element$, kebabProp) !== newValue) {
-        if (rctx) {
-            setAttribute(rctx, ctx.$element$, kebabProp, newValue);
-        }
-        else {
-            directSetAttribute(ctx.$element$, kebabProp, newValue);
-        }
+        setAttribute(rctx, ctx.$element$, kebabProp, newValue);
     }
 };
 const getDomListeners = (el) => {
@@ -797,16 +685,16 @@ const implicit$FirstArg = (fn) => {
  */
 // </docs>
 const useCleanupQrl = (unmountFn) => {
-    const [watch, setWatch, i] = useSequentialScope();
-    if (!watch) {
-        const el = useHostElement();
+    const { get, set, i, ctx } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
         const watch = {
             qrl: unmountFn,
             el,
             f: WatchFlagsIsCleanup,
             i,
         };
-        setWatch(true);
+        set(true);
         getContext(el).$watches$.push(watch);
     }
 };
@@ -941,10 +829,8 @@ const useVisibleQrl = (resumeFn) => {
  * @alpha
  */
 // </docs>
-const useOn = (event, eventFn) => {
-    const el = useHostElement();
-    const ctx = getContext(el);
-    qPropWriteQRL(undefined, ctx, `on:${event}`, eventFn);
+const useOn = (event, eventQrl) => {
+    _useOn(`on:${event}`, eventQrl);
 };
 // <docs markdown="../readme.md#useOnDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -977,9 +863,7 @@ const useOn = (event, eventFn) => {
  */
 // </docs>
 const useOnDocument = (event, eventQrl) => {
-    const el = useHostElement();
-    const ctx = getContext(el);
-    qPropWriteQRL(undefined, ctx, `on-document:${event}`, eventQrl);
+    _useOn(`on-document:${event}`, eventQrl);
 };
 // <docs markdown="../readme.md#useOnWindow">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -1012,10 +896,13 @@ const useOnDocument = (event, eventQrl) => {
  * @alpha
  */
 // </docs>
-const useOnWindow = (event, eventFn) => {
-    const el = useHostElement();
-    const ctx = getContext(el);
-    qPropWriteQRL(undefined, ctx, `on-window:${event}`, eventFn);
+const useOnWindow = (event, eventQrl) => {
+    _useOn(`on-window:${event}`, eventQrl);
+};
+const _useOn = (eventName, eventQrl) => {
+    const invokeCtx = useInvokeContext();
+    const ctx = getContext(invokeCtx.$hostElement$);
+    qPropWriteQRL(invokeCtx.$renderCtx$, ctx, eventName, eventQrl);
 };
 
 const WatchFlagsIsEffect = 1 << 0;
@@ -1085,19 +972,19 @@ const WatchFlagsIsCleanup = 1 << 3;
  */
 // </docs>
 const useWatchQrl = (qrl, opts) => {
-    const [watch, setWatch, i] = useSequentialScope();
-    if (!watch) {
-        const el = useHostElement();
-        const containerState = useRenderContext().$containerState$;
+    const { get, set, ctx, i } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
+        const containerState = ctx.$renderCtx$.$containerState$;
         const watch = {
             qrl,
             el,
             f: WatchFlagsIsDirty | WatchFlagsIsWatch,
             i,
         };
-        setWatch(true);
+        set(true);
         getContext(el).$watches$.push(watch);
-        useWaitOn(Promise.resolve().then(() => runWatch(watch, containerState)));
+        ctx.$waitOn$.push(Promise.resolve().then(() => runWatch(watch, containerState)));
         const isServer = containerState.$platform$.isServer;
         if (isServer) {
             useRunWatch(watch, opts?.run);
@@ -1195,19 +1082,19 @@ const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
  */
 // </docs>
 const useClientEffectQrl = (qrl, opts) => {
-    const [watch, setWatch, i] = useSequentialScope();
-    if (!watch) {
-        const el = useHostElement();
+    const { get, set, i, ctx } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
         const watch = {
             qrl,
             el,
             f: WatchFlagsIsEffect,
             i,
         };
-        setWatch(true);
+        set(true);
         getContext(el).$watches$.push(watch);
         useRunWatch(watch, opts?.run ?? 'visible');
-        const doc = useDocument();
+        const doc = ctx.$doc$;
         if (doc['qO']) {
             doc['qO'].observe(el);
         }
@@ -1282,12 +1169,12 @@ const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
  */
 // </docs>
 const useServerMountQrl = (mountQrl) => {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        setWatch(true);
-        const isServer = getPlatform(useDocument()).isServer;
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
+        const isServer = getPlatform(ctx.$doc$).isServer;
         if (isServer) {
-            useWaitOn(mountQrl.invoke());
+            ctx.$waitOn$.push(mountQrl.invoke());
         }
     }
 };
@@ -1365,12 +1252,12 @@ const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
  */
 // </docs>
 const useClientMountQrl = (mountQrl) => {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        setWatch(true);
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
         const isServer = getPlatform(useDocument()).isServer;
         if (!isServer) {
-            useWaitOn(mountQrl.invoke());
+            ctx.$waitOn$.push(mountQrl.invoke());
         }
     }
 };
@@ -1442,10 +1329,10 @@ const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
  */
 // </docs>
 const useMountQrl = (mountQrl) => {
-    const [watch, setWatch] = useSequentialScope();
-    if (!watch) {
-        setWatch(true);
-        useWaitOn(mountQrl.invoke());
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
+        ctx.$waitOn$.push(mountQrl.invoke());
     }
 };
 // <docs markdown="../readme.md#useMount">
@@ -2293,7 +2180,8 @@ const normalizeOnProp = (prop) => {
     return `${scope}:${prop}`;
 };
 const setEvent = (rctx, ctx, prop, value) => {
-    qPropWriteQRL(rctx, ctx, normalizeOnProp(prop), value);
+    const dollar = qDev && prop.endsWith('$');
+    qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, dollar ? -1 : -3)), dollar ? $(value) : value);
 };
 const createProps = (target, containerState) => {
     return createProxy(target, containerState, QObjectImmutable);
@@ -2323,7 +2211,7 @@ const getPropsMutator = (ctx, containerState) => {
                 if (qDev) {
                     if (didSet && !mut && !isQrl(value)) {
                         const displayName = ctx.$renderQrl$?.getSymbol() ?? ctx.$element$.localName;
-                        logError(`Props are immutable by default. If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, '\n - Component:', displayName, '\n - Prop:', prop, '\n - Old value:', oldValue, '\n - New value:', value);
+                        logError(codeToText(QError_immutableJsxProps), `If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, '\n - Component:', displayName, '\n - Prop:', prop, '\n - Old value:', oldValue, '\n - New value:', value);
                     }
                 }
                 manager.$notifySubs$(prop);
@@ -3098,11 +2986,7 @@ const updateProperties = (rctx, ctx, expectProps, isSvg) => {
             continue;
         }
         if (isOnProp(key)) {
-            setEvent(rctx, ctx, key.slice(0, -3), newValue);
-            continue;
-        }
-        if (isOn$Prop(key)) {
-            setEvent(rctx, ctx, key.slice(0, -1), $(newValue));
+            setEvent(rctx, ctx, key, newValue);
             continue;
         }
         // Check if its an exception
@@ -3147,11 +3031,12 @@ const copyRenderContext = (ctx) => {
 };
 const setAttribute = (ctx, el, prop, value) => {
     const fn = () => {
-        if (value == null) {
+        if (value == null || value === false) {
             el.removeAttribute(prop);
         }
         else {
-            directSetAttribute(el, prop, String(value));
+            const str = value === true ? '' : String(value);
+            directSetAttribute(el, prop, str);
         }
     };
     ctx.$operations$.push({
@@ -3439,6 +3324,7 @@ const useLexicalScope = () => {
     if (qrl.$captureRef$ == null) {
         const el = context.$element$;
         assertDefined(el);
+        assertDefined(qrl.$capture$);
         resumeIfNeeded(getContainer(el));
         const ctx = getContext(el);
         qrl.$captureRef$ = qrl.$capture$.map((idx) => qInflate(idx, ctx));
@@ -3874,30 +3760,40 @@ const wrap = (value, containerState) => {
     }
 };
 const verifySerializable = (value) => {
-    if (value == null) {
-        return;
+    const unwrapped = unwrapProxy(value);
+    if (unwrapped == null) {
+        return value;
     }
-    if (shouldSerialize(value)) {
-        switch (typeof value) {
+    if (shouldSerialize(unwrapped)) {
+        switch (typeof unwrapped) {
             case 'object':
-                if (isArray(value))
-                    return;
-                if (Object.getPrototypeOf(value) === Object.prototype)
-                    return;
-                if (isQrl(value))
-                    return;
-                if (isElement(value))
-                    return;
-                if (isDocument(value))
-                    return;
+                if (isArray(unwrapped)) {
+                    for (const item of unwrapped) {
+                        verifySerializable(item);
+                    }
+                    return value;
+                }
+                if (Object.getPrototypeOf(unwrapped) === Object.prototype) {
+                    for (const item of Object.values(unwrapped)) {
+                        verifySerializable(item);
+                    }
+                    return value;
+                }
+                if (isQrl(unwrapped))
+                    return value;
+                if (isElement(unwrapped))
+                    return value;
+                if (isDocument(unwrapped))
+                    return value;
                 break;
             case 'boolean':
             case 'string':
             case 'number':
-                return;
+                return value;
         }
-        throw qError(QError_verifySerializable, value);
+        throw qError(QError_verifySerializable, unwrapped);
     }
+    return value;
 };
 const noSerializeSet = /*#__PURE__*/ new WeakSet();
 const shouldSerialize = (obj) => {
@@ -3961,6 +3857,85 @@ const getProxyFlags = (obj) => {
         return obj[QOjectFlagsSymbol];
     }
     return undefined;
+};
+
+const isQrl = (value) => {
+    return value instanceof QRL;
+};
+class QRL {
+    constructor($chunk$, $symbol$, $symbolRef$, $symbolFn$, $capture$, $captureRef$) {
+        this.$chunk$ = $chunk$;
+        this.$symbol$ = $symbol$;
+        this.$symbolRef$ = $symbolRef$;
+        this.$symbolFn$ = $symbolFn$;
+        this.$capture$ = $capture$;
+        this.$captureRef$ = $captureRef$;
+        if (qDev) {
+            verifySerializable($captureRef$);
+        }
+    }
+    setContainer(el) {
+        if (!this.$el$) {
+            this.$el$ = el;
+        }
+    }
+    getSymbol() {
+        return this.$refSymbol$ ?? this.$symbol$;
+    }
+    getHash() {
+        return getSymbolHash(this.$refSymbol$ ?? this.$symbol$);
+    }
+    async resolve(el) {
+        if (el) {
+            this.setContainer(el);
+        }
+        return qrlImport(this.$el$, this);
+    }
+    resolveLazy(el) {
+        return isFunction(this.$symbolRef$) ? this.$symbolRef$ : this.resolve(el);
+    }
+    invokeFn(el, currentCtx, beforeFn) {
+        return ((...args) => {
+            const fn = this.resolveLazy(el);
+            return then(fn, (fn) => {
+                if (isFunction(fn)) {
+                    const baseContext = currentCtx ?? newInvokeContext();
+                    const context = {
+                        ...baseContext,
+                        $qrl$: this,
+                    };
+                    if (beforeFn) {
+                        beforeFn();
+                    }
+                    return useInvoke(context, fn, ...args);
+                }
+                throw qError(QError_qrlIsNotFunction);
+            });
+        });
+    }
+    copy() {
+        const copy = new QRL(this.$chunk$, this.$symbol$, this.$symbolRef$, this.$symbolFn$, null, this.$captureRef$);
+        copy.$refSymbol$ = this.$refSymbol$;
+        return copy;
+    }
+    async invoke(...args) {
+        const fn = this.invokeFn();
+        const result = await fn(...args);
+        return result;
+    }
+    serialize(options) {
+        return stringifyQRL(this, options);
+    }
+}
+const getSymbolHash = (symbolName) => {
+    const index = symbolName.lastIndexOf('_');
+    if (index > -1) {
+        return symbolName.slice(index + 1);
+    }
+    return symbolName;
+};
+const isSameQRL = (a, b) => {
+    return a.getHash() === b.getHash();
 };
 
 let runtimeSymbolId = 0;
@@ -4052,7 +4027,6 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
         throw qError(QError_unknownTypeArgument, chunkOrFn);
     }
     // Unwrap subscribers
-    unwrapLexicalScope(lexicalScopeCapture);
     const qrl = new QRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
     const ctx = tryGetInvokeContext();
     if (ctx && ctx.$element$) {
@@ -4068,17 +4042,7 @@ const runtimeQrl = (symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
  */
 const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
     // Unwrap subscribers
-    return new QRL(INLINED_QRL, symbolName, symbol, null, null, unwrapLexicalScope(lexicalScopeCapture));
-};
-const unwrapLexicalScope = (lexicalScope) => {
-    if (isArray(lexicalScope)) {
-        for (let i = 0; i < lexicalScope.length; i++) {
-            if (qDev) {
-                verifySerializable(getProxyTarget(lexicalScope[i]) ?? lexicalScope[i]);
-            }
-        }
-    }
-    return lexicalScope;
+    return new QRL(INLINED_QRL, symbolName, symbol, null, null, lexicalScopeCapture);
 };
 const stringifyQRL = (qrl, opts = {}) => {
     const qrl_ = qrl;
@@ -4485,6 +4449,39 @@ const injectQContainer = (containerEl) => {
     directSetAttribute(containerEl, QContainerAttr, 'resumed');
 };
 
+// <docs markdown="../readme.md#useHostElement">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useHostElement instead)
+/**
+ * Retrieves the Host Element of the current component.
+ *
+ * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
+ * (before any `await` statements.)
+ *
+ * ```tsx
+ * const Section = component$(
+ *   () => {
+ *     const hostElement = useHostElement();
+ *     console.log(hostElement); // hostElement is a HTMLSectionElement
+ *
+ *     return <Host>I am a section</Host>;
+ *   },
+ *   {
+ *     tagName: 'section',
+ *   }
+ * );
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useHostElement = () => {
+    const ctx = useInvokeContext();
+    const element = ctx.$hostElement$;
+    assertDefined(element);
+    return element;
+};
+
 /**
  * @alpha
  */
@@ -4497,17 +4494,16 @@ const createContext = (name) => {
  * @alpha
  */
 const useContextProvider = (context, newValue) => {
-    const [value, setValue] = useSequentialScope();
-    if (value) {
+    const { get, set, ctx } = useSequentialScope();
+    if (get) {
         return;
     }
-    const invokeContext = getInvokeContext();
-    const hostElement = invokeContext.$hostElement$;
-    const renderCtx = invokeContext.$renderCtx$;
-    const ctx = getContext(hostElement);
-    let contexts = ctx.$contexts$;
+    const hostElement = ctx.$hostElement$;
+    const renderCtx = ctx.$renderCtx$;
+    const hostCtx = getContext(hostElement);
+    let contexts = hostCtx.$contexts$;
     if (!contexts) {
-        ctx.$contexts$ = contexts = new Map();
+        hostCtx.$contexts$ = contexts = new Map();
     }
     contexts.set(context.id, newValue);
     const serializedContexts = [];
@@ -4515,39 +4511,38 @@ const useContextProvider = (context, newValue) => {
         serializedContexts.push(`${key}`);
     });
     setAttribute(renderCtx, hostElement, QCtxAttr, serializedContexts.join(' '));
-    setValue(true);
+    set(true);
 };
 /**
  * @alpha
  */
 const useContext = (context) => {
-    const [value, setValue] = useSequentialScope();
-    if (!value) {
-        const invokeContext = getInvokeContext();
-        let hostElement = invokeContext.$hostElement$;
-        const contexts = invokeContext.$renderCtx$.$contexts$;
-        for (let i = contexts.length - 1; i >= 0; i--) {
-            const ctx = contexts[i];
-            hostElement = ctx.$element$;
-            if (ctx.$contexts$) {
-                const found = ctx.$contexts$.get(context.id);
-                if (found) {
-                    setValue(found);
-                    return found;
-                }
-            }
-        }
-        const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}"]`);
-        if (foundEl) {
-            const value = getContext(foundEl).$contexts$.get(context.id);
-            if (value) {
-                setValue(value);
-                return value;
-            }
-        }
-        throw qError(QError_notFoundContext, context.id);
+    const { get, set, ctx } = useSequentialScope();
+    if (get) {
+        return get;
     }
-    return value;
+    let hostElement = ctx.$hostElement$;
+    const contexts = ctx.$renderCtx$.$contexts$;
+    for (let i = contexts.length - 1; i >= 0; i--) {
+        const ctx = contexts[i];
+        hostElement = ctx.$element$;
+        if (ctx.$contexts$) {
+            const found = ctx.$contexts$.get(context.id);
+            if (found) {
+                set(found);
+                return found;
+            }
+        }
+    }
+    const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}"]`);
+    if (foundEl) {
+        const value = getContext(foundEl).$contexts$.get(context.id);
+        if (value) {
+            set(value);
+            return value;
+        }
+    }
+    throw qError(QError_notFoundContext, context.id);
 };
 
 // <docs markdown="../readme.md#useStyles">
@@ -4625,20 +4620,20 @@ const useScopedStylesQrl = (styles) => {
 // </docs>
 const useScopedStyles$ = /*#__PURE__*/ implicit$FirstArg(useScopedStylesQrl);
 const _useStyles = (styles, scoped) => {
-    const [style, setStyle, index] = useSequentialScope();
-    if (style === true) {
+    const { get, set, ctx, i } = useSequentialScope();
+    if (get === true) {
         return;
     }
-    setStyle(true);
-    const renderCtx = useRenderContext();
+    set(true);
+    const renderCtx = ctx.$renderCtx$;
     const styleQrl = toQrlOrError(styles);
-    const styleId = styleKey(styleQrl, index);
-    const hostElement = useHostElement();
+    const styleId = styleKey(styleQrl, i);
+    const hostElement = ctx.$hostElement$;
     if (scoped) {
         directSetAttribute(hostElement, ComponentScopedStyles, styleId);
     }
     if (!hasStyle(renderCtx, styleId)) {
-        useWaitOn(styleQrl.resolve(hostElement).then((styleText) => {
+        ctx.$waitOn$.push(styleQrl.resolve(hostElement).then((styleText) => {
             if (!hasStyle(renderCtx, styleId)) {
                 appendStyle(renderCtx, hostElement, {
                     type: 'style',

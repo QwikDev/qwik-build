@@ -227,7 +227,7 @@ declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-declare type Booleanish = boolean | 'true' | 'false';
+declare type Booleanish = 'true' | 'false';
 
 declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
