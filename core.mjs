@@ -2023,7 +2023,8 @@ const collectSubscriptions = (subs, collector) => {
         }
     });
 };
-const collectQObjects = (obj, collector) => {
+const collectQObjects = (input, collector) => {
+    let obj = input;
     if (obj != null) {
         if (typeof obj === 'object') {
             const target = getProxyTarget(obj);
@@ -2051,13 +2052,13 @@ const collectQObjects = (obj, collector) => {
             collector.$objSet$.add(obj);
             if (isArray(obj)) {
                 for (let i = 0; i < obj.length; i++) {
-                    collectQObjects(obj[i], collector);
+                    collectQObjects(input[i], collector);
                 }
             }
             else {
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        collectQObjects(obj[key], collector);
+                        collectQObjects(input[key], collector);
                     }
                 }
             }
