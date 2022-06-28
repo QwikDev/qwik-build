@@ -6,10 +6,9 @@
         return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
     }
     ((doc, hasInitialized, prefetchWorker) => {
-        const ON_PREFIXES = [ "on:", "on-window:", "on-document:" ];
         const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
-            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, type, ev)));
+            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));
         };
         const emitEvent = (el, eventName, detail) => el.dispatchEvent(new CustomEvent(eventName, {
             detail: detail,
@@ -23,25 +22,23 @@
             element = element.closest("[q\\:container]");
             return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
-        const dispatch = async (element, eventName, ev) => {
+        const dispatch = async (element, onPrefix, eventName, ev) => {
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
-            for (const onPrefix of ON_PREFIXES) {
-                const attrValue = element.getAttribute(onPrefix + eventName);
-                if (attrValue) {
-                    for (const qrl of attrValue.split("\n")) {
-                        const url = qrlResolver(element, qrl);
-                        if (url) {
-                            const symbolName = getSymbolName(url);
-                            const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
-                            const previousCtx = doc.__q_context__;
-                            if (element.isConnected) {
-                                try {
-                                    doc.__q_context__ = [ element, ev, url ];
-                                    handler(ev, element, url);
-                                } finally {
-                                    doc.__q_context__ = previousCtx;
-                                    emitEvent(element, "qsymbol", symbolName);
-                                }
+            const attrValue = element.getAttribute("on" + onPrefix + ":" + eventName);
+            if (attrValue) {
+                for (const qrl of attrValue.split("\n")) {
+                    const url = qrlResolver(element, qrl);
+                    if (url) {
+                        const symbolName = getSymbolName(url);
+                        const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
+                        const previousCtx = doc.__q_context__;
+                        if (element.isConnected) {
+                            try {
+                                doc.__q_context__ = [ element, ev, url ];
+                                handler(ev, element, url);
+                            } finally {
+                                doc.__q_context__ = previousCtx;
+                                emitEvent(element, "qsymbol", symbolName);
                             }
                         }
                     }
@@ -49,14 +46,12 @@
             }
         };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
-        const processEvent = (ev, element) => {
-            if ((element = ev.target) == doc) {
-                setTimeout((() => broadcast("-document", ev.type, ev)));
-            } else {
-                while (element && element.getAttribute) {
-                    dispatch(element, ev.type, ev);
-                    element = ev.bubbles ? element.parentElement : null;
-                }
+        const processWindowEvent = (ev, element) => {
+            element = ev.target;
+            broadcast("-window", ev.type, ev);
+            while (element && element.getAttribute) {
+                dispatch(element, "", ev.type, ev);
+                element = ev.bubbles ? element.parentElement : null;
             }
         };
         const processReadyStateChange = readyState => {
@@ -69,7 +64,7 @@
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "qvisible", new CustomEvent("qvisible", {
+                                dispatch(entry.target, "", "qvisible", new CustomEvent("qvisible", {
                                     bubbles: !1,
                                     detail: entry
                                 }));
@@ -81,9 +76,11 @@
                 }
             }
         };
-        const addDocEventListener = eventName => doc.addEventListener(eventName, processEvent, {
-            capture: !0
-        });
+        const addDocEventListener = eventName => {
+            window.addEventListener(eventName, processWindowEvent, {
+                capture: !0
+            });
+        };
         if (!doc.qR) {
             doc.qR = 1;
             window.qEvents.forEach(addDocEventListener);

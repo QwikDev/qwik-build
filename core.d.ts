@@ -2524,7 +2524,7 @@ export declare const useMountQrl: (mountQrl: QRL<ServerFn>) => void;
  *
  * @alpha
  */
-export declare const useOn: (event: string, eventQrl: QRL<() => void>) => void;
+export declare const useOn: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * Register a listener on `document`.
@@ -2552,7 +2552,7 @@ export declare const useOn: (event: string, eventQrl: QRL<() => void>) => void;
  *
  * @alpha
  */
-export declare const useOnDocument: (event: string, eventQrl: QRL<() => void>) => void;
+export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * Register a listener on `window`.
@@ -2581,7 +2581,7 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<() => void>) =
  *
  * @alpha
  */
-export declare const useOnWindow: (event: string, eventQrl: QRL<() => void>) => void;
+export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * It's a very thin wrapper around `useStore()` including the proper type signature to be passed

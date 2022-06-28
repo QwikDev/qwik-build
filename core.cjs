@@ -875,7 +875,7 @@
      */
     // </docs>
     const useOnDocument = (event, eventQrl) => {
-        _useOn(`on-document:${event}`, eventQrl);
+        _useOn(`on-window:${event}`, eventQrl);
     };
     // <docs markdown="../readme.md#useOnWindow">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2174,7 +2174,7 @@
         el[Q_CTX] = undefined;
     };
     const PREFIXES = ['document:on', 'window:on', 'on'];
-    const SCOPED = ['on-document', 'on-window', 'on'];
+    const SCOPED = ['on-window', 'on-window', 'on'];
     const normalizeOnProp = (prop) => {
         let scope = 'on';
         for (let i = 0; i < PREFIXES.length; i++) {
