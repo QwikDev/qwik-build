@@ -24,10 +24,10 @@
             return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, eventName, ev) => {
+            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
             for (const onPrefix of ON_PREFIXES) {
                 const attrValue = element.getAttribute(onPrefix + eventName);
                 if (attrValue) {
-                    element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
                     for (const qrl of attrValue.split("\n")) {
                         const url = qrlResolver(element, qrl);
                         if (url) {
