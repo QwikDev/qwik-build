@@ -3773,22 +3773,30 @@
         }
     };
     const verifySerializable = (value) => {
+        const seen = new Set();
+        return _verifySerializable(value, seen);
+    };
+    const _verifySerializable = (value, seen) => {
         const unwrapped = unwrapProxy(value);
         if (unwrapped == null) {
             return value;
         }
         if (shouldSerialize(unwrapped)) {
+            if (seen.has(unwrapped)) {
+                return value;
+            }
+            seen.add(unwrapped);
             switch (typeof unwrapped) {
                 case 'object':
                     if (isArray(unwrapped)) {
                         for (const item of unwrapped) {
-                            verifySerializable(item);
+                            _verifySerializable(item, seen);
                         }
                         return value;
                     }
                     if (Object.getPrototypeOf(unwrapped) === Object.prototype) {
                         for (const item of Object.values(unwrapped)) {
-                            verifySerializable(item);
+                            _verifySerializable(item, seen);
                         }
                         return value;
                     }
