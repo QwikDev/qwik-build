@@ -1729,25 +1729,21 @@ globalThis.qwikOptimizer = function(module) {
                 entry[1].forEach((v => {
                   var _a2, _b;
                   const hook = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.hook;
-                  if (hook) {
-                    let url2 = v.url;
-                    v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
-                    manifest.mapping[hook.name] = url2;
-                  }
+                  let url2 = v.url;
+                  v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
+                  hook && (manifest.mapping[hook.name] = url2);
+                  const {pathId: pathId, query: query} = parseId(v.url);
+                  "" === query && pathId.endsWith(".css") && manifest.injections.push({
+                    tag: "link",
+                    location: "head",
+                    attributes: {
+                      rel: "stylesheet",
+                      href: url2
+                    }
+                  });
                 }));
               }));
               qwikPlugin.log("handleSSR()", "symbols", manifest);
-              const renderInputModule = await server.moduleGraph.getModuleByUrl(opts.input[0]);
-              renderInputModule && renderInputModule.importedModules.forEach((moduleNode => {
-                moduleNode.url.endsWith(".css") && manifest.injections.push({
-                  tag: "link",
-                  location: "head",
-                  attributes: {
-                    rel: "stylesheet",
-                    href: moduleNode.url
-                  }
-                });
-              }));
               const renderToStringOpts = {
                 url: url.href,
                 debug: true,
