@@ -39,7 +39,7 @@ const QError_immutableJsxProps = 19;
 const QError_useInvokeContext = 20;
 const qError = (code, ...parts) => {
     const text = codeToText(code);
-    const error = text + parts.join(' ');
+    const error = `${text} ${parts.join(' ')}`;
     debugger; // eslint-disable-line no-debugger
     return new Error(error);
 };
@@ -2391,10 +2391,6 @@ const styleContent = (styleId) => {
     return ComponentStylesPrefixContent + styleId;
 };
 
-const firstRenderComponent = (rctx, ctx) => {
-    directSetAttribute(ctx.$element$, QHostAttr, '');
-    return renderComponent(rctx, ctx);
-};
 const renderComponent = (rctx, ctx) => {
     ctx.$dirty$ = false;
     const hostElement = ctx.$element$;
@@ -2476,6 +2472,17 @@ const smartUpdateChildren = (ctx, elm, ch, mode, isSvg) => {
         ch = ch[0].$children$;
     }
     const oldCh = getChildren(elm, mode);
+    if (qDev) {
+        if (elm.nodeType === 9) {
+            assertEqual(ch.length, 1);
+            assertEqual(ch[0].$type$, 'html');
+        }
+        else if (elm.nodeName === 'HTML') {
+            assertEqual(ch.length, 2);
+            assertEqual(ch[0].$type$, 'head');
+            assertEqual(ch[1].$type$, 'body');
+        }
+    }
     if (oldCh.length > 0 && ch.length > 0) {
         return updateChildren(ctx, elm, oldCh, ch, isSvg);
     }
@@ -2632,12 +2639,6 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
         }
         return;
     }
-    if (tag === '#comment') {
-        if (elm.data !== vnode.$text$) {
-            setProperty(rctx, elm, 'data', vnode.$text$);
-        }
-        return;
-    }
     if (tag === HOST_TYPE) {
         throw qError(QError_hostCanOnlyBeAtRoot);
     }
@@ -2647,11 +2648,10 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
     if (!isSvg) {
         isSvg = tag === 'svg';
     }
-    let promise;
     const props = vnode.$props$;
     const ctx = getContext(elm);
-    const dirty = updateProperties(rctx, ctx, props, isSvg);
     const isSlot = tag === 'q:slot';
+    let dirty = updateProperties(rctx, ctx, props, isSvg);
     if (isSvg && vnode.$type$ === 'foreignObject') {
         isSvg = false;
     }
@@ -2662,12 +2662,14 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
         }
     }
     const isComponent = isComponentNode(vnode);
-    if (dirty) {
-        assertEqual(isComponent, true);
-        promise = renderComponent(rctx, ctx);
-    }
     const ch = vnode.$children$;
     if (isComponent) {
+        if (!dirty && !ctx.$renderQrl$ && !ctx.$element$.hasAttribute(QHostAttr)) {
+            setAttribute(rctx, ctx.$element$, QHostAttr, '');
+            ctx.$renderQrl$ = props[OnRenderProp];
+            dirty = true;
+        }
+        const promise = dirty ? renderComponent(rctx, ctx) : undefined;
         return then(promise, () => {
             const slotMaps = getSlots(ctx.$component$, elm);
             const splittedChidren = splitBy(ch, getSlotName);
@@ -2707,10 +2709,8 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
         }
         return;
     }
-    return then(promise, () => {
-        const mode = isSlot ? 'fallback' : 'default';
-        return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
-    });
+    const mode = isSlot ? 'fallback' : 'default';
+    return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
 };
 const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) => {
     const promises = [];
@@ -2849,7 +2849,8 @@ const createElm = (rctx, vnode, isSvg) => {
         // Run mount hook
         const renderQRL = props[OnRenderProp];
         ctx.$renderQrl$ = renderQRL;
-        wait = firstRenderComponent(rctx, ctx);
+        directSetAttribute(ctx.$element$, QHostAttr, '');
+        wait = renderComponent(rctx, ctx);
     }
     else {
         const setsInnerHTML = checkInnerHTML(props);
@@ -3250,14 +3251,15 @@ const setKey = (el, key) => {
 };
 const sameVnode = (elm, vnode2) => {
     const isElement = elm.nodeType === 1;
+    const type = vnode2.$type$;
     if (isElement) {
-        const isSameSel = elm.localName === vnode2.$type$;
+        const isSameSel = elm.localName === type;
         if (!isSameSel) {
             return false;
         }
         return getKey(elm) === vnode2.$key$;
     }
-    return elm.nodeName === vnode2.$type$;
+    return elm.nodeName === type;
 };
 const isTagName = (elm, tagName) => {
     if (elm.nodeType === 1) {
@@ -4215,6 +4217,7 @@ const $ = (expression) => {
     return runtimeQrl(expression);
 };
 
+const ELEMENTS_SKIP_KEY = ['html', 'body', 'head'];
 // <docs markdown="../readme.md#component">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#component instead)
@@ -4271,9 +4274,10 @@ const $ = (expression) => {
 // </docs>
 const componentQrl = (onRenderQrl, options = {}) => {
     const tagName = options.tagName ?? 'div';
+    const skipKey = ELEMENTS_SKIP_KEY.includes(tagName);
     // Return a QComponent Factory function.
     return function QSimpleComponent(props, key) {
-        const finalKey = onRenderQrl.getHash() + ':' + (key ? key : '');
+        const finalKey = skipKey ? undefined : onRenderQrl.getHash() + ':' + (key ? key : '');
         return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
     };
 };
@@ -4392,7 +4396,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.30";
+const version = "0.0.31";
 
 /**
  * Render JSX.

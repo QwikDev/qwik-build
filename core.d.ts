@@ -628,7 +628,7 @@ export declare const getPlatform: (docOrNode: Document | Node) => CorePlatform;
 /**
  * @public
  */
-export declare function h<PROPS extends {} = {}>(type: string | FunctionComponent<PROPS>, props: PROPS | null, ...children: any[]): JSXNode;
+export declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends {} = {}>(type: TYPE, props: PROPS | null, ...children: any[]): JSXNode<TYPE>;
 
 /**
  * @public
@@ -3003,7 +3003,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.30
+ * 0.0.31
  * @public
  */
 export declare const version: string;

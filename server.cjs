@@ -117,7 +117,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.30",
+  qwik: "0.0.31",
   qwikDom: "2.1.18"
 };
 
@@ -136,7 +136,7 @@ var QError_verifySerializable = 3;
 var QError_qrlIsNotFunction = 10;
 var qError = (code, ...parts) => {
   const text = codeToText(code);
-  const error = text + parts.join(" ");
+  const error = `${text} ${parts.join(" ")}`;
   debugger;
   return new Error(error);
 };
