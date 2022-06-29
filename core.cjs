@@ -763,9 +763,7 @@
      * @alpha
      */
     // </docs>
-    const useResumeQrl = (resumeFn) => {
-        useOn('qinit', resumeFn);
-    };
+    const useResumeQrl = (resumeFn) => useOn('qinit', resumeFn);
     // <docs markdown="../readme.md#useResume">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useResume instead)
@@ -824,9 +822,7 @@
      * @alpha
      */
     // </docs>
-    const useVisibleQrl = (resumeFn) => {
-        useOn('qvisible', resumeFn);
-    };
+    const useVisibleQrl = (resumeFn) => useOn('qvisible', resumeFn);
     // <docs markdown="../readme.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useOn instead)
@@ -841,9 +837,7 @@
      * @alpha
      */
     // </docs>
-    const useOn = (event, eventQrl) => {
-        _useOn(`on:${event}`, eventQrl);
-    };
+    const useOn = (event, eventQrl) => _useOn(`on:${event}`, eventQrl);
     // <docs markdown="../readme.md#useOnDocument">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useOnDocument instead)
@@ -874,9 +868,7 @@
      * @alpha
      */
     // </docs>
-    const useOnDocument = (event, eventQrl) => {
-        _useOn(`on-window:${event}`, eventQrl);
-    };
+    const useOnDocument = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
     // <docs markdown="../readme.md#useOnWindow">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useOnWindow instead)
@@ -908,9 +900,7 @@
      * @alpha
      */
     // </docs>
-    const useOnWindow = (event, eventQrl) => {
-        _useOn(`on-window:${event}`, eventQrl);
-    };
+    const useOnWindow = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
         const ctx = getContext(invokeCtx.$hostElement$);
