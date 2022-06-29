@@ -1159,7 +1159,7 @@ globalThis.qwikOptimizer = function(module) {
           }
         };
       }
-      if (TRANSFORM_EXTS[ext] || pathId.endsWith(".qwik.js")) {
+      if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId)) {
         log("transform()", "Transforming", pathId);
         let filePath = base;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
@@ -1301,6 +1301,7 @@ globalThis.qwikOptimizer = function(module) {
     ".ts": true,
     ".tsx": true
   };
+  var TRANSFORM_REGEX = /\.qwik\.(m|c)?js$/;
   var QWIK_CORE_ID = "@builder.io/qwik";
   var QWIK_BUILD_ID = "@builder.io/qwik/build";
   var QWIK_JSX_RUNTIME_ID = "@builder.io/qwik/jsx-runtime";

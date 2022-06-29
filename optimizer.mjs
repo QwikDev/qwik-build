@@ -1074,7 +1074,7 @@ function createPlugin(optimizerOptions = {}) {
         }
       };
     }
-    if (TRANSFORM_EXTS[ext] || pathId.endsWith(".qwik.js")) {
+    if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId)) {
       log("transform()", "Transforming", pathId);
       let filePath = base;
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
@@ -1220,6 +1220,8 @@ var TRANSFORM_EXTS = {
   ".ts": true,
   ".tsx": true
 };
+
+var TRANSFORM_REGEX = /\.qwik\.(m|c)?js$/;
 
 var QWIK_CORE_ID = "@builder.io/qwik";
 
