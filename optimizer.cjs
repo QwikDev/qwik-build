@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.31"
+    qwik: "0.0.32"
   };
   async function getSystem() {
     const sysEnv = getEnv();

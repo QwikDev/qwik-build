@@ -156,7 +156,7 @@ const ComponentStylesPrefixContent = '⭐️';
 /**
  * `<some-element q:slot="...">`
  */
-const QSlotAttr = 'q:slot';
+const QSlot = 'q:slot';
 const QCtxAttr = 'q:ctx';
 const QContainerAttr = 'q:container';
 const QContainerSelector = '[q\\:container]';
@@ -2640,7 +2640,7 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
     }
     const props = vnode.$props$;
     const ctx = getContext(elm);
-    const isSlot = tag === 'q:slot';
+    const isSlot = tag === QSlot;
     let dirty = updateProperties(rctx, ctx, props, isSvg);
     if (isSvg && vnode.$type$ === 'foreignObject') {
         isSvg = false;
@@ -2750,7 +2750,7 @@ const getSlotElement = (ctx, slotMaps, parentEl, slotName) => {
 };
 const createTemplate = (ctx, slotName) => {
     const template = createElement(ctx, 'q:template', false);
-    directSetAttribute(template, QSlotAttr, slotName);
+    directSetAttribute(template, QSlot, slotName);
     directSetAttribute(template, 'hidden', '');
     directSetAttribute(template, 'aria-hidden', 'true');
     return template;
@@ -2800,7 +2800,7 @@ const resolveSlotProjection = (ctx, hostElm, before, after) => {
     });
 };
 const getSlotName = (node) => {
-    return node.$props$?.['q:slot'] ?? '';
+    return node.$props$?.[QSlot] ?? '';
 };
 const createElm = (rctx, vnode, isSvg) => {
     rctx.$perf$.$visited$++;
@@ -2829,7 +2829,7 @@ const createElm = (rctx, vnode, isSvg) => {
         if (styleTag) {
             classlistAdd(rctx, elm, styleTag);
         }
-        if (tag === 'q:slot') {
+        if (tag === QSlot || tag === 'html') {
             setSlotRef(rctx, currentComponent.$hostElement$, elm);
             currentComponent.$slots$.push(vnode);
         }
@@ -2876,6 +2876,9 @@ const createElm = (rctx, vnode, isSvg) => {
     });
 };
 const getSlots = (componentCtx, hostElm) => {
+    if (hostElm.localName === 'html') {
+        return { slots: { '': hostElm }, templates: {} };
+    }
     const slots = {};
     const templates = {};
     const slotRef = directGetAttribute(hostElm, 'q:sref');
@@ -2892,7 +2895,7 @@ const getSlots = (componentCtx, hostElm) => {
     }
     // Map templates
     for (const elm of t) {
-        templates[directGetAttribute(elm, 'q:slot') ?? ''] = elm;
+        templates[directGetAttribute(elm, QSlot) ?? ''] = elm;
     }
     return { slots, templates };
 };
@@ -2930,7 +2933,7 @@ const PROP_HANDLER_MAP = {
     checked: checkBeforeAssign,
     [dangerouslySetInnerHTML]: setInnerHTML,
 };
-const ALLOWS_PROPS = ['class', 'className', 'style', 'id', 'q:slot'];
+const ALLOWS_PROPS = ['class', 'className', 'style', 'id', QSlot];
 const HOST_PREFIX = 'host:';
 const SCOPE_PREFIX = /^(host|window|document|prevent(d|D)efault):/;
 const updateProperties = (rctx, ctx, expectProps, isSvg) => {
@@ -4376,7 +4379,7 @@ const Slot = (props) => {
         : jsx('q:fallback', {
             children: props.children,
         });
-    return jsx('q:slot', {
+    return jsx(QSlot, {
         name: props.name,
         children: newChildrem,
     }, props.name);
@@ -4386,7 +4389,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.31";
+const version = "0.0.32";
 
 /**
  * Render JSX.
