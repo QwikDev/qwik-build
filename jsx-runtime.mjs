@@ -1,5 +1,5 @@
 // packages/qwik/src/jsx-runtime/index.ts
-import { jsx, jsxs, jsxDEV, Fragment } from "./core.mjs";
+import { jsx, jsxs, jsxDEV, Fragment } from "@builder.io/qwik";
 export {
   Fragment,
   jsx,

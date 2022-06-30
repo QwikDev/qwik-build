@@ -10,11 +10,9 @@ if (typeof globalThis == 'undefined') {
   g.globalThis = g;
 }
 
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -28,7 +26,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // packages/qwik/src/testing/index.ts
@@ -83,7 +80,7 @@ function createPlatform(document2) {
       if (mod) {
         return mod[symbolName];
       }
-      return Promise.resolve().then(() => __toESM(require(importPath))).then((mod2) => {
+      return import(importPath).then((mod2) => {
         moduleCache.set(importPath, mod2);
         return mod2[symbolName];
       });
@@ -134,9 +131,8 @@ function setTestPlatform(document2) {
   (0, import_qwik.setPlatform)(document2, platform);
 }
 function toUrl(doc, element, url) {
-  var _a;
   const containerEl = getContainer(element);
-  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
+  const base = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
 }
 function toPath(url) {

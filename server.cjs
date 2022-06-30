@@ -31,14 +31,12 @@ if (typeof require !== 'function' && typeof location !== 'undefined' && typeof n
     throw new Error('Unable to require() path "' + path + '" from a browser environment.');
   };
 }
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
@@ -66,7 +64,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // packages/qwik/src/server/index.ts
@@ -117,7 +114,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.33",
+  qwik: "0.0.34",
   qwikDom: "2.1.18"
 };
 
@@ -141,7 +138,6 @@ var qError = (code, ...parts) => {
   return new Error(error);
 };
 var codeToText = (code) => {
-  var _a;
   if (qDev) {
     const MAP = [
       "Error while serializing class attribute",
@@ -166,7 +162,7 @@ var codeToText = (code) => {
       "Props are immutable by default.",
       "use- method must be called only at the root level of a component$()"
     ];
-    return `Code(${code}): ${(_a = MAP[code]) != null ? _a : ""}`;
+    return `Code(${code}): ${MAP[code] ?? ""}`;
   } else {
     return `Code(${code})`;
   }
@@ -286,7 +282,10 @@ var createPlatform = (doc) => {
       if (mod) {
         return mod[symbolName];
       }
-      return Promise.resolve().then(() => __toESM(require(importURL))).then((mod2) => {
+      return import(
+        /* @vite-ignore */
+        importURL
+      ).then((mod2) => {
         mod2 = findModule(mod2);
         moduleCache.set(importURL, mod2);
         return mod2[symbolName];
@@ -318,9 +317,8 @@ var isModule = (module2) => {
   return isObject(module2) && module2[Symbol.toStringTag] === "Module";
 };
 var toUrl = (doc, element, url) => {
-  var _a;
   const containerEl = getContainer(element);
-  const base = new URL((_a = containerEl == null ? void 0 : containerEl.getAttribute("q:base")) != null ? _a : doc.baseURI, doc.baseURI);
+  const base = new URL((containerEl == null ? void 0 : containerEl.getAttribute("q:base")) ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
 };
 var getPlatform = (docOrNode) => {
@@ -348,11 +346,10 @@ var qrlImport = (element, qrl) => {
   }
 };
 var stringifyQRL = (qrl, opts = {}) => {
-  var _a;
   const qrl_ = qrl;
   let symbol = qrl_.$symbol$;
   let chunk = qrl_.$chunk$;
-  const refSymbol = (_a = qrl_.$refSymbol$) != null ? _a : symbol;
+  const refSymbol = qrl_.$refSymbol$ ?? symbol;
   const platform = opts.$platform$;
   const element = opts.$element$;
   if (platform) {
@@ -455,8 +452,7 @@ var shouldSerialize = (obj) => {
 };
 var MUTABLE = Symbol("mutable");
 var unwrapProxy = (proxy) => {
-  var _a;
-  return (_a = getProxyTarget(proxy)) != null ? _a : proxy;
+  return getProxyTarget(proxy) ?? proxy;
 };
 var getProxyTarget = (obj) => {
   if (isObject(obj)) {
@@ -487,12 +483,10 @@ var QRL = class {
     }
   }
   getSymbol() {
-    var _a;
-    return (_a = this.$refSymbol$) != null ? _a : this.$symbol$;
+    return this.$refSymbol$ ?? this.$symbol$;
   }
   getHash() {
-    var _a;
-    return getSymbolHash((_a = this.$refSymbol$) != null ? _a : this.$symbol$);
+    return getSymbolHash(this.$refSymbol$ ?? this.$symbol$);
   }
   async resolve(el) {
     if (el) {
@@ -508,7 +502,7 @@ var QRL = class {
       const fn = this.resolveLazy(el);
       return then(fn, (fn2) => {
         if (isFunction(fn2)) {
-          const baseContext = currentCtx != null ? currentCtx : newInvokeContext();
+          const baseContext = currentCtx ?? newInvokeContext();
           const context = __spreadProps(__spreadValues({}, baseContext), {
             $qrl$: this
           });
@@ -1543,7 +1537,7 @@ var It = O((Lf, Ji) => {
   var fa;
   try {
     fa = Xi();
-  } catch (e) {
+  } catch {
     fa = Zi();
   }
   Ji.exports = fa;
@@ -3269,7 +3263,7 @@ var bo = O((go) => {
     e.prototype = { constructor: e, addListener: function(f, _) {
       this._listeners[f] || (this._listeners[f] = []), this._listeners[f].push(_);
     }, fire: function(f) {
-      if (typeof f == "string" && (f = { type: f }), typeof f.target != "undefined" && (f.target = this), typeof f.type == "undefined")
+      if (typeof f == "string" && (f = { type: f }), typeof f.target < "u" && (f.target = this), typeof f.type > "u")
         throw new Error("Event object missing 'type' property.");
       if (this._listeners[f.type])
         for (var _ = this._listeners[f.type].concat(), y = 0, w = _.length; y < w; y++)
@@ -3295,7 +3289,7 @@ var bo = O((go) => {
       return this._cursor === this._input.length;
     }, peek: function(f) {
       var _ = null;
-      return f = typeof f == "undefined" ? 1 : f, this._cursor < this._input.length && (_ = this._input.charAt(this._cursor + f - 1)), _;
+      return f = typeof f > "u" ? 1 : f, this._cursor < this._input.length && (_ = this._input.charAt(this._cursor + f - 1)), _;
     }, read: function() {
       var f = null;
       return this._cursor < this._input.length && (this._input.charAt(this._cursor) === `

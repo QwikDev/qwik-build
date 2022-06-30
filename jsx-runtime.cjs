@@ -25,5 +25,5 @@ __export(jsx_runtime_exports, {
   jsxs: () => import_qwik.jsxs
 });
 module.exports = __toCommonJS(jsx_runtime_exports);
-var import_qwik = require("./core.cjs");
+var import_qwik = require("@builder.io/qwik");
 //# sourceMappingURL=jsx-runtime.cjs.map

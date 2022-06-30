@@ -497,7 +497,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.33"
+    qwik: "0.0.34"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -710,7 +710,7 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("Not implemented");
   };
   var convertOptions = opts => {
-    var _a, _b;
+    var _a;
     const output = {
       minify: "simplify",
       sourceMaps: false,
@@ -722,7 +722,7 @@ globalThis.qwikOptimizer = function(module) {
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
     }));
-    output.entryStrategy = null != (_b = null == (_a = opts.entryStrategy) ? void 0 : _a.type) ? _b : "smart";
+    output.entryStrategy = (null == (_a = opts.entryStrategy) ? void 0 : _a.type) ?? "smart";
     return output;
   };
   function prioritorizeSymbolNames(manifest) {
@@ -816,7 +816,6 @@ globalThis.qwikOptimizer = function(module) {
     manifest.symbols = prioritorizedSymbols;
     manifest.mapping = prioritorizedMapping;
     manifest.bundles = sortedBundles;
-    Array.isArray(manifest.injections) && manifest.injections.sort();
     return manifest;
   }
   function sortAlphabetical(a, b) {
@@ -893,7 +892,6 @@ globalThis.qwikOptimizer = function(module) {
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
-    const injections = [];
     const transformedOutputs = new Map;
     let internalOptimizer = null;
     let addWatchFileCallback = () => {};
@@ -935,7 +933,6 @@ globalThis.qwikOptimizer = function(module) {
       return optimizer.sys.path;
     };
     const normalizeOptions = inputOpts => {
-      var _a;
       const updatedOpts = Object.assign({}, inputOpts);
       const optimizer = getOptimizer();
       const path = optimizer.sys.path;
@@ -984,7 +981,7 @@ globalThis.qwikOptimizer = function(module) {
       clientManifest && (opts.manifestInput = clientManifest);
       "function" === typeof updatedOpts.transformedModuleOutput && (opts.transformedModuleOutput = updatedOpts.transformedModuleOutput);
       opts.vendorRoots = updatedOpts.vendorRoots ? updatedOpts.vendorRoots : [];
-      opts.scope = null != (_a = updatedOpts.scope) ? _a : null;
+      opts.scope = updatedOpts.scope ?? null;
       return __spreadValues({}, opts);
     };
     let hasValidatedSource = false;
@@ -1206,7 +1203,9 @@ globalThis.qwikOptimizer = function(module) {
     };
     const createOutputAnalyzer = () => {
       const outputBundles = [];
+      const injections = [];
       const addBundle = b => outputBundles.push(b);
+      const addInjection = b => injections.push(b);
       const generateManifest = async () => {
         const optimizer = getOptimizer();
         const path = optimizer.sys.path;
@@ -1215,6 +1214,7 @@ globalThis.qwikOptimizer = function(module) {
       };
       return {
         addBundle: addBundle,
+        addInjection: addInjection,
         generateManifest: generateManifest
       };
     };
@@ -1320,7 +1320,6 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async options(inputOpts) {
-        var _a;
         await qwikPlugin.init();
         inputOpts.onwarn = (warning, warn) => {
           if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -1332,7 +1331,7 @@ globalThis.qwikOptimizer = function(module) {
           target: qwikRollupOpts.target,
           buildMode: qwikRollupOpts.buildMode,
           debug: qwikRollupOpts.debug,
-          forceFullBuild: null == (_a = qwikRollupOpts.forceFullBuild) || _a,
+          forceFullBuild: qwikRollupOpts.forceFullBuild ?? true,
           entryStrategy: qwikRollupOpts.entryStrategy,
           rootDir: qwikRollupOpts.rootDir,
           srcDir: qwikRollupOpts.srcDir,
@@ -1414,9 +1413,7 @@ globalThis.qwikOptimizer = function(module) {
     return rollupPlugin;
   }
   function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
-    const outputOpts = __spreadValues({
-      minifyInternalExports: false
-    }, rollupOutputOpts);
+    const outputOpts = __spreadValues({}, rollupOutputOpts);
     if ("ssr" === opts.target) {
       outputOpts.entryFileNames || (outputOpts.entryFileNames = "[name].js");
       outputOpts.assetFileNames || (outputOpts.assetFileNames = "[name].[ext]");
@@ -1439,8 +1436,7 @@ globalThis.qwikOptimizer = function(module) {
     return outputOpts;
   }
   function createRollupError(optimizer, diagnostic) {
-    var _a;
-    const loc = null != (_a = diagnostic.highlights[0]) ? _a : {};
+    const loc = diagnostic.highlights[0] ?? {};
     const id = optimizer ? optimizer.sys.path.join(optimizer.sys.cwd(), diagnostic.file) : diagnostic.file;
     const err = Object.assign(new Error(diagnostic.message), {
       id: id,
@@ -1455,13 +1451,13 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{function e(e){return"object"==typeof e&&e&&"Module"===e[Symbol.toStringTag]}((t,n)=>{const o="__q_context__",r=(e,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),t.querySelectorAll("[on"+e+"\\\\:"+n+"]").forEach((t=>c(t,e,n,o)))},s=(e,t,n)=>e.dispatchEvent(new CustomEvent(t,{detail:n,bubbles:!0,composed:!0})),i=e=>{throw Error("QWIK "+e)},a=(e,n)=>(e=e.closest("[q\\\\:container]"),new URL(n,new URL(e?e.getAttribute("q:base"):t.baseURI,t.baseURI))),c=async(n,r,c,b)=>{n.hasAttribute("preventdefault:"+c)&&b.preventDefault();const u=n.getAttribute("on"+r+":"+c);if(u)for(const r of u.split("\\n")){const c=a(n,r);if(c){const r=l(c),a=(window[c.pathname]||(f=await import(c.href.split("#")[0]),Object.values(f).find(e)||f))[r]||i(c+" does not export "+r),u=t[o];if(n.isConnected)try{t[o]=[n,b,c],a(b,n,c)}finally{t[o]=u,s(n,"qsymbol",r)}}}var f},l=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",b=(e,t)=>{for(t=e.target,r("-window",e.type,e);t&&t.getAttribute;)c(t,"",e.type,e),t=e.bubbles?t.parentElement:null},u=e=>{if(e=t.readyState,!n&&("interactive"==e||"complete"==e)&&(n=1,r("","qinit",new CustomEvent("qinit")),"undefined"!=typeof IntersectionObserver)){const e=new IntersectionObserver((t=>{for(const n of t)n.isIntersecting&&(e.unobserve(n.target),c(n.target,"","qvisible",new CustomEvent("qvisible",{bubbles:!1,detail:n})))}));t.qO=e,t.querySelectorAll("[on\\\\:qvisible]").forEach((t=>e.observe(t)))}},f=e=>{window.addEventListener(e,b,{capture:!0})};if(!t.qR){t.qR=1;{const e=t.querySelector("script[events]");if(e)e.getAttribute("events").split(/[\\s,;]+/).forEach(f);else for(const e in t)e.startsWith("on")&&f(e.slice(2))}t.addEventListener("readystatechange",u),u()}})(document)})();';
   var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    function findModule(module) {\n        return Object.values(module).find(isModule) || module;\n    }\n    function isModule(module) {\n        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];\n    }\n    ((doc, hasInitialized, prefetchWorker) => {\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));\n        };\n        const emitEvent = (el, eventName, detail) => el.dispatchEvent(new CustomEvent(eventName, {\n            detail: detail,\n            bubbles: !0,\n            composed: !0\n        }));\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, onPrefix, eventName, ev) => {\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const attrValue = element.getAttribute("on" + onPrefix + ":" + eventName);\n            if (attrValue) {\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        if (element.isConnected) {\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element, url);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                emitEvent(element, "qsymbol", symbolName);\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processWindowEvent = (ev, element) => {\n            element = ev.target;\n            broadcast("-window", ev.type, ev);\n            while (element && element.getAttribute) {\n                dispatch(element, "", ev.type, ev);\n                element = ev.bubbles ? element.parentElement : null;\n            }\n        };\n        const processReadyStateChange = readyState => {\n            readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qinit", new CustomEvent("qinit"));\n                if ("undefined" != typeof IntersectionObserver) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", "qvisible", new CustomEvent("qvisible", {\n                                    bubbles: !1,\n                                    detail: entry\n                                }));\n                            }\n                        }\n                    }));\n                    doc.qO = observer;\n                    doc.querySelectorAll("[on\\\\:qvisible]").forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addDocEventListener = eventName => {\n            window.addEventListener(eventName, processWindowEvent, {\n                capture: !0\n            });\n        };\n        if (!doc.qR) {\n            doc.qR = 1;\n            {\n                const scriptTag = doc.querySelector("script[events]");\n                if (scriptTag) {\n                    scriptTag.getAttribute("events").split(/[\\s,;]+/).forEach(addDocEventListener);\n                } else {\n                    for (const key in doc) {\n                        key.startsWith("on") && addDocEventListener(key.slice(2));\n                    }\n                }\n            }\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
-  var OPTIMIZE_DEPS = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ];
   var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ];
   function qwikVite(qwikViteOpts = {}) {
     let isClientDevOnly = false;
     let clientDevInput;
     let tmpClientManifestPath;
     let viteCommand = "serve";
+    const injections = [];
     const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
     const vitePlugin = {
       name: "vite-plugin-qwik",
@@ -1471,7 +1467,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -1522,7 +1518,7 @@ globalThis.qwikOptimizer = function(module) {
         if ("node" === sys.env) {
           const fs = await sys.dynamicImport("fs");
           try {
-            const rootDir = null != (_l = pluginOpts.rootDir) ? _l : sys.cwd();
+            const rootDir = pluginOpts.rootDir ?? sys.cwd();
             const packageJsonPath = sys.path.join(rootDir, "package.json");
             const pkgString = await fs.promises.readFile(packageJsonPath, "utf-8");
             try {
@@ -1542,17 +1538,15 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
-        clientDevInput = "string" === typeof (null == (_m = qwikViteOpts.client) ? void 0 : _m.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
+        clientDevInput = "string" === typeof (null == (_l = qwikViteOpts.client) ? void 0 : _l.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
         clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         const vendorIds = vendorRoots.map((v => v.id));
         const updatedViteConfig = {
-          esbuild: false,
           resolve: {
             dedupe: [ ...DEDUPE, ...vendorIds ]
           },
           optimizeDeps: {
-            include: OPTIMIZE_DEPS,
-            exclude: [ "@vite/client", "@vite/env", QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
+            exclude: [ "@vite/client", "@vite/env", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
           },
           build: {
             outDir: opts.outDir,
@@ -1582,8 +1576,9 @@ globalThis.qwikOptimizer = function(module) {
           "serve" === viteCommand && (updatedViteConfig.ssr = {
             noExternal: vendorIds
           });
-        } else {
-          "client" === opts.target && isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
+        } else if ("client" === opts.target) {
+          "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "production", "import", "module", "browser", "default" ]);
+          isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
         }
         return updatedViteConfig;
       },
@@ -1641,13 +1636,23 @@ globalThis.qwikOptimizer = function(module) {
           const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
           for (const fileName in rollupBundle) {
             const b = rollupBundle[fileName];
-            "chunk" === b.type && outputAnalyzer.addBundle({
+            "chunk" === b.type ? outputAnalyzer.addBundle({
               fileName: fileName,
               modules: b.modules,
               imports: b.imports,
               dynamicImports: b.dynamicImports,
               size: b.code.length
+            }) : fileName.endsWith(".css") && injections.push({
+              tag: "link",
+              location: "head",
+              attributes: {
+                rel: "stylesheet",
+                href: `/${fileName}`
+              }
             });
+          }
+          for (const i of injections) {
+            outputAnalyzer.addInjection(i);
           }
           const optimizer = qwikPlugin.getOptimizer();
           const manifest = await outputAnalyzer.generateManifest();
@@ -1687,8 +1692,7 @@ globalThis.qwikOptimizer = function(module) {
           global.Response = nodeFetch.Response;
         }
         server.middlewares.use((async (req, res, next) => {
-          var _a;
-          const domain = "http://" + (null != (_a = req.headers.host) ? _a : "localhost");
+          const domain = "http://" + (req.headers.host ?? "localhost");
           const url = new URL(req.originalUrl, domain);
           const pathname = url.pathname;
           const hasExtension = /\.[\w?=&]+$/.test(pathname);
@@ -1728,8 +1732,8 @@ globalThis.qwikOptimizer = function(module) {
               };
               Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
                 entry[1].forEach((v => {
-                  var _a2, _b;
-                  const hook = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.hook;
+                  var _a, _b;
+                  const hook = null == (_b = null == (_a = v.info) ? void 0 : _a.meta) ? void 0 : _b.hook;
                   let url2 = v.url;
                   v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                   hook && (manifest.mapping[hook.name] = url2);
