@@ -160,7 +160,8 @@ var codeToText = (code) => {
       "props are inmutable",
       "<Host> component can only be used at the root of a Qwik component$()",
       "Props are immutable by default.",
-      "use- method must be called only at the root level of a component$()"
+      "use- method must be called only at the root level of a component$()",
+      "Container is already paused. Skipping"
     ];
     return `Code(${code}): ${MAP[code] ?? ""}`;
   } else {

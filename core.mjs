@@ -37,6 +37,7 @@ const QError_immutableProps = 17;
 const QError_hostCanOnlyBeAtRoot = 18;
 const QError_immutableJsxProps = 19;
 const QError_useInvokeContext = 20;
+const QError_containerAlreadyPaused = 21;
 const qError = (code, ...parts) => {
     const text = codeToText(code);
     const error = `${text} ${parts.join(' ')}`;
@@ -67,6 +68,7 @@ const codeToText = (code) => {
             '<Host> component can only be used at the root of a Qwik component$()',
             'Props are immutable by default.',
             'use- method must be called only at the root level of a component$()',
+            'Container is already paused. Skipping',
         ];
         return `Code(${code}): ${MAP[code] ?? ''}`;
     }
@@ -1460,9 +1462,13 @@ const DOCUMENT_PREFIX = '\u0012';
 // </docs>
 const pauseContainer = (elmOrDoc) => {
     const doc = getDocument(elmOrDoc);
-    const containerEl = isDocument(elmOrDoc) ? elmOrDoc.documentElement : elmOrDoc;
-    const parentJSON = isDocument(elmOrDoc) ? elmOrDoc.body : containerEl;
-    const data = snapshotState(containerEl);
+    const documentElement = doc.documentElement;
+    const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+    if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
+        throw qError(QError_containerAlreadyPaused);
+    }
+    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+    const data = pauseState(containerEl);
     const script = doc.createElement('script');
     directSetAttribute(script, 'type', 'qwik/json');
     script.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
@@ -1544,7 +1550,7 @@ const resumeContainer = (containerEl) => {
 const hasContext = (el) => {
     return !!tryGetContext(el);
 };
-const snapshotState = (containerEl) => {
+const pauseState = (containerEl) => {
     const containerState = getContainerState(containerEl);
     const doc = getDocument(containerEl);
     const elementToIndex = new Map();
@@ -1567,6 +1573,9 @@ const snapshotState = (containerEl) => {
         });
         ctx.$watches$.forEach((watch) => {
             collector.$watches$.push(watch);
+        });
+        ctx.$refMap$.$array$.forEach((obj) => {
+            collectValue(obj, collector);
         });
     });
     // Convert objSet to array
