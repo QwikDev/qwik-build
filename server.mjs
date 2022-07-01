@@ -886,6 +886,7 @@ var Xr = O((_f, qi) => {
   var Jn, $r;
 });
 var Qr = O((Hi) => {
+  "use strict";
   Hi.isApiWritable = !global.__domino_frozen__;
 });
 var le = O((K) => {

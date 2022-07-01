@@ -1479,7 +1479,8 @@ function qwikVite(qwikViteOpts = {}) {
       const vendorIds = vendorRoots.map((v => v.id));
       const updatedViteConfig = {
         resolve: {
-          dedupe: [ ...DEDUPE, ...vendorIds ]
+          dedupe: [ ...DEDUPE, ...vendorIds ],
+          conditions: []
         },
         optimizeDeps: {
           exclude: [ "@vite/client", "@vite/env", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
@@ -1508,12 +1509,11 @@ function qwikVite(qwikViteOpts = {}) {
       };
       if ("ssr" === opts.target) {
         updatedViteConfig.build.ssr = true;
-        updatedViteConfig.publicDir = false;
-        "serve" === viteCommand && (updatedViteConfig.ssr = {
+        "serve" === viteCommand ? updatedViteConfig.ssr = {
           noExternal: vendorIds
-        });
+        } : updatedViteConfig.publicDir = false;
       } else if ("client" === opts.target) {
-        "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "production", "import", "module", "browser", "default" ]);
+        "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
         isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
       }
       return updatedViteConfig;
@@ -1753,29 +1753,35 @@ var findQwikRoots = async (sys, packageJsonPath) => {
   if ("node" === sys.env) {
     const fs = await sys.dynamicImport("fs");
     const {resolvePackageData: resolvePackageData} = await sys.dynamicImport("vite");
-    const data = fs.readFileSync(packageJsonPath, {
-      encoding: "utf-8"
-    });
-    const packageJson = JSON.parse(data);
-    const dependencies = packageJson.dependencies;
-    const devDependencies = packageJson.devDependencies;
-    const packages = [];
-    "object" === typeof dependencies && packages.push(...Object.keys(dependencies));
-    "object" === typeof devDependencies && packages.push(...Object.keys(devDependencies));
-    const basedir = sys.cwd();
-    const qwikDirs = packages.map((id => {
-      const pkgData = resolvePackageData(id, basedir);
-      if (pkgData) {
-        const qwikPath = pkgData.data.qwik;
-        if (qwikPath) {
-          return {
-            id: id,
-            path: sys.path.resolve(pkgData.dir, qwikPath)
-          };
-        }
+    try {
+      const data = await fs.promises.readFile(packageJsonPath, {
+        encoding: "utf-8"
+      });
+      try {
+        const packageJson = JSON.parse(data);
+        const dependencies = packageJson.dependencies;
+        const devDependencies = packageJson.devDependencies;
+        const packages = [];
+        "object" === typeof dependencies && packages.push(...Object.keys(dependencies));
+        "object" === typeof devDependencies && packages.push(...Object.keys(devDependencies));
+        const basedir = sys.cwd();
+        const qwikDirs = packages.map((id => {
+          const pkgData = resolvePackageData(id, basedir);
+          if (pkgData) {
+            const qwikPath = pkgData.data.qwik;
+            if (qwikPath) {
+              return {
+                id: id,
+                path: sys.path.resolve(pkgData.dir, qwikPath)
+              };
+            }
+          }
+        })).filter(isNotNullable);
+        return qwikDirs;
+      } catch (e) {
+        console.error(e);
       }
-    })).filter(isNotNullable);
-    return qwikDirs;
+    } catch (e) {}
   }
   return [];
 };

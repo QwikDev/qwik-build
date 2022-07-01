@@ -1,3 +1,4 @@
+"use strict";
 /**
  * @license
  * @builder.io/qwik/testing
