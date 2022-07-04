@@ -260,56 +260,6 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
-/**
- * @alpha
- */
-declare interface ComponentCtx {
-    $hostElement$: Element;
-    $styleId$: string | undefined;
-    $styleClass$: string | undefined;
-    $styleHostClass$: string | undefined;
-    $slots$: ProcessedJSXNode[];
-}
-
-/**
- * @alpha
- */
-declare interface ContainerState {
-    $proxyMap$: ObjToProxyMap;
-    $subsManager$: SubscriptionManager;
-    $platform$: CorePlatform;
-    $watchNext$: Set<WatchDescriptor>;
-    $watchStaging$: Set<WatchDescriptor>;
-    $hostsNext$: Set<Element>;
-    $hostsStaging$: Set<Element>;
-    $hostsRendering$: Set<Element> | undefined;
-    $renderPromise$: Promise<RenderContext> | undefined;
-}
-
-/**
- * @public
- */
-declare interface CorePlatform {
-    /**
-     * Dynamic import()
-     */
-    isServer: boolean;
-    /**
-     * Dynamic import()
-     */
-    importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
-    /**
-     * Platform specific queue, such as process.nextTick() for Node
-     * and requestAnimationFrame() for the browser.
-     */
-    raf: (fn: () => any) => Promise<any>;
-    nextTick: (fn: () => any) => Promise<any>;
-    /**
-     * Takes a qrl and serializes into a string
-     */
-    chunkForSymbol: (symbolName: string) => [symbol: string, chunk: string] | undefined;
-}
-
 declare interface CSSProperties {
     [key: string]: string | number;
 }
@@ -707,23 +657,6 @@ declare interface IntrinsicElements {
 /**
  * @public
  */
-declare interface InvokeContext {
-    $url$: URL | null;
-    $seq$: number;
-    $doc$?: Document;
-    $hostElement$?: Element;
-    $element$?: Element;
-    $event$: any;
-    $qrl$?: QRL<any>;
-    $waitOn$?: ValueOrPromise<any>[];
-    $props$?: Props;
-    $subscriber$?: Subscriber | null;
-    $renderCtx$?: RenderContext;
-}
-
-/**
- * @public
- */
 declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
@@ -790,12 +723,6 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     charSet?: string | undefined;
 }
 
-declare interface LocalSubscriptionManager {
-    $subs$: SubscriberMap;
-    $notifySubs$: (key?: string | undefined) => void;
-    $addSub$: (subscriber: Subscriber, key?: string) => void;
-}
-
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
@@ -835,13 +762,6 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-/**
- * @alpha
- */
-declare type NoSerialize<T> = (T & {
-    __no_serialize__: true;
-}) | undefined;
-
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
@@ -854,18 +774,11 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     wmode?: string | undefined;
 }
 
-declare type ObjToProxyMap = WeakMap<any, any>;
-
 declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
-
-/**
- * @public
- */
-declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null | (() => JSXNode<any>);
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -890,48 +803,9 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare interface ProcessedJSXNode {
-    $type$: string;
-    $props$: Record<string, any> | null;
-    $children$: ProcessedJSXNode[];
-    $key$: string | null;
-    $elm$: Node | null;
-    $text$: string;
-}
-
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
-}
-
-/**
- * @public
- */
-declare type Props<T extends {} = {}> = Record<string, any> & T;
-
-declare interface QContext {
-    $cache$: Map<string, any>;
-    $refMap$: QObjectMap;
-    $element$: Element;
-    $dirty$: boolean;
-    $props$: Record<string, any> | undefined;
-    $renderQrl$: QRL<OnRenderFn<any>> | undefined;
-    $component$: ComponentCtx | undefined;
-    $listeners$?: Map<string, QRL<any>[]>;
-    $seq$: any[];
-    $watches$: WatchDescriptor[];
-    $contexts$?: Map<string, any>;
-}
-
-declare type QObject<T extends {}> = T & {
-    __brand__: 'QObject';
-};
-
-declare interface QObjectMap {
-    $add$(qObject: QObject<any>): number;
-    $get$(index: number): QObject<any> | undefined;
-    $indexOf$(object: QObject<any>): number | undefined;
-    readonly $array$: QObject<any>[];
 }
 
 /**
@@ -954,11 +828,11 @@ declare interface QObjectMap {
  * ```tsx
  * useOnDocument(
  *   'mousemove',
- *   $(() => console.log('mousemove'))
+ *   $((event) => console.log('mousemove', event))
  * );
  * ```
  *
- * In the above code the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
+ * In the above code, the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
  *
  * ```tsx
  * // FILE: <current file>
@@ -970,7 +844,7 @@ declare interface QObjectMap {
  *
  * NOTE: `qrl(...)` is a result of Qwik Optimizer transformation. You should never have to invoke
  * this function directly in your application. The `qrl(...)` function should be invoked only
- * after Qwik Optimizer transformation.
+ * after the Qwik Optimizer transformation.
  *
  * ## Using `QRL`s
  *
@@ -986,22 +860,22 @@ declare interface QObjectMap {
  * }
  * ```
  *
- * In the above example the way to think about the code is that you are not asking for a callback
- * function, but rather a reference to a lazy-loadable callback function. Specifically the
- * function loading should be delayed until it is actually needed. In the above example the
+ * In the above example, the way to think about the code is that you are not asking for a
+ * callback function but rather a reference to a lazy-loadable callback function. Specifically,
+ * the function loading should be delayed until it is actually needed. In the above example, the
  * function would not load until after a `mousemove` event on `document` fires.
  *
  * ## Resolving `QRL` references
  *
  * At times it may be necessary to resolve a `QRL` reference to the actual value. This can be
- * performed using `qrlImport(..)` function.
+ * performed using `QRL.resolve(..)` function.
  *
  * ```tsx
  * // Assume you have QRL reference to a greet function
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
  * // Use `qrlImport` to load / resolve the reference.
- * const greet: () => void = await lazyGreet.resolve(element);
+ * const greet: () => void = await lazyGreet.resolve();
  *
  * //  Invoke it
  * greet();
@@ -1012,7 +886,7 @@ declare interface QObjectMap {
  *
  * ## Question: Why not just use `import()`?
  *
- * At first glance `QRL` serves the same purpose as `import()`. However, there are three subtle
+ * At first glance, `QRL` serves the same purpose as `import()`. However, there are three subtle
  * differences that need to be taken into account.
  *
  * 1. `QRL`s must be serializable into HTML.
@@ -1042,12 +916,12 @@ declare interface QObjectMap {
  * relative to where the `import()` file is declared. Because it is our framework doing the load,
  * the `./chunk-abc.js` would become relative to the framework file. This is not correct, as it
  * should be relative to the original file generated by the bundler.
- * 3. Next the framework needs to resolve the `./chunk-abc.js` and needs a base location that is
+ * 3. Next, the framework needs to resolve the `./chunk-abc.js` and needs a base location that is
  * encoded in the HTML.
  * 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows
  * loading top-level symbols which don't capture variables.)
- * 5. As a developer you don't want to think about `import` and naming of the chunks and symbols.
- * You just want to say, this should be lazy.
+ * 5. As a developer, you don't want to think about `import` and naming the chunks and symbols.
+ * You just want to say: "this should be lazy."
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
@@ -1056,13 +930,16 @@ declare interface QObjectMap {
  * @public
  */
 declare interface QRL<TYPE = any> {
-    __brand__QRL__: TYPE;
-    getSymbol(): string;
-    getHash(): string;
-    resolve(container?: Element): Promise<TYPE>;
-    resolveLazy(container?: Element): ValueOrPromise<TYPE>;
+    /**
+     * Resolve the QRL and return the actual value.
+     */
+    resolve(): Promise<TYPE>;
+    /**
+     * Resolve the QRL of closure and invoke it.
+     * @param args - Clousure arguments.
+     * @returns A promise of the return value of the closure.
+     */
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
-    invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
 /**
@@ -1263,38 +1140,6 @@ declare interface Ref<T> {
     current?: T;
 }
 
-/**
- * @alpha
- */
-declare interface RenderContext {
-    $doc$: Document;
-    $roots$: Element[];
-    $hostElements$: Set<Element>;
-    $operations$: RenderOperation[];
-    $contexts$: QContext[];
-    $currentComponent$: ComponentCtx | undefined;
-    $containerState$: ContainerState;
-    $containerEl$: Element;
-    $perf$: RenderPerf;
-}
-
-/**
- * @alpha
- */
-declare interface RenderOperation {
-    $el$: Node;
-    $operation$: string;
-    $args$: any[];
-    $fn$: () => void;
-}
-
-/**
- * @alpha
- */
-declare interface RenderPerf {
-    $visited$: number;
-}
-
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
@@ -1340,19 +1185,6 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     nonce?: string | undefined;
     scoped?: boolean | undefined;
     type?: string | undefined;
-}
-
-/**
- * @alpha
- */
-declare type Subscriber = WatchDescriptor | Element;
-
-declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
-
-declare interface SubscriptionManager {
-    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
-    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
-    $clearSub$: (sub: Subscriber) => void;
 }
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -1672,45 +1504,6 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
-/**
- * Used to signal to Qwik which state should be watched for changes.
- *
- * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
- * state objects in a read proxy which signals to Qwik which properties should be watched for
- * changes. A change to any of the properties cause the `watchFn` to re-run.
- *
- * ## Example
- *
- * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
- * Any changes to the `state.count` property will cause the `watchFn` to re-run.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((track) => {
- *     const count = track(store, 'count');
- *     store.doubleCount = 2 * count;
- *   });
- *   return (
- *     <div>
- *       <span>
- *         {store.count} / {store.doubleCount}
- *       </span>
- *       <button onClick$={() => store.count++}>+</button>
- *     </div>
- *   );
- * });
- * ```
- *
- * @see `useWatch`
- *
- * @public
- */
-declare interface Tracker {
-    <T extends {}>(obj: T): T;
-    <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
-}
-
 declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
@@ -1718,12 +1511,6 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     srcLang?: string | undefined;
 }
-
-/**
- * Type representing a value which is either resolve or a promise.
- * @public
- */
-declare type ValueOrPromise<T> = T | Promise<T>;
 
 declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     height?: number | string | undefined;
@@ -1733,23 +1520,6 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disablePictureInPicture?: boolean | undefined;
     disableRemotePlayback?: boolean | undefined;
 }
-
-/**
- * @alpha
- */
-declare interface WatchDescriptor {
-    qrl: QRL<WatchFn>;
-    el: Element;
-    f: number;
-    i: number;
-    destroy?: NoSerialize<() => void>;
-    running?: NoSerialize<Promise<WatchDescriptor>>;
-}
-
-/**
- * @alpha
- */
-declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;

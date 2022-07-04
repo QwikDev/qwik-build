@@ -6,7 +6,7 @@
  *
  * @see `implicit$FirstArg` for additional `____$(...)` rules.
  *
- * In this example `$(...)` is used to capture the callback function of `onmousemove` into
+ * In this example, `$(...)` is used to capture the callback function of `onmousemove` into a
  * lazy-loadable reference. This allows the code to refer to the function without actually
  * loading the function. In this example, the callback function does not get loaded until
  * `mousemove` event fires.
@@ -14,11 +14,11 @@
  * ```tsx
  * useOnDocument(
  *   'mousemove',
- *   $(() => console.log('mousemove'))
+ *   $((event) => console.log('mousemove', event))
  * );
  * ```
  *
- * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
+ * In this code, the Qwik Optimizer detects `$(...)` and transforms the code into:
  *
  * ```tsx
  * // FILE: <current file>
@@ -34,8 +34,8 @@
  *
  * 1. The expression of the `$(expression)` function must be importable by the system.
  * (expression shows up in `import` or has `export`)
- * 2. If inlined function then all lexically captured values must be:
- *    - importable (vars shows up in `import` or has `export`)
+ * 2. If inlined function, then all lexically captured values must be:
+ *    - importable (vars show up in `import`s or `export`s)
  *    - const (The capturing process differs from JS capturing in that writing to captured
  * variables does not update them, and therefore writes are forbidden. The best practice is that
  * all captured variables are constants.)
@@ -388,6 +388,19 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare const component$: <PROPS extends {}>(onMount: OnRenderFn<PROPS>, options?: ComponentOptions) => Component<PROPS>;
 
 /**
+ * Type representing the Qwik component.
+ *
+ * `Component` is the type returned by invoking `component$`.
+ *
+ * ```
+ * interface MyComponentProps {
+ *   someProp: string;
+ * }
+ * const MyComponent: Component<MyComponentProps> = component$((props: MyComponentProps) => {
+ *   return <span>{props.someProp}</span>;
+ * });
+ * ```
+ *
  * @public
  */
 export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
@@ -417,10 +430,7 @@ declare interface ComponentBaseProps {
     children?: JSXChildren;
 }
 
-/**
- * @alpha
- */
-export declare interface ComponentCtx {
+declare interface ComponentCtx {
     $hostElement$: Element;
     $styleId$: string | undefined;
     $styleClass$: string | undefined;
@@ -429,9 +439,25 @@ export declare interface ComponentCtx {
 }
 
 /**
+ * Declarative component options.
+ *
  * @public
  */
 export declare interface ComponentOptions {
+    /**
+     * Tag the name of the component's host element.
+     *
+     * Default value fo `tagName` is `div`. Override this value in situations where you want to use
+     * a different tag name. Examples are:
+     * - It is desirable to have component names directly in the HTML (WebComponent style)
+     * - It is desirable to have a specific tag name for accessibility. For example, using `<button>`
+     *   for `<MyCustomButton>` component.
+     *
+     * When a component is inserted into the render tree, the host element needs to be inserted
+     * synchronously, while the component body is inserted asynchronously. The synchronous nature
+     * of host element requires that the parent component needs to know the tag name of the child
+     * component synchronously.
+     */
     tagName?: string;
 }
 
@@ -503,38 +529,181 @@ declare interface ContainerState {
 }
 
 /**
+ * Context is a typesafe ID for your context.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
+ * for the values. Qwik needs a serializable ID for the context so that the it can track context
+ * providers and consumers in a way that survives resumability.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
  * @alpha
  */
 export declare interface Context<STATE extends object> {
+    /**
+     * Design-time property to store type information for the context.
+     */
+    readonly __brand_context_type__: STATE;
+    /**
+     * A unique ID for the context.
+     */
     readonly id: string;
-    readonly _v: STATE;
 }
 
 /**
- * @public
+ * Low-level API for platform abstraction.
+ *
+ * Different platforms (browser, node, service workers) may have different ways of handling
+ * things such as `requestAnimationFrame` and imports. To make Qwik platform-independent Qwik
+ * uses the `CorePlatform` API to access the platform API.
+ *
+ * `CorePlatform` also is responsible for importing symbols. The import map is different on the
+ * client (browser) then on the server. For this reason, the server has a manifest that is used
+ * to map symbols to javascript chunks. The manifest is encapsulated in `CorePlatform`, for this
+ * reason, the `CorePlatform` can't be global as there may be multiple applications running at
+ * server concurrently.
+ *
+ * This is a low-level API and there should not be a need for you to access this.
+ *
+ * @alpha
  */
 export declare interface CorePlatform {
     /**
-     * Dynamic import()
+     * True of running on the server platform.
+     *
+     * @returns True if we are running on the server (not the browser.)
      */
     isServer: boolean;
     /**
-     * Dynamic import()
+     * Retrieve a symbol value from QRL.
+     *
+     * Qwik needs to lazy load data and closures. For this Qwik uses QRLs that are serializable
+     * references of resources that are needed. The QRLs contain all the information necessary to
+     * retrieved the reference using `importSymbol`.
+     *
+     * Why not use `import()`? Because `import()` is relative to the current file, and the current
+     * file is always the Qwik framework. So QRLs have additional information that allows them to
+     * serialize imports relative to application base rather than the Qwik framework file.
+     *
+     * @param element - The element against which the `url` is resolved. Used to locate the container
+     * root and `q:base` attribute.
+     * @param url - Relative URL retrieved from the attribute that needs to be resolved against the
+     * container `q:base` attribute.
+     * @param symbol - The name of the symbol to import.
+     * @returns A promise that resolves to the imported symbol.
      */
     importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
-     * Platform specific queue, such as process.nextTick() for Node
-     * and requestAnimationFrame() for the browser.
+     * Perform operation on next request-animation-frame.
+     *
+     * @param fn - The function to call when the next animation frame is ready.
      */
     raf: (fn: () => any) => Promise<any>;
+    /**
+     * Perform operation on next tick.
+     *
+     * @param fn - The function to call when the tick is ready.
+     */
     nextTick: (fn: () => any) => Promise<any>;
     /**
-     * Takes a qrl and serializes into a string
+     * Retrieve chunk name for the symbol.
+     *
+     * When the application is running on the server the symbols may be imported from different files
+     * (as server build is typically a single javascript chunk.) For this reason, it is necessary to
+     * convert the chunks from server format to client (browser) format. This is done by looking up
+     * symbols (which are globally unique) in the manifest. (Manifest is the mapping of symbols to
+     * the client chunk names.)
+     *
+     * @param symbolName - Resolve `symbolName` against the manifest and return the chunk that
+     * contains the symbol.
      */
     chunkForSymbol: (symbolName: string) => [symbol: string, chunk: string] | undefined;
 }
 
 /**
+ * Create a context ID to be used in your application.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
+ * for the values. Qwik needs a serializable ID for the context so that the it can track context
+ * providers and consumers in a way that survives resumability.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param name - The name of the context.
  * @alpha
  */
 export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
@@ -621,7 +790,16 @@ export declare interface FunctionComponent<P = {}> {
 }
 
 /**
- * @public
+ * Retrieve the `CorePlatform`.
+ *
+ * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings
+ * from symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but
+ * is specific to the application currently running. On server it is possible that many different
+ * applications are running in a single server instance, and for this reason the `CorePlatform`
+ * is associated with the application document.
+ *
+ * @param docOrNode - The document (or node) of the application for which the platform is needed.
+ * @alpha
  */
 export declare const getPlatform: (docOrNode: Document | Node) => CorePlatform;
 
@@ -655,6 +833,8 @@ export declare namespace h {
 }
 
 /**
+ * Low-level API used by the Optimizer to process `useWatch$()` API. This method
+ * is not intended to be used by developers.
  * @alpha
  */
 export declare const handleWatch: () => void;
@@ -781,6 +961,12 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * Mark an object as immutable, preventing Qwik from creating subscriptions on that object.
+ *
+ * Qwik automatically creates subscriptions on store objects created by `useStore()`. By marking
+ * an object as `immutable`, it hints to Qwik that the properties of this object will not change,
+ * and therefore there is no need to create subscriptions for those objects.
+ *
  * @alpha
  */
 export declare const immutable: <T extends {}>(input: T) => Readonly<T>;
@@ -795,7 +981,7 @@ export declare const immutable: <T extends {}>(input: T) => Readonly<T>;
  * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
  * The former is just a shorthand for the latter.
  *
- * For example these function call are equivalent:
+ * For example, these function calls are equivalent:
  *
  * - `component$(() => {...})` is same as `onRender($(() => {...}))`
  *
@@ -818,7 +1004,7 @@ export declare const immutable: <T extends {}>(input: T) => Readonly<T>;
  * export const callback = () => console.log('callback');
  * ```
  *
- * @param fn - function that should have its first argument automatically `$`.
+ * @param fn - a function that should have its first argument automatically `$`.
  * @alpha
  */
 export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
@@ -1046,10 +1232,7 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
-/**
- * @public
- */
-export declare interface InvokeContext {
+declare interface InvokeContext {
     $url$: URL | null;
     $seq$: number;
     $doc$?: Document;
@@ -1164,6 +1347,24 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
 declare const MUTABLE: unique symbol;
 
 /**
+ * Mark property as mutable.
+ *
+ * Qwik assumes that all bindings in components are immutable by default. This is done for two
+ * reasons:
+ *
+ * 1. JSX does not allow Qwik runtime to know if a binding is static or mutable.
+ *    `<Example valueA={123} valueB={exp}>` At runtime there is no way to know if `valueA` is
+ * immutable.
+ * 2. If Qwik assumes that properties are immutable, then it can do a better job data-shaking the
+ * amount of code that needs to be serialized to the client.
+ *
+ * Because Qwik assumes that bindings are immutable by default, it needs a way for a developer to
+ * let it know that binding is mutable. `mutable()` function serves that purpose.
+ * `<Example valueA={123} valueB={mutable(exp)}>`. In this case, the Qwik runtime can correctly
+ * recognize that the `Example` props are mutable and need to be serialized.
+ *
+ * See: [Mutable Props Tutorial](http://qwik.builder.io/tutorial/props/mutable) for an example
+ *
  * @alpha
  */
 export declare const mutable: <T>(v: T) => MutableWrapper<T>;
@@ -1176,10 +1377,18 @@ declare type MutableProps<PROPS extends {}> = {
 };
 
 /**
- * @public
+ * A marker object returned by `mutable()` to identify that the binding is mutable.
+ *
+ * @alpha
  */
-declare interface MutableWrapper<T> {
+export declare interface MutableWrapper<T> {
+    /**
+     * A marker symbol.
+     */
     [MUTABLE]: true;
+    /**
+     * Mutable value.
+     */
     v: T;
 }
 
@@ -1191,6 +1400,19 @@ export declare type NoSerialize<T> = (T & {
 }) | undefined;
 
 /**
+ * Marks a property on a store as non-serializable.
+ *
+ * At times it is necessary to store values on a store that are non-serializable. Normally this
+ * is a runtime error as Store wants to eagerly report when a non-serializable property is
+ * assigned to it.
+ *
+ * You can use `noSerialize()` to mark a value as non-serializable. The value is persisted in the
+ * Store but does not survive serialization. The implication is that when your application is
+ * resumed, the value of this object will be `undefined`. You will be responsible for recovering
+ * from this.
+ *
+ * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
+ *
  * @alpha
  */
 export declare const noSerialize: <T extends {}>(input: T) => NoSerialize<T>;
@@ -1216,6 +1438,43 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * The type used to autogenerate the `$` suffixed properties on the component props.
+ *
+ * When declaring component props, it is not possible to pass in closures. Instead, the closures
+ * need to be passed in as QRLs. This is usually done automatically by the Optimizer by suffixing
+ * the property with `$`. This type automatically generates the `$`-suffixed properties from
+ * `Qrl`-suffixed properties.
+ *
+ * ```tsx
+ * export const App = component$(() => {
+ *   const goodbyeQrl = $(() => alert('Good Bye!'));
+ *
+ *   // This is not-canonical usage of On$Props. It is here only as an example.
+ *   const myComponentProps: On$Props<MyComponentProps> & MyComponentProps = {
+ *     goodbyeQrl: goodbyeQrl,
+ *     hello$: (name) => alert('Hello ' + name),
+ *   };
+ *   return (
+ *     <div>
+ *       <MyComponent {...myComponentProps} />
+ *     </div>
+ *   );
+ * });
+ *
+ * interface MyComponentProps {
+ *   goodbyeQrl?: QRL<() => void>;
+ *   helloQrl?: QRL<(name: string) => void>;
+ * }
+ * export const MyComponent = component$((props: MyComponentProps) => {
+ *   return (
+ *     <div>
+ *       <button onClickQrl={props.goodbyeQrl}>hello</button>
+ *       <button onClick$={async () => await props.helloQrl?.invoke('World')}>good bye</button>
+ *     </div>
+ *   );
+ * });
+ * ```
+ *
  * @public
  */
 export declare type On$Props<T extends {}> = {
@@ -1300,9 +1559,9 @@ declare interface QContext {
     $element$: Element;
     $dirty$: boolean;
     $props$: Record<string, any> | undefined;
-    $renderQrl$: QRL<OnRenderFn<any>> | undefined;
+    $renderQrl$: QRL_2<OnRenderFn<any>> | undefined;
     $component$: ComponentCtx | undefined;
-    $listeners$?: Map<string, QRL<any>[]>;
+    $listeners$?: Map<string, QRL_2<any>[]>;
     $seq$: any[];
     $watches$: WatchDescriptor[];
     $contexts$?: Map<string, any>;
@@ -1339,11 +1598,11 @@ declare interface QObjectMap {
  * ```tsx
  * useOnDocument(
  *   'mousemove',
- *   $(() => console.log('mousemove'))
+ *   $((event) => console.log('mousemove', event))
  * );
  * ```
  *
- * In the above code the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
+ * In the above code, the Qwik Optimizer detects `$(...)` and transforms the code as shown below:
  *
  * ```tsx
  * // FILE: <current file>
@@ -1355,7 +1614,7 @@ declare interface QObjectMap {
  *
  * NOTE: `qrl(...)` is a result of Qwik Optimizer transformation. You should never have to invoke
  * this function directly in your application. The `qrl(...)` function should be invoked only
- * after Qwik Optimizer transformation.
+ * after the Qwik Optimizer transformation.
  *
  * ## Using `QRL`s
  *
@@ -1371,22 +1630,22 @@ declare interface QObjectMap {
  * }
  * ```
  *
- * In the above example the way to think about the code is that you are not asking for a callback
- * function, but rather a reference to a lazy-loadable callback function. Specifically the
- * function loading should be delayed until it is actually needed. In the above example the
+ * In the above example, the way to think about the code is that you are not asking for a
+ * callback function but rather a reference to a lazy-loadable callback function. Specifically,
+ * the function loading should be delayed until it is actually needed. In the above example, the
  * function would not load until after a `mousemove` event on `document` fires.
  *
  * ## Resolving `QRL` references
  *
  * At times it may be necessary to resolve a `QRL` reference to the actual value. This can be
- * performed using `qrlImport(..)` function.
+ * performed using `QRL.resolve(..)` function.
  *
  * ```tsx
  * // Assume you have QRL reference to a greet function
  * const lazyGreet: QRL<() => void> = $(() => console.log('Hello World!'));
  *
  * // Use `qrlImport` to load / resolve the reference.
- * const greet: () => void = await lazyGreet.resolve(element);
+ * const greet: () => void = await lazyGreet.resolve();
  *
  * //  Invoke it
  * greet();
@@ -1397,7 +1656,7 @@ declare interface QObjectMap {
  *
  * ## Question: Why not just use `import()`?
  *
- * At first glance `QRL` serves the same purpose as `import()`. However, there are three subtle
+ * At first glance, `QRL` serves the same purpose as `import()`. However, there are three subtle
  * differences that need to be taken into account.
  *
  * 1. `QRL`s must be serializable into HTML.
@@ -1427,12 +1686,12 @@ declare interface QObjectMap {
  * relative to where the `import()` file is declared. Because it is our framework doing the load,
  * the `./chunk-abc.js` would become relative to the framework file. This is not correct, as it
  * should be relative to the original file generated by the bundler.
- * 3. Next the framework needs to resolve the `./chunk-abc.js` and needs a base location that is
+ * 3. Next, the framework needs to resolve the `./chunk-abc.js` and needs a base location that is
  * encoded in the HTML.
  * 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows
  * loading top-level symbols which don't capture variables.)
- * 5. As a developer you don't want to think about `import` and naming of the chunks and symbols.
- * You just want to say, this should be lazy.
+ * 5. As a developer, you don't want to think about `import` and naming the chunks and symbols.
+ * You just want to say: "this should be lazy."
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
@@ -1441,13 +1700,16 @@ declare interface QObjectMap {
  * @public
  */
 export declare interface QRL<TYPE = any> {
-    __brand__QRL__: TYPE;
-    getSymbol(): string;
-    getHash(): string;
-    resolve(container?: Element): Promise<TYPE>;
-    resolveLazy(container?: Element): ValueOrPromise<TYPE>;
+    /**
+     * Resolve the QRL and return the actual value.
+     */
+    resolve(): Promise<TYPE>;
+    /**
+     * Resolve the QRL of closure and invoke it.
+     * @param args - Clousure arguments.
+     * @returns A promise of the return value of the closure.
+     */
     invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
-    invokeFn(el?: Element, context?: InvokeContext, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer RETURN ? (...args: ARGS) => ValueOrPromise<RETURN> : never;
 }
 
 /**
@@ -1465,10 +1727,38 @@ export declare interface QRL<TYPE = any> {
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
+declare class QRL_2<TYPE = any> implements QRL<TYPE> {
+    $chunk$: string;
+    $symbol$: string;
+    $symbolRef$: null | ValueOrPromise<TYPE>;
+    $symbolFn$: null | (() => Promise<Record<string, any>>);
+    $capture$: null | string[];
+    $captureRef$: any[] | null;
+    __brand__QRL__: TYPE;
+    $refSymbol$?: string;
+    private $el$;
+    constructor($chunk$: string, $symbol$: string, $symbolRef$: null | ValueOrPromise<TYPE>, $symbolFn$: null | (() => Promise<Record<string, any>>), $capture$: null | string[], $captureRef$: any[] | null);
+    setContainer(el: Element): void;
+    getSymbol(): string;
+    getHash(): string;
+    resolve(el?: Element): Promise<TYPE>;
+    resolveLazy(el?: Element): ValueOrPromise<TYPE>;
+    invokeFn(el?: Element, currentCtx?: InvokeContext, beforeFn?: () => void): any;
+    copy(): QRL_2<TYPE>;
+    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<any>;
+    serialize(options?: QRLSerializeOptions): string;
+}
+
 /**
  * @public
  */
 declare type QrlEvent<Type = Event> = QRL<EventHandler_2<Type>>;
+
+declare interface QRLSerializeOptions {
+    $platform$?: CorePlatform;
+    $element$?: Element;
+    $getObjId$?: (obj: any) => string | null;
+}
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1771,7 +2061,14 @@ declare interface SequentialScope<T> {
 export declare type ServerFn = () => ValueOrPromise<void | (() => void)>;
 
 /**
- * @public
+ * Sets the `CorePlatform`.
+ *
+ * This is useful to override the platform in tests to change the behavior of,
+ * `requestAnimationFrame`, and import resolution.
+ *
+ * @param doc - The document of the application for which the platform is needed.
+ * @param platform - The platform to use.
+ * @alpha
  */
 export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlatform;
 
@@ -2183,12 +2480,12 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
- * changes. A change to any of the properties cause the `watchFn` to re-run.
+ * changes. A change to any of the properties causes the `watchFn` to rerun.
  *
  * ## Example
  *
  * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
- * Any changes to the `state.count` property will cause the `watchFn` to re-run.
+ * Any changes to the `state.count` property will cause the `watchFn` to rerun.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -2231,7 +2528,7 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
  * Invoked when the component is destroyed (removed from render tree), or paused as part of the
  * SSR serialization.
  *
- * Can be used to release resouces, abort network requets, stop timers...
+ * It can be used to release resources, abort network requests, stop timers...
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -2254,7 +2551,7 @@ export declare const useCleanup$: (first: () => void) => void;
  * Invoked when the component is destroyed (removed from render tree), or paused as part of the
  * SSR serialization.
  *
- * Can be used to release resouces, abort network requets, stop timers...
+ * It can be used to release resources, abort network requests, stop timers...
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -2322,19 +2619,20 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
 export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
 /**
- * Register's a client mount hook, that runs only in client when the component is first mounted.
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
  *
  * ## Example
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({
- *     hash: ''
+ *     hash: '',
  *   });
  *
  *   useClientMount$(async () => {
  *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash
+ *     store.hash = document.location.hash;
  *   });
  *
  *   return (
@@ -2352,19 +2650,20 @@ export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOpt
 export declare const useClientMount$: (first: ServerFn) => void;
 
 /**
- * Register's a client mount hook, that runs only in client when the component is first mounted.
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
  *
  * ## Example
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({
- *     hash: ''
+ *     hash: '',
  *   });
  *
  *   useClientMount$(async () => {
  *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash
+ *     store.hash = document.location.hash;
  *   });
  *
  *   return (
@@ -2382,18 +2681,106 @@ export declare const useClientMount$: (first: ServerFn) => void;
 export declare const useClientMountQrl: (mountQrl: QRL<ServerFn>) => void;
 
 /**
+ * Retrive Context value.
+ *
+ * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
+ * parent component needs to invoke `useContextProvider()` to assign a value.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to retrieve a value from.
  * @alpha
  */
 export declare const useContext: <STATE extends object>(context: Context<STATE>) => STATE;
 
 /**
+ * Assign a value to a Context.
+ *
+ * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
+ * component's function. Once assign use `useContext()` in any child component to retrieve the
+ * value.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to assign a value to.
+ * @param value - The value to assign to the context.
  * @alpha
  */
 export declare const useContextProvider: <STATE extends object>(context: Context<STATE>, newValue: STATE) => void;
 
 /**
  * Retrieves the document of the current element. It's important to use this method instead of
- * accessing `document` directly, because during SSR, the global document might not exist.
+ * accessing `document` directly because during SSR, the global document might not exist.
  *
  * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
  * any `await` statements.)
@@ -2406,6 +2793,10 @@ export declare const useDocument: () => Document;
  * @alpha
  */
 export declare interface UseEffectOptions {
+    /**
+     * - `visible`: run the effect when the element is visible.
+     * - `load`: eagerly run the effect when the application resumes.
+     */
     run?: UseEffectRunOptions;
 }
 
@@ -2439,7 +2830,7 @@ export declare type UseEffectRunOptions = 'visible' | 'load';
 export declare const useHostElement: () => Element;
 
 /**
- * Used by the Qwik Optimizer to restore the lexical scoped variables.
+ * Used by the Qwik Optimizer to restore the lexically scoped variables.
  *
  * This method should not be present in the application source code.
  *
@@ -2451,8 +2842,7 @@ export declare const useHostElement: () => Element;
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
 /**
- * Register's a mount hook, that runs both in the server and the client when the component is
- * first mounted.
+ * Register a server mount hook that runs only in the server when the component is first mounted.
  *
  * ## Example
  *
@@ -2465,7 +2855,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  *   useMount$(async () => {
  *     // This code will run once whenever a component is mounted in the server, or in the client
  *     const res = await fetch('weather-api.example');
- *     const json = await res.json() as any;
+ *     const json = (await res.json()) as any;
  *     store.temp = json.temp;
  *   });
  *
@@ -2483,8 +2873,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 export declare const useMount$: (first: ServerFn) => void;
 
 /**
- * Register's a mount hook, that runs both in the server and the client when the component is
- * first mounted.
+ * Register a server mount hook that runs only in the server when the component is first mounted.
  *
  * ## Example
  *
@@ -2497,7 +2886,7 @@ export declare const useMount$: (first: ServerFn) => void;
  *   useMount$(async () => {
  *     // This code will run once whenever a component is mounted in the server, or in the client
  *     const res = await fetch('weather-api.example');
- *     const json = await res.json() as any;
+ *     const json = (await res.json()) as any;
  *     store.temp = json.temp;
  *   });
  *
@@ -2518,7 +2907,8 @@ export declare const useMountQrl: (mountQrl: QRL<ServerFn>) => void;
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX. Otherwise it's adding a JSX listener in the `<Host>` is a better idea.
+ * have access to the JSX. Otherwise, it's adding a JSX listener in the `<Host>` is a better
+ * idea.
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
@@ -2538,8 +2928,8 @@ export declare const useOn: (event: string, eventQrl: QRL<(ev: Event) => void>) 
  * function useScroll() {
  *   useOnDocument(
  *     'scroll',
- *     $(() => {
- *       console.log('body scrolled');
+ *     $((event) => {
+ *       console.log('body scrolled', event);
  *     })
  *   );
  * }
@@ -2566,8 +2956,8 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) =>
  * function useAnalytics() {
  *   useOnWindow(
  *     'popstate',
- *     $(() => {
- *       console.log('navigation happened');
+ *     $((event) => {
+ *       console.log('navigation happened', event);
  *       // report to analytics
  *     })
  *   );
@@ -2584,7 +2974,7 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) =>
 export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
- * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+ * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
  * to the `ref` property in JSX.
  *
  * ```tsx
@@ -2640,7 +3030,18 @@ export declare const useRef: <T = Element>(current?: T | undefined) => Ref<T>;
  *
  * @alpha
  */
-export declare const useResume$: (first: () => void) => void;
+export declare const useResume$: (first: () => void, options?: UseResumeOptions | undefined) => void;
+
+/**
+ * @alpha
+ */
+declare interface UseResumeOptions {
+    /**
+     * - `visible`: run the effect when the element is visible.
+     * - `load`: eagerly run the effect when the application resumes.
+     */
+    run?: UseResumeRunOptions;
+}
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -2665,7 +3066,12 @@ export declare const useResume$: (first: () => void) => void;
  *
  * @alpha
  */
-export declare const useResumeQrl: (resumeFn: QRL<() => void>) => void;
+export declare const useResumeQrl: (resumeFn: QRL<() => void>, options?: UseResumeOptions) => void;
+
+/**
+ * @alpha
+ */
+declare type UseResumeRunOptions = 'visible' | 'load';
 
 /**
  * @see `useStyles`.
@@ -2687,7 +3093,8 @@ export declare const useScopedStylesQrl: (styles: QRL<string>) => void;
 export declare const useSequentialScope: <T>() => SequentialScope<T>;
 
 /**
- * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
  *
  * ## Example
  *
@@ -2725,7 +3132,8 @@ export declare const useSequentialScope: <T>() => SequentialScope<T>;
 export declare const useServerMount$: (first: ServerFn) => void;
 
 /**
- * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
  *
  * ## Example
  *
@@ -2763,14 +3171,14 @@ export declare const useServerMount$: (first: ServerFn) => void;
 export declare const useServerMountQrl: (mountQrl: QRL<ServerFn>) => void;
 
 /**
- * Creates a object that Qwik can track across serializations.
+ * Creates an object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has a
- * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create a state for your application. The returned object is a proxy that has
+ * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
- * Example showing how `useStore` is used in Counter example to keep track of count.
+ * Example showing how `useStore` is used in Counter example to keep track of the count.
  *
  * ```tsx
  * const Stores = component$(() => {
@@ -2882,9 +3290,9 @@ export declare const useWaitOn: (promise: ValueOrPromise<any>) => void;
  * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -2942,9 +3350,9 @@ export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undef
  * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -3003,7 +3411,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.34
+ * 0.0.35
  * @public
  */
 export declare const version: string;
@@ -3021,7 +3429,7 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
  * @alpha
  */
 declare interface WatchDescriptor {
-    qrl: QRL<WatchFn>;
+    qrl: QRL_2<WatchFn>;
     el: Element;
     f: number;
     i: number;

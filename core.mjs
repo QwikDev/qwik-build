@@ -314,14 +314,14 @@ const isNotNullable = (v) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useStore instead)
 /**
- * Creates a object that Qwik can track across serializations.
+ * Creates an object that Qwik can track across serializations.
  *
- * Use `useStore` to create state for your application. The return object is a proxy which has a
- * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create a state for your application. The returned object is a proxy that has
+ * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ## Example
  *
- * Example showing how `useStore` is used in Counter example to keep track of count.
+ * Example showing how `useStore` is used in Counter example to keep track of the count.
  *
  * ```tsx
  * const Stores = component$(() => {
@@ -390,7 +390,7 @@ const useStore = (initialState, opts) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useRef instead)
 /**
- * It's a very thin wrapper around `useStore()` including the proper type signature to be passed
+ * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
  * to the `ref` property in JSX.
  *
  * ```tsx
@@ -506,13 +506,37 @@ const toUrl = (doc, element, url) => {
     const base = new URL(containerEl?.getAttribute('q:base') ?? doc.baseURI, doc.baseURI);
     return new URL(url, base);
 };
+// <docs markdown="./readme.md#setPlatform">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./readme.md#setPlatform instead)
 /**
- * @public
+ * Sets the `CorePlatform`.
+ *
+ * This is useful to override the platform in tests to change the behavior of,
+ * `requestAnimationFrame`, and import resolution.
+ *
+ * @param doc - The document of the application for which the platform is needed.
+ * @param platform - The platform to use.
+ * @alpha
  */
+// </docs>
 const setPlatform = (doc, plt) => (doc[DocumentPlatform] = plt);
+// <docs markdown="./readme.md#getPlatform">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./readme.md#getPlatform instead)
 /**
- * @public
+ * Retrieve the `CorePlatform`.
+ *
+ * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings
+ * from symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but
+ * is specific to the application currently running. On server it is possible that many different
+ * applications are running in a single server instance, and for this reason the `CorePlatform`
+ * is associated with the application document.
+ *
+ * @param docOrNode - The document (or node) of the application for which the platform is needed.
+ * @alpha
  */
+// </docs>
 const getPlatform = (docOrNode) => {
     const doc = getDocument(docOrNode);
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
@@ -524,7 +548,7 @@ const DocumentPlatform = /*#__PURE__*/ Symbol();
 // (edit ../readme.md#useDocument instead)
 /**
  * Retrieves the document of the current element. It's important to use this method instead of
- * accessing `document` directly, because during SSR, the global document might not exist.
+ * accessing `document` directly because during SSR, the global document might not exist.
  *
  * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
  * any `await` statements.)
@@ -628,7 +652,7 @@ const serializeQRLs = (existingQRLs, ctx) => {
  * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
  * The former is just a shorthand for the latter.
  *
- * For example these function call are equivalent:
+ * For example, these function calls are equivalent:
  *
  * - `component$(() => {...})` is same as `onRender($(() => {...}))`
  *
@@ -651,7 +675,7 @@ const serializeQRLs = (existingQRLs, ctx) => {
  * export const callback = () => console.log('callback');
  * ```
  *
- * @param fn - function that should have its first argument automatically `$`.
+ * @param fn - a function that should have its first argument automatically `$`.
  * @alpha
  */
 // </docs>
@@ -670,7 +694,7 @@ const implicit$FirstArg = (fn) => {
  * Invoked when the component is destroyed (removed from render tree), or paused as part of the
  * SSR serialization.
  *
- * Can be used to release resouces, abort network requets, stop timers...
+ * It can be used to release resources, abort network requests, stop timers...
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -709,7 +733,7 @@ const useCleanupQrl = (unmountFn) => {
  * Invoked when the component is destroyed (removed from render tree), or paused as part of the
  * SSR serialization.
  *
- * Can be used to release resouces, abort network requets, stop timers...
+ * It can be used to release resources, abort network requests, stop timers...
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -753,7 +777,7 @@ const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
  * @alpha
  */
 // </docs>
-const useResumeQrl = (resumeFn) => useOn('qinit', resumeFn);
+const useResumeQrl = (resumeFn, options = {}) => useOn(options.run == 'load' ? 'qinit' : 'qvisible', resumeFn);
 // <docs markdown="../readme.md#useResume">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useResume instead)
@@ -786,7 +810,7 @@ const useResume$ = /*#__PURE__*/ implicit$FirstArg(useResumeQrl);
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useVisible instead)
 /**
- * A lazy-loadable reference to a component's on visible hook.
+ * A lazy-loadable reference to a component's on the visible hook.
  *
  * The hook is lazily invoked when the component becomes visible in the browser viewport.
  *
@@ -820,7 +844,8 @@ const useVisibleQrl = (resumeFn) => useOn('qvisible', resumeFn);
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX. Otherwise it's adding a JSX listener in the `<Host>` is a better idea.
+ * have access to the JSX. Otherwise, it's adding a JSX listener in the `<Host>` is a better
+ * idea.
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
@@ -843,8 +868,8 @@ const useOn = (event, eventQrl) => _useOn(`on:${event}`, eventQrl);
  * function useScroll() {
  *   useOnDocument(
  *     'scroll',
- *     $(() => {
- *       console.log('body scrolled');
+ *     $((event) => {
+ *       console.log('body scrolled', event);
  *     })
  *   );
  * }
@@ -874,8 +899,8 @@ const useOnDocument = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl
  * function useAnalytics() {
  *   useOnWindow(
  *     'popstate',
- *     $(() => {
- *       console.log('navigation happened');
+ *     $((event) => {
+ *       console.log('navigation happened', event);
  *       // report to analytics
  *     })
  *   );
@@ -910,9 +935,9 @@ const WatchFlagsIsCleanup = 1 << 3;
  * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -969,7 +994,7 @@ const useWatchQrl = (qrl, opts) => {
         const el = ctx.$hostElement$;
         const containerState = ctx.$renderCtx$.$containerState$;
         const watch = {
-            qrl,
+            qrl: qrl,
             el,
             f: WatchFlagsIsDirty | WatchFlagsIsWatch,
             i,
@@ -992,9 +1017,9 @@ const useWatchQrl = (qrl, opts) => {
  * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs use the `obs`
- * function to wrap property reads. This creates subscriptions which will trigger the `watchFn`
- * to re-run.
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -1078,7 +1103,7 @@ const useClientEffectQrl = (qrl, opts) => {
     if (!get) {
         const el = ctx.$hostElement$;
         const watch = {
-            qrl,
+            qrl: qrl,
             el,
             f: WatchFlagsIsEffect,
             i,
@@ -1124,7 +1149,8 @@ const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useServerMount instead)
 /**
- * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
  *
  * ## Example
  *
@@ -1174,7 +1200,8 @@ const useServerMountQrl = (mountQrl) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useServerMount instead)
 /**
- * Register's a server mount hook, that runs only in server when the component is first mounted.
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
  *
  * ## Example
  *
@@ -1215,19 +1242,20 @@ const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useClientMount instead)
 /**
- * Register's a client mount hook, that runs only in client when the component is first mounted.
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
  *
  * ## Example
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({
- *     hash: ''
+ *     hash: '',
  *   });
  *
  *   useClientMount$(async () => {
  *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash
+ *     store.hash = document.location.hash;
  *   });
  *
  *   return (
@@ -1257,19 +1285,20 @@ const useClientMountQrl = (mountQrl) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useClientMount instead)
 /**
- * Register's a client mount hook, that runs only in client when the component is first mounted.
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
  *
  * ## Example
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({
- *     hash: ''
+ *     hash: '',
  *   });
  *
  *   useClientMount$(async () => {
  *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash
+ *     store.hash = document.location.hash;
  *   });
  *
  *   return (
@@ -1290,8 +1319,7 @@ const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useMount instead)
 /**
- * Register's a mount hook, that runs both in the server and the client when the component is
- * first mounted.
+ * Register a server mount hook that runs only in the server when the component is first mounted.
  *
  * ## Example
  *
@@ -1304,7 +1332,7 @@ const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
  *   useMount$(async () => {
  *     // This code will run once whenever a component is mounted in the server, or in the client
  *     const res = await fetch('weather-api.example');
- *     const json = await res.json() as any;
+ *     const json = (await res.json()) as any;
  *     store.temp = json.temp;
  *   });
  *
@@ -1331,8 +1359,7 @@ const useMountQrl = (mountQrl) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useMount instead)
 /**
- * Register's a mount hook, that runs both in the server and the client when the component is
- * first mounted.
+ * Register a server mount hook that runs only in the server when the component is first mounted.
  *
  * ## Example
  *
@@ -1345,7 +1372,7 @@ const useMountQrl = (mountQrl) => {
  *   useMount$(async () => {
  *     // This code will run once whenever a component is mounted in the server, or in the client
  *     const res = await fetch('weather-api.example');
- *     const json = await res.json() as any;
+ *     const json = (await res.json()) as any;
  *     store.temp = json.temp;
  *   });
  *
@@ -3311,7 +3338,7 @@ const stringifyClassOrStyle = (obj, isClass) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useLexicalScope instead)
 /**
- * Used by the Qwik Optimizer to restore the lexical scoped variables.
+ * Used by the Qwik Optimizer to restore the lexically scoped variables.
  *
  * This method should not be present in the application source code.
  *
@@ -3444,6 +3471,8 @@ const scheduleFrame = (containerEl, containerState) => {
     return containerState.$renderPromise$;
 };
 /**
+ * Low-level API used by the Optimizer to process `useWatch$()` API. This method
+ * is not intended to be used by developers.
  * @alpha
  */
 const handleWatch = () => {
@@ -3555,7 +3584,7 @@ const sortWatches = (watches) => {
 const QObjectRecursive = 1 << 0;
 const QObjectImmutable = 1 << 1;
 /**
- * Creates a proxy which notifies of any writes.
+ * Creates a proxy that notifies of any writes.
  */
 const getOrCreateProxy = (target, containerState, flags = 0) => {
     const proxy = containerState.$proxyMap$.get(target);
@@ -3819,6 +3848,19 @@ const shouldSerialize = (obj) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#noSerialize instead)
 /**
+ * Marks a property on a store as non-serializable.
+ *
+ * At times it is necessary to store values on a store that are non-serializable. Normally this
+ * is a runtime error as Store wants to eagerly report when a non-serializable property is
+ * assigned to it.
+ *
+ * You can use `noSerialize()` to mark a value as non-serializable. The value is persisted in the
+ * Store but does not survive serialization. The implication is that when your application is
+ * resumed, the value of this object will be `undefined`. You will be responsible for recovering
+ * from this.
+ *
+ * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
+ *
  * @alpha
  */
 // </docs>
@@ -3826,15 +3868,47 @@ const noSerialize = (input) => {
     noSerializeSet.add(input);
     return input;
 };
+// <docs markdown="../readme.md#immutable">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#immutable instead)
 /**
+ * Mark an object as immutable, preventing Qwik from creating subscriptions on that object.
+ *
+ * Qwik automatically creates subscriptions on store objects created by `useStore()`. By marking
+ * an object as `immutable`, it hints to Qwik that the properties of this object will not change,
+ * and therefore there is no need to create subscriptions for those objects.
+ *
  * @alpha
  */
+// </docs>
 const immutable = (input) => {
     return Object.freeze(input);
 };
+// <docs markdown="../readme.md#mutable">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#mutable instead)
 /**
+ * Mark property as mutable.
+ *
+ * Qwik assumes that all bindings in components are immutable by default. This is done for two
+ * reasons:
+ *
+ * 1. JSX does not allow Qwik runtime to know if a binding is static or mutable.
+ *    `<Example valueA={123} valueB={exp}>` At runtime there is no way to know if `valueA` is
+ * immutable.
+ * 2. If Qwik assumes that properties are immutable, then it can do a better job data-shaking the
+ * amount of code that needs to be serialized to the client.
+ *
+ * Because Qwik assumes that bindings are immutable by default, it needs a way for a developer to
+ * let it know that binding is mutable. `mutable()` function serves that purpose.
+ * `<Example valueA={123} valueB={mutable(exp)}>`. In this case, the Qwik runtime can correctly
+ * recognize that the `Example` props are mutable and need to be serialized.
+ *
+ * See: [Mutable Props Tutorial](http://qwik.builder.io/tutorial/props/mutable) for an example
+ *
  * @alpha
  */
+// </docs>
 const mutable = (v) => {
     return {
         [MUTABLE]: true,
@@ -4149,7 +4223,7 @@ const toQrlOrError = (symbolOrQrl) => {
  *
  * @see `implicit$FirstArg` for additional `____$(...)` rules.
  *
- * In this example `$(...)` is used to capture the callback function of `onmousemove` into
+ * In this example, `$(...)` is used to capture the callback function of `onmousemove` into a
  * lazy-loadable reference. This allows the code to refer to the function without actually
  * loading the function. In this example, the callback function does not get loaded until
  * `mousemove` event fires.
@@ -4157,11 +4231,11 @@ const toQrlOrError = (symbolOrQrl) => {
  * ```tsx
  * useOnDocument(
  *   'mousemove',
- *   $(() => console.log('mousemove'))
+ *   $((event) => console.log('mousemove', event))
  * );
  * ```
  *
- * In this code the Qwik Optimizer detects `$(...)` and transforms the code into:
+ * In this code, the Qwik Optimizer detects `$(...)` and transforms the code into:
  *
  * ```tsx
  * // FILE: <current file>
@@ -4177,8 +4251,8 @@ const toQrlOrError = (symbolOrQrl) => {
  *
  * 1. The expression of the `$(expression)` function must be importable by the system.
  * (expression shows up in `import` or has `export`)
- * 2. If inlined function then all lexically captured values must be:
- *    - importable (vars shows up in `import` or has `export`)
+ * 2. If inlined function, then all lexically captured values must be:
+ *    - importable (vars show up in `import`s or `export`s)
  *    - const (The capturing process differs from JS capturing in that writing to captured
  * variables does not update them, and therefore writes are forbidden. The best practice is that
  * all captured variables are constants.)
@@ -4279,7 +4353,9 @@ const componentQrl = (onRenderQrl, options = {}) => {
     const skipKey = ELEMENTS_SKIP_KEY.includes(tagName);
     // Return a QComponent Factory function.
     return function QSimpleComponent(props, key) {
-        const finalKey = skipKey ? undefined : onRenderQrl.getHash() + ':' + (key ? key : '');
+        const finalKey = skipKey
+            ? undefined
+            : onRenderQrl.getHash() + ':' + (key ? key : '');
         return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
     };
 };
@@ -4398,7 +4474,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.34";
+const version = "0.0.35";
 
 /**
  * Render JSX.
@@ -4497,17 +4573,117 @@ const useHostElement = () => {
     return element;
 };
 
+// <docs markdown="./use-context.docs.md#createContext">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-context.docs.md#createContext instead)
 /**
+ * Create a context ID to be used in your application.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
+ * for the values. Qwik needs a serializable ID for the context so that the it can track context
+ * providers and consumers in a way that survives resumability.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param name - The name of the context.
  * @alpha
  */
+// </docs>
 const createContext = (name) => {
     return Object.freeze({
         id: fromCamelToKebabCase(name),
     });
 };
+// <docs markdown="./use-context.docs.md#useContextProvider">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-context.docs.md#useContextProvider instead)
 /**
+ * Assign a value to a Context.
+ *
+ * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
+ * component's function. Once assign use `useContext()` in any child component to retrieve the
+ * value.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to assign a value to.
+ * @param value - The value to assign to the context.
  * @alpha
  */
+// </docs>
 const useContextProvider = (context, newValue) => {
     const { get, set, ctx } = useSequentialScope();
     if (get) {
@@ -4528,9 +4704,55 @@ const useContextProvider = (context, newValue) => {
     setAttribute(renderCtx, hostElement, QCtxAttr, serializedContexts.join(' '));
     set(true);
 };
+// <docs markdown="./use-context.docs.md#useContext">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ./use-context.docs.md#useContext instead)
 /**
+ * Retrive Context value.
+ *
+ * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
+ * parent component needs to invoke `useContextProvider()` to assign a value.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContext<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to retrieve a value from.
  * @alpha
  */
+// </docs>
 const useContext = (context) => {
     const { get, set, ctx } = useSequentialScope();
     if (get) {

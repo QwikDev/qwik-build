@@ -33,7 +33,6 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var testing_exports = {};
 __export(testing_exports, {
   ElementFixture: () => ElementFixture,
-  applyDocumentConfig: () => applyDocumentConfig,
   createDocument: () => createDocument,
   createWindow: () => createWindow,
   getTestPlatform: () => getTestPlatform,
@@ -178,31 +177,6 @@ var isPromise = (value) => {
   return value instanceof Promise;
 };
 
-// packages/qwik/src/testing/util.ts
-var import_url2 = require("url");
-function toFileUrl(filePath) {
-  return (0, import_url2.pathToFileURL)(filePath).href;
-}
-function applyDocumentConfig(doc, config) {
-  if (doc && config) {
-    if (config.baseURI) {
-      appendConfig(doc, `baseURI`, config.baseURI);
-    }
-    if (config.protocol) {
-      for (const protocol in config.protocol) {
-        appendConfig(doc, `protocol.${protocol}`, config.protocol[protocol]);
-      }
-    }
-  }
-}
-function appendConfig(doc, key, value) {
-  const linkElm = doc.createElement("link");
-  linkElm.setAttribute(`rel`, `q.${key}`);
-  linkElm.setAttribute(`href`, value);
-  doc.head.appendChild(linkElm);
-}
-var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
-
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
@@ -216,13 +190,18 @@ var ElementFixture = class {
     this.parent.appendChild(this.host);
     this.host.appendChild(this.child);
     this.document.body.appendChild(this.superParent);
-    applyDocumentConfig(this.document, options);
   }
 };
+
+// packages/qwik/src/testing/util.ts
+var import_url2 = require("url");
+function toFileUrl(filePath) {
+  return (0, import_url2.pathToFileURL)(filePath).href;
+}
+var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ElementFixture,
-  applyDocumentConfig,
   createDocument,
   createWindow,
   getTestPlatform,
