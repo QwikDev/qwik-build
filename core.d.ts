@@ -419,11 +419,11 @@ declare interface ComponentBaseProps {
     ref?: Ref<Element>;
     'q:slot'?: string;
     [key: `host:${string}`]: any;
-    [key: `host:on${string}$`]: EventHandler_2;
+    [key: `host:on${string}$`]: NativeEventHandler;
     [key: `host:on${string}Qrl`]: QrlEvent | QrlEvent[];
-    [key: `document:on${string}$`]: EventHandler_2 | undefined;
+    [key: `document:on${string}$`]: NativeEventHandler | undefined;
     [key: `document:on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
-    [key: `window:on${string}$`]: EventHandler_2 | undefined;
+    [key: `window:on${string}$`]: NativeEventHandler | undefined;
     [key: `window:on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
     [key: `preventDefault:${string}`]: boolean;
     [key: `preventdefault:${string}`]: boolean;
@@ -747,16 +747,6 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
     width?: number | string | undefined;
 }
-
-/**
- * @public
- */
-export declare type EventHandler<T> = QRL<(value: T) => any>;
-
-/**
- * @public
- */
-declare type EventHandler_2<Type = Event> = (event: Type, element: Element) => any;
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1393,6 +1383,11 @@ export declare interface MutableWrapper<T> {
 }
 
 /**
+ * @public
+ */
+declare type NativeEventHandler<T = Event> = ((ev: T, element: Element) => any) | ((ev: T, element: Element) => any)[];
+
+/**
  * @alpha
  */
 export declare type NoSerialize<T> = (T & {
@@ -1436,50 +1431,6 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
-
-/**
- * The type used to autogenerate the `$` suffixed properties on the component props.
- *
- * When declaring component props, it is not possible to pass in closures. Instead, the closures
- * need to be passed in as QRLs. This is usually done automatically by the Optimizer by suffixing
- * the property with `$`. This type automatically generates the `$`-suffixed properties from
- * `Qrl`-suffixed properties.
- *
- * ```tsx
- * export const App = component$(() => {
- *   const goodbyeQrl = $(() => alert('Good Bye!'));
- *
- *   // This is not-canonical usage of On$Props. It is here only as an example.
- *   const myComponentProps: On$Props<MyComponentProps> & MyComponentProps = {
- *     goodbyeQrl: goodbyeQrl,
- *     hello$: (name) => alert('Hello ' + name),
- *   };
- *   return (
- *     <div>
- *       <MyComponent {...myComponentProps} />
- *     </div>
- *   );
- * });
- *
- * interface MyComponentProps {
- *   goodbyeQrl?: QRL<() => void>;
- *   helloQrl?: QRL<(name: string) => void>;
- * }
- * export const MyComponent = component$((props: MyComponentProps) => {
- *   return (
- *     <div>
- *       <button onClickQrl={props.goodbyeQrl}>hello</button>
- *       <button onClick$={async () => await props.helloQrl?.invoke('World')}>good bye</button>
- *     </div>
- *   );
- * });
- * ```
- *
- * @public
- */
-export declare type On$Props<T extends {}> = {
-    [K in keyof T as K extends `${infer A}Qrl` ? NonNullable<T[K]> extends QRL ? `${A}$` : never : never]?: NonNullable<T[K]> extends QRL<infer B> ? B : never;
-};
 
 /**
  * @public
@@ -1533,6 +1484,11 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
+export declare type PropFunction<T extends Function> = T extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => Promise<RET> : never;
+
+/**
+ * @public
+ */
 export declare type Props<T extends {} = {}> = Record<string, any> & T;
 
 /**
@@ -1551,7 +1507,7 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
 /**
  * @public
  */
-export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & On$Props<PROPS> & ComponentBaseProps;
+export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps;
 
 declare interface QContext {
     $cache$: Map<string, any>;
@@ -1559,9 +1515,9 @@ declare interface QContext {
     $element$: Element;
     $dirty$: boolean;
     $props$: Record<string, any> | undefined;
-    $renderQrl$: QRL_2<OnRenderFn<any>> | undefined;
+    $renderQrl$: QRLInternal<OnRenderFn<any>> | undefined;
     $component$: ComponentCtx | undefined;
-    $listeners$?: Map<string, QRL_2<any>[]>;
+    $listeners$?: Map<string, QRLInternal<any>[]>;
     $seq$: any[];
     $watches$: WatchDescriptor[];
     $contexts$?: Map<string, any>;
@@ -1701,15 +1657,17 @@ declare interface QObjectMap {
  */
 export declare interface QRL<TYPE = any> {
     /**
-     * Resolve the QRL and return the actual value.
-     */
-    resolve(): Promise<TYPE>;
-    /**
      * Resolve the QRL of closure and invoke it.
      * @param args - Clousure arguments.
      * @returns A promise of the return value of the closure.
      */
-    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
+    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
+    /**
+     * Resolve the QRL and return the actual value.
+     */
+    resolve(el?: Element): Promise<TYPE>;
+    getSymbol(): string;
+    getHash(): string;
 }
 
 /**
@@ -1727,32 +1685,29 @@ export declare interface QRL<TYPE = any> {
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
-declare class QRL_2<TYPE = any> implements QRL<TYPE> {
-    $chunk$: string;
-    $symbol$: string;
-    $symbolRef$: null | ValueOrPromise<TYPE>;
-    $symbolFn$: null | (() => Promise<Record<string, any>>);
-    $capture$: null | string[];
-    $captureRef$: any[] | null;
-    __brand__QRL__: TYPE;
-    $refSymbol$?: string;
-    private $el$;
-    constructor($chunk$: string, $symbol$: string, $symbolRef$: null | ValueOrPromise<TYPE>, $symbolFn$: null | (() => Promise<Record<string, any>>), $capture$: null | string[], $captureRef$: any[] | null);
-    setContainer(el: Element): void;
-    getSymbol(): string;
-    getHash(): string;
-    resolve(el?: Element): Promise<TYPE>;
-    resolveLazy(el?: Element): ValueOrPromise<TYPE>;
-    invokeFn(el?: Element, currentCtx?: InvokeContext, beforeFn?: () => void): any;
-    copy(): QRL_2<TYPE>;
-    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<any>;
-    serialize(options?: QRLSerializeOptions): string;
-}
-
 /**
  * @public
  */
-declare type QrlEvent<Type = Event> = QRL<EventHandler_2<Type>>;
+declare type QrlEvent<Type = Event> = QRL<NativeEventHandler<Type>>;
+
+declare interface QRLInternal<TYPE = any> extends QRL<TYPE>, QRLInternalMethods<TYPE> {
+}
+
+declare interface QRLInternalMethods<TYPE> {
+    readonly $chunk$: string;
+    readonly $symbol$: string;
+    readonly $refSymbol$: string | null;
+    $capture$: string[] | null;
+    $captureRef$: any[] | null;
+    resolve(el?: Element): Promise<TYPE>;
+    getSymbol(): string;
+    getHash(): string;
+    $setContainer$(el: Element): void;
+    $resolveLazy$(el: Element): void;
+    $invokeFn$(el?: Element, currentCtx?: InvokeContext, beforeFn?: () => void): any;
+    $copy$(): QRLInternal<TYPE>;
+    $serialize$(options?: QRLSerializeOptions): string;
+}
 
 declare interface QRLSerializeOptions {
     $platform$?: CorePlatform;
@@ -1781,121 +1736,121 @@ export declare interface QwikDOMAttributes extends DOMAttributes<any> {
  * @public
  */
 declare interface QwikEvents {
-    onCopy$?: (event: ClipboardEvent, el: Element) => void;
-    onCopyCapture$?: (event: ClipboardEvent, el: Element) => void;
-    onCut$?: (event: ClipboardEvent, el: Element) => void;
-    onCutCapture$?: (event: ClipboardEvent, el: Element) => void;
-    onPaste$?: (event: ClipboardEvent, el: Element) => void;
-    onPasteCapture$?: (event: ClipboardEvent, el: Element) => void;
-    onCompositionEnd$?: (event: CompositionEvent, el: Element) => void;
-    onCompositionEndCapture$?: (event: CompositionEvent, el: Element) => void;
-    onCompositionStart$?: (event: CompositionEvent, el: Element) => void;
-    onCompositionStartCapture$?: (event: CompositionEvent, el: Element) => void;
-    onCompositionUpdate$?: (event: CompositionEvent, el: Element) => void;
-    onCompositionUpdateCapture$?: (event: CompositionEvent, el: Element) => void;
-    onFocus$?: (event: FocusEvent, el: Element) => void;
-    onFocusCapture$?: (event: FocusEvent, el: Element) => void;
-    onFocusin$?: (event: FocusEvent, el: Element) => void;
-    onFocusinCapture$?: (event: FocusEvent, el: Element) => void;
-    onFocusout$?: (event: FocusEvent, el: Element) => void;
-    onFocusoutCapture$?: (event: FocusEvent, el: Element) => void;
-    onBlur$?: (event: FocusEvent, el: Element) => void;
-    onBlurCapture$?: (event: FocusEvent, el: Element) => void;
-    onChange$?: (event: Event, el: Element) => void;
-    onChangeCapture$?: (event: Event, el: Element) => void;
-    onInput$?: (event: Event, el: Element) => void;
-    onInputCapture$?: (event: Event, el: Element) => void;
-    onReset$?: (event: Event, el: Element) => void;
-    onResetCapture$?: (event: Event, el: Element) => void;
-    onSubmit$?: (event: Event, el: Element) => void;
-    onSubmitCapture$?: (event: Event, el: Element) => void;
-    onInvalid$?: (event: Event, el: Element) => void;
-    onInvalidCapture$?: (event: Event, el: Element) => void;
-    onLoad$?: (event: Event, el: Element) => void;
-    onLoadCapture$?: (event: Event, el: Element) => void;
-    onError$?: (event: Event, el: Element) => void;
-    onErrorCapture$?: (event: Event, el: Element) => void;
-    onKeyDown$?: (event: KeyboardEvent, el: Element) => void;
-    onKeyDownCapture$?: (event: KeyboardEvent, el: Element) => void;
-    onKeyPress$?: (event: KeyboardEvent, el: Element) => void;
-    onKeyPressCapture$?: (event: KeyboardEvent, el: Element) => void;
-    onKeyUp$?: (event: KeyboardEvent, el: Element) => void;
-    onKeyUpCapture$?: (event: KeyboardEvent, el: Element) => void;
-    onAuxClick$?: (event: MouseEvent, el: Element) => void;
-    onClick$?: (event: MouseEvent, el: Element) => void;
-    onClickCapture$?: (event: MouseEvent, el: Element) => void;
-    onContextMenu$?: (event: MouseEvent, el: Element) => void;
-    onContextMenuCapture$?: (event: MouseEvent, el: Element) => void;
-    onDblClick$?: (event: MouseEvent, el: Element) => void;
-    onDblClickCapture$?: (event: MouseEvent, el: Element) => void;
-    onDrag$?: (event: DragEvent, el: Element) => void;
-    onDragCapture$?: (event: DragEvent, el: Element) => void;
-    onDragEnd$?: (event: DragEvent, el: Element) => void;
-    onDragEndCapture$?: (event: DragEvent, el: Element) => void;
-    onDragEnter$?: (event: DragEvent, el: Element) => void;
-    onDragEnterCapture$?: (event: DragEvent, el: Element) => void;
-    onDragExit$?: (event: DragEvent, el: Element) => void;
-    onDragExitCapture$?: (event: DragEvent, el: Element) => void;
-    onDragLeave$?: (event: DragEvent, el: Element) => void;
-    onDragLeaveCapture$?: (event: DragEvent, el: Element) => void;
-    onDragOver$?: (event: DragEvent, el: Element) => void;
-    onDragOverCapture$?: (event: DragEvent, el: Element) => void;
-    onDragStart$?: (event: DragEvent, el: Element) => void;
-    onDragStartCapture$?: (event: DragEvent, el: Element) => void;
-    onDrop$?: (event: DragEvent, el: Element) => void;
-    onDropCapture$?: (event: DragEvent, el: Element) => void;
-    onMouseDown$?: (event: MouseEvent, el: Element) => void;
-    onMouseDownCapture$?: (event: MouseEvent, el: Element) => void;
-    onMouseEnter$?: (event: MouseEvent, el: Element) => void;
-    onMouseLeave$?: (event: MouseEvent, el: Element) => void;
-    onMouseMove$?: (event: MouseEvent, el: Element) => void;
-    onMouseMoveCapture$?: (event: MouseEvent, el: Element) => void;
-    onMouseOut$?: (event: MouseEvent, el: Element) => void;
-    onMouseOutCapture$?: (event: MouseEvent, el: Element) => void;
-    onMouseOver$?: (event: MouseEvent, el: Element) => void;
-    onMouseOverCapture$?: (event: MouseEvent, el: Element) => void;
-    onMouseUp$?: (event: MouseEvent, el: Element) => void;
-    onMouseUpCapture$?: (event: MouseEvent, el: Element) => void;
-    onTouchCancel$?: (event: TouchEvent, el: Element) => void;
-    onTouchCancelCapture$?: (event: TouchEvent, el: Element) => void;
-    onTouchEnd$?: (event: TouchEvent, el: Element) => void;
-    onTouchEndCapture$?: (event: TouchEvent, el: Element) => void;
-    onTouchMove$?: (event: TouchEvent, el: Element) => void;
-    onTouchMoveCapture$?: (event: TouchEvent, el: Element) => void;
-    onTouchStart$?: (event: TouchEvent, el: Element) => void;
-    onTouchStartCapture$?: (event: TouchEvent, el: Element) => void;
-    onPointerDown$?: (event: PointerEvent, el: Element) => void;
-    onPointerDownCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerMove$?: (event: PointerEvent, el: Element) => void;
-    onPointerMoveCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerUp$?: (event: PointerEvent, el: Element) => void;
-    onPointerUpCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerCancel$?: (event: PointerEvent, el: Element) => void;
-    onPointerCancelCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerEnter$?: (event: PointerEvent, el: Element) => void;
-    onPointerEnterCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerLeave$?: (event: PointerEvent, el: Element) => void;
-    onPointerLeaveCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerOver$?: (event: PointerEvent, el: Element) => void;
-    onPointerOverCapture$?: (event: PointerEvent, el: Element) => void;
-    onPointerOut$?: (event: PointerEvent, el: Element) => void;
-    onPointerOutCapture$?: (event: PointerEvent, el: Element) => void;
-    onGotPointerCapture$?: (event: PointerEvent, el: Element) => void;
-    onGotPointerCaptureCapture$?: (event: PointerEvent, el: Element) => void;
-    onLostPointerCapture$?: (event: PointerEvent, el: Element) => void;
-    onLostPointerCaptureCapture$?: (event: PointerEvent, el: Element) => void;
-    onScroll$?: (event: UIEvent, el: Element) => void;
-    onScrollCapture$?: (event: UIEvent, el: Element) => void;
-    onWheel$?: (event: WheelEvent, el: Element) => void;
-    onWheelCapture$?: (event: WheelEvent, el: Element) => void;
-    onAnimationStart$?: (event: AnimationEvent, el: Element) => void;
-    onAnimationStartCapture$?: (event: AnimationEvent, el: Element) => void;
-    onAnimationEnd$?: (event: AnimationEvent, el: Element) => void;
-    onAnimationEndCapture$?: (event: AnimationEvent, el: Element) => void;
-    onAnimationIteration$?: (event: AnimationEvent, el: Element) => void;
-    onAnimationIterationCapture$?: (event: AnimationEvent, el: Element) => void;
-    onTransitionEnd$?: (event: TransitionEvent, el: Element) => void;
-    onTransitionEndCapture$?: (event: TransitionEvent, el: Element) => void;
+    onCopy$?: NativeEventHandler<ClipboardEvent>;
+    onCopyCapture$?: NativeEventHandler<ClipboardEvent>;
+    onCut$?: NativeEventHandler<ClipboardEvent>;
+    onCutCapture$?: NativeEventHandler<ClipboardEvent>;
+    onPaste$?: NativeEventHandler<ClipboardEvent>;
+    onPasteCapture$?: NativeEventHandler<ClipboardEvent>;
+    onCompositionEnd$?: NativeEventHandler<CompositionEvent>;
+    onCompositionEndCapture$?: NativeEventHandler<CompositionEvent>;
+    onCompositionStart$?: NativeEventHandler<CompositionEvent>;
+    onCompositionStartCapture$?: NativeEventHandler<CompositionEvent>;
+    onCompositionUpdate$?: NativeEventHandler<CompositionEvent>;
+    onCompositionUpdateCapture$?: NativeEventHandler<CompositionEvent>;
+    onFocus$?: NativeEventHandler<FocusEvent>;
+    onFocusCapture$?: NativeEventHandler<FocusEvent>;
+    onFocusin$?: NativeEventHandler<FocusEvent>;
+    onFocusinCapture$?: NativeEventHandler<FocusEvent>;
+    onFocusout$?: NativeEventHandler<FocusEvent>;
+    onFocusoutCapture$?: NativeEventHandler<FocusEvent>;
+    onBlur$?: NativeEventHandler<FocusEvent>;
+    onBlurCapture$?: NativeEventHandler<FocusEvent>;
+    onChange$?: NativeEventHandler<Event>;
+    onChangeCapture$?: NativeEventHandler<Event>;
+    onInput$?: NativeEventHandler<Event>;
+    onInputCapture$?: NativeEventHandler<Event>;
+    onReset$?: NativeEventHandler<Event>;
+    onResetCapture$?: NativeEventHandler<Event>;
+    onSubmit$?: NativeEventHandler<Event>;
+    onSubmitCapture$?: NativeEventHandler<Event>;
+    onInvalid$?: NativeEventHandler<Event>;
+    onInvalidCapture$?: NativeEventHandler<Event>;
+    onLoad$?: NativeEventHandler<Event>;
+    onLoadCapture$?: NativeEventHandler<Event>;
+    onError$?: NativeEventHandler<Event>;
+    onErrorCapture$?: NativeEventHandler<Event>;
+    onKeyDown$?: NativeEventHandler<KeyboardEvent>;
+    onKeyDownCapture$?: NativeEventHandler<KeyboardEvent>;
+    onKeyPress$?: NativeEventHandler<KeyboardEvent>;
+    onKeyPressCapture$?: NativeEventHandler<KeyboardEvent>;
+    onKeyUp$?: NativeEventHandler<KeyboardEvent>;
+    onKeyUpCapture$?: NativeEventHandler<KeyboardEvent>;
+    onAuxClick$?: NativeEventHandler<MouseEvent>;
+    onClick$?: NativeEventHandler<MouseEvent>;
+    onClickCapture$?: NativeEventHandler<MouseEvent>;
+    onContextMenu$?: NativeEventHandler<MouseEvent>;
+    onContextMenuCapture$?: NativeEventHandler<MouseEvent>;
+    onDblClick$?: NativeEventHandler<MouseEvent>;
+    onDblClickCapture$?: NativeEventHandler<MouseEvent>;
+    onDrag$?: NativeEventHandler<DragEvent>;
+    onDragCapture$?: NativeEventHandler<DragEvent>;
+    onDragEnd$?: NativeEventHandler<DragEvent>;
+    onDragEndCapture$?: NativeEventHandler<DragEvent>;
+    onDragEnter$?: NativeEventHandler<DragEvent>;
+    onDragEnterCapture$?: NativeEventHandler<DragEvent>;
+    onDragExit$?: NativeEventHandler<DragEvent>;
+    onDragExitCapture$?: NativeEventHandler<DragEvent>;
+    onDragLeave$?: NativeEventHandler<DragEvent>;
+    onDragLeaveCapture$?: NativeEventHandler<DragEvent>;
+    onDragOver$?: NativeEventHandler<DragEvent>;
+    onDragOverCapture$?: NativeEventHandler<DragEvent>;
+    onDragStart$?: NativeEventHandler<DragEvent>;
+    onDragStartCapture$?: NativeEventHandler<DragEvent>;
+    onDrop$?: NativeEventHandler<DragEvent>;
+    onDropCapture$?: NativeEventHandler<DragEvent>;
+    onMouseDown$?: NativeEventHandler<MouseEvent>;
+    onMouseDownCapture$?: NativeEventHandler<MouseEvent>;
+    onMouseEnter$?: NativeEventHandler<MouseEvent>;
+    onMouseLeave$?: NativeEventHandler<MouseEvent>;
+    onMouseMove$?: NativeEventHandler<MouseEvent>;
+    onMouseMoveCapture$?: NativeEventHandler<MouseEvent>;
+    onMouseOut$?: NativeEventHandler<MouseEvent>;
+    onMouseOutCapture$?: NativeEventHandler<MouseEvent>;
+    onMouseOver$?: NativeEventHandler<MouseEvent>;
+    onMouseOverCapture$?: NativeEventHandler<MouseEvent>;
+    onMouseUp$?: NativeEventHandler<MouseEvent>;
+    onMouseUpCapture$?: NativeEventHandler<MouseEvent>;
+    onTouchCancel$?: NativeEventHandler<TouchEvent>;
+    onTouchCancelCapture$?: NativeEventHandler<TouchEvent>;
+    onTouchEnd$?: NativeEventHandler<TouchEvent>;
+    onTouchEndCapture$?: NativeEventHandler<TouchEvent>;
+    onTouchMove$?: NativeEventHandler<TouchEvent>;
+    onTouchMoveCapture$?: NativeEventHandler<TouchEvent>;
+    onTouchStart$?: NativeEventHandler<TouchEvent>;
+    onTouchStartCapture$?: NativeEventHandler<TouchEvent>;
+    onPointerDown$?: NativeEventHandler<PointerEvent>;
+    onPointerDownCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerMove$?: NativeEventHandler<PointerEvent>;
+    onPointerMoveCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerUp$?: NativeEventHandler<PointerEvent>;
+    onPointerUpCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerCancel$?: NativeEventHandler<PointerEvent>;
+    onPointerCancelCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerEnter$?: NativeEventHandler<PointerEvent>;
+    onPointerEnterCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerLeave$?: NativeEventHandler<PointerEvent>;
+    onPointerLeaveCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerOver$?: NativeEventHandler<PointerEvent>;
+    onPointerOverCapture$?: NativeEventHandler<PointerEvent>;
+    onPointerOut$?: NativeEventHandler<PointerEvent>;
+    onPointerOutCapture$?: NativeEventHandler<PointerEvent>;
+    onGotPointerCapture$?: NativeEventHandler<PointerEvent>;
+    onGotPointerCaptureCapture$?: NativeEventHandler<PointerEvent>;
+    onLostPointerCapture$?: NativeEventHandler<PointerEvent>;
+    onLostPointerCaptureCapture$?: NativeEventHandler<PointerEvent>;
+    onScroll$?: NativeEventHandler<UIEvent>;
+    onScrollCapture$?: NativeEventHandler<UIEvent>;
+    onWheel$?: NativeEventHandler<WheelEvent>;
+    onWheelCapture$?: NativeEventHandler<WheelEvent>;
+    onAnimationStart$?: NativeEventHandler<AnimationEvent>;
+    onAnimationStartCapture$?: NativeEventHandler<AnimationEvent>;
+    onAnimationEnd$?: NativeEventHandler<AnimationEvent>;
+    onAnimationEndCapture$?: NativeEventHandler<AnimationEvent>;
+    onAnimationIteration$?: NativeEventHandler<AnimationEvent>;
+    onAnimationIterationCapture$?: NativeEventHandler<AnimationEvent>;
+    onTransitionEnd$?: NativeEventHandler<TransitionEvent>;
+    onTransitionEndCapture$?: NativeEventHandler<TransitionEvent>;
     'document:onLoad$'?: (event: Event, el: Element) => any;
     'document:onLoadQrl'?: QRL<(event: Event, el: Element) => any>;
     'document:onScroll$'?: (event: Event, el: Element) => any;
@@ -1904,12 +1859,9 @@ declare interface QwikEvents {
     'document:onVisible'?: QRL<(event: Event, el: Element) => any>;
     'document:onVisibilityChange$'?: (event: Event, el: Element) => any;
     'document:onVisibilityChangeQrl'?: QRL<(event: Event, el: Element) => any>;
-    [key: `on${string}$`]: EventHandler_2<any> | undefined;
-    [key: `on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
-    [key: `document:on${string}$`]: EventHandler_2<any> | undefined;
-    [key: `document:on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
-    [key: `window:on${string}$`]: EventHandler_2<any> | undefined;
-    [key: `window:on${string}Qrl`]: QrlEvent<any> | QrlEvent<any>[] | undefined;
+    [key: `on${string}$`]: NativeEventHandler<any> | undefined;
+    [key: `document:on${string}$`]: NativeEventHandler<any> | undefined;
+    [key: `window:on${string}$`]: NativeEventHandler<any> | undefined;
 }
 
 /**
@@ -3429,7 +3381,7 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
  * @alpha
  */
 declare interface WatchDescriptor {
-    qrl: QRL_2<WatchFn>;
+    qrl: QRLInternal<WatchFn>;
     el: Element;
     f: number;
     i: number;

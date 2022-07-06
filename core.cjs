@@ -37,7 +37,6 @@
     const QError_errorWhileRendering = 4; // Crash while rendering
     const QError_cannotRenderOverExistingContainer = 5; //'You can render over a existing q:container. Skipping render().'
     const QError_setProperty = 6; //'Set property'
-    const QError_qrlOrError = 7;
     const QError_onlyObjectWrapped = 8;
     const QError_onlyLiteralWrapped = 9;
     const QError_qrlIsNotFunction = 10;
@@ -549,7 +548,7 @@
         return el.getAttribute(prop);
     };
 
-    const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*(Qrl|\$)$/;
+    const ON_PROP_REGEX = /^(window:|document:|)on([A-Z]|-.).*\$$/;
     const isOnProp = (prop) => {
         return ON_PROP_REGEX.test(prop);
     };
@@ -564,8 +563,8 @@
         const existingListeners = ctx.$listeners$.get(kebabProp) || [];
         const newQRLs = isArray(value) ? value : [value];
         for (const value of newQRLs) {
-            const cp = value.copy();
-            cp.setContainer(ctx.$element$);
+            const cp = value.$copy$();
+            cp.$setContainer$(ctx.$element$);
             const capture = cp.$capture$;
             if (capture == null) {
                 // we need to serialize the lexical scope references
@@ -804,7 +803,7 @@
         // Clean current subscription before render
         rctx.$containerState$.$subsManager$.$clearSub$(hostElement);
         // Resolve render function
-        const onRenderFn = onRenderQRL.invokeFn(rctx.$containerEl$, invocatinContext);
+        const onRenderFn = onRenderQRL.$invokeFn$(rctx.$containerEl$, invocatinContext);
         try {
             // Execution of the render function
             const renderPromise = onRenderFn(props);
@@ -1062,6 +1061,7 @@
             if (!dirty && !ctx.$renderQrl$ && !ctx.$element$.hasAttribute(QHostAttr)) {
                 setAttribute(rctx, ctx.$element$, QHostAttr, '');
                 ctx.$renderQrl$ = props[OnRenderProp];
+                assertQrl(ctx.$renderQrl$);
                 dirty = true;
             }
             const promise = dirty ? renderComponent(rctx, ctx) : undefined;
@@ -1243,6 +1243,7 @@
         if (isComponent) {
             // Run mount hook
             const renderQRL = props[OnRenderProp];
+            assertQrl(renderQRL);
             ctx.$renderQrl$ = renderQRL;
             directSetAttribute(ctx.$element$, QHostAttr, '');
             wait = renderComponent(rctx, ctx);
@@ -1720,8 +1721,8 @@
     const useLexicalScope = () => {
         const context = getInvokeContext();
         const hostElement = context.$hostElement$;
-        const qrl = (context.$qrl$ ??
-            parseQRL(decodeURIComponent(String(context.$url$)), hostElement));
+        const qrl = context.$qrl$ ?? parseQRL(decodeURIComponent(String(context.$url$)), hostElement);
+        assertQrl(qrl);
         if (qrl.$captureRef$ == null) {
             const el = context.$element$;
             assertDefined(el);
@@ -1912,7 +1913,7 @@
         const watchPromises = [];
         containerState.$watchNext$.forEach((watch) => {
             if (watchPred(watch, false)) {
-                watchPromises.push(then(watch.qrl.resolveLazy(watch.el), () => watch));
+                watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
         });
@@ -1920,7 +1921,7 @@
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
                 if (watchPred(watch, true)) {
-                    watchPromises.push(then(watch.qrl.resolveLazy(watch.el), () => watch));
+                    watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
                 }
                 else {
                     containerState.$watchNext$.add(watch);
@@ -2024,6 +2025,7 @@
     const useCleanupQrl = (unmountFn) => {
         const { get, set, i, ctx } = useSequentialScope();
         if (!get) {
+            assertQrl(unmountFn);
             const el = ctx.$hostElement$;
             const watch = {
                 qrl: unmountFn,
@@ -2230,6 +2232,7 @@
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
         const ctx = getContext(invokeCtx.$hostElement$);
+        assertQrl(eventQrl);
         qPropWriteQRL(invokeCtx.$renderCtx$, ctx, eventName, eventQrl);
     };
 
@@ -2302,10 +2305,11 @@
     const useWatchQrl = (qrl, opts) => {
         const { get, set, ctx, i } = useSequentialScope();
         if (!get) {
+            assertQrl(qrl);
             const el = ctx.$hostElement$;
             const containerState = ctx.$renderCtx$.$containerState$;
             const watch = {
-                qrl: qrl,
+                qrl,
                 el,
                 f: WatchFlagsIsDirty | WatchFlagsIsWatch,
                 i,
@@ -2412,9 +2416,10 @@
     const useClientEffectQrl = (qrl, opts) => {
         const { get, set, i, ctx } = useSequentialScope();
         if (!get) {
+            assertQrl(qrl);
             const el = ctx.$hostElement$;
             const watch = {
-                qrl: qrl,
+                qrl,
                 el,
                 f: WatchFlagsIsEffect,
                 i,
@@ -2503,7 +2508,7 @@
             set(true);
             const isServer = getPlatform(ctx.$doc$).isServer;
             if (isServer) {
-                ctx.$waitOn$.push(mountQrl.invoke());
+                ctx.$waitOn$.push(mountQrl());
             }
         }
     };
@@ -2588,7 +2593,7 @@
             set(true);
             const isServer = getPlatform(useDocument()).isServer;
             if (!isServer) {
-                ctx.$waitOn$.push(mountQrl.invoke());
+                ctx.$waitOn$.push(mountQrl());
             }
         }
     };
@@ -2663,7 +2668,7 @@
         const { get, set, ctx } = useSequentialScope();
         if (!get) {
             set(true);
-            ctx.$waitOn$.push(mountQrl.invoke());
+            ctx.$waitOn$.push(mountQrl());
         }
     };
     // <docs markdown="../readme.md#useMount">
@@ -2713,7 +2718,7 @@
                 const doc = getDocument(el);
                 const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
                 const { $subsManager$: subsManager } = containerState;
-                const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+                const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
                     subsManager.$clearSub$(watch);
                 });
                 const track = (obj, prop) => {
@@ -2754,7 +2759,7 @@
     const destroyWatch = (watch) => {
         if (watch.f & WatchFlagsIsCleanup) {
             watch.f &= ~WatchFlagsIsCleanup;
-            const cleanup = watch.qrl.invokeFn(watch.el);
+            const cleanup = watch.qrl.$invokeFn$(watch.el);
             cleanup();
         }
         else {
@@ -2771,8 +2776,8 @@
     };
     const getWatchHandlerQrl = (watch) => {
         const watchQrl = watch.qrl;
-        const watchHandler = new QRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch]);
-        watchHandler.$refSymbol$ = watchQrl.$symbol$;
+        assertQrl(watchQrl);
+        const watchHandler = createQrl(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
         return watchHandler;
     };
 
@@ -3037,12 +3042,12 @@
             $getObjId$: getObjId,
         };
         const convertedObjs = objs.map((obj) => {
+            if (isQrl(obj)) {
+                return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
+            }
             if (isObject(obj)) {
                 if (isArray(obj)) {
                     return obj.map(serialize);
-                }
-                if (isQrl(obj)) {
-                    return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
                 }
                 const output = {};
                 Object.entries(obj).forEach(([key, value]) => {
@@ -3226,15 +3231,15 @@
         }
     };
     const reviveNestedObjects = (obj, getObject) => {
-        if (obj && typeof obj == 'object') {
-            if (isQrl(obj)) {
-                if (obj.$capture$ && obj.$capture$.length > 0) {
-                    obj.$captureRef$ = obj.$capture$.map(getObject);
-                    obj.$capture$ = null;
-                }
-                return;
+        if (isQrl(obj)) {
+            if (obj.$capture$ && obj.$capture$.length > 0) {
+                obj.$captureRef$ = obj.$capture$.map(getObject);
+                obj.$capture$ = null;
             }
-            else if (isArray(obj)) {
+            return;
+        }
+        if (obj && typeof obj == 'object') {
+            if (isArray(obj)) {
                 for (let i = 0; i < obj.length; i++) {
                     const value = obj[i];
                     if (typeof value == 'string') {
@@ -3397,6 +3402,10 @@
     const collectQObjects = async (input, collector) => {
         let obj = input;
         if (obj != null) {
+            if (isQrl(obj)) {
+                await collectQrl(obj, collector);
+                return true;
+            }
             if (typeof obj === 'object') {
                 if (isPromise(obj)) {
                     if (collector.$seen$.has(obj)) {
@@ -3413,10 +3422,6 @@
                         return true;
                     }
                     return false;
-                }
-                if (isQrl(obj)) {
-                    await collectQrl(obj, collector);
-                    return true;
                 }
                 const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
                 if (subs) {
@@ -3561,8 +3566,12 @@
         return `${scope}:${prop}`;
     };
     const setEvent = (rctx, ctx, prop, value) => {
-        const dollar = qDev && prop.endsWith('$');
-        qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, dollar ? -1 : -3)), dollar ? $(value) : value);
+        assertEqual(prop.endsWith('$'), true);
+        const qrl = isArray(value) ? value.map(ensureQrl) : ensureQrl(value);
+        qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, -1)), qrl);
+    };
+    const ensureQrl = (value) => {
+        return isQrl(value) ? value : $(value);
     };
     const createProps = (target, containerState) => {
         return createProxy(target, containerState, QObjectImmutable);
@@ -3849,10 +3858,10 @@
         }
     }
     const wrap = (value, containerState) => {
+        if (isQrl(value)) {
+            return value;
+        }
         if (isObject(value)) {
-            if (isQrl(value)) {
-                return value;
-            }
             if (Object.isFrozen(value)) {
                 return value;
             }
@@ -3891,6 +3900,9 @@
                 return value;
             }
             seen.add(unwrapped);
+            if (isQrl(unwrapped)) {
+                return value;
+            }
             switch (typeof unwrapped) {
                 case 'object':
                     if (isArray(unwrapped)) {
@@ -3906,8 +3918,6 @@
                         return value;
                     }
                     if (isPromise(unwrapped))
-                        return value;
-                    if (isQrl(unwrapped))
                         return value;
                     if (isElement(unwrapped))
                         return value;
@@ -4033,49 +4043,50 @@
     };
 
     const isQrl = (value) => {
-        return value instanceof QRL;
+        return typeof value === 'function' && typeof value.getSymbol === 'function';
     };
-    class QRL {
-        constructor($chunk$, $symbol$, $symbolRef$, $symbolFn$, $capture$, $captureRef$) {
-            this.$chunk$ = $chunk$;
-            this.$symbol$ = $symbol$;
-            this.$symbolRef$ = $symbolRef$;
-            this.$symbolFn$ = $symbolFn$;
-            this.$capture$ = $capture$;
-            this.$captureRef$ = $captureRef$;
-            if (qDev) {
-                verifySerializable($captureRef$);
+    const createQrl = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
+        if (qDev) {
+            verifySerializable(captureRef);
+        }
+        let cachedEl;
+        const setContainer = (el) => {
+            if (!cachedEl) {
+                cachedEl = el;
             }
-        }
-        setContainer(el) {
-            if (!this.$el$) {
-                this.$el$ = el;
-            }
-        }
-        getSymbol() {
-            return this.$refSymbol$ ?? this.$symbol$;
-        }
-        getHash() {
-            return getSymbolHash(this.$refSymbol$ ?? this.$symbol$);
-        }
-        async resolve(el) {
+        };
+        const resolve = async (el) => {
             if (el) {
-                this.setContainer(el);
+                setContainer(el);
             }
-            return qrlImport(this.$el$, this);
-        }
-        resolveLazy(el) {
-            return isFunction(this.$symbolRef$) ? this.$symbolRef$ : this.resolve(el);
-        }
-        invokeFn(el, currentCtx, beforeFn) {
+            if (symbolRef) {
+                return symbolRef;
+            }
+            if (symbolFn) {
+                return (symbolRef = symbolFn().then((module) => (symbolRef = module[symbol])));
+            }
+            else {
+                if (!cachedEl) {
+                    throw new Error(`QRL '${chunk}#${symbol || 'default'}' does not have an attached container`);
+                }
+                const symbol2 = getPlatform(cachedEl).importSymbol(cachedEl, chunk, symbol);
+                return (symbolRef = then(symbol2, (ref) => {
+                    return (symbolRef = ref);
+                }));
+            }
+        };
+        const resolveLazy = (el) => {
+            return isFunction(symbolRef) ? symbolRef : resolve(el);
+        };
+        const invokeFn = (el, currentCtx, beforeFn) => {
             return ((...args) => {
-                const fn = this.resolveLazy(el);
+                const fn = resolveLazy(el);
                 return then(fn, (fn) => {
                     if (isFunction(fn)) {
                         const baseContext = currentCtx ?? newInvokeContext();
                         const context = {
                             ...baseContext,
-                            $qrl$: this,
+                            $qrl$: QRL,
                         };
                         if (beforeFn) {
                             beforeFn();
@@ -4085,21 +4096,44 @@
                     throw qError(QError_qrlIsNotFunction);
                 });
             });
-        }
-        copy() {
-            const copy = new QRL(this.$chunk$, this.$symbol$, this.$symbolRef$, this.$symbolFn$, null, this.$captureRef$);
-            copy.$refSymbol$ = this.$refSymbol$;
-            return copy;
-        }
-        async invoke(...args) {
-            const fn = this.invokeFn();
+        };
+        const invoke = async function (...args) {
+            const fn = invokeFn();
             const result = await fn(...args);
             return result;
-        }
-        serialize(options) {
-            return stringifyQRL(this, options);
-        }
-    }
+        };
+        const QRL = invoke;
+        const methods = {
+            getSymbol: () => refSymbol ?? symbol,
+            getHash: () => getSymbolHash(refSymbol ?? symbol),
+            resolve,
+            $resolveLazy$: resolveLazy,
+            $setContainer$: setContainer,
+            $chunk$: chunk,
+            $symbol$: symbol,
+            $refSymbol$: refSymbol,
+            get $capture$() {
+                return capture;
+            },
+            set $capture$(v) {
+                capture = v;
+            },
+            get $captureRef$() {
+                return captureRef;
+            },
+            set $captureRef$(v) {
+                captureRef = v;
+            },
+            $invokeFn$: invokeFn,
+            $copy$() {
+                return createQrl(chunk, symbol, symbolRef, symbolFn, null, captureRef, refSymbol);
+            },
+            $serialize$(options) {
+                return stringifyQRL(QRL, options);
+            },
+        };
+        return Object.assign(invoke, methods);
+    };
     const getSymbolHash = (symbolName) => {
         const index = symbolName.lastIndexOf('_');
         if (index > -1) {
@@ -4110,6 +4144,11 @@
     const isSameQRL = (a, b) => {
         return a.getHash() === b.getHash();
     };
+    function assertQrl(qrl) {
+        if (!isQrl(qrl)) {
+            throw new Error('Not a QRL');
+        }
+    }
 
     let runtimeSymbolId = 0;
     const RUNTIME_QRL = '/runtimeQRL';
@@ -4120,35 +4159,6 @@
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     // https://regexr.com/6a83h
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-    /**
-     * Lazy-load a `QRL` symbol and return the lazy-loaded value.
-     *
-     * @see `QRL`
-     *
-     * @param element - Location of the URL to resolve against. This is needed to take `q:base` into
-     * account.
-     * @param qrl - QRL to load.
-     * @returns A resolved QRL value as a Promise.
-     */
-    const qrlImport = (element, qrl) => {
-        const qrl_ = qrl;
-        if (qrl_.$symbolRef$)
-            return qrl_.$symbolRef$;
-        if (qrl_.$symbolFn$) {
-            return (qrl_.$symbolRef$ = qrl_
-                .$symbolFn$()
-                .then((module) => (qrl_.$symbolRef$ = module[qrl_.$symbol$])));
-        }
-        else {
-            if (!element) {
-                throw new Error(`QRL '${qrl_.$chunk$}#${qrl_.$symbol$ || 'default'}' does not have an attached container`);
-            }
-            const symbol = getPlatform(element).importSymbol(element, qrl_.$chunk$, qrl_.$symbol$);
-            return (qrl_.$symbolRef$ = then(symbol, (ref) => {
-                return (qrl_.$symbolRef$ = ref);
-            }));
-        }
-    };
     // <docs markdown="../readme.md#qrl">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#qrl instead)
@@ -4200,35 +4210,35 @@
             throw qError(QError_unknownTypeArgument, chunkOrFn);
         }
         // Unwrap subscribers
-        const qrl = new QRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture);
+        const qrl = createQrl(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
         const ctx = tryGetInvokeContext();
         if (ctx && ctx.$element$) {
-            qrl.setContainer(ctx.$element$);
+            qrl.$setContainer$(ctx.$element$);
         }
         return qrl;
     };
     const runtimeQrl = (symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
-        return new QRL(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture);
+        return createQrl(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null);
     };
     /**
      * @alpha
      */
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
         // Unwrap subscribers
-        return new QRL(INLINED_QRL, symbolName, symbol, null, null, lexicalScopeCapture);
+        return createQrl(INLINED_QRL, symbolName, symbol, null, null, lexicalScopeCapture, null);
     };
     const stringifyQRL = (qrl, opts = {}) => {
-        const qrl_ = qrl;
-        let symbol = qrl_.$symbol$;
-        let chunk = qrl_.$chunk$;
-        const refSymbol = qrl_.$refSymbol$ ?? symbol;
+        assertQrl(qrl);
+        let symbol = qrl.$symbol$;
+        let chunk = qrl.$chunk$;
+        const refSymbol = qrl.$refSymbol$ ?? symbol;
         const platform = opts.$platform$;
         const element = opts.$element$;
         if (platform) {
             const result = platform.chunkForSymbol(refSymbol);
             if (result) {
                 chunk = result[1];
-                if (!qrl_.$refSymbol$) {
+                if (!qrl.$refSymbol$) {
                     symbol = result[0];
                 }
             }
@@ -4237,8 +4247,8 @@
         if (symbol && symbol !== 'default') {
             parts.push('#', symbol);
         }
-        const capture = qrl_.$capture$;
-        const captureRef = qrl_.$captureRef$;
+        const capture = qrl.$capture$;
+        const captureRef = qrl.$captureRef$;
         if (opts.$getObjId$) {
             if (captureRef && captureRef.length) {
                 const capture = captureRef.map(opts.$getObjId$);
@@ -4249,7 +4259,7 @@
             parts.push(`[${capture.join(' ')}]`);
         }
         const qrlString = parts.join('');
-        if (qrl_.$chunk$ === RUNTIME_QRL && element) {
+        if (qrl.$chunk$ === RUNTIME_QRL && element) {
             const qrls = element.__qrls__ || (element.__qrls__ = new Set());
             qrls.add(qrl);
         }
@@ -4275,9 +4285,9 @@
         if (chunk === RUNTIME_QRL) {
             logError(codeToText(QError_runtimeQrlNoElement), qrl);
         }
-        const iQrl = new QRL(chunk, symbol, null, null, capture, null);
+        const iQrl = createQrl(chunk, symbol, null, null, capture, null, null);
         if (el) {
-            iQrl.setContainer(el);
+            iQrl.$setContainer$(el);
         }
         return iQrl;
     };
@@ -4285,17 +4295,6 @@
         const endIdx = text.length;
         const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
         return charIdx == -1 ? endIdx : charIdx;
-    };
-    const toQrlOrError = (symbolOrQrl) => {
-        if (!isQrl(symbolOrQrl)) {
-            if (typeof symbolOrQrl == 'function' || typeof symbolOrQrl == 'string') {
-                symbolOrQrl = runtimeQrl(symbolOrQrl);
-            }
-            else {
-                throw qError(QError_qrlOrError);
-            }
-        }
-        return symbolOrQrl;
     };
 
     // <docs markdown="../readme.md#$">
@@ -4439,9 +4438,7 @@
         const skipKey = ELEMENTS_SKIP_KEY.includes(tagName);
         // Return a QComponent Factory function.
         return function QSimpleComponent(props, key) {
-            const finalKey = skipKey
-                ? undefined
-                : onRenderQrl.getHash() + ':' + (key ? key : '');
+            const finalKey = skipKey ? undefined : onRenderQrl.getHash() + ':' + (key ? key : '');
             return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
         };
     };
@@ -4948,14 +4945,13 @@
      */
     // </docs>
     const useScopedStyles$ = /*#__PURE__*/ implicit$FirstArg(useScopedStylesQrl);
-    const _useStyles = (styles, scoped) => {
+    const _useStyles = (styleQrl, scoped) => {
         const { get, set, ctx, i } = useSequentialScope();
         if (get === true) {
             return;
         }
         set(true);
         const renderCtx = ctx.$renderCtx$;
-        const styleQrl = toQrlOrError(styles);
         const styleId = styleKey(styleQrl, i);
         const hostElement = ctx.$hostElement$;
         if (scoped) {

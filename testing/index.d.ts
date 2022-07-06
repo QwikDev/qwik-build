@@ -178,15 +178,17 @@ export declare interface PrefetchStrategy {
  */
 declare interface QRL<TYPE = any> {
     /**
-     * Resolve the QRL and return the actual value.
-     */
-    resolve(): Promise<TYPE>;
-    /**
      * Resolve the QRL of closure and invoke it.
      * @param args - Clousure arguments.
      * @returns A promise of the return value of the closure.
      */
-    invoke(...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
+    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
+    /**
+     * Resolve the QRL and return the actual value.
+     */
+    resolve(el?: Element): Promise<TYPE>;
+    getSymbol(): string;
+    getHash(): string;
 }
 
 /**
