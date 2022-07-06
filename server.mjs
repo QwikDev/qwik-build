@@ -108,22 +108,13 @@ var codeToText = (code) => {
   }
 };
 
-// packages/qwik/src/core/util/log.ts
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  const err = message instanceof Error ? message : new Error(message);
-  console.error("%cQWIK ERROR", STYLE, err, ...optionalParams);
-  return err;
-};
-var logErrorAndStop = (message, ...optionalParams) => {
-  logError(message, ...optionalParams);
-  debugger;
-};
-var logWarn = (message, ...optionalParams) => {
-  if (qDev) {
-    console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
-  }
-};
+// packages/qwik/src/testing/html.ts
+function isElement(value) {
+  return isNode(value) && value.nodeType == 1;
+}
+function isNode(value) {
+  return value && typeof value.nodeType == "number";
+}
 
 // packages/qwik/src/core/util/types.ts
 var isObject = (v) => {
@@ -135,18 +126,6 @@ var isArray = (v) => {
 var isFunction = (v) => {
   return typeof v === "function";
 };
-
-// packages/qwik/src/core/assert/assert.ts
-var assertDefined = (value, text) => {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw logErrorAndStop(text || "Expected defined value");
-  }
-};
-
-// packages/qwik/src/core/util/markers.ts
-var QContainerSelector = "[q\\:container]";
 
 // packages/qwik/src/core/util/dom.ts
 var getDocument = (node) => {
@@ -168,6 +147,10 @@ var isPromise = (value) => {
 var then = (promise, thenFn, rejectFn) => {
   return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
 };
+
+// packages/qwik/src/core/util/markers.ts
+var QHostAttr = "q:host";
+var QContainerSelector = "[q\\:container]";
 
 // packages/qwik/src/core/use/use-core.ts
 var _context;
@@ -324,14 +307,68 @@ var stringifyQRL = (qrl, opts = {}) => {
 };
 
 // packages/qwik/src/core/util/element.ts
-var isNode = (value) => {
+var isNode2 = (value) => {
   return value && typeof value.nodeType == "number";
 };
 var isDocument = (value) => {
   return value && value.nodeType == 9;
 };
-var isElement = (value) => {
-  return isNode(value) && value.nodeType === 1;
+var isElement2 = (value) => {
+  return isNode2(value) && value.nodeType === 1;
+};
+
+// packages/qwik/src/core/props/props.ts
+var Q_CTX = "__ctx__";
+var tryGetContext = (element) => {
+  return element[Q_CTX];
+};
+
+// packages/qwik/src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  const err = message instanceof Error ? message : new Error(message);
+  console.error("%cQWIK ERROR", STYLE, err, ...printParams(optionalParams));
+  return err;
+};
+var logErrorAndStop = (message, ...optionalParams) => {
+  logError(message, ...optionalParams);
+  debugger;
+};
+var logWarn = (message, ...optionalParams) => {
+  if (qDev) {
+    console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
+  }
+};
+var printParams = (optionalParams) => {
+  if (qDev) {
+    return optionalParams.map((p) => {
+      if (isElement(p)) {
+        return printElement(p);
+      }
+      return p;
+    });
+  }
+  return optionalParams;
+};
+var printElement = (el) => {
+  const ctx = tryGetContext(el);
+  const isComponent = el.hasAttribute(QHostAttr);
+  return {
+    isComponent,
+    tagName: el.tagName,
+    renderQRL: ctx?.$renderQrl$?.getSymbol(),
+    element: el,
+    ctx
+  };
+};
+
+// packages/qwik/src/core/assert/assert.ts
+var assertDefined = (value, text) => {
+  if (qDev) {
+    if (value != null)
+      return;
+    throw logErrorAndStop(text || "Expected defined value");
+  }
 };
 
 // packages/qwik/src/core/object/q-object.ts
@@ -367,9 +404,11 @@ var _verifySerializable = (value, seen) => {
           }
           return value;
         }
+        if (isPromise(unwrapped))
+          return value;
         if (isQrl(unwrapped))
           return value;
-        if (isElement(unwrapped))
+        if (isElement2(unwrapped))
           return value;
         if (isDocument(unwrapped))
           return value;
@@ -9762,7 +9801,7 @@ async function renderToString(rootNode, opts = {}) {
   containerEl.setAttribute("q:base", buildBase);
   let snapshotResult = null;
   if (opts.snapshot !== false) {
-    snapshotResult = pauseContainer(root);
+    snapshotResult = await pauseContainer(root);
   }
   const prefetchResources = getPrefetchResources(snapshotResult, opts, mapper);
   const parentElm = isFullDocument ? doc.body : containerEl;

@@ -1514,7 +1514,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @alpha
  */
-export declare const pauseContainer: (elmOrDoc: Element | Document) => SnapshotResult;
+export declare const pauseContainer: (elmOrDoc: Element | Document) => Promise<SnapshotResult>;
 
 declare interface ProcessedJSXNode {
     $type$: string;

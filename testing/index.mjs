@@ -13,6 +13,11 @@ import { getPlatform, setPlatform } from "../core.mjs";
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 
+// packages/qwik/src/core/util/promises.ts
+var isPromise = (value) => {
+  return value instanceof Promise;
+};
+
 // packages/qwik/src/core/util/markers.ts
 var QContainerSelector = "[q\\:container]";
 
@@ -135,11 +140,6 @@ function createDocument(opts = {}) {
   setTestPlatform(doc);
   return doc;
 }
-
-// packages/qwik/src/core/util/promises.ts
-var isPromise = (value) => {
-  return value instanceof Promise;
-};
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {

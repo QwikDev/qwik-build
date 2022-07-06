@@ -49,6 +49,11 @@ var import_qwik = require("../core.cjs");
 var import_fs = require("fs");
 var import_url = require("url");
 
+// packages/qwik/src/core/util/promises.ts
+var isPromise = (value) => {
+  return value instanceof Promise;
+};
+
 // packages/qwik/src/core/util/markers.ts
 var QContainerSelector = "[q\\:container]";
 
@@ -171,11 +176,6 @@ function createDocument(opts = {}) {
   setTestPlatform(doc);
   return doc;
 }
-
-// packages/qwik/src/core/util/promises.ts
-var isPromise = (value) => {
-  return value instanceof Promise;
-};
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {

@@ -5,14 +5,52 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+function isElement(value) {
+  return isNode(value) && 1 == value.nodeType;
+}
+
+function isNode(value) {
+  return value && "number" == typeof value.nodeType;
+}
+
 var qDev = false !== globalThis.qDev;
 
 var qTest = void 0 !== globalThis.describe;
 
+var QHostAttr = "q:host";
+
+var Q_CTX = "__ctx__";
+
+var tryGetContext = element => element[Q_CTX];
+
 var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
 
 var logWarn = (message, ...optionalParams) => {
-  qDev && console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
+  qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
+};
+
+var printParams = optionalParams => {
+  if (qDev) {
+    return optionalParams.map((p => {
+      if (isElement(p)) {
+        return printElement(p);
+      }
+      return p;
+    }));
+  }
+  return optionalParams;
+};
+
+var printElement = el => {
+  const ctx = tryGetContext(el);
+  const isComponent = el.hasAttribute(QHostAttr);
+  return {
+    isComponent: isComponent,
+    tagName: el.tagName,
+    renderQRL: ctx?.$renderQrl$?.getSymbol(),
+    element: el,
+    ctx: ctx
+  };
 };
 
 function createPath(opts = {}) {

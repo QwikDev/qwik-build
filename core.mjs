@@ -77,62 +77,33 @@ const codeToText = (code) => {
     }
 };
 
-const STYLE = qDev
-    ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
-    : '';
-const logError = (message, ...optionalParams) => {
-    const err = message instanceof Error ? message : new Error(message);
-    // eslint-disable-next-line no-console
-    console.error('%cQWIK ERROR', STYLE, err, ...optionalParams);
-    return err;
-};
-const logErrorAndStop = (message, ...optionalParams) => {
-    logError(message, ...optionalParams);
-    // eslint-disable-next-line no-debugger
-    debugger;
-};
-const logWarn = (message, ...optionalParams) => {
-    // eslint-disable-next-line no-console
-    if (qDev) {
-        console.warn('%cQWIK WARN', STYLE, message, ...optionalParams);
+function isElement$1(value) {
+    return isNode$2(value) && value.nodeType == 1;
+}
+function isNode$2(value) {
+    return value && typeof value.nodeType == 'number';
+}
+
+const getDocument = (node) => {
+    if (typeof document !== 'undefined') {
+        return document;
     }
-};
-const logDebug = (message, ...optionalParams) => {
-    if (qDev) {
-        // eslint-disable-next-line no-console
-        console.debug('%cQWIK', STYLE, message, ...optionalParams);
+    if (node.nodeType === 9) {
+        return node;
     }
+    const doc = node.ownerDocument;
+    assertDefined(doc);
+    return doc;
 };
 
-/**
- * @private
- */
-const isObject = (v) => {
-    return v && typeof v === 'object';
+const isNode$1 = (value) => {
+    return value && typeof value.nodeType == 'number';
 };
-const isArray = (v) => {
-    return Array.isArray(v);
+const isDocument = (value) => {
+    return value && value.nodeType == 9;
 };
-const isString = (v) => {
-    return typeof v === 'string';
-};
-const isFunction = (v) => {
-    return typeof v === 'function';
-};
-
-const assertDefined = (value, text) => {
-    if (qDev) {
-        if (value != null)
-            return;
-        throw logErrorAndStop(text || 'Expected defined value');
-    }
-};
-const assertEqual = (value1, value2, text) => {
-    if (qDev) {
-        if (value1 === value2)
-            return;
-        throw logErrorAndStop(text || `Expected '${value1}' === '${value2}'.`);
-    }
+const isElement = (value) => {
+    return isNode$1(value) && value.nodeType === 1;
 };
 
 /**
@@ -166,26 +137,20 @@ const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
 
-const getDocument = (node) => {
-    if (typeof document !== 'undefined') {
-        return document;
-    }
-    if (node.nodeType === 9) {
-        return node;
-    }
-    const doc = node.ownerDocument;
-    assertDefined(doc);
-    return doc;
+/**
+ * @private
+ */
+const isObject = (v) => {
+    return v && typeof v === 'object';
 };
-
-const isNode$1 = (value) => {
-    return value && typeof value.nodeType == 'number';
+const isArray = (v) => {
+    return Array.isArray(v);
 };
-const isDocument = (value) => {
-    return value && value.nodeType == 9;
+const isString = (v) => {
+    return typeof v === 'string';
 };
-const isElement = (value) => {
-    return isNode$1(value) && value.nodeType === 1;
+const isFunction = (v) => {
+    return typeof v === 'function';
 };
 
 let _context;
@@ -637,1614 +602,6 @@ const serializeQRLs = (existingQRLs, ctx) => {
         $element$: ctx.$element$,
     };
     return existingQRLs.map((qrl) => stringifyQRL(qrl, opts)).join('\n');
-};
-
-// <docs markdown="../readme.md#implicit$FirstArg">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#implicit$FirstArg instead)
-/**
- * Create a `____$(...)` convenience method from `___(...)`.
- *
- * It is very common for functions to take a lazy-loadable resource as a first argument. For this
- * reason, the Qwik Optimizer automatically extracts the first argument from any function which
- * ends in `$`.
- *
- * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
- * The former is just a shorthand for the latter.
- *
- * For example, these function calls are equivalent:
- *
- * - `component$(() => {...})` is same as `onRender($(() => {...}))`
- *
- * ```tsx
- * export function myApi(callback: QRL<() => void>): void {
- *   // ...
- * }
- *
- * export const myApi$ = implicit$FirstArg(myApi);
- * // type of myApi$: (callback: () => void): void
- *
- * // can be used as:
- * myApi$(() => console.log('callback'));
- *
- * // will be transpiled to:
- * // FILE: <current file>
- * myApi(qrl('./chunk-abc.js', 'callback'));
- *
- * // FILE: chunk-abc.js
- * export const callback = () => console.log('callback');
- * ```
- *
- * @param fn - a function that should have its first argument automatically `$`.
- * @alpha
- */
-// </docs>
-const implicit$FirstArg = (fn) => {
-    return function (first, ...rest) {
-        return fn.call(null, $(first), ...rest);
-    };
-};
-
-// <docs markdown="../readme.md#useCleanup">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useCleanup instead)
-/**
- * A lazy-loadable reference to a component's cleanup hook.
- *
- * Invoked when the component is destroyed (removed from render tree), or paused as part of the
- * SSR serialization.
- *
- * It can be used to release resources, abort network requests, stop timers...
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useCleanup$(() => {
- *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resouces, abort network requets, stop timers...
- *     console.log('component is destroyed');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useCleanupQrl = (unmountFn) => {
-    const { get, set, i, ctx } = useSequentialScope();
-    if (!get) {
-        const el = ctx.$hostElement$;
-        const watch = {
-            qrl: unmountFn,
-            el,
-            f: WatchFlagsIsCleanup,
-            i,
-        };
-        set(true);
-        getContext(el).$watches$.push(watch);
-    }
-};
-// <docs markdown="../readme.md#useCleanup">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useCleanup instead)
-/**
- * A lazy-loadable reference to a component's cleanup hook.
- *
- * Invoked when the component is destroyed (removed from render tree), or paused as part of the
- * SSR serialization.
- *
- * It can be used to release resources, abort network requests, stop timers...
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useCleanup$(() => {
- *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resouces, abort network requets, stop timers...
- *     console.log('component is destroyed');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
-// <docs markdown="../readme.md#useResume">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useResume instead)
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to resume even if no user interaction has taken place.
- *
- * Only called in the client.
- * Only called once.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useResume$(() => {
- *     // Eagerly invoked when the application resumes on the client
- *     console.log('called once in client');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @see `useVisible`, `useClientEffect`
- *
- * @alpha
- */
-// </docs>
-const useResumeQrl = (resumeFn, options = {}) => useOn(options.run == 'load' ? 'qinit' : 'qvisible', resumeFn);
-// <docs markdown="../readme.md#useResume">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useResume instead)
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to resume even if no user interaction has taken place.
- *
- * Only called in the client.
- * Only called once.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useResume$(() => {
- *     // Eagerly invoked when the application resumes on the client
- *     console.log('called once in client');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @see `useVisible`, `useClientEffect`
- *
- * @alpha
- */
-// </docs>
-const useResume$ = /*#__PURE__*/ implicit$FirstArg(useResumeQrl);
-// <docs markdown="../readme.md#useVisible">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useVisible instead)
-/**
- * A lazy-loadable reference to a component's on the visible hook.
- *
- * The hook is lazily invoked when the component becomes visible in the browser viewport.
- *
- * Only called in the client.
- * Only called once.
- *
- * @see `useResume`, `useClientEffect`
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     isVisible: false,
- *   });
- *   useVisible$(() => {
- *     // Invoked once when the component is visible in the browser's viewport
- *     console.log('called once in client when visible');
- *     store.isVisible = true;
- *   });
- *   return <div>{store.isVisible}</div>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useVisibleQrl = (resumeFn) => useOn('qvisible', resumeFn);
-// <docs markdown="../readme.md#useOn">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useOn instead)
-/**
- * Register a listener on the current component's host element.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX. Otherwise, it's adding a JSX listener in the `<Host>` is a better
- * idea.
- *
- * @see `useOn`, `useOnWindow`, `useOnDocument`.
- *
- * @alpha
- */
-// </docs>
-const useOn = (event, eventQrl) => _useOn(`on:${event}`, eventQrl);
-// <docs markdown="../readme.md#useOnDocument">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useOnDocument instead)
-/**
- * Register a listener on `document`.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
- *
- * @see `useOn`, `useOnWindow`, `useOnDocument`.
- *
- * ```tsx
- * function useScroll() {
- *   useOnDocument(
- *     'scroll',
- *     $((event) => {
- *       console.log('body scrolled', event);
- *     })
- *   );
- * }
- *
- * const Cmp = component$(() => {
- *   useScroll();
- *   return <Host>Profit!</Host>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useOnDocument = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
-// <docs markdown="../readme.md#useOnWindow">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useOnWindow instead)
-/**
- * Register a listener on `window`.
- *
- * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX.
- *
- * @see `useOn`, `useOnWindow`, `useOnDocument`.
- *
- * ```tsx
- * function useAnalytics() {
- *   useOnWindow(
- *     'popstate',
- *     $((event) => {
- *       console.log('navigation happened', event);
- *       // report to analytics
- *     })
- *   );
- * }
- *
- * const Cmp = component$(() => {
- *   useAnalytics();
- *   return <Host>Profit!</Host>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useOnWindow = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
-const _useOn = (eventName, eventQrl) => {
-    const invokeCtx = useInvokeContext();
-    const ctx = getContext(invokeCtx.$hostElement$);
-    qPropWriteQRL(invokeCtx.$renderCtx$, ctx, eventName, eventQrl);
-};
-
-const WatchFlagsIsEffect = 1 << 0;
-const WatchFlagsIsWatch = 1 << 1;
-const WatchFlagsIsDirty = 1 << 2;
-const WatchFlagsIsCleanup = 1 << 3;
-// <docs markdown="../readme.md#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
- * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
- *
- * @see `Tracker`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *     doubleCount: 0,
- *     debounced: 0,
- *   });
- *
- *   // Double count watch
- *   useWatch$((track) => {
- *     const count = track(store, 'count');
- *     store.doubleCount = 2 * count;
- *   });
- *
- *   // Debouncer watch
- *   useWatch$((track) => {
- *     const doubleCount = track(store, 'doubleCount');
- *     const timer = setTimeout(() => {
- *       store.debounced = doubleCount;
- *     }, 2000);
- *     return () => {
- *       clearTimeout(timer);
- *     };
- *   });
- *   return (
- *     <Host>
- *       <div>
- *         {store.count} / {store.doubleCount}
- *       </div>
- *       <div>{store.debounced}</div>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const useWatchQrl = (qrl, opts) => {
-    const { get, set, ctx, i } = useSequentialScope();
-    if (!get) {
-        const el = ctx.$hostElement$;
-        const containerState = ctx.$renderCtx$.$containerState$;
-        const watch = {
-            qrl: qrl,
-            el,
-            f: WatchFlagsIsDirty | WatchFlagsIsWatch,
-            i,
-        };
-        set(true);
-        getContext(el).$watches$.push(watch);
-        ctx.$waitOn$.push(Promise.resolve().then(() => runWatch(watch, containerState)));
-        const isServer = containerState.$platform$.isServer;
-        if (isServer) {
-            useRunWatch(watch, opts?.run);
-        }
-    }
-};
-// <docs markdown="../readme.md#useWatch">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useWatch instead)
-/**
- * Reruns the `watchFn` when the observed inputs change.
- *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
- * those inputs change.
- *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
- * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
- *
- * @see `Tracker`
- *
- * @public
- *
- * ## Example
- *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *     doubleCount: 0,
- *     debounced: 0,
- *   });
- *
- *   // Double count watch
- *   useWatch$((track) => {
- *     const count = track(store, 'count');
- *     store.doubleCount = 2 * count;
- *   });
- *
- *   // Debouncer watch
- *   useWatch$((track) => {
- *     const doubleCount = track(store, 'doubleCount');
- *     const timer = setTimeout(() => {
- *       store.debounced = doubleCount;
- *     }, 2000);
- *     return () => {
- *       clearTimeout(timer);
- *     };
- *   });
- *   return (
- *     <Host>
- *       <div>
- *         {store.count} / {store.doubleCount}
- *       </div>
- *       <div>{store.debounced}</div>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
- * @public
- */
-// </docs>
-const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
-// <docs markdown="../readme.md#useClientEffect">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientEffect instead)
-/**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <Host>{store.count}</Host>;
- * });
- * ```
- *
- * @public
- */
-// </docs>
-const useClientEffectQrl = (qrl, opts) => {
-    const { get, set, i, ctx } = useSequentialScope();
-    if (!get) {
-        const el = ctx.$hostElement$;
-        const watch = {
-            qrl: qrl,
-            el,
-            f: WatchFlagsIsEffect,
-            i,
-        };
-        set(true);
-        getContext(el).$watches$.push(watch);
-        useRunWatch(watch, opts?.run ?? 'visible');
-        const doc = ctx.$doc$;
-        if (doc['qO']) {
-            doc['qO'].observe(el);
-        }
-    }
-};
-// <docs markdown="../readme.md#useClientEffect">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientEffect instead)
-/**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <Host>{store.count}</Host>;
- * });
- * ```
- *
- * @public
- */
-// </docs>
-const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
-// <docs markdown="../readme.md#useServerMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useServerMount instead)
-/**
- * Register's a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <Host>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </Host>
- *   );
- * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
- * ```
- *
- * @see `useClientMount` `useMount`
- * @public
- */
-// </docs>
-const useServerMountQrl = (mountQrl) => {
-    const { get, set, ctx } = useSequentialScope();
-    if (!get) {
-        set(true);
-        const isServer = getPlatform(ctx.$doc$).isServer;
-        if (isServer) {
-            ctx.$waitOn$.push(mountQrl.invoke());
-        }
-    }
-};
-// <docs markdown="../readme.md#useServerMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useServerMount instead)
-/**
- * Register's a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <Host>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </Host>
- *   );
- * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
- * ```
- *
- * @see `useClientMount` `useMount`
- * @public
- */
-// </docs>
-const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
-// <docs markdown="../readme.md#useClientMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientMount instead)
-/**
- * Register's a client mount hook that runs only in the client when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     hash: '',
- *   });
- *
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The url hash is: ${store.hash}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useMount`
- *
- * @public
- */
-// </docs>
-const useClientMountQrl = (mountQrl) => {
-    const { get, set, ctx } = useSequentialScope();
-    if (!get) {
-        set(true);
-        const isServer = getPlatform(useDocument()).isServer;
-        if (!isServer) {
-            ctx.$waitOn$.push(mountQrl.invoke());
-        }
-    }
-};
-// <docs markdown="../readme.md#useClientMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientMount instead)
-/**
- * Register's a client mount hook that runs only in the client when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     hash: '',
- *   });
- *
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The url hash is: ${store.hash}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useMount`
- *
- * @public
- */
-// </docs>
-const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
-// <docs markdown="../readme.md#useMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useMount instead)
-/**
- * Register a server mount hook that runs only in the server when the component is first mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The temperature is: ${store.temp}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useClientMount`
- * @public
- */
-// </docs>
-const useMountQrl = (mountQrl) => {
-    const { get, set, ctx } = useSequentialScope();
-    if (!get) {
-        set(true);
-        ctx.$waitOn$.push(mountQrl.invoke());
-    }
-};
-// <docs markdown="../readme.md#useMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useMount instead)
-/**
- * Register a server mount hook that runs only in the server when the component is first mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The temperature is: ${store.temp}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useClientMount`
- * @public
- */
-// </docs>
-const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
-const runWatch = (watch, containerState) => {
-    if (!(watch.f & WatchFlagsIsDirty)) {
-        logDebug('Watch is not dirty, skipping run', watch);
-        return Promise.resolve(watch);
-    }
-    watch.f &= ~WatchFlagsIsDirty;
-    const promise = new Promise((resolve) => {
-        then(watch.running, () => {
-            cleanupWatch(watch);
-            const el = watch.el;
-            const doc = getDocument(el);
-            const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
-            const { $subsManager$: subsManager } = containerState;
-            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
-                subsManager.$clearSub$(watch);
-            });
-            const track = (obj, prop) => {
-                const target = getProxyTarget(obj);
-                assertDefined(target, 'Expected a Proxy object to track');
-                const manager = subsManager.$getLocal$(target);
-                manager.$addSub$(watch, prop);
-                if (prop) {
-                    return obj[prop];
-                }
-                else {
-                    return obj;
-                }
-            };
-            return then(watchFn(track), (returnValue) => {
-                if (isFunction(returnValue)) {
-                    watch.destroy = noSerialize(returnValue);
-                }
-                resolve(watch);
-            });
-        });
-    });
-    watch.running = noSerialize(promise);
-    return promise;
-};
-const cleanupWatch = (watch) => {
-    const destroy = watch.destroy;
-    if (destroy) {
-        watch.destroy = undefined;
-        try {
-            destroy();
-        }
-        catch (err) {
-            logError(err);
-        }
-    }
-};
-const destroyWatch = (watch) => {
-    if (watch.f & WatchFlagsIsCleanup) {
-        watch.f &= ~WatchFlagsIsCleanup;
-        const cleanup = watch.qrl.invokeFn(watch.el);
-        cleanup();
-    }
-    else {
-        cleanupWatch(watch);
-    }
-};
-const useRunWatch = (watch, run) => {
-    if (run === 'load') {
-        useResumeQrl(getWatchHandlerQrl(watch));
-    }
-    else if (run === 'visible') {
-        useVisibleQrl(getWatchHandlerQrl(watch));
-    }
-};
-const getWatchHandlerQrl = (watch) => {
-    const watchQrl = watch.qrl;
-    const watchHandler = new QRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch]);
-    watchHandler.$refSymbol$ = watchQrl.$symbol$;
-    return watchHandler;
-};
-
-const emitEvent = (el, eventName, detail, bubbles) => {
-    if (el && typeof CustomEvent === 'function') {
-        el.dispatchEvent(new CustomEvent(eventName, {
-            detail,
-            bubbles: bubbles,
-            composed: bubbles,
-        }));
-    }
-};
-
-const UNDEFINED_PREFIX = '\u0010';
-const QRL_PREFIX = '\u0011';
-const DOCUMENT_PREFIX = '\u0012';
-// <docs markdown="../readme.md#pauseContainer">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#pauseContainer instead)
-/**
- * Serialize the current state of the application into DOM
- *
- * @alpha
- */
-// </docs>
-const pauseContainer = (elmOrDoc) => {
-    const doc = getDocument(elmOrDoc);
-    const documentElement = doc.documentElement;
-    const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
-    if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
-        throw qError(QError_containerAlreadyPaused);
-    }
-    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-    const data = pauseState(containerEl);
-    const script = doc.createElement('script');
-    directSetAttribute(script, 'type', 'qwik/json');
-    script.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
-    parentJSON.appendChild(script);
-    directSetAttribute(containerEl, QContainerAttr, 'paused');
-    return data;
-};
-const resumeContainer = (containerEl) => {
-    if (!isContainer(containerEl)) {
-        logWarn('Skipping hydration because parent element is not q:container');
-        return;
-    }
-    const doc = getDocument(containerEl);
-    const isDocElement = containerEl === doc.documentElement;
-    const parentJSON = isDocElement ? doc.body : containerEl;
-    const script = getQwikJSON(parentJSON);
-    if (!script) {
-        logWarn('Skipping hydration qwik/json metadata was not found.');
-        return;
-    }
-    script.remove();
-    const containerState = getContainerState(containerEl);
-    const meta = JSON.parse(unescapeText(script.textContent || '{}'));
-    // Collect all elements
-    const elements = new Map();
-    const getObject = (id) => {
-        return getObjectImpl(id, elements, meta.objs, containerState);
-    };
-    getNodesInScope(containerEl, hasQId).forEach((el) => {
-        const id = directGetAttribute(el, ELEMENT_ID);
-        elements.set(ELEMENT_ID_PREFIX + id, el);
-    });
-    // Revive proxies with subscriptions into the proxymap
-    reviveValues(meta.objs, meta.subs, getObject, containerState, parentJSON);
-    // Rebuild target objects
-    for (const obj of meta.objs) {
-        reviveNestedObjects(obj, getObject);
-    }
-    Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
-        const el = getObject(elementID);
-        assertDefined(el);
-        const ctx = getContext(el);
-        const qobj = ctxMeta.r;
-        const seq = ctxMeta.s;
-        const host = ctxMeta.h;
-        const contexts = ctxMeta.c;
-        const watches = ctxMeta.w;
-        if (qobj) {
-            ctx.$refMap$.$array$.push(...qobj.split(' ').map((part) => getObject(part)));
-        }
-        if (seq) {
-            ctx.$seq$ = seq.split(' ').map((part) => getObject(part));
-        }
-        if (watches) {
-            ctx.$watches$ = watches.split(' ').map((part) => getObject(part));
-        }
-        if (contexts) {
-            contexts.split(' ').map((part) => {
-                const [key, value] = part.split('=');
-                if (!ctx.$contexts$) {
-                    ctx.$contexts$ = new Map();
-                }
-                ctx.$contexts$.set(key, getObject(value));
-            });
-        }
-        // Restore sequence scoping
-        if (host) {
-            const [props, renderQrl] = host.split(' ');
-            assertDefined(props);
-            assertDefined(renderQrl);
-            ctx.$props$ = getObject(props);
-            ctx.$renderQrl$ = getObject(renderQrl);
-        }
-    });
-    directSetAttribute(containerEl, QContainerAttr, 'resumed');
-    logDebug('Container resumed');
-    emitEvent(containerEl, 'qresume', undefined, true);
-};
-const hasContext = (el) => {
-    return !!tryGetContext(el);
-};
-const pauseState = (containerEl) => {
-    const containerState = getContainerState(containerEl);
-    const doc = getDocument(containerEl);
-    const elementToIndex = new Map();
-    const collector = createCollector(doc, containerState);
-    // Collect all qObjected around the DOM
-    const elements = getNodesInScope(containerEl, hasContext);
-    elements.forEach((node) => {
-        const ctx = tryGetContext(node);
-        collectProps(node, ctx.$props$, collector);
-        ctx.$contexts$?.forEach((ctx) => {
-            collectValue(ctx, collector);
-        });
-        ctx.$listeners$?.forEach((listeners) => {
-            for (const l of listeners) {
-                const captured = l.$captureRef$;
-                if (captured) {
-                    captured.forEach((obj) => collectValue(obj, collector));
-                }
-            }
-        });
-        ctx.$watches$.forEach((watch) => {
-            collector.$watches$.push(watch);
-        });
-        ctx.$refMap$.$array$.forEach((obj) => {
-            collectValue(obj, collector);
-        });
-    });
-    // Convert objSet to array
-    const objs = Array.from(collector.$objSet$);
-    const objToId = new Map();
-    const hasSubscriptions = (a) => {
-        const flags = getProxyFlags(containerState.$proxyMap$.get(a));
-        if (typeof flags === 'number' && flags > 0) {
-            return true;
-        }
-        const manager = containerState.$subsManager$.$tryGetLocal$(a);
-        if (manager) {
-            return manager.$subs$.size > 0;
-        }
-        return false;
-    };
-    const getElementID = (el) => {
-        let id = elementToIndex.get(el);
-        if (id === undefined) {
-            if (el.isConnected) {
-                id = intToStr(elementToIndex.size);
-                directSetAttribute(el, ELEMENT_ID, id);
-                id = ELEMENT_ID_PREFIX + id;
-            }
-            else {
-                id = null;
-            }
-            elementToIndex.set(el, id);
-        }
-        return id;
-    };
-    const getObjId = (obj) => {
-        let suffix = '';
-        if (isMutable(obj)) {
-            obj = obj.v;
-            suffix = '%';
-        }
-        if (isObject(obj)) {
-            const target = getProxyTarget(obj);
-            if (target) {
-                suffix += '!';
-            }
-            const id = objToId.get(normalizeObj(target ?? obj, doc));
-            if (id !== undefined) {
-                return intToStr(id) + suffix;
-            }
-            if (!target && isNode$1(obj)) {
-                if (obj.nodeType === 1) {
-                    return getElementID(obj) + suffix;
-                }
-                else {
-                    logError(codeToText(QError_cannotSerializeNode), obj);
-                    return null;
-                }
-            }
-        }
-        else {
-            const id = objToId.get(normalizeObj(obj, doc));
-            if (id !== undefined) {
-                return intToStr(id) + suffix;
-            }
-        }
-        return null;
-    };
-    const mustGetObjId = (obj) => {
-        const id = getObjId(obj);
-        assertDefined(id);
-        return id;
-    };
-    const serialize = (value) => {
-        return getObjId(value) ?? value;
-    };
-    let count = 0;
-    objs.sort((a, b) => {
-        const isProxyA = hasSubscriptions(a) ? 0 : 1;
-        const isProxyB = hasSubscriptions(b) ? 0 : 1;
-        return isProxyA - isProxyB;
-    });
-    for (const obj of objs) {
-        objToId.set(obj, count);
-        count++;
-    }
-    const subs = objs
-        .map((obj) => {
-        const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
-        if (flags === undefined) {
-            return null;
-        }
-        const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
-        if ((subs && subs.size > 0) || flags !== 0) {
-            const subsObj = {};
-            if (flags > 0) {
-                subsObj['$'] = flags;
-            }
-            subs &&
-                subs.forEach((set, key) => {
-                    const id = getObjId(key);
-                    if (id !== null) {
-                        subsObj[id] = set ? Array.from(set) : null;
-                    }
-                });
-            return subsObj;
-        }
-        else {
-            return null;
-        }
-    })
-        .filter(isNotNullable);
-    const qrlSerializeOptions = {
-        $platform$: containerState.$platform$,
-        $getObjId$: getObjId,
-    };
-    const convertedObjs = objs.map((obj) => {
-        if (isObject(obj)) {
-            if (isArray(obj)) {
-                return obj.map(serialize);
-            }
-            if (isQrl(obj)) {
-                return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
-            }
-            const output = {};
-            Object.entries(obj).forEach(([key, value]) => {
-                output[key] = serialize(value);
-            });
-            return output;
-        }
-        return obj;
-    });
-    const listeners = [];
-    const meta = {};
-    // Write back to the dom
-    elements.forEach((node) => {
-        const ctx = getContext(node);
-        assertDefined(ctx);
-        const ref = ctx.$refMap$;
-        const props = ctx.$props$;
-        const contexts = ctx.$contexts$;
-        const watches = ctx.$watches$;
-        const renderQrl = ctx.$renderQrl$;
-        const seq = ctx.$seq$;
-        const metaValue = {};
-        const elementCaptured = collector.$elements$.includes(node);
-        let add = false;
-        if (ref.$array$.length > 0) {
-            const value = ref.$array$.map((obj) => mustGetObjId(obj)).join(' ');
-            if (value) {
-                metaValue.r = value;
-                add = true;
-            }
-        }
-        if (elementCaptured && props) {
-            const objs = [props];
-            if (renderQrl) {
-                objs.push(renderQrl);
-            }
-            const value = objs.map((obj) => mustGetObjId(obj)).join(' ');
-            if (value) {
-                metaValue.h = value;
-                add = true;
-            }
-        }
-        if (watches.length > 0) {
-            const value = watches
-                .map((watch) => getObjId(watch))
-                .filter(isNotNullable)
-                .join(' ');
-            if (value) {
-                metaValue.w = value;
-                add = true;
-            }
-        }
-        if (elementCaptured && seq.length > 0) {
-            const value = seq.map((obj) => mustGetObjId(obj)).join(' ');
-            if (value) {
-                metaValue.s = value;
-                add = true;
-            }
-        }
-        if (contexts) {
-            const serializedContexts = [];
-            contexts.forEach((value, key) => {
-                serializedContexts.push(`${key}=${mustGetObjId(value)}`);
-            });
-            const value = serializedContexts.join(' ');
-            if (value) {
-                metaValue.c = value;
-                add = true;
-            }
-        }
-        if (add) {
-            const elementID = getElementID(node);
-            assertDefined(elementID);
-            meta[elementID] = metaValue;
-        }
-        if (ctx.$listeners$) {
-            ctx.$listeners$.forEach((qrls, key) => {
-                qrls.forEach((qrl) => {
-                    listeners.push({
-                        key,
-                        qrl,
-                    });
-                });
-            });
-        }
-    });
-    for (const watch of collector.$watches$) {
-        destroyWatch(watch);
-        if (qDev) {
-            if (watch.f & WatchFlagsIsDirty) {
-                logWarn('Serializing dirty watch. Looks like an internal error.');
-            }
-            if (!isConnected(watch)) {
-                logWarn('Serializing disconneted watch. Looks like an internal error.');
-            }
-        }
-    }
-    // Sanity check of serialized element
-    if (qDev) {
-        elementToIndex.forEach((value, el) => {
-            if (getDocument(el) !== doc) {
-                logWarn('element from different document', value, el.tagName);
-            }
-            if (!value) {
-                logWarn('unconnected element', el.tagName, '\n');
-            }
-        });
-    }
-    return {
-        state: {
-            ctx: meta,
-            objs: convertedObjs,
-            subs,
-        },
-        objs,
-        listeners,
-    };
-};
-const getQwikJSON = (parentElm) => {
-    let child = parentElm.lastElementChild;
-    while (child) {
-        if (child.tagName === 'SCRIPT' && directGetAttribute(child, 'type') === 'qwik/json') {
-            return child;
-        }
-        child = child.previousElementSibling;
-    }
-    return undefined;
-};
-const getNodesInScope = (parent, predicate) => {
-    const nodes = [];
-    walkNodes(nodes, parent, predicate);
-    return nodes;
-};
-const walkNodes = (nodes, parent, predicate) => {
-    let child = parent.firstElementChild;
-    while (child) {
-        if (!isContainer(child)) {
-            if (predicate(child)) {
-                nodes.push(child);
-            }
-            walkNodes(nodes, child, predicate);
-        }
-        child = child.nextElementSibling;
-    }
-};
-const reviveValues = (objs, subs, getObject, containerState, containerEl) => {
-    for (let i = 0; i < objs.length; i++) {
-        const value = objs[i];
-        if (isString(value)) {
-            if (value === UNDEFINED_PREFIX) {
-                objs[i] = undefined;
-            }
-            else if (value === DOCUMENT_PREFIX) {
-                objs[i] = getDocument(containerEl);
-            }
-            else if (value.startsWith(QRL_PREFIX)) {
-                objs[i] = parseQRL(value.slice(1), containerEl);
-            }
-        }
-        else {
-            const sub = subs[i];
-            if (sub) {
-                const converted = new Map();
-                let flags = 0;
-                Object.entries(sub).forEach((entry) => {
-                    if (entry[0] === '$') {
-                        flags = entry[1];
-                        return;
-                    }
-                    const el = getObject(entry[0]);
-                    if (!el) {
-                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
-                        return;
-                    }
-                    const set = entry[1] === null ? null : new Set(entry[1]);
-                    converted.set(el, set);
-                });
-                createProxy(value, containerState, flags, converted);
-            }
-        }
-    }
-};
-const reviveNestedObjects = (obj, getObject) => {
-    if (obj && typeof obj == 'object') {
-        if (isQrl(obj)) {
-            if (obj.$capture$ && obj.$capture$.length > 0) {
-                obj.$captureRef$ = obj.$capture$.map(getObject);
-                obj.$capture$ = null;
-            }
-            return;
-        }
-        else if (isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                const value = obj[i];
-                if (typeof value == 'string') {
-                    obj[i] = getObject(value);
-                }
-                else {
-                    reviveNestedObjects(value, getObject);
-                }
-            }
-        }
-        else if (Object.getPrototypeOf(obj) === Object.prototype) {
-            for (const key in obj) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const value = obj[key];
-                    if (typeof value == 'string') {
-                        obj[key] = getObject(value);
-                    }
-                    else {
-                        reviveNestedObjects(value, getObject);
-                    }
-                }
-            }
-        }
-    }
-};
-const getObjectImpl = (id, elements, objs, containerState) => {
-    if (id.startsWith(ELEMENT_ID_PREFIX)) {
-        assertEqual(elements.has(id), true);
-        return elements.get(id);
-    }
-    const index = strToInt(id);
-    assertEqual(objs.length > index, true);
-    let obj = objs[index];
-    const needsProxy = id.endsWith('!');
-    if (needsProxy && containerState) {
-        id = id.slice(0, -1);
-        obj = containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
-    }
-    if (id.endsWith('%')) {
-        obj = mutable(obj);
-    }
-    return obj;
-};
-const normalizeObj = (obj, doc) => {
-    if (obj === doc) {
-        return DOCUMENT_PREFIX;
-    }
-    if (obj === undefined || !shouldSerialize(obj)) {
-        return UNDEFINED_PREFIX;
-    }
-    return getProxyTarget(obj) ?? obj;
-};
-const collectValue = (obj, collector) => {
-    const handled = collectQObjects(obj, collector);
-    if (!handled) {
-        collector.$objSet$.add(normalizeObj(obj, collector.$doc$));
-    }
-};
-const collectProps = (el, props, collector) => {
-    const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(getProxyTarget(props))?.$subs$;
-    if (subs && subs.has(el)) {
-        // The host element read the props
-        collectElement(el, collector);
-    }
-};
-const createCollector = (doc, containerState) => {
-    return {
-        $seen$: new Set(),
-        $objSet$: new Set(),
-        $elements$: [],
-        $watches$: [],
-        $containerState$: containerState,
-        $doc$: doc,
-    };
-};
-const collectQrl = (obj, collector) => {
-    if (collector.$seen$.has(obj)) {
-        return true;
-    }
-    collector.$seen$.add(obj);
-    collector.$objSet$.add(normalizeObj(obj, collector.$doc$));
-    if (obj.$captureRef$) {
-        obj.$captureRef$.forEach((obj) => collectValue(obj, collector));
-    }
-};
-const collectElement = (el, collector) => {
-    if (collector.$seen$.has(el)) {
-        return;
-    }
-    collector.$seen$.add(el);
-    const ctx = tryGetContext(el);
-    if (ctx) {
-        collector.$elements$.push(el);
-        if (ctx.$props$) {
-            collectValue(ctx.$props$, collector);
-        }
-        if (ctx.$renderQrl$) {
-            collectValue(ctx.$renderQrl$, collector);
-        }
-        ctx.$seq$.forEach((obj) => {
-            collectValue(obj, collector);
-        });
-        ctx.$refMap$.$array$.forEach((obj) => {
-            collectValue(obj, collector);
-        });
-        ctx.$watches$.forEach((watch) => {
-            collectValue(watch, collector);
-        });
-        if (ctx.$contexts$) {
-            ctx.$contexts$.forEach((obj) => {
-                collectValue(obj, collector);
-            });
-        }
-    }
-};
-const escapeText = (str) => {
-    return str.replace(/<(\/?script)/g, '\\x3C$1');
-};
-const unescapeText = (str) => {
-    return str.replace(/\\x3C(\/?script)/g, '<$1');
-};
-const collectSubscriptions = (subs, collector) => {
-    if (collector.$seen$.has(subs)) {
-        return;
-    }
-    collector.$seen$.add(subs);
-    Array.from(subs.keys()).forEach((key) => {
-        if (isElement(key)) {
-            collectElement(key, collector);
-        }
-        else {
-            collectValue(key, collector);
-        }
-    });
-};
-const collectQObjects = (input, collector) => {
-    let obj = input;
-    if (obj != null) {
-        if (typeof obj === 'object') {
-            const target = getProxyTarget(obj);
-            if (!target && isNode$1(obj)) {
-                if (obj.nodeType === 1) {
-                    return true;
-                }
-                return false;
-            }
-            if (isQrl(obj)) {
-                collectQrl(obj, collector);
-                return true;
-            }
-            const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
-            if (subs) {
-                collectSubscriptions(subs, collector);
-            }
-            obj = normalizeObj(obj, collector.$doc$);
-        }
-        if (typeof obj === 'object') {
-            if (collector.$seen$.has(obj)) {
-                return true;
-            }
-            collector.$seen$.add(obj);
-            collector.$objSet$.add(obj);
-            if (isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
-                    collectQObjects(input[i], collector);
-                }
-            }
-            else {
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        collectQObjects(input[key], collector);
-                    }
-                }
-            }
-            return true;
-        }
-        if (isString(obj)) {
-            collector.$objSet$.add(obj);
-            return true;
-        }
-    }
-    return false;
-};
-const isContainer = (el) => {
-    return el.hasAttribute(QContainerAttr);
-};
-const hasQId = (el) => {
-    return el.hasAttribute(ELEMENT_ID);
-};
-const intToStr = (nu) => {
-    return nu.toString(36);
-};
-const strToInt = (nu) => {
-    return parseInt(nu, 36);
-};
-
-const newQObjectMap = () => {
-    const array = [];
-    return {
-        $array$: array,
-        $get$(index) {
-            return array[index];
-        },
-        $indexOf$(obj) {
-            const index = array.indexOf(obj);
-            return index === -1 ? undefined : index;
-        },
-        $add$(object) {
-            const index = array.indexOf(object);
-            if (index === -1) {
-                array.push(object);
-                return array.length - 1;
-            }
-            return index;
-        },
-    };
-};
-
-const Q_CTX = '__ctx__';
-const resumeIfNeeded = (containerEl) => {
-    const isResumed = directGetAttribute(containerEl, QContainerAttr);
-    if (isResumed === 'paused') {
-        resumeContainer(containerEl);
-        if (qDev) {
-            appendQwikDevTools(containerEl);
-        }
-    }
-};
-const appendQwikDevTools = (containerEl) => {
-    containerEl['qwik'] = {
-        pause: () => pauseContainer(containerEl),
-        state: getContainerState(containerEl),
-    };
-};
-const tryGetContext = (element) => {
-    return element[Q_CTX];
-};
-const getContext = (element) => {
-    let ctx = tryGetContext(element);
-    if (!ctx) {
-        const cache = new Map();
-        element[Q_CTX] = ctx = {
-            $element$: element,
-            $cache$: cache,
-            $refMap$: newQObjectMap(),
-            $dirty$: false,
-            $seq$: [],
-            $watches$: [],
-            $props$: undefined,
-            $renderQrl$: undefined,
-            $component$: undefined,
-        };
-    }
-    return ctx;
-};
-const cleanupContext = (ctx, subsManager) => {
-    const el = ctx.$element$;
-    ctx.$watches$.forEach((watch) => {
-        subsManager.$clearSub$(watch);
-        destroyWatch(watch);
-    });
-    if (ctx.$renderQrl$) {
-        subsManager.$clearSub$(el);
-    }
-    ctx.$component$ = undefined;
-    ctx.$renderQrl$ = undefined;
-    ctx.$seq$.length = 0;
-    ctx.$watches$.length = 0;
-    ctx.$cache$.clear();
-    ctx.$dirty$ = false;
-    ctx.$refMap$.$array$.length = 0;
-    el[Q_CTX] = undefined;
-};
-const PREFIXES = ['document:on', 'window:on', 'on'];
-const SCOPED = ['on-window', 'on-window', 'on'];
-const normalizeOnProp = (prop) => {
-    let scope = 'on';
-    for (let i = 0; i < PREFIXES.length; i++) {
-        const prefix = PREFIXES[i];
-        if (prop.startsWith(prefix)) {
-            scope = SCOPED[i];
-            prop = prop.slice(prefix.length);
-        }
-    }
-    if (prop.startsWith('-')) {
-        prop = prop.slice(1);
-    }
-    else {
-        prop = prop.toLowerCase();
-    }
-    return `${scope}:${prop}`;
-};
-const setEvent = (rctx, ctx, prop, value) => {
-    const dollar = qDev && prop.endsWith('$');
-    qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, dollar ? -1 : -3)), dollar ? $(value) : value);
-};
-const createProps = (target, containerState) => {
-    return createProxy(target, containerState, QObjectImmutable);
-};
-const getPropsMutator = (ctx, containerState) => {
-    let props = ctx.$props$;
-    if (!ctx.$props$) {
-        ctx.$props$ = props = createProps({}, containerState);
-    }
-    const target = getProxyTarget(props);
-    assertDefined(target);
-    const manager = containerState.$subsManager$.$getLocal$(target);
-    return {
-        set(prop, value) {
-            const didSet = prop in target;
-            let oldValue = target[prop];
-            let mut = false;
-            if (isMutable(oldValue)) {
-                oldValue = oldValue.v;
-            }
-            target[prop] = value;
-            if (isMutable(value)) {
-                value = value.v;
-                mut = true;
-            }
-            if (oldValue !== value) {
-                if (qDev) {
-                    if (didSet && !mut && !isQrl(value)) {
-                        const displayName = ctx.$renderQrl$?.getSymbol() ?? ctx.$element$.localName;
-                        logError(codeToText(QError_immutableJsxProps), `If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, '\n - Component:', displayName, '\n - Prop:', prop, '\n - Old value:', oldValue, '\n - New value:', value);
-                    }
-                }
-                manager.$notifySubs$(prop);
-            }
-        },
-    };
 };
 
 /**
@@ -3581,6 +1938,1721 @@ const sortWatches = (watches) => {
     });
 };
 
+// <docs markdown="../readme.md#implicit$FirstArg">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#implicit$FirstArg instead)
+/**
+ * Create a `____$(...)` convenience method from `___(...)`.
+ *
+ * It is very common for functions to take a lazy-loadable resource as a first argument. For this
+ * reason, the Qwik Optimizer automatically extracts the first argument from any function which
+ * ends in `$`.
+ *
+ * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
+ * The former is just a shorthand for the latter.
+ *
+ * For example, these function calls are equivalent:
+ *
+ * - `component$(() => {...})` is same as `onRender($(() => {...}))`
+ *
+ * ```tsx
+ * export function myApi(callback: QRL<() => void>): void {
+ *   // ...
+ * }
+ *
+ * export const myApi$ = implicit$FirstArg(myApi);
+ * // type of myApi$: (callback: () => void): void
+ *
+ * // can be used as:
+ * myApi$(() => console.log('callback'));
+ *
+ * // will be transpiled to:
+ * // FILE: <current file>
+ * myApi(qrl('./chunk-abc.js', 'callback'));
+ *
+ * // FILE: chunk-abc.js
+ * export const callback = () => console.log('callback');
+ * ```
+ *
+ * @param fn - a function that should have its first argument automatically `$`.
+ * @alpha
+ */
+// </docs>
+const implicit$FirstArg = (fn) => {
+    return function (first, ...rest) {
+        return fn.call(null, $(first), ...rest);
+    };
+};
+
+// <docs markdown="../readme.md#useCleanup">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useCleanup instead)
+/**
+ * A lazy-loadable reference to a component's cleanup hook.
+ *
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
+ *
+ * It can be used to release resources, abort network requests, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+const useCleanupQrl = (unmountFn) => {
+    const { get, set, i, ctx } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
+        const watch = {
+            qrl: unmountFn,
+            el,
+            f: WatchFlagsIsCleanup,
+            i,
+        };
+        set(true);
+        getContext(el).$watches$.push(watch);
+    }
+};
+// <docs markdown="../readme.md#useCleanup">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useCleanup instead)
+/**
+ * A lazy-loadable reference to a component's cleanup hook.
+ *
+ * Invoked when the component is destroyed (removed from render tree), or paused as part of the
+ * SSR serialization.
+ *
+ * It can be used to release resources, abort network requests, stop timers...
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useCleanup$(() => {
+ *     // Executed after SSR (pause) or when the component gets removed from the DOM.
+ *     // Can be used to release resouces, abort network requets, stop timers...
+ *     console.log('component is destroyed');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
+// <docs markdown="../readme.md#useResume">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useResume instead)
+/**
+ * A lazy-loadable reference to a component's on resume hook.
+ *
+ * The hook is eagerly invoked when the application resumes on the client. Because it is called
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
+ *
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
+ */
+// </docs>
+const useResumeQrl = (resumeFn, options = {}) => useOn(options.run == 'load' ? 'qinit' : 'qvisible', resumeFn);
+// <docs markdown="../readme.md#useResume">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useResume instead)
+/**
+ * A lazy-loadable reference to a component's on resume hook.
+ *
+ * The hook is eagerly invoked when the application resumes on the client. Because it is called
+ * eagerly, this allows the component to resume even if no user interaction has taken place.
+ *
+ * Only called in the client.
+ * Only called once.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useResume$(() => {
+ *     // Eagerly invoked when the application resumes on the client
+ *     console.log('called once in client');
+ *   });
+ *   return <div>Hello world</div>;
+ * });
+ * ```
+ *
+ * @see `useVisible`, `useClientEffect`
+ *
+ * @alpha
+ */
+// </docs>
+const useResume$ = /*#__PURE__*/ implicit$FirstArg(useResumeQrl);
+// <docs markdown="../readme.md#useVisible">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useVisible instead)
+/**
+ * A lazy-loadable reference to a component's on the visible hook.
+ *
+ * The hook is lazily invoked when the component becomes visible in the browser viewport.
+ *
+ * Only called in the client.
+ * Only called once.
+ *
+ * @see `useResume`, `useClientEffect`
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     isVisible: false,
+ *   });
+ *   useVisible$(() => {
+ *     // Invoked once when the component is visible in the browser's viewport
+ *     console.log('called once in client when visible');
+ *     store.isVisible = true;
+ *   });
+ *   return <div>{store.isVisible}</div>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+const useVisibleQrl = (resumeFn) => useOn('qvisible', resumeFn);
+// <docs markdown="../readme.md#useOn">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useOn instead)
+/**
+ * Register a listener on the current component's host element.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX. Otherwise, it's adding a JSX listener in the `<Host>` is a better
+ * idea.
+ *
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
+ *
+ * @alpha
+ */
+// </docs>
+const useOn = (event, eventQrl) => _useOn(`on:${event}`, eventQrl);
+// <docs markdown="../readme.md#useOnDocument">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useOnDocument instead)
+/**
+ * Register a listener on `document`.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX.
+ *
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
+ *
+ * ```tsx
+ * function useScroll() {
+ *   useOnDocument(
+ *     'scroll',
+ *     $((event) => {
+ *       console.log('body scrolled', event);
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useScroll();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+const useOnDocument = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
+// <docs markdown="../readme.md#useOnWindow">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useOnWindow instead)
+/**
+ * Register a listener on `window`.
+ *
+ * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
+ * have access to the JSX.
+ *
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
+ *
+ * ```tsx
+ * function useAnalytics() {
+ *   useOnWindow(
+ *     'popstate',
+ *     $((event) => {
+ *       console.log('navigation happened', event);
+ *       // report to analytics
+ *     })
+ *   );
+ * }
+ *
+ * const Cmp = component$(() => {
+ *   useAnalytics();
+ *   return <Host>Profit!</Host>;
+ * });
+ * ```
+ *
+ * @alpha
+ */
+// </docs>
+const useOnWindow = (event, eventQrl) => _useOn(`on-window:${event}`, eventQrl);
+const _useOn = (eventName, eventQrl) => {
+    const invokeCtx = useInvokeContext();
+    const ctx = getContext(invokeCtx.$hostElement$);
+    qPropWriteQRL(invokeCtx.$renderCtx$, ctx, eventName, eventQrl);
+};
+
+const WatchFlagsIsEffect = 1 << 0;
+const WatchFlagsIsWatch = 1 << 1;
+const WatchFlagsIsDirty = 1 << 2;
+const WatchFlagsIsCleanup = 1 << 3;
+// <docs markdown="../readme.md#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+const useWatchQrl = (qrl, opts) => {
+    const { get, set, ctx, i } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
+        const containerState = ctx.$renderCtx$.$containerState$;
+        const watch = {
+            qrl: qrl,
+            el,
+            f: WatchFlagsIsDirty | WatchFlagsIsWatch,
+            i,
+        };
+        set(true);
+        getContext(el).$watches$.push(watch);
+        ctx.$waitOn$.push(Promise.resolve().then(() => runWatch(watch, containerState)));
+        const isServer = containerState.$platform$.isServer;
+        if (isServer) {
+            useRunWatch(watch, opts?.run);
+        }
+    }
+};
+// <docs markdown="../readme.md#useWatch">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useWatch instead)
+/**
+ * Reruns the `watchFn` when the observed inputs change.
+ *
+ * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * those inputs change.
+ *
+ * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * `obs` function to wrap property reads. This creates subscriptions that will trigger the
+ * `watchFn` to rerun.
+ *
+ * @see `Tracker`
+ *
+ * @public
+ *
+ * ## Example
+ *
+ * The `useWatch` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * the double of `state.count`.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *     doubleCount: 0,
+ *     debounced: 0,
+ *   });
+ *
+ *   // Double count watch
+ *   useWatch$((track) => {
+ *     const count = track(store, 'count');
+ *     store.doubleCount = 2 * count;
+ *   });
+ *
+ *   // Debouncer watch
+ *   useWatch$((track) => {
+ *     const doubleCount = track(store, 'doubleCount');
+ *     const timer = setTimeout(() => {
+ *       store.debounced = doubleCount;
+ *     }, 2000);
+ *     return () => {
+ *       clearTimeout(timer);
+ *     };
+ *   });
+ *   return (
+ *     <Host>
+ *       <div>
+ *         {store.count} / {store.doubleCount}
+ *       </div>
+ *       <div>{store.debounced}</div>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @public
+ */
+// </docs>
+const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
+// <docs markdown="../readme.md#useClientEffect">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientEffect instead)
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useClientEffectQrl = (qrl, opts) => {
+    const { get, set, i, ctx } = useSequentialScope();
+    if (!get) {
+        const el = ctx.$hostElement$;
+        const watch = {
+            qrl: qrl,
+            el,
+            f: WatchFlagsIsEffect,
+            i,
+        };
+        set(true);
+        getContext(el).$watches$.push(watch);
+        useRunWatch(watch, opts?.run ?? 'visible');
+        const doc = ctx.$doc$;
+        if (doc['qO']) {
+            doc['qO'].observe(el);
+        }
+    }
+};
+// <docs markdown="../readme.md#useClientEffect">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientEffect instead)
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <Host>{store.count}</Host>;
+ * });
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @see `useClientMount` `useMount`
+ * @public
+ */
+// </docs>
+const useServerMountQrl = (mountQrl) => {
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
+        const isServer = getPlatform(ctx.$doc$).isServer;
+        if (isServer) {
+            ctx.$waitOn$.push(mountQrl.invoke());
+        }
+    }
+};
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @see `useClientMount` `useMount`
+ * @public
+ */
+// </docs>
+const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
+// <docs markdown="../readme.md#useClientMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientMount instead)
+/**
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     hash: '',
+ *   });
+ *
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *     store.hash = document.location.hash;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The url hash is: ${store.hash}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useMount`
+ *
+ * @public
+ */
+// </docs>
+const useClientMountQrl = (mountQrl) => {
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
+        const isServer = getPlatform(useDocument()).isServer;
+        if (!isServer) {
+            ctx.$waitOn$.push(mountQrl.invoke());
+        }
+    }
+};
+// <docs markdown="../readme.md#useClientMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientMount instead)
+/**
+ * Register's a client mount hook that runs only in the client when the component is first
+ * mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     hash: '',
+ *   });
+ *
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *     store.hash = document.location.hash;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The url hash is: ${store.hash}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useMount`
+ *
+ * @public
+ */
+// </docs>
+const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
+// <docs markdown="../readme.md#useMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useMount instead)
+/**
+ * Register a server mount hook that runs only in the server when the component is first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     temp: 0,
+ *   });
+ *
+ *   useMount$(async () => {
+ *     // This code will run once whenever a component is mounted in the server, or in the client
+ *     const res = await fetch('weather-api.example');
+ *     const json = (await res.json()) as any;
+ *     store.temp = json.temp;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The temperature is: ${store.temp}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useClientMount`
+ * @public
+ */
+// </docs>
+const useMountQrl = (mountQrl) => {
+    const { get, set, ctx } = useSequentialScope();
+    if (!get) {
+        set(true);
+        ctx.$waitOn$.push(mountQrl.invoke());
+    }
+};
+// <docs markdown="../readme.md#useMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useMount instead)
+/**
+ * Register a server mount hook that runs only in the server when the component is first mounted.
+ *
+ * ## Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     temp: 0,
+ *   });
+ *
+ *   useMount$(async () => {
+ *     // This code will run once whenever a component is mounted in the server, or in the client
+ *     const res = await fetch('weather-api.example');
+ *     const json = (await res.json()) as any;
+ *     store.temp = json.temp;
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       <p>The temperature is: ${store.temp}</p>
+ *     </Host>
+ *   );
+ * });
+ * ```
+ *
+ * @see `useServerMount` `useClientMount`
+ * @public
+ */
+// </docs>
+const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
+const runWatch = (watch, containerState) => {
+    if (!(watch.f & WatchFlagsIsDirty)) {
+        logDebug('Watch is not dirty, skipping run', watch);
+        return Promise.resolve(watch);
+    }
+    watch.f &= ~WatchFlagsIsDirty;
+    const promise = new Promise((resolve) => {
+        then(watch.running, () => {
+            cleanupWatch(watch);
+            const el = watch.el;
+            const doc = getDocument(el);
+            const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
+            const { $subsManager$: subsManager } = containerState;
+            const watchFn = watch.qrl.invokeFn(el, invokationContext, () => {
+                subsManager.$clearSub$(watch);
+            });
+            const track = (obj, prop) => {
+                const target = getProxyTarget(obj);
+                assertDefined(target, 'Expected a Proxy object to track');
+                const manager = subsManager.$getLocal$(target);
+                manager.$addSub$(watch, prop);
+                if (prop) {
+                    return obj[prop];
+                }
+                else {
+                    return obj;
+                }
+            };
+            return then(watchFn(track), (returnValue) => {
+                if (isFunction(returnValue)) {
+                    watch.destroy = noSerialize(returnValue);
+                }
+                resolve(watch);
+            });
+        });
+    });
+    watch.running = noSerialize(promise);
+    return promise;
+};
+const cleanupWatch = (watch) => {
+    const destroy = watch.destroy;
+    if (destroy) {
+        watch.destroy = undefined;
+        try {
+            destroy();
+        }
+        catch (err) {
+            logError(err);
+        }
+    }
+};
+const destroyWatch = (watch) => {
+    if (watch.f & WatchFlagsIsCleanup) {
+        watch.f &= ~WatchFlagsIsCleanup;
+        const cleanup = watch.qrl.invokeFn(watch.el);
+        cleanup();
+    }
+    else {
+        cleanupWatch(watch);
+    }
+};
+const useRunWatch = (watch, run) => {
+    if (run === 'load') {
+        useResumeQrl(getWatchHandlerQrl(watch));
+    }
+    else if (run === 'visible') {
+        useVisibleQrl(getWatchHandlerQrl(watch));
+    }
+};
+const getWatchHandlerQrl = (watch) => {
+    const watchQrl = watch.qrl;
+    const watchHandler = new QRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch]);
+    watchHandler.$refSymbol$ = watchQrl.$symbol$;
+    return watchHandler;
+};
+
+const emitEvent = (el, eventName, detail, bubbles) => {
+    if (el && typeof CustomEvent === 'function') {
+        el.dispatchEvent(new CustomEvent(eventName, {
+            detail,
+            bubbles: bubbles,
+            composed: bubbles,
+        }));
+    }
+};
+
+const UNDEFINED_PREFIX = '\u0010';
+const QRL_PREFIX = '\u0011';
+const DOCUMENT_PREFIX = '\u0012';
+// <docs markdown="../readme.md#pauseContainer">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#pauseContainer instead)
+/**
+ * Serialize the current state of the application into DOM
+ *
+ * @alpha
+ */
+// </docs>
+const pauseContainer = async (elmOrDoc) => {
+    const doc = getDocument(elmOrDoc);
+    const documentElement = doc.documentElement;
+    const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+    if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
+        throw qError(QError_containerAlreadyPaused);
+    }
+    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+    const data = await pauseState(containerEl);
+    const script = doc.createElement('script');
+    directSetAttribute(script, 'type', 'qwik/json');
+    script.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
+    parentJSON.appendChild(script);
+    directSetAttribute(containerEl, QContainerAttr, 'paused');
+    return data;
+};
+const resumeContainer = (containerEl) => {
+    if (!isContainer(containerEl)) {
+        logWarn('Skipping hydration because parent element is not q:container');
+        return;
+    }
+    const doc = getDocument(containerEl);
+    const isDocElement = containerEl === doc.documentElement;
+    const parentJSON = isDocElement ? doc.body : containerEl;
+    const script = getQwikJSON(parentJSON);
+    if (!script) {
+        logWarn('Skipping hydration qwik/json metadata was not found.');
+        return;
+    }
+    script.remove();
+    const containerState = getContainerState(containerEl);
+    const meta = JSON.parse(unescapeText(script.textContent || '{}'));
+    // Collect all elements
+    const elements = new Map();
+    const getObject = (id) => {
+        return getObjectImpl(id, elements, meta.objs, containerState);
+    };
+    getNodesInScope(containerEl, hasQId).forEach((el) => {
+        const id = directGetAttribute(el, ELEMENT_ID);
+        elements.set(ELEMENT_ID_PREFIX + id, el);
+    });
+    // Revive proxies with subscriptions into the proxymap
+    reviveValues(meta.objs, meta.subs, getObject, containerState, parentJSON);
+    // Rebuild target objects
+    for (const obj of meta.objs) {
+        reviveNestedObjects(obj, getObject);
+    }
+    Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
+        const el = getObject(elementID);
+        assertDefined(el);
+        const ctx = getContext(el);
+        const qobj = ctxMeta.r;
+        const seq = ctxMeta.s;
+        const host = ctxMeta.h;
+        const contexts = ctxMeta.c;
+        const watches = ctxMeta.w;
+        if (qobj) {
+            ctx.$refMap$.$array$.push(...qobj.split(' ').map((part) => getObject(part)));
+        }
+        if (seq) {
+            ctx.$seq$ = seq.split(' ').map((part) => getObject(part));
+        }
+        if (watches) {
+            ctx.$watches$ = watches.split(' ').map((part) => getObject(part));
+        }
+        if (contexts) {
+            contexts.split(' ').map((part) => {
+                const [key, value] = part.split('=');
+                if (!ctx.$contexts$) {
+                    ctx.$contexts$ = new Map();
+                }
+                ctx.$contexts$.set(key, getObject(value));
+            });
+        }
+        // Restore sequence scoping
+        if (host) {
+            const [props, renderQrl] = host.split(' ');
+            assertDefined(props);
+            assertDefined(renderQrl);
+            ctx.$props$ = getObject(props);
+            ctx.$renderQrl$ = getObject(renderQrl);
+        }
+    });
+    directSetAttribute(containerEl, QContainerAttr, 'resumed');
+    logDebug('Container resumed');
+    emitEvent(containerEl, 'qresume', undefined, true);
+};
+const hasContext = (el) => {
+    return !!tryGetContext(el);
+};
+const pauseState = async (containerEl) => {
+    const containerState = getContainerState(containerEl);
+    const doc = getDocument(containerEl);
+    const elementToIndex = new Map();
+    const collector = createCollector(doc, containerState);
+    // Collect all qObjected around the DOM
+    const elements = getNodesInScope(containerEl, hasContext);
+    for (const node of elements) {
+        const ctx = tryGetContext(node);
+        await collectProps(node, ctx.$props$, collector);
+        if (ctx.$contexts$) {
+            for (const item of ctx.$contexts$.values()) {
+                await collectValue(item, collector);
+            }
+        }
+        if (ctx.$listeners$) {
+            for (const listeners of ctx.$listeners$.values()) {
+                for (const l of listeners) {
+                    const captured = l.$captureRef$;
+                    if (captured) {
+                        for (const obj of captured) {
+                            await collectValue(obj, collector);
+                        }
+                    }
+                }
+            }
+        }
+        for (const watch of ctx.$watches$) {
+            collector.$watches$.push(watch);
+        }
+        for (const obj of ctx.$refMap$.$array$) {
+            await collectValue(obj, collector);
+        }
+    }
+    // Convert objSet to array
+    const objs = Array.from(collector.$objSet$);
+    const objToId = new Map();
+    const hasSubscriptions = (a) => {
+        const flags = getProxyFlags(containerState.$proxyMap$.get(a));
+        if (typeof flags === 'number' && flags > 0) {
+            return true;
+        }
+        const manager = containerState.$subsManager$.$tryGetLocal$(a);
+        if (manager) {
+            return manager.$subs$.size > 0;
+        }
+        return false;
+    };
+    const getElementID = (el) => {
+        let id = elementToIndex.get(el);
+        if (id === undefined) {
+            if (el.isConnected) {
+                id = intToStr(elementToIndex.size);
+                directSetAttribute(el, ELEMENT_ID, id);
+                id = ELEMENT_ID_PREFIX + id;
+            }
+            else {
+                id = null;
+            }
+            elementToIndex.set(el, id);
+        }
+        return id;
+    };
+    const getObjId = (obj) => {
+        let suffix = '';
+        if (isMutable(obj)) {
+            obj = obj.v;
+            suffix = '%';
+        }
+        if (isObject(obj)) {
+            if (isPromise(obj)) {
+                obj = getPromiseValue(obj);
+                suffix += '~';
+            }
+            const target = getProxyTarget(obj);
+            if (target) {
+                suffix += '!';
+            }
+            const id = objToId.get(normalizeObj(target ?? obj, doc));
+            if (id !== undefined) {
+                return intToStr(id) + suffix;
+            }
+            if (!target && isNode$1(obj)) {
+                if (obj.nodeType === 1) {
+                    return getElementID(obj) + suffix;
+                }
+                else {
+                    logError(codeToText(QError_cannotSerializeNode), obj);
+                    return null;
+                }
+            }
+        }
+        else {
+            const id = objToId.get(normalizeObj(obj, doc));
+            if (id !== undefined) {
+                return intToStr(id) + suffix;
+            }
+        }
+        return null;
+    };
+    const mustGetObjId = (obj) => {
+        const id = getObjId(obj);
+        assertDefined(id);
+        return id;
+    };
+    const serialize = (value) => {
+        return getObjId(value) ?? value;
+    };
+    let count = 0;
+    objs.sort((a, b) => {
+        const isProxyA = hasSubscriptions(a) ? 0 : 1;
+        const isProxyB = hasSubscriptions(b) ? 0 : 1;
+        return isProxyA - isProxyB;
+    });
+    for (const obj of objs) {
+        objToId.set(obj, count);
+        count++;
+    }
+    const subs = objs
+        .map((obj) => {
+        const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
+        if (flags === undefined) {
+            return null;
+        }
+        const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
+        if ((subs && subs.size > 0) || flags !== 0) {
+            const subsObj = {};
+            if (flags > 0) {
+                subsObj['$'] = flags;
+            }
+            subs &&
+                subs.forEach((set, key) => {
+                    const id = getObjId(key);
+                    if (id !== null) {
+                        subsObj[id] = set ? Array.from(set) : null;
+                    }
+                });
+            return subsObj;
+        }
+        else {
+            return null;
+        }
+    })
+        .filter(isNotNullable);
+    const qrlSerializeOptions = {
+        $platform$: containerState.$platform$,
+        $getObjId$: getObjId,
+    };
+    const convertedObjs = objs.map((obj) => {
+        if (isObject(obj)) {
+            if (isArray(obj)) {
+                return obj.map(serialize);
+            }
+            if (isQrl(obj)) {
+                return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
+            }
+            const output = {};
+            Object.entries(obj).forEach(([key, value]) => {
+                output[key] = serialize(value);
+            });
+            return output;
+        }
+        return obj;
+    });
+    const listeners = [];
+    const meta = {};
+    // Write back to the dom
+    elements.forEach((node) => {
+        const ctx = getContext(node);
+        assertDefined(ctx);
+        const ref = ctx.$refMap$;
+        const props = ctx.$props$;
+        const contexts = ctx.$contexts$;
+        const watches = ctx.$watches$;
+        const renderQrl = ctx.$renderQrl$;
+        const seq = ctx.$seq$;
+        const metaValue = {};
+        const elementCaptured = collector.$elements$.includes(node);
+        let add = false;
+        if (ref.$array$.length > 0) {
+            const value = ref.$array$.map((obj) => mustGetObjId(obj)).join(' ');
+            if (value) {
+                metaValue.r = value;
+                add = true;
+            }
+        }
+        if (elementCaptured && props) {
+            const objs = [props];
+            if (renderQrl) {
+                objs.push(renderQrl);
+            }
+            const value = objs.map((obj) => mustGetObjId(obj)).join(' ');
+            if (value) {
+                metaValue.h = value;
+                add = true;
+            }
+        }
+        if (watches.length > 0) {
+            const value = watches
+                .map((watch) => getObjId(watch))
+                .filter(isNotNullable)
+                .join(' ');
+            if (value) {
+                metaValue.w = value;
+                add = true;
+            }
+        }
+        if (elementCaptured && seq.length > 0) {
+            const value = seq.map((obj) => mustGetObjId(obj)).join(' ');
+            if (value) {
+                metaValue.s = value;
+                add = true;
+            }
+        }
+        if (contexts) {
+            const serializedContexts = [];
+            contexts.forEach((value, key) => {
+                serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+            });
+            const value = serializedContexts.join(' ');
+            if (value) {
+                metaValue.c = value;
+                add = true;
+            }
+        }
+        if (add) {
+            const elementID = getElementID(node);
+            assertDefined(elementID);
+            meta[elementID] = metaValue;
+        }
+        if (ctx.$listeners$) {
+            ctx.$listeners$.forEach((qrls, key) => {
+                qrls.forEach((qrl) => {
+                    listeners.push({
+                        key,
+                        qrl,
+                    });
+                });
+            });
+        }
+    });
+    for (const watch of collector.$watches$) {
+        destroyWatch(watch);
+        if (qDev) {
+            if (watch.f & WatchFlagsIsDirty) {
+                logWarn('Serializing dirty watch. Looks like an internal error.');
+            }
+            if (!isConnected(watch)) {
+                logWarn('Serializing disconneted watch. Looks like an internal error.');
+            }
+        }
+    }
+    // Sanity check of serialized element
+    if (qDev) {
+        elementToIndex.forEach((value, el) => {
+            if (getDocument(el) !== doc) {
+                logWarn('element from different document', value, el.tagName);
+            }
+            if (!value) {
+                logWarn('unconnected element', el.tagName, '\n');
+            }
+        });
+    }
+    return {
+        state: {
+            ctx: meta,
+            objs: convertedObjs,
+            subs,
+        },
+        objs,
+        listeners,
+    };
+};
+const getQwikJSON = (parentElm) => {
+    let child = parentElm.lastElementChild;
+    while (child) {
+        if (child.tagName === 'SCRIPT' && directGetAttribute(child, 'type') === 'qwik/json') {
+            return child;
+        }
+        child = child.previousElementSibling;
+    }
+    return undefined;
+};
+const getNodesInScope = (parent, predicate) => {
+    const nodes = [];
+    walkNodes(nodes, parent, predicate);
+    return nodes;
+};
+const walkNodes = (nodes, parent, predicate) => {
+    let child = parent.firstElementChild;
+    while (child) {
+        if (!isContainer(child)) {
+            if (predicate(child)) {
+                nodes.push(child);
+            }
+            walkNodes(nodes, child, predicate);
+        }
+        child = child.nextElementSibling;
+    }
+};
+const reviveValues = (objs, subs, getObject, containerState, containerEl) => {
+    for (let i = 0; i < objs.length; i++) {
+        const value = objs[i];
+        if (isString(value)) {
+            if (value === UNDEFINED_PREFIX) {
+                objs[i] = undefined;
+            }
+            else if (value === DOCUMENT_PREFIX) {
+                objs[i] = getDocument(containerEl);
+            }
+            else if (value.startsWith(QRL_PREFIX)) {
+                objs[i] = parseQRL(value.slice(1), containerEl);
+            }
+        }
+        else {
+            const sub = subs[i];
+            if (sub) {
+                const converted = new Map();
+                let flags = 0;
+                Object.entries(sub).forEach((entry) => {
+                    if (entry[0] === '$') {
+                        flags = entry[1];
+                        return;
+                    }
+                    const el = getObject(entry[0]);
+                    if (!el) {
+                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
+                        return;
+                    }
+                    const set = entry[1] === null ? null : new Set(entry[1]);
+                    converted.set(el, set);
+                });
+                createProxy(value, containerState, flags, converted);
+            }
+        }
+    }
+};
+const reviveNestedObjects = (obj, getObject) => {
+    if (obj && typeof obj == 'object') {
+        if (isQrl(obj)) {
+            if (obj.$capture$ && obj.$capture$.length > 0) {
+                obj.$captureRef$ = obj.$capture$.map(getObject);
+                obj.$capture$ = null;
+            }
+            return;
+        }
+        else if (isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                const value = obj[i];
+                if (typeof value == 'string') {
+                    obj[i] = getObject(value);
+                }
+                else {
+                    reviveNestedObjects(value, getObject);
+                }
+            }
+        }
+        else if (Object.getPrototypeOf(obj) === Object.prototype) {
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    if (typeof value == 'string') {
+                        obj[key] = getObject(value);
+                    }
+                    else {
+                        reviveNestedObjects(value, getObject);
+                    }
+                }
+            }
+        }
+    }
+};
+const OBJECT_TRANSFORMS = {
+    '!': (obj, containerState) => {
+        return containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
+    },
+    '%': (obj) => {
+        return mutable(obj);
+    },
+    '~': (obj) => {
+        return Promise.resolve(obj);
+    },
+};
+const getObjectImpl = (id, elements, objs, containerState) => {
+    if (id.startsWith(ELEMENT_ID_PREFIX)) {
+        assertEqual(elements.has(id), true);
+        return elements.get(id);
+    }
+    const index = strToInt(id);
+    assertEqual(objs.length > index, true);
+    let obj = objs[index];
+    for (let i = id.length - 1; i >= 0; i--) {
+        const code = id[i];
+        const transform = OBJECT_TRANSFORMS[code];
+        if (!transform) {
+            break;
+        }
+        obj = transform(obj, containerState);
+    }
+    return obj;
+};
+const normalizeObj = (obj, doc) => {
+    if (obj === doc) {
+        return DOCUMENT_PREFIX;
+    }
+    if (obj === undefined || !shouldSerialize(obj)) {
+        return UNDEFINED_PREFIX;
+    }
+    return getProxyTarget(obj) ?? obj;
+};
+const collectValue = async (obj, collector) => {
+    const handled = await collectQObjects(obj, collector);
+    if (!handled) {
+        collector.$objSet$.add(normalizeObj(obj, collector.$doc$));
+    }
+};
+const collectProps = async (el, props, collector) => {
+    const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(getProxyTarget(props))?.$subs$;
+    if (subs && subs.has(el)) {
+        // The host element read the props
+        await collectElement(el, collector);
+    }
+};
+const createCollector = (doc, containerState) => {
+    return {
+        $seen$: new Set(),
+        $objSet$: new Set(),
+        $elements$: [],
+        $watches$: [],
+        $containerState$: containerState,
+        $doc$: doc,
+    };
+};
+const collectQrl = async (obj, collector) => {
+    if (collector.$seen$.has(obj)) {
+        return true;
+    }
+    collector.$seen$.add(obj);
+    collector.$objSet$.add(normalizeObj(obj, collector.$doc$));
+    if (obj.$captureRef$) {
+        for (const item of obj.$captureRef$) {
+            await collectValue(item, collector);
+        }
+    }
+};
+const collectElement = async (el, collector) => {
+    if (collector.$seen$.has(el)) {
+        return;
+    }
+    collector.$seen$.add(el);
+    const ctx = tryGetContext(el);
+    if (ctx) {
+        collector.$elements$.push(el);
+        if (ctx.$props$) {
+            await collectValue(ctx.$props$, collector);
+        }
+        if (ctx.$renderQrl$) {
+            await collectValue(ctx.$renderQrl$, collector);
+        }
+        for (const obj of ctx.$seq$) {
+            await collectValue(obj, collector);
+        }
+        for (const obj of ctx.$refMap$.$array$) {
+            await collectValue(obj, collector);
+        }
+        for (const obj of ctx.$watches$) {
+            await collectValue(obj, collector);
+        }
+        if (ctx.$contexts$) {
+            for (const obj of ctx.$contexts$.values()) {
+                await collectValue(obj, collector);
+            }
+        }
+    }
+};
+const escapeText = (str) => {
+    return str.replace(/<(\/?script)/g, '\\x3C$1');
+};
+const unescapeText = (str) => {
+    return str.replace(/\\x3C(\/?script)/g, '<$1');
+};
+const collectSubscriptions = async (subs, collector) => {
+    if (collector.$seen$.has(subs)) {
+        return;
+    }
+    collector.$seen$.add(subs);
+    for (const key of Array.from(subs.keys())) {
+        if (isElement(key)) {
+            await collectElement(key, collector);
+        }
+        else {
+            await collectValue(key, collector);
+        }
+    }
+};
+const PROMISE_VALUE = Symbol();
+const resolvePromise = (promise) => {
+    return promise.then((value) => {
+        promise[PROMISE_VALUE] = value;
+        return value;
+    });
+};
+const getPromiseValue = (promise) => {
+    assertEqual(PROMISE_VALUE in promise, true);
+    return promise[PROMISE_VALUE];
+};
+const collectQObjects = async (input, collector) => {
+    let obj = input;
+    if (obj != null) {
+        if (typeof obj === 'object') {
+            if (isPromise(obj)) {
+                if (collector.$seen$.has(obj)) {
+                    return true;
+                }
+                collector.$seen$.add(obj);
+                obj = await resolvePromise(obj);
+                await collectValue(obj, collector);
+                return true;
+            }
+            const target = getProxyTarget(obj);
+            if (!target && isNode$1(obj)) {
+                if (obj.nodeType === 1) {
+                    return true;
+                }
+                return false;
+            }
+            if (isQrl(obj)) {
+                await collectQrl(obj, collector);
+                return true;
+            }
+            const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
+            if (subs) {
+                await collectSubscriptions(subs, collector);
+            }
+            obj = normalizeObj(obj, collector.$doc$);
+        }
+        if (typeof obj === 'object') {
+            if (collector.$seen$.has(obj)) {
+                return true;
+            }
+            collector.$seen$.add(obj);
+            collector.$objSet$.add(obj);
+            if (isArray(obj)) {
+                for (let i = 0; i < obj.length; i++) {
+                    await collectQObjects(input[i], collector);
+                }
+            }
+            else {
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        await collectQObjects(input[key], collector);
+                    }
+                }
+            }
+            return true;
+        }
+        if (isString(obj)) {
+            collector.$objSet$.add(obj);
+            return true;
+        }
+    }
+    return false;
+};
+const isContainer = (el) => {
+    return el.hasAttribute(QContainerAttr);
+};
+const hasQId = (el) => {
+    return el.hasAttribute(ELEMENT_ID);
+};
+const intToStr = (nu) => {
+    return nu.toString(36);
+};
+const strToInt = (nu) => {
+    return parseInt(nu, 36);
+};
+
+const newQObjectMap = () => {
+    const array = [];
+    return {
+        $array$: array,
+        $get$(index) {
+            return array[index];
+        },
+        $indexOf$(obj) {
+            const index = array.indexOf(obj);
+            return index === -1 ? undefined : index;
+        },
+        $add$(object) {
+            const index = array.indexOf(object);
+            if (index === -1) {
+                array.push(object);
+                return array.length - 1;
+            }
+            return index;
+        },
+    };
+};
+
+const Q_CTX = '__ctx__';
+const resumeIfNeeded = (containerEl) => {
+    const isResumed = directGetAttribute(containerEl, QContainerAttr);
+    if (isResumed === 'paused') {
+        resumeContainer(containerEl);
+        if (qDev) {
+            appendQwikDevTools(containerEl);
+        }
+    }
+};
+const appendQwikDevTools = (containerEl) => {
+    containerEl['qwik'] = {
+        pause: () => pauseContainer(containerEl),
+        state: getContainerState(containerEl),
+    };
+};
+const tryGetContext = (element) => {
+    return element[Q_CTX];
+};
+const getContext = (element) => {
+    let ctx = tryGetContext(element);
+    if (!ctx) {
+        const cache = new Map();
+        element[Q_CTX] = ctx = {
+            $element$: element,
+            $cache$: cache,
+            $refMap$: newQObjectMap(),
+            $dirty$: false,
+            $seq$: [],
+            $watches$: [],
+            $props$: undefined,
+            $renderQrl$: undefined,
+            $component$: undefined,
+        };
+    }
+    return ctx;
+};
+const cleanupContext = (ctx, subsManager) => {
+    const el = ctx.$element$;
+    ctx.$watches$.forEach((watch) => {
+        subsManager.$clearSub$(watch);
+        destroyWatch(watch);
+    });
+    if (ctx.$renderQrl$) {
+        subsManager.$clearSub$(el);
+    }
+    ctx.$component$ = undefined;
+    ctx.$renderQrl$ = undefined;
+    ctx.$seq$.length = 0;
+    ctx.$watches$.length = 0;
+    ctx.$cache$.clear();
+    ctx.$dirty$ = false;
+    ctx.$refMap$.$array$.length = 0;
+    el[Q_CTX] = undefined;
+};
+const PREFIXES = ['document:on', 'window:on', 'on'];
+const SCOPED = ['on-window', 'on-window', 'on'];
+const normalizeOnProp = (prop) => {
+    let scope = 'on';
+    for (let i = 0; i < PREFIXES.length; i++) {
+        const prefix = PREFIXES[i];
+        if (prop.startsWith(prefix)) {
+            scope = SCOPED[i];
+            prop = prop.slice(prefix.length);
+        }
+    }
+    if (prop.startsWith('-')) {
+        prop = prop.slice(1);
+    }
+    else {
+        prop = prop.toLowerCase();
+    }
+    return `${scope}:${prop}`;
+};
+const setEvent = (rctx, ctx, prop, value) => {
+    const dollar = qDev && prop.endsWith('$');
+    qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, dollar ? -1 : -3)), dollar ? $(value) : value);
+};
+const createProps = (target, containerState) => {
+    return createProxy(target, containerState, QObjectImmutable);
+};
+const getPropsMutator = (ctx, containerState) => {
+    let props = ctx.$props$;
+    if (!ctx.$props$) {
+        ctx.$props$ = props = createProps({}, containerState);
+    }
+    const target = getProxyTarget(props);
+    assertDefined(target);
+    const manager = containerState.$subsManager$.$getLocal$(target);
+    return {
+        set(prop, value) {
+            const didSet = prop in target;
+            let oldValue = target[prop];
+            let mut = false;
+            if (isMutable(oldValue)) {
+                oldValue = oldValue.v;
+            }
+            target[prop] = value;
+            if (isMutable(value)) {
+                value = value.v;
+                mut = true;
+            }
+            if (oldValue !== value) {
+                if (qDev) {
+                    if (didSet && !mut && !isQrl(value)) {
+                        const displayName = ctx.$renderQrl$?.getSymbol() ?? ctx.$element$.localName;
+                        logError(codeToText(QError_immutableJsxProps), `If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, '\n - Component:', displayName, '\n - Prop:', prop, '\n - Old value:', oldValue, '\n - New value:', value);
+                    }
+                }
+                manager.$notifySubs$(prop);
+            }
+        },
+    };
+};
+
+const STYLE = qDev
+    ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
+    : '';
+const logError = (message, ...optionalParams) => {
+    const err = message instanceof Error ? message : new Error(message);
+    // eslint-disable-next-line no-console
+    console.error('%cQWIK ERROR', STYLE, err, ...printParams(optionalParams));
+    return err;
+};
+const logErrorAndStop = (message, ...optionalParams) => {
+    logError(message, ...optionalParams);
+    // eslint-disable-next-line no-debugger
+    debugger;
+};
+const logWarn = (message, ...optionalParams) => {
+    // eslint-disable-next-line no-console
+    if (qDev) {
+        console.warn('%cQWIK WARN', STYLE, message, ...printParams(optionalParams));
+    }
+};
+const logDebug = (message, ...optionalParams) => {
+    if (qDev) {
+        // eslint-disable-next-line no-console
+        console.debug('%cQWIK', STYLE, message, ...printParams(optionalParams));
+    }
+};
+const printParams = (optionalParams) => {
+    if (qDev) {
+        return optionalParams.map((p) => {
+            if (isElement$1(p)) {
+                return printElement(p);
+            }
+            return p;
+        });
+    }
+    return optionalParams;
+};
+const printElement = (el) => {
+    const ctx = tryGetContext(el);
+    const isComponent = el.hasAttribute(QHostAttr);
+    return {
+        isComponent,
+        tagName: el.tagName,
+        renderQRL: ctx?.$renderQrl$?.getSymbol(),
+        element: el,
+        ctx,
+    };
+};
+
+const assertDefined = (value, text) => {
+    if (qDev) {
+        if (value != null)
+            return;
+        throw logErrorAndStop(text || 'Expected defined value');
+    }
+};
+const assertEqual = (value1, value2, text) => {
+    if (qDev) {
+        if (value1 === value2)
+            return;
+        throw logErrorAndStop(text || `Expected '${value1}' === '${value2}'.`);
+    }
+};
+
 const QObjectRecursive = 1 << 0;
 const QObjectImmutable = 1 << 1;
 /**
@@ -3821,6 +3893,8 @@ const _verifySerializable = (value, seen) => {
                     }
                     return value;
                 }
+                if (isPromise(unwrapped))
+                    return value;
                 if (isQrl(unwrapped))
                     return value;
                 if (isElement(unwrapped))
@@ -4501,6 +4575,7 @@ const render = async (parent, jsxNode) => {
     }
     injectQContainer(containerEl);
     const containerState = getContainerState(containerEl);
+    // containerState.$hostsRendering$ = new Set();
     const ctx = createRenderContext(doc, containerState, containerEl);
     ctx.$roots$.push(parent);
     const processedNodes = await processData(jsxNode);
@@ -4518,7 +4593,12 @@ const render = async (parent, jsxNode) => {
         const elCtx = getContext(host);
         elCtx.$watches$.forEach((watch) => {
             if (watch.f & WatchFlagsIsDirty) {
-                promises.push(runWatch(watch, containerState));
+                try {
+                    promises.push(runWatch(watch, containerState));
+                }
+                catch (e) {
+                    logErrorAndStop(e);
+                }
             }
         });
     });

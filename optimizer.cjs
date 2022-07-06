@@ -47,11 +47,43 @@ globalThis.qwikOptimizer = function(module) {
     versions: () => versions
   });
   module.exports = __toCommonJS(src_exports);
+  function isElement(value) {
+    return isNode(value) && 1 == value.nodeType;
+  }
+  function isNode(value) {
+    return value && "number" == typeof value.nodeType;
+  }
   var qDev = false !== globalThis.qDev;
   globalThis.describe;
+  var QHostAttr = "q:host";
+  var Q_CTX = "__ctx__";
+  var tryGetContext = element => element[Q_CTX];
   var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
   var logWarn = (message, ...optionalParams) => {
-    qDev && console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
+    qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
+  };
+  var printParams = optionalParams => {
+    if (qDev) {
+      return optionalParams.map((p => {
+        if (isElement(p)) {
+          return printElement(p);
+        }
+        return p;
+      }));
+    }
+    return optionalParams;
+  };
+  var printElement = el => {
+    var _a;
+    const ctx = tryGetContext(el);
+    const isComponent = el.hasAttribute(QHostAttr);
+    return {
+      isComponent: isComponent,
+      tagName: el.tagName,
+      renderQRL: null == (_a = null == ctx ? void 0 : ctx.$renderQrl$) ? void 0 : _a.getSymbol(),
+      element: el,
+      ctx: ctx
+    };
   };
   function createPath(opts = {}) {
     function assertPath(path) {
