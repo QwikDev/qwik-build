@@ -49,6 +49,7 @@
     const QError_immutableJsxProps = 19;
     const QError_useInvokeContext = 20;
     const QError_containerAlreadyPaused = 21;
+    const QError_canNotMountUseServerMount = 22;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         const error = `${text} ${parts.join(' ')}`;
@@ -80,6 +81,7 @@
                 'Props are immutable by default.',
                 'use- method must be called only at the root level of a component$()',
                 'Container is already paused. Skipping',
+                'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
             ];
             return `Code(${code}): ${MAP[code] ?? ''}`;
         }
@@ -212,12 +214,7 @@
             returnValue = fn.apply(null, args);
         }
         finally {
-            const currentCtx = _context;
             _context = previousContext;
-            if (currentCtx.$waitOn$ && currentCtx.$waitOn$.length > 0) {
-                // eslint-disable-next-line no-unsafe-finally
-                return Promise.all(currentCtx.$waitOn$).then(() => returnValue);
-            }
         }
         return returnValue;
     };
@@ -272,8 +269,22 @@
     const isPromise = (value) => {
         return value instanceof Promise;
     };
-    const then = (promise, thenFn, rejectFn) => {
-        return isPromise(promise) ? promise.then(thenFn, rejectFn) : thenFn(promise);
+    const safeCall = (call, thenFn, rejectFn) => {
+        try {
+            const promise = call();
+            if (isPromise(promise)) {
+                return promise.then(thenFn, rejectFn);
+            }
+            else {
+                return thenFn(promise);
+            }
+        }
+        catch (e) {
+            return rejectFn(e);
+        }
+    };
+    const then = (promise, thenFn) => {
+        return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
     };
     const promiseAll = (promises) => {
         const hasPromise = promises.some(isPromise);
@@ -519,24 +530,6 @@
     };
     const DocumentPlatform = /*#__PURE__*/ Symbol();
 
-    // <docs markdown="../readme.md#useDocument">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useDocument instead)
-    /**
-     * Retrieves the document of the current element. It's important to use this method instead of
-     * accessing `document` directly because during SSR, the global document might not exist.
-     *
-     * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
-     * any `await` statements.)
-     *
-     * @alpha
-     */
-    // </docs>
-    const useDocument = () => {
-        const ctx = useInvokeContext();
-        return ctx.$doc$;
-    };
-
     const fromCamelToKebabCase = (text) => {
         return text.replace(/([A-Z])/g, '-$1').toLowerCase();
     };
@@ -716,7 +709,7 @@
             return newNode;
         }
         else {
-            logWarn('Unvalid node, skipping');
+            logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
             return undefined;
         }
     };
@@ -804,57 +797,48 @@
         rctx.$containerState$.$subsManager$.$clearSub$(hostElement);
         // Resolve render function
         const onRenderFn = onRenderQRL.$invokeFn$(rctx.$containerEl$, invocatinContext);
-        try {
-            // Execution of the render function
-            const renderPromise = onRenderFn(props);
-            // Wait for results
-            return then(renderPromise, (jsxNode) => {
-                rctx.$hostElements$.add(hostElement);
-                const waitOnPromise = promiseAll(waitOn);
-                return then(waitOnPromise, () => {
-                    if (isFunction(jsxNode)) {
-                        ctx.$dirty$ = false;
-                        jsxNode = jsxNode();
+        return safeCall(() => onRenderFn(props), (jsxNode) => {
+            rctx.$hostElements$.add(hostElement);
+            const waitOnPromise = promiseAll(waitOn);
+            return then(waitOnPromise, () => {
+                if (isFunction(jsxNode)) {
+                    ctx.$dirty$ = false;
+                    jsxNode = jsxNode();
+                }
+                else if (ctx.$dirty$) {
+                    return renderComponent(rctx, ctx);
+                }
+                let componentCtx = ctx.$component$;
+                if (!componentCtx) {
+                    componentCtx = ctx.$component$ = {
+                        $hostElement$: hostElement,
+                        $slots$: [],
+                        $styleHostClass$: undefined,
+                        $styleClass$: undefined,
+                        $styleId$: undefined,
+                    };
+                    const scopedStyleId = directGetAttribute(hostElement, ComponentScopedStyles) ?? undefined;
+                    if (scopedStyleId) {
+                        componentCtx.$styleId$ = scopedStyleId;
+                        componentCtx.$styleHostClass$ = styleHost(scopedStyleId);
+                        componentCtx.$styleClass$ = styleContent(scopedStyleId);
+                        hostElement.classList.add(componentCtx.$styleHostClass$);
                     }
-                    else if (ctx.$dirty$) {
-                        logDebug('Dropping render. State changed during render.');
-                        return renderComponent(rctx, ctx);
-                    }
-                    let componentCtx = ctx.$component$;
-                    if (!componentCtx) {
-                        componentCtx = ctx.$component$ = {
-                            $hostElement$: hostElement,
-                            $slots$: [],
-                            $styleHostClass$: undefined,
-                            $styleClass$: undefined,
-                            $styleId$: undefined,
-                        };
-                        const scopedStyleId = directGetAttribute(hostElement, ComponentScopedStyles) ?? undefined;
-                        if (scopedStyleId) {
-                            componentCtx.$styleId$ = scopedStyleId;
-                            componentCtx.$styleHostClass$ = styleHost(scopedStyleId);
-                            componentCtx.$styleClass$ = styleContent(scopedStyleId);
-                            hostElement.classList.add(componentCtx.$styleHostClass$);
-                        }
-                    }
-                    componentCtx.$slots$ = [];
-                    newCtx.$contexts$.push(ctx);
-                    newCtx.$currentComponent$ = componentCtx;
-                    const invocatinContext = newInvokeContext(rctx.$doc$, hostElement, hostElement);
-                    invocatinContext.$subscriber$ = hostElement;
-                    invocatinContext.$renderCtx$ = newCtx;
-                    const processedJSXNode = processData(jsxNode, invocatinContext);
-                    return then(processedJSXNode, (processedJSXNode) => {
-                        return visitJsxNode(newCtx, hostElement, processedJSXNode, false);
-                    });
+                }
+                componentCtx.$slots$ = [];
+                newCtx.$contexts$.push(ctx);
+                newCtx.$currentComponent$ = componentCtx;
+                const invocatinContext = newInvokeContext(rctx.$doc$, hostElement, hostElement);
+                invocatinContext.$subscriber$ = hostElement;
+                invocatinContext.$renderCtx$ = newCtx;
+                const processedJSXNode = processData(jsxNode, invocatinContext);
+                return then(processedJSXNode, (processedJSXNode) => {
+                    return visitJsxNode(newCtx, hostElement, processedJSXNode, false);
                 });
-            }, (err) => {
-                logError(err);
             });
-        }
-        catch (err) {
+        }, (err) => {
             logError(err);
-        }
+        });
     };
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -1805,6 +1789,7 @@
         ctx.$dirty$ = true;
         const activeRendering = state.$hostsRendering$ !== undefined;
         if (activeRendering) {
+            assertDefined(state.$renderPromise$);
             state.$hostsStaging$.add(hostElement);
             return state.$renderPromise$.then((ctx) => {
                 if (state.$hostsNext$.has(hostElement)) {
@@ -1852,9 +1837,7 @@
     const renderMarked = async (containerEl, containerState) => {
         const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
         containerState.$hostsNext$.clear();
-        await executeWatches(containerState, (watch) => {
-            return (watch.f & WatchFlagsIsWatch) !== 0;
-        });
+        await executeWatchesBefore(containerState);
         containerState.$hostsStaging$.forEach((host) => {
             hostsRendering.add(host);
         });
@@ -1889,7 +1872,7 @@
         });
     };
     const postRendering = async (containerEl, containerState, ctx) => {
-        await executeWatches(containerState, (watch, stage) => {
+        await executeWatchesAfter(containerState, (watch, stage) => {
             if ((watch.f & WatchFlagsIsEffect) === 0) {
                 return false;
             }
@@ -1909,7 +1892,49 @@
             scheduleFrame(containerEl, containerState);
         }
     };
-    const executeWatches = async (containerState, watchPred) => {
+    const executeWatchesBefore = async (containerState) => {
+        const resourcesPromises = [];
+        const watchPromises = [];
+        const isWatch = (watch) => (watch.f & WatchFlagsIsWatch) !== 0;
+        const isResource = (watch) => (watch.f & WatchFlagsIsResource) !== 0;
+        containerState.$watchNext$.forEach((watch) => {
+            if (isWatch(watch)) {
+                watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                containerState.$watchNext$.delete(watch);
+            }
+            if (isResource(watch)) {
+                resourcesPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                containerState.$watchNext$.delete(watch);
+            }
+        });
+        do {
+            // Run staging effected
+            containerState.$watchStaging$.forEach((watch) => {
+                if (isWatch(watch)) {
+                    watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                }
+                else if (isResource(watch)) {
+                    resourcesPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                }
+                else {
+                    containerState.$watchNext$.add(watch);
+                }
+            });
+            containerState.$watchStaging$.clear();
+            // Wait for all promises
+            if (watchPromises.length > 0) {
+                const watches = await Promise.all(watchPromises);
+                sortWatches(watches);
+                await Promise.all(watches.map((watch) => {
+                    return runSubscriber(watch, containerState);
+                }));
+                watchPromises.length = 0;
+            }
+        } while (containerState.$watchStaging$.size > 0);
+        const resources = await Promise.all(resourcesPromises);
+        resources.map((watch) => runSubscriber(watch, containerState));
+    };
+    const executeWatchesAfter = async (containerState, watchPred) => {
         const watchPromises = [];
         containerState.$watchNext$.forEach((watch) => {
             if (watchPred(watch, false)) {
@@ -1933,7 +1958,7 @@
                 const watches = await Promise.all(watchPromises);
                 sortWatches(watches);
                 await Promise.all(watches.map((watch) => {
-                    return runWatch(watch, containerState);
+                    return runSubscriber(watch, containerState);
                 }));
                 watchPromises.length = 0;
             }
@@ -2240,6 +2265,7 @@
     const WatchFlagsIsWatch = 1 << 1;
     const WatchFlagsIsDirty = 1 << 2;
     const WatchFlagsIsCleanup = 1 << 3;
+    const WatchFlagsIsResource = 1 << 4;
     // <docs markdown="../readme.md#useWatch">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useWatch instead)
@@ -2316,7 +2342,7 @@
             };
             set(true);
             getContext(el).$watches$.push(watch);
-            ctx.$waitOn$.push(Promise.resolve().then(() => runWatch(watch, containerState)));
+            ctx.$waitOn$.push(Promise.resolve().then(() => runSubscriber(watch, containerState)));
             const isServer = containerState.$platform$.isServer;
             if (isServer) {
                 useRunWatch(watch, opts?.run);
@@ -2498,18 +2524,24 @@
      * }
      * ```
      *
-     * @see `useClientMount` `useMount`
+     * @see `useMount`
      * @public
      */
     // </docs>
     const useServerMountQrl = (mountQrl) => {
         const { get, set, ctx } = useSequentialScope();
-        if (!get) {
-            set(true);
-            const isServer = getPlatform(ctx.$doc$).isServer;
-            if (isServer) {
-                ctx.$waitOn$.push(mountQrl());
-            }
+        if (get) {
+            return get;
+        }
+        const isServer = getPlatform(ctx.$doc$).isServer;
+        if (isServer) {
+            const resource = createResourceFromPromise(mountQrl());
+            ctx.$waitOn$.push(resource.promise);
+            set(resource);
+            return resource;
+        }
+        else {
+            throw qError(QError_canNotMountUseServerMount, ctx.$hostElement$);
         }
     };
     // <docs markdown="../readme.md#useServerMount">
@@ -2549,88 +2581,11 @@
      * }
      * ```
      *
-     * @see `useClientMount` `useMount`
+     * @see `useMount`
      * @public
      */
     // </docs>
     const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
-    // <docs markdown="../readme.md#useClientMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientMount instead)
-    /**
-     * Register's a client mount hook that runs only in the client when the component is first
-     * mounted.
-     *
-     * ## Example
-     *
-     * ```tsx
-     * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     hash: '',
-     *   });
-     *
-     *   useClientMount$(async () => {
-     *     // This code will ONLY run once in the client, when the component is mounted
-     *     store.hash = document.location.hash;
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       <p>The url hash is: ${store.hash}</p>
-     *     </Host>
-     *   );
-     * });
-     * ```
-     *
-     * @see `useServerMount` `useMount`
-     *
-     * @public
-     */
-    // </docs>
-    const useClientMountQrl = (mountQrl) => {
-        const { get, set, ctx } = useSequentialScope();
-        if (!get) {
-            set(true);
-            const isServer = getPlatform(useDocument()).isServer;
-            if (!isServer) {
-                ctx.$waitOn$.push(mountQrl());
-            }
-        }
-    };
-    // <docs markdown="../readme.md#useClientMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientMount instead)
-    /**
-     * Register's a client mount hook that runs only in the client when the component is first
-     * mounted.
-     *
-     * ## Example
-     *
-     * ```tsx
-     * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     hash: '',
-     *   });
-     *
-     *   useClientMount$(async () => {
-     *     // This code will ONLY run once in the client, when the component is mounted
-     *     store.hash = document.location.hash;
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       <p>The url hash is: ${store.hash}</p>
-     *     </Host>
-     *   );
-     * });
-     * ```
-     *
-     * @see `useServerMount` `useMount`
-     *
-     * @public
-     */
-    // </docs>
-    const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
     // <docs markdown="../readme.md#useMount">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useMount instead)
@@ -2660,16 +2615,36 @@
      * });
      * ```
      *
-     * @see `useServerMount` `useClientMount`
+     * @see `useServerMount`
      * @public
      */
     // </docs>
     const useMountQrl = (mountQrl) => {
         const { get, set, ctx } = useSequentialScope();
-        if (!get) {
-            set(true);
-            ctx.$waitOn$.push(mountQrl());
+        if (get) {
+            return get;
         }
+        const resource = createResourceFromPromise(mountQrl());
+        ctx.$waitOn$.push(resource.promise);
+        set(resource);
+        return resource;
+    };
+    const createResourceFromPromise = (promise) => {
+        const resource = {
+            state: 'pending',
+            error: undefined,
+            resolved: undefined,
+            promise: promise.then((value) => {
+                resource.state = 'resolved';
+                resource.resolved = value;
+                return value;
+            }, (reason) => {
+                resource.state = 'rejected';
+                resource.error = reason;
+                throw reason;
+            }),
+        };
+        return resource;
     };
     // <docs markdown="../readme.md#useMount">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2700,49 +2675,117 @@
      * });
      * ```
      *
-     * @see `useServerMount` `useClientMount`
+     * @see `useServerMount`
      * @public
      */
     // </docs>
     const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
+    const runSubscriber = async (watch, containerState) => {
+        if ('r' in watch) {
+            await runResource(watch, containerState);
+        }
+        else {
+            await runWatch(watch, containerState);
+        }
+    };
+    const runResource = (watch, containerState) => {
+        if (!(watch.f & WatchFlagsIsDirty)) {
+            logDebug('Watch is not dirty, skipping run', watch);
+            return;
+        }
+        watch.f &= ~WatchFlagsIsDirty;
+        cleanupWatch(watch);
+        const el = watch.el;
+        const doc = getDocument(el);
+        const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
+        const { $subsManager$: subsManager } = containerState;
+        const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
+            subsManager.$clearSub$(watch);
+        });
+        const cleanups = [];
+        const resource = watch.r;
+        assertDefined(resource);
+        const track = (obj, prop) => {
+            const target = getProxyTarget(obj);
+            assertDefined(target, 'Expected a Proxy object to track');
+            const manager = subsManager.$getLocal$(target);
+            manager.$addSub$(watch, prop);
+            if (prop) {
+                return obj[prop];
+            }
+            else {
+                return obj;
+            }
+        };
+        const opts = {
+            track,
+            cleanup(callback) {
+                cleanups.push(callback);
+            },
+            previous: resource.resolved,
+        };
+        let resolve;
+        let reject;
+        // Execute mutation inside empty invokation
+        useInvoke(invokationContext, () => {
+            resource.state = 'pending';
+            resource.resolved = undefined;
+            resource.promise = new Promise((r, re) => {
+                resolve = r;
+                reject = re;
+            });
+        });
+        watch.destroy = noSerialize(() => {
+            cleanups.forEach((fn) => fn());
+            reject('cancelled');
+        });
+        return safeCall(() => watchFn(opts), (value) => {
+            resource.state = 'resolved';
+            resource.resolved = value;
+            resource.error = undefined;
+            resolve(value);
+            return;
+        }, (reason) => {
+            resource.state = 'rejected';
+            resource.resolved = undefined;
+            resource.error = noSerialize(reason);
+            reject(reason);
+            return;
+        });
+    };
     const runWatch = (watch, containerState) => {
         if (!(watch.f & WatchFlagsIsDirty)) {
             logDebug('Watch is not dirty, skipping run', watch);
-            return Promise.resolve(watch);
+            return;
         }
         watch.f &= ~WatchFlagsIsDirty;
-        const promise = new Promise((resolve) => {
-            then(watch.running, () => {
-                cleanupWatch(watch);
-                const el = watch.el;
-                const doc = getDocument(el);
-                const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
-                const { $subsManager$: subsManager } = containerState;
-                const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
-                    subsManager.$clearSub$(watch);
-                });
-                const track = (obj, prop) => {
-                    const target = getProxyTarget(obj);
-                    assertDefined(target, 'Expected a Proxy object to track');
-                    const manager = subsManager.$getLocal$(target);
-                    manager.$addSub$(watch, prop);
-                    if (prop) {
-                        return obj[prop];
-                    }
-                    else {
-                        return obj;
-                    }
-                };
-                return then(watchFn(track), (returnValue) => {
-                    if (isFunction(returnValue)) {
-                        watch.destroy = noSerialize(returnValue);
-                    }
-                    resolve(watch);
-                });
-            });
+        cleanupWatch(watch);
+        const el = watch.el;
+        const doc = getDocument(el);
+        const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
+        const { $subsManager$: subsManager } = containerState;
+        const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
+            subsManager.$clearSub$(watch);
         });
-        watch.running = noSerialize(promise);
-        return promise;
+        const track = (obj, prop) => {
+            const target = getProxyTarget(obj);
+            assertDefined(target, 'Expected a Proxy object to track');
+            const manager = subsManager.$getLocal$(target);
+            manager.$addSub$(watch, prop);
+            if (prop) {
+                return obj[prop];
+            }
+            else {
+                return obj;
+            }
+        };
+        return safeCall(() => watchFn(track), (returnValue) => {
+            if (isFunction(returnValue)) {
+                watch.destroy = noSerialize(returnValue);
+            }
+        }, (reason) => {
+            logError(reason);
+        });
     };
     const cleanupWatch = (watch) => {
         const destroy = watch.destroy;
@@ -2776,7 +2819,6 @@
     };
     const getWatchHandlerQrl = (watch) => {
         const watchQrl = watch.qrl;
-        assertQrl(watchQrl);
         const watchHandler = createQrl(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
         return watchHandler;
     };
@@ -2977,12 +3019,13 @@
                 }
                 if (!target && isNode$1(obj)) {
                     if (obj.nodeType === 1) {
-                        return getElementID(obj) + suffix;
+                        const elID = getElementID(obj);
+                        if (elID) {
+                            return elID + suffix;
+                        }
                     }
-                    else {
-                        logError(codeToText(QError_cannotSerializeNode), obj);
-                        return null;
-                    }
+                    logErrorAndStop(codeToText(QError_cannotSerializeNode), obj);
+                    return null;
                 }
             }
             else {
@@ -3650,29 +3693,30 @@
     const printElement = (el) => {
         const ctx = tryGetContext(el);
         const isComponent = el.hasAttribute(QHostAttr);
+        const isServer = /*#__PURE__*/ (() => typeof process !== 'undefined' && !!process.versions && !!process.versions.node)();
         return {
             isComponent,
             tagName: el.tagName,
             renderQRL: ctx?.$renderQrl$?.getSymbol(),
-            element: el,
-            ctx,
+            element: isServer ? undefined : el,
+            ctx: isServer ? undefined : ctx,
         };
     };
 
-    const assertDefined = (value, text) => {
+    function assertDefined(value, text) {
         if (qDev) {
             if (value != null)
                 return;
             throw logErrorAndStop(text || 'Expected defined value');
         }
-    };
-    const assertEqual = (value1, value2, text) => {
+    }
+    function assertEqual(value1, value2, text) {
         if (qDev) {
             if (value1 === value2)
                 return;
             throw logErrorAndStop(text || `Expected '${value1}' === '${value2}'.`);
         }
-    };
+    }
 
     const QObjectRecursive = 1 << 0;
     const QObjectImmutable = 1 << 1;
@@ -4145,8 +4189,10 @@
         return a.getHash() === b.getHash();
     };
     function assertQrl(qrl) {
-        if (!isQrl(qrl)) {
-            throw new Error('Not a QRL');
+        if (qDev) {
+            if (!isQrl(qrl)) {
+                throw new Error('Not a QRL');
+            }
         }
     }
 
@@ -4500,6 +4546,74 @@
         return componentQrl($(onMount), options);
     };
 
+    /**
+     * @alpha
+     */
+    const useResourceQrl = (qrl) => {
+        const { get, set, i, ctx } = useSequentialScope();
+        if (get != null) {
+            return get;
+        }
+        assertQrl(qrl);
+        const containerState = ctx.$renderCtx$.$containerState$;
+        const result = {
+            promise: undefined,
+            resolved: undefined,
+            error: undefined,
+            state: 'pending',
+        };
+        const resource = createProxy(result, containerState, 0, undefined);
+        const el = ctx.$hostElement$;
+        const watch = {
+            qrl,
+            el,
+            f: WatchFlagsIsDirty | WatchFlagsIsResource,
+            i,
+            r: resource,
+        };
+        ctx.$waitOn$.push(runResource(watch, containerState));
+        getContext(el).$watches$.push(watch);
+        assertDefined(result.promise);
+        set(resource);
+        return resource;
+    };
+    /**
+     * @alpha
+     */
+    const useResource$ = /*#__PURE__*/ implicit$FirstArg(useResourceQrl);
+    const useIsServer = () => {
+        const ctx = getInvokeContext();
+        assertDefined(ctx.$doc$);
+        return getPlatform(ctx.$doc$).isServer;
+    };
+    /**
+     * @alpha
+     */
+    const Async = (props) => {
+        const isBrowser = !qDev || !useIsServer();
+        if (isBrowser) {
+            if (props.onRejected) {
+                props.resource.promise.catch(() => { });
+                if (props.resource.state === 'rejected') {
+                    return props.onRejected(props.resource.error);
+                }
+            }
+            if (props.onPending) {
+                const state = props.resource.state;
+                if (state === 'pending') {
+                    return props.onPending();
+                }
+                else if (state === 'resolved') {
+                    return props.onResolved(props.resource.resolved);
+                }
+            }
+        }
+        // Async path
+        return jsx(Fragment, {
+            children: props.resource.promise.then(props.onResolved, props.onRejected),
+        });
+    };
+
     /* eslint-disable */
     const flattenArray = (array, dst) => {
         // Yes this function is just Array.flat, but we need to run on old versions of Node.
@@ -4557,7 +4671,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.35";
+    const version = "0.0.36";
 
     /**
      * Render JSX.
@@ -4571,7 +4685,7 @@
      * @param jsxNode - JSX to render
      * @alpha
      */
-    const render = async (parent, jsxNode) => {
+    const render = async (parent, jsxNode, allowRerender = true) => {
         // If input is not JSX, convert it
         if (!isJSXNode(jsxNode)) {
             jsxNode = jsx(jsxNode, null);
@@ -4579,12 +4693,29 @@
         const doc = getDocument(parent);
         const containerEl = getElement(parent);
         if (qDev && containerEl.hasAttribute(QContainerAttr)) {
-            logError(codeToText(QError_cannotRenderOverExistingContainer));
-            return;
+            throw qError(QError_cannotRenderOverExistingContainer, containerEl);
         }
         injectQContainer(containerEl);
         const containerState = getContainerState(containerEl);
-        // containerState.$hostsRendering$ = new Set();
+        containerState.$hostsRendering$ = new Set();
+        containerState.$renderPromise$ = renderRoot(parent, jsxNode, doc, containerState, containerEl);
+        const renderCtx = await containerState.$renderPromise$;
+        if (allowRerender) {
+            await postRendering(containerEl, containerState, renderCtx);
+        }
+        else {
+            containerState.$hostsRendering$ = undefined;
+            containerState.$renderPromise$ = undefined;
+            const next = containerState.$hostsNext$.size +
+                containerState.$hostsStaging$.size +
+                containerState.$watchNext$.size +
+                containerState.$watchStaging$.size;
+            if (next > 0) {
+                logWarn('State changed and a rerender is required, skipping');
+            }
+        }
+    };
+    const renderRoot = async (parent, jsxNode, doc, containerState, containerEl) => {
         const ctx = createRenderContext(doc, containerState, containerEl);
         ctx.$roots$.push(parent);
         const processedNodes = await processData(jsxNode);
@@ -4597,21 +4728,7 @@
             appendQwikDevTools(containerEl);
             printRenderStats(ctx);
         }
-        const promises = [];
-        ctx.$hostElements$.forEach((host) => {
-            const elCtx = getContext(host);
-            elCtx.$watches$.forEach((watch) => {
-                if (watch.f & WatchFlagsIsDirty) {
-                    try {
-                        promises.push(runWatch(watch, containerState));
-                    }
-                    catch (e) {
-                        logErrorAndStop(e);
-                    }
-                }
-            });
-        });
-        await Promise.all(promises);
+        return ctx;
     };
     const injectQwikSlotCSS = (docOrElm) => {
         const doc = getDocument(docOrElm);
@@ -4660,6 +4777,24 @@
         const element = ctx.$hostElement$;
         assertDefined(element);
         return element;
+    };
+
+    // <docs markdown="../readme.md#useDocument">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useDocument instead)
+    /**
+     * Retrieves the document of the current element. It's important to use this method instead of
+     * accessing `document` directly because during SSR, the global document might not exist.
+     *
+     * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
+     * any `await` statements.)
+     *
+     * @alpha
+     */
+    // </docs>
+    const useDocument = () => {
+        const ctx = useInvokeContext();
+        return ctx.$doc$;
     };
 
     // <docs markdown="./use-context.docs.md#createContext">
@@ -4971,6 +5106,7 @@
     };
 
     exports.$ = $;
+    exports.Async = Async;
     exports.Fragment = Fragment;
     exports.Host = Host;
     exports.SkipRerender = SkipRerender;
@@ -4997,8 +5133,6 @@
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
     exports.useClientEffectQrl = useClientEffectQrl;
-    exports.useClientMount$ = useClientMount$;
-    exports.useClientMountQrl = useClientMountQrl;
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
     exports.useDocument = useDocument;
@@ -5010,6 +5144,8 @@
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;
     exports.useRef = useRef;
+    exports.useResource$ = useResource$;
+    exports.useResourceQrl = useResourceQrl;
     exports.useResume$ = useResume$;
     exports.useResumeQrl = useResumeQrl;
     exports.useScopedStyles$ = useScopedStyles$;

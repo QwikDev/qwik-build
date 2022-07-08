@@ -77,12 +77,13 @@ globalThis.qwikOptimizer = function(module) {
     var _a;
     const ctx = tryGetContext(el);
     const isComponent = el.hasAttribute(QHostAttr);
+    const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
     return {
       isComponent: isComponent,
       tagName: el.tagName,
       renderQRL: null == (_a = null == ctx ? void 0 : ctx.$renderQrl$) ? void 0 : _a.getSymbol(),
-      element: el,
-      ctx: ctx
+      element: isServer ? void 0 : el,
+      ctx: isServer ? void 0 : ctx
     };
   };
   function createPath(opts = {}) {
@@ -509,7 +510,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.35"
+    qwik: "0.0.36"
   };
   async function getSystem() {
     const sysEnv = getEnv();

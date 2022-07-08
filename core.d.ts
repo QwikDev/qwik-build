@@ -290,6 +290,21 @@ export declare interface AriaAttributes {
 
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
+/**
+ * @alpha
+ */
+export declare const Async: <T>(props: AsyncProps<T>) => JSXNode;
+
+/**
+ * @alpha
+ */
+declare interface AsyncProps<T> {
+    resource: Resource<T>;
+    onResolved: (value: T) => JSXNode;
+    onPending?: () => JSXNode;
+    onRejected?: (reason: any) => JSXNode;
+}
+
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
@@ -520,8 +535,8 @@ declare interface ContainerState {
     $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
     $platform$: CorePlatform;
-    $watchNext$: Set<WatchDescriptor>;
-    $watchStaging$: Set<WatchDescriptor>;
+    $watchNext$: Set<SubscriberDescriptor>;
+    $watchStaging$: Set<SubscriberDescriptor>;
     $hostsNext$: Set<Element>;
     $hostsStaging$: Set<Element>;
     $hostsRendering$: Set<Element> | undefined;
@@ -723,6 +738,17 @@ declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface DescriptorBase<T = any> {
+    qrl: QRLInternal<T>;
+    el: Element;
+    f: number;
+    i: number;
+    destroy?: NoSerialize<() => void>;
 }
 
 declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1519,7 +1545,7 @@ declare interface QContext {
     $component$: ComponentCtx | undefined;
     $listeners$?: Map<string, QRLInternal<any>[]>;
     $seq$: any[];
-    $watches$: WatchDescriptor[];
+    $watches$: SubscriberDescriptor[];
     $contexts$?: Map<string, any>;
 }
 
@@ -1661,7 +1687,7 @@ export declare interface QRL<TYPE = any> {
      * @param args - Clousure arguments.
      * @returns A promise of the return value of the closure.
      */
-    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? RETURN : never>;
+    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
     /**
      * Resolve the QRL and return the actual value.
      */
@@ -1938,7 +1964,7 @@ export declare interface Ref<T> {
  * @param jsxNode - JSX to render
  * @alpha
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>) => Promise<void>;
+export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>, allowRerender?: boolean) => Promise<void>;
 
 /**
  * @alpha
@@ -1972,6 +1998,62 @@ declare interface RenderOperation {
  */
 declare interface RenderPerf {
     $visited$: number;
+}
+
+/**
+ * @alpha
+ */
+export declare type Resource<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
+
+/**
+ * @alpha
+ */
+export declare interface ResourceCtx<T> {
+    track: Tracker;
+    cleanup(callback: () => void): void;
+    previous: T | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>> {
+    r: Resource<T>;
+}
+
+/**
+ * @alpha
+ */
+declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
+
+/**
+ * @alpha
+ */
+export declare interface ResourcePending<T> {
+    state: 'pending';
+    promise: Promise<T>;
+    resolved: undefined;
+    error: undefined;
+}
+
+/**
+ * @alpha
+ */
+export declare interface ResourceRejected<T> {
+    state: 'rejected';
+    promise: Promise<T>;
+    resolved: undefined;
+    error: NoSerialize<any>;
+}
+
+/**
+ * @alpha
+ */
+export declare interface ResourceResolved<T> {
+    state: 'resolved';
+    promise: Promise<T>;
+    resolved: T;
+    error: undefined;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2010,7 +2092,7 @@ declare interface SequentialScope<T> {
 /**
  * @alpha
  */
-export declare type ServerFn = () => ValueOrPromise<void | (() => void)>;
+export declare type ServerFn<T> = () => ValueOrPromise<T>;
 
 /**
  * Sets the `CorePlatform`.
@@ -2100,7 +2182,12 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-declare type Subscriber = WatchDescriptor | Element;
+declare type Subscriber = SubscriberDescriptor | Element;
+
+/**
+ * @alpha
+ */
+declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
 
 declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
 
@@ -2571,68 +2658,6 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
 export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
 /**
- * Register's a client mount hook that runs only in the client when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     hash: '',
- *   });
- *
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The url hash is: ${store.hash}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useMount`
- *
- * @public
- */
-export declare const useClientMount$: (first: ServerFn) => void;
-
-/**
- * Register's a client mount hook that runs only in the client when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     hash: '',
- *   });
- *
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *     store.hash = document.location.hash;
- *   });
- *
- *   return (
- *     <Host>
- *       <p>The url hash is: ${store.hash}</p>
- *     </Host>
- *   );
- * });
- * ```
- *
- * @see `useServerMount` `useMount`
- *
- * @public
- */
-export declare const useClientMountQrl: (mountQrl: QRL<ServerFn>) => void;
-
-/**
  * Retrive Context value.
  *
  * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
@@ -2819,10 +2844,10 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  * });
  * ```
  *
- * @see `useServerMount` `useClientMount`
+ * @see `useServerMount`
  * @public
  */
-export declare const useMount$: (first: ServerFn) => void;
+export declare const useMount$: <T>(first: ServerFn<T>) => Resource<T>;
 
 /**
  * Register a server mount hook that runs only in the server when the component is first mounted.
@@ -2850,10 +2875,10 @@ export declare const useMount$: (first: ServerFn) => void;
  * });
  * ```
  *
- * @see `useServerMount` `useClientMount`
+ * @see `useServerMount`
  * @public
  */
-export declare const useMountQrl: (mountQrl: QRL<ServerFn>) => void;
+export declare const useMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => Resource<T>;
 
 /**
  * Register a listener on the current component's host element.
@@ -2958,6 +2983,16 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  * @public
  */
 export declare const useRef: <T = Element>(current?: T | undefined) => Ref<T>;
+
+/**
+ * @alpha
+ */
+export declare const useResource$: <T>(first: ResourceFn<T>) => Resource<T>;
+
+/**
+ * @alpha
+ */
+export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>) => Resource<T>;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -3078,10 +3113,10 @@ export declare const useSequentialScope: <T>() => SequentialScope<T>;
  * }
  * ```
  *
- * @see `useClientMount` `useMount`
+ * @see `useMount`
  * @public
  */
-export declare const useServerMount$: (first: ServerFn) => void;
+export declare const useServerMount$: <T>(first: ServerFn<T>) => Resource<T>;
 
 /**
  * Register's a server mount hook that runs only in the server when the component is first
@@ -3117,10 +3152,10 @@ export declare const useServerMount$: (first: ServerFn) => void;
  * }
  * ```
  *
- * @see `useClientMount` `useMount`
+ * @see `useMount`
  * @public
  */
-export declare const useServerMountQrl: (mountQrl: QRL<ServerFn>) => void;
+export declare const useServerMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => Resource<T>;
 
 /**
  * Creates an object that Qwik can track across serializations.
@@ -3363,7 +3398,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.35
+ * 0.0.36
  * @public
  */
 export declare const version: string;
@@ -3380,14 +3415,7 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 /**
  * @alpha
  */
-declare interface WatchDescriptor {
-    qrl: QRLInternal<WatchFn>;
-    el: Element;
-    f: number;
-    i: number;
-    destroy?: NoSerialize<() => void>;
-    running?: NoSerialize<Promise<WatchDescriptor>>;
-}
+declare type WatchDescriptor = DescriptorBase<WatchFn>;
 
 /**
  * @alpha

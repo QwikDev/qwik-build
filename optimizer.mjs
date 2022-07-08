@@ -44,12 +44,13 @@ var printParams = optionalParams => {
 var printElement = el => {
   const ctx = tryGetContext(el);
   const isComponent = el.hasAttribute(QHostAttr);
+  const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
   return {
     isComponent: isComponent,
     tagName: el.tagName,
     renderQRL: ctx?.$renderQrl$?.getSymbol(),
-    element: el,
-    ctx: ctx
+    element: isServer ? void 0 : el,
+    ctx: isServer ? void 0 : ctx
   };
 };
 
@@ -479,7 +480,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.35"
+  qwik: "0.0.36"
 };
 
 async function getSystem() {

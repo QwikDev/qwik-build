@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.35",
+  qwik: "0.0.36",
   qwikDom: "2.1.18"
 };
 
@@ -115,12 +115,13 @@ var printParams = (optionalParams) => {
 var printElement = (el) => {
   const ctx = tryGetContext(el);
   const isComponent = el.hasAttribute(QHostAttr);
+  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
   return {
     isComponent,
     tagName: el.tagName,
     renderQRL: ctx?.$renderQrl$?.getSymbol(),
-    element: el,
-    ctx
+    element: isServer ? void 0 : el,
+    ctx: isServer ? void 0 : ctx
   };
 };
 
@@ -9413,7 +9414,7 @@ async function renderToString(rootNode, opts = {}) {
   const isFullDocument = isDocument(root);
   const mapper = computeSymbolMapper(opts.manifest);
   await setServerPlatform(doc, opts, mapper);
-  await render(root, rootNode);
+  await render(root, rootNode, false);
   const renderDocTime = renderDocTimer();
   const buildBase = getBuildBase(opts);
   const containerEl = getElement(root);
