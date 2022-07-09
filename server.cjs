@@ -98,7 +98,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.36",
+  qwik: "0.0.35",
   qwikDom: "2.1.18"
 };
 
@@ -346,7 +346,7 @@ function getQwikLoaderScript(opts = {}) {
 function applyPrefetchImplementation(doc, parentElm, opts, prefetchResources) {
   const prefetchStrategy = opts.prefetchStrategy;
   if (prefetchStrategy !== null) {
-    const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "link-prefetch";
+    const prefetchImpl = (prefetchStrategy == null ? void 0 : prefetchStrategy.implementation) || "worker-fetch";
     if (prefetchImpl === "link-prefetch-html" || prefetchImpl === "link-preload-html" || prefetchImpl === "link-modulepreload-html") {
       linkHtmlImplementation(doc, parentElm, prefetchResources, prefetchImpl);
     } else if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
