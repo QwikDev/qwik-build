@@ -1768,7 +1768,7 @@
      * @returns A promise which is resolved when the component has been rendered.
      * @public
      */
-    const notifyRender = async (hostElement) => {
+    const notifyRender = (hostElement) => {
         assertDefined(directGetAttribute(hostElement, QHostAttr));
         const containerEl = getContainer(hostElement);
         assertDefined(containerEl);
@@ -1784,34 +1784,29 @@
         const ctx = getContext(hostElement);
         assertDefined(ctx.$renderQrl$);
         if (ctx.$dirty$) {
-            return state.$renderPromise$;
+            return;
         }
         ctx.$dirty$ = true;
         const activeRendering = state.$hostsRendering$ !== undefined;
         if (activeRendering) {
             assertDefined(state.$renderPromise$);
             state.$hostsStaging$.add(hostElement);
-            return state.$renderPromise$.then((ctx) => {
-                if (state.$hostsNext$.has(hostElement)) {
-                    // TODO
-                    return state.$renderPromise$;
-                }
-                else {
-                    return ctx;
-                }
-            });
         }
         else {
             state.$hostsNext$.add(hostElement);
-            return scheduleFrame(containerEl, state);
+            scheduleFrame(containerEl, state);
         }
     };
     const notifyWatch = (watch) => {
+        if (watch.f & WatchFlagsIsDirty) {
+            return;
+        }
+        watch.f |= WatchFlagsIsDirty;
         const containerEl = getContainer(watch.el);
         const state = getContainerState(containerEl);
-        watch.f |= WatchFlagsIsDirty;
         const activeRendering = state.$hostsRendering$ !== undefined;
         if (activeRendering) {
+            assertDefined(state.$renderPromise$);
             state.$watchStaging$.add(watch);
         }
         else {
@@ -1931,8 +1926,11 @@
                 watchPromises.length = 0;
             }
         } while (containerState.$watchStaging$.size > 0);
-        const resources = await Promise.all(resourcesPromises);
-        resources.map((watch) => runSubscriber(watch, containerState));
+        if (resourcesPromises.length > 0) {
+            const resources = await Promise.all(resourcesPromises);
+            sortWatches(resources);
+            resources.forEach((watch) => runSubscriber(watch, containerState));
+        }
     };
     const executeWatchesAfter = async (containerState, watchPred) => {
         const watchPromises = [];
@@ -2342,7 +2340,8 @@
             };
             set(true);
             getContext(el).$watches$.push(watch);
-            ctx.$waitOn$.push(Promise.resolve().then(() => runSubscriber(watch, containerState)));
+            const previousWait = ctx.$waitOn$.slice();
+            ctx.$waitOn$.push(Promise.all(previousWait).then(() => runSubscriber(watch, containerState)));
             const isServer = containerState.$platform$.isServer;
             if (isServer) {
                 useRunWatch(watch, opts?.run);
@@ -2681,6 +2680,7 @@
     // </docs>
     const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
     const runSubscriber = async (watch, containerState) => {
+        assertEqual(!!(watch.f & WatchFlagsIsDirty), true, 'Resource is not dirty');
         if ('r' in watch) {
             await runResource(watch, containerState);
         }
@@ -2688,11 +2688,7 @@
             await runWatch(watch, containerState);
         }
     };
-    const runResource = (watch, containerState) => {
-        if (!(watch.f & WatchFlagsIsDirty)) {
-            logDebug('Watch is not dirty, skipping run', watch);
-            return;
-        }
+    const runResource = (watch, containerState, waitOn) => {
         watch.f &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const el = watch.el;
@@ -2739,7 +2735,7 @@
             cleanups.forEach((fn) => fn());
             reject('cancelled');
         });
-        return safeCall(() => watchFn(opts), (value) => {
+        return safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
             resource.state = 'resolved';
             resource.resolved = value;
             resource.error = undefined;
@@ -2754,10 +2750,6 @@
         });
     };
     const runWatch = (watch, containerState) => {
-        if (!(watch.f & WatchFlagsIsDirty)) {
-            logDebug('Watch is not dirty, skipping run', watch);
-            return;
-        }
         watch.f &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const el = watch.el;
@@ -3799,10 +3791,7 @@
                     },
                     $notifySubs$(key) {
                         map.forEach((value, subscriber) => {
-                            if (value === null || !key) {
-                                notifyChange(subscriber);
-                            }
-                            else if (value.has(key)) {
+                            if (value === null || !key || value.has(key)) {
                                 notifyChange(subscriber);
                             }
                         });
@@ -4571,7 +4560,8 @@
             i,
             r: resource,
         };
-        ctx.$waitOn$.push(runResource(watch, containerState));
+        const previousWait = Promise.all(ctx.$waitOn$.slice());
+        runResource(watch, containerState, previousWait);
         getContext(el).$watches$.push(watch);
         assertDefined(result.promise);
         set(resource);
@@ -4580,7 +4570,9 @@
     /**
      * @alpha
      */
-    const useResource$ = /*#__PURE__*/ implicit$FirstArg(useResourceQrl);
+    const useResource$ = (generatorFn) => {
+        return useResourceQrl($(generatorFn));
+    };
     const useIsServer = () => {
         const ctx = getInvokeContext();
         assertDefined(ctx.$doc$);

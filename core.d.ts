@@ -2987,7 +2987,7 @@ export declare const useRef: <T = Element>(current?: T | undefined) => Ref<T>;
 /**
  * @alpha
  */
-export declare const useResource$: <T>(first: ResourceFn<T>) => Resource<T>;
+export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => Resource<T>;
 
 /**
  * @alpha
