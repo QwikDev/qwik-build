@@ -730,7 +730,8 @@ globalThis.qwikOptimizer = function(module) {
       transpile: false,
       explicitExtensions: false,
       dev: true,
-      scope: void 0
+      scope: void 0,
+      stripExports: void 0
     };
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
