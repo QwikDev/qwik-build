@@ -38,6 +38,9 @@ const QError_immutableJsxProps = 19;
 const QError_useInvokeContext = 20;
 const QError_containerAlreadyPaused = 21;
 const QError_canNotMountUseServerMount = 22;
+const QError_rootNodeMustBeHTML = 23;
+const QError_strictHTMLChildren = 24;
+const QError_invalidJsxNodeType = 25;
 const qError = (code, ...parts) => {
     const text = codeToText(code);
     const error = `${text} ${parts.join(' ')}`;
@@ -70,6 +73,9 @@ const codeToText = (code) => {
             'use- method must be called only at the root level of a component$()',
             'Container is already paused. Skipping',
             'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
+            'When rendering directly on top of Document, the root node must be a <html>',
+            'A <html> node must have 2 children. The first one <head> and the second one a <body>',
+            'Invalid JSXNode type. It must be either a function or a string. Found:',
         ];
         return `Code(${code}): ${MAP[code] ?? ''}`;
     }
@@ -93,7 +99,7 @@ const getDocument = (node) => {
         return node;
     }
     const doc = node.ownerDocument;
-    assertDefined(doc);
+    assertDefined(doc, 'doc must be defined');
     return doc;
 };
 
@@ -168,7 +174,7 @@ const tryGetInvokeContext = () => {
         if (isArray(context)) {
             const element = context[0];
             const hostElement = getHostElement(element);
-            assertDefined(element);
+            assertDefined(hostElement, `invoke: can not find hostElement from active element: ${element}`);
             return (document.__q_context__ = newInvokeContext(getDocument(element), hostElement, element, context[1], context[2]));
         }
         return context;
@@ -187,11 +193,11 @@ const useInvokeContext = () => {
     if (ctx.$event$ !== RenderEvent) {
         throw qError(QError_useInvokeContext);
     }
-    assertDefined(ctx.$hostElement$);
-    assertDefined(ctx.$waitOn$);
-    assertDefined(ctx.$renderCtx$);
-    assertDefined(ctx.$doc$);
-    assertDefined(ctx.$subscriber$);
+    assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`);
+    assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`);
+    assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`);
+    assertDefined(ctx.$doc$, `invoke: $doc$ must be defined`);
+    assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`);
     return ctx;
 };
 const useInvoke = (context, fn, ...args) => {
@@ -660,6 +666,9 @@ const processNode = (node, invocationContext) => {
     else if (isString(node.type)) {
         textType = node.type;
     }
+    else {
+        throw qError(QError_invalidJsxNodeType, node.type);
+    }
     let children = EMPTY_ARRAY;
     if (node.props) {
         const mightPromise = processData(node.props.children, invocationContext);
@@ -706,8 +715,9 @@ const isJSXNode = (n) => {
         if (n instanceof JSXNodeImpl) {
             return true;
         }
-        if (isObject(n) && n.constructor.name === JSXNodeImpl.name) {
-            throw new Error(`Duplicate implementations of "JSXNodeImpl" found`);
+        if (isObject(n) && 'key' in n && 'props' in n && 'type' in n) {
+            logWarn(`Duplicate implementations of "JSXNode" found`);
+            return true;
         }
         return false;
     }
@@ -770,9 +780,9 @@ const renderComponent = (rctx, ctx) => {
     ctx.$dirty$ = false;
     const hostElement = ctx.$element$;
     const onRenderQRL = ctx.$renderQrl$;
-    assertDefined(onRenderQRL);
+    assertDefined(onRenderQRL, `render: host element to render must has a $renderQrl$: ${hostElement}`);
     const props = ctx.$props$;
-    assertDefined(props);
+    assertDefined(props, `render: host element to render must has defined props: ${hostElement}`);
     // Component is not dirty any more
     rctx.$containerState$.$hostsStaging$.delete(hostElement);
     const newCtx = copyRenderContext(rctx);
@@ -840,13 +850,14 @@ const smartUpdateChildren = (ctx, elm, ch, mode, isSvg) => {
     const oldCh = getChildren(elm, mode);
     if (qDev) {
         if (elm.nodeType === 9) {
-            assertEqual(ch.length, 1);
-            assertEqual(ch[0].$type$, 'html');
+            if (ch.length !== 1 || ch[0].$type$ !== 'html') {
+                throw qError(QError_rootNodeMustBeHTML, ch);
+            }
         }
         else if (elm.nodeName === 'HTML') {
-            assertEqual(ch.length, 2);
-            assertEqual(ch[0].$type$, 'head');
-            assertEqual(ch[1].$type$, 'body');
+            if (ch.length !== 2 || ch[0].$type$ !== 'head' || ch[1].$type$ !== 'body') {
+                throw qError(QError_strictHTMLChildren, ch);
+            }
         }
     }
     if (oldCh.length > 0 && ch.length > 0) {
@@ -1083,7 +1094,7 @@ const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) => {
     const promises = [];
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = vnodes[startIdx];
-        assertDefined(ch);
+        assertDefined(ch, 'render: node must be defined');
         promises.push(createElm(ctx, ch, isSvg));
     }
     return then(promiseAll(promises), (children) => {
@@ -1562,7 +1573,7 @@ const executeContextWithSlots = (ctx) => {
     const before = ctx.$roots$.map((elm) => getSlots(undefined, elm));
     executeContext(ctx);
     const after = ctx.$roots$.map((elm) => getSlots(undefined, elm));
-    assertEqual(before.length, after.length);
+    assertEqual(before.length, after.length, 'render: number of q:slots changed during render context execution');
     for (let i = 0; i < before.length; i++) {
         resolveSlotProjection(ctx, ctx.$roots$[i], before[i], after[i]);
     }
@@ -1697,9 +1708,11 @@ const useLexicalScope = () => {
     assertQrl(qrl);
     if (qrl.$captureRef$ == null) {
         const el = context.$element$;
-        assertDefined(el);
-        assertDefined(qrl.$capture$);
-        resumeIfNeeded(getContainer(el));
+        assertDefined(el, 'invoke: element must be defined inside useLexicalScope()');
+        assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()');
+        const container = getContainer(el);
+        assertDefined(container, `invoke: cant find parent q:container of: ${el}`);
+        resumeIfNeeded(container);
         const ctx = getContext(el);
         qrl.$captureRef$ = qrl.$capture$.map((idx) => qInflate(idx, ctx));
     }
@@ -1712,7 +1725,7 @@ const useLexicalScope = () => {
 const qInflate = (ref, hostCtx) => {
     const int = parseInt(ref, 10);
     const obj = hostCtx.$refMap$.$get$(int);
-    assertEqual(hostCtx.$refMap$.$array$.length > int, true);
+    assertTrue(hostCtx.$refMap$.$array$.length > int, 'out of bounds infrate access');
     return obj;
 };
 
@@ -1757,9 +1770,9 @@ const notifyChange = (subscriber) => {
  * @public
  */
 const notifyRender = (hostElement) => {
-    assertDefined(directGetAttribute(hostElement, QHostAttr));
+    assertDefined(directGetAttribute(hostElement, QHostAttr), 'render: notified element must be a component');
     const containerEl = getContainer(hostElement);
-    assertDefined(containerEl);
+    assertDefined(containerEl, 'render: host element need to be inside a q:container');
     const state = getContainerState(containerEl);
     if (qDev &&
         !qTest &&
@@ -1770,14 +1783,14 @@ const notifyRender = (hostElement) => {
     }
     resumeIfNeeded(containerEl);
     const ctx = getContext(hostElement);
-    assertDefined(ctx.$renderQrl$);
+    assertDefined(ctx.$renderQrl$, `render: notified host element must have a defined $renderQrl$`);
     if (ctx.$dirty$) {
         return;
     }
     ctx.$dirty$ = true;
     const activeRendering = state.$hostsRendering$ !== undefined;
     if (activeRendering) {
-        assertDefined(state.$renderPromise$);
+        assertDefined(state.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined');
         state.$hostsStaging$.add(hostElement);
     }
     else {
@@ -1794,7 +1807,7 @@ const notifyWatch = (watch) => {
     const state = getContainerState(containerEl);
     const activeRendering = state.$hostsRendering$ !== undefined;
     if (activeRendering) {
-        assertDefined(state.$renderPromise$);
+        assertDefined(state.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined');
         state.$watchStaging$.add(watch);
     }
     else {
@@ -2688,7 +2701,7 @@ const runResource = (watch, containerState, waitOn) => {
     });
     const cleanups = [];
     const resource = watch.r;
-    assertDefined(resource);
+    assertDefined(resource, 'useResource: when running a resource, "watch.r" must be a defined.');
     const track = (obj, prop) => {
         const target = getProxyTarget(obj);
         assertDefined(target, 'Expected a Proxy object to track');
@@ -2874,7 +2887,7 @@ const resumeContainer = (containerEl) => {
     }
     Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
         const el = getObject(elementID);
-        assertDefined(el);
+        assertDefined(el, `resume: cant find dom node for id: ${elementID}`);
         const ctx = getContext(el);
         const qobj = ctxMeta.r;
         const seq = ctxMeta.s;
@@ -2902,8 +2915,8 @@ const resumeContainer = (containerEl) => {
         // Restore sequence scoping
         if (host) {
             const [props, renderQrl] = host.split(' ');
-            assertDefined(props);
-            assertDefined(renderQrl);
+            assertDefined(props, `resume: props missing in q:host attribute: ${host}`);
+            assertDefined(renderQrl, `resume: renderQRL missing in q:host attribute: ${host}`);
             ctx.$props$ = getObject(props);
             ctx.$renderQrl$ = getObject(renderQrl);
         }
@@ -3018,7 +3031,7 @@ const pauseState = async (containerEl) => {
     };
     const mustGetObjId = (obj) => {
         const id = getObjId(obj);
-        assertDefined(id);
+        assertDefined(id, `pause: missing ID for value ${obj}`);
         return id;
     };
     const serialize = (value) => {
@@ -3084,8 +3097,8 @@ const pauseState = async (containerEl) => {
     const meta = {};
     // Write back to the dom
     elements.forEach((node) => {
-        const ctx = getContext(node);
-        assertDefined(ctx);
+        const ctx = tryGetContext(node);
+        assertDefined(ctx, `pause: missing context for dom node`);
         const ref = ctx.$refMap$;
         const props = ctx.$props$;
         const contexts = ctx.$contexts$;
@@ -3143,7 +3156,7 @@ const pauseState = async (containerEl) => {
         }
         if (add) {
             const elementID = getElementID(node);
-            assertDefined(elementID);
+            assertDefined(elementID, `pause: can not generate ID for dom node`);
             meta[elementID] = metaValue;
         }
         if (ctx.$listeners$) {
@@ -3301,11 +3314,11 @@ const OBJECT_TRANSFORMS = {
 };
 const getObjectImpl = (id, elements, objs, containerState) => {
     if (id.startsWith(ELEMENT_ID_PREFIX)) {
-        assertEqual(elements.has(id), true);
+        assertTrue(elements.has(id), `missing element for id: ${id}`);
         return elements.get(id);
     }
     const index = strToInt(id);
-    assertEqual(objs.length > index, true);
+    assertTrue(objs.length > index, 'resume: index is out of bounds');
     let obj = objs[index];
     for (let i = id.length - 1; i >= 0; i--) {
         const code = id[i];
@@ -3419,7 +3432,7 @@ const resolvePromise = (promise) => {
     });
 };
 const getPromiseValue = (promise) => {
-    assertEqual(PROMISE_VALUE in promise, true);
+    assertTrue(PROMISE_VALUE in promise, 'pause: promise was not resolved previously');
     return promise[PROMISE_VALUE];
 };
 const collectQObjects = async (input, collector) => {
@@ -3589,7 +3602,7 @@ const normalizeOnProp = (prop) => {
     return `${scope}:${prop}`;
 };
 const setEvent = (rctx, ctx, prop, value) => {
-    assertEqual(prop.endsWith('$'), true);
+    assertTrue(prop.endsWith('$'), 'render: event property does not end with $');
     const qrl = isArray(value) ? value.map(ensureQrl) : ensureQrl(value);
     qPropWriteQRL(rctx, ctx, normalizeOnProp(prop.slice(0, -1)), qrl);
 };
@@ -3605,7 +3618,7 @@ const getPropsMutator = (ctx, containerState) => {
         ctx.$props$ = props = createProps({}, containerState);
     }
     const target = getProxyTarget(props);
-    assertDefined(target);
+    assertDefined(target, `props have to be a proxy, but it is not: ${props}`);
     const manager = containerState.$subsManager$.$getLocal$(target);
     return {
         set(prop, value) {
@@ -3697,6 +3710,13 @@ function assertEqual(value1, value2, text) {
         throw logErrorAndStop(text || `Expected '${value1}' === '${value2}'.`);
     }
 }
+function assertTrue(value1, text) {
+    if (qDev) {
+        if (value1 === true)
+            return;
+        throw logErrorAndStop(text || `Expected '${value1}' to be true.`);
+    }
+}
 
 const QObjectRecursive = 1 << 0;
 const QObjectImmutable = 1 << 1;
@@ -3740,7 +3760,7 @@ const createSubscriptionManager = () => {
         }
     };
     const tryGetLocal = (obj) => {
-        assertEqual(getProxyTarget(obj), undefined);
+        assertEqual(getProxyTarget(obj), undefined, 'object can not be be a proxy');
         return objToSubs.get(obj);
     };
     const trackSubToObj = (subscriber, map) => {
@@ -3753,7 +3773,7 @@ const createSubscriptionManager = () => {
     const getLocal = (obj, initialMap) => {
         let local = tryGetLocal(obj);
         if (local) {
-            assertEqual(initialMap, undefined);
+            assertEqual(initialMap, undefined, 'subscription map can not be set to an existing object');
         }
         else {
             const map = !initialMap ? new Map() : initialMap;
@@ -4551,7 +4571,7 @@ const useResourceQrl = (qrl) => {
     const previousWait = Promise.all(ctx.$waitOn$.slice());
     runResource(watch, containerState, previousWait);
     getContext(el).$watches$.push(watch);
-    assertDefined(result.promise);
+    assertDefined(result.promise, `useResource: resource.promise must be defined ${result}`);
     set(resource);
     return resource;
 };
@@ -4563,7 +4583,7 @@ const useResource$ = (generatorFn) => {
 };
 const useIsServer = () => {
     const ctx = getInvokeContext();
-    assertDefined(ctx.$doc$);
+    assertDefined(ctx.$doc$, 'doc must be defined');
     return getPlatform(ctx.$doc$).isServer;
 };
 /**
@@ -4754,9 +4774,7 @@ const injectQContainer = (containerEl) => {
 // </docs>
 const useHostElement = () => {
     const ctx = useInvokeContext();
-    const element = ctx.$hostElement$;
-    assertDefined(element);
-    return element;
+    return ctx.$hostElement$;
 };
 
 // <docs markdown="../readme.md#useDocument">
