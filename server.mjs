@@ -63,10 +63,6 @@ import { pauseContainer, render } from "./core.mjs";
 // packages/qwik/src/server/platform.ts
 import { setPlatform } from "./core.mjs";
 
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev !== false;
-var qTest = globalThis.describe !== void 0;
-
 // packages/qwik/src/testing/html.ts
 function isElement(value) {
   return isNode(value) && value.nodeType == 1;
@@ -74,6 +70,10 @@ function isElement(value) {
 function isNode(value) {
   return value && typeof value.nodeType == "number";
 }
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev !== false;
+var qTest = globalThis.describe !== void 0;
 
 // packages/qwik/src/core/util/markers.ts
 var QHostAttr = "q:host";

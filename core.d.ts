@@ -1949,7 +1949,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  * @alpha
  */
 export declare interface Ref<T> {
-    current?: T;
+    current: T | undefined;
 }
 
 /**
@@ -2982,7 +2982,7 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  *
  * @public
  */
-export declare const useRef: <T = Element>(current?: T | undefined) => Ref<T>;
+export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
 /**
  * @alpha

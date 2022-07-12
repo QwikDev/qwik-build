@@ -1131,7 +1131,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
  * @alpha
  */
 declare interface Ref<T> {
-    current?: T;
+    current: T | undefined;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
