@@ -480,7 +480,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.35"
+  qwik: "0.0.36"
 };
 
 async function getSystem() {
@@ -534,7 +534,7 @@ var getPlatformInputFiles = async sys => {
       const inputs = (await Promise.all(filePaths.map((async filePath => {
         const input = {
           code: await fs.promises.readFile(filePath, "utf8"),
-          path: sys.path.relative(rootDir, filePath)
+          path: filePath
         };
         return input;
       })))).sort(((a, b) => {
@@ -598,7 +598,8 @@ var extensions = {
   ".js": true,
   ".ts": true,
   ".tsx": true,
-  ".jsx": true
+  ".jsx": true,
+  ".mjs": true
 };
 
 var createOptimizer = async (optimizerOptions = {}) => {
@@ -634,6 +635,9 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       const rootFiles = await getInputFiles(root);
       input.push(...rootFiles);
     }
+    input.forEach((file => {
+      file.path = sys.path.relative(fsOpts.srcDir, file.path);
+    }));
     const modulesOpts = {
       srcDir: fsOpts.srcDir,
       entryStrategy: fsOpts.entryStrategy,
@@ -996,7 +1000,7 @@ function createPlugin(optimizerOptions = {}) {
       const result = await optimizer.transformFs(transformOpts);
       for (const output of result.modules) {
         const key = normalizePath(path.join(srcDir, output.path));
-        log("buildStart() add transformedOutput", key);
+        log("buildStart() add transformedOutput", key, output.hook?.displayName);
         transformedOutputs.set(key, [ output, key ]);
       }
       diagnosticsCallback(result.diagnostics, optimizer);

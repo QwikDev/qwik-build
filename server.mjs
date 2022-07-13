@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.35",
+  qwik: "0.0.36",
   qwikDom: "2.1.18"
 };
 
@@ -151,7 +151,7 @@ function createPlatform(document, opts, mapper) {
       const hash = getSymbolHash(symbolName);
       const result = mapper[hash];
       if (!result) {
-        logError("Cannot resolved symbol", symbolName, "in", mapper);
+        logError("Cannot resolve symbol", symbolName, "in", mapper);
       }
       return result;
     }

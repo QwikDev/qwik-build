@@ -4694,7 +4694,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.35";
+    const version = "0.0.36";
 
     /**
      * Render JSX.

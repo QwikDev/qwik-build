@@ -510,7 +510,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.35"
+    qwik: "0.0.36"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -580,7 +580,7 @@ globalThis.qwikOptimizer = function(module) {
         const inputs = (await Promise.all(filePaths.map((async filePath => {
           const input = {
             code: await fs.promises.readFile(filePath, "utf8"),
-            path: sys.path.relative(rootDir, filePath)
+            path: filePath
           };
           return input;
         })))).sort(((a, b) => {
@@ -676,7 +676,8 @@ globalThis.qwikOptimizer = function(module) {
     ".js": true,
     ".ts": true,
     ".tsx": true,
-    ".jsx": true
+    ".jsx": true,
+    ".mjs": true
   };
   var createOptimizer = async (optimizerOptions = {}) => {
     const sys = (null == optimizerOptions ? void 0 : optimizerOptions.sys) || await getSystem();
@@ -708,6 +709,9 @@ globalThis.qwikOptimizer = function(module) {
         const rootFiles = await getInputFiles(root);
         input.push(...rootFiles);
       }
+      input.forEach((file => {
+        file.path = sys.path.relative(fsOpts.srcDir, file.path);
+      }));
       const modulesOpts = {
         srcDir: fsOpts.srcDir,
         entryStrategy: fsOpts.entryStrategy,
@@ -1025,6 +1029,7 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
     const buildStart = async _ctx => {
+      var _a;
       log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build", opts.scope);
       if (opts.forceFullBuild) {
         const optimizer = getOptimizer();
@@ -1060,7 +1065,7 @@ globalThis.qwikOptimizer = function(module) {
         const result = await optimizer.transformFs(transformOpts);
         for (const output of result.modules) {
           const key = normalizePath(path.join(srcDir, output.path));
-          log("buildStart() add transformedOutput", key);
+          log("buildStart() add transformedOutput", key, null == (_a = output.hook) ? void 0 : _a.displayName);
           transformedOutputs.set(key, [ output, key ]);
         }
         diagnosticsCallback(result.diagnostics, optimizer);
