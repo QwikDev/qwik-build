@@ -289,6 +289,7 @@ export declare interface RenderToStringOptions extends SerializeDocumentOptions 
      * Defaults to `undefined`
      */
     fragmentTagName?: string;
+    userContext?: Record<string, any>;
 }
 
 /**
