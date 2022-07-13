@@ -9461,7 +9461,7 @@ async function renderToString(rootNode, opts = {}) {
   const isFullDocument = isDocument(root);
   const mapper = computeSymbolMapper(opts.manifest);
   await setServerPlatform(doc, opts, mapper);
-  doc.__qwikUserCtx = opts.userContext;
+  doc._qwikUserCtx = opts.userContext;
   await (0, import_qwik2.render)(root, rootNode, false);
   const renderDocTime = renderDocTimer();
   const buildBase = getBuildBase(opts);
@@ -9493,7 +9493,7 @@ async function renderToString(rootNode, opts = {}) {
       parentElm.insertBefore(scriptElm, parentElm.firstChild);
     }
   }
-  doc.__qwikUserCtx = void 0;
+  doc._qwikUserCtx = void 0;
   const docToStringTimer = createTimer();
   const result = {
     prefetchResources,

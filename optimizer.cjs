@@ -1727,12 +1727,15 @@ globalThis.qwikOptimizer = function(module) {
           }
           try {
             if (req.headers.accept && req.headers.accept.includes("text/html")) {
+              const userContext = {
+                ...res._qwikUserCtx
+              };
               const status = "number" === typeof res.statusCode ? res.statusCode : 200;
               if (isClientDevOnly) {
                 qwikPlugin.log(`handleClientEntry("${url}")`);
                 const relPath = path.relative(opts.rootDir, clientDevInput);
                 const entryUrl = "/" + qwikPlugin.normalizePath(relPath);
-                let html = getViteDevIndexHtml(entryUrl);
+                let html = getViteDevIndexHtml(entryUrl, userContext);
                 html = await server.transformIndexHtml(pathname, html);
                 res.setHeader("Content-Type", "text/html; charset=utf-8");
                 res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
@@ -1774,16 +1777,6 @@ globalThis.qwikOptimizer = function(module) {
                   }));
                 }));
                 qwikPlugin.log("handleSSR()", "symbols", manifest);
-                const userContext = {};
-                try {
-                  const userContextStr = res.getHeader("X-Qwik-Dev-User-Context");
-                  if ("string" === typeof userContextStr) {
-                    Object.assign(userContext, JSON.parse(userContextStr));
-                    res.removeHeader("X-Qwik-Dev-User-Context");
-                  }
-                } catch (e) {
-                  console.error(e);
-                }
                 const renderToStringOpts = {
                   url: url.href,
                   debug: true,
@@ -1830,8 +1823,11 @@ globalThis.qwikOptimizer = function(module) {
     };
     return vitePlugin;
   }
-  function getViteDevIndexHtml(entryUrl) {
-    return `\x3c!-- Qwik Vite Dev Mode --\x3e\n<!DOCTYPE html>\n<html>\n  <head></head>\n  <body>\n    <script type="module" src="${entryUrl}?${VITE_DEV_CLIENT_QS}="><\/script>\n  </body>\n</html>`;
+  function getViteDevIndexHtml(entryUrl, userContext) {
+    const doc = {
+      _qwikUserCtx: userContext
+    };
+    return `\x3c!-- Qwik Vite Dev Mode --\x3e\n<!DOCTYPE html>\n<html>\n  <head>\n    <script>\n      Object.assign(document, ${JSON.stringify(doc, null, 2)});\n    <\/script>\n  </head>\n  <body>\n    <script type="module" src="${entryUrl}?${VITE_DEV_CLIENT_QS}="><\/script>\n  </body>\n</html>`;
   }
   function updateEntryDev(code) {
     code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);
