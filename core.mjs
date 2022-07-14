@@ -4600,7 +4600,7 @@ const useIsServer = () => {
 /**
  * @alpha
  */
-const Async = (props) => {
+const Resource = (props) => {
     const isBrowser = !qDev || !useIsServer();
     if (isBrowser) {
         if (props.onRejected) {
@@ -5117,5 +5117,5 @@ const _useStyles = (styleQrl, scoped) => {
     }
 };
 
-export { $, Async, Fragment, Host, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useSequentialScope, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version };
+export { $, Fragment, Host, Resource, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useSequentialScope, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

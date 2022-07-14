@@ -293,13 +293,8 @@ declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'b
 /**
  * @alpha
  */
-export declare const Async: <T>(props: AsyncProps<T>) => JSXNode;
-
-/**
- * @alpha
- */
 declare interface AsyncProps<T> {
-    resource: Resource<T>;
+    resource: ResourceReturn<T>;
     onResolved: (value: T) => JSXNode;
     onPending?: () => JSXNode;
     onRejected?: (reason: any) => JSXNode;
@@ -2003,7 +1998,7 @@ declare interface RenderPerf {
 /**
  * @alpha
  */
-export declare type Resource<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
+export declare const Resource: <T>(props: AsyncProps<T>) => JSXNode;
 
 /**
  * @alpha
@@ -2018,7 +2013,7 @@ export declare interface ResourceCtx<T> {
  * @alpha
  */
 declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>> {
-    r: Resource<T>;
+    r: ResourceReturn<T>;
 }
 
 /**
@@ -2055,6 +2050,11 @@ export declare interface ResourceResolved<T> {
     resolved: T;
     error: undefined;
 }
+
+/**
+ * @alpha
+ */
+export declare type ResourceReturn<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;
@@ -2847,7 +2847,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  * @see `useServerMount`
  * @public
  */
-export declare const useMount$: <T>(first: ServerFn<T>) => Resource<T>;
+export declare const useMount$: <T>(first: ServerFn<T>) => ResourceReturn<T>;
 
 /**
  * Register a server mount hook that runs only in the server when the component is first mounted.
@@ -2878,7 +2878,7 @@ export declare const useMount$: <T>(first: ServerFn<T>) => Resource<T>;
  * @see `useServerMount`
  * @public
  */
-export declare const useMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => Resource<T>;
+export declare const useMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => ResourceReturn<T>;
 
 /**
  * Register a listener on the current component's host element.
@@ -2987,12 +2987,12 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
 /**
  * @alpha
  */
-export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => Resource<T>;
+export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => ResourceReturn<T>;
 
 /**
  * @alpha
  */
-export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>) => Resource<T>;
+export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>) => ResourceReturn<T>;
 
 /**
  * A lazy-loadable reference to a component's on resume hook.
@@ -3116,7 +3116,7 @@ export declare const useSequentialScope: <T>() => SequentialScope<T>;
  * @see `useMount`
  * @public
  */
-export declare const useServerMount$: <T>(first: ServerFn<T>) => Resource<T>;
+export declare const useServerMount$: <T>(first: ServerFn<T>) => ResourceReturn<T>;
 
 /**
  * Register's a server mount hook that runs only in the server when the component is first
@@ -3155,7 +3155,7 @@ export declare const useServerMount$: <T>(first: ServerFn<T>) => Resource<T>;
  * @see `useMount`
  * @public
  */
-export declare const useServerMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => Resource<T>;
+export declare const useServerMountQrl: <T>(mountQrl: QRL<ServerFn<T>>) => ResourceReturn<T>;
 
 /**
  * Creates an object that Qwik can track across serializations.

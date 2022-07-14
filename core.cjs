@@ -4612,7 +4612,7 @@
     /**
      * @alpha
      */
-    const Async = (props) => {
+    const Resource = (props) => {
         const isBrowser = !qDev || !useIsServer();
         if (isBrowser) {
             if (props.onRejected) {
@@ -5130,9 +5130,9 @@
     };
 
     exports.$ = $;
-    exports.Async = Async;
     exports.Fragment = Fragment;
     exports.Host = Host;
+    exports.Resource = Resource;
     exports.SkipRerender = SkipRerender;
     exports.Slot = Slot;
     exports.component$ = component$;
