@@ -489,13 +489,16 @@ async function getSystem() {
     dynamicImport: path => {
       throw new Error(`Qwik Optimizer sys.dynamicImport() not implemented, trying to import: "${path}"`);
     },
+    strictDynamicImport: path => {
+      throw new Error(`Qwik Optimizer sys.strictDynamicImport() not implemented, trying to import: "${path}"`);
+    },
     path: null,
     cwd: () => "/",
     os: "unknown",
     env: sysEnv
   };
   sys.path = createPath(sys);
-  sys.dynamicImport = path => import(path);
+  sys.strictDynamicImport = sys.dynamicImport = path => import(path);
   false;
   if ("node" === sysEnv) {
     sys.path = await sys.dynamicImport("path");
@@ -1809,7 +1812,7 @@ var getSymbolHash = symbolName => {
 var findQwikRoots = async (sys, packageJsonPath) => {
   if ("node" === sys.env) {
     const fs = await sys.dynamicImport("fs");
-    const {resolvePackageData: resolvePackageData} = await sys.dynamicImport("vite");
+    const {resolvePackageData: resolvePackageData} = await sys.strictDynamicImport("vite");
     try {
       const data = await fs.promises.readFile(packageJsonPath, {
         encoding: "utf-8"

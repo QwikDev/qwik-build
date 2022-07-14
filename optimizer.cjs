@@ -518,6 +518,9 @@ globalThis.qwikOptimizer = function(module) {
       dynamicImport: path => {
         throw new Error(`Qwik Optimizer sys.dynamicImport() not implemented, trying to import: "${path}"`);
       },
+      strictDynamicImport: path => {
+        throw new Error(`Qwik Optimizer sys.strictDynamicImport() not implemented, trying to import: "${path}"`);
+      },
       path: null,
       cwd: () => "/",
       os: "unknown",
@@ -527,13 +530,15 @@ globalThis.qwikOptimizer = function(module) {
     false;
     if ("node" === sysEnv) {
       sys.dynamicImport = path => require(path);
+      sys.strictDynamicImport = path => import(path);
       if ("undefined" === typeof TextEncoder) {
         const nodeUtil = await sys.dynamicImport("util");
         global.TextEncoder = nodeUtil.TextEncoder;
         global.TextDecoder = nodeUtil.TextDecoder;
       }
-    } else {
-      "webworker" !== sysEnv && "browsermain" !== sysEnv || (sys.dynamicImport = async path => {
+    } else if ("webworker" === sysEnv || "browsermain" === sysEnv) {
+      sys.strictDynamicImport = path => import(path);
+      sys.dynamicImport = async path => {
         const cjsRsp = await fetch(path);
         const cjsCode = await cjsRsp.text();
         const cjsModule = {
@@ -542,7 +547,7 @@ globalThis.qwikOptimizer = function(module) {
         const cjsRun = new Function("module", "exports", cjsCode);
         cjsRun(cjsModule, cjsModule.exports);
         return cjsModule.exports;
-      });
+      };
     }
     if ("node" === sysEnv) {
       sys.path = await sys.dynamicImport("path");
@@ -1852,7 +1857,7 @@ globalThis.qwikOptimizer = function(module) {
   var findQwikRoots = async (sys, packageJsonPath) => {
     if ("node" === sys.env) {
       const fs = await sys.dynamicImport("fs");
-      const {resolvePackageData: resolvePackageData} = await sys.dynamicImport("vite");
+      const {resolvePackageData: resolvePackageData} = await sys.strictDynamicImport("vite");
       try {
         const data = await fs.promises.readFile(packageJsonPath, {
           encoding: "utf-8"
