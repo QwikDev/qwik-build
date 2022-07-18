@@ -611,6 +611,7 @@ globalThis.qwikOptimizer = function(module) {
         if (triples) {
           for (const triple of triples) {
             try {
+              false;
               const mod = await sys.dynamicImport(`./bindings/${triple.platformArchABI}`);
               return mod;
             } catch (e) {
@@ -922,7 +923,6 @@ globalThis.qwikOptimizer = function(module) {
     const opts = {
       target: "client",
       buildMode: "development",
-      format: "es",
       debug: false,
       rootDir: null,
       input: null,
@@ -1446,9 +1446,6 @@ globalThis.qwikOptimizer = function(module) {
       ...rollupOutputOpts
     };
     if ("ssr" === opts.target) {
-      outputOpts.entryFileNames || (outputOpts.entryFileNames = "[name].js");
-      outputOpts.assetFileNames || (outputOpts.assetFileNames = "[name].[ext]");
-      outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "[name].js");
       outputOpts.inlineDynamicImports = true;
     } else if ("client" === opts.target) {
       if ("production" === opts.buildMode) {
@@ -1603,10 +1600,14 @@ globalThis.qwikOptimizer = function(module) {
           }
         };
         if ("ssr" === opts.target) {
-          updatedViteConfig.build.ssr = true;
-          "serve" === viteCommand ? updatedViteConfig.ssr = {
-            noExternal: vendorIds
-          } : updatedViteConfig.publicDir = false;
+          if ("serve" === viteCommand) {
+            updatedViteConfig.ssr = {
+              noExternal: vendorIds
+            };
+          } else {
+            updatedViteConfig.publicDir = false;
+            updatedViteConfig.build.ssr = true;
+          }
         } else if ("client" === opts.target) {
           "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
@@ -1717,11 +1718,15 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.log(`configureServer(), entry module: ${clientDevInput}`);
         if ("function" !== typeof fetch && "node" === sys.env) {
           qwikPlugin.log("configureServer(), patch fetch()");
-          const nodeFetch = await sys.dynamicImport("node-fetch");
-          global.fetch = nodeFetch;
-          global.Headers = nodeFetch.Headers;
-          global.Request = nodeFetch.Request;
-          global.Response = nodeFetch.Response;
+          try {
+            const nodeFetch = await sys.strictDynamicImport("node-fetch");
+            global.fetch = nodeFetch;
+            global.Headers = nodeFetch.Headers;
+            global.Request = nodeFetch.Request;
+            global.Response = nodeFetch.Response;
+          } catch {
+            console.warn("Global fetch() was not installed");
+          }
         }
         server.middlewares.use((async (req, res, next) => {
           const domain = "http://" + (req.headers.host ?? "localhost");

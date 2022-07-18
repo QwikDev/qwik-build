@@ -564,8 +564,11 @@ async function loadPlatformBinding(sys) {
       if (triples) {
         for (const triple of triples) {
           try {
-            const mod = await sys.dynamicImport(`./bindings/${triple.platformArchABI}`);
-            return mod;
+            {
+              const module = await sys.dynamicImport("module");
+              const mod2 = module.default.createRequire(import.meta.url)(`./bindings/${triple.platformArchABI}`);
+              return mod2;
+            }
           } catch (e) {
             logWarn(e);
           }
@@ -856,7 +859,6 @@ function createPlugin(optimizerOptions = {}) {
   const opts = {
     target: "client",
     buildMode: "development",
-    format: "es",
     debug: false,
     rootDir: null,
     input: null,
@@ -1394,9 +1396,6 @@ function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
     ...rollupOutputOpts
   };
   if ("ssr" === opts.target) {
-    outputOpts.entryFileNames || (outputOpts.entryFileNames = "[name].js");
-    outputOpts.assetFileNames || (outputOpts.assetFileNames = "[name].[ext]");
-    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "[name].js");
     outputOpts.inlineDynamicImports = true;
   } else if ("client" === opts.target) {
     if ("production" === opts.buildMode) {
@@ -1555,10 +1554,14 @@ function qwikVite(qwikViteOpts = {}) {
         }
       };
       if ("ssr" === opts.target) {
-        updatedViteConfig.build.ssr = true;
-        "serve" === viteCommand ? updatedViteConfig.ssr = {
-          noExternal: vendorIds
-        } : updatedViteConfig.publicDir = false;
+        if ("serve" === viteCommand) {
+          updatedViteConfig.ssr = {
+            noExternal: vendorIds
+          };
+        } else {
+          updatedViteConfig.publicDir = false;
+          updatedViteConfig.build.ssr = true;
+        }
       } else if ("client" === opts.target) {
         "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
         isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
@@ -1668,11 +1671,15 @@ function qwikVite(qwikViteOpts = {}) {
       qwikPlugin.log(`configureServer(), entry module: ${clientDevInput}`);
       if ("function" !== typeof fetch && "node" === sys.env) {
         qwikPlugin.log("configureServer(), patch fetch()");
-        const nodeFetch = await sys.dynamicImport("node-fetch");
-        global.fetch = nodeFetch;
-        global.Headers = nodeFetch.Headers;
-        global.Request = nodeFetch.Request;
-        global.Response = nodeFetch.Response;
+        try {
+          const nodeFetch = await sys.strictDynamicImport("node-fetch");
+          global.fetch = nodeFetch;
+          global.Headers = nodeFetch.Headers;
+          global.Request = nodeFetch.Request;
+          global.Response = nodeFetch.Response;
+        } catch {
+          console.warn("Global fetch() was not installed");
+        }
       }
       server.middlewares.use((async (req, res, next) => {
         const domain = "http://" + (req.headers.host ?? "localhost");
