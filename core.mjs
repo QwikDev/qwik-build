@@ -4619,7 +4619,7 @@ const Resource = (props) => {
             }
         }
     }
-    // Async path
+    // Resource path
     return jsx(Fragment, {
         children: props.resource.promise.then(props.onResolved, props.onRejected),
     });
@@ -4682,7 +4682,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.36";
+const version = "0.0.37";
 
 /**
  * Render JSX.

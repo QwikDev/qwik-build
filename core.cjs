@@ -4631,7 +4631,7 @@
                 }
             }
         }
-        // Async path
+        // Resource path
         return jsx(Fragment, {
             children: props.resource.promise.then(props.onResolved, props.onRejected),
         });
@@ -4694,7 +4694,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.36";
+    const version = "0.0.37";
 
     /**
      * Render JSX.

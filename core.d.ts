@@ -290,16 +290,6 @@ export declare interface AriaAttributes {
 
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-/**
- * @alpha
- */
-declare interface AsyncProps<T> {
-    resource: ResourceReturn<T>;
-    onResolved: (value: T) => JSXNode;
-    onPending?: () => JSXNode;
-    onRejected?: (reason: any) => JSXNode;
-}
-
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
@@ -1998,7 +1988,7 @@ declare interface RenderPerf {
 /**
  * @alpha
  */
-export declare const Resource: <T>(props: AsyncProps<T>) => JSXNode;
+export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
 
 /**
  * @alpha
@@ -2029,6 +2019,16 @@ export declare interface ResourcePending<T> {
     promise: Promise<T>;
     resolved: undefined;
     error: undefined;
+}
+
+/**
+ * @alpha
+ */
+export declare interface ResourceProps<T> {
+    resource: ResourceReturn<T>;
+    onResolved: (value: T) => JSXNode;
+    onPending?: () => JSXNode;
+    onRejected?: (reason: any) => JSXNode;
 }
 
 /**
@@ -3398,7 +3398,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) =
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.36
+ * 0.0.37
  * @public
  */
 export declare const version: string;
