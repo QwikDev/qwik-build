@@ -302,7 +302,7 @@ const getPlatform = (docOrNode) => {
     const doc = getDocument(docOrNode);
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
 };
-const DocumentPlatform = /*#__PURE__*/ Symbol();
+const DocumentPlatform = ':platform:';
 
 const fromCamelToKebabCase = (text) => {
     return text.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -1643,7 +1643,7 @@ const useRunWatch = (watch, run) => {
 };
 const getWatchHandlerQrl = (watch) => {
     const watchQrl = watch.qrl;
-    const watchHandler = createQrl(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
+    const watchHandler = createQRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
     return watchHandler;
 };
 
@@ -4097,7 +4097,7 @@ const codeToText = (code) => {
 const isQrl = (value) => {
     return typeof value === 'function' && typeof value.getSymbol === 'function';
 };
-const createQrl = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
+const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
     if (qDev) {
         verifySerializable(captureRef);
     }
@@ -4178,7 +4178,7 @@ const createQrl = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         },
         $invokeFn$: invokeFn,
         $copy$() {
-            return createQrl(chunk, symbol, symbolRef, symbolFn, null, captureRef, refSymbol);
+            return createQRL(chunk, symbol, symbolRef, symbolFn, null, captureRef, refSymbol);
         },
         $serialize$(options) {
             return stringifyQRL(QRL, options);
@@ -4264,7 +4264,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
         throw qError(QError_unknownTypeArgument, chunkOrFn);
     }
     // Unwrap subscribers
-    const qrl = createQrl(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    const qrl = createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     const ctx = tryGetInvokeContext();
     if (ctx && ctx.$element$) {
         qrl.$setContainer$(ctx.$element$);
@@ -4272,14 +4272,14 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
     return qrl;
 };
 const runtimeQrl = (symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
-    return createQrl(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null);
+    return createQRL(RUNTIME_QRL, 's' + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null);
 };
 /**
  * @alpha
  */
 const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
     // Unwrap subscribers
-    return createQrl(INLINED_QRL, symbolName, symbol, null, null, lexicalScopeCapture, null);
+    return createQRL(INLINED_QRL, symbolName, symbol, null, null, lexicalScopeCapture, null);
 };
 const stringifyQRL = (qrl, opts = {}) => {
     assertQrl(qrl);
@@ -4339,7 +4339,7 @@ const parseQRL = (qrl, el) => {
     if (chunk === RUNTIME_QRL) {
         logError(codeToText(QError_runtimeQrlNoElement), qrl);
     }
-    const iQrl = createQrl(chunk, symbol, null, null, capture, null, null);
+    const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
     if (el) {
         iQrl.$setContainer$(el);
     }

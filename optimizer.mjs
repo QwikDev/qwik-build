@@ -577,6 +577,18 @@ async function loadPlatformBinding(sys) {
     }
   }
   false;
+  if ("node" === sysEnv) {
+    const url = await sys.dynamicImport("url");
+    const __dirname2 = sys.path.dirname(url.fileURLToPath(import.meta.url));
+    const wasmPath = sys.path.join(__dirname2, "bindings", "qwik_wasm_bg.wasm");
+    const mod = await sys.dynamicImport("./bindings/qwik.wasm.mjs");
+    const fs = await sys.dynamicImport("fs");
+    return new Promise(((resolve, reject) => {
+      fs.readFile(wasmPath, ((err, buf) => {
+        null != err ? reject(err) : resolve(buf);
+      }));
+    })).then((buf => WebAssembly.compile(buf))).then((wasm => mod.default(wasm))).then((() => mod));
+  }
   {
     const module = await sys.dynamicImport("./bindings/qwik.wasm.mjs");
     await module.default();
@@ -1672,11 +1684,13 @@ function qwikVite(qwikViteOpts = {}) {
       if ("function" !== typeof fetch && "node" === sys.env) {
         qwikPlugin.log("configureServer(), patch fetch()");
         try {
-          const nodeFetch = await sys.strictDynamicImport("node-fetch");
-          global.fetch = nodeFetch;
-          global.Headers = nodeFetch.Headers;
-          global.Request = nodeFetch.Request;
-          global.Response = nodeFetch.Response;
+          if (!globalThis.fetch) {
+            const nodeFetch = await sys.strictDynamicImport("node-fetch");
+            global.fetch = nodeFetch;
+            global.Headers = nodeFetch.Headers;
+            global.Request = nodeFetch.Request;
+            global.Response = nodeFetch.Response;
+          }
         } catch {
           console.warn("Global fetch() was not installed");
         }
