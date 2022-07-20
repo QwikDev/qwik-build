@@ -1497,7 +1497,14 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare type PropFunction<T extends Function> = T extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => Promise<RET> : never;
+declare interface PropFnInterface<ARGS extends any[], RET> {
+    (...args: ARGS): Promise<RET>;
+}
+
+/**
+ * @public
+ */
+export declare type PropFunction<T extends Function> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
 
 /**
  * @public
@@ -1669,6 +1676,7 @@ declare interface QObjectMap {
  * @public
  */
 export declare interface QRL<TYPE = any> {
+    __brand__QRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it.
      * @param args - Clousure arguments.

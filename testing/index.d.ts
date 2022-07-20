@@ -177,6 +177,7 @@ export declare interface PrefetchStrategy {
  * @public
  */
 declare interface QRL<TYPE = any> {
+    __brand__QRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it.
      * @param args - Clousure arguments.
