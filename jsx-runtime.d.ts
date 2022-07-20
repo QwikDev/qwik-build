@@ -305,7 +305,7 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
-    autoComplete?: string | undefined;
+    autoComplete?: 'on' | 'off' | Omit<'on' | 'off', string> | undefined;
     encType?: string | undefined;
     method?: string | undefined;
     name?: string | undefined;
@@ -389,6 +389,8 @@ declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
+declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
+
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
 declare interface HTMLWebViewElement_2 extends HTMLElement {
@@ -434,7 +436,7 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
-    autoComplete?: string | undefined;
+    autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     capture?: boolean | 'user' | 'environment' | undefined;
     checked?: boolean | undefined;
@@ -1149,7 +1151,7 @@ declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoComplete?: string | undefined;
+    autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
     form?: string | undefined;
@@ -1468,7 +1470,7 @@ declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoComplete?: string | undefined;
+    autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     cols?: number | undefined;
     dirName?: string | undefined;
