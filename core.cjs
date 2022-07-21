@@ -740,13 +740,19 @@
         if (get != null) {
             return get;
         }
-        const containerState = ctx.$renderCtx$.$containerState$;
         const value = isFunction(initialState) ? initialState() : initialState;
-        const recursive = opts?.recursive ?? false;
-        const flags = recursive ? QObjectRecursive : 0;
-        const newStore = createProxy(value, containerState, flags, undefined);
-        set(newStore);
-        return newStore;
+        if (opts?.reactive === false) {
+            set(value);
+            return value;
+        }
+        else {
+            const containerState = ctx.$renderCtx$.$containerState$;
+            const recursive = opts?.recursive ?? false;
+            const flags = recursive ? QObjectRecursive : 0;
+            const newStore = createProxy(value, containerState, flags, undefined);
+            set(newStore);
+            return newStore;
+        }
     };
     // <docs markdown="../readme.md#useRef">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -1779,47 +1785,68 @@
         const collector = createCollector(doc, containerState);
         // Collect all qObjected around the DOM
         const elements = getNodesInScope(containerEl, hasContext);
+        // Collect all listeners
+        const listeners = [];
         for (const node of elements) {
             const ctx = tryGetContext(node);
-            await collectProps(node, ctx.$props$, collector);
-            if (ctx.$contexts$) {
-                for (const item of ctx.$contexts$.values()) {
-                    await collectValue(item, collector);
-                }
-            }
             if (ctx.$listeners$) {
-                for (const listeners of ctx.$listeners$.values()) {
-                    for (const l of listeners) {
-                        const captured = l.$captureRef$;
-                        if (captured) {
-                            for (const obj of captured) {
-                                await collectValue(obj, collector);
-                            }
-                        }
-                    }
-                }
+                ctx.$listeners$.forEach((qrls, key) => {
+                    qrls.forEach((qrl) => {
+                        listeners.push({
+                            key,
+                            qrl,
+                            el: node,
+                        });
+                    });
+                });
             }
             for (const watch of ctx.$watches$) {
                 collector.$watches$.push(watch);
             }
+        }
+        // No listeners implies static page
+        if (listeners.length === 0) {
+            return {
+                state: {
+                    ctx: {},
+                    objs: [],
+                    subs: [],
+                },
+                objs: [],
+                listeners: [],
+                mode: 'static',
+            };
+        }
+        // Listeners becomes the app roots
+        for (const listener of listeners) {
+            assertQrl(listener.qrl);
+            const captured = listener.qrl.$captureRef$;
+            if (captured) {
+                for (const obj of captured) {
+                    await collectValue(obj, collector, true);
+                }
+            }
+            const ctx = tryGetContext(listener.el);
             for (const obj of ctx.$refMap$.$array$) {
-                await collectValue(obj, collector);
+                await collectValue(obj, collector, true);
+            }
+        }
+        // If at this point any component can render, we need to capture Context and Props
+        const canRender = collector.$elements$.length > 0;
+        if (canRender) {
+            for (const node of elements) {
+                const ctx = tryGetContext(node);
+                await collectProps(node, ctx.$props$, collector);
+                if (ctx.$contexts$) {
+                    for (const item of ctx.$contexts$.values()) {
+                        await collectValue(item, collector, false);
+                    }
+                }
             }
         }
         // Convert objSet to array
         const objs = Array.from(new Set(collector.$objMap$.values()));
         const objToId = new Map();
-        const hasSubscriptions = (a) => {
-            const flags = getProxyFlags(containerState.$proxyMap$.get(a));
-            if (typeof flags === 'number' && flags > 0) {
-                return true;
-            }
-            const manager = containerState.$subsManager$.$tryGetLocal$(a);
-            if (manager) {
-                return manager.$subs$.size > 0;
-            }
-            return false;
-        };
         const getElementID = (el) => {
             let id = elementToIndex.get(el);
             if (id === undefined) {
@@ -1874,46 +1901,77 @@
             }
             return key;
         };
+        // Compute subscriptions
+        const subsMap = new Map();
+        objs.forEach((obj) => {
+            const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
+            if (flags === undefined) {
+                return;
+            }
+            const subsObj = [];
+            if (flags > 0) {
+                subsObj.push({
+                    subscriber: '$',
+                    data: flags,
+                });
+            }
+            const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
+            if (subs) {
+                subs.forEach((set, key) => {
+                    if (isElement(key)) {
+                        if (!collector.$elements$.includes(key)) {
+                            return;
+                        }
+                    }
+                    subsObj.push({
+                        subscriber: key,
+                        data: set ? Array.from(set) : null,
+                    });
+                });
+            }
+            if (subsObj.length > 0) {
+                subsMap.set(obj, subsObj);
+            }
+        });
+        // Sort objects: the ones with subscriptions go first
         objs.sort((a, b) => {
-            const isProxyA = hasSubscriptions(a) ? 0 : 1;
-            const isProxyB = hasSubscriptions(b) ? 0 : 1;
+            const isProxyA = subsMap.has(a) ? 0 : 1;
+            const isProxyB = subsMap.has(b) ? 0 : 1;
             return isProxyA - isProxyB;
         });
+        // Generate object ID by using a monotonic counter
         let count = 0;
         for (const obj of objs) {
             objToId.set(obj, count);
             count++;
         }
+        // Serialize object subscriptions
         const subs = objs
             .map((obj) => {
-            const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
-            if (flags === undefined) {
+            const sub = subsMap.get(obj);
+            if (!sub) {
                 return null;
             }
-            const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
-            if ((subs && subs.size > 0) || flags !== 0) {
-                const subsObj = {};
-                if (flags > 0) {
-                    subsObj['$'] = flags;
+            const subsObj = {};
+            sub.forEach(({ subscriber, data }) => {
+                if (subscriber === '$') {
+                    subsObj[subscriber] = data;
                 }
-                subs &&
-                    subs.forEach((set, key) => {
-                        const id = getObjId(key);
-                        if (id !== null) {
-                            subsObj[id] = set ? Array.from(set) : null;
-                        }
-                    });
-                return subsObj;
-            }
-            else {
-                return null;
-            }
+                else {
+                    const id = getObjId(subscriber);
+                    if (id !== null) {
+                        subsObj[id] = data;
+                    }
+                }
+            });
+            return subsObj;
         })
             .filter(isNotNullable);
         const qrlSerializeOptions = {
             $platform$: containerState.$platform$,
             $getObjId$: getObjId,
         };
+        // Serialize objects
         const convertedObjs = objs.map((obj) => {
             switch (typeof obj) {
                 case 'undefined':
@@ -1948,7 +2006,6 @@
             }
             throw qError(QError_verifySerializable, obj);
         });
-        const listeners = [];
         const meta = {};
         // Write back to the dom
         elements.forEach((node) => {
@@ -1970,56 +2027,48 @@
                     add = true;
                 }
             }
-            if (elementCaptured && props) {
-                const objs = [props];
-                if (renderQrl) {
-                    objs.push(renderQrl);
+            if (canRender) {
+                if (elementCaptured && props) {
+                    const objs = [props];
+                    if (renderQrl) {
+                        objs.push(renderQrl);
+                    }
+                    const value = objs.map(mustGetObjId).join(' ');
+                    if (value) {
+                        metaValue.h = value;
+                        add = true;
+                    }
                 }
-                const value = objs.map(mustGetObjId).join(' ');
-                if (value) {
-                    metaValue.h = value;
-                    add = true;
+                if (watches.length > 0) {
+                    const value = watches.map(getObjId).filter(isNotNullable).join(' ');
+                    if (value) {
+                        metaValue.w = value;
+                        add = true;
+                    }
                 }
-            }
-            if (watches.length > 0) {
-                const value = watches.map(getObjId).filter(isNotNullable).join(' ');
-                if (value) {
-                    metaValue.w = value;
-                    add = true;
+                if (elementCaptured && seq.length > 0) {
+                    const value = seq.map(mustGetObjId).join(' ');
+                    if (value) {
+                        metaValue.s = value;
+                        add = true;
+                    }
                 }
-            }
-            if (elementCaptured && seq.length > 0) {
-                const value = seq.map(mustGetObjId).join(' ');
-                if (value) {
-                    metaValue.s = value;
-                    add = true;
-                }
-            }
-            if (contexts) {
-                const serializedContexts = [];
-                contexts.forEach((value, key) => {
-                    serializedContexts.push(`${key}=${mustGetObjId(value)}`);
-                });
-                const value = serializedContexts.join(' ');
-                if (value) {
-                    metaValue.c = value;
-                    add = true;
+                if (contexts) {
+                    const serializedContexts = [];
+                    contexts.forEach((value, key) => {
+                        serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+                    });
+                    const value = serializedContexts.join(' ');
+                    if (value) {
+                        metaValue.c = value;
+                        add = true;
+                    }
                 }
             }
             if (add) {
                 const elementID = getElementID(node);
                 assertDefined(elementID, `pause: can not generate ID for dom node`, node);
                 meta[elementID] = metaValue;
-            }
-            if (ctx.$listeners$) {
-                ctx.$listeners$.forEach((qrls, key) => {
-                    qrls.forEach((qrl) => {
-                        listeners.push({
-                            key,
-                            qrl,
-                        });
-                    });
-                });
             }
         });
         for (const watch of collector.$watches$) {
@@ -2052,6 +2101,7 @@
             },
             objs,
             listeners,
+            mode: canRender ? 'render' : 'listeners',
         };
     };
     const getQwikJSON = (parentElm) => {
@@ -2195,6 +2245,7 @@
     const createCollector = (doc, containerState) => {
         return {
             $seen$: new Set(),
+            $seenLeaks$: new Set(),
             $objMap$: new Map(),
             $elements$: [],
             $watches$: [],
@@ -2210,23 +2261,23 @@
         if (ctx) {
             collector.$elements$.push(el);
             if (ctx.$props$) {
-                await collectValue(ctx.$props$, collector);
+                await collectValue(ctx.$props$, collector, false);
             }
             if (ctx.$renderQrl$) {
-                await collectValue(ctx.$renderQrl$, collector);
+                await collectValue(ctx.$renderQrl$, collector, false);
             }
             for (const obj of ctx.$seq$) {
-                await collectValue(obj, collector);
+                await collectValue(obj, collector, false);
             }
             for (const obj of ctx.$refMap$.$array$) {
-                await collectValue(obj, collector);
+                await collectValue(obj, collector, false);
             }
             for (const obj of ctx.$watches$) {
-                await collectValue(obj, collector);
+                await collectValue(obj, collector, false);
             }
             if (ctx.$contexts$) {
                 for (const obj of ctx.$contexts$.values()) {
-                    await collectValue(obj, collector);
+                    await collectValue(obj, collector, false);
                 }
             }
         }
@@ -2237,17 +2288,20 @@
     const unescapeText = (str) => {
         return str.replace(/\\x3C(\/?script)/g, '<$1');
     };
-    const collectSubscriptions = async (subs, collector) => {
-        if (collector.$seen$.has(subs)) {
-            return;
-        }
-        collector.$seen$.add(subs);
-        for (const key of Array.from(subs.keys())) {
-            if (isElement(key)) {
-                await collectElement(key, collector);
+    const collectSubscriptions = async (target, collector) => {
+        const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
+        if (subs) {
+            if (collector.$seen$.has(subs)) {
+                return;
             }
-            else {
-                await collectValue(key, collector);
+            collector.$seen$.add(subs);
+            for (const key of Array.from(subs.keys())) {
+                if (isElement(key)) {
+                    await collectElement(key, collector);
+                }
+                else {
+                    await collectValue(key, collector, true);
+                }
             }
         }
     };
@@ -2262,12 +2316,13 @@
         assertTrue(PROMISE_VALUE in promise, 'pause: promise was not resolved previously', promise);
         return promise[PROMISE_VALUE];
     };
-    const collectValue = async (obj, collector) => {
+    const collectValue = async (obj, collector, leaks) => {
         const input = obj;
-        if (collector.$seen$.has(obj)) {
+        const seen = leaks ? collector.$seenLeaks$ : collector.$seen$;
+        if (seen.has(obj)) {
             return;
         }
-        collector.$seen$.add(obj);
+        seen.add(obj);
         if (!shouldSerialize(obj) || obj === undefined) {
             collector.$objMap$.set(obj, undefined);
             return;
@@ -2278,7 +2333,7 @@
                 collector.$objMap$.set(obj, obj);
                 if (obj.$captureRef$) {
                     for (const item of obj.$captureRef$) {
-                        await collectValue(item, collector);
+                        await collectValue(item, collector, leaks);
                     }
                 }
                 return;
@@ -2288,7 +2343,7 @@
                 // Handle promises
                 if (isPromise(obj)) {
                     const resolved = await resolvePromise(obj);
-                    await collectValue(resolved, collector);
+                    await collectValue(resolved, collector, leaks);
                     return;
                 }
                 const target = getProxyTarget(obj);
@@ -2305,26 +2360,25 @@
                 }
                 // If proxy collect subscriptions
                 if (target) {
-                    const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
-                    if (subs) {
-                        await collectSubscriptions(subs, collector);
+                    if (leaks) {
+                        await collectSubscriptions(target, collector);
                     }
                     obj = target;
-                    if (collector.$seen$.has(obj)) {
+                    if (seen.has(obj)) {
                         return;
                     }
-                    collector.$seen$.add(obj);
+                    seen.add(obj);
                 }
                 collector.$objMap$.set(obj, obj);
                 if (isArray(obj)) {
                     for (let i = 0; i < obj.length; i++) {
-                        await collectValue(input[i], collector);
+                        await collectValue(input[i], collector, leaks);
                     }
                 }
                 else {
                     for (const key in obj) {
                         if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                            await collectValue(input[key], collector);
+                            await collectValue(input[key], collector, leaks);
                         }
                     }
                 }

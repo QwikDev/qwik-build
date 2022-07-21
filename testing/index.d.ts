@@ -203,6 +203,15 @@ export declare interface QwikBundle {
 }
 
 /**
+ * @public
+ */
+declare interface QwikLoaderOptions {
+    events?: string[];
+    include?: 'always' | 'never' | 'auto';
+    position?: 'top' | 'bottom';
+}
+
+/**
  * @alpha
  */
 export declare interface QwikManifest {
@@ -278,10 +287,7 @@ export declare interface RenderToStringOptions extends SerializeDocumentOptions 
     /**
      * Specifies if the Qwik Loader script is added to the document or not. Defaults to `{ include: true }`.
      */
-    qwikLoader?: {
-        events?: string[];
-        include?: boolean | 'top' | 'bottom';
-    };
+    qwikLoader?: QwikLoaderOptions;
     prefetchStrategy?: PrefetchStrategy | null;
     /**
      * When set, the app is serialized into a fragment. And the returned html is not a complete document.
@@ -335,6 +341,7 @@ export declare function setServerPlatform(document: any, opts: SerializeDocument
 declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
+    el: Element;
 }
 
 declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
@@ -357,6 +364,7 @@ export declare interface SnapshotResult {
     state: SnapshotState;
     listeners: SnapshotListener[];
     objs: any[];
+    mode: 'render' | 'listeners' | 'static';
 }
 
 /**

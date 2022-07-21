@@ -9400,10 +9400,15 @@ async function renderToString(rootNode, opts = {}) {
   if (typeof opts.fragmentTagName === "string") {
     if (opts.qwikLoader) {
       if (opts.qwikLoader.include === void 0) {
-        opts.qwikLoader.include = false;
+        opts.qwikLoader.include = "never";
+      }
+      if (opts.qwikLoader.position === void 0) {
+        opts.qwikLoader.position = "bottom";
       }
     } else {
-      opts.qwikLoader = { include: false };
+      opts.qwikLoader = {
+        include: "never"
+      };
     }
     root = doc.createElement(opts.fragmentTagName);
     doc.body.appendChild(root);
@@ -9429,8 +9434,11 @@ async function renderToString(rootNode, opts = {}) {
   if (prefetchResources.length > 0) {
     applyPrefetchImplementation(doc, parentElm, opts, prefetchResources);
   }
-  const includeLoader = !opts.qwikLoader || opts.qwikLoader.include === void 0 ? "bottom" : opts.qwikLoader.include;
+  const needLoader = !snapshotResult || snapshotResult.mode !== "static";
+  const includeMode = opts.qwikLoader?.include ?? "auto";
+  const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
   if (includeLoader) {
+    const qwikPosition = opts.qwikLoader?.position ?? "bottom";
     const qwikLoaderScript = getQwikLoaderScript({
       events: opts.qwikLoader?.events,
       debug: opts.debug
@@ -9438,7 +9446,7 @@ async function renderToString(rootNode, opts = {}) {
     const scriptElm = doc.createElement("script");
     scriptElm.setAttribute("id", "qwikloader");
     scriptElm.textContent = qwikLoaderScript;
-    if (includeLoader === "bottom") {
+    if (qwikPosition === "bottom") {
       parentElm.appendChild(scriptElm);
     } else if (isFullDocument) {
       doc.head.appendChild(scriptElm);

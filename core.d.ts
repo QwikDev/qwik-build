@@ -2139,6 +2139,7 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
+    el: Element;
 }
 
 declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
@@ -2161,6 +2162,7 @@ export declare interface SnapshotResult {
     state: SnapshotState;
     listeners: SnapshotListener[];
     objs: any[];
+    mode: 'render' | 'listeners' | 'static';
 }
 
 /**
@@ -3230,6 +3232,7 @@ export declare const useStore: <STATE extends object>(initialState: STATE | (() 
 
 declare interface UseStoreOptions {
     recursive?: boolean;
+    reactive?: boolean;
 }
 
 /**

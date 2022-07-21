@@ -9438,7 +9438,7 @@ var QWIK_DOC = Symbol();
 
 // packages/qwik/src/server/render.ts
 async function renderToString(rootNode, opts = {}) {
-  var _a;
+  var _a, _b, _c2;
   const createDocTimer = createTimer();
   const doc = _createDocument(opts);
   const createDocTime = createDocTimer();
@@ -9447,10 +9447,15 @@ async function renderToString(rootNode, opts = {}) {
   if (typeof opts.fragmentTagName === "string") {
     if (opts.qwikLoader) {
       if (opts.qwikLoader.include === void 0) {
-        opts.qwikLoader.include = false;
+        opts.qwikLoader.include = "never";
+      }
+      if (opts.qwikLoader.position === void 0) {
+        opts.qwikLoader.position = "bottom";
       }
     } else {
-      opts.qwikLoader = { include: false };
+      opts.qwikLoader = {
+        include: "never"
+      };
     }
     root = doc.createElement(opts.fragmentTagName);
     doc.body.appendChild(root);
@@ -9476,16 +9481,19 @@ async function renderToString(rootNode, opts = {}) {
   if (prefetchResources.length > 0) {
     applyPrefetchImplementation(doc, parentElm, opts, prefetchResources);
   }
-  const includeLoader = !opts.qwikLoader || opts.qwikLoader.include === void 0 ? "bottom" : opts.qwikLoader.include;
+  const needLoader = !snapshotResult || snapshotResult.mode !== "static";
+  const includeMode = ((_a = opts.qwikLoader) == null ? void 0 : _a.include) ?? "auto";
+  const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
   if (includeLoader) {
+    const qwikPosition = ((_b = opts.qwikLoader) == null ? void 0 : _b.position) ?? "bottom";
     const qwikLoaderScript = getQwikLoaderScript({
-      events: (_a = opts.qwikLoader) == null ? void 0 : _a.events,
+      events: (_c2 = opts.qwikLoader) == null ? void 0 : _c2.events,
       debug: opts.debug
     });
     const scriptElm = doc.createElement("script");
     scriptElm.setAttribute("id", "qwikloader");
     scriptElm.textContent = qwikLoaderScript;
-    if (includeLoader === "bottom") {
+    if (qwikPosition === "bottom") {
       parentElm.appendChild(scriptElm);
     } else if (isFullDocument) {
       doc.head.appendChild(scriptElm);
