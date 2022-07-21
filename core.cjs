@@ -561,7 +561,7 @@
             return smartUpdateChildren(ctx, elm, jsxNode.flat(), 'root', isSvg);
         }
         else if (jsxNode.$type$ === HOST_TYPE) {
-            updateProperties(ctx, getContext(elm), jsxNode.$props$, isSvg);
+            updateProperties(ctx, getContext(elm), jsxNode.$props$, isSvg, true);
             return smartUpdateChildren(ctx, elm, jsxNode.$children$ || [], 'root', isSvg);
         }
         else {
@@ -2589,7 +2589,7 @@
         const props = vnode.$props$;
         const ctx = getContext(elm);
         const isSlot = tag === QSlot;
-        let dirty = updateProperties(rctx, ctx, props, isSvg);
+        let dirty = updateProperties(rctx, ctx, props, isSvg, false);
         if (isSvg && vnode.$type$ === 'foreignObject') {
             isSvg = false;
         }
@@ -2768,7 +2768,7 @@
         const isComponent = isComponentNode(vnode);
         const ctx = getContext(elm);
         setKey(elm, vnode.$key$);
-        updateProperties(rctx, ctx, props, isSvg);
+        updateProperties(rctx, ctx, props, isSvg, false);
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
         }
@@ -2886,7 +2886,7 @@
     const ALLOWS_PROPS = ['class', 'className', 'style', 'id', QSlot];
     const HOST_PREFIX = 'host:';
     const SCOPE_PREFIX = /^(host|window|document|prevent(d|D)efault):/;
-    const updateProperties = (rctx, ctx, expectProps, isSvg) => {
+    const updateProperties = (rctx, ctx, expectProps, isSvg, isHost) => {
         if (!expectProps) {
             return false;
         }
@@ -2903,11 +2903,12 @@
                 continue;
             }
             // Early exit if value didnt change
-            const oldValue = ctx.$cache$.get(key);
+            const cacheKey = isHost ? `_host:${key}` : `_:${key}`;
+            const oldValue = ctx.$cache$.get(cacheKey);
             if (newValue === oldValue) {
                 continue;
             }
-            ctx.$cache$.set(key, newValue);
+            ctx.$cache$.set(cacheKey, newValue);
             // Check of data- or aria-
             if (key.startsWith('data-') || key.startsWith('aria-')) {
                 setAttribute(rctx, elm, key, newValue);

@@ -855,7 +855,11 @@ export declare const handleWatch: () => void;
  * servers that purpose.
  * @public
  */
-export declare const Host: FunctionComponent<HTMLAttributes<HTMLElement>>;
+export declare const Host: FunctionComponent<HostAttributes>;
+
+declare interface HostAttributes extends HTMLAttributes<HTMLElement> {
+    [key: string]: any;
+}
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
