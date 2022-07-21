@@ -46,13 +46,17 @@
             }
         };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
-        const processWindowEvent = (ev, element) => {
+        const processDocumentEvent = (ev, element) => {
             element = ev.target;
-            broadcast("-window", ev.type, ev);
+            broadcast("-document", ev.type, ev);
             while (element && element.getAttribute) {
                 dispatch(element, "", ev.type, ev);
                 element = ev.bubbles ? element.parentElement : null;
             }
+        };
+        const processWindowEvent = (ev, element) => {
+            ev.target;
+            broadcast("-window", ev.type, ev);
         };
         const processReadyStateChange = readyState => {
             readyState = doc.readyState;
@@ -77,9 +81,10 @@
             }
         };
         const addDocEventListener = eventName => {
-            window.addEventListener(eventName, processWindowEvent, {
+            document.addEventListener(eventName, processDocumentEvent, {
                 capture: !0
             });
+            window.addEventListener(eventName, processWindowEvent);
         };
         if (!doc.qR) {
             doc.qR = 1;
