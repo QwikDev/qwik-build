@@ -2396,6 +2396,10 @@ const smartUpdateChildren = (ctx, elm, ch, mode, isSvg) => {
         }
         ch = ch[0].$children$;
     }
+    const isHead = elm.nodeName === 'HEAD';
+    if (isHead) {
+        mode = 'head';
+    }
     const oldCh = getChildren(elm, mode);
     if (qDev) {
         if (elm.nodeType === 9) {
@@ -2410,16 +2414,16 @@ const smartUpdateChildren = (ctx, elm, ch, mode, isSvg) => {
         }
     }
     if (oldCh.length > 0 && ch.length > 0) {
-        return updateChildren(ctx, elm, oldCh, ch, isSvg);
+        return updateChildren(ctx, elm, oldCh, ch, isSvg, isHead);
     }
     else if (ch.length > 0) {
-        return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg);
+        return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, isSvg, isHead);
     }
     else if (oldCh.length > 0) {
         return removeVnodes(ctx, oldCh, 0, oldCh.length - 1);
     }
 };
-const updateChildren = (ctx, parentElm, oldCh, newCh, isSvg) => {
+const updateChildren = (ctx, parentElm, oldCh, newCh, isSvg, isHead) => {
     let oldStartIdx = 0;
     let newStartIdx = 0;
     let oldEndIdx = oldCh.length - 1;
@@ -2476,7 +2480,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, isSvg) => {
             idxInOld = oldKeyToIdx[newStartVnode.$key$];
             if (idxInOld === undefined) {
                 // New element
-                const newElm = createElm(ctx, newStartVnode, isSvg);
+                const newElm = createElm(ctx, newStartVnode, isSvg, isHead);
                 results.push(then(newElm, (newElm) => {
                     insertBefore(ctx, parentElm, newElm, oldStartVnode);
                 }));
@@ -2484,7 +2488,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, isSvg) => {
             else {
                 elmToMove = oldCh[idxInOld];
                 if (!isTagName(elmToMove, newStartVnode.$type$)) {
-                    const newElm = createElm(ctx, newStartVnode, isSvg);
+                    const newElm = createElm(ctx, newStartVnode, isSvg, isHead);
                     results.push(then(newElm, (newElm) => {
                         insertBefore(ctx, parentElm, newElm, oldStartVnode);
                     }));
@@ -2500,7 +2504,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, isSvg) => {
     }
     if (newStartIdx <= newEndIdx) {
         const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
-        results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg));
+        results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, isSvg, isHead));
     }
     let wait = promiseAll(results);
     if (oldStartIdx <= oldEndIdx) {
@@ -2529,6 +2533,8 @@ const getChildren = (elm, mode) => {
             return getCh(elm, isChildComponent);
         case 'fallback':
             return getCh(elm, isFallback);
+        case 'head':
+            return getCh(elm, isHeadChildren);
     }
 };
 const isNode = (elm) => {
@@ -2537,6 +2543,9 @@ const isNode = (elm) => {
 };
 const isFallback = (node) => {
     return node.nodeName === 'Q:FALLBACK';
+};
+const isHeadChildren = (node) => {
+    return isElement(node) && (node.hasAttribute('q:head') || node.nodeName === 'TITLE');
 };
 const isChildSlot = (node) => {
     return isNode(node) && node.nodeName !== 'Q:FALLBACK' && node.nodeName !== 'Q:TEMPLATE';
@@ -2639,12 +2648,12 @@ const patchVnode = (rctx, elm, vnode, isSvg) => {
     const mode = isSlot ? 'fallback' : 'default';
     return smartUpdateChildren(rctx, elm, ch, mode, isSvg);
 };
-const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg) => {
+const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, isSvg, isHead) => {
     const promises = [];
     for (; startIdx <= endIdx; ++startIdx) {
         const ch = vnodes[startIdx];
         assertDefined(ch, 'render: node must be defined at index', startIdx, vnodes);
-        promises.push(createElm(ctx, ch, isSvg));
+        promises.push(createElm(ctx, ch, isSvg, isHead));
     }
     return then(promiseAll(promises), (children) => {
         for (const child of children) {
@@ -2739,7 +2748,7 @@ const resolveSlotProjection = (ctx, hostElm, before, after) => {
 const getSlotName = (node) => {
     return node.$props$?.[QSlot] ?? '';
 };
-const createElm = (rctx, vnode, isSvg) => {
+const createElm = (rctx, vnode, isSvg, isHead) => {
     rctx.$perf$.$visited$++;
     const tag = vnode.$type$;
     if (tag === '#text') {
@@ -2757,6 +2766,9 @@ const createElm = (rctx, vnode, isSvg) => {
     const ctx = getContext(elm);
     setKey(elm, vnode.$key$);
     updateProperties(rctx, ctx, props, isSvg, false);
+    if (isHead) {
+        directSetAttribute(elm, 'q:head', '');
+    }
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
     }
@@ -2798,7 +2810,7 @@ const createElm = (rctx, vnode, isSvg) => {
             const slotRctx = copyRenderContext(rctx);
             slotRctx.$contexts$.push(ctx);
             const slotMap = isComponent ? getSlots(ctx.$component$, elm) : undefined;
-            const promises = children.map((ch) => createElm(slotRctx, ch, isSvg));
+            const promises = children.map((ch) => createElm(slotRctx, ch, isSvg, false));
             return then(promiseAll(promises), () => {
                 let parent = elm;
                 for (const node of children) {
@@ -3035,11 +3047,16 @@ const insertBefore = (ctx, parent, newChild, refChild) => {
 const appendStyle = (ctx, hostElement, styleTask) => {
     const fn = () => {
         const containerEl = ctx.$containerEl$;
-        const stylesParent = ctx.$doc$.documentElement === containerEl ? ctx.$doc$.head ?? containerEl : containerEl;
+        const isDoc = ctx.$doc$.documentElement === containerEl && !!ctx.$doc$.head;
         const style = ctx.$doc$.createElement('style');
         directSetAttribute(style, 'q:style', styleTask.styleId);
         style.textContent = styleTask.content;
-        stylesParent.insertBefore(style, stylesParent.firstChild);
+        if (isDoc) {
+            ctx.$doc$.head.appendChild(style);
+        }
+        else {
+            containerEl.insertBefore(style, containerEl.firstChild);
+        }
     };
     ctx.$operations$.push({
         $el$: hostElement,
@@ -4798,11 +4815,16 @@ const renderRoot = async (parent, jsxNode, doc, containerState, containerEl) => 
 };
 const injectQwikSlotCSS = (docOrElm) => {
     const doc = getDocument(docOrElm);
-    const element = isDocument(docOrElm) ? docOrElm.head : docOrElm;
+    const isDoc = isDocument(docOrElm);
     const style = doc.createElement('style');
     directSetAttribute(style, 'id', 'qwik/base-styles');
     style.textContent = `q\\:slot{display:contents}q\\:fallback,q\\:template{display:none}q\\:fallback:last-child{display:contents}`;
-    element.insertBefore(style, element.firstChild);
+    if (isDoc) {
+        docOrElm.head.appendChild(style);
+    }
+    else {
+        docOrElm.insertBefore(style, docOrElm.firstChild);
+    }
 };
 const getElement = (docOrElm) => {
     return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
