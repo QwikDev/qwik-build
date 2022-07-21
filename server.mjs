@@ -53,7 +53,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.38",
+  qwik: "0.0.39",
   qwikDom: "2.1.18"
 };
 
