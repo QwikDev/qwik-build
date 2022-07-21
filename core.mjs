@@ -169,13 +169,6 @@ const newInvokeContext = (doc, hostElement, element, event, url) => {
         $qrl$: undefined,
     };
 };
-/**
- * @alpha
- */
-const useWaitOn = (promise) => {
-    const ctx = useInvokeContext();
-    ctx.$waitOn$.push(promise);
-};
 const getHostElement = (el) => {
     let foundSlot = false;
     let node = el;
@@ -916,93 +909,6 @@ const useCleanupQrl = (unmountFn) => {
  */
 // </docs>
 const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
-// <docs markdown="../readme.md#useResume">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useResume instead)
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to resume even if no user interaction has taken place.
- *
- * Only called in the client.
- * Only called once.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useResume$(() => {
- *     // Eagerly invoked when the application resumes on the client
- *     console.log('called once in client');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @see `useVisible`, `useClientEffect`
- *
- * @alpha
- */
-// </docs>
-const useResumeQrl = (resumeFn, options = {}) => useOn(options.run == 'load' ? 'qinit' : 'qvisible', resumeFn);
-// <docs markdown="../readme.md#useResume">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useResume instead)
-/**
- * A lazy-loadable reference to a component's on resume hook.
- *
- * The hook is eagerly invoked when the application resumes on the client. Because it is called
- * eagerly, this allows the component to resume even if no user interaction has taken place.
- *
- * Only called in the client.
- * Only called once.
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   useResume$(() => {
- *     // Eagerly invoked when the application resumes on the client
- *     console.log('called once in client');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
- * @see `useVisible`, `useClientEffect`
- *
- * @alpha
- */
-// </docs>
-const useResume$ = /*#__PURE__*/ implicit$FirstArg(useResumeQrl);
-// <docs markdown="../readme.md#useVisible">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useVisible instead)
-/**
- * A lazy-loadable reference to a component's on the visible hook.
- *
- * The hook is lazily invoked when the component becomes visible in the browser viewport.
- *
- * Only called in the client.
- * Only called once.
- *
- * @see `useResume`, `useClientEffect`
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     isVisible: false,
- *   });
- *   useVisible$(() => {
- *     // Invoked once when the component is visible in the browser's viewport
- *     console.log('called once in client when visible');
- *     store.isVisible = true;
- *   });
- *   return <div>{store.isVisible}</div>;
- * });
- * ```
- *
- * @alpha
- */
-// </docs>
-const useVisibleQrl = (resumeFn) => useOn('qvisible', resumeFn);
 // <docs markdown="../readme.md#useOn">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useOn instead)
@@ -1174,7 +1080,7 @@ const useWatchQrl = (qrl, opts) => {
         ctx.$waitOn$.push(Promise.all(previousWait).then(() => runSubscriber(watch, containerState)));
         const isServer = containerState.$platform$.isServer;
         if (isServer) {
-            useRunWatch(watch, opts?.run);
+            useRunWatch(watch, opts?.eagerness);
         }
     }
 };
@@ -1281,7 +1187,7 @@ const useClientEffectQrl = (qrl, opts) => {
         };
         set(true);
         getContext(el).$watches$.push(watch);
-        useRunWatch(watch, opts?.run ?? 'visible');
+        useRunWatch(watch, opts?.eagerness ?? 'visible');
         const doc = ctx.$doc$;
         if (doc['qO']) {
             doc['qO'].observe(el);
@@ -1639,12 +1545,12 @@ const destroyWatch = (watch) => {
         cleanupWatch(watch);
     }
 };
-const useRunWatch = (watch, run) => {
-    if (run === 'load') {
-        useResumeQrl(getWatchHandlerQrl(watch));
+const useRunWatch = (watch, eagerness) => {
+    if (eagerness === 'load') {
+        useOn('qinit', getWatchHandlerQrl(watch));
     }
-    else if (run === 'visible') {
-        useVisibleQrl(getWatchHandlerQrl(watch));
+    else if (eagerness === 'visible') {
+        useOn('qvisible', getWatchHandlerQrl(watch));
     }
 };
 const getWatchHandlerQrl = (watch) => {
@@ -4754,7 +4660,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.37";
+const version = "0.0.38";
 
 /**
  * Render JSX.
@@ -5194,5 +5100,5 @@ const _useStyles = (styleQrl, scoped) => {
     }
 };
 
-export { $, Fragment, Host, Resource, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useResume$, useResumeQrl, useScopedStyles$, useScopedStylesQrl, useSequentialScope, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWaitOn, useWatch$, useWatchQrl, version };
+export { $, Fragment, Host, Resource, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

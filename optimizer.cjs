@@ -510,7 +510,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.37"
+    qwik: "0.0.38"
   };
   async function getSystem() {
     const sysEnv = getEnv();
