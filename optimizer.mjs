@@ -1686,7 +1686,7 @@ function qwikVite(qwikViteOpts = {}) {
         try {
           if (!globalThis.fetch) {
             const nodeFetch = await sys.strictDynamicImport("node-fetch");
-            global.fetch = nodeFetch;
+            global.fetch = nodeFetch.default;
             global.Headers = nodeFetch.Headers;
             global.Request = nodeFetch.Request;
             global.Response = nodeFetch.Response;
