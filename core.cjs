@@ -4482,8 +4482,9 @@
         const skipKey = ELEMENTS_SKIP_KEY.includes(tagName);
         // Return a QComponent Factory function.
         return function QSimpleComponent(props, key) {
+            const finalTag = props['host:tagName'] ?? tagName;
             const finalKey = skipKey ? undefined : onRenderQrl.getHash() + ':' + (key ? key : '');
-            return jsx(tagName, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
+            return jsx(finalTag, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
         };
     };
     // <docs markdown="../readme.md#component">

@@ -427,6 +427,7 @@ declare interface ComponentBaseProps {
     [key: `window:on${string}Qrl`]: QrlEvent | QrlEvent[] | undefined;
     [key: `preventDefault:${string}`]: boolean;
     [key: `preventdefault:${string}`]: boolean;
+    'host:tagName'?: JSXTagName;
     children?: JSXChildren;
 }
 
@@ -450,7 +451,7 @@ export declare interface ComponentOptions {
      * of host element requires that the parent component needs to know the tag name of the child
      * component synchronously.
      */
-    tagName?: string;
+    tagName?: JSXTagName;
 }
 
 /**
@@ -1228,6 +1229,11 @@ export declare interface JSXNode<T = any> {
     props: Record<string, any> | null;
     key: string | number | null;
 }
+
+/**
+ * @public
+ */
+declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
