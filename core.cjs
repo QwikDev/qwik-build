@@ -307,6 +307,9 @@
         const doc = getDocument(docOrNode);
         return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
     };
+    const isServer = (doc) => {
+        return getPlatform(doc).isServer;
+    };
     const DocumentPlatform = ':platform:';
 
     const fromCamelToKebabCase = (text) => {
@@ -799,7 +802,7 @@
             if (qDev) {
                 verifySerializable(value);
             }
-            elementCtx.$seq$[i] = value;
+            return (elementCtx.$seq$[i] = value);
         };
         return {
             get: elementCtx.$seq$[i],
@@ -1280,8 +1283,7 @@
         if (get) {
             return get;
         }
-        const isServer = getPlatform(ctx.$doc$).isServer;
-        if (isServer) {
+        if (isServer(ctx.$doc$)) {
             const resource = createResourceFromPromise(mountQrl());
             ctx.$waitOn$.push(resource.promise);
             set(resource);
@@ -3228,6 +3230,7 @@
                 $hostsStaging$: new Set(),
                 $renderPromise$: undefined,
                 $hostsRendering$: undefined,
+                $userContext$: {},
             };
         }
         return set;
@@ -3744,24 +3747,10 @@
      */
     // </docs>
     const noSerialize = (input) => {
-        noSerializeSet.add(input);
+        if (input != null) {
+            noSerializeSet.add(input);
+        }
         return input;
-    };
-    // <docs markdown="../readme.md#immutable">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#immutable instead)
-    /**
-     * Mark an object as immutable, preventing Qwik from creating subscriptions on that object.
-     *
-     * Qwik automatically creates subscriptions on store objects created by `useStore()`. By marking
-     * an object as `immutable`, it hints to Qwik that the properties of this object will not change,
-     * and therefore there is no need to create subscriptions for those objects.
-     *
-     * @alpha
-     */
-    // </docs>
-    const immutable = (input) => {
-        return Object.freeze(input);
     };
     // <docs markdown="../readme.md#mutable">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4586,7 +4575,7 @@
     const useIsServer = () => {
         const ctx = getInvokeContext();
         assertDefined(ctx.$doc$, 'doc must be defined', ctx);
-        return getPlatform(ctx.$doc$).isServer;
+        return isServer(ctx.$doc$);
     };
     /**
      * @alpha
@@ -4687,7 +4676,7 @@
      * @param jsxNode - JSX to render
      * @alpha
      */
-    const render = async (parent, jsxNode, allowRerender = true) => {
+    const render = async (parent, jsxNode, opts) => {
         // If input is not JSX, convert it
         if (!isJSXNode(jsxNode)) {
             jsxNode = jsx(jsxNode, null);
@@ -4699,9 +4688,14 @@
         }
         injectQContainer(containerEl);
         const containerState = getContainerState(containerEl);
+        const userContext = opts?.userContext;
+        if (userContext) {
+            Object.assign(containerState.$userContext$, userContext);
+        }
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot(parent, jsxNode, doc, containerState, containerEl);
         const renderCtx = await containerState.$renderPromise$;
+        const allowRerender = opts?.allowRerender ?? true;
         if (allowRerender) {
             await postRendering(containerEl, containerState, renderCtx);
         }
@@ -5014,6 +5008,14 @@
         throw qError(QError_notFoundContext, context.id);
     };
 
+    /**
+     * @alpha
+     */
+    function useUserContext(key, defaultValue) {
+        const ctx = useInvokeContext();
+        return ctx.$renderCtx$.$containerState$.$userContext$[key] ?? defaultValue;
+    }
+
     // <docs markdown="../readme.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useStyles instead)
@@ -5125,7 +5127,6 @@
     exports.getPlatform = getPlatform;
     exports.h = h;
     exports.handleWatch = handleWatch;
-    exports.immutable = immutable;
     exports.implicit$FirstArg = implicit$FirstArg;
     exports.inlinedQrl = inlinedQrl;
     exports.jsx = jsx;
@@ -5161,6 +5162,7 @@
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
     exports.useStylesQrl = useStylesQrl;
+    exports.useUserContext = useUserContext;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;

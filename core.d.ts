@@ -940,17 +940,6 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * Mark an object as immutable, preventing Qwik from creating subscriptions on that object.
- *
- * Qwik automatically creates subscriptions on store objects created by `useStore()`. By marking
- * an object as `immutable`, it hints to Qwik that the properties of this object will not change,
- * and therefore there is no need to create subscriptions for those objects.
- *
- * @alpha
- */
-export declare const immutable: <T extends {}>(input: T) => Readonly<T>;
-
-/**
  * Create a `____$(...)` convenience method from `___(...)`.
  *
  * It is very common for functions to take a lazy-loadable resource as a first argument. For this
@@ -1389,7 +1378,7 @@ export declare type NoSerialize<T> = (T & {
  *
  * @alpha
  */
-export declare const noSerialize: <T extends {}>(input: T) => NoSerialize<T>;
+export declare const noSerialize: <T extends object | undefined>(input: T) => NoSerialize<T>;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
@@ -1864,7 +1853,15 @@ export declare interface Ref<T> {
  * @param jsxNode - JSX to render
  * @alpha
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>, allowRerender?: boolean) => Promise<void>;
+export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderOptions) => Promise<void>;
+
+/**
+ * @alpha
+ */
+export declare interface RenderOptions {
+    allowRerender?: boolean;
+    userContext?: Record<string, any>;
+}
 
 /**
  * @alpha
@@ -3036,6 +3033,16 @@ export declare const useStyles$: (first: string) => void;
  * @public
  */
 export declare const useStylesQrl: (styles: QRL<string>) => void;
+
+/**
+ * @alpha
+ */
+export declare function useUserContext<T>(key: string): T | undefined;
+
+/**
+ * @alpha
+ */
+export declare function useUserContext<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.

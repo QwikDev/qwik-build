@@ -295,6 +295,9 @@ const getPlatform = (docOrNode) => {
     const doc = getDocument(docOrNode);
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
 };
+const isServer = (doc) => {
+    return getPlatform(doc).isServer;
+};
 const DocumentPlatform = ':platform:';
 
 const fromCamelToKebabCase = (text) => {
@@ -787,7 +790,7 @@ const useSequentialScope = () => {
         if (qDev) {
             verifySerializable(value);
         }
-        elementCtx.$seq$[i] = value;
+        return (elementCtx.$seq$[i] = value);
     };
     return {
         get: elementCtx.$seq$[i],
@@ -1268,8 +1271,7 @@ const useServerMountQrl = (mountQrl) => {
     if (get) {
         return get;
     }
-    const isServer = getPlatform(ctx.$doc$).isServer;
-    if (isServer) {
+    if (isServer(ctx.$doc$)) {
         const resource = createResourceFromPromise(mountQrl());
         ctx.$waitOn$.push(resource.promise);
         set(resource);
@@ -3216,6 +3218,7 @@ const getContainerState = (containerEl) => {
             $hostsStaging$: new Set(),
             $renderPromise$: undefined,
             $hostsRendering$: undefined,
+            $userContext$: {},
         };
     }
     return set;
@@ -3732,24 +3735,10 @@ const shouldSerialize = (obj) => {
  */
 // </docs>
 const noSerialize = (input) => {
-    noSerializeSet.add(input);
+    if (input != null) {
+        noSerializeSet.add(input);
+    }
     return input;
-};
-// <docs markdown="../readme.md#immutable">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#immutable instead)
-/**
- * Mark an object as immutable, preventing Qwik from creating subscriptions on that object.
- *
- * Qwik automatically creates subscriptions on store objects created by `useStore()`. By marking
- * an object as `immutable`, it hints to Qwik that the properties of this object will not change,
- * and therefore there is no need to create subscriptions for those objects.
- *
- * @alpha
- */
-// </docs>
-const immutable = (input) => {
-    return Object.freeze(input);
 };
 // <docs markdown="../readme.md#mutable">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4574,7 +4563,7 @@ const useResource$ = (generatorFn) => {
 const useIsServer = () => {
     const ctx = getInvokeContext();
     assertDefined(ctx.$doc$, 'doc must be defined', ctx);
-    return getPlatform(ctx.$doc$).isServer;
+    return isServer(ctx.$doc$);
 };
 /**
  * @alpha
@@ -4675,7 +4664,7 @@ const version = "0.0.39";
  * @param jsxNode - JSX to render
  * @alpha
  */
-const render = async (parent, jsxNode, allowRerender = true) => {
+const render = async (parent, jsxNode, opts) => {
     // If input is not JSX, convert it
     if (!isJSXNode(jsxNode)) {
         jsxNode = jsx(jsxNode, null);
@@ -4687,9 +4676,14 @@ const render = async (parent, jsxNode, allowRerender = true) => {
     }
     injectQContainer(containerEl);
     const containerState = getContainerState(containerEl);
+    const userContext = opts?.userContext;
+    if (userContext) {
+        Object.assign(containerState.$userContext$, userContext);
+    }
     containerState.$hostsRendering$ = new Set();
     containerState.$renderPromise$ = renderRoot(parent, jsxNode, doc, containerState, containerEl);
     const renderCtx = await containerState.$renderPromise$;
+    const allowRerender = opts?.allowRerender ?? true;
     if (allowRerender) {
         await postRendering(containerEl, containerState, renderCtx);
     }
@@ -5002,6 +4996,14 @@ const useContext = (context) => {
     throw qError(QError_notFoundContext, context.id);
 };
 
+/**
+ * @alpha
+ */
+function useUserContext(key, defaultValue) {
+    const ctx = useInvokeContext();
+    return ctx.$renderCtx$.$containerState$.$userContext$[key] ?? defaultValue;
+}
+
 // <docs markdown="../readme.md#useStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useStyles instead)
@@ -5101,5 +5103,5 @@ const _useStyles = (styleQrl, scoped) => {
     }
 };
 
-export { $, Fragment, Host, Resource, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, immutable, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useWatch$, useWatchQrl, version };
+export { $, Fragment, Host, Resource, SkipRerender, Slot, component$, componentQrl, createContext, getPlatform, h, handleWatch, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, pauseContainer, qrl, render, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useScopedStyles$, useScopedStylesQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

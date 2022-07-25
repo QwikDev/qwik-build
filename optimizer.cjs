@@ -1766,7 +1766,7 @@ globalThis.qwikOptimizer = function(module) {
               const ssrModule = await server.ssrLoadModule(opts.input[0], {
                 fixStacktrace: true
               });
-              const render = ssrModule.render;
+              const render = ssrModule.default ?? ssrModule.render;
               if ("function" === typeof render) {
                 const manifest = {
                   symbols: {},
@@ -1841,10 +1841,7 @@ globalThis.qwikOptimizer = function(module) {
     return vitePlugin;
   }
   function getViteDevIndexHtml(entryUrl, userContext) {
-    const doc = {
-      _qwikUserCtx: userContext
-    };
-    return `\x3c!-- Qwik Vite Dev Mode --\x3e\n<!DOCTYPE html>\n<html>\n  <head>\n    <script>\n      Object.assign(document, ${JSON.stringify(doc, null, 2)});\n    <\/script>\n  </head>\n  <body>\n    <script type="module" src="${entryUrl}?${VITE_DEV_CLIENT_QS}="><\/script>\n  </body>\n</html>`;
+    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const userContext = JSON.parse(${JSON.stringify(JSON.stringify(userContext))})\n        mod.default({\n          userContext,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
   }
   function updateEntryDev(code) {
     code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);
@@ -1852,7 +1849,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   function getViteDevModule(opts) {
     const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
-    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport function render(document, rootNode) {\n  const headNodes = [];\n  document.head.childNodes.forEach(n => headNodes.push(n));\n  document.head.textContent = '';\n\n  qwikRender(document, rootNode);\n\n  headNodes.forEach(n => document.head.appendChild(n));\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
+    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
   }
   var getSymbolHash = symbolName => {
     const index = symbolName.lastIndexOf("_");
