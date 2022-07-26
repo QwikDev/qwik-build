@@ -1450,7 +1450,7 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-declare interface PropFnInterface<ARGS extends any[], RET> {
+export declare interface PropFnInterface<ARGS extends any[], RET> {
     (...args: ARGS): Promise<RET>;
 }
 
