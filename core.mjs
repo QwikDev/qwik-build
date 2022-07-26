@@ -1728,18 +1728,11 @@ const emitEvent = (el, eventName, detail, bubbles) => {
     }
 };
 
-const UNDEFINED_PREFIX = '\u0010';
-const QRL_PREFIX = '\u0011';
-const DOCUMENT_PREFIX = '\u0012';
-const RESOURCE_PREFIX = '\u0013';
-const WATCH_PREFIX = '\u0014';
 const UndefinedSerializer = {
-    prefix: UNDEFINED_PREFIX,
     test: (obj) => obj === undefined,
     prepare: () => undefined,
 };
 const QRLSerializer = {
-    prefix: QRL_PREFIX,
     test: (v) => isQrl(v),
     serialize: (obj, getObjId, containerState) => {
         return stringifyQRL(obj, {
@@ -1758,14 +1751,12 @@ const QRLSerializer = {
     },
 };
 const DocumentSerializer = {
-    prefix: DOCUMENT_PREFIX,
     test: (v) => isDocument(v),
     prepare: (_, containerState) => {
         return getDocument(containerState.$containerEl$);
     },
 };
 const ResourceSerializer = {
-    prefix: RESOURCE_PREFIX,
     test: (v) => isResourceReturn(v),
     serialize: (obj, getObjId) => {
         return serializeResource(obj, getObjId);
@@ -1781,7 +1772,6 @@ const ResourceSerializer = {
     },
 };
 const WatchSerializer = {
-    prefix: WATCH_PREFIX,
     test: (v) => isSubscriberDescriptor(v),
     serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
     prepare: (data) => parseWatch(data),
@@ -1793,17 +1783,49 @@ const WatchSerializer = {
         }
     },
 };
+const URLSerializer = {
+    test: (v) => v instanceof URL,
+    serialize: (obj) => obj.href,
+    prepare: (data) => new URL(data),
+};
+const DateSerializer = {
+    test: (v) => v instanceof Date,
+    serialize: (obj) => obj.toISOString(),
+    prepare: (data) => new Date(data),
+};
+const RegexSerializer = {
+    test: (v) => v instanceof RegExp,
+    serialize: (obj) => `${obj.flags} ${obj.source}`,
+    prepare: (data) => {
+        const space = data.indexOf(' ');
+        const source = data.slice(space + 1);
+        const flags = data.slice(0, space);
+        return new RegExp(source, flags);
+    },
+};
 const serializers = [
     UndefinedSerializer,
     QRLSerializer,
     DocumentSerializer,
     ResourceSerializer,
     WatchSerializer,
+    URLSerializer,
+    RegexSerializer,
+    DateSerializer,
 ];
-const serializeValue = (obj, getObjID, containerState) => {
+const canSerialize = (obj) => {
     for (const s of serializers) {
         if (s.test(obj)) {
-            let value = s.prefix;
+            return true;
+        }
+    }
+    return false;
+};
+const serializeValue = (obj, getObjID, containerState) => {
+    for (let i = 0; i < serializers.length; i++) {
+        const s = serializers[i];
+        if (s.test(obj)) {
+            let value = String.fromCharCode(i);
             if (s.serialize) {
                 value += s.serialize(obj, getObjID, containerState);
             }
@@ -1816,9 +1838,11 @@ const createParser = (getObject, containerState) => {
     const map = new Map();
     return {
         prepare(data) {
-            for (const s of serializers) {
-                if (data.startsWith(s.prefix)) {
-                    const value = s.prepare(data.slice(s.prefix.length), containerState);
+            for (let i = 0; i < serializers.length; i++) {
+                const s = serializers[i];
+                const prefix = String.fromCodePoint(i);
+                if (data.startsWith(prefix)) {
+                    const value = s.prepare(data.slice(prefix.length), containerState);
                     if (s.fill) {
                         map.set(value, s);
                     }
@@ -3956,14 +3980,11 @@ const _verifySerializable = (value, seen) => {
             return value;
         }
         seen.add(unwrapped);
-        if (isQrl(unwrapped)) {
+        if (canSerialize(unwrapped)) {
             return value;
         }
         switch (typeof unwrapped) {
             case 'object':
-                if (isSubscriberDescriptor(unwrapped)) {
-                    return value;
-                }
                 if (isArray(unwrapped)) {
                     for (const item of unwrapped) {
                         _verifySerializable(item, seen);
