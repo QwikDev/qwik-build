@@ -1758,9 +1758,10 @@ function qwikVite(qwikViteOpts = {}) {
                 }));
               }));
               qwikPlugin.log("handleSSR()", "symbols", manifest);
-              const renderToStringOpts = {
+              const renderOpts = {
                 url: url.href,
                 debug: true,
+                stream: res,
                 snapshot: !isClientDevOnly,
                 manifest: isClientDevOnly ? void 0 : manifest,
                 symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
@@ -1772,14 +1773,13 @@ function qwikVite(qwikViteOpts = {}) {
                 prefetchStrategy: null,
                 userContext: userContext
               };
-              const result = await render(renderToStringOpts);
-              const html = await server.transformIndexHtml(pathname, result.html, req.originalUrl);
               res.setHeader("Content-Type", "text/html; charset=utf-8");
               res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
               res.setHeader("Access-Control-Allow-Origin", "*");
               res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
               res.writeHead(status);
-              res.end(html);
+              const result = await render(renderOpts);
+              "html" in result ? res.end(result.html) : res.end();
             } else {
               next();
             }

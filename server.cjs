@@ -56,8 +56,8 @@ __export(server_exports, {
   _createDocument: () => _createDocument,
   createTimer: () => createTimer,
   getQwikLoaderScript: () => getQwikLoaderScript,
+  renderToStream: () => renderToStream,
   renderToString: () => renderToString,
-  serializeDocument: () => serializeDocument,
   setServerPlatform: () => setServerPlatform,
   versions: () => versions
 });
@@ -122,6 +122,12 @@ var qTest = globalThis.describe !== void 0;
 
 // packages/qwik/src/core/util/markers.ts
 var QHostAttr = "q:host";
+var QContainerAttr = "q:container";
+
+// packages/qwik/src/core/render/fast-calls.ts
+var directSetAttribute = (el, prop, value) => {
+  return el.setAttribute(prop, value);
+};
 
 // packages/qwik/src/core/util/element.ts
 var isDocument = (value) => {
@@ -301,7 +307,7 @@ function getValidManifest(manifest) {
 }
 
 // packages/qwik/src/server/serialize.ts
-function serializeDocument(docOrEl, opts) {
+function _serializeDocument(docOrEl, opts) {
   if (!isDocument(docOrEl)) {
     return docOrEl.outerHTML;
   }
@@ -321,7 +327,21 @@ function serializeDocument(docOrEl, opts) {
       parent.appendChild(el);
     }
   }
-  return "<!DOCTYPE html>" + docOrEl.documentElement.outerHTML;
+  return docOrEl.documentElement.outerHTML;
+}
+function serializeDocument(docOrEl, opts) {
+  const html = _serializeDocument(docOrEl, opts);
+  let end = html.length;
+  const bodyIndex = html.lastIndexOf("</body>");
+  if (bodyIndex >= 0) {
+    end = bodyIndex;
+  } else {
+    const lastClosingTag = html.lastIndexOf("</");
+    if (lastClosingTag >= 0) {
+      end = lastClosingTag;
+    }
+  }
+  return [html.slice(0, end), html.slice(end)];
 }
 
 // packages/qwik/src/core/render/render.public.ts
@@ -9437,12 +9457,13 @@ var noop = () => {
 var QWIK_DOC = Symbol();
 
 // packages/qwik/src/server/render.ts
-async function renderToString(rootNode, opts = {}) {
-  var _a, _b, _c2;
+var DOCTYPE = "<!DOCTYPE html>";
+async function renderToStream(rootNode, opts) {
+  var _a, _b;
+  const write = opts.stream.write.bind(opts.stream);
   const createDocTimer = createTimer();
   const doc = _createDocument(opts);
   const createDocTime = createDocTimer();
-  const renderDocTimer = createTimer();
   let root = doc;
   if (typeof opts.fragmentTagName === "string") {
     if (opts.qwikLoader) {
@@ -9459,62 +9480,88 @@ async function renderToString(rootNode, opts = {}) {
     }
     root = doc.createElement(opts.fragmentTagName);
     doc.body.appendChild(root);
+  } else {
+    write(DOCTYPE);
   }
   if (!opts.manifest) {
     logWarn("Missing client manifest, loading symbols in the client might 404");
   }
-  const isFullDocument = isDocument(root);
+  const containerEl = getElement(root);
+  const buildBase = getBuildBase(opts);
   const mapper = computeSymbolMapper(opts.manifest);
   await setServerPlatform(doc, opts, mapper);
+  const renderDocTimer = createTimer();
   await (0, import_qwik2.render)(root, rootNode, {
     allowRerender: false,
     userContext: opts.userContext
   });
+  directSetAttribute(containerEl, QContainerAttr, "paused");
+  directSetAttribute(containerEl, "q:base", buildBase);
+  const [before, after] = serializeDocument(doc, opts);
+  directSetAttribute(containerEl, QContainerAttr, "resumed");
+  write(before);
   const renderDocTime = renderDocTimer();
-  const buildBase = getBuildBase(opts);
-  const containerEl = getElement(root);
-  containerEl.setAttribute("q:base", buildBase);
+  const restDiv = doc.createElement("div");
   let snapshotResult = null;
+  const snapshotTimer = createTimer();
   if (opts.snapshot !== false) {
-    snapshotResult = await (0, import_qwik2.pauseContainer)(root);
+    snapshotResult = await (0, import_qwik2.pauseContainer)(root, restDiv);
   }
+  const snapshotTime = snapshotTimer();
   const prefetchResources = getPrefetchResources(snapshotResult, opts, mapper);
-  const parentElm = isFullDocument ? doc.body : containerEl;
   if (prefetchResources.length > 0) {
-    applyPrefetchImplementation(doc, parentElm, opts, prefetchResources);
+    applyPrefetchImplementation(doc, restDiv, opts, prefetchResources);
   }
   const needLoader = !snapshotResult || snapshotResult.mode !== "static";
   const includeMode = ((_a = opts.qwikLoader) == null ? void 0 : _a.include) ?? "auto";
   const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
   if (includeLoader) {
-    const qwikPosition = ((_b = opts.qwikLoader) == null ? void 0 : _b.position) ?? "bottom";
     const qwikLoaderScript = getQwikLoaderScript({
-      events: (_c2 = opts.qwikLoader) == null ? void 0 : _c2.events,
+      events: (_b = opts.qwikLoader) == null ? void 0 : _b.events,
       debug: opts.debug
     });
     const scriptElm = doc.createElement("script");
     scriptElm.setAttribute("id", "qwikloader");
     scriptElm.textContent = qwikLoaderScript;
-    if (qwikPosition === "bottom") {
-      parentElm.appendChild(scriptElm);
-    } else if (isFullDocument) {
-      doc.head.appendChild(scriptElm);
-    } else {
-      parentElm.insertBefore(scriptElm, parentElm.firstChild);
-    }
+    restDiv.appendChild(scriptElm);
   }
+  write(restDiv.innerHTML);
+  if (snapshotResult == null ? void 0 : snapshotResult.pendingContent) {
+    await Promise.allSettled(snapshotResult.pendingContent.map((promise) => {
+      return promise.then((resolved) => {
+        write(`<script type="qwik/chunk">${resolved}<\/script>`);
+      });
+    }));
+  }
+  write(after);
   const docToStringTimer = createTimer();
   const result = {
     prefetchResources,
     snapshotResult,
-    html: serializeDocument(root, opts),
     timing: {
       createDocument: createDocTime,
       render: renderDocTime,
+      snapshot: snapshotTime,
       toString: docToStringTimer()
     }
   };
   return result;
+}
+async function renderToString(rootNode, opts = {}) {
+  const chunks = [];
+  const stream = {
+    write: (chunk) => {
+      chunks.push(chunk);
+    }
+  };
+  const result = await renderToStream(rootNode, {
+    ...opts,
+    stream
+  });
+  return {
+    ...result,
+    html: chunks.join("")
+  };
 }
 function computeSymbolMapper(manifest) {
   if (manifest) {
@@ -9531,8 +9578,8 @@ function computeSymbolMapper(manifest) {
   _createDocument,
   createTimer,
   getQwikLoaderScript,
+  renderToStream,
   renderToString,
-  serializeDocument,
   setServerPlatform,
   versions
 });

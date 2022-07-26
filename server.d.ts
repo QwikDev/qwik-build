@@ -207,7 +207,7 @@ export declare interface QwikBundle {
 /**
  * @public
  */
-declare interface QwikLoaderOptions {
+export declare interface QwikLoaderOptions {
     events?: string[];
     include?: 'always' | 'never' | 'auto';
     position?: 'top' | 'bottom';
@@ -258,25 +258,12 @@ export declare interface QwikSymbol {
 /**
  * @public
  */
-export declare type Render = (opts: RenderOptions) => Promise<RenderToStringResult>;
+export declare type Render = RenderToString | RenderToStream;
 
 /**
  * @public
  */
-export declare interface RenderOptions extends RenderToStringOptions {
-}
-
-/**
- * Creates a server-side `document`, renders to root node to the document,
- * then serializes the document to a string.
- * @public
- */
-export declare function renderToString(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
-
-/**
- * @public
- */
-export declare interface RenderToStringOptions extends SerializeDocumentOptions {
+export declare interface RenderOptions extends SerializeDocumentOptions {
     /**
      * Defaults to `true`
      */
@@ -302,23 +289,66 @@ export declare interface RenderToStringOptions extends SerializeDocumentOptions 
 /**
  * @public
  */
-export declare interface RenderToStringResult {
+export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
     snapshotResult: SnapshotResult | null;
-    html: string;
     timing: {
         createDocument: number;
         render: number;
+        snapshot: number;
         toString: number;
     };
 }
 
 /**
- * Serializes the given `document` to a string. Additionally, will serialize the
- * Qwik component state and optionally add Qwik protocols to the document.
  * @public
  */
-export declare function serializeDocument(docOrEl: Document | Element, opts?: SerializeDocumentOptions): string;
+declare type RenderToStream = (opts: RenderToStreamOptions) => Promise<RenderToStreamResult>;
+
+/**
+ * Creates a server-side `document`, renders to root node to the document,
+ * then serializes the document to a string.
+ * @public
+ */
+export declare function renderToStream(rootNode: any, opts: RenderToStreamOptions): Promise<RenderToStreamResult>;
+
+/**
+ * @public
+ */
+export declare interface RenderToStreamOptions extends RenderOptions {
+    stream: StreamWriter;
+}
+
+/**
+ * @public
+ */
+export declare interface RenderToStreamResult extends RenderResult {
+}
+
+/**
+ * @public
+ */
+declare type RenderToString = (opts: RenderToStringOptions) => Promise<RenderToStringResult>;
+
+/**
+ * Creates a server-side `document`, renders to root node to the document,
+ * then serializes the document to a string.
+ * @public
+ */
+export declare function renderToString(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
+
+/**
+ * @public
+ */
+export declare interface RenderToStringOptions extends RenderOptions {
+}
+
+/**
+ * @public
+ */
+export declare interface RenderToStringResult extends RenderResult {
+    html: string;
+}
 
 /**
  * @public
@@ -367,6 +397,7 @@ export declare interface SnapshotResult {
     listeners: SnapshotListener[];
     objs: any[];
     mode: 'render' | 'listeners' | 'static';
+    pendingContent: Promise<string>[];
 }
 
 /**
@@ -377,6 +408,13 @@ declare interface SnapshotState {
     objs: any[];
     subs: any[];
 }
+
+/**
+ * @public
+ */
+export declare type StreamWriter = {
+    write: (chunk: string) => void;
+};
 
 declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
 

@@ -441,6 +441,11 @@
     const isNotNullable = (v) => {
         return v != null;
     };
+    const delay = (timeout) => {
+        return new Promise((resolve) => {
+            setTimeout(resolve, timeout);
+        });
+    };
 
     /**
      * @public
@@ -888,12 +893,7 @@
         if (!get) {
             assertQrl(unmountFn);
             const el = ctx.$hostElement$;
-            const watch = {
-                qrl: unmountFn,
-                el,
-                f: WatchFlagsIsCleanup,
-                i,
-            };
+            const watch = new Watch(WatchFlagsIsCleanup, i, el, unmountFn, undefined);
             set(true);
             getContext(el).$watches$.push(watch);
         }
@@ -1010,6 +1010,127 @@
         qPropWriteQRL(invokeCtx.$renderCtx$, ctx, eventName, eventQrl);
     };
 
+    const _createResourceReturn = (opts) => {
+        const resource = {
+            __brand: 'resource',
+            promise: undefined,
+            resolved: undefined,
+            error: undefined,
+            state: 'pending',
+            timeout: opts?.timeout,
+        };
+        return resource;
+    };
+    const createResourceReturn = (containerState, opts, initialPromise) => {
+        const result = _createResourceReturn(opts);
+        result.promise = initialPromise;
+        const resource = createProxy(result, containerState, 0, undefined);
+        return resource;
+    };
+    /**
+     * @alpha
+     */
+    const useResourceQrl = (qrl, opts) => {
+        const { get, set, i, ctx } = useSequentialScope();
+        if (get != null) {
+            return get;
+        }
+        assertQrl(qrl);
+        const containerState = ctx.$renderCtx$.$containerState$;
+        const resource = createResourceReturn(containerState, opts);
+        const el = ctx.$hostElement$;
+        const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
+        const previousWait = Promise.all(ctx.$waitOn$.slice());
+        runResource(watch, containerState, previousWait);
+        getContext(el).$watches$.push(watch);
+        set(resource);
+        return resource;
+    };
+    /**
+     * @alpha
+     */
+    const useResource$ = (generatorFn) => {
+        return useResourceQrl($(generatorFn));
+    };
+    const useIsServer = () => {
+        const ctx = getInvokeContext();
+        assertDefined(ctx.$doc$, 'doc must be defined', ctx);
+        return isServer(ctx.$doc$);
+    };
+    /**
+     * @alpha
+     */
+    const Resource = (props) => {
+        const isBrowser = !qDev || !useIsServer();
+        if (isBrowser) {
+            if (props.onRejected) {
+                props.resource.promise.catch(() => { });
+                if (props.resource.state === 'rejected') {
+                    return props.onRejected(props.resource.error);
+                }
+            }
+            if (props.onPending) {
+                const state = props.resource.state;
+                if (state === 'pending') {
+                    return props.onPending();
+                }
+                else if (state === 'resolved') {
+                    return props.onResolved(props.resource.resolved);
+                }
+            }
+        }
+        const promise = props.resource.promise.then(props.onResolved, props.onRejected);
+        // if (isServer) {
+        //   const onPending = props.onPending;
+        //   if (props.ssrWait && onPending) {
+        //     promise = Promise.race([
+        //       delay(props.ssrWait).then(() => {
+        //         getInternalResource(props.resource).dirty = true;
+        //         return onPending();
+        //       }),
+        //       promise,
+        //     ]);
+        //   }
+        // }
+        // Resource path
+        return jsx(Fragment, {
+            children: promise,
+        });
+    };
+    const isResourceReturn = (obj) => {
+        return isObject(obj) && obj.__brand === 'resource';
+    };
+    const serializeResource = (resource, getObjId) => {
+        const state = resource.state;
+        if (state === 'resolved') {
+            return `0 ${getObjId(resource.resolved)}`;
+        }
+        else if (state === 'pending') {
+            return `1`;
+        }
+        else {
+            return `2`;
+        }
+    };
+    const parseResourceReturn = (data) => {
+        const [first, id] = data.split(' ');
+        const result = _createResourceReturn(undefined);
+        result.promise = Promise.resolve();
+        if (first === '0') {
+            result.state = 'resolved';
+            result.resolved = id;
+        }
+        else if (first === '1') {
+            result.state = 'pending';
+            result.promise = new Promise(() => { });
+        }
+        else if (first === '2') {
+            result.state = 'rejected';
+            result.promise = Promise.reject();
+        }
+        return result;
+    };
+
     const WatchFlagsIsEffect = 1 << 0;
     const WatchFlagsIsWatch = 1 << 1;
     const WatchFlagsIsDirty = 1 << 2;
@@ -1083,12 +1204,7 @@
             assertQrl(qrl);
             const el = ctx.$hostElement$;
             const containerState = ctx.$renderCtx$.$containerState$;
-            const watch = {
-                qrl,
-                el,
-                f: WatchFlagsIsDirty | WatchFlagsIsWatch,
-                i,
-            };
+            const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, undefined);
             set(true);
             getContext(el).$watches$.push(watch);
             const previousWait = ctx.$waitOn$.slice();
@@ -1194,12 +1310,7 @@
         if (!get) {
             assertQrl(qrl);
             const el = ctx.$hostElement$;
-            const watch = {
-                qrl,
-                el,
-                f: WatchFlagsIsEffect,
-                i,
-            };
+            const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
             set(true);
             getContext(el).$watches$.push(watch);
             useRunWatch(watch, opts?.eagerness ?? 'visible');
@@ -1284,7 +1395,7 @@
             return get;
         }
         if (isServer(ctx.$doc$)) {
-            const resource = createResourceFromPromise(mountQrl());
+            const resource = createResourceFromPromise(mountQrl(), ctx.$renderCtx$.$containerState$);
             ctx.$waitOn$.push(resource.promise);
             set(resource);
             return resource;
@@ -1373,26 +1484,21 @@
         if (get) {
             return get;
         }
-        const resource = createResourceFromPromise(mountQrl());
+        const resource = createResourceFromPromise(mountQrl(), ctx.$renderCtx$.$containerState$);
         ctx.$waitOn$.push(resource.promise);
         set(resource);
         return resource;
     };
-    const createResourceFromPromise = (promise) => {
-        const resource = {
-            state: 'pending',
-            error: undefined,
-            resolved: undefined,
-            promise: promise.then((value) => {
-                resource.state = 'resolved';
-                resource.resolved = value;
-                return value;
-            }, (reason) => {
-                resource.state = 'rejected';
-                resource.error = reason;
-                throw reason;
-            }),
-        };
+    const createResourceFromPromise = (promise, containerState) => {
+        const resource = createResourceReturn(containerState, undefined, promise.then((value) => {
+            resource.state = 'resolved';
+            resource.resolved = value;
+            return value;
+        }, (reason) => {
+            resource.state = 'rejected';
+            resource.error = reason;
+            throw reason;
+        }));
         return resource;
     };
     // <docs markdown="../readme.md#useMount">
@@ -1429,9 +1535,12 @@
      */
     // </docs>
     const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
+    const isResourceWatch = (watch) => {
+        return !!watch.$resource$;
+    };
     const runSubscriber = async (watch, containerState) => {
-        assertEqual(!!(watch.f & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
-        if ('r' in watch) {
+        assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
+        if (isResourceWatch(watch)) {
             await runResource(watch, containerState);
         }
         else {
@@ -1439,17 +1548,17 @@
         }
     };
     const runResource = (watch, containerState, waitOn) => {
-        watch.f &= ~WatchFlagsIsDirty;
+        watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
-        const el = watch.el;
+        const el = watch.$el$;
         const doc = getDocument(el);
         const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
+        const watchFn = watch.$qrl$.$invokeFn$(el, invokationContext, () => {
             subsManager.$clearSub$(watch);
         });
         const cleanups = [];
-        const resource = watch.r;
+        const resource = watch.$resource$;
         assertDefined(resource, 'useResource: when running a resource, "watch.r" must be a defined.', watch);
         const track = (obj, prop) => {
             const target = getProxyTarget(obj);
@@ -1467,12 +1576,13 @@
                 return obj;
             }
         };
+        const resourceTarget = unwrapProxy(resource);
         const opts = {
             track,
             cleanup(callback) {
                 cleanups.push(callback);
             },
-            previous: unwrapProxy(resource).resolved,
+            previous: resourceTarget.resolved,
         };
         let resolve;
         let reject;
@@ -1485,32 +1595,56 @@
                 reject = re;
             });
         });
-        watch.destroy = noSerialize(() => {
+        watch.$destroy$ = noSerialize(() => {
             cleanups.forEach((fn) => fn());
             reject('cancelled');
         });
-        return safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
-            resource.state = 'resolved';
-            resource.resolved = value;
-            resource.error = undefined;
-            resolve(value);
+        let done = false;
+        const promise = safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
+            if (!done) {
+                done = true;
+                resource.state = 'resolved';
+                resource.resolved = value;
+                resource.error = undefined;
+                resolve(value);
+            }
             return;
         }, (reason) => {
-            resource.state = 'rejected';
-            resource.resolved = undefined;
-            resource.error = noSerialize(reason);
-            reject(reason);
+            if (!done) {
+                done = true;
+                resource.state = 'rejected';
+                resource.resolved = undefined;
+                resource.error = noSerialize(reason);
+                reject(reason);
+            }
             return;
         });
+        const timeout = resourceTarget.timeout;
+        if (timeout) {
+            return Promise.race([
+                promise,
+                delay(timeout).then(() => {
+                    if (!done) {
+                        done = true;
+                        resource.state = 'rejected';
+                        resource.resolved = undefined;
+                        resource.error = 'timeout';
+                        cleanupWatch(watch);
+                        reject('timeout');
+                    }
+                }),
+            ]);
+        }
+        return promise;
     };
     const runWatch = (watch, containerState) => {
-        watch.f &= ~WatchFlagsIsDirty;
+        watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
-        const el = watch.el;
+        const el = watch.$el$;
         const doc = getDocument(el);
         const invokationContext = newInvokeContext(doc, el, el, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.qrl.$invokeFn$(el, invokationContext, () => {
+        const watchFn = watch.$qrl$.$invokeFn$(el, invokationContext, () => {
             subsManager.$clearSub$(watch);
         });
         const track = (obj, prop) => {
@@ -1531,16 +1665,16 @@
         };
         return safeCall(() => watchFn(track), (returnValue) => {
             if (isFunction(returnValue)) {
-                watch.destroy = noSerialize(returnValue);
+                watch.$destroy$ = noSerialize(returnValue);
             }
         }, (reason) => {
             logError(reason);
         });
     };
     const cleanupWatch = (watch) => {
-        const destroy = watch.destroy;
+        const destroy = watch.$destroy$;
         if (destroy) {
-            watch.destroy = undefined;
+            watch.$destroy$ = undefined;
             try {
                 destroy();
             }
@@ -1550,9 +1684,9 @@
         }
     };
     const destroyWatch = (watch) => {
-        if (watch.f & WatchFlagsIsCleanup) {
-            watch.f &= ~WatchFlagsIsCleanup;
-            const cleanup = watch.qrl.$invokeFn$(watch.el);
+        if (watch.$flags$ & WatchFlagsIsCleanup) {
+            watch.$flags$ &= ~WatchFlagsIsCleanup;
+            const cleanup = watch.$qrl$.$invokeFn$(watch.$el$);
             cleanup();
         }
         else {
@@ -1568,10 +1702,33 @@
         }
     };
     const getWatchHandlerQrl = (watch) => {
-        const watchQrl = watch.qrl;
+        const watchQrl = watch.$qrl$;
         const watchHandler = createQRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
         return watchHandler;
     };
+    const isSubscriberDescriptor = (obj) => {
+        return isObject(obj) && obj instanceof Watch;
+    };
+    const serializeWatch = (watch, getObjId) => {
+        let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
+        if (isResourceWatch(watch)) {
+            value += ` ${getObjId(watch.$resource$)}`;
+        }
+        return value;
+    };
+    const parseWatch = (data) => {
+        const [flags, index, qrl, el, resource] = data.split(' ');
+        return new Watch(strToInt(flags), strToInt(index), el, qrl, resource);
+    };
+    class Watch {
+        constructor($flags$, $index$, $el$, $qrl$, $resource$) {
+            this.$flags$ = $flags$;
+            this.$index$ = $index$;
+            this.$el$ = $el$;
+            this.$qrl$ = $qrl$;
+            this.$resource$ = $resource$;
+        }
+    }
 
     const emitEvent = (el, eventName, detail, bubbles) => {
         if (el && typeof CustomEvent === 'function') {
@@ -1586,6 +1743,113 @@
     const UNDEFINED_PREFIX = '\u0010';
     const QRL_PREFIX = '\u0011';
     const DOCUMENT_PREFIX = '\u0012';
+    const RESOURCE_PREFIX = '\u0013';
+    const WATCH_PREFIX = '\u0014';
+    const UndefinedSerializer = {
+        prefix: UNDEFINED_PREFIX,
+        test: (obj) => obj === undefined,
+        prepare: () => undefined,
+    };
+    const QRLSerializer = {
+        prefix: QRL_PREFIX,
+        test: (v) => isQrl(v),
+        serialize: (obj, getObjId, containerState) => {
+            return stringifyQRL(obj, {
+                $platform$: containerState.$platform$,
+                $getObjId$: getObjId,
+            });
+        },
+        prepare: (data, containerState) => {
+            return parseQRL(data, containerState.$containerEl$);
+        },
+        fill: (qrl, getObject) => {
+            if (qrl.$capture$ && qrl.$capture$.length > 0) {
+                qrl.$captureRef$ = qrl.$capture$.map(getObject);
+                qrl.$capture$ = null;
+            }
+        },
+    };
+    const DocumentSerializer = {
+        prefix: DOCUMENT_PREFIX,
+        test: (v) => isDocument(v),
+        prepare: (_, containerState) => {
+            return getDocument(containerState.$containerEl$);
+        },
+    };
+    const ResourceSerializer = {
+        prefix: RESOURCE_PREFIX,
+        test: (v) => isResourceReturn(v),
+        serialize: (obj, getObjId) => {
+            return serializeResource(obj, getObjId);
+        },
+        prepare: (data) => {
+            return parseResourceReturn(data);
+        },
+        fill: (resource, getObject) => {
+            if (resource.state === 'resolved') {
+                resource.resolved = getObject(resource.resolved);
+                resource.promise = Promise.resolve(resource.resolved);
+            }
+        },
+    };
+    const WatchSerializer = {
+        prefix: WATCH_PREFIX,
+        test: (v) => isSubscriberDescriptor(v),
+        serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
+        prepare: (data) => parseWatch(data),
+        fill: (watch, getObject) => {
+            watch.$el$ = getObject(watch.$el$);
+            watch.$qrl$ = getObject(watch.$qrl$);
+            if (watch.$resource$) {
+                watch.$resource$ = getObject(watch.$resource$);
+            }
+        },
+    };
+    const serializers = [
+        UndefinedSerializer,
+        QRLSerializer,
+        DocumentSerializer,
+        ResourceSerializer,
+        WatchSerializer,
+    ];
+    const serializeValue = (obj, getObjID, containerState) => {
+        for (const s of serializers) {
+            if (s.test(obj)) {
+                let value = s.prefix;
+                if (s.serialize) {
+                    value += s.serialize(obj, getObjID, containerState);
+                }
+                return value;
+            }
+        }
+        return undefined;
+    };
+    const createParser = (getObject, containerState) => {
+        const map = new Map();
+        return {
+            prepare(data) {
+                for (const s of serializers) {
+                    if (data.startsWith(s.prefix)) {
+                        const value = s.prepare(data.slice(s.prefix.length), containerState);
+                        if (s.fill) {
+                            map.set(value, s);
+                        }
+                        return value;
+                    }
+                }
+                return data;
+            },
+            fill(obj) {
+                const serializer = map.get(obj);
+                if (serializer) {
+                    serializer.fill(obj, getObject, containerState);
+                    return true;
+                }
+                return false;
+            },
+        };
+    };
+
     // <docs markdown="../readme.md#pauseContainer">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#pauseContainer instead)
@@ -1595,14 +1859,14 @@
      * @alpha
      */
     // </docs>
-    const pauseContainer = async (elmOrDoc) => {
+    const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
         const doc = getDocument(elmOrDoc);
         const documentElement = doc.documentElement;
         const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
         if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
             throw qError(QError_containerAlreadyPaused);
         }
-        const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+        const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
         const data = await pauseState(containerEl);
         const script = doc.createElement('script');
         directSetAttribute(script, 'type', 'qwik/json');
@@ -1637,11 +1901,12 @@
             assertDefined(id, `resume: element missed q:id`, el);
             elements.set(ELEMENT_ID_PREFIX + id, el);
         });
+        const parser = createParser(getObject, containerState);
         // Revive proxies with subscriptions into the proxymap
-        reviveValues(meta.objs, meta.subs, getObject, containerState, parentJSON);
+        reviveValues(meta.objs, meta.subs, getObject, containerState, parser);
         // Rebuild target objects
         for (const obj of meta.objs) {
-            reviveNestedObjects(obj, getObject);
+            reviveNestedObjects(obj, getObject, parser);
         }
         Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
             const el = getObject(elementID);
@@ -1722,6 +1987,7 @@
                 },
                 objs: [],
                 listeners: [],
+                pendingContent: [],
                 mode: 'static',
             };
         }
@@ -1759,9 +2025,13 @@
             let id = elementToIndex.get(el);
             if (id === undefined) {
                 if (el.isConnected) {
-                    id = intToStr(elementToIndex.size);
-                    directSetAttribute(el, ELEMENT_ID, id);
-                    id = ELEMENT_ID_PREFIX + id;
+                    id = directGetAttribute(el, ELEMENT_ID);
+                    if (!id) {
+                        console.warn('Missing ID');
+                    }
+                    else {
+                        id = ELEMENT_ID_PREFIX + id;
+                    }
                 }
                 else {
                     id = null;
@@ -1875,26 +2145,16 @@
             return subsObj;
         })
             .filter(isNotNullable);
-        const qrlSerializeOptions = {
-            $platform$: containerState.$platform$,
-            $getObjId$: getObjId,
-        };
         // Serialize objects
         const convertedObjs = objs.map((obj) => {
+            const value = serializeValue(obj, getObjId, containerState);
+            if (value !== undefined) {
+                return value;
+            }
             switch (typeof obj) {
-                case 'undefined':
-                    return UNDEFINED_PREFIX;
-                case 'function':
-                    if (isQrl(obj)) {
-                        return QRL_PREFIX + stringifyQRL(obj, qrlSerializeOptions);
-                    }
-                    break;
                 case 'object':
                     if (obj === null) {
                         return null;
-                    }
-                    if (obj === doc) {
-                        return DOCUMENT_PREFIX;
                     }
                     if (isArray(obj)) {
                         return obj.map(mustGetObjId);
@@ -1979,16 +2239,32 @@
                 meta[elementID] = metaValue;
             }
         });
+        // async function additionalChunk(obj: any) {
+        //   const localCollector = createCollector(doc, containerState);
+        //   localCollector.$seen$ = collector.$seen$;
+        //   localCollector.$seenLeaks$ = collector.$seenLeaks$;
+        //   await collectValue(obj, collector, false);
+        //   return '';
+        // }
+        const pendingContent = [];
         for (const watch of collector.$watches$) {
-            destroyWatch(watch);
             if (qDev) {
-                if (watch.f & WatchFlagsIsDirty) {
+                if (watch.$flags$ & WatchFlagsIsDirty) {
                     logWarn('Serializing dirty watch. Looks like an internal error.');
                 }
                 if (!isConnected(watch)) {
                     logWarn('Serializing disconneted watch. Looks like an internal error.');
                 }
             }
+            destroyWatch(watch);
+            // if (isResourceWatch(watch)) {
+            //   const resource = getInternalResource(watch.r);
+            //   if (resource.dirty) {
+            //     pendingResources.push(resource.promise.then(additionalChunk));
+            //   }
+            // } else {
+            //   destroyWatch(watch);
+            // }
         }
         // Sanity check of serialized element
         if (qDev) {
@@ -2007,6 +2283,7 @@
                 objs: convertedObjs,
                 subs,
             },
+            pendingContent,
             objs,
             listeners,
             mode: canRender ? 'render' : 'listeners',
@@ -2042,49 +2319,38 @@
             child = child.nextElementSibling;
         }
     };
-    const reviveValues = (objs, subs, getObject, containerState, containerEl) => {
+    const reviveValues = (objs, subs, getObject, containerState, parser) => {
         for (let i = 0; i < objs.length; i++) {
             const value = objs[i];
             if (isString(value)) {
-                if (value === UNDEFINED_PREFIX) {
-                    objs[i] = undefined;
-                }
-                else if (value === DOCUMENT_PREFIX) {
-                    objs[i] = getDocument(containerEl);
-                }
-                else if (value.startsWith(QRL_PREFIX)) {
-                    objs[i] = parseQRL(value.slice(1), containerEl);
-                }
+                objs[i] = parser.prepare(value);
             }
-            else {
-                const sub = subs[i];
-                if (sub) {
-                    const converted = new Map();
-                    let flags = 0;
-                    Object.entries(sub).forEach((entry) => {
-                        if (entry[0] === '$') {
-                            flags = entry[1];
-                            return;
-                        }
-                        const el = getObject(entry[0]);
-                        if (!el) {
-                            logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
-                            return;
-                        }
-                        const set = entry[1] === null ? null : new Set(entry[1]);
-                        converted.set(el, set);
-                    });
-                    createProxy(value, containerState, flags, converted);
-                }
+        }
+        for (let i = 0; i < subs.length; i++) {
+            const value = objs[i];
+            const sub = subs[i];
+            if (sub) {
+                const converted = new Map();
+                let flags = 0;
+                Object.entries(sub).forEach((entry) => {
+                    if (entry[0] === '$') {
+                        flags = entry[1];
+                        return;
+                    }
+                    const el = getObject(entry[0]);
+                    if (!el) {
+                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
+                        return;
+                    }
+                    const set = entry[1] === null ? null : new Set(entry[1]);
+                    converted.set(el, set);
+                });
+                createProxy(value, containerState, flags, converted);
             }
         }
     };
-    const reviveNestedObjects = (obj, getObject) => {
-        if (isQrl(obj)) {
-            if (obj.$capture$ && obj.$capture$.length > 0) {
-                obj.$captureRef$ = obj.$capture$.map(getObject);
-                obj.$capture$ = null;
-            }
+    const reviveNestedObjects = (obj, getObject, parser) => {
+        if (parser.fill(obj)) {
             return;
         }
         if (obj && typeof obj == 'object') {
@@ -2095,7 +2361,7 @@
                         obj[i] = getObject(value);
                     }
                     else {
-                        reviveNestedObjects(value, getObject);
+                        reviveNestedObjects(value, getObject, parser);
                     }
                 }
             }
@@ -2107,7 +2373,7 @@
                             obj[key] = getObject(value);
                         }
                         else {
-                            reviveNestedObjects(value, getObject);
+                            reviveNestedObjects(value, getObject, parser);
                         }
                     }
                 }
@@ -2259,7 +2525,7 @@
                 if (!target && isNode$1(obj)) {
                     if (obj.nodeType === 9) {
                         assertTrue(obj === collector.$doc$, 'Document reference is not from the same page', obj);
-                        collector.$objMap$.set(obj, DOCUMENT_PREFIX);
+                        collector.$objMap$.set(obj, obj);
                     }
                     else if (obj.nodeType !== 1) {
                         throw qError(QError_verifySerializable, obj);
@@ -2276,6 +2542,12 @@
                         return;
                     }
                     seen.add(obj);
+                    if (isResourceReturn(obj)) {
+                        collector.$objMap$.set(target, target);
+                        await collectValue(obj.promise, collector, leaks);
+                        await collectValue(obj.resolved, collector, leaks);
+                        return;
+                    }
                 }
                 collector.$objMap$.set(obj, obj);
                 if (isArray(obj)) {
@@ -2521,6 +2793,7 @@
         if (isComponent) {
             if (!dirty && !ctx.$renderQrl$ && !ctx.$element$.hasAttribute(QHostAttr)) {
                 setAttribute(rctx, ctx.$element$, QHostAttr, '');
+                setAttribute(rctx, ctx.$element$, ELEMENT_ID, getNextIndex(rctx));
                 ctx.$renderQrl$ = props[OnRenderProp];
                 assertQrl(ctx.$renderQrl$);
                 dirty = true;
@@ -2703,6 +2976,10 @@
                 currentComponent.$slots$.push(vnode);
             }
         }
+        const hasRef = props && 'ref' in props;
+        if (isComponent || ctx.$listeners$ || hasRef) {
+            directSetAttribute(ctx.$element$, ELEMENT_ID, getNextIndex(rctx));
+        }
         let wait;
         if (isComponent) {
             // Run mount hook
@@ -2744,6 +3021,9 @@
             }
             return elm;
         });
+    };
+    const getNextIndex = (ctx) => {
+        return intToStr(ctx.$containerState$.$elementIndex$++);
     };
     const getSlots = (componentCtx, hostElm) => {
         if (hostElm.localName === 'html') {
@@ -3221,6 +3501,7 @@
         let set = containerEl[CONTAINER_STATE];
         if (!set) {
             containerEl[CONTAINER_STATE] = set = {
+                $containerEl$: containerEl,
                 $proxyMap$: new WeakMap(),
                 $subsManager$: createSubscriptionManager(),
                 $platform$: getPlatform(containerEl),
@@ -3231,6 +3512,7 @@
                 $renderPromise$: undefined,
                 $hostsRendering$: undefined,
                 $userContext$: {},
+                $elementIndex$: 0,
             };
         }
         return set;
@@ -3287,11 +3569,11 @@
         }
     };
     const notifyWatch = (watch) => {
-        if (watch.f & WatchFlagsIsDirty) {
+        if (watch.$flags$ & WatchFlagsIsDirty) {
             return;
         }
-        watch.f |= WatchFlagsIsDirty;
-        const containerEl = getContainer(watch.el);
+        watch.$flags$ |= WatchFlagsIsDirty;
+        const containerEl = getContainer(watch.$el$);
         const state = getContainerState(containerEl);
         const activeRendering = state.$hostsRendering$ !== undefined;
         if (activeRendering) {
@@ -3357,11 +3639,11 @@
     };
     const postRendering = async (containerEl, containerState, ctx) => {
         await executeWatchesAfter(containerState, (watch, stage) => {
-            if ((watch.f & WatchFlagsIsEffect) === 0) {
+            if ((watch.$flags$ & WatchFlagsIsEffect) === 0) {
                 return false;
             }
             if (stage) {
-                return ctx.$hostElements$.has(watch.el);
+                return ctx.$hostElements$.has(watch.$el$);
             }
             return true;
         });
@@ -3379,15 +3661,15 @@
     const executeWatchesBefore = async (containerState) => {
         const resourcesPromises = [];
         const watchPromises = [];
-        const isWatch = (watch) => (watch.f & WatchFlagsIsWatch) !== 0;
-        const isResource = (watch) => (watch.f & WatchFlagsIsResource) !== 0;
+        const isWatch = (watch) => (watch.$flags$ & WatchFlagsIsWatch) !== 0;
+        const isResourceWatch = (watch) => (watch.$flags$ & WatchFlagsIsResource) !== 0;
         containerState.$watchNext$.forEach((watch) => {
             if (isWatch(watch)) {
-                watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                watchPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
-            if (isResource(watch)) {
-                resourcesPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+            if (isResourceWatch(watch)) {
+                resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
         });
@@ -3395,10 +3677,10 @@
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
                 if (isWatch(watch)) {
-                    watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 }
-                else if (isResource(watch)) {
-                    resourcesPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                else if (isResourceWatch(watch)) {
+                    resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 }
                 else {
                     containerState.$watchNext$.add(watch);
@@ -3425,7 +3707,7 @@
         const watchPromises = [];
         containerState.$watchNext$.forEach((watch) => {
             if (watchPred(watch, false)) {
-                watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                watchPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
         });
@@ -3433,7 +3715,7 @@
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
                 if (watchPred(watch, true)) {
-                    watchPromises.push(then(watch.qrl.$resolveLazy$(watch.el), () => watch));
+                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(watch.$el$), () => watch));
                 }
                 else {
                     containerState.$watchNext$.add(watch);
@@ -3456,10 +3738,10 @@
     };
     const sortWatches = (watches) => {
         watches.sort((a, b) => {
-            if (a.el === b.el) {
-                return a.i < b.i ? -1 : 1;
+            if (a.$el$ === b.$el$) {
+                return a.$index$ < b.$index$ ? -1 : 1;
             }
-            return (a.el.compareDocumentPosition(b.el) & 2) !== 0 ? 1 : -1;
+            return (a.$el$.compareDocumentPosition(b.$el$) & 2) !== 0 ? 1 : -1;
         });
     };
 
@@ -3691,6 +3973,9 @@
             }
             switch (typeof unwrapped) {
                 case 'object':
+                    if (isSubscriberDescriptor(unwrapped)) {
+                        return value;
+                    }
                     if (isArray(unwrapped)) {
                         for (const item of unwrapped) {
                             _verifySerializable(item, seen);
@@ -3788,7 +4073,7 @@
             return !!tryGetContext(sub) || sub.isConnected;
         }
         else {
-            return isConnected(sub.el);
+            return isConnected(sub.$el$);
         }
     };
     const MUTABLE = Symbol('mutable');
@@ -4532,77 +4817,6 @@
     // </docs>
     const component$ = (onMount, options) => {
         return componentQrl($(onMount), options);
-    };
-
-    /**
-     * @alpha
-     */
-    const useResourceQrl = (qrl) => {
-        const { get, set, i, ctx } = useSequentialScope();
-        if (get != null) {
-            return get;
-        }
-        assertQrl(qrl);
-        const containerState = ctx.$renderCtx$.$containerState$;
-        const result = {
-            promise: undefined,
-            resolved: undefined,
-            error: undefined,
-            state: 'pending',
-        };
-        const resource = createProxy(result, containerState, 0, undefined);
-        const el = ctx.$hostElement$;
-        const watch = {
-            qrl,
-            el,
-            f: WatchFlagsIsDirty | WatchFlagsIsResource,
-            i,
-            r: resource,
-        };
-        const previousWait = Promise.all(ctx.$waitOn$.slice());
-        runResource(watch, containerState, previousWait);
-        getContext(el).$watches$.push(watch);
-        assertDefined(result.promise, `useResource: resource.promise must be defined`, result);
-        set(resource);
-        return resource;
-    };
-    /**
-     * @alpha
-     */
-    const useResource$ = (generatorFn) => {
-        return useResourceQrl($(generatorFn));
-    };
-    const useIsServer = () => {
-        const ctx = getInvokeContext();
-        assertDefined(ctx.$doc$, 'doc must be defined', ctx);
-        return isServer(ctx.$doc$);
-    };
-    /**
-     * @alpha
-     */
-    const Resource = (props) => {
-        const isBrowser = !qDev || !useIsServer();
-        if (isBrowser) {
-            if (props.onRejected) {
-                props.resource.promise.catch(() => { });
-                if (props.resource.state === 'rejected') {
-                    return props.onRejected(props.resource.error);
-                }
-            }
-            if (props.onPending) {
-                const state = props.resource.state;
-                if (state === 'pending') {
-                    return props.onPending();
-                }
-                else if (state === 'resolved') {
-                    return props.onResolved(props.resource.resolved);
-                }
-            }
-        }
-        // Resource path
-        return jsx(Fragment, {
-            children: props.resource.promise.then(props.onResolved, props.onRejected),
-        });
     };
 
     /* eslint-disable */

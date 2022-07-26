@@ -1431,7 +1431,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @alpha
  */
-export declare const pauseContainer: (elmOrDoc: Element | Document) => Promise<SnapshotResult>;
+export declare const pauseContainer: (elmOrDoc: Element | Document, defaultParentJSON?: Element) => Promise<SnapshotResult>;
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
@@ -1885,11 +1885,20 @@ declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
 /**
  * @alpha
  */
+declare interface ResourceOptions {
+    timeout?: number;
+}
+
+/**
+ * @alpha
+ */
 export declare interface ResourcePending<T> {
+    __brand: 'resource';
     state: 'pending';
     promise: Promise<T>;
     resolved: undefined;
     error: undefined;
+    timeout?: number;
 }
 
 /**
@@ -1906,20 +1915,24 @@ export declare interface ResourceProps<T> {
  * @alpha
  */
 export declare interface ResourceRejected<T> {
+    __brand: 'resource';
     state: 'rejected';
     promise: Promise<T>;
     resolved: undefined;
     error: NoSerialize<any>;
+    timeout?: number;
 }
 
 /**
  * @alpha
  */
 export declare interface ResourceResolved<T> {
+    __brand: 'resource';
     state: 'resolved';
     promise: Promise<T>;
     resolved: T;
     error: undefined;
+    timeout?: number;
 }
 
 /**
@@ -2012,6 +2025,7 @@ export declare interface SnapshotResult {
     listeners: SnapshotListener[];
     objs: any[];
     mode: 'render' | 'listeners' | 'static';
+    pendingContent: Promise<string>[];
 }
 
 /**
@@ -2830,7 +2844,7 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => ResourceRe
 /**
  * @alpha
  */
-export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>) => ResourceReturn<T>;
+export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
  * @see `useStyles`.
