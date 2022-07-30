@@ -20914,6 +20914,7 @@ var ElementFixture = class {
 };
 
 // packages/qwik/src/testing/util.ts
+var import_path = require("path");
 var import_url2 = require("url");
 function toFileUrl(filePath) {
   return (0, import_url2.pathToFileURL)(filePath).href;

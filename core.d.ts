@@ -850,7 +850,7 @@ export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes
     className?: string | undefined;
     contentEditable?: Booleanish | 'inherit' | undefined;
     contextMenu?: string | undefined;
-    dir?: string | undefined;
+    dir?: 'ltr' | 'rtl' | 'auto' | undefined;
     draggable?: Booleanish | undefined;
     hidden?: boolean | undefined;
     id?: string | undefined;
