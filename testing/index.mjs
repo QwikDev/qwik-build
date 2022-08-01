@@ -20890,6 +20890,7 @@ var ElementFixture = class {
 };
 
 // packages/qwik/src/testing/util.ts
+import { normalize } from "path";
 import { pathToFileURL } from "url";
 function toFileUrl(filePath) {
   return pathToFileURL(filePath).href;

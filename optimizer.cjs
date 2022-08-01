@@ -1007,6 +1007,7 @@ globalThis.qwikOptimizer = function(module) {
       "function" === typeof updatedOpts.transformedModuleOutput && (opts.transformedModuleOutput = updatedOpts.transformedModuleOutput);
       opts.vendorRoots = updatedOpts.vendorRoots ? updatedOpts.vendorRoots : [];
       opts.scope = updatedOpts.scope ?? null;
+      "boolean" === typeof updatedOpts.resolveQwikBuild && (opts.resolveQwikBuild = updatedOpts.resolveQwikBuild);
       return {
         ...opts
       };
