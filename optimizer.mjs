@@ -5,19 +5,13 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-function isElement(value) {
-  return isNode(value) && 1 == value.nodeType;
-}
-
-function isNode(value) {
-  return value && "number" == typeof value.nodeType;
-}
-
 var qDev = false !== globalThis.qDev;
 
 var qTest = void 0 !== globalThis.describe;
 
-var QHostAttr = "q:host";
+var isNode = value => value && "number" == typeof value.nodeType;
+
+var isElement = value => isNode(value) && 1 === value.nodeType;
 
 var Q_CTX = "__ctx__";
 
@@ -43,10 +37,8 @@ var printParams = optionalParams => {
 
 var printElement = el => {
   const ctx = tryGetContext(el);
-  const isComponent = el.hasAttribute(QHostAttr);
   const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
   return {
-    isComponent: isComponent,
     tagName: el.tagName,
     renderQRL: ctx?.$renderQrl$?.getSymbol(),
     element: isServer ? void 0 : el,
@@ -754,7 +746,7 @@ function prioritorizeSymbolNames(manifest) {
 
 var EVENT_PRIORITY = [ "onClick$", "onDblClick$", "onContextMenu$", "onAuxClick$", "onPointerDown$", "onPointerUp$", "onPointerMove$", "onPointerOver$", "onPointerEnter$", "onPointerLeave$", "onPointerOut$", "onPointerCancel$", "onGotPointerCapture$", "onLostPointerCapture$", "onTouchStart$", "onTouchEnd$", "onTouchMove$", "onTouchCancel$", "onMouseDown$", "onMouseUp$", "onMouseMove$", "onMouseEnter$", "onMouseLeave$", "onMouseOver$", "onMouseOut$", "onWheel$", "onGestureStart$", "onGestureChange$", "onGestureEnd$", "onKeyDown$", "onKeyUp$", "onKeyPress$", "onInput$", "onChange$", "onSearch$", "onInvalid$", "onBeforeInput$", "onSelect$", "onFocusIn$", "onFocusOut$", "onFocus$", "onBlur$", "onSubmit$", "onReset$", "onScroll$" ].map((n => n.toLowerCase()));
 
-var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useScopedStyles$" ].map((n => n.toLowerCase()));
+var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStyles$" ].map((n => n.toLowerCase()));
 
 function sortBundleNames(manifest) {
   return Object.keys(manifest.bundles).sort(sortAlphabetical);
@@ -1711,7 +1703,8 @@ function qwikVite(qwikViteOpts = {}) {
         try {
           if (req.headers.accept && req.headers.accept.includes("text/html")) {
             const userContext = {
-              ...res._qwikUserCtx
+              ...res._qwikUserCtx,
+              url: url.href
             };
             const status = "number" === typeof res.statusCode ? res.statusCode : 200;
             if (isClientDevOnly) {
@@ -1780,7 +1773,13 @@ function qwikVite(qwikViteOpts = {}) {
               res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
               res.writeHead(status);
               const result = await render(renderOpts);
-              "html" in result ? res.end(result.html) : res.end();
+              if ("html" in result) {
+                res.write('<script type="module" src="/@vite/client"><\/script>');
+                res.end(result.html);
+              } else {
+                res.write('<script type="module" src="/@vite/client"><\/script>');
+                res.end();
+              }
             } else {
               next();
             }

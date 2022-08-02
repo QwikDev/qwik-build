@@ -686,7 +686,7 @@ declare type JSXChildren = string | number | boolean | null | undefined | Functi
  */
 export declare interface JSXNode<T = any> {
     type: T;
-    props: Record<string, any> | null;
+    props: Record<string, any>;
     key: string | number | null;
 }
 
@@ -983,7 +983,6 @@ declare interface QwikProps extends PreventDefault {
     class?: string | {
         [className: string]: boolean;
     };
-    innerHTML?: string;
     dangerouslySetInnerHTML?: string;
     ref?: Ref<Element>;
     /**
@@ -993,8 +992,6 @@ declare interface QwikProps extends PreventDefault {
     /**
      * URL against which relative QRLs should be resolved to.
      */
-    'q:obj'?: string;
-    'q:host'?: string;
     'q:version'?: string;
     'q:container'?: '';
 }

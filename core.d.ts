@@ -385,7 +385,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```
  *
  * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
- * `useOnWindow`, `useStyles`, `useScopedStyles`
+ * `useOnWindow`, `useStyles`
  *
  * @public
  */
@@ -425,6 +425,12 @@ declare interface ComponentBaseProps extends PreventDefault, ComponentCustomEven
     [key: `host:${string}`]: any;
     'host:tagName'?: JSXTagName;
     children?: JSXChildren;
+}
+
+declare interface ComponentCtx {
+    $hostElement$: Element;
+    $slots$: ProcessedJSXNode[];
+    $id$: string;
 }
 
 declare interface ComponentCustomEvents {
@@ -505,11 +511,30 @@ export declare interface ComponentOptions {
  * ```
  *
  * See also: `component`, `useCleanup`, `onResume`, `onPause`, `useOn`, `useOnDocument`,
- * `useOnWindow`, `useStyles`, `useScopedStyles`
+ * `useOnWindow`, `useStyles`
  *
  * @public
  */
 export declare const componentQrl: <PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions) => Component<PROPS>;
+
+/**
+ * @alpha
+ */
+declare interface ContainerState {
+    $containerEl$: Element;
+    $proxyMap$: ObjToProxyMap;
+    $subsManager$: SubscriptionManager;
+    $platform$: CorePlatform;
+    $watchNext$: Set<SubscriberDescriptor>;
+    $watchStaging$: Set<SubscriberDescriptor>;
+    $hostsNext$: Set<Element>;
+    $hostsStaging$: Set<Element>;
+    $hostsRendering$: Set<Element> | undefined;
+    $renderPromise$: Promise<RenderContext> | undefined;
+    $userContext$: Record<string, any>;
+    $elementIndex$: number;
+    $stylesIds$: Set<string>;
+}
 
 /**
  * Context is a typesafe ID for your context.
@@ -706,6 +731,18 @@ declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface DescriptorBase<T = any, B = undefined> {
+    $qrl$: QRLInternal<T>;
+    $el$: Element;
+    $flags$: number;
+    $index$: number;
+    $destroy$?: NoSerialize<() => void>;
+    $resource$: B;
 }
 
 declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1205,6 +1242,20 @@ declare interface IntrinsicElements {
     view: SVGProps<SVGViewElement>;
 }
 
+declare interface InvokeContext {
+    $url$: URL | null;
+    $seq$: number;
+    $doc$?: Document;
+    $hostElement$?: Element;
+    $element$?: Element;
+    $event$: any;
+    $qrl$?: QRL<any>;
+    $waitOn$?: ValueOrPromise<any>[];
+    $props$?: Props;
+    $subscriber$?: Subscriber | null;
+    $renderCtx$?: RenderContext;
+}
+
 /**
  * @public
  */
@@ -1220,7 +1271,7 @@ declare type JSXChildren = string | number | boolean | null | undefined | Functi
  */
 export declare interface JSXNode<T = any> {
     type: T;
-    props: Record<string, any> | null;
+    props: Record<string, any>;
     key: string | number | null;
 }
 
@@ -1261,6 +1312,12 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     sizes?: string | undefined;
     type?: string | undefined;
     charSet?: string | undefined;
+}
+
+declare interface LocalSubscriptionManager {
+    $subs$: SubscriberMap;
+    $notifySubs$: (key?: string | undefined) => void;
+    $addSub$: (subscriber: Subscriber, key?: string) => void;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1397,6 +1454,8 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     wmode?: string | undefined;
 }
 
+declare type ObjToProxyMap = WeakMap<any, any>;
+
 declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
@@ -1432,15 +1491,22 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * Serialize the current state of the application into DOM
- *
  * @alpha
  */
-export declare const pauseContainer: (elmOrDoc: Element | Document, defaultParentJSON?: Element) => Promise<SnapshotResult>;
+export declare const pauseFromContexts: (elements: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
 
 declare type PreventDefault = {
     [K in keyof QwikEventMap as `prevent${'default' | 'Default'}:${Lowercase<K>}`]?: boolean;
 };
+
+declare interface ProcessedJSXNode {
+    $type$: string;
+    $props$: Record<string, any>;
+    $children$: ProcessedJSXNode[];
+    $key$: string | null;
+    $elm$: Node | null;
+    $text$: string;
+}
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
     max?: number | string | undefined;
@@ -1481,6 +1547,23 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
  * @public
  */
 export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps;
+
+declare interface QContext {
+    $element$: Element;
+    $refMap$: any[];
+    $dirty$: boolean;
+    $id$: string;
+    $mounted$: boolean;
+    $cache$: Map<string, any> | null;
+    $props$: Record<string, any> | null;
+    $renderQrl$: QRLInternal<OnRenderFn<any>> | null;
+    $component$: ComponentCtx | null;
+    $listeners$: Map<string, QRLInternal<any>[]> | null;
+    $seq$: any[];
+    $watches$: SubscriberDescriptor[];
+    $contexts$: Map<string, any> | null;
+    $styles$: StyleAppend[];
+}
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -1633,6 +1716,31 @@ export declare interface QRL<TYPE = any> {
  * @alpha
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
+
+declare interface QRLInternal<TYPE = any> extends QRL<TYPE>, QRLInternalMethods<TYPE> {
+}
+
+declare interface QRLInternalMethods<TYPE> {
+    readonly $chunk$: string;
+    readonly $symbol$: string;
+    readonly $refSymbol$: string | null;
+    $capture$: string[] | null;
+    $captureRef$: any[] | null;
+    resolve(el?: Element): Promise<TYPE>;
+    getSymbol(): string;
+    getHash(): string;
+    $setContainer$(el: Element): void;
+    $resolveLazy$(el: Element): void;
+    $invokeFn$(el?: Element, currentCtx?: InvokeContext, beforeFn?: () => void): any;
+    $copy$(): QRLInternal<TYPE>;
+    $serialize$(options?: QRLSerializeOptions): string;
+}
+
+declare interface QRLSerializeOptions {
+    $platform$?: CorePlatform;
+    $element$?: Element;
+    $getObjId$?: (obj: any) => string | null;
+}
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
@@ -1820,7 +1928,6 @@ declare interface QwikProps extends PreventDefault {
     class?: string | {
         [className: string]: boolean;
     };
-    innerHTML?: string;
     dangerouslySetInnerHTML?: string;
     ref?: Ref<Element>;
     /**
@@ -1830,8 +1937,6 @@ declare interface QwikProps extends PreventDefault {
     /**
      * URL against which relative QRLs should be resolved to.
      */
-    'q:obj'?: string;
-    'q:host'?: string;
     'q:version'?: string;
     'q:container'?: '';
 }
@@ -1864,9 +1969,56 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode<unkno
 /**
  * @alpha
  */
+declare interface RenderContext {
+    $doc$: Document;
+    $roots$: Element[];
+    $hostElements$: Set<Element>;
+    $operations$: RenderOperation[];
+    $contexts$: QContext[];
+    $currentComponent$: ComponentCtx | undefined;
+    $containerState$: ContainerState;
+    $containerEl$: Element;
+    $perf$: RenderPerf;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderOperation {
+    $el$: Node;
+    $operation$: string;
+    $args$: any[];
+    $fn$: () => void;
+}
+
+/**
+ * @alpha
+ */
 export declare interface RenderOptions {
     allowRerender?: boolean;
     userContext?: Record<string, any>;
+}
+
+/**
+ * @alpha
+ */
+declare interface RenderPerf {
+    $visited$: number;
+}
+
+/**
+ * @alpha
+ */
+export declare const renderSSR: (doc: Document, node: JSXNode, opts: RenderSSROptions) => Promise<void>;
+
+declare interface RenderSSROptions {
+    fragmentTagName?: string;
+    stream: StreamWriter;
+    base?: string;
+    userContext?: Record<string, any>;
+    url?: string;
+    beforeContent?: JSXNode[];
+    beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
 }
 
 /**
@@ -1881,6 +2033,12 @@ export declare interface ResourceCtx<T> {
     track: Tracker;
     cleanup(callback: () => void): void;
     previous: T | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturn<T>> {
 }
 
 /**
@@ -1994,6 +2152,7 @@ export declare const SkipRerender: FunctionComponent<{}>;
  */
 export declare const Slot: FunctionComponent<{
     name?: string;
+    as?: string;
     children?: any;
 }>;
 
@@ -2053,11 +2212,54 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @public
+ */
+export declare const SSRFlush: FunctionComponent<{}>;
+
+/**
+ * @public
+ */
+export declare const SSRMark: FunctionComponent<{
+    message: string;
+}>;
+
+/**
+ * @public
+ */
+declare type StreamWriter = {
+    write: (chunk: string) => void | boolean | Promise<void> | Promise<boolean>;
+};
+
+declare interface StyleAppend {
+    type: 'style';
+    styleId: string;
+    content: string;
+}
+
 declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     media?: string | undefined;
     nonce?: string | undefined;
     scoped?: boolean | undefined;
     type?: string | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare type Subscriber = SubscriberDescriptor | Element;
+
+/**
+ * @alpha
+ */
+declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
+
+declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
+
+declare interface SubscriptionManager {
+    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
+    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
+    $clearSub$: (sub: Subscriber) => void;
 }
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
@@ -3026,8 +3228,7 @@ declare interface UseStoreOptions {
  * });
  * ```
  *
- * @see `useScopedStyles`.
- *
+ * *
  * @public
  */
 export declare const useStyles$: (first: string) => void;
@@ -3047,9 +3248,7 @@ export declare const useStyles$: (first: string) => void;
  *   return <Host>Some text</Host>;
  * });
  * ```
- *
- * @see `useScopedStyles`.
- *
+ * *
  * @public
  */
 export declare const useStylesQrl: (styles: QRL<string>) => void;
@@ -3204,6 +3403,11 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     disablePictureInPicture?: boolean | undefined;
     disableRemotePlayback?: boolean | undefined;
 }
+
+/**
+ * @alpha
+ */
+declare type WatchDescriptor = DescriptorBase<WatchFn>;
 
 /**
  * @alpha

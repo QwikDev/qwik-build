@@ -20553,88 +20553,10 @@ __export(testing_exports, {
 });
 module.exports = __toCommonJS(testing_exports);
 
-// packages/qwik/src/server/utils.ts
-function normalizeUrl(url) {
-  if (url != null) {
-    if (typeof url === "string") {
-      return new URL(url || "/", BASE_URI);
-    }
-    if (typeof url.href === "string") {
-      return new URL(url.href || "/", BASE_URI);
-    }
-  }
-  return new URL(BASE_URI);
-}
-var BASE_URI = `http://document.qwik.dev/`;
-var versions = {
-  qwik: globalThis.QWIK_VERSION,
-  qwikDom: globalThis.QWIK_DOM_VERSION
-};
-
-// packages/qwik/src/server/document.ts
-var import_qwik_dom = __toESM(require_lib(), 1);
-function _createDocument(opts) {
-  opts = opts || {};
-  const doc = import_qwik_dom.default.createDocument(opts.html);
-  const win = ensureGlobals(doc, opts);
-  return win.document;
-}
-function ensureGlobals(doc, opts) {
-  if (!doc[QWIK_DOC]) {
-    if (!doc || doc.nodeType !== 9) {
-      throw new Error(`Invalid document`);
-    }
-    doc[QWIK_DOC] = true;
-    const loc = normalizeUrl(opts.url);
-    Object.defineProperty(doc, "baseURI", {
-      get: () => loc.href,
-      set: (url) => loc.href = normalizeUrl(url).href
-    });
-    doc.defaultView = {
-      get document() {
-        return doc;
-      },
-      get location() {
-        return loc;
-      },
-      get origin() {
-        return loc.origin;
-      },
-      addEventListener: noop,
-      removeEventListener: noop,
-      history: {
-        pushState: noop,
-        replaceState: noop,
-        go: noop,
-        back: noop,
-        forward: noop
-      },
-      CustomEvent: class CustomEvent {
-        constructor(type, details) {
-          Object.assign(this, details);
-          this.type = type;
-        }
-      }
-    };
-  }
-  return doc.defaultView;
-}
-var noop = () => {
-};
-var QWIK_DOC = Symbol();
-
 // packages/qwik/src/core/util/types.ts
 var isObject = (v) => {
   return v && typeof v === "object";
 };
-
-// packages/qwik/src/testing/html.ts
-function isElement(value) {
-  return isNode(value) && value.nodeType == 1;
-}
-function isNode(value) {
-  return value && typeof value.nodeType == "number";
-}
 
 // packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev !== false;
@@ -20658,8 +20580,15 @@ var getDocument = (node) => {
   return doc;
 };
 
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType == "number";
+};
+var isElement = (value) => {
+  return isNode(value) && value.nodeType === 1;
+};
+
 // packages/qwik/src/core/util/markers.ts
-var QHostAttr = "q:host";
 var QContainerSelector = "[q\\:container]";
 
 // packages/qwik/src/core/props/props.ts
@@ -20694,10 +20623,8 @@ var printParams = (optionalParams) => {
 var printElement = (el) => {
   var _a;
   const ctx = tryGetContext(el);
-  const isComponent = el.hasAttribute(QHostAttr);
   const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
   return {
-    isComponent,
     tagName: el.tagName,
     renderQRL: (_a = ctx == null ? void 0 : ctx.$renderQrl$) == null ? void 0 : _a.getSymbol(),
     element: isServer ? void 0 : el,
@@ -20886,16 +20813,82 @@ function getTestPlatform(document2) {
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
 // packages/qwik/src/testing/document.ts
-function createWindow(opts = {}) {
-  const win = _createDocument(opts).defaultView;
-  setTestPlatform(win.document);
-  return win;
+var import_qwik_dom = __toESM(require_lib(), 1);
+
+// packages/qwik/src/testing/util.ts
+var import_path = require("path");
+var import_url2 = require("url");
+function toFileUrl(filePath) {
+  return (0, import_url2.pathToFileURL)(filePath).href;
 }
-function createDocument(opts = {}) {
-  const doc = _createDocument(opts);
+function normalizeUrl(url) {
+  if (url != null) {
+    if (typeof url === "string") {
+      return new URL(url || "/", BASE_URI);
+    }
+    if (typeof url.href === "string") {
+      return new URL(url.href || "/", BASE_URI);
+    }
+  }
+  return new URL(BASE_URI);
+}
+var BASE_URI = `http://document.qwik.dev/`;
+var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
+
+// packages/qwik/src/testing/document.ts
+function createDocument(opts) {
+  const doc = import_qwik_dom.default.createDocument(opts == null ? void 0 : opts.html);
+  ensureGlobals(doc, opts);
   setTestPlatform(doc);
   return doc;
 }
+function createWindow(opts = {}) {
+  const win = createDocument(opts).defaultView;
+  return win;
+}
+function ensureGlobals(doc, opts) {
+  if (!doc[QWIK_DOC]) {
+    if (!doc || doc.nodeType !== 9) {
+      throw new Error(`Invalid document`);
+    }
+    doc[QWIK_DOC] = true;
+    const loc = normalizeUrl(opts == null ? void 0 : opts.url);
+    Object.defineProperty(doc, "baseURI", {
+      get: () => loc.href,
+      set: (url) => loc.href = normalizeUrl(url).href
+    });
+    doc.defaultView = {
+      get document() {
+        return doc;
+      },
+      get location() {
+        return loc;
+      },
+      get origin() {
+        return loc.origin;
+      },
+      addEventListener: noop,
+      removeEventListener: noop,
+      history: {
+        pushState: noop,
+        replaceState: noop,
+        go: noop,
+        back: noop,
+        forward: noop
+      },
+      CustomEvent: class CustomEvent {
+        constructor(type, details) {
+          Object.assign(this, details);
+          this.type = type;
+        }
+      }
+    };
+  }
+  return doc.defaultView;
+}
+var noop = () => {
+};
+var QWIK_DOC = Symbol();
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
@@ -20912,14 +20905,6 @@ var ElementFixture = class {
     this.document.body.appendChild(this.superParent);
   }
 };
-
-// packages/qwik/src/testing/util.ts
-var import_path = require("path");
-var import_url2 = require("url");
-function toFileUrl(filePath) {
-  return (0, import_url2.pathToFileURL)(filePath).href;
-}
-var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   ElementFixture,

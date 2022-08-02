@@ -47,15 +47,10 @@ globalThis.qwikOptimizer = function(module) {
     versions: () => versions
   });
   module.exports = __toCommonJS(src_exports);
-  function isElement(value) {
-    return isNode(value) && 1 == value.nodeType;
-  }
-  function isNode(value) {
-    return value && "number" == typeof value.nodeType;
-  }
   var qDev = false !== globalThis.qDev;
   globalThis.describe;
-  var QHostAttr = "q:host";
+  var isNode = value => value && "number" == typeof value.nodeType;
+  var isElement = value => isNode(value) && 1 === value.nodeType;
   var Q_CTX = "__ctx__";
   var tryGetContext = element => element[Q_CTX];
   var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
@@ -76,10 +71,8 @@ globalThis.qwikOptimizer = function(module) {
   var printElement = el => {
     var _a;
     const ctx = tryGetContext(el);
-    const isComponent = el.hasAttribute(QHostAttr);
     const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
     return {
-      isComponent: isComponent,
       tagName: el.tagName,
       renderQRL: null == (_a = null == ctx ? void 0 : ctx.$renderQrl$) ? void 0 : _a.getSymbol(),
       element: isServer ? void 0 : el,
@@ -813,7 +806,7 @@ globalThis.qwikOptimizer = function(module) {
     }));
   }
   var EVENT_PRIORITY = [ "onClick$", "onDblClick$", "onContextMenu$", "onAuxClick$", "onPointerDown$", "onPointerUp$", "onPointerMove$", "onPointerOver$", "onPointerEnter$", "onPointerLeave$", "onPointerOut$", "onPointerCancel$", "onGotPointerCapture$", "onLostPointerCapture$", "onTouchStart$", "onTouchEnd$", "onTouchMove$", "onTouchCancel$", "onMouseDown$", "onMouseUp$", "onMouseMove$", "onMouseEnter$", "onMouseLeave$", "onMouseOver$", "onMouseOut$", "onWheel$", "onGestureStart$", "onGestureChange$", "onGestureEnd$", "onKeyDown$", "onKeyUp$", "onKeyPress$", "onInput$", "onChange$", "onSearch$", "onInvalid$", "onBeforeInput$", "onSelect$", "onFocusIn$", "onFocusOut$", "onFocus$", "onBlur$", "onSubmit$", "onReset$", "onScroll$" ].map((n => n.toLowerCase()));
-  var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useScopedStyles$" ].map((n => n.toLowerCase()));
+  var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStyles$" ].map((n => n.toLowerCase()));
   function sortBundleNames(manifest) {
     return Object.keys(manifest.bundles).sort(sortAlphabetical);
   }
@@ -1746,7 +1739,8 @@ globalThis.qwikOptimizer = function(module) {
           try {
             if (req.headers.accept && req.headers.accept.includes("text/html")) {
               const userContext = {
-                ...res._qwikUserCtx
+                ...res._qwikUserCtx,
+                url: url.href
               };
               const status = "number" === typeof res.statusCode ? res.statusCode : 200;
               if (isClientDevOnly) {
@@ -1816,7 +1810,13 @@ globalThis.qwikOptimizer = function(module) {
                 res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
                 res.writeHead(status);
                 const result = await render(renderOpts);
-                "html" in result ? res.end(result.html) : res.end();
+                if ("html" in result) {
+                  res.write('<script type="module" src="/@vite/client"><\/script>');
+                  res.end(result.html);
+                } else {
+                  res.write('<script type="module" src="/@vite/client"><\/script>');
+                  res.end();
+                }
               } else {
                 next();
               }

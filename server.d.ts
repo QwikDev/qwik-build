@@ -1,13 +1,6 @@
 /// <reference path="./server-modules.d.ts" />
 
 /**
- * Create emulated `Document` for server environment. Does not implement the full browser
- * `document` and `window` API. This api may be removed in the future.
- * @internal
- */
-export declare function _createDocument(opts?: SerializeDocumentOptions): any;
-
-/**
  * Utility timer function for performance profiling.
  * Returns a duration of 0 in environments that do not support performance.
  * @alpha
@@ -35,6 +28,25 @@ export declare interface GlobalInjections {
     location: 'head' | 'body';
     children?: string;
 }
+
+declare interface InOrderFull {
+    buffering: 'full';
+}
+
+declare interface InOrderManual {
+    buffering: 'marks';
+}
+
+declare interface InOrderNone {
+    buffering: 'none';
+}
+
+declare interface InOrderSize {
+    buffering: 'size';
+    size: number;
+}
+
+declare type InOrderStreaming = InOrderNone | InOrderManual | InOrderSize | InOrderFull;
 
 /**
  * @alpha
@@ -317,6 +329,7 @@ export declare function renderToStream(rootNode: any, opts: RenderToStreamOption
  */
 export declare interface RenderToStreamOptions extends RenderOptions {
     stream: StreamWriter;
+    streaming?: StreamingOptions;
 }
 
 /**
@@ -357,7 +370,6 @@ declare interface SerializeDocumentOptions {
     manifest?: QwikManifest;
     symbolMapper?: SymbolMapperFn;
     url?: URL | string;
-    html?: string;
     debug?: boolean;
 }
 
@@ -407,6 +419,10 @@ declare interface SnapshotState {
     ctx: SnapshotMeta;
     objs: any[];
     subs: any[];
+}
+
+declare interface StreamingOptions {
+    inOrder?: InOrderStreaming;
 }
 
 /**
