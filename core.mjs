@@ -81,6 +81,10 @@ const ELEMENT_ID_PREFIX = '#';
 /**
  * @private
  */
+const isSerializableObject = (v) => {
+    const proto = Object.getPrototypeOf(v);
+    return proto === Object.prototype || proto === null;
+};
 const isObject = (v) => {
     return v && typeof v === 'object';
 };
@@ -2171,7 +2175,7 @@ const pauseState = async (containerEl) => {
                 if (isArray(obj)) {
                     return obj.map(mustGetObjId);
                 }
-                if (Object.getPrototypeOf(obj) === Object.prototype) {
+                if (isSerializableObject(obj)) {
                     const output = {};
                     Object.entries(obj).forEach(([key, value]) => {
                         output[key] = mustGetObjId(value);
@@ -2377,7 +2381,7 @@ const reviveNestedObjects = (obj, getObject, parser) => {
                 }
             }
         }
-        else if (Object.getPrototypeOf(obj) === Object.prototype) {
+        else if (isSerializableObject(obj)) {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
@@ -3991,7 +3995,7 @@ const _verifySerializable = (value, seen) => {
                     }
                     return value;
                 }
-                if (Object.getPrototypeOf(unwrapped) === Object.prototype) {
+                if (isSerializableObject(unwrapped)) {
                     for (const item of Object.values(unwrapped)) {
                         _verifySerializable(item, seen);
                     }
