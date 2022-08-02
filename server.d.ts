@@ -413,7 +413,7 @@ declare interface SnapshotState {
  * @public
  */
 export declare type StreamWriter = {
-    write: (chunk: string) => void;
+    write: (chunk: string) => void | boolean | Promise<void> | Promise<boolean>;
 };
 
 declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
