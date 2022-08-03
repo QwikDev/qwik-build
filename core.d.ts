@@ -428,9 +428,8 @@ declare interface ComponentBaseProps extends PreventDefault, ComponentCustomEven
 }
 
 declare interface ComponentCtx {
-    $hostElement$: Element;
+    $ctx$: QContext;
     $slots$: ProcessedJSXNode[];
-    $id$: string;
 }
 
 declare interface ComponentCustomEvents {
@@ -533,7 +532,7 @@ declare interface ContainerState {
     $renderPromise$: Promise<RenderContext> | undefined;
     $userContext$: Record<string, any>;
     $elementIndex$: number;
-    $stylesIds$: Set<string>;
+    $styleIds$: Set<string>;
 }
 
 /**
@@ -1562,7 +1561,8 @@ declare interface QContext {
     $seq$: any[];
     $watches$: SubscriberDescriptor[];
     $contexts$: Map<string, any> | null;
-    $styles$: StyleAppend[];
+    $appendStyles$: StyleAppend[] | null;
+    $scopeIds$: string[] | null;
 }
 
 /**
@@ -2215,13 +2215,15 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare const SSRFlush: FunctionComponent<{}>;
+export declare const SSRComment: FunctionComponent<{
+    data: string;
+}>;
 
 /**
  * @public
  */
-export declare const SSRMark: FunctionComponent<{
-    message: string;
+export declare const SSRStreamBlock: FunctionComponent<{
+    children?: any;
 }>;
 
 /**
@@ -2232,9 +2234,8 @@ declare type StreamWriter = {
 };
 
 declare interface StyleAppend {
-    type: 'style';
     styleId: string;
-    content: string;
+    content: string | null;
 }
 
 declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {

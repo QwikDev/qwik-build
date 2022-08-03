@@ -75,9 +75,6 @@
     /**
      * State factory of the component.
      */
-    /**
-     * State factory of the component.
-     */
     const OnRenderProp = 'q:renderFn';
     /**
      * Component style content prefix
@@ -90,6 +87,7 @@
     const QSlotRef = 'q:sref';
     const QSlotName = 'q:sname';
     const QStyle = 'q:style';
+    const QScopedStyle = 'q:sstyle';
     const QCtxAttr = 'q:ctx';
     const QContainerAttr = 'q:container';
     const QContainerSelector = '[q\\:container]';
@@ -582,6 +580,13 @@
         }
         return listeners;
     };
+    const getScopeIds = (el) => {
+        const scoped = el.getAttribute(QScopedStyle);
+        if (scoped) {
+            return scoped.split(' ');
+        }
+        return [];
+    };
 
     // <docs markdown="../readme.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -755,6 +760,11 @@
      * @public
      */
     const jsx = (type, props, key) => {
+        if (qDev) {
+            if (!isString(type) && !isFunction(type)) {
+                throw qError(QError_invalidJsxNodeType, type);
+            }
+        }
         return new JSXNodeImpl(type, props, key);
     };
     const HOST_TYPE = ':host';
@@ -1024,11 +1034,17 @@
     /**
      * @public
      */
-    const SSRMark = (() => null);
+    const SSRComment = (() => null);
     /**
      * @public
      */
-    const SSRFlush = () => jsx(SSRMark, { message: 'qkssr-f' });
+    const SSRStreamBlock = (props) => {
+        return [
+            jsx(SSRComment, { data: 'qkssr-pu' }),
+            props.children,
+            jsx(SSRComment, { data: 'qkssr-po' }),
+        ];
+    };
 
     const executeComponent = (rctx, ctx) => {
         ctx.$dirty$ = false;
@@ -1064,9 +1080,8 @@
                 let componentCtx = ctx.$component$;
                 if (!componentCtx) {
                     componentCtx = ctx.$component$ = {
-                        $hostElement$: hostElement,
+                        $ctx$: ctx,
                         $slots$: [],
-                        $id$: ctx.$id$,
                     };
                 }
                 componentCtx.$slots$ = [];
@@ -1104,37 +1119,62 @@
         };
         return newCtx;
     };
-    const stringifyClassOrStyle = (obj, isClass) => {
-        if (obj == null)
-            return '';
-        if (typeof obj == 'object') {
-            let text = '';
-            let sep = '';
+    const stringifyClass = (obj, oldValue) => {
+        const oldParsed = parseClassAny(oldValue);
+        const newParsed = parseClassAny(obj);
+        return [...oldParsed.filter((s) => s.includes(ComponentStylesPrefixContent)), ...newParsed].join(' ');
+    };
+    const joinClasses = (...input) => {
+        const set = new Set();
+        input.forEach((value) => {
+            parseClassAny(value).forEach((v) => set.add(v));
+        });
+        return Array.from(set).join(' ');
+    };
+    const parseClassAny = (obj) => {
+        if (isString(obj)) {
+            return parseClassList(obj);
+        }
+        else if (isObject(obj)) {
             if (isArray(obj)) {
-                if (!isClass) {
-                    throw qError(QError_stringifyClassOrStyle, obj, 'style');
-                }
-                for (let i = 0; i < obj.length; i++) {
-                    text += sep + obj[i];
-                    sep = ' ';
-                }
+                return obj;
             }
             else {
+                const output = [];
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
                         const value = obj[key];
                         if (value) {
-                            text += isClass
-                                ? value
-                                    ? sep + key
-                                    : ''
-                                : sep + fromCamelToKebabCase(key) + ':' + value;
-                            sep = isClass ? ' ' : ';';
+                            output.push(key);
                         }
                     }
                 }
+                return output;
             }
-            return text;
+        }
+        return [];
+    };
+    const parseClassListRegex = /\s/;
+    const parseClassList = (value) => !value ? [] : value.split(parseClassListRegex);
+    const stringifyStyle = (obj) => {
+        if (obj == null)
+            return '';
+        if (typeof obj == 'object') {
+            if (isArray(obj)) {
+                throw qError(QError_stringifyClassOrStyle, obj, 'style');
+            }
+            else {
+                const chunks = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        if (value) {
+                            chunks.push(fromCamelToKebabCase(key) + ':' + value);
+                        }
+                    }
+                }
+                return chunks.join(';');
+            }
         }
         return String(obj);
     };
@@ -1154,17 +1194,48 @@
         directSetAttribute(ctx.$element$, ELEMENT_ID, id);
     };
     const hasStyle = (containerState, styleId) => {
-        return containerState.$stylesIds$.has(styleId);
+        return containerState.$styleIds$.has(styleId);
     };
     const ALLOWS_PROPS = ['class', 'className', 'style', 'id', QSlot];
     const HOST_PREFIX = 'host:';
     const SCOPE_PREFIX = /^(host|window|document|prevent(d|D)efault):/;
     const BASE_QWIK_STYLES = `q\\:slot{display:contents}q\\:fallback,q\\:template{display:none}q\\:fallback:last-child{display:contents}`;
 
+    const hashCode = (text, hash = 0) => {
+        if (text.length === 0)
+            return hash;
+        for (let i = 0; i < text.length; i++) {
+            const chr = text.charCodeAt(i);
+            hash = (hash << 5) - hash + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return Number(Math.abs(hash)).toString(36);
+    };
+
+    const styleKey = (qStyles, index) => {
+        return `${hashCode(qStyles.getHash())}-${index}`;
+    };
+    const styleHost = (styleId) => {
+        return styleId;
+    };
+    const styleContent = (styleId) => {
+        return ComponentStylesPrefixContent + styleId;
+    };
+    const serializeSStyle = (scopeIds) => {
+        const value = scopeIds.join(' ');
+        if (value.length > 0) {
+            return value;
+        }
+        return undefined;
+    };
+
     const renderComponent = (rctx, ctx) => {
         const justMounted = !ctx.$mounted$;
         if (!ctx.$listeners$) {
             ctx.$listeners$ = getDomListeners(ctx.$element$);
+        }
+        if (!ctx.$scopeIds$) {
+            ctx.$scopeIds$ = getScopeIds(ctx.$element$);
         }
         return then(executeComponent(rctx, ctx), (res) => {
             if (res) {
@@ -1175,10 +1246,21 @@
                 invocatinContext.$renderCtx$ = newCtx;
                 if (justMounted) {
                     if (ctx.$contexts$) {
-                        setAttribute(newCtx, hostElement, QCtxAttr, serializeInlineContexts(ctx.$contexts$));
+                        directSetAttribute(hostElement, QCtxAttr, serializeInlineContexts(ctx.$contexts$));
                     }
-                    for (const style of ctx.$styles$) {
-                        appendHeadStyle(rctx, hostElement, style);
+                    if (ctx.$appendStyles$) {
+                        for (const style of ctx.$appendStyles$) {
+                            appendHeadStyle(rctx, hostElement, style);
+                        }
+                    }
+                    if (ctx.$scopeIds$) {
+                        const value = serializeSStyle(ctx.$scopeIds$);
+                        if (value) {
+                            directSetAttribute(hostElement, QScopedStyle, value);
+                        }
+                        for (const scope of ctx.$scopeIds$) {
+                            hostElement.classList.add(styleHost(scope));
+                        }
                     }
                 }
                 const processedJSXNode = processData$1(res.node, invocatinContext);
@@ -1663,9 +1745,17 @@
             setQId(rctx, ctx);
         }
         const currentComponent = rctx.$currentComponent$;
-        if (isSlot && !isComponent && currentComponent) {
-            directSetAttribute(elm, QSlotRef, currentComponent.$id$);
-            currentComponent.$slots$.push(vnode);
+        if (currentComponent) {
+            const scopedIds = currentComponent.$ctx$.$scopeIds$;
+            if (scopedIds) {
+                scopedIds.forEach((styleId) => {
+                    elm.classList.add(styleId);
+                });
+            }
+            if (isSlot && !isComponent) {
+                directSetAttribute(elm, QSlotRef, currentComponent.$ctx$.$id$);
+                currentComponent.$slots$.push(vnode);
+            }
         }
         let wait;
         if (isComponent) {
@@ -1735,11 +1825,14 @@
         return { slots, templates };
     };
     const handleStyle = (ctx, elm, _, newValue) => {
-        setAttribute(ctx, elm, 'style', stringifyClassOrStyle(newValue, false));
+        setAttribute(ctx, elm, 'style', stringifyStyle(newValue));
         return true;
     };
-    const handleClass = (ctx, elm, _, newValue) => {
-        setAttribute(ctx, elm, 'class', stringifyClassOrStyle(newValue, true));
+    const handleClass = (ctx, elm, _, newValue, oldValue) => {
+        if (!oldValue) {
+            oldValue = elm.className;
+        }
+        setAttribute(ctx, elm, 'class', stringifyClass(newValue, oldValue));
         return true;
     };
     const checkBeforeAssign = (ctx, elm, prop, newValue) => {
@@ -1927,7 +2020,7 @@
                 containerEl.insertBefore(style, containerEl.firstChild);
             }
         };
-        ctx.$containerState$.$stylesIds$.add(styleTask.styleId);
+        ctx.$containerState$.$styleIds$.add(styleTask.styleId);
         ctx.$operations$.push({
             $el$: hostElement,
             $operation$: 'append-style',
@@ -2348,7 +2441,7 @@
                 $hostsRendering$: undefined,
                 $userContext$: {},
                 $elementIndex$: 0,
-                $stylesIds$: new Set(),
+                $styleIds$: new Set(),
             };
             set.$subsManager$ = createSubscriptionManager(set);
         }
@@ -2451,7 +2544,7 @@
     const moveStyles = (containerEl, containerState) => {
         const head = containerEl.ownerDocument.head;
         containerEl.querySelectorAll('style[q\\:style]').forEach((el) => {
-            containerState.$stylesIds$.add(el.getAttribute(QStyle));
+            containerState.$styleIds$.add(el.getAttribute(QStyle));
             head.appendChild(el);
         });
     };
@@ -4356,7 +4449,8 @@
                 $refMap$: [],
                 $seq$: [],
                 $watches$: [],
-                $styles$: [],
+                $scopeIds$: null,
+                $appendStyles$: null,
                 $props$: null,
                 $renderQrl$: null,
                 $component$: null,
@@ -5191,9 +5285,9 @@
         const ssrCtx = {
             rctx,
             $contexts$: [],
-            hostId: undefined,
-            projectedContext: undefined,
             projectedChildren: undefined,
+            projectedContext: undefined,
+            hostCtx: undefined,
             invocationContext: undefined,
             headNodes: [getBaseStyles()],
         };
@@ -5286,9 +5380,13 @@
             Object.assign(attributes, extraAttributes);
         }
         if (isHost) {
-            ssrCtx.hostId = elCtx.$id$;
             if (elCtx.$contexts$) {
                 attributes[QCtxAttr] = serializeInlineContexts(elCtx.$contexts$);
+            }
+        }
+        else {
+            if (ssrCtx.hostCtx) {
+                attributes['class'] = joinClasses(ssrCtx.hostCtx.$scopeIds$, attributes['class']);
             }
         }
         if (elCtx.$listeners$) {
@@ -5303,8 +5401,8 @@
         const slotName = props[QSlotName];
         const isSlot = typeof slotName === 'string';
         if (isSlot) {
-            assertDefined(ssrCtx.hostId, 'hostId must be defined for a slot');
-            attributes[QSlotRef] = ssrCtx.hostId;
+            assertDefined(ssrCtx.hostCtx?.$id$, 'hostId must be defined for a slot');
+            attributes[QSlotRef] = ssrCtx.hostCtx.$id$;
         }
         if (renderNodeElementSync(textType, attributes, stream)) {
             return;
@@ -5358,6 +5456,9 @@
         stream.write(`<${tagName}`);
         Object.entries(attributes).forEach(([key, value]) => {
             if (key !== 'dangerouslySetInnerHTML' && key !== 'children') {
+                if (key === 'class' && !value) {
+                    return;
+                }
                 const chunk = value === '' ? ` ${key}` : ` ${key}="${escapeAttr(value)}"`;
                 stream.write(chunk);
             }
@@ -5406,14 +5507,35 @@
                     rctx: newCtx,
                     invocationContext,
                 };
+                const extraNodes = [];
+                const styleClasses = [];
+                if (elCtx.$appendStyles$) {
+                    for (const style of elCtx.$appendStyles$) {
+                        extraNodes.push(jsx('style', {
+                            [QStyle]: style.styleId,
+                            dangerouslySetInnerHTML: style.content,
+                        }));
+                    }
+                }
+                if (elCtx.$scopeIds$) {
+                    for (const styleId of elCtx.$scopeIds$) {
+                        styleClasses.push(styleHost(styleId));
+                    }
+                    const value = serializeSStyle(elCtx.$scopeIds$);
+                    if (value) {
+                        attributes[QScopedStyle] = value;
+                    }
+                }
                 const processedNode = jsx(node.type, {
                     ...attributes,
+                    class: joinClasses(attributes['class'], styleClasses),
                 });
                 if (res.node) {
                     if (res.node.type === Host) {
                         processedNode.props = {
                             ...attributes,
                             ...res.node.props,
+                            class: joinClasses(processedNode.props.class, res.node.props.class),
                         };
                     }
                     else {
@@ -5421,13 +5543,7 @@
                     }
                 }
                 flags |= IS_HOST;
-                const extraNodes = [];
-                for (const style of elCtx.$styles$) {
-                    extraNodes.push(jsx('style', {
-                        [QStyle]: style.styleId,
-                        dangerouslySetInnerHTML: style.content,
-                    }));
-                }
+                newSSrContext.hostCtx = elCtx;
                 return renderNodeElement(processedNode, elCtx, undefined, extraNodes, newSSrContext, stream, flags, (stream) => {
                     return then(renderQTemplates(newSSrContext, stream), () => {
                         return beforeClose?.(stream);
@@ -5473,8 +5589,8 @@
         return slotMap;
     };
     const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
-        if (node.type === SSRMark) {
-            stream.write(`<!--${node.props.message ?? ''}-->`);
+        if (node.type === SSRComment) {
+            stream.write(`<!--${node.props.data ?? ''}-->`);
         }
         else if (typeof node.type === 'string') {
             const elCtx = getContext(ssrCtx.rctx.$doc$.createElement(node.type));
@@ -5566,7 +5682,7 @@
         if (isArray(children)) {
             return children.flatMap((c) => _flatVirtualChildren(c, ssrCtx));
         }
-        else if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRMark) {
+        else if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRComment) {
             const fn = children.type;
             const res = ssrCtx.invocationContext
                 ? useInvoke(ssrCtx.invocationContext, () => fn(children.props, children.key))
@@ -5632,7 +5748,7 @@
     function setProperty(attributes, prop, value) {
         if (value != null && value !== false) {
             prop = processPropKey(prop);
-            const attrValue = processPropValue(prop, value);
+            const attrValue = processPropValue(prop, value, attributes[prop]);
             if (attrValue !== null) {
                 attributes[prop] = attrValue;
             }
@@ -5644,12 +5760,13 @@
         }
         return prop;
     }
-    function processPropValue(prop, value) {
+    function processPropValue(prop, value, prevValue) {
         if (prop === 'class') {
-            return stringifyClassOrStyle(value, true);
+            const str = joinClasses(value, prevValue);
+            return str === '' ? null : str;
         }
         if (prop === 'style') {
-            return stringifyClassOrStyle(value, false);
+            return stringifyStyle(value);
         }
         if (value === false || value == null) {
             return null;
@@ -5783,24 +5900,6 @@
         const ctx = useInvokeContext();
         return ctx.$renderCtx$.$containerState$.$userContext$[key] ?? defaultValue;
     }
-
-    const hashCode = (text, hash = 0) => {
-        if (text.length === 0)
-            return hash;
-        for (let i = 0; i < text.length; i++) {
-            const chr = text.charCodeAt(i);
-            hash = (hash << 5) - hash + chr;
-            hash |= 0; // Convert to 32bit integer
-        }
-        return Number(Math.abs(hash)).toString(36);
-    };
-
-    /**
-     * @public
-     */
-    const styleKey = (qStyles, index) => {
-        return `${hashCode(qStyles.getHash())}-${index}`;
-    };
 
     function scopeStylesheet(css, scopeId) {
         const end = css.length;
@@ -5936,7 +6035,7 @@
      */
     // </docs>
     const useStylesQrl = (styles) => {
-        _useStyles(styles, false);
+        _useStyles(styles, (str) => str, false);
     };
     // <docs markdown="../readme.md#useStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -5972,7 +6071,7 @@
      */
     // </docs>
     const useScopedStylesQrl = (styles) => {
-        _useStyles(styles, true);
+        _useStyles(styles, scopeStylesheet, true);
     };
     // <docs markdown="../readme.md#useScopedStyles">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -5984,7 +6083,7 @@
      */
     // </docs>
     const useScopedStyles$ = /*#__PURE__*/ implicit$FirstArg(useScopedStylesQrl);
-    const _useStyles = (styleQrl, scoped) => {
+    const _useStyles = (styleQrl, transform, scoped) => {
         const { get, set, ctx, i } = useSequentialScope();
         if (get === true) {
             return;
@@ -5995,13 +6094,21 @@
         const hostElement = ctx.$hostElement$;
         const containerState = renderCtx.$containerState$;
         const elCtx = getContext(ctx.$hostElement$);
+        if (!elCtx.$appendStyles$) {
+            elCtx.$appendStyles$ = [];
+        }
+        if (!elCtx.$scopeIds$) {
+            elCtx.$scopeIds$ = [];
+        }
+        if (scoped) {
+            elCtx.$scopeIds$.push(styleContent(styleId));
+        }
         if (!hasStyle(containerState, styleId)) {
-            containerState.$stylesIds$.add(styleId);
+            containerState.$styleIds$.add(styleId);
             ctx.$waitOn$.push(styleQrl.resolve(hostElement).then((styleText) => {
-                elCtx.$styles$.push({
-                    type: 'style',
+                elCtx.$appendStyles$.push({
                     styleId,
-                    content: scoped ? scopeStylesheet(styleText, styleId) : styleText,
+                    content: transform(styleText, styleId),
                 });
             }));
         }
@@ -6011,8 +6118,8 @@
     exports.Fragment = Fragment;
     exports.Host = Host;
     exports.Resource = Resource;
-    exports.SSRFlush = SSRFlush;
-    exports.SSRMark = SSRMark;
+    exports.SSRComment = SSRComment;
+    exports.SSRStreamBlock = SSRStreamBlock;
     exports.SkipRerender = SkipRerender;
     exports.Slot = Slot;
     exports.component$ = component$;
