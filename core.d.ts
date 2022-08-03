@@ -2228,7 +2228,7 @@ export declare const SSRMark: FunctionComponent<{
  * @public
  */
 declare type StreamWriter = {
-    write: (chunk: string) => void | boolean | Promise<void> | Promise<boolean>;
+    write: (chunk: any) => void | boolean | Promise<void> | Promise<boolean>;
 };
 
 declare interface StyleAppend {

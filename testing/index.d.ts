@@ -427,7 +427,7 @@ declare interface StreamingOptions {
  * @public
  */
 export declare type StreamWriter = {
-    write: (chunk: string) => void | boolean | Promise<void> | Promise<boolean>;
+    write: (chunk: any) => void | boolean | Promise<void> | Promise<boolean>;
 };
 
 declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
