@@ -72,10 +72,10 @@ function createPlatform(document, opts, mapper) {
         modulePath += ".js";
       }
       const module = __require(modulePath);
-      const symbol = module[symbolName];
-      if (!symbol) {
+      if (!(symbolName in module)) {
         throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${modulePath}'.`);
       }
+      const symbol = module[symbolName];
       return symbol;
     },
     raf: () => {

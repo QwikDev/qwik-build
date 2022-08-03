@@ -68,6 +68,10 @@ const isFunction = (v) => {
  */
 const OnRenderProp = 'q:renderFn';
 /**
+ * Component style content prefix
+ */
+const ComponentStylesPrefixContent = '⭐️';
+/**
  * `<some-element q:slot="...">`
  */
 const QSlot = 'q:slot';
@@ -3925,6 +3929,44 @@ const RegexSerializer = {
         return new RegExp(source, flags);
     },
 };
+const SERIALIZABLE_STATE = Symbol('serializable-data');
+const ComponentSerializer = {
+    test: (obj) => isQwikComponent(obj),
+    serialize: (obj, getObjId, containerState) => {
+        const [qrl, options] = obj[SERIALIZABLE_STATE];
+        const optionsJSON = JSON.stringify(options);
+        return (stringifyQRL(qrl, {
+            $platform$: containerState.$platform$,
+            $getObjId$: getObjId,
+        }) + (optionsJSON === '{}' ? '' : optionsJSON));
+    },
+    prepare: (data, containerState) => {
+        const optionsIndex = data.indexOf('{');
+        const qrlString = optionsIndex == -1 ? data : data.slice(0, optionsIndex);
+        const options = optionsIndex == -1 ? {} : JSON.parse(data.slice(optionsIndex));
+        const qrl = parseQRL(qrlString, containerState.$containerEl$);
+        return componentQrl(qrl, options);
+    },
+    fill: (component, getObject) => {
+        const [qrl] = component[SERIALIZABLE_STATE];
+        if (qrl.$capture$ && qrl.$capture$.length > 0) {
+            qrl.$captureRef$ = qrl.$capture$.map(getObject);
+            qrl.$capture$ = null;
+        }
+    },
+};
+const PureFunctionSerializer = {
+    test: (obj) => typeof obj === 'function' && obj.__qwik_serializable__ !== undefined,
+    serialize: (obj) => {
+        return obj.toString();
+    },
+    prepare: (data) => {
+        const fn = new Function('return ' + data)();
+        fn.__qwik_serializable__ = true;
+        return fn;
+    },
+    fill: undefined,
+};
 const serializers = [
     UndefinedSerializer,
     QRLSerializer,
@@ -3934,6 +3976,8 @@ const serializers = [
     URLSerializer,
     RegexSerializer,
     DateSerializer,
+    ComponentSerializer,
+    PureFunctionSerializer,
 ];
 const canSerialize = (obj) => {
     for (const s of serializers) {
@@ -4908,12 +4952,17 @@ const componentQrl = (onRenderQrl, options = {}) => {
     const tagName = options.tagName ?? 'div';
     const skipKey = ELEMENTS_SKIP_KEY.includes(tagName);
     // Return a QComponent Factory function.
-    return function QSimpleComponent(props, key) {
+    function QwikComponent(props, key) {
         const finalTag = props['host:tagName'] ?? tagName;
         const hash = qTest ? 'sX' : onRenderQrl.getHash();
         const finalKey = skipKey ? undefined : hash + ':' + (key ? key : '');
         return jsx(finalTag, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
-    };
+    }
+    QwikComponent[SERIALIZABLE_STATE] = [onRenderQrl, options];
+    return QwikComponent;
+};
+const isQwikComponent = (component) => {
+    return typeof component == 'function' && component[SERIALIZABLE_STATE] !== undefined;
 };
 // <docs markdown="../readme.md#component">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -5715,6 +5764,117 @@ const styleKey = (qStyles, index) => {
     return `${hashCode(qStyles.getHash())}-${index}`;
 };
 
+function scopeStylesheet(css, scopeId) {
+    const end = css.length;
+    const out = [];
+    const stack = [];
+    let idx = 0;
+    let lastIdx = idx;
+    let mode = MODE.selector;
+    let lastCh = 0;
+    while (idx < end) {
+        let ch = css.charCodeAt(idx++);
+        if (ch === CHAR.BACKSLASH) {
+            idx++;
+            ch = CHAR.A; // Pretend it's a letter
+        }
+        const arcs = STATE_MACHINE[mode];
+        for (let i = 0; i < arcs.length; i++) {
+            const [expectLastCh, expectCh, newMode] = arcs[i];
+            if (expectLastCh === lastCh ||
+                expectLastCh === CHAR.ANY ||
+                (expectLastCh === CHAR.IDENT && isIdent(lastCh))) {
+                if (expectCh === ch ||
+                    expectCh === CHAR.ANY ||
+                    (expectCh === CHAR.NOT_IDENT_AND_NOT_DOT && !isIdent(ch) && ch !== CHAR.DOT)) {
+                    if (newMode === MODE.EXIT) {
+                        mode = stack.pop() || MODE.selector;
+                    }
+                    else if (mode === newMode) {
+                        flush(idx - 1);
+                        out.push('.', ComponentStylesPrefixContent, scopeId);
+                    }
+                    else {
+                        stack.push(mode);
+                        mode = newMode;
+                    }
+                }
+            }
+        }
+        lastCh = ch;
+    }
+    flush(idx);
+    return out.join('');
+    function flush(idx) {
+        out.push(css.substring(lastIdx, idx));
+        lastIdx = idx;
+    }
+}
+function isIdent(ch) {
+    return ((ch >= CHAR._0 && ch <= CHAR._9) ||
+        (ch >= CHAR.A && ch <= CHAR.Z) ||
+        (ch >= CHAR.a && ch <= CHAR.z) ||
+        ch === CHAR.UNDERSCORE ||
+        ch === CHAR.DASH);
+}
+var MODE;
+(function (MODE) {
+    MODE[MODE["selector"] = 0] = "selector";
+    MODE[MODE["media"] = 1] = "media";
+    MODE[MODE["body"] = 2] = "body";
+    MODE[MODE["stringSingle"] = 3] = "stringSingle";
+    MODE[MODE["stringDouble"] = 4] = "stringDouble";
+    MODE[MODE["commentMultiline"] = 5] = "commentMultiline";
+    MODE[MODE["EXIT"] = 6] = "EXIT";
+})(MODE || (MODE = {}));
+var CHAR;
+(function (CHAR) {
+    CHAR[CHAR["ANY"] = 0] = "ANY";
+    CHAR[CHAR["IDENT"] = 1] = "IDENT";
+    CHAR[CHAR["NOT_IDENT_AND_NOT_DOT"] = 2] = "NOT_IDENT_AND_NOT_DOT";
+    CHAR[CHAR["SPACE"] = 32] = "SPACE";
+    CHAR[CHAR["FORWARD_SLASH"] = 47] = "FORWARD_SLASH";
+    CHAR[CHAR["DOUBLE_QUOTE"] = 34] = "DOUBLE_QUOTE";
+    CHAR[CHAR["SINGLE_QUOTE"] = 39] = "SINGLE_QUOTE";
+    CHAR[CHAR["STAR"] = 42] = "STAR";
+    CHAR[CHAR["DASH"] = 45] = "DASH";
+    CHAR[CHAR["DOT"] = 46] = "DOT";
+    CHAR[CHAR["AT"] = 64] = "AT";
+    CHAR[CHAR["A"] = 65] = "A";
+    CHAR[CHAR["Z"] = 90] = "Z";
+    CHAR[CHAR["_0"] = 48] = "_0";
+    CHAR[CHAR["_9"] = 57] = "_9";
+    CHAR[CHAR["BACKSLASH"] = 92] = "BACKSLASH";
+    CHAR[CHAR["UNDERSCORE"] = 95] = "UNDERSCORE";
+    CHAR[CHAR["a"] = 97] = "a";
+    CHAR[CHAR["z"] = 122] = "z";
+    CHAR[CHAR["OPEN_BRACE"] = 123] = "OPEN_BRACE";
+    CHAR[CHAR["CLOSE_BRACE"] = 125] = "CLOSE_BRACE";
+})(CHAR || (CHAR = {}));
+const STATE_MACHINE = [
+    [
+        [CHAR.IDENT, CHAR.NOT_IDENT_AND_NOT_DOT, MODE.selector],
+        [CHAR.ANY, CHAR.AT, MODE.media],
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.body],
+        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
+    ] /*selector*/,
+    [
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.selector],
+        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
+    ] /*media*/,
+    [
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        [CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.stringSingle],
+        [CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.stringDouble],
+        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
+    ] /*body*/,
+    [[CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.EXIT]] /*stringSingle*/,
+    [[CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.EXIT]] /*stringDouble*/,
+    [[CHAR.STAR, CHAR.FORWARD_SLASH, MODE.EXIT]] /*commentMultiline*/,
+];
+
 // <docs markdown="../readme.md#useStyles">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useStyles instead)
@@ -5803,7 +5963,7 @@ const _useStyles = (styleQrl, scoped) => {
             elCtx.$styles$.push({
                 type: 'style',
                 styleId,
-                content: scoped ? styleText.replace(/�/g, styleId) : styleText,
+                content: scoped ? scopeStylesheet(styleText, styleId) : styleText,
             });
         }));
     }
