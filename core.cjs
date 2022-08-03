@@ -969,7 +969,7 @@
             return get;
         }
         let hostElement = ctx.$hostElement$;
-        const contexts = ctx.$renderCtx$.$contexts$;
+        const contexts = ctx.$renderCtx$.$localStack$;
         for (let i = contexts.length - 1; i >= 0; i--) {
             const ctx = contexts[i];
             hostElement = ctx.$element$;
@@ -981,12 +981,14 @@
                 }
             }
         }
-        const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}"]`);
-        if (foundEl) {
-            const value = getContext(foundEl).$contexts$.get(context.id);
-            if (value) {
-                set(value);
-                return value;
+        if (hostElement.closest) {
+            const foundEl = hostElement.closest(`[q\\:ctx*="${context.id}"]`);
+            if (foundEl) {
+                const value = getContext(foundEl).$contexts$.get(context.id);
+                if (value) {
+                    set(value);
+                    return value;
+                }
             }
         }
         throw qError(QError_notFoundContext, context.id);
@@ -1068,7 +1070,7 @@
                     };
                 }
                 componentCtx.$slots$ = [];
-                newCtx.$contexts$.push(ctx);
+                newCtx.$localStack$.push(ctx);
                 newCtx.$currentComponent$ = componentCtx;
                 return {
                     node: jsxNode,
@@ -1087,7 +1089,7 @@
             $hostElements$: new Set(),
             $operations$: [],
             $roots$: [],
-            $contexts$: [],
+            $localStack$: [],
             $currentComponent$: undefined,
             $perf$: {
                 $visited$: 0,
@@ -1098,7 +1100,7 @@
     const copyRenderContext = (ctx) => {
         const newCtx = {
             ...ctx,
-            $contexts$: [...ctx.$contexts$],
+            $localStack$: [...ctx.$localStack$],
         };
         return newCtx;
     };
@@ -1505,7 +1507,7 @@
                 const splittedChidren = splitBy(ch, getSlotName);
                 const promises = [];
                 const slotRctx = copyRenderContext(rctx);
-                slotRctx.$contexts$.push(ctx);
+                slotRctx.$localStack$.push(ctx);
                 // Mark empty slots and remove content
                 Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
                     if (slotEl && !splittedChidren[key]) {
@@ -1690,7 +1692,7 @@
                     children = children[0].$children$;
                 }
                 const slotRctx = copyRenderContext(rctx);
-                slotRctx.$contexts$.push(ctx);
+                slotRctx.$localStack$.push(ctx);
                 const slotMap = isComponent ? getSlots(currentComponent, elm) : undefined;
                 const promises = children.map((ch) => createElm(slotRctx, ch, isSvg, false));
                 return then(promiseAll(promises), () => {
@@ -5190,6 +5192,7 @@
             rctx,
             $contexts$: [],
             hostId: undefined,
+            projectedContext: undefined,
             projectedChildren: undefined,
             invocationContext: undefined,
             headNodes: [getBaseStyles()],
@@ -5218,7 +5221,12 @@
                 ...containerAttributes,
                 children: [...ssrCtx.headNodes, node],
             });
-            await renderNode(node, ssrCtx, opts.stream, 0, () => beforeClose?.(ssrCtx.$contexts$, containerState));
+            await renderNode(node, ssrCtx, opts.stream, 0, (stream) => {
+                const result = beforeClose?.(ssrCtx.$contexts$, containerState);
+                if (result) {
+                    return processData(result, ssrCtx, stream, 0, undefined);
+                }
+            });
         }
         else {
             const elCtx = getContext(containerEl);
@@ -5245,6 +5253,7 @@
     };
     const IS_HOST = 1 << 0;
     const IS_HEAD = 1 << 1;
+    const IS_RAW_CONTENT = 1 << 2;
     const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
         const res = ssrCtx.invocationContext
             ? useInvoke(ssrCtx.invocationContext, () => node.type(node.props, node.key))
@@ -5305,6 +5314,9 @@
         if (textType === 'head') {
             flags |= IS_HEAD;
         }
+        if (hasRawContent[textType]) {
+            flags |= IS_RAW_CONTENT;
+        }
         if (extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
@@ -5328,12 +5340,12 @@
                 const content = ssrCtx.projectedChildren?.[slotName];
                 if (content) {
                     ssrCtx.projectedChildren[slotName] = undefined;
-                    promise = processData(content, ssrCtx, stream, flags);
+                    promise = processData(content, ssrCtx.projectedContext, stream, flags);
                 }
             }
             // Inject before close
             if (beforeClose) {
-                promise = then(promise, () => then(beforeClose(), (jsx) => {
+                promise = then(promise, () => then(beforeClose(stream), (jsx) => {
                     return processData(jsx, ssrCtx, stream, flags);
                 }));
             }
@@ -5345,7 +5357,7 @@
     const renderNodeElementSync = (tagName, attributes, stream) => {
         stream.write(`<${tagName}`);
         Object.entries(attributes).forEach(([key, value]) => {
-            if (key !== 'dangerouslySetInnerHTML') {
+            if (key !== 'dangerouslySetInnerHTML' && key !== 'children') {
                 const chunk = value === '' ? ` ${key}` : ` ${key}="${escapeAttr(value)}"`;
                 stream.write(chunk);
             }
@@ -5383,9 +5395,14 @@
                 const invocationContext = newInvokeContext(newCtx.$doc$, hostElement, hostElement);
                 invocationContext.$subscriber$ = hostElement;
                 invocationContext.$renderCtx$ = newCtx;
+                const projectedContext = {
+                    ...ssrCtx,
+                    rctx: copyRenderContext(newCtx),
+                };
                 const newSSrContext = {
                     ...ssrCtx,
                     projectedChildren: splitProjectedChildren(children, ssrCtx),
+                    projectedContext,
                     rctx: newCtx,
                     invocationContext,
                 };
@@ -5411,30 +5428,30 @@
                         dangerouslySetInnerHTML: style.content,
                     }));
                 }
-                return renderNodeElement(processedNode, elCtx, undefined, extraNodes, newSSrContext, stream, flags, () => {
-                    const beforeResult = beforeClose?.();
-                    const projectedChildren = newSSrContext.projectedChildren;
-                    if (projectedChildren) {
-                        const nodes = Object.keys(projectedChildren).map((slotName) => {
-                            const value = projectedChildren[slotName];
-                            if (value) {
-                                return jsx('q:template', {
-                                    [QSlot]: slotName,
-                                    hidden: '',
-                                    'aria-hidden': 'true',
-                                    children: value,
-                                });
-                            }
-                        });
-                        if (beforeResult) {
-                            nodes.push(beforeResult);
-                        }
-                        return nodes;
-                    }
-                    return beforeResult;
+                return renderNodeElement(processedNode, elCtx, undefined, extraNodes, newSSrContext, stream, flags, (stream) => {
+                    return then(renderQTemplates(newSSrContext, stream), () => {
+                        return beforeClose?.(stream);
+                    });
                 });
             }
         });
+    };
+    const renderQTemplates = (ssrContext, stream) => {
+        const projectedChildren = ssrContext.projectedChildren;
+        if (projectedChildren) {
+            const nodes = Object.keys(projectedChildren).map((slotName) => {
+                const value = projectedChildren[slotName];
+                if (value) {
+                    return jsx('q:template', {
+                        [QSlot]: slotName,
+                        hidden: '',
+                        'aria-hidden': 'true',
+                        children: value,
+                    });
+                }
+            });
+            return processData(nodes, ssrContext, stream, 0, undefined);
+        }
     };
     const splitProjectedChildren = (children, ssrCtx) => {
         const flatChildren = flatVirtualChildren(children, ssrCtx);
@@ -5482,7 +5499,12 @@
             return walkChildren(node, ssrCtx, stream, flags);
         }
         else if (isString(node) || typeof node === 'number') {
-            stream.write(escape(String(node)));
+            if ((flags & IS_RAW_CONTENT) !== 0) {
+                stream.write(String(node));
+            }
+            else {
+                stream.write(escape(String(node)));
+            }
         }
         else {
             logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
@@ -5637,6 +5659,10 @@
         }
         return String(value);
     }
+    const hasRawContent = {
+        style: true,
+        script: true,
+    };
     const emptyElements = {
         area: true,
         base: true,
@@ -5658,7 +5684,7 @@
         wbr: true,
     };
     const escape = (s) => {
-        return s.replace(/[&<>\u00A0]/g, function (c) {
+        return s.replace(/[&<>\u00A0]/g, (c) => {
             switch (c) {
                 case '&':
                     return '&amp;';
