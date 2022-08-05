@@ -72,7 +72,7 @@ export declare interface HookEntryStrategy {
 /**
  * @alpha
  */
-declare interface InlineEntryStrategy {
+export declare interface InlineEntryStrategy {
     type: 'inline';
 }
 
@@ -168,9 +168,15 @@ export declare interface Path {
     readonly posix: Path;
 }
 
-declare type QwikBuildMode = 'production' | 'development';
+/**
+ * @alpha
+ */
+export declare type QwikBuildMode = 'production' | 'development';
 
-declare type QwikBuildTarget = 'client' | 'ssr' | 'lib';
+/**
+ * @alpha
+ */
+export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib';
 
 /**
  * @alpha
@@ -411,6 +417,16 @@ export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 /**
  * @alpha
  */
+export declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
+
+/**
+ * @alpha
+ */
+export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => [symbol: string, chunk: string] | undefined;
+
+/**
+ * @alpha
+ */
 export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
 
 /**
@@ -449,7 +465,7 @@ export declare interface TransformModulesOptions extends TransformOptions {
 /**
  * @alpha
  */
-declare interface TransformOptions {
+export declare interface TransformOptions {
     srcDir: string;
     entryStrategy?: EntryStrategy;
     minify?: MinifyMode;

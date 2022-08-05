@@ -43,6 +43,8 @@
  *
  * ```tsx
  * import { importedFn } from './import/example';
+ * import { createContext, useContext, useContextProvider } from './use/use-context';
+ * import { useRef } from './use/use-ref';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}
@@ -288,7 +290,10 @@ export declare interface AriaAttributes {
     'aria-valuetext'?: string | undefined;
 }
 
-declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
+/**
+ * @public
+ */
+export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
@@ -412,12 +417,12 @@ export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<
 /**
  * @public
  */
-declare interface ComponentBaseProps extends PreventDefault, ComponentCustomEvents, ComponentKnownEvents {
+export declare interface ComponentBaseProps extends PreventDefault, ComponentCustomEvents, ComponentKnownEvents {
     class?: string | {
         [className: string]: boolean;
     };
     className?: string | undefined;
-    style?: CSSProperties | string | undefined;
+    style?: Record<string, string | number> | string | undefined;
     key?: string | number;
     id?: string | undefined;
     ref?: Ref<Element>;
@@ -530,7 +535,7 @@ declare interface ContainerState {
     $hostsStaging$: Set<Element>;
     $hostsRendering$: Set<Element> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
-    $userContext$: Record<string, any>;
+    $envData$: Record<string, any>;
     $elementIndex$: number;
     $styleIds$: Set<string>;
 }
@@ -581,7 +586,7 @@ declare interface ContainerState {
  * });
  *
  * ```
- * @alpha
+ * @public
  */
 export declare interface Context<STATE extends object> {
     /**
@@ -711,17 +716,9 @@ export declare interface CorePlatform {
  *
  * ```
  * @param name - The name of the context.
- * @alpha
+ * @public
  */
 export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
-
-declare interface CSSProperties {
-    [key: string]: string | number;
-}
-
-declare interface CSSProperties_2 {
-    [key: string]: string | number;
-}
 
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -761,7 +758,7 @@ export declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type EagernessOptions = 'visible' | 'load';
 
@@ -847,13 +844,6 @@ export declare namespace h {
 }
 
 /**
- * Low-level API used by the Optimizer to process `useWatch$()` API. This method
- * is not intended to be used by developers.
- * @alpha
- */
-export declare const handleWatch: () => void;
-
-/**
  * Place at the root of the component View to allow binding of attributes on the Host element.
  *
  * ```
@@ -866,11 +856,15 @@ export declare const handleWatch: () => void;
  * asynchronous loading point. Host element is not owned by the component. At times it is
  * desirable for the component to render additional attributes on the host element. `<Host>`
  * servers that purpose.
+ *
  * @public
  */
 export declare const Host: FunctionComponent<HostAttributes>;
 
-declare interface HostAttributes extends HTMLAttributes<HTMLElement> {
+/**
+ * @public
+ */
+export declare interface HostAttributes extends HTMLAttributes<HTMLElement> {
     [key: string]: any;
 }
 
@@ -894,7 +888,7 @@ export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes
     placeholder?: string | undefined;
     slot?: string | undefined;
     spellCheck?: Booleanish | undefined;
-    style?: CSSProperties_2 | string | undefined;
+    style?: Record<string, string | number> | string | undefined;
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
@@ -942,6 +936,15 @@ declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' |
 
 declare interface HTMLWebViewElement_2 extends HTMLElement {
 }
+
+/**
+ * Low-level API used by the Optimizer to process `useWatch$()` API. This method
+ * is not intended to be used by developers.
+ *
+ * @internal
+ *
+ */
+export declare const _hW: () => void;
 
 declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allow?: string | undefined;
@@ -1263,7 +1266,10 @@ export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
 
-declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
+/**
+ * @public
+ */
+export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
 
 /**
  * @public
@@ -1277,7 +1283,7 @@ export declare interface JSXNode<T = any> {
 /**
  * @public
  */
-declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
+export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
@@ -1359,7 +1365,7 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type MountFn<T> = () => ValueOrPromise<T>;
 
@@ -1417,7 +1423,7 @@ export declare interface MutableWrapper<T> {
 declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | BivariantEventHandler<T>[];
 
 /**
- * @alpha
+ * @public
  */
 export declare type NoSerialize<T> = (T & {
     __no_serialize__: true;
@@ -1437,7 +1443,7 @@ export declare type NoSerialize<T> = (T & {
  *
  * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
  *
- * @alpha
+ * @public
  */
 export declare const noSerialize: <T extends object | undefined>(input: T) => NoSerialize<T>;
 
@@ -1490,9 +1496,9 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @internal
  */
-export declare const pauseFromContexts: (elements: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
+export declare const _pauseFromContexts: (elements: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
 
 declare type PreventDefault = {
     [K in keyof QwikEventMap as `prevent${'default' | 'Default'}:${Lowercase<K>}`]?: boolean;
@@ -1946,7 +1952,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface Ref<T> {
     current: T | undefined;
@@ -1996,7 +2002,7 @@ declare interface RenderOperation {
  */
 export declare interface RenderOptions {
     allowRerender?: boolean;
-    userContext?: Record<string, any>;
+    envData?: Record<string, any>;
 }
 
 /**
@@ -2011,23 +2017,26 @@ declare interface RenderPerf {
  */
 export declare const renderSSR: (doc: Document, node: JSXNode, opts: RenderSSROptions) => Promise<void>;
 
-declare interface RenderSSROptions {
+/**
+ * @alpha
+ */
+export declare interface RenderSSROptions {
     fragmentTagName?: string;
     stream: StreamWriter;
     base?: string;
-    userContext?: Record<string, any>;
+    envData?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ResourceCtx<T> {
     track: Tracker;
@@ -2035,26 +2044,23 @@ export declare interface ResourceCtx<T> {
     previous: T | undefined;
 }
 
-/**
- * @alpha
- */
 declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturn<T>> {
 }
 
 /**
- * @alpha
+ * @public
  */
-declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
+export declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
 
 /**
- * @alpha
+ * @public
  */
-declare interface ResourceOptions {
+export declare interface ResourceOptions {
     timeout?: number;
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ResourcePending<T> {
     __brand: 'resource';
@@ -2066,7 +2072,7 @@ export declare interface ResourcePending<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ResourceProps<T> {
     resource: ResourceReturn<T>;
@@ -2076,7 +2082,7 @@ export declare interface ResourceProps<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ResourceRejected<T> {
     __brand: 'resource';
@@ -2088,7 +2094,7 @@ export declare interface ResourceRejected<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ResourceResolved<T> {
     __brand: 'resource';
@@ -2100,7 +2106,7 @@ export declare interface ResourceResolved<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type ResourceReturn<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
 
@@ -2143,7 +2149,7 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlatform;
 
 /**
- * @public
+ * @alpha
  */
 export declare const SkipRerender: FunctionComponent<{}>;
 
@@ -2161,20 +2167,23 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @public
+ * @alpha
  */
-declare interface SnapshotListener {
+export declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
     el: Element;
 }
 
-declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
+/**
+ * @alpha
+ */
+export declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
 
 /**
- * @public
+ * @alpha
  */
-declare interface SnapshotMetaValue {
+export declare interface SnapshotMetaValue {
     r?: string;
     w?: string;
     s?: string;
@@ -2183,7 +2192,7 @@ declare interface SnapshotMetaValue {
 }
 
 /**
- * @public
+ * @alpha
  */
 export declare interface SnapshotResult {
     state: SnapshotState;
@@ -2194,7 +2203,7 @@ export declare interface SnapshotResult {
 }
 
 /**
- * @public
+ * @alpha
  */
 export declare interface SnapshotState {
     ctx: SnapshotMeta;
@@ -2213,23 +2222,23 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @public
+ * @alpha
  */
 export declare const SSRComment: FunctionComponent<{
     data: string;
 }>;
 
 /**
- * @public
+ * @alpha
  */
 export declare const SSRStreamBlock: FunctionComponent<{
     children?: any;
 }>;
 
 /**
- * @public
+ * @alpha
  */
-declare type StreamWriter = {
+export declare type StreamWriter = {
     write: (chunk: any) => void | boolean | Promise<void> | Promise<boolean>;
 };
 
@@ -2245,14 +2254,8 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-/**
- * @alpha
- */
 declare type Subscriber = SubscriberDescriptor | Element;
 
-/**
- * @alpha
- */
 declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
 
 declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
@@ -2277,7 +2280,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     method?: string | undefined;
     min?: number | string | undefined;
     name?: string | undefined;
-    style?: CSSProperties_2 | string | undefined;
+    style?: Record<string, string | number> | string | undefined;
     target?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
@@ -2595,7 +2598,7 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$((track) => {
+ *   useWatch$(({ track }) => {
  *     const count = track(store, 'count');
  *     store.doubleCount = 2 * count;
  *   });
@@ -2766,7 +2769,7 @@ export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOpt
  *
  * ```
  * @param context - The context to retrieve a value from.
- * @alpha
+ * @public
  */
 export declare const useContext: <STATE extends object>(context: Context<STATE>) => STATE;
 
@@ -2817,7 +2820,7 @@ export declare const useContext: <STATE extends object>(context: Context<STATE>)
  * ```
  * @param context - The context to assign a value to.
  * @param value - The value to assign to the context.
- * @alpha
+ * @public
  */
 export declare const useContextProvider: <STATE extends object>(context: Context<STATE>, newValue: STATE) => void;
 
@@ -2833,7 +2836,7 @@ export declare const useContextProvider: <STATE extends object>(context: Context
 export declare const useDocument: () => Document;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface UseEffectOptions {
     /**
@@ -2842,6 +2845,16 @@ export declare interface UseEffectOptions {
      */
     eagerness?: EagernessOptions;
 }
+
+/**
+ * @alpha
+ */
+export declare function useEnvData<T>(key: string): T | undefined;
+
+/**
+ * @alpha
+ */
+export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
  * Retrieves the Host Element of the current component.
@@ -2863,7 +2876,7 @@ export declare interface UseEffectOptions {
  * );
  * ```
  *
- * @public
+ * @alpha
  */
 export declare const useHostElement: () => Element;
 
@@ -2875,7 +2888,7 @@ export declare const useHostElement: () => Element;
  * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
  * (before any `await` statements.)
  *
- * @public
+ * @internal
  */
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
@@ -2908,7 +2921,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  * @see `useServerMount`
  * @public
  */
-export declare const useMount$: <T>(first: MountFn<T>) => ResourceReturn<T>;
+export declare const useMount$: <T>(first: MountFn<T>) => void;
 
 /**
  * Register a server mount hook that runs only in the server when the component is first mounted.
@@ -2939,7 +2952,7 @@ export declare const useMount$: <T>(first: MountFn<T>) => ResourceReturn<T>;
  * @see `useServerMount`
  * @public
  */
-export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => ResourceReturn<T>;
+export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
  * Register a listener on the current component's host element.
@@ -3027,7 +3040,7 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  * const Cmp = component$(() => {
  *   const input = useRef<HTMLInputElement>();
  *
- *   useClientEffect$((track) => {
+ *   useClientEffect$(({ track }) => {
  *     const el = track(input, 'current')!;
  *     el.focus();
  *   });
@@ -3046,28 +3059,53 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => ResourceReturn<T>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
- * @see `useStyles`.
+ * Register's a server mount hook that runs only in the server when the component is first
+ * mounted.
  *
- * @alpha
- */
-export declare const useScopedStyles$: (first: string) => void;
-
-/**
- * @see `useStyles`.
+ * ## Example
  *
- * @alpha
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     users: [],
+ *   });
+ *
+ *   useServerMount$(async () => {
+ *     // This code will ONLY run once in the server, when the component is mounted
+ *     store.users = await db.requestUsers();
+ *   });
+ *
+ *   return (
+ *     <Host>
+ *       {store.users.map((user) => (
+ *         <User user={user} />
+ *       ))}
+ *     </Host>
+ *   );
+ * });
+ *
+ * interface User {
+ *   name: string;
+ * }
+ * function User(props: { user: User }) {
+ *   return <div>Name: {props.user.name}</div>;
+ * }
+ * ```
+ *
+ * @see `useMount`
+ * @public
  */
-export declare const useScopedStylesQrl: (styles: QRL<string>) => void;
+export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 
 /**
  * Register's a server mount hook that runs only in the server when the component is first
@@ -3106,46 +3144,7 @@ export declare const useScopedStylesQrl: (styles: QRL<string>) => void;
  * @see `useMount`
  * @public
  */
-export declare const useServerMount$: <T>(first: MountFn<T>) => ResourceReturn<T>;
-
-/**
- * Register's a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ## Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <Host>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </Host>
- *   );
- * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
- * ```
- *
- * @see `useMount`
- * @public
- */
-export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => ResourceReturn<T>;
+export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
  * Creates an object that Qwik can track across serializations.
@@ -3208,7 +3207,10 @@ export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => Resour
  */
 export declare const useStore: <STATE extends object>(initialState: STATE | (() => STATE), opts?: UseStoreOptions) => STATE;
 
-declare interface UseStoreOptions {
+/**
+ * @public
+ */
+export declare interface UseStoreOptions {
     recursive?: boolean;
     reactive?: boolean;
 }
@@ -3229,7 +3231,8 @@ declare interface UseStoreOptions {
  * });
  * ```
  *
- * *
+ * @see `useStylesScoped`
+ *
  * @public
  */
 export declare const useStyles$: (first: string) => void;
@@ -3249,20 +3252,62 @@ export declare const useStyles$: (first: string) => void;
  *   return <Host>Some text</Host>;
  * });
  * ```
- * *
+ *
+ * @see `useStylesScoped`
+ *
  * @public
  */
 export declare const useStylesQrl: (styles: QRL<string>) => void;
 
 /**
+ * A lazy-loadable reference to a component's styles, that is scoped to the component.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import scoped from './code-block.css?inline';
+ *
+ * export const CmpScopedStyles = component$(() => {
+ *   useStylesScoped$(scoped);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useStyles`
+ *
  * @alpha
  */
-export declare function useUserContext<T>(key: string): T | undefined;
+export declare const useStylesScoped$: (first: string) => void;
+
+/**
+ * A lazy-loadable reference to a component's styles, that is scoped to the component.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import scoped from './code-block.css?inline';
+ *
+ * export const CmpScopedStyles = component$(() => {
+ *   useStylesScoped$(scoped);
+ *
+ *   return <Host>Some text</Host>;
+ * });
+ * ```
+ *
+ * @see `useStyles`
+ *
+ * @alpha
+ */
+export declare const useStylesScopedQrl: (styles: QRL<string>) => void;
 
 /**
  * @alpha
+ * @deprecated Please use `useEnvData` instead.
  */
-export declare function useUserContext<T, B = T>(key: string, defaultValue: B): T | B;
+export declare const useUserContext: typeof useEnvData;
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -3293,13 +3338,13 @@ export declare function useUserContext<T, B = T>(key: string, defaultValue: B): 
  *   });
  *
  *   // Double count watch
- *   useWatch$((track) => {
+ *   useWatch$(({ track }) => {
  *     const count = track(store, 'count');
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$((track) => {
+ *   useWatch$(({ track }) => {
  *     const doubleCount = track(store, 'doubleCount');
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -3322,7 +3367,18 @@ export declare function useUserContext<T, B = T>(key: string, defaultValue: B): 
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
+export declare const useWatch$: (first: WatchFn, opts?: UseWatchOptions | undefined) => void;
+
+/**
+ * @public
+ */
+export declare interface UseWatchOptions {
+    /**
+     * - `visible`: run the effect when the element is visible.
+     * - `load`: eagerly run the effect when the application resumes.
+     */
+    eagerness?: EagernessOptions;
+}
 
 /**
  * Reruns the `watchFn` when the observed inputs change.
@@ -3353,13 +3409,13 @@ export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undef
  *   });
  *
  *   // Double count watch
- *   useWatch$((track) => {
+ *   useWatch$(({ track }) => {
  *     const count = track(store, 'count');
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$((track) => {
+ *   useWatch$(({ track }) => {
  *     const doubleCount = track(store, 'doubleCount');
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -3382,7 +3438,7 @@ export declare const useWatch$: (first: WatchFn, opts?: UseEffectOptions | undef
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
+export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) => void;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -3406,14 +3462,19 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
+export declare interface WatchCtx {
+    track: Tracker;
+    cleanup(callback: () => void): void;
+}
+
 declare type WatchDescriptor = DescriptorBase<WatchFn>;
 
 /**
- * @alpha
+ * @public
  */
-export declare type WatchFn = (track: Tracker) => ValueOrPromise<void | (() => void)>;
+export declare type WatchFn = (ctx: WatchCtx) => ValueOrPromise<void | (() => void)>;
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;

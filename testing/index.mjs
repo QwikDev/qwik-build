@@ -20539,11 +20539,6 @@ var isObject = (v) => {
 var qDev = globalThis.qDev !== false;
 var qTest = globalThis.describe !== void 0;
 
-// packages/qwik/src/core/util/promises.ts
-var isPromise = (value) => {
-  return value instanceof Promise;
-};
-
 // packages/qwik/src/core/util/dom.ts
 var getDocument = (node) => {
   if (typeof document !== "undefined") {
@@ -20578,7 +20573,7 @@ var tryGetContext = (element) => {
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
 var logError = (message, ...optionalParams) => {
   const err = message instanceof Error ? message : new Error(message);
-  console.error("%cQWIK ERROR", STYLE, err, ...printParams(optionalParams));
+  console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
   return err;
 };
 var logErrorAndStop = (message, ...optionalParams) => {
@@ -20886,7 +20881,6 @@ export {
   createDocument,
   createWindow,
   getTestPlatform,
-  isPromise,
   toFileUrl
 };
 /*!

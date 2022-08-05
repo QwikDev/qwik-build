@@ -46,7 +46,7 @@ var versions = {
 };
 
 // packages/qwik/src/server/render.ts
-import { renderSSR, Fragment as Fragment2, jsx as jsx2, pauseFromContexts } from "@builder.io/qwik";
+import { renderSSR, Fragment as Fragment2, jsx as jsx2, _pauseFromContexts } from "@builder.io/qwik";
 
 // packages/qwik/src/server/platform.ts
 import { setPlatform } from "@builder.io/qwik";
@@ -125,7 +125,7 @@ import { Fragment, jsx } from "@builder.io/qwik";
 
 // packages/qwik/src/server/prefetch-utils.ts
 function workerFetchScript() {
-  const fetch = `Promise.all(e.data.map(u=>fetch(u,{priority:"low"}))).finally(()=>{setTimeout(postMessage({}),999)})`;
+  const fetch = `Promise.all(e.data.map(u=>fetch(u))).finally(()=>{setTimeout(postMessage({}),9999)})`;
   const workerBody = `onmessage=(e)=>{${fetch}}`;
   const blob = `new Blob(['${workerBody}'],{type:"text/javascript"})`;
   const url = `URL.createObjectURL(${blob})`;
@@ -152,14 +152,14 @@ function flattenPrefetchResources(prefetchResources) {
 
 // packages/qwik/src/server/prefetch-implementation.ts
 function applyPrefetchImplementation(opts, prefetchResources) {
-  const prefetchStrategy = opts.prefetchStrategy;
+  const { prefetchStrategy } = opts;
   if (prefetchStrategy !== null) {
-    const prefetchImpl = prefetchStrategy?.implementation || "worker-fetch";
-    if (prefetchImpl === "link-prefetch-html" || prefetchImpl === "link-preload-html" || prefetchImpl === "link-modulepreload-html") {
+    const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy?.implementation);
+    if (prefetchImpl.linkInsert === "html-append") {
       return linkHtmlImplementation(prefetchResources, prefetchImpl);
-    } else if (prefetchImpl === "link-prefetch" || prefetchImpl === "link-preload" || prefetchImpl === "link-modulepreload") {
+    } else if (prefetchImpl.linkInsert === "js-append") {
       return linkJsImplementation(prefetchResources, prefetchImpl);
-    } else if (prefetchImpl === "worker-fetch") {
+    } else if (prefetchImpl.workerFetchInsert === "always") {
       return workerFetchImplementation(prefetchResources);
     }
   }
@@ -167,48 +167,52 @@ function applyPrefetchImplementation(opts, prefetchResources) {
 }
 function linkHtmlImplementation(prefetchResources, prefetchImpl) {
   const urls = flattenPrefetchResources(prefetchResources);
-  const links = [];
+  const rel = prefetchImpl.linkRel || "prefetch";
+  const children = [];
   for (const url of urls) {
     const attributes = {};
     attributes["href"] = url;
-    if (prefetchImpl === "link-modulepreload-html") {
-      attributes["rel"] = "modulepreload";
-    } else if (prefetchImpl === "link-preload-html") {
-      attributes["rel"] = "preload";
-      if (url.endsWith(".js")) {
-        attributes["as"] = "script";
-      }
-    } else {
-      attributes["rel"] = "prefetch";
+    attributes["rel"] = rel;
+    if (rel === "prefetch" || rel === "preload") {
       if (url.endsWith(".js")) {
         attributes["as"] = "script";
       }
     }
-    links.push(jsx("link", attributes, void 0));
+    children.push(jsx("link", attributes, void 0));
   }
-  return jsx(Fragment, { children: links });
+  if (prefetchImpl.workerFetchInsert === "always") {
+    children.push(workerFetchImplementation(prefetchResources));
+  }
+  return jsx(Fragment, { children });
 }
 function linkJsImplementation(prefetchResources, prefetchImpl) {
-  const rel = prefetchImpl === "link-modulepreload" ? "modulepreload" : prefetchImpl === "link-preload" ? "preload" : "prefetch";
-  let s = `let supportsLinkRel = true;`;
+  const rel = prefetchImpl.linkRel || "prefetch";
+  let s = ``;
+  if (prefetchImpl.workerFetchInsert === "no-link-support") {
+    s += `let supportsLinkRel = true;`;
+  }
   s += `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
   s += `u.map((u,i)=>{`;
   s += `const l=document.createElement('link');`;
   s += `l.setAttribute("href",u);`;
   s += `l.setAttribute("rel","${rel}");`;
-  if (rel === "prefetch" || rel === "preload") {
-    s += `l.setAttribute("as","script");`;
+  if (prefetchImpl.workerFetchInsert === "no-link-support") {
+    s += `if(i===0){`;
+    s += `try{`;
+    s += `supportsLinkRel=l.relList.supports("${rel}");`;
+    s += `}catch(e){}`;
+    s += `}`;
   }
-  s += `if(i===0){`;
-  s += `try{`;
-  s += `supportsLinkRel=l.relList.supports("${rel}");`;
-  s += `}catch(e){}`;
-  s += `}`;
   s += `document.body.appendChild(l);`;
   s += `});`;
-  s += `if(!supportsLinkRel){`;
-  s += workerFetchScript();
-  s += `}`;
+  if (prefetchImpl.workerFetchInsert === "no-link-support") {
+    s += `if(!supportsLinkRel){`;
+    s += workerFetchScript();
+    s += `}`;
+  }
+  if (prefetchImpl.workerFetchInsert === "always") {
+    s += workerFetchScript();
+  }
   return jsx("script", {
     type: "module",
     dangerouslySetInnerHTML: s
@@ -221,6 +225,68 @@ function workerFetchImplementation(prefetchResources) {
     type: "module",
     dangerouslySetInnerHTML: s
   });
+}
+function normalizePrefetchImplementation(input) {
+  if (typeof input === "string") {
+    switch (input) {
+      case "link-prefetch-html": {
+        return {
+          linkInsert: "html-append",
+          linkRel: "prefetch",
+          workerFetchInsert: null
+        };
+      }
+      case "link-prefetch": {
+        return {
+          linkInsert: "js-append",
+          linkRel: "prefetch",
+          workerFetchInsert: "no-link-support"
+        };
+      }
+      case "link-preload-html": {
+        return {
+          linkInsert: "html-append",
+          linkRel: "preload",
+          workerFetchInsert: null
+        };
+      }
+      case "link-preload": {
+        return {
+          linkInsert: "js-append",
+          linkRel: "preload",
+          workerFetchInsert: "no-link-support"
+        };
+      }
+      case "link-modulepreload-html": {
+        return {
+          linkInsert: "html-append",
+          linkRel: "modulepreload",
+          workerFetchInsert: null
+        };
+      }
+      case "link-modulepreload": {
+        return {
+          linkInsert: "js-append",
+          linkRel: "modulepreload",
+          workerFetchInsert: "no-link-support"
+        };
+      }
+    }
+    return {
+      linkInsert: null,
+      linkRel: null,
+      workerFetchInsert: "always"
+    };
+  }
+  if (input && typeof input === "object") {
+    return input;
+  }
+  const defaultImplementation = {
+    linkInsert: "html-append",
+    linkRel: "prefetch",
+    workerFetchInsert: "always"
+  };
+  return defaultImplementation;
 }
 
 // packages/qwik/src/optimizer/src/manifest.ts
@@ -385,10 +451,9 @@ function createSimpleDocument() {
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
   let stream = opts.stream;
-  let bufferSize = 0;
   const doc = createSimpleDocument();
   const inOrderStreaming = opts.streaming?.inOrder ?? {
-    buffering: "none"
+    strategy: "auto"
   };
   const buffer = [];
   const nativeStream = stream;
@@ -396,33 +461,30 @@ async function renderToStream(rootNode, opts) {
     buffer.forEach((chunk) => nativeStream.write(chunk));
     buffer.length = 0;
   }
-  switch (inOrderStreaming.buffering) {
-    case "full":
+  switch (inOrderStreaming.strategy) {
+    case "disabled":
       stream = {
         write(chunk) {
           buffer.push(chunk);
-          bufferSize += chunk.length;
         }
       };
       break;
-    case "size":
+    case "auto":
+      let count = 0;
       stream = {
         write(chunk) {
-          buffer.push(chunk);
-          bufferSize += chunk.length;
-          if (bufferSize >= inOrderStreaming.size) {
-            flush();
+          if (chunk === "<!--qkssr-pu-->") {
+            count++;
+          } else if (count > 0 && chunk === "<!--qkssr-po-->") {
+            count--;
+            if (count === 0) {
+              flush();
+            }
           }
-        }
-      };
-      break;
-    case "marks":
-      stream = {
-        write(chunk) {
-          buffer.push(chunk);
-          bufferSize += chunk.length;
-          if (chunk === "<!--qkssr-f-->") {
-            flush();
+          if (count === 0) {
+            nativeStream.write(chunk);
+          } else {
+            buffer.push(chunk);
           }
         }
       };
@@ -457,12 +519,12 @@ async function renderToStream(rootNode, opts) {
   await renderSSR(doc, rootNode, {
     stream,
     fragmentTagName: opts.fragmentTagName,
-    userContext: opts.userContext,
+    envData: opts.envData,
     url: opts.url instanceof URL ? opts.url.href : opts.url,
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState) => {
-      snapshotResult = await pauseFromContexts(contexts, containerState);
+      snapshotResult = await _pauseFromContexts(contexts, containerState);
       prefetchResources = getPrefetchResources(snapshotResult, opts, mapper);
       const children = [
         jsx2("script", {

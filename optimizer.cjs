@@ -1738,8 +1738,8 @@ globalThis.qwikOptimizer = function(module) {
           }
           try {
             if (req.headers.accept && req.headers.accept.includes("text/html")) {
-              const userContext = {
-                ...res._qwikUserCtx,
+              const envData = {
+                ...res._qwikEnvData,
                 url: url.href
               };
               const status = "number" === typeof res.statusCode ? res.statusCode : 200;
@@ -1747,7 +1747,7 @@ globalThis.qwikOptimizer = function(module) {
                 qwikPlugin.log(`handleClientEntry("${url}")`);
                 const relPath = path.relative(opts.rootDir, clientDevInput);
                 const entryUrl = "/" + qwikPlugin.normalizePath(relPath);
-                let html = getViteDevIndexHtml(entryUrl, userContext);
+                let html = getViteDevIndexHtml(entryUrl, envData);
                 html = await server.transformIndexHtml(pathname, html);
                 res.setHeader("Content-Type", "text/html; charset=utf-8");
                 res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
@@ -1802,7 +1802,7 @@ globalThis.qwikOptimizer = function(module) {
                     }
                   },
                   prefetchStrategy: null,
-                  userContext: userContext
+                  envData: envData
                 };
                 res.setHeader("Content-Type", "text/html; charset=utf-8");
                 res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
@@ -1841,8 +1841,8 @@ globalThis.qwikOptimizer = function(module) {
     };
     return vitePlugin;
   }
-  function getViteDevIndexHtml(entryUrl, userContext) {
-    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const userContext = JSON.parse(${JSON.stringify(JSON.stringify(userContext))})\n        mod.default({\n          userContext,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
+  function getViteDevIndexHtml(entryUrl, envData) {
+    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
   }
   function updateEntryDev(code) {
     code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);

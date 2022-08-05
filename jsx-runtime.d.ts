@@ -213,6 +213,9 @@ declare interface AriaAttributes {
     'aria-valuetext'?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
@@ -262,10 +265,6 @@ declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: number | string | undefined;
-}
-
-declare interface CSSProperties {
-    [key: string]: string | number;
 }
 
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -351,7 +350,7 @@ declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     placeholder?: string | undefined;
     slot?: string | undefined;
     spellCheck?: Booleanish | undefined;
-    style?: CSSProperties | string | undefined;
+    style?: Record<string, string | number> | string | undefined;
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
@@ -679,6 +678,9 @@ declare namespace JSX_2 {
 }
 export { JSX_2 as JSX }
 
+/**
+ * @public
+ */
 declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
 
 /**
@@ -1001,7 +1003,7 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface Ref<T> {
     current: T | undefined;
@@ -1068,7 +1070,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     method?: string | undefined;
     min?: number | string | undefined;
     name?: string | undefined;
-    style?: CSSProperties | string | undefined;
+    style?: Record<string, string | number> | string | undefined;
     target?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;

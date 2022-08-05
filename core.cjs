@@ -220,150 +220,6 @@
         });
     };
 
-    // <docs markdown="../readme.md#useStore">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useStore instead)
-    /**
-     * Creates an object that Qwik can track across serializations.
-     *
-     * Use `useStore` to create a state for your application. The returned object is a proxy that has
-     * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
-     *
-     * ## Example
-     *
-     * Example showing how `useStore` is used in Counter example to keep track of the count.
-     *
-     * ```tsx
-     * const Stores = component$(() => {
-     *   const counter = useCounter(1);
-     *
-     *   // Reactivity happens even for nested objects and arrays
-     *   const userData = useStore({
-     *     name: 'Manu',
-     *     address: {
-     *       address: '',
-     *       city: '',
-     *     },
-     *     orgs: [],
-     *   });
-     *
-     *   // useStore() can also accept a function to calculate the initial value
-     *   const state = useStore(() => {
-     *     return {
-     *       value: expensiveInitialValue(),
-     *     };
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       <div>Counter: {counter.value}</div>
-     *       <Child userData={userData} state={state} />
-     *     </Host>
-     *   );
-     * });
-     *
-     * function useCounter(step: number) {
-     *   // Multiple stores can be created in custom hooks for convenience and composability
-     *   const counterStore = useStore({
-     *     value: 0,
-     *   });
-     *   useClientEffect$(() => {
-     *     // Only runs in the client
-     *     const timer = setInterval(() => {
-     *       counterStore.value += step;
-     *     }, 500);
-     *     return () => {
-     *       clearInterval(timer);
-     *     };
-     *   });
-     *   return counterStore;
-     * }
-     * ```
-     *
-     * @public
-     */
-    // </docs>
-    const useStore = (initialState, opts) => {
-        const { get, set, ctx } = useSequentialScope();
-        if (get != null) {
-            return get;
-        }
-        const value = isFunction(initialState) ? initialState() : initialState;
-        if (opts?.reactive === false) {
-            set(value);
-            return value;
-        }
-        else {
-            const containerState = ctx.$renderCtx$.$containerState$;
-            const recursive = opts?.recursive ?? false;
-            const flags = recursive ? QObjectRecursive : 0;
-            const newStore = createProxy(value, containerState, flags, undefined);
-            set(newStore);
-            return newStore;
-        }
-    };
-    // <docs markdown="../readme.md#useRef">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useRef instead)
-    /**
-     * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
-     * to the `ref` property in JSX.
-     *
-     * ```tsx
-     * export function useRef<T = Element>(current?: T): Ref<T> {
-     *   return useStore({ current });
-     * }
-     * ```
-     *
-     * ## Example
-     *
-     * ```tsx
-     * const Cmp = component$(() => {
-     *   const input = useRef<HTMLInputElement>();
-     *
-     *   useClientEffect$((track) => {
-     *     const el = track(input, 'current')!;
-     *     el.focus();
-     *   });
-     *
-     *   return (
-     *     <Host>
-     *       <input type="text" ref={input} />
-     *     </Host>
-     *   );
-     * });
-     *
-     * ```
-     *
-     * @public
-     */
-    // </docs>
-    const useRef = (current) => {
-        return useStore({ current });
-    };
-    /**
-     * @alpha
-     */
-    const useSequentialScope = () => {
-        const ctx = useInvokeContext();
-        const i = ctx.$seq$;
-        const hostElement = ctx.$hostElement$;
-        const elementCtx = getContext(hostElement);
-        ctx.$seq$++;
-        const set = (value) => {
-            if (qDev) {
-                verifySerializable(value);
-            }
-            return (elementCtx.$seq$[i] = value);
-        };
-        return {
-            get: elementCtx.$seq$[i],
-            set,
-            i,
-            ctx,
-        };
-    };
-
     const createPlatform = (doc) => {
         const moduleCache = new Map();
         return {
@@ -588,6 +444,26 @@
         return [];
     };
 
+    const useSequentialScope = () => {
+        const ctx = useInvokeContext();
+        const i = ctx.$seq$;
+        const hostElement = ctx.$hostElement$;
+        const elementCtx = getContext(hostElement);
+        ctx.$seq$++;
+        const set = (value) => {
+            if (qDev) {
+                verifySerializable(value);
+            }
+            return (elementCtx.$seq$[i] = value);
+        };
+        return {
+            get: elementCtx.$seq$[i],
+            set,
+            i,
+            ctx,
+        };
+    };
+
     // <docs markdown="../readme.md#useCleanup">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useCleanup instead)
@@ -796,9 +672,9 @@
      */
     const Fragment = (props) => props.children;
 
-    // <docs markdown="./use-context.docs.md#createContext">
+    // <docs markdown="../readme.md#createContext">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-context.docs.md#createContext instead)
+    // (edit ../readme.md#createContext instead)
     /**
      * Create a context ID to be used in your application.
      *
@@ -846,7 +722,7 @@
      *
      * ```
      * @param name - The name of the context.
-     * @alpha
+     * @public
      */
     // </docs>
     const createContext = (name) => {
@@ -854,9 +730,9 @@
             id: fromCamelToKebabCase(name),
         });
     };
-    // <docs markdown="./use-context.docs.md#useContextProvider">
+    // <docs markdown="../readme.md#useContextProvider">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-context.docs.md#useContextProvider instead)
+    // (edit ../readme.md#useContextProvider instead)
     /**
      * Assign a value to a Context.
      *
@@ -904,13 +780,16 @@
      * ```
      * @param context - The context to assign a value to.
      * @param value - The value to assign to the context.
-     * @alpha
+     * @public
      */
     // </docs>
     const useContextProvider = (context, newValue) => {
         const { get, set, ctx } = useSequentialScope();
         if (get) {
             return;
+        }
+        if (qDev) {
+            validateContext(context);
         }
         const hostElement = ctx.$hostElement$;
         const hostCtx = getContext(hostElement);
@@ -924,9 +803,9 @@
         contexts.set(context.id, newValue);
         set(true);
     };
-    // <docs markdown="./use-context.docs.md#useContext">
+    // <docs markdown="../readme.md#useContext">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ./use-context.docs.md#useContext instead)
+    // (edit ../readme.md#useContext instead)
     /**
      * Retrive Context value.
      *
@@ -970,13 +849,16 @@
      *
      * ```
      * @param context - The context to retrieve a value from.
-     * @alpha
+     * @public
      */
     // </docs>
     const useContext = (context) => {
         const { get, set, ctx } = useSequentialScope();
         if (get) {
             return get;
+        }
+        if (qDev) {
+            validateContext(context);
         }
         let hostElement = ctx.$hostElement$;
         const contexts = ctx.$renderCtx$.$localStack$;
@@ -1003,6 +885,11 @@
         }
         throw qError(QError_notFoundContext, context.id);
     };
+    const validateContext = (context) => {
+        if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
+            throw qError(QError_invalidContext, context);
+        }
+    };
     const serializeInlineContexts = (contexts) => {
         const serializedContexts = [];
         contexts.forEach((_, key) => {
@@ -1024,19 +911,20 @@
      * asynchronous loading point. Host element is not owned by the component. At times it is
      * desirable for the component to render additional attributes on the host element. `<Host>`
      * servers that purpose.
+     *
      * @public
      */
     const Host = ((props) => props.children);
     /**
-     * @public
+     * @alpha
      */
     const SkipRerender = ((props) => props.children);
     /**
-     * @public
+     * @alpha
      */
     const SSRComment = (() => null);
     /**
-     * @public
+     * @alpha
      */
     const SSRStreamBlock = (props) => {
         return [
@@ -2174,7 +2062,7 @@
      * NOTE: `useLexicalScope` method can only be used in the synchronous portion of the callback
      * (before any `await` statements.)
      *
-     * @public
+     * @internal
      */
     // </docs>
     const useLexicalScope = () => {
@@ -2273,9 +2161,11 @@
     /**
      * Low-level API used by the Optimizer to process `useWatch$()` API. This method
      * is not intended to be used by developers.
-     * @alpha
+     *
+     * @internal
+     *
      */
-    const handleWatch = () => {
+    const _hW = () => {
         const [watch] = useLexicalScope();
         notifyWatch(watch, getContainerState(getContainer(watch.$el$)));
     };
@@ -2439,7 +2329,7 @@
                 $hostsStaging$: new Set(),
                 $renderPromise$: undefined,
                 $hostsRendering$: undefined,
-                $userContext$: {},
+                $envData$: {},
                 $elementIndex$: 0,
                 $styleIds$: new Set(),
             };
@@ -2634,12 +2524,12 @@
     const pauseFromContainer = async (containerEl) => {
         const containerState = getContainerState(containerEl);
         const contexts = getNodesInScope(containerEl, hasContext).map(tryGetContext);
-        return pauseFromContexts(contexts, containerState);
+        return _pauseFromContexts(contexts, containerState);
     };
     /**
-     * @alpha
+     * @internal
      */
-    const pauseFromContexts = async (elements, containerState) => {
+    const _pauseFromContexts = async (elements, containerState) => {
         const elementToIndex = new Map();
         const collector = createCollector(containerState);
         const listeners = [];
@@ -3278,13 +3168,13 @@
      *   });
      *
      *   // Double count watch
-     *   useWatch$((track) => {
+     *   useWatch$(({ track }) => {
      *     const count = track(store, 'count');
      *     store.doubleCount = 2 * count;
      *   });
      *
      *   // Debouncer watch
-     *   useWatch$((track) => {
+     *   useWatch$(({ track }) => {
      *     const doubleCount = track(store, 'doubleCount');
      *     const timer = setTimeout(() => {
      *       store.debounced = doubleCount;
@@ -3357,13 +3247,13 @@
      *   });
      *
      *   // Double count watch
-     *   useWatch$((track) => {
+     *   useWatch$(({ track }) => {
      *     const count = track(store, 'count');
      *     store.doubleCount = 2 * count;
      *   });
      *
      *   // Debouncer watch
-     *   useWatch$((track) => {
+     *   useWatch$(({ track }) => {
      *     const doubleCount = track(store, 'doubleCount');
      *     const timer = setTimeout(() => {
      *       store.debounced = doubleCount;
@@ -3502,13 +3392,11 @@
     const useServerMountQrl = (mountQrl) => {
         const { get, set, ctx } = useSequentialScope();
         if (get) {
-            return get;
+            return;
         }
         if (isServer(ctx.$doc$)) {
-            const resource = createResourceFromPromise(mountQrl(), ctx.$renderCtx$.$containerState$);
-            ctx.$waitOn$.push(resource.promise);
-            set(resource);
-            return resource;
+            ctx.$waitOn$.push(mountQrl());
+            set(true);
         }
         else {
             throw qError(QError_canNotMountUseServerMount, ctx.$hostElement$);
@@ -3592,24 +3480,10 @@
     const useMountQrl = (mountQrl) => {
         const { get, set, ctx } = useSequentialScope();
         if (get) {
-            return get;
+            return;
         }
-        const resource = createResourceFromPromise(mountQrl(), ctx.$renderCtx$.$containerState$);
-        ctx.$waitOn$.push(resource.promise);
-        set(resource);
-        return resource;
-    };
-    const createResourceFromPromise = (promise, containerState) => {
-        const resource = createResourceReturn(containerState, undefined, promise.then((value) => {
-            resource.state = 'resolved';
-            resource.resolved = value;
-            return value;
-        }, (reason) => {
-            resource.state = 'rejected';
-            resource.error = reason;
-            throw reason;
-        }));
-        return resource;
+        ctx.$waitOn$.push(mountQrl());
+        set(true);
     };
     // <docs markdown="../readme.md#useMount">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3773,9 +3647,19 @@
                 return obj;
             }
         };
-        return safeCall(() => watchFn(track), (returnValue) => {
+        const cleanups = [];
+        watch.$destroy$ = noSerialize(() => {
+            cleanups.forEach((fn) => fn());
+        });
+        const opts = {
+            track,
+            cleanup(callback) {
+                cleanups.push(callback);
+            },
+        };
+        return safeCall(() => watchFn(opts), (returnValue) => {
             if (isFunction(returnValue)) {
-                watch.$destroy$ = noSerialize(returnValue);
+                cleanups.push(returnValue);
             }
         }, (reason) => {
             logError(reason);
@@ -3813,7 +3697,7 @@
     };
     const getWatchHandlerQrl = (watch) => {
         const watchQrl = watch.$qrl$;
-        const watchHandler = createQRL(watchQrl.$chunk$, 'handleWatch', handleWatch, null, null, [watch], watchQrl.$symbol$);
+        const watchHandler = createQRL(watchQrl.$chunk$, '_hW', _hW, null, null, [watch], watchQrl.$symbol$);
         return watchHandler;
     };
     const isSubscriberDescriptor = (obj) => {
@@ -3840,25 +3724,8 @@
         }
     }
 
-    const _createResourceReturn = (opts) => {
-        const resource = {
-            __brand: 'resource',
-            promise: undefined,
-            resolved: undefined,
-            error: undefined,
-            state: 'pending',
-            timeout: opts?.timeout,
-        };
-        return resource;
-    };
-    const createResourceReturn = (containerState, opts, initialPromise) => {
-        const result = _createResourceReturn(opts);
-        result.promise = initialPromise;
-        const resource = createProxy(result, containerState, 0, undefined);
-        return resource;
-    };
     /**
-     * @alpha
+     * @public
      */
     const useResourceQrl = (qrl, opts) => {
         const { get, set, i, ctx } = useSequentialScope();
@@ -3877,18 +3744,13 @@
         return resource;
     };
     /**
-     * @alpha
+     * @public
      */
     const useResource$ = (generatorFn) => {
         return useResourceQrl($(generatorFn));
     };
-    const useIsServer = () => {
-        const ctx = getInvokeContext();
-        assertDefined(ctx.$doc$, 'doc must be defined', ctx);
-        return isServer(ctx.$doc$);
-    };
     /**
-     * @alpha
+     * @public
      */
     const Resource = (props) => {
         const isBrowser = !qDev || !useIsServer();
@@ -3926,6 +3788,28 @@
         return jsx(Fragment, {
             children: promise,
         });
+    };
+    const _createResourceReturn = (opts) => {
+        const resource = {
+            __brand: 'resource',
+            promise: undefined,
+            resolved: undefined,
+            error: undefined,
+            state: 'pending',
+            timeout: opts?.timeout,
+        };
+        return resource;
+    };
+    const createResourceReturn = (containerState, opts, initialPromise) => {
+        const result = _createResourceReturn(opts);
+        result.promise = initialPromise;
+        const resource = createProxy(result, containerState, 0, undefined);
+        return resource;
+    };
+    const useIsServer = () => {
+        const ctx = getInvokeContext();
+        assertDefined(ctx.$doc$, 'doc must be defined', ctx);
+        return isServer(ctx.$doc$);
     };
     const isResourceReturn = (obj) => {
         return isObject(obj) && obj.__brand === 'resource';
@@ -4347,7 +4231,7 @@
      *
      * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
      *
-     * @alpha
+     * @public
      */
     // </docs>
     const noSerialize = (input) => {
@@ -4543,7 +4427,7 @@
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
         // eslint-disable-next-line no-console
-        console.error('%cQWIK ERROR', STYLE, err, ...printParams(optionalParams));
+        console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
         return err;
     };
     const logErrorAndStop = (message, ...optionalParams) => {
@@ -4610,6 +4494,7 @@
     const QError_invalidJsxNodeType = 25;
     const QError_trackUseStore = 26;
     const QError_missingObjectId = 27;
+    const QError_invalidContext = 28;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
@@ -4645,6 +4530,7 @@
                 'Invalid JSXNode type. It must be either a function or a string. Found:',
                 'Tracking value changes can only be done to useStore() objects and component props',
                 'Missing Object ID for captured object',
+                'The provided Context reference is not a valid context created by createContext()', // 27
             ];
             return `Code(${code}): ${MAP[code] ?? ''}`;
         }
@@ -4968,6 +4854,8 @@
      *
      * ```tsx
      * import { importedFn } from './import/example';
+     * import { createContext, useContext, useContextProvider } from './use/use-context';
+     * import { useRef } from './use/use-ref';
      *
      * export const greet = () => console.log('greet');
      * function topLevelFn() {}
@@ -5215,9 +5103,9 @@
         }
         injectQContainer(containerEl);
         const containerState = getContainerState(containerEl);
-        const userContext = opts?.userContext;
-        if (userContext) {
-            Object.assign(containerState.$userContext$, userContext);
+        const envData = opts?.envData;
+        if (envData) {
+            Object.assign(containerState.$envData$, envData);
         }
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot(parent, jsxNode, doc, containerState, containerEl);
@@ -5305,10 +5193,10 @@
             containerAttributes['q:base'] = opts.base;
         }
         if (opts.url) {
-            containerState.$userContext$['url'] = opts.url;
+            containerState.$envData$['url'] = opts.url;
         }
-        if (opts.userContext) {
-            Object.assign(containerState.$userContext$, opts.userContext);
+        if (opts.envData) {
+            Object.assign(containerState.$envData$, opts.envData);
         }
         if (opts.fragmentTagName) {
             node = jsx(root, {
@@ -5867,7 +5755,7 @@
      * );
      * ```
      *
-     * @public
+     * @alpha
      */
     // </docs>
     const useHostElement = () => {
@@ -5893,13 +5781,141 @@
         return ctx.$doc$;
     };
 
+    // <docs markdown="../readme.md#useStore">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useStore instead)
+    /**
+     * Creates an object that Qwik can track across serializations.
+     *
+     * Use `useStore` to create a state for your application. The returned object is a proxy that has
+     * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+     *
+     * ## Example
+     *
+     * Example showing how `useStore` is used in Counter example to keep track of the count.
+     *
+     * ```tsx
+     * const Stores = component$(() => {
+     *   const counter = useCounter(1);
+     *
+     *   // Reactivity happens even for nested objects and arrays
+     *   const userData = useStore({
+     *     name: 'Manu',
+     *     address: {
+     *       address: '',
+     *       city: '',
+     *     },
+     *     orgs: [],
+     *   });
+     *
+     *   // useStore() can also accept a function to calculate the initial value
+     *   const state = useStore(() => {
+     *     return {
+     *       value: expensiveInitialValue(),
+     *     };
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <div>Counter: {counter.value}</div>
+     *       <Child userData={userData} state={state} />
+     *     </Host>
+     *   );
+     * });
+     *
+     * function useCounter(step: number) {
+     *   // Multiple stores can be created in custom hooks for convenience and composability
+     *   const counterStore = useStore({
+     *     value: 0,
+     *   });
+     *   useClientEffect$(() => {
+     *     // Only runs in the client
+     *     const timer = setInterval(() => {
+     *       counterStore.value += step;
+     *     }, 500);
+     *     return () => {
+     *       clearInterval(timer);
+     *     };
+     *   });
+     *   return counterStore;
+     * }
+     * ```
+     *
+     * @public
+     */
+    // </docs>
+    const useStore = (initialState, opts) => {
+        const { get, set, ctx } = useSequentialScope();
+        if (get != null) {
+            return get;
+        }
+        const value = isFunction(initialState) ? initialState() : initialState;
+        if (opts?.reactive === false) {
+            set(value);
+            return value;
+        }
+        else {
+            const containerState = ctx.$renderCtx$.$containerState$;
+            const recursive = opts?.recursive ?? false;
+            const flags = recursive ? QObjectRecursive : 0;
+            const newStore = createProxy(value, containerState, flags, undefined);
+            set(newStore);
+            return newStore;
+        }
+    };
+
+    // <docs markdown="../readme.md#useRef">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useRef instead)
+    /**
+     * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
+     * to the `ref` property in JSX.
+     *
+     * ```tsx
+     * export function useRef<T = Element>(current?: T): Ref<T> {
+     *   return useStore({ current });
+     * }
+     * ```
+     *
+     * ## Example
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const input = useRef<HTMLInputElement>();
+     *
+     *   useClientEffect$(({ track }) => {
+     *     const el = track(input, 'current')!;
+     *     el.focus();
+     *   });
+     *
+     *   return (
+     *     <Host>
+     *       <input type="text" ref={input} />
+     *     </Host>
+     *   );
+     * });
+     *
+     * ```
+     *
+     * @public
+     */
+    // </docs>
+    const useRef = (current) => {
+        return useStore({ current });
+    };
+
     /**
      * @alpha
      */
-    function useUserContext(key, defaultValue) {
+    function useEnvData(key, defaultValue) {
         const ctx = useInvokeContext();
-        return ctx.$renderCtx$.$containerState$.$userContext$[key] ?? defaultValue;
+        return ctx.$renderCtx$.$containerState$.$envData$[key] ?? defaultValue;
     }
+    /**
+     * @alpha
+     * @deprecated Please use `useEnvData` instead.
+     */
+    const useUserContext = useEnvData;
 
     function scopeStylesheet(css, scopeId) {
         const end = css.length;
@@ -6030,7 +6046,9 @@
      *   return <Host>Some text</Host>;
      * });
      * ```
-     * *
+     *
+     * @see `useStylesScoped`
+     *
      * @public
      */
     // </docs>
@@ -6056,33 +6074,64 @@
      * });
      * ```
      *
-     * *
+     * @see `useStylesScoped`
+     *
      * @public
      */
     // </docs>
     const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
-    // <docs markdown="../readme.md#useScopedStyles">
+    // <docs markdown="../readme.md#useStylesScoped">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useScopedStyles instead)
+    // (edit ../readme.md#useStylesScoped instead)
     /**
-     * @see `useStyles`.
+     * A lazy-loadable reference to a component's styles, that is scoped to the component.
+     *
+     * Component styles allow Qwik to lazy load the style information for the component only when
+     * needed. (And avoid double loading it in case of SSR hydration.)
+     *
+     * ```tsx
+     * import scoped from './code-block.css?inline';
+     *
+     * export const CmpScopedStyles = component$(() => {
+     *   useStylesScoped$(scoped);
+     *
+     *   return <Host>Some text</Host>;
+     * });
+     * ```
+     *
+     * @see `useStyles`
      *
      * @alpha
      */
     // </docs>
-    const useScopedStylesQrl = (styles) => {
+    const useStylesScopedQrl = (styles) => {
         _useStyles(styles, scopeStylesheet, true);
     };
-    // <docs markdown="../readme.md#useScopedStyles">
+    // <docs markdown="../readme.md#useStylesScoped">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useScopedStyles instead)
+    // (edit ../readme.md#useStylesScoped instead)
     /**
-     * @see `useStyles`.
+     * A lazy-loadable reference to a component's styles, that is scoped to the component.
+     *
+     * Component styles allow Qwik to lazy load the style information for the component only when
+     * needed. (And avoid double loading it in case of SSR hydration.)
+     *
+     * ```tsx
+     * import scoped from './code-block.css?inline';
+     *
+     * export const CmpScopedStyles = component$(() => {
+     *   useStylesScoped$(scoped);
+     *
+     *   return <Host>Some text</Host>;
+     * });
+     * ```
+     *
+     * @see `useStyles`
      *
      * @alpha
      */
     // </docs>
-    const useScopedStyles$ = /*#__PURE__*/ implicit$FirstArg(useScopedStylesQrl);
+    const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
         const { get, set, ctx, i } = useSequentialScope();
         if (get === true) {
@@ -6122,12 +6171,13 @@
     exports.SSRStreamBlock = SSRStreamBlock;
     exports.SkipRerender = SkipRerender;
     exports.Slot = Slot;
+    exports._hW = _hW;
+    exports._pauseFromContexts = _pauseFromContexts;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
     exports.createContext = createContext;
     exports.getPlatform = getPlatform;
     exports.h = h;
-    exports.handleWatch = handleWatch;
     exports.implicit$FirstArg = implicit$FirstArg;
     exports.inlinedQrl = inlinedQrl;
     exports.jsx = jsx;
@@ -6135,7 +6185,6 @@
     exports.jsxs = jsx;
     exports.mutable = mutable;
     exports.noSerialize = noSerialize;
-    exports.pauseFromContexts = pauseFromContexts;
     exports.qrl = qrl;
     exports.render = render;
     exports.renderSSR = renderSSR;
@@ -6147,6 +6196,7 @@
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
     exports.useDocument = useDocument;
+    exports.useEnvData = useEnvData;
     exports.useHostElement = useHostElement;
     exports.useLexicalScope = useLexicalScope;
     exports.useMount$ = useMount$;
@@ -6157,13 +6207,13 @@
     exports.useRef = useRef;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
-    exports.useScopedStyles$ = useScopedStyles$;
-    exports.useScopedStylesQrl = useScopedStylesQrl;
     exports.useServerMount$ = useServerMount$;
     exports.useServerMountQrl = useServerMountQrl;
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
     exports.useStylesQrl = useStylesQrl;
+    exports.useStylesScoped$ = useStylesScoped$;
+    exports.useStylesScopedQrl = useStylesScopedQrl;
     exports.useUserContext = useUserContext;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
