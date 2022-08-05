@@ -2320,6 +2320,7 @@ const getContainerState = (containerEl) => {
             $envData$: {},
             $elementIndex$: 0,
             $styleIds$: new Set(),
+            $mutableProps$: false,
         };
         set.$subsManager$ = createSubscriptionManager(set);
     }
@@ -4391,10 +4392,22 @@ const getPropsMutator = (ctx, containerState) => {
             if (isMutable(oldValue)) {
                 oldValue = oldValue.v;
             }
-            target[prop] = value;
-            if (isMutable(value)) {
-                value = value.v;
+            if (containerState.$mutableProps$) {
                 mut = true;
+                if (isMutable(value)) {
+                    value = value.v;
+                    target[prop] = value;
+                }
+                else {
+                    target[prop] = mutable(value);
+                }
+            }
+            else {
+                target[prop] = value;
+                if (isMutable(value)) {
+                    value = value.v;
+                    mut = true;
+                }
             }
             if (oldValue !== value) {
                 if (qDev) {
@@ -4407,6 +4420,13 @@ const getPropsMutator = (ctx, containerState) => {
             }
         },
     };
+};
+/**
+ * @internal
+ */
+const _useMutableProps = (mutable) => {
+    const ctx = useInvokeContext();
+    ctx.$renderCtx$.$containerState$.$mutableProps$ = mutable;
 };
 
 const STYLE = qDev
@@ -6151,5 +6171,5 @@ const _useStyles = (styleQrl, transform, scoped) => {
     }
 };
 
-export { $, Fragment, Host, Resource, SSRComment, SSRStreamBlock, SkipRerender, Slot, _hW, _pauseFromContexts, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useEnvData, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Host, Resource, SSRComment, SSRStreamBlock, SkipRerender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useEnvData, useHostElement, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

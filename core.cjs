@@ -2332,6 +2332,7 @@
                 $envData$: {},
                 $elementIndex$: 0,
                 $styleIds$: new Set(),
+                $mutableProps$: false,
             };
             set.$subsManager$ = createSubscriptionManager(set);
         }
@@ -4403,10 +4404,22 @@
                 if (isMutable(oldValue)) {
                     oldValue = oldValue.v;
                 }
-                target[prop] = value;
-                if (isMutable(value)) {
-                    value = value.v;
+                if (containerState.$mutableProps$) {
                     mut = true;
+                    if (isMutable(value)) {
+                        value = value.v;
+                        target[prop] = value;
+                    }
+                    else {
+                        target[prop] = mutable(value);
+                    }
+                }
+                else {
+                    target[prop] = value;
+                    if (isMutable(value)) {
+                        value = value.v;
+                        mut = true;
+                    }
                 }
                 if (oldValue !== value) {
                     if (qDev) {
@@ -4419,6 +4432,13 @@
                 }
             },
         };
+    };
+    /**
+     * @internal
+     */
+    const _useMutableProps = (mutable) => {
+        const ctx = useInvokeContext();
+        ctx.$renderCtx$.$containerState$.$mutableProps$ = mutable;
     };
 
     const STYLE = qDev
@@ -6173,6 +6193,7 @@
     exports.Slot = Slot;
     exports._hW = _hW;
     exports._pauseFromContexts = _pauseFromContexts;
+    exports._useMutableProps = _useMutableProps;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
     exports.createContext = createContext;

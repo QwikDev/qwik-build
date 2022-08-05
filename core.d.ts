@@ -538,6 +538,7 @@ declare interface ContainerState {
     $envData$: Record<string, any>;
     $elementIndex$: number;
     $styleIds$: Set<string>;
+    $mutableProps$: boolean;
 }
 
 /**
@@ -2953,6 +2954,11 @@ export declare const useMount$: <T>(first: MountFn<T>) => void;
  * @public
  */
 export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
+
+/**
+ * @internal
+ */
+export declare const _useMutableProps: (mutable: boolean) => void;
 
 /**
  * Register a listener on the current component's host element.
