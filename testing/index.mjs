@@ -20537,7 +20537,7 @@ var isObject = (v) => {
 
 // packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev !== false;
-var qTest = globalThis.describe !== void 0;
+var qTest = !!globalThis.describe;
 
 // packages/qwik/src/core/util/dom.ts
 var getDocument = (node) => {

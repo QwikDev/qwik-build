@@ -7,7 +7,7 @@
  */
 var qDev = false !== globalThis.qDev;
 
-var qTest = void 0 !== globalThis.describe;
+var qTest = !!globalThis.describe;
 
 var isNode = value => value && "number" == typeof value.nodeType;
 
