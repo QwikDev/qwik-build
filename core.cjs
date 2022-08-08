@@ -4180,6 +4180,12 @@
             }
             switch (typeof unwrapped) {
                 case 'object':
+                    if (isPromise(unwrapped))
+                        return value;
+                    if (isElement(unwrapped))
+                        return value;
+                    if (isDocument(unwrapped))
+                        return value;
                     if (isArray(unwrapped)) {
                         for (const item of unwrapped) {
                             _verifySerializable(item, seen);
@@ -4192,12 +4198,6 @@
                         }
                         return value;
                     }
-                    if (isPromise(unwrapped))
-                        return value;
-                    if (isElement(unwrapped))
-                        return value;
-                    if (isDocument(unwrapped))
-                        return value;
                     break;
                 case 'boolean':
                 case 'string':
@@ -4436,9 +4436,9 @@
     /**
      * @internal
      */
-    const _useMutableProps = (mutable) => {
-        const ctx = useInvokeContext();
-        ctx.$renderCtx$.$containerState$.$mutableProps$ = mutable;
+    const _useMutableProps = (element, mutable) => {
+        const ctx = getContainer(element);
+        getContainerState(ctx).$mutableProps$ = mutable;
     };
 
     const STYLE = qDev

@@ -2958,7 +2958,7 @@ export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 /**
  * @internal
  */
-export declare const _useMutableProps: (mutable: boolean) => void;
+export declare const _useMutableProps: (element: Element, mutable: boolean) => void;
 
 /**
  * Register a listener on the current component's host element.
