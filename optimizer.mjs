@@ -472,7 +472,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.39"
+  qwik: "0.0.41"
 };
 
 async function getSystem() {
@@ -1402,6 +1402,7 @@ function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
   };
   if ("ssr" === opts.target) {
     outputOpts.inlineDynamicImports = true;
+    "production" === opts.buildMode && (outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]"));
   } else if ("client" === opts.target) {
     if ("production" === opts.buildMode) {
       outputOpts.entryFileNames || (outputOpts.entryFileNames = "build/q-[hash].js");
