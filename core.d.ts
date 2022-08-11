@@ -394,7 +394,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare const component$: <PROPS extends {}>(onMount: OnRenderFn<PROPS>, options?: ComponentOptions) => Component<PROPS>;
+export declare const component$: <PROPS extends {}>(onMount: OnRenderFn<PROPS>) => Component<PROPS>;
 
 /**
  * Type representing the Qwik component.
@@ -417,56 +417,16 @@ export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<
 /**
  * @public
  */
-export declare interface ComponentBaseProps extends PreventDefault, ComponentCustomEvents, ComponentKnownEvents {
-    class?: string | {
-        [className: string]: boolean;
-    };
-    className?: string | undefined;
-    style?: Record<string, string | number> | string | undefined;
+export declare interface ComponentBaseProps {
     key?: string | number;
-    id?: string | undefined;
-    ref?: Ref<Element>;
     'q:slot'?: string;
-    [key: `host:${string}`]: any;
-    'host:tagName'?: JSXTagName;
     children?: JSXChildren;
 }
 
 declare interface ComponentCtx {
     $ctx$: QContext;
     $slots$: ProcessedJSXNode[];
-}
-
-declare interface ComponentCustomEvents {
-    [key: `${'host'}on:${string}$`]: NativeEventHandler<Event>;
-    [key: `${'window' | 'document'}:on${string}$`]: NativeEventHandler<Event> | undefined;
-}
-
-declare type ComponentKnownEvents = {
-    [K in keyof QwikEventMap as `${'host' | 'window' | 'document'}:on${K}$`]?: NativeEventHandler<QwikEventMap[K]>;
-};
-
-/**
- * Declarative component options.
- *
- * @public
- */
-export declare interface ComponentOptions {
-    /**
-     * Tag the name of the component's host element.
-     *
-     * Default value fo `tagName` is `div`. Override this value in situations where you want to use
-     * a different tag name. Examples are:
-     * - It is desirable to have component names directly in the HTML (WebComponent style)
-     * - It is desirable to have a specific tag name for accessibility. For example, using `<button>`
-     *   for `<MyCustomButton>` component.
-     *
-     * When a component is inserted into the render tree, the host element needs to be inserted
-     * synchronously, while the component body is inserted asynchronously. The synchronous nature
-     * of host element requires that the parent component needs to know the tag name of the child
-     * component synchronously.
-     */
-    tagName?: JSXTagName;
+    $attachedListeners$: boolean;
 }
 
 /**
@@ -519,7 +479,7 @@ export declare interface ComponentOptions {
  *
  * @public
  */
-export declare const componentQrl: <PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>, options?: ComponentOptions) => Component<PROPS>;
+export declare const componentQrl: <PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
 /**
  * @alpha
@@ -531,9 +491,9 @@ declare interface ContainerState {
     $platform$: CorePlatform;
     $watchNext$: Set<SubscriberDescriptor>;
     $watchStaging$: Set<SubscriberDescriptor>;
-    $hostsNext$: Set<Element>;
-    $hostsStaging$: Set<Element>;
-    $hostsRendering$: Set<Element> | undefined;
+    $hostsNext$: Set<QwikElement>;
+    $hostsStaging$: Set<QwikElement>;
+    $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
     $envData$: Record<string, any>;
     $elementIndex$: number;
@@ -642,7 +602,7 @@ export declare interface CorePlatform {
      * @param symbol - The name of the symbol to import.
      * @returns A promise that resolves to the imported symbol.
      */
-    importSymbol: (element: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
+    importSymbol: (element: QwikElement, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
      * Perform operation on next request-animation-frame.
      *
@@ -735,7 +695,7 @@ declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 declare interface DescriptorBase<T = any, B = undefined> {
     $qrl$: QRLInternal<T>;
-    $el$: Element;
+    $el$: QwikElement;
     $flags$: number;
     $index$: number;
     $destroy$?: NoSerialize<() => void>;
@@ -813,7 +773,7 @@ export declare interface FunctionComponent<P = {}> {
  * @param docOrNode - The document (or node) of the application for which the platform is needed.
  * @alpha
  */
-export declare const getPlatform: (docOrNode: Document | Node) => CorePlatform;
+export declare const getPlatform: (docOrNode: Document | QwikElement) => CorePlatform;
 
 /**
  * @public
@@ -842,31 +802,6 @@ export declare namespace h {
             children?: any;
         }
     }
-}
-
-/**
- * Place at the root of the component View to allow binding of attributes on the Host element.
- *
- * ```
- * <Host someAttr={someExpr} someAttrStatic="value">
- *   View content implementation.
- * </Host>
- * ```
- *
- * Qwik requires that components have [docs/HOST_ELEMENTS.ts] so that it is possible to have
- * asynchronous loading point. Host element is not owned by the component. At times it is
- * desirable for the component to render additional attributes on the host element. `<Host>`
- * servers that purpose.
- *
- * @public
- */
-export declare const Host: FunctionComponent<HostAttributes>;
-
-/**
- * @public
- */
-export declare interface HostAttributes extends HTMLAttributes<HTMLElement> {
-    [key: string]: any;
 }
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
@@ -1249,7 +1184,7 @@ declare interface InvokeContext {
     $url$: URL | null;
     $seq$: number;
     $doc$?: Document;
-    $hostElement$?: Element;
+    $hostElement$?: QwikElement;
     $element$?: Element;
     $event$: any;
     $qrl$?: QRL<any>;
@@ -1262,7 +1197,7 @@ declare interface InvokeContext {
 /**
  * @public
  */
-declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number) => JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -1510,7 +1445,7 @@ declare interface ProcessedJSXNode {
     $props$: Record<string, any>;
     $children$: ProcessedJSXNode[];
     $key$: string | null;
-    $elm$: Node | null;
+    $elm$: Node | VirtualElement | null;
     $text$: string;
 }
 
@@ -1555,7 +1490,7 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
 export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps;
 
 declare interface QContext {
-    $element$: Element;
+    $element$: QwikElement;
     $refMap$: any[];
     $dirty$: boolean;
     $id$: string;
@@ -1704,7 +1639,7 @@ export declare interface QRL<TYPE = any> {
     /**
      * Resolve the QRL and return the actual value.
      */
-    resolve(el?: Element): Promise<TYPE>;
+    resolve(el?: QwikElement): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
 }
@@ -1733,20 +1668,21 @@ declare interface QRLInternalMethods<TYPE> {
     readonly $refSymbol$: string | null;
     $capture$: string[] | null;
     $captureRef$: any[] | null;
-    resolve(el?: Element): Promise<TYPE>;
+    resolve(el?: QwikElement): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
-    $setContainer$(el: Element): void;
-    $resolveLazy$(el: Element): void;
-    $invokeFn$(el?: Element, currentCtx?: InvokeContext, beforeFn?: () => void): any;
+    $setContainer$(el: QwikElement): void;
+    $resolveLazy$(el: QwikElement): void;
+    $invokeFn$(el?: QwikElement, currentCtx?: InvokeContext, beforeFn?: () => void): any;
     $copy$(): QRLInternal<TYPE>;
     $serialize$(options?: QRLSerializeOptions): string;
 }
 
 declare interface QRLSerializeOptions {
     $platform$?: CorePlatform;
-    $element$?: Element;
+    $element$?: QwikElement;
     $getObjId$?: (obj: any) => string | null;
+    $addRefMap$?: (obj: any) => number;
 }
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1769,6 +1705,8 @@ declare interface QwikCustomHTMLElement extends HTMLElement {
  */
 export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
+
+declare type QwikElement = Element | VirtualElement;
 
 declare type QwikEventMap = {
     Copy: ClipboardEvent;
@@ -1978,8 +1916,8 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode<unkno
  */
 declare interface RenderContext {
     $doc$: Document;
-    $roots$: Element[];
-    $hostElements$: Set<Element>;
+    $roots$: QwikElement[];
+    $hostElements$: Set<QwikElement>;
     $operations$: RenderOperation[];
     $localStack$: QContext[];
     $currentComponent$: ComponentCtx | undefined;
@@ -1992,7 +1930,7 @@ declare interface RenderContext {
  * @alpha
  */
 declare interface RenderOperation {
-    $el$: Node;
+    $el$: Node | VirtualElement;
     $operation$: string;
     $args$: any[];
     $fn$: () => void;
@@ -2022,7 +1960,7 @@ export declare const renderSSR: (doc: Document, node: JSXNode, opts: RenderSSROp
  * @alpha
  */
 export declare interface RenderSSROptions {
-    fragmentTagName?: string;
+    containerTagName: string;
     stream: StreamWriter;
     base?: string;
     envData?: Record<string, any>;
@@ -2159,8 +2097,6 @@ export declare const SkipRerender: FunctionComponent<{}>;
  */
 export declare const Slot: FunctionComponent<{
     name?: string;
-    as?: string;
-    children?: any;
 }>;
 
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2255,7 +2191,7 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare type Subscriber = SubscriberDescriptor | Element;
+declare type Subscriber = SubscriberDescriptor | VirtualElement | Element;
 
 declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
 
@@ -2694,7 +2630,7 @@ export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
  *     };
  *   });
  *
- *   return <Host>{store.count}</Host>;
+ *   return <div>{store.count}</div>;
  * });
  * ```
  *
@@ -2719,7 +2655,7 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  *     };
  *   });
  *
- *   return <Host>{store.count}</Host>;
+ *   return <div>{store.count}</div>;
  * });
  * ```
  *
@@ -2858,30 +2794,6 @@ export declare function useEnvData<T>(key: string): T | undefined;
 export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
- * Retrieves the Host Element of the current component.
- *
- * NOTE: `useHostElement` method can only be used in the synchronous portion of the callback
- * (before any `await` statements.)
- *
- * ```tsx
- * const Section = component$(
- *   () => {
- *     const hostElement = useHostElement();
- *     console.log(hostElement); // hostElement is a HTMLSectionElement
- *
- *     return <Host>I am a section</Host>;
- *   },
- *   {
- *     tagName: 'section',
- *   }
- * );
- * ```
- *
- * @alpha
- */
-export declare const useHostElement: () => Element;
-
-/**
  * Used by the Qwik Optimizer to restore the lexically scoped variables.
  *
  * This method should not be present in the application source code.
@@ -2912,9 +2824,9 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       <p>The temperature is: ${store.temp}</p>
- *     </Host>
+ *     </div>
  *   );
  * });
  * ```
@@ -2943,9 +2855,9 @@ export declare const useMount$: <T>(first: MountFn<T>) => void;
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       <p>The temperature is: ${store.temp}</p>
- *     </Host>
+ *     </div>
  *   );
  * });
  * ```
@@ -2964,7 +2876,7 @@ export declare const _useMutableProps: (element: Element, mutable: boolean) => v
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX. Otherwise, it's adding a JSX listener in the `<Host>` is a better
+ * have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better
  * idea.
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
@@ -2993,7 +2905,7 @@ export declare const useOn: (event: string, eventQrl: QRL<(ev: Event) => void>) 
  *
  * const Cmp = component$(() => {
  *   useScroll();
- *   return <Host>Profit!</Host>;
+ *   return <div>Profit!</div>;
  * });
  * ```
  *
@@ -3022,7 +2934,7 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) =>
  *
  * const Cmp = component$(() => {
  *   useAnalytics();
- *   return <Host>Profit!</Host>;
+ *   return <div>Profit!</div>;
  * });
  * ```
  *
@@ -3052,9 +2964,9 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       <input type="text" ref={input} />
- *     </Host>
+ *     </div>
  *   );
  * });
  *
@@ -3092,11 +3004,11 @@ export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: Resourc
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       {store.users.map((user) => (
  *         <User user={user} />
  *       ))}
- *     </Host>
+ *     </div>
  *   );
  * });
  *
@@ -3131,11 +3043,11 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       {store.users.map((user) => (
  *         <User user={user} />
  *       ))}
- *     </Host>
+ *     </div>
  *   );
  * });
  *
@@ -3184,10 +3096,10 @@ export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
  *   });
  *
  *   return (
- *     <Host>
+ *     <div>
  *       <div>Counter: {counter.value}</div>
  *       <Child userData={userData} state={state} />
- *     </Host>
+ *     </div>
  *   );
  * });
  *
@@ -3233,7 +3145,7 @@ export declare interface UseStoreOptions {
  * export const CmpStyles = component$(() => {
  *   useStyles$(styles);
  *
- *   return <Host>Some text</Host>;
+ *   return <div>Some text</div>;
  * });
  * ```
  *
@@ -3255,7 +3167,7 @@ export declare const useStyles$: (first: string) => void;
  * export const CmpStyles = component$(() => {
  *   useStyles$(styles);
  *
- *   return <Host>Some text</Host>;
+ *   return <div>Some text</div>;
  * });
  * ```
  *
@@ -3277,7 +3189,7 @@ export declare const useStylesQrl: (styles: QRL<string>) => void;
  * export const CmpScopedStyles = component$(() => {
  *   useStylesScoped$(scoped);
  *
- *   return <Host>Some text</Host>;
+ *   return <div>Some text</div>;
  * });
  * ```
  *
@@ -3299,7 +3211,7 @@ export declare const useStylesScoped$: (first: string) => void;
  * export const CmpScopedStyles = component$(() => {
  *   useStylesScoped$(scoped);
  *
- *   return <Host>Some text</Host>;
+ *   return <div>Some text</div>;
  * });
  * ```
  *
@@ -3360,12 +3272,12 @@ export declare const useUserContext: typeof useEnvData;
  *     };
  *   });
  *   return (
- *     <Host>
+ *     <div>
  *       <div>
  *         {store.count} / {store.doubleCount}
  *       </div>
  *       <div>{store.debounced}</div>
- *     </Host>
+ *     </div>
  *   );
  * });
  * ```
@@ -3431,12 +3343,12 @@ export declare interface UseWatchOptions {
  *     };
  *   });
  *   return (
- *     <Host>
+ *     <div>
  *       <div>
  *         {store.count} / {store.doubleCount}
  *       </div>
  *       <div>{store.debounced}</div>
- *     </Host>
+ *     </div>
  *   );
  * });
  * ```
@@ -3453,7 +3365,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.41
+ * 0.0.42
  * @public
  */
 export declare const version: string;
@@ -3465,6 +3377,36 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
     width?: number | string | undefined;
     disablePictureInPicture?: boolean | undefined;
     disableRemotePlayback?: boolean | undefined;
+}
+
+declare interface VirtualElement {
+    readonly open: Comment;
+    readonly close: Comment;
+    readonly insertBefore: <T extends Node>(node: T, child: Node | null) => T;
+    readonly appendChild: <T extends Node>(node: T) => T;
+    readonly insertBeforeTo: (newParent: QwikElement, child: Node | null) => void;
+    readonly appendTo: (newParent: QwikElement) => void;
+    readonly ownerDocument: Document;
+    readonly nodeType: 111;
+    readonly childNodes: Node[];
+    readonly firstChild: Node | null;
+    readonly previousSibling: Node | null;
+    readonly nextSibling: Node | null;
+    readonly remove: () => void;
+    readonly closest: (query: string) => Element | null;
+    readonly hasAttribute: (prop: string) => boolean;
+    readonly getAttribute: (prop: string) => string | null;
+    readonly removeAttribute: (prop: string) => void;
+    readonly querySelector: (query: string) => QwikElement | null;
+    readonly querySelectorAll: (query: string) => QwikElement[];
+    readonly compareDocumentPosition: (other: Node) => number;
+    readonly matches: (query: string) => boolean;
+    readonly setAttribute: (prop: string, value: string) => void;
+    readonly removeChild: (node: Node) => void;
+    readonly localName: string;
+    readonly nodeName: string;
+    readonly isConnected: boolean;
+    readonly parentElement: Element | null;
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server
+ * @builder.io/qwik/server 0.0.42
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -41,7 +41,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.41",
+  qwik: "0.0.42",
   qwikDom: "2.1.18"
 };
 
@@ -426,7 +426,7 @@ var isQrl = (value) => {
 // packages/qwik/src/server/document.ts
 function createEl(tagName, doc) {
   return {
-    nodeType: 1,
+    nodeType: tagName === ":virtual" ? 111 : 1,
     nodeName: tagName.toUpperCase(),
     localName: tagName,
     ownerDocument: doc,
@@ -455,6 +455,7 @@ async function renderToStream(rootNode, opts) {
   const inOrderStreaming = opts.streaming?.inOrder ?? {
     strategy: "auto"
   };
+  const containerTagName = opts.containerTagName ?? "html";
   const buffer = [];
   const nativeStream = stream;
   function flush() {
@@ -490,7 +491,9 @@ async function renderToStream(rootNode, opts) {
       };
       break;
   }
-  if (typeof opts.fragmentTagName === "string") {
+  if (containerTagName === "html") {
+    stream.write(DOCTYPE);
+  } else {
     if (opts.qwikLoader) {
       if (opts.qwikLoader.include === void 0) {
         opts.qwikLoader.include = "never";
@@ -503,8 +506,6 @@ async function renderToStream(rootNode, opts) {
         include: "never"
       };
     }
-  } else {
-    stream.write(DOCTYPE);
   }
   if (!opts.manifest) {
     console.warn("Missing client manifest, loading symbols in the client might 404");
@@ -518,7 +519,7 @@ async function renderToStream(rootNode, opts) {
   const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes)) : void 0;
   await renderSSR(doc, rootNode, {
     stream,
-    fragmentTagName: opts.fragmentTagName,
+    containerTagName,
     envData: opts.envData,
     url: opts.url instanceof URL ? opts.url.href : opts.url,
     base: buildBase,
