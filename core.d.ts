@@ -2176,7 +2176,7 @@ export declare const SSRStreamBlock: FunctionComponent<{
  * @alpha
  */
 export declare type StreamWriter = {
-    write: (chunk: any) => void | boolean | Promise<void> | Promise<boolean>;
+    write: (chunk: string) => void | boolean | Promise<void> | Promise<boolean>;
 };
 
 declare interface StyleAppend {

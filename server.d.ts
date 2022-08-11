@@ -50,6 +50,8 @@ export declare function getQwikLoaderScript(opts?: {
  */
 export declare interface InOrderAuto {
     strategy: 'auto';
+    minimunChunkSize?: number;
+    initialChunkSize?: number;
 }
 
 /**
@@ -149,12 +151,6 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
 export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
     snapshotResult: SnapshotResult | null;
-    timing: {
-        createDocument: number;
-        render: number;
-        snapshot: number;
-        toString: number;
-    };
 }
 
 /**
@@ -183,6 +179,13 @@ export declare interface RenderToStreamOptions extends RenderOptions {
  * @alpha
  */
 export declare interface RenderToStreamResult extends RenderResult {
+    flushes: number;
+    size: number;
+    timing: {
+        firstFlush: number;
+        render: number;
+        snapshot: number;
+    };
 }
 
 /**
@@ -210,6 +213,10 @@ export declare interface RenderToStringOptions extends RenderOptions {
  */
 export declare interface RenderToStringResult extends RenderResult {
     html: string;
+    timing: {
+        render: number;
+        snapshot: number;
+    };
 }
 
 /**
