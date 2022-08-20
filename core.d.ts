@@ -2028,7 +2028,7 @@ export declare interface ResourceRejected<T> {
     state: 'rejected';
     promise: Promise<T>;
     resolved: undefined;
-    error: NoSerialize<any>;
+    error: any;
     timeout?: number;
 }
 
@@ -2979,7 +2979,7 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
 /**
  * @public
  */
-export declare const useResource$: <T>(generatorFn: ResourceFn<T>) => ResourceReturn<T>;
+export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
  * @public
@@ -3365,7 +3365,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.42
+ * 0.0.100
  * @public
  */
 export declare const version: string;

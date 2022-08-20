@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.42
+ * @builder.io/qwik 0.0.100
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -129,7 +129,16 @@ const useInvokeContext = () => {
     assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
     return ctx;
 };
-const useInvoke = (context, fn, ...args) => {
+const useBindInvokeContext = (callback) => {
+    if (callback == null) {
+        return callback;
+    }
+    const ctx = getInvokeContext();
+    return ((...args) => {
+        return invoke(ctx, callback.bind(undefined, ...args));
+    });
+};
+const invoke = (context, fn, ...args) => {
     const previousContext = _context;
     let returnValue;
     try {
@@ -879,7 +888,7 @@ const processNode = (node, invocationContext) => {
     }
     else if (isFunction(node.type)) {
         const res = invocationContext
-            ? useInvoke(invocationContext, () => node.type(node.props, node.key))
+            ? invoke(invocationContext, () => node.type(node.props, node.key))
             : node.type(node.props, node.key);
         return processData$1(res, invocationContext);
     }
@@ -2678,8 +2687,14 @@ const _pauseFromContexts = async (elements, containerState) => {
             suffix = '%';
         }
         if (isPromise(obj)) {
-            obj = getPromiseValue(obj);
-            suffix += '~';
+            const { value, resolved } = getPromiseValue(obj);
+            obj = value;
+            if (resolved) {
+                suffix += '~';
+            }
+            else {
+                suffix += '_';
+            }
         }
         if (isObject(obj)) {
             const target = getProxyTarget(obj);
@@ -3005,8 +3020,12 @@ const OBJECT_TRANSFORMS = {
     '~': (obj) => {
         return Promise.resolve(obj);
     },
+    _: (obj) => {
+        return Promise.reject(obj);
+    },
 };
 const getObjectImpl = (id, elements, objs, containerState) => {
+    assertTrue(typeof id === 'string' && id.length > 0, 'resume: id must be an non-empty string, got:', id);
     if (id.startsWith(ELEMENT_ID_PREFIX)) {
         assertTrue(elements.has(id), `missing element for id:`, id);
         return elements.get(id);
@@ -3093,7 +3112,18 @@ const collectSubscriptions = async (target, collector) => {
 const PROMISE_VALUE = Symbol();
 const resolvePromise = (promise) => {
     return promise.then((value) => {
-        promise[PROMISE_VALUE] = value;
+        const v = {
+            resolved: true,
+            value,
+        };
+        promise[PROMISE_VALUE] = v;
+        return value;
+    }, (value) => {
+        const v = {
+            resolved: false,
+            value,
+        };
+        promise[PROMISE_VALUE] = v;
         return value;
     });
 };
@@ -3127,8 +3157,8 @@ const collectValue = async (obj, collector, leaks) => {
         if (typeof obj === 'object') {
             // Handle promises
             if (isPromise(obj)) {
-                const resolved = await resolvePromise(obj);
-                await collectValue(resolved, collector, leaks);
+                const value = await resolvePromise(obj);
+                await collectValue(value, collector, leaks);
                 return;
             }
             const target = getProxyTarget(obj);
@@ -3633,8 +3663,30 @@ const runResource = (watch, containerState, waitOn) => {
     };
     let resolve;
     let reject;
+    let done = false;
+    const setState = (resolved, value) => {
+        if (!done) {
+            done = true;
+            if (resolved) {
+                done = true;
+                resource.state = 'resolved';
+                resource.resolved = value;
+                resource.error = undefined;
+                resolve(value);
+            }
+            else {
+                done = true;
+                resource.state = 'rejected';
+                resource.resolved = undefined;
+                resource.error = value;
+                reject(value);
+            }
+            return true;
+        }
+        return false;
+    };
     // Execute mutation inside empty invokation
-    useInvoke(invokationContext, () => {
+    invoke(invokationContext, () => {
         resource.state = 'pending';
         resource.resolved = undefined;
         resource.promise = new Promise((r, re) => {
@@ -3644,40 +3696,19 @@ const runResource = (watch, containerState, waitOn) => {
     });
     watch.$destroy$ = noSerialize(() => {
         cleanups.forEach((fn) => fn());
-        reject('cancelled');
     });
-    let done = false;
     const promise = safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
-        if (!done) {
-            done = true;
-            resource.state = 'resolved';
-            resource.resolved = value;
-            resource.error = undefined;
-            resolve(value);
-        }
-        return;
+        setState(true, value);
     }, (reason) => {
-        if (!done) {
-            done = true;
-            resource.state = 'rejected';
-            resource.resolved = undefined;
-            resource.error = noSerialize(reason);
-            reject(reason);
-        }
-        return;
+        setState(false, reason);
     });
     const timeout = resourceTarget.timeout;
     if (timeout) {
         return Promise.race([
             promise,
             delay(timeout).then(() => {
-                if (!done) {
-                    done = true;
-                    resource.state = 'rejected';
-                    resource.resolved = undefined;
-                    resource.error = 'timeout';
+                if (setState(false, 'timeout')) {
                     cleanupWatch(watch);
-                    reject('timeout');
                 }
             }),
         ]);
@@ -3809,8 +3840,8 @@ const useResourceQrl = (qrl, opts) => {
 /**
  * @public
  */
-const useResource$ = (generatorFn) => {
-    return useResourceQrl($(generatorFn));
+const useResource$ = (generatorFn, opts) => {
+    return useResourceQrl($(generatorFn), opts);
 };
 /**
  * @public
@@ -3834,7 +3865,7 @@ const Resource = (props) => {
             }
         }
     }
-    const promise = props.resource.promise.then(props.onResolved, props.onRejected);
+    const promise = props.resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     // if (isServer) {
     //   const onPending = props.onPending;
     //   if (props.ssrWait && onPending) {
@@ -3886,7 +3917,7 @@ const serializeResource = (resource, getObjId) => {
         return `1`;
     }
     else {
-        return `2`;
+        return `2 ${getObjId(resource.error)}`;
     }
 };
 const parseResourceReturn = (data) => {
@@ -3903,7 +3934,7 @@ const parseResourceReturn = (data) => {
     }
     else if (first === '2') {
         result.state = 'rejected';
-        result.promise = Promise.reject();
+        result.error = id;
     }
     return result;
 };
@@ -3930,6 +3961,17 @@ const QRLSerializer = {
         }
     },
 };
+const ErrorSerializer = {
+    test: (v) => v instanceof Error,
+    serialize: (obj) => {
+        return obj.message;
+    },
+    prepare: (text) => {
+        const err = new Error(text);
+        err.stack = undefined;
+        return err;
+    },
+};
 const DocumentSerializer = {
     test: (v) => isDocument(v),
     prepare: (_, _c, doc) => {
@@ -3948,6 +3990,12 @@ const ResourceSerializer = {
         if (resource.state === 'resolved') {
             resource.resolved = getObject(resource.resolved);
             resource.promise = Promise.resolve(resource.resolved);
+        }
+        else if (resource.state === 'rejected') {
+            const p = Promise.reject(resource.error);
+            p.catch(() => null);
+            resource.error = getObject(resource.error);
+            resource.promise = p;
         }
     },
 };
@@ -4030,6 +4078,7 @@ const serializers = [
     DateSerializer,
     ComponentSerializer,
     PureFunctionSerializer,
+    ErrorSerializer,
 ];
 const canSerialize = (obj) => {
     for (const s of serializers) {
@@ -4661,18 +4710,18 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     if (beforeFn) {
                         beforeFn();
                     }
-                    return useInvoke(context, fn, ...args);
+                    return invoke(context, fn, ...args);
                 }
                 throw qError(QError_qrlIsNotFunction);
             });
         });
     };
-    const invoke = async function (...args) {
+    const invokeQRL = async function (...args) {
         const fn = invokeFn();
         const result = await fn(...args);
         return result;
     };
-    const QRL = invoke;
+    const QRL = invokeQRL;
     const methods = {
         getSymbol: () => refSymbol ?? symbol,
         getHash: () => getSymbolHash(refSymbol ?? symbol),
@@ -4692,7 +4741,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             return stringifyQRL(QRL, options);
         },
     };
-    const qrl = Object.assign(invoke, methods);
+    const qrl = Object.assign(invokeQRL, methods);
     return qrl;
 };
 const getSymbolHash = (symbolName) => {
@@ -4805,6 +4854,9 @@ const stringifyQRL = (qrl, opts = {}) => {
                 symbol = result[0];
             }
         }
+    }
+    if (chunk.startsWith('./')) {
+        chunk = chunk.slice(2);
     }
     const parts = [chunk];
     if (symbol && symbol !== 'default') {
@@ -5145,7 +5197,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.42";
+const version = "0.0.100";
 
 /**
  * Render JSX.
@@ -5282,7 +5334,7 @@ const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
         return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
     }
     const res = ssrCtx.invocationContext
-        ? useInvoke(ssrCtx.invocationContext, () => node.type(node.props, node.key))
+        ? invoke(ssrCtx.invocationContext, () => node.type(node.props, node.key))
         : node.type(node.props, node.key);
     return processData(res, ssrCtx, stream, flags, beforeClose);
 };
@@ -5641,7 +5693,7 @@ const _flatVirtualChildren = (children, ssrCtx) => {
         children.type !== Virtual) {
         const fn = children.type;
         const res = ssrCtx.invocationContext
-            ? useInvoke(ssrCtx.invocationContext, () => fn(children.props, children.key))
+            ? invoke(ssrCtx.invocationContext, () => fn(children.props, children.key))
             : fn(children.props, children.key);
         return flatVirtualChildren(res, ssrCtx);
     }
