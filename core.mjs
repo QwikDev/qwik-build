@@ -8,6 +8,7 @@
 // minification can replace the `globalThis.qDev` with `false`
 // which will remove all dev code within from the build
 const qDev = true;
+const qDynamicPlatform = globalThis.qDynamicPlatform !== false;
 const qTest = !!globalThis.describe;
 
 const EMPTY_ARRAY = [];
@@ -149,6 +150,10 @@ const invoke = (context, fn, ...args) => {
         _context = previousContext;
     }
     return returnValue;
+};
+const waitAndRun = (ctx, callback) => {
+    const previousWait = ctx.$waitOn$.slice();
+    ctx.$waitOn$.push(Promise.allSettled(previousWait).then(callback));
 };
 const newInvokeContext = (doc, hostElement, element, event, url) => {
     return {
@@ -318,8 +323,11 @@ const getPlatform = (docOrNode) => {
     const doc = getDocument(docOrNode);
     return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
 };
-const isServer = (doc) => {
-    return getPlatform(doc).isServer;
+const isServer = (ctx) => {
+    if (qDynamicPlatform) {
+        return (ctx.$renderCtx$?.$containerState$.$platform$.isServer ?? getPlatform(ctx.$doc$).isServer);
+    }
+    return false;
 };
 const DocumentPlatform = ':platform:';
 
@@ -2175,11 +2183,10 @@ const notifyChange = (subscriber, containerState) => {
  * @public
  */
 const notifyRender = (hostElement, containerState) => {
-    if (qDev && !qTest && containerState.$platform$.isServer) {
-        logWarn('Can not rerender in server platform');
-        return undefined;
+    const isServer = qDev && !qTest && containerState.$platform$.isServer;
+    if (!isServer) {
+        resumeIfNeeded(containerState.$containerEl$);
     }
-    resumeIfNeeded(containerState.$containerEl$);
     const ctx = getContext(hostElement);
     assertDefined(ctx.$renderQrl$, `render: notified host element must have a defined $renderQrl$`, ctx);
     if (ctx.$dirty$) {
@@ -2192,6 +2199,10 @@ const notifyRender = (hostElement, containerState) => {
         containerState.$hostsStaging$.add(hostElement);
     }
     else {
+        if (isServer) {
+            logWarn('Can not rerender in server platform');
+            return undefined;
+        }
         containerState.$hostsNext$.add(hostElement);
         scheduleFrame(containerState);
     }
@@ -3293,19 +3304,19 @@ const WatchFlagsIsResource = 1 << 4;
 // </docs>
 const useWatchQrl = (qrl, opts) => {
     const { get, set, ctx, i } = useSequentialScope();
-    if (!get) {
-        assertQrl(qrl);
-        const el = ctx.$hostElement$;
-        const containerState = ctx.$renderCtx$.$containerState$;
-        const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, undefined);
-        set(true);
-        getContext(el).$watches$.push(watch);
-        const previousWait = ctx.$waitOn$.slice();
-        ctx.$waitOn$.push(Promise.all(previousWait).then(() => runSubscriber(watch, containerState)));
-        const isServer = containerState.$platform$.isServer;
-        if (isServer) {
-            useRunWatch(watch, opts?.eagerness);
-        }
+    if (get) {
+        return;
+    }
+    assertQrl(qrl);
+    const el = ctx.$hostElement$;
+    const containerState = ctx.$renderCtx$.$containerState$;
+    const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, undefined);
+    set(true);
+    qrl.$resolveLazy$(el);
+    getContext(el).$watches$.push(watch);
+    waitAndRun(ctx, () => runSubscriber(watch, containerState));
+    if (isServer(ctx)) {
+        useRunWatch(watch, opts?.eagerness);
     }
 };
 // <docs markdown="../readme.md#useWatch">
@@ -3400,17 +3411,19 @@ const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
 // </docs>
 const useClientEffectQrl = (qrl, opts) => {
     const { get, set, i, ctx } = useSequentialScope();
-    if (!get) {
-        assertQrl(qrl);
-        const el = ctx.$hostElement$;
-        const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
-        set(true);
-        getContext(el).$watches$.push(watch);
-        useRunWatch(watch, opts?.eagerness ?? 'visible');
-        const doc = ctx.$doc$;
-        if (doc['qO']) {
-            doc['qO'].observe(el);
-        }
+    if (get) {
+        return;
+    }
+    assertQrl(qrl);
+    const el = ctx.$hostElement$;
+    const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
+    const eagerness = opts?.eagerness ?? 'visible';
+    set(true);
+    getContext(el).$watches$.push(watch);
+    useRunWatch(watch, eagerness);
+    if (!isServer(ctx)) {
+        qrl.$resolveLazy$(el);
+        notifyWatch(watch, ctx.$renderCtx$.$containerState$);
     }
 };
 // <docs markdown="../readme.md#useClientEffect">
@@ -3487,8 +3500,8 @@ const useServerMountQrl = (mountQrl) => {
     if (get) {
         return;
     }
-    if (isServer(ctx.$doc$)) {
-        ctx.$waitOn$.push(mountQrl());
+    if (isServer(ctx)) {
+        waitAndRun(ctx, mountQrl);
         set(true);
     }
     else {
@@ -3575,7 +3588,9 @@ const useMountQrl = (mountQrl) => {
     if (get) {
         return;
     }
-    ctx.$waitOn$.push(mountQrl());
+    assertQrl(mountQrl);
+    mountQrl.$resolveLazy$(ctx.$hostElement$);
+    waitAndRun(ctx, mountQrl);
     set(true);
 };
 // <docs markdown="../readme.md#useMount">
@@ -3902,8 +3917,7 @@ const createResourceReturn = (containerState, opts, initialPromise) => {
 };
 const useIsServer = () => {
     const ctx = getInvokeContext();
-    assertDefined(ctx.$doc$, 'doc must be defined', ctx);
-    return isServer(ctx.$doc$);
+    return isServer(ctx);
 };
 const isResourceReturn = (obj) => {
     return isObject(obj) && obj.__brand === 'resource';
@@ -5228,11 +5242,11 @@ const render = async (parent, jsxNode, opts) => {
         Object.assign(containerState.$envData$, envData);
     }
     containerState.$hostsRendering$ = new Set();
-    containerState.$renderPromise$ = renderRoot(containerEl, jsxNode, doc, containerState, containerEl);
+    containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
     const renderCtx = await containerState.$renderPromise$;
     await postRendering(containerState, renderCtx);
 };
-const renderRoot = async (parent, jsxNode, doc, containerState, containerEl) => {
+const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) => {
     const ctx = createRenderContext(doc, containerState);
     ctx.$roots$.push(parent);
     const processedNodes = await processData$1(jsxNode);
@@ -5273,7 +5287,6 @@ const renderSSR = async (doc, node, opts) => {
         headNodes: [],
     };
     const beforeContent = opts.beforeContent;
-    const beforeClose = opts.beforeClose;
     if (beforeContent) {
         ssrCtx.headNodes.push(...beforeContent);
     }
@@ -5304,12 +5317,19 @@ const renderSSR = async (doc, node, opts) => {
             children: [...ssrCtx.headNodes, node],
         });
     }
-    await renderNode(node, ssrCtx, opts.stream, 0, (stream) => {
+    containerState.$hostsRendering$ = new Set();
+    containerState.$renderPromise$ = Promise.resolve().then(() => renderRoot(node, ssrCtx, opts.stream, containerState, opts));
+    await containerState.$renderPromise$;
+};
+const renderRoot = async (node, ssrCtx, stream, containerState, opts) => {
+    const beforeClose = opts.beforeClose;
+    await renderNode(node, ssrCtx, stream, 0, (stream) => {
         const result = beforeClose?.(ssrCtx.$contexts$, containerState);
         if (result) {
             return processData(result, ssrCtx, stream, 0, undefined);
         }
     });
+    return ssrCtx.rctx;
 };
 const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
     if (node.type === SSRComment) {
@@ -5381,7 +5401,7 @@ const renderNodeElement = (node, extraAttributes, extraNodes, ssrCtx, stream, fl
     const textType = node.type;
     const elCtx = getContext(ssrCtx.rctx.$doc$.createElement(node.type));
     const hasRef = 'ref' in props;
-    const attributes = updateProperties(ssrCtx.rctx, elCtx, props);
+    const attributes = updateProperties(elCtx, props);
     const hostCtx = ssrCtx.hostCtx;
     if (hostCtx) {
         attributes['class'] = joinClasses(hostCtx.$scopeIds$, attributes['class']);
@@ -5686,7 +5706,7 @@ const _flatVirtualChildren = (children, ssrCtx) => {
     }
     return children;
 };
-const updateProperties = (rctx, ctx, expectProps) => {
+const updateProperties = (ctx, expectProps) => {
     const attributes = {};
     if (!expectProps) {
         return attributes;

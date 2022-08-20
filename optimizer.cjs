@@ -48,6 +48,7 @@ globalThis.qwikOptimizer = function(module) {
   });
   module.exports = __toCommonJS(src_exports);
   var qDev = false !== globalThis.qDev;
+  globalThis.qDynamicPlatform;
   globalThis.describe;
   var isNode = value => value && "number" == typeof value.nodeType;
   var isElement = value => isNode(value) && 1 === value.nodeType;

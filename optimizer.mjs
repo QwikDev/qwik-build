@@ -7,6 +7,8 @@
  */
 var qDev = false !== globalThis.qDev;
 
+var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
+
 var qTest = !!globalThis.describe;
 
 var isNode = value => value && "number" == typeof value.nodeType;
