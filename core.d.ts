@@ -1940,7 +1940,6 @@ declare interface RenderOperation {
  * @alpha
  */
 export declare interface RenderOptions {
-    allowRerender?: boolean;
     envData?: Record<string, any>;
 }
 
@@ -1961,6 +1960,7 @@ export declare const renderSSR: (doc: Document, node: JSXNode, opts: RenderSSROp
  */
 export declare interface RenderSSROptions {
     containerTagName: string;
+    containerAttributes: Record<string, string>;
     stream: StreamWriter;
     base?: string;
     envData?: Record<string, any>;

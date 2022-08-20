@@ -5242,21 +5242,7 @@
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot(containerEl, jsxNode, doc, containerState, containerEl);
         const renderCtx = await containerState.$renderPromise$;
-        const allowRerender = opts?.allowRerender ?? true;
-        if (allowRerender) {
-            await postRendering(containerState, renderCtx);
-        }
-        else {
-            containerState.$hostsRendering$ = undefined;
-            containerState.$renderPromise$ = undefined;
-            const next = containerState.$hostsNext$.size +
-                containerState.$hostsStaging$.size +
-                containerState.$watchNext$.size +
-                containerState.$watchStaging$.size;
-            if (next > 0) {
-                logWarn('State changed and a rerender is required, skipping');
-            }
-        }
+        await postRendering(containerState, renderCtx);
     };
     const renderRoot = async (parent, jsxNode, doc, containerState, containerEl) => {
         const ctx = createRenderContext(doc, containerState);
@@ -5304,6 +5290,7 @@
             ssrCtx.headNodes.push(...beforeContent);
         }
         const containerAttributes = {
+            ...opts.containerAttributes,
             'q:container': 'paused',
             'q:version': version ?? 'dev',
             'q:render': 'ssr',
