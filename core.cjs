@@ -736,6 +736,7 @@
             $containerEl$: containerState.$containerEl$,
             $hostElements$: new Set(),
             $operations$: [],
+            $postOperations$: [],
             $roots$: [],
             $localStack$: [],
             $currentComponent$: undefined,
@@ -1953,19 +1954,24 @@
     const appendHeadStyle = (ctx, hostElement, styleTask) => {
         const fn = () => {
             const containerEl = ctx.$containerEl$;
-            const isDoc = ctx.$doc$.documentElement === containerEl && !!ctx.$doc$.head;
-            const style = ctx.$doc$.createElement('style');
+            const doc = ctx.$doc$;
+            const isDoc = doc.documentElement === containerEl;
+            const headEl = doc.head;
+            const style = doc.createElement('style');
+            if (isDoc && !headEl) {
+                logWarn('document.head is undefined');
+            }
             directSetAttribute(style, QStyle, styleTask.styleId);
             style.textContent = styleTask.content;
-            if (isDoc) {
-                directAppendChild(ctx.$doc$.head, style);
+            if (isDoc && headEl) {
+                directAppendChild(headEl, style);
             }
             else {
                 directInsertBefore(containerEl, style, containerEl.firstChild);
             }
         };
         ctx.$containerState$.$styleIds$.add(styleTask.styleId);
-        ctx.$operations$.push({
+        ctx.$postOperations$.push({
             $el$: hostElement,
             $operation$: 'append-style',
             $args$: [styleTask],
@@ -2024,14 +2030,14 @@
     };
     const executeContextWithSlots = (ctx) => {
         const before = ctx.$roots$.map((elm) => getSlots(null, elm));
-        executeContext(ctx);
+        executeDOMRender(ctx);
         const after = ctx.$roots$.map((elm) => getSlots(null, elm));
         assertEqual(before.length, after.length, 'render: number of q:slots changed during render context execution', before, after);
         for (let i = 0; i < before.length; i++) {
             resolveSlotProjection(ctx, ctx.$roots$[i], before[i], after[i]);
         }
     };
-    const executeContext = (ctx) => {
+    const executeDOMRender = (ctx) => {
         for (const op of ctx.$operations$) {
             op.$fn$();
         }
@@ -2275,6 +2281,8 @@
                 }
             }
         }
+        // Add post operations
+        ctx.$operations$.push(...ctx.$postOperations$);
         // Early exist, no dom operations
         if (ctx.$operations$.length === 0) {
             printRenderStats(ctx);
@@ -5263,7 +5271,8 @@
         ctx.$roots$.push(parent);
         const processedNodes = await processData$1(jsxNode);
         await visitJsxNode(ctx, parent, processedNodes, 0);
-        executeContext(ctx);
+        ctx.$operations$.push(...ctx.$postOperations$);
+        executeDOMRender(ctx);
         if (qDev) {
             appendQwikDevTools(containerEl);
             printRenderStats(ctx);
@@ -5278,9 +5287,9 @@
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
     };
 
-    const IS_HOST = 1 << 0;
-    const IS_HEAD = 1 << 1;
-    const IS_RAW_CONTENT = 1 << 2;
+    const IS_HEAD = 1 << 0;
+    const IS_RAW_CONTENT = 1 << 1;
+    const IS_HTML = 1 << 2;
     /**
      * @alpha
      */
@@ -5289,6 +5298,7 @@
         const containerEl = doc.createElement(root);
         const containerState = getContainerState(containerEl);
         const rctx = createRenderContext(doc, containerState);
+        const headNodes = opts.beforeContent ?? [];
         const ssrCtx = {
             rctx,
             $contexts$: [],
@@ -5296,12 +5306,8 @@
             projectedContext: undefined,
             hostCtx: undefined,
             invocationContext: undefined,
-            headNodes: [],
+            headNodes: root === 'html' ? headNodes : [],
         };
-        const beforeContent = opts.beforeContent;
-        if (beforeContent) {
-            ssrCtx.headNodes.push(...beforeContent);
-        }
         const containerAttributes = {
             ...opts.containerAttributes,
             'q:container': 'paused',
@@ -5326,7 +5332,7 @@
         else {
             node = jsx(root, {
                 ...containerAttributes,
-                children: [...ssrCtx.headNodes, node],
+                children: [...(headNodes ?? []), node],
             });
         }
         containerState.$hostsRendering$ = new Set();
@@ -5341,6 +5347,12 @@
                 return processData(result, ssrCtx, stream, 0, undefined);
             }
         });
+        if (qDev) {
+            if (ssrCtx.headNodes.length > 0) {
+                logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
+                throw new Error('dfd');
+            }
+        }
         return ssrCtx.rctx;
     };
     const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
@@ -5457,6 +5469,12 @@
         if (textType !== 'head') {
             flags &= ~IS_HEAD;
         }
+        if (textType === 'html') {
+            flags |= IS_HTML;
+        }
+        else {
+            flags &= ~IS_HTML;
+        }
         if (hasRawContent[textType]) {
             flags |= IS_RAW_CONTENT;
         }
@@ -5475,6 +5493,7 @@
                 ssrCtx.headNodes.forEach((node) => {
                     renderNodeElementSync(node.type, node.props, stream);
                 });
+                ssrCtx.headNodes.length = 0;
             }
             // Fast path
             if (!beforeClose) {
@@ -5516,7 +5535,7 @@
         const attributes = updateComponentProperties(ssrCtx.rctx, elCtx, node.props);
         return then(executeComponent(ssrCtx.rctx, elCtx), (res) => {
             if (!res) {
-                console.error('not rendered');
+                logError('component was not rendered during SSR');
                 return;
             }
             const hostElement = elCtx.$element$;
@@ -5548,8 +5567,10 @@
             };
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
+                const isHTML = !!(flags & IS_HTML);
+                const array = isHTML ? ssrCtx.headNodes : extraNodes;
                 for (const style of elCtx.$appendStyles$) {
-                    extraNodes.push(jsx('style', {
+                    array.push(jsx('style', {
                         [QStyle]: style.styleId,
                         dangerouslySetInnerHTML: style.content,
                     }));
@@ -5571,7 +5592,6 @@
                 ...attributes,
                 children: res.node,
             }, node.key);
-            flags |= IS_HOST;
             newSSrContext.hostCtx = elCtx;
             return renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream) => {
                 return then(renderQTemplates(newSSrContext, stream), () => {
