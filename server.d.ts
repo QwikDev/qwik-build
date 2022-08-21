@@ -226,7 +226,6 @@ export declare interface RenderToStringResult extends RenderResult {
 export declare interface SerializeDocumentOptions {
     manifest?: QwikManifest;
     symbolMapper?: SymbolMapperFn;
-    url?: URL | string;
     debug?: boolean;
 }
 
