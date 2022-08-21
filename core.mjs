@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.100
+ * @builder.io/qwik 0.0.101
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -5219,7 +5219,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.100";
+const version = "0.0.101";
 
 /**
  * Render JSX.
@@ -6285,13 +6285,14 @@ function useEnvData(key, defaultValue) {
  */
 const useUserContext = useEnvData;
 
+/* eslint-disable no-console */
 function scopeStylesheet(css, scopeId) {
     const end = css.length;
     const out = [];
     const stack = [];
     let idx = 0;
     let lastIdx = idx;
-    let mode = MODE.selector;
+    let mode = MODE.rule;
     let lastCh = 0;
     while (idx < end) {
         let ch = css.charCodeAt(idx++);
@@ -6301,23 +6302,71 @@ function scopeStylesheet(css, scopeId) {
         }
         const arcs = STATE_MACHINE[mode];
         for (let i = 0; i < arcs.length; i++) {
-            const [expectLastCh, expectCh, newMode] = arcs[i];
+            const arc = arcs[i];
+            const [expectLastCh, expectCh, newMode] = arc;
             if (expectLastCh === lastCh ||
                 expectLastCh === CHAR.ANY ||
-                (expectLastCh === CHAR.IDENT && isIdent(lastCh))) {
+                (expectLastCh === CHAR.IDENT && isIdent(lastCh)) ||
+                (expectLastCh === CHAR.WHITESPACE && isWhiteSpace(lastCh))) {
                 if (expectCh === ch ||
                     expectCh === CHAR.ANY ||
-                    (expectCh === CHAR.NOT_IDENT_AND_NOT_DOT && !isIdent(ch) && ch !== CHAR.DOT)) {
-                    if (newMode === MODE.EXIT) {
-                        mode = stack.pop() || MODE.selector;
-                    }
-                    else if (mode === newMode) {
-                        flush(idx - 1);
-                        out.push('.', ComponentStylesPrefixContent, scopeId);
-                    }
-                    else {
-                        stack.push(mode);
-                        mode = newMode;
+                    (expectCh === CHAR.IDENT && isIdent(ch)) ||
+                    (expectCh === CHAR.NOT_IDENT && !isIdent(ch) && ch !== CHAR.DOT) ||
+                    (expectCh === CHAR.WHITESPACE && isWhiteSpace(ch))) {
+                    if (arc.length == 3 || lookAhead(arc)) {
+                        // We found a match!
+                        if (newMode === MODE.EXIT || newMode == MODE.EXIT_INSERT_SCOPE) {
+                            if (newMode === MODE.EXIT_INSERT_SCOPE) {
+                                if (mode === MODE.starSelector && !isInGlobal()) {
+                                    // Replace `*` with the scoping elementClassIdSelector.
+                                    if (isChainedSelector(ch)) {
+                                        // *foo
+                                        flush(idx - 2);
+                                    }
+                                    else {
+                                        // * (by itself)
+                                        insertScopingSelector(idx - 2);
+                                    }
+                                    lastIdx++;
+                                }
+                                else {
+                                    if (!isChainedSelector(ch)) {
+                                        // We are exiting one of the Selector so we may need to
+                                        const offset = expectCh == CHAR.NOT_IDENT ? 1 : expectCh == CHAR.CLOSE_PARENTHESIS ? 2 : 0;
+                                        insertScopingSelector(idx - offset);
+                                    }
+                                }
+                            }
+                            if (expectCh === CHAR.NOT_IDENT) {
+                                // NOT_IDENT is not a real character more like lack of what we expected.
+                                // if pseudoGlobal we need to give it a chance to exit as well.
+                                // For this reason we need to reparse the last character again.
+                                idx--;
+                                ch = lastCh;
+                            }
+                            do {
+                                mode = stack.pop() || MODE.rule;
+                                if (mode === MODE.pseudoGlobal) {
+                                    // Skip over the `)` in `:global(...)`.
+                                    flush(idx - 1);
+                                    lastIdx++;
+                                }
+                            } while (isSelfClosingRule(mode));
+                        }
+                        else {
+                            stack.push(mode);
+                            if (mode === MODE.pseudoGlobal && newMode === MODE.rule) {
+                                flush(idx - 8); // `:global(`.length
+                                lastIdx = idx; // skip over ":global("
+                            }
+                            else if (newMode === MODE.pseudoElement) {
+                                // We are entering pseudoElement `::foo`; insert scoping in front of it.
+                                insertScopingSelector(idx - 2);
+                            }
+                            mode = newMode;
+                            ch == CHAR.SPACE; // Pretend not an identifier so that we don't flush again on elementClassIdSelector
+                        }
+                        break; // get out of the for loop as we found a match
                     }
                 }
             }
@@ -6330,70 +6379,242 @@ function scopeStylesheet(css, scopeId) {
         out.push(css.substring(lastIdx, idx));
         lastIdx = idx;
     }
+    function insertScopingSelector(idx) {
+        if (mode === MODE.pseudoGlobal || isInGlobal())
+            return;
+        flush(idx);
+        const separator = stack.length && stack[stack.length - 1] === MODE.atRuleSelector ? '-' : '.';
+        out.push(separator, ComponentStylesPrefixContent, scopeId);
+    }
+    function lookAhead(arc) {
+        words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
+            const txt = arc[arcIndx];
+            for (let i = 0; i < txt.length; i++) {
+                if ((css.charCodeAt(idx + i) | CHAR.LOWERCASE) !== txt.charCodeAt(i)) {
+                    continue words;
+                }
+            }
+            // we found a match;
+            idx += txt.length;
+            return true;
+        }
+        return false;
+    }
+    function isInGlobal() {
+        return stack.indexOf(MODE.pseudoGlobal) !== -1;
+    }
 }
 function isIdent(ch) {
     return ((ch >= CHAR._0 && ch <= CHAR._9) ||
         (ch >= CHAR.A && ch <= CHAR.Z) ||
         (ch >= CHAR.a && ch <= CHAR.z) ||
+        ch >= 0x80 ||
         ch === CHAR.UNDERSCORE ||
         ch === CHAR.DASH);
 }
+function isChainedSelector(ch) {
+    return (ch === CHAR.COLON ||
+        ch === CHAR.DOT ||
+        ch === CHAR.OPEN_BRACKET ||
+        ch === CHAR.HASH ||
+        isIdent(ch));
+}
+function isSelfClosingRule(mode) {
+    return (mode === MODE.atRuleBlock ||
+        mode === MODE.atRuleSelector ||
+        mode === MODE.atRuleInert ||
+        mode === MODE.pseudoGlobal);
+}
+function isWhiteSpace(ch) {
+    return ch === CHAR.SPACE || ch === CHAR.TAB || ch === CHAR.NEWLINE || ch === CHAR.CARRIAGE_RETURN;
+}
 var MODE;
 (function (MODE) {
-    MODE[MODE["selector"] = 0] = "selector";
-    MODE[MODE["media"] = 1] = "media";
-    MODE[MODE["body"] = 2] = "body";
-    MODE[MODE["stringSingle"] = 3] = "stringSingle";
-    MODE[MODE["stringDouble"] = 4] = "stringDouble";
-    MODE[MODE["commentMultiline"] = 5] = "commentMultiline";
-    MODE[MODE["EXIT"] = 6] = "EXIT";
+    MODE[MODE["rule"] = 0] = "rule";
+    MODE[MODE["elementClassIdSelector"] = 1] = "elementClassIdSelector";
+    MODE[MODE["starSelector"] = 2] = "starSelector";
+    MODE[MODE["pseudoClassWithSelector"] = 3] = "pseudoClassWithSelector";
+    MODE[MODE["pseudoClass"] = 4] = "pseudoClass";
+    MODE[MODE["pseudoGlobal"] = 5] = "pseudoGlobal";
+    MODE[MODE["pseudoElement"] = 6] = "pseudoElement";
+    MODE[MODE["attrSelector"] = 7] = "attrSelector";
+    MODE[MODE["inertParenthesis"] = 8] = "inertParenthesis";
+    MODE[MODE["inertBlock"] = 9] = "inertBlock";
+    MODE[MODE["atRuleSelector"] = 10] = "atRuleSelector";
+    MODE[MODE["atRuleBlock"] = 11] = "atRuleBlock";
+    MODE[MODE["atRuleInert"] = 12] = "atRuleInert";
+    MODE[MODE["body"] = 13] = "body";
+    MODE[MODE["stringSingle"] = 14] = "stringSingle";
+    MODE[MODE["stringDouble"] = 15] = "stringDouble";
+    MODE[MODE["commentMultiline"] = 16] = "commentMultiline";
+    // NOT REAL MODES
+    MODE[MODE["EXIT"] = 17] = "EXIT";
+    MODE[MODE["EXIT_INSERT_SCOPE"] = 18] = "EXIT_INSERT_SCOPE";
 })(MODE || (MODE = {}));
 var CHAR;
 (function (CHAR) {
     CHAR[CHAR["ANY"] = 0] = "ANY";
     CHAR[CHAR["IDENT"] = 1] = "IDENT";
-    CHAR[CHAR["NOT_IDENT_AND_NOT_DOT"] = 2] = "NOT_IDENT_AND_NOT_DOT";
+    CHAR[CHAR["NOT_IDENT"] = 2] = "NOT_IDENT";
+    CHAR[CHAR["WHITESPACE"] = 3] = "WHITESPACE";
+    CHAR[CHAR["TAB"] = 9] = "TAB";
+    CHAR[CHAR["NEWLINE"] = 10] = "NEWLINE";
+    CHAR[CHAR["CARRIAGE_RETURN"] = 13] = "CARRIAGE_RETURN";
     CHAR[CHAR["SPACE"] = 32] = "SPACE";
-    CHAR[CHAR["FORWARD_SLASH"] = 47] = "FORWARD_SLASH";
     CHAR[CHAR["DOUBLE_QUOTE"] = 34] = "DOUBLE_QUOTE";
+    CHAR[CHAR["HASH"] = 35] = "HASH";
     CHAR[CHAR["SINGLE_QUOTE"] = 39] = "SINGLE_QUOTE";
+    CHAR[CHAR["OPEN_PARENTHESIS"] = 40] = "OPEN_PARENTHESIS";
+    CHAR[CHAR["CLOSE_PARENTHESIS"] = 41] = "CLOSE_PARENTHESIS";
     CHAR[CHAR["STAR"] = 42] = "STAR";
+    CHAR[CHAR["COMMA"] = 44] = "COMMA";
     CHAR[CHAR["DASH"] = 45] = "DASH";
     CHAR[CHAR["DOT"] = 46] = "DOT";
+    CHAR[CHAR["FORWARD_SLASH"] = 47] = "FORWARD_SLASH";
+    CHAR[CHAR["_0"] = 48] = "_0";
+    CHAR[CHAR["_9"] = 57] = "_9";
+    CHAR[CHAR["COLON"] = 58] = "COLON";
+    CHAR[CHAR["SEMICOLON"] = 59] = "SEMICOLON";
+    CHAR[CHAR["LESS_THAN"] = 60] = "LESS_THAN";
     CHAR[CHAR["AT"] = 64] = "AT";
     CHAR[CHAR["A"] = 65] = "A";
     CHAR[CHAR["Z"] = 90] = "Z";
-    CHAR[CHAR["_0"] = 48] = "_0";
-    CHAR[CHAR["_9"] = 57] = "_9";
+    CHAR[CHAR["OPEN_BRACKET"] = 91] = "OPEN_BRACKET";
+    CHAR[CHAR["CLOSE_BRACKET"] = 93] = "CLOSE_BRACKET";
     CHAR[CHAR["BACKSLASH"] = 92] = "BACKSLASH";
     CHAR[CHAR["UNDERSCORE"] = 95] = "UNDERSCORE";
+    CHAR[CHAR["LOWERCASE"] = 32] = "LOWERCASE";
     CHAR[CHAR["a"] = 97] = "a";
+    CHAR[CHAR["d"] = 100] = "d";
+    CHAR[CHAR["g"] = 103] = "g";
+    CHAR[CHAR["h"] = 104] = "h";
+    CHAR[CHAR["i"] = 105] = "i";
+    CHAR[CHAR["l"] = 108] = "l";
+    CHAR[CHAR["t"] = 116] = "t";
     CHAR[CHAR["z"] = 122] = "z";
     CHAR[CHAR["OPEN_BRACE"] = 123] = "OPEN_BRACE";
     CHAR[CHAR["CLOSE_BRACE"] = 125] = "CLOSE_BRACE";
 })(CHAR || (CHAR = {}));
+const STRINGS_COMMENTS = [
+    [CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.stringSingle],
+    [CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.stringDouble],
+    [CHAR.ANY, CHAR.FORWARD_SLASH, MODE.commentMultiline, '*'],
+];
 const STATE_MACHINE = [
     [
-        [CHAR.IDENT, CHAR.NOT_IDENT_AND_NOT_DOT, MODE.selector],
-        [CHAR.ANY, CHAR.AT, MODE.media],
+        /// rule
+        [CHAR.ANY, CHAR.STAR, MODE.starSelector],
+        [CHAR.ANY, CHAR.OPEN_BRACKET, MODE.attrSelector],
+        [CHAR.ANY, CHAR.COLON, MODE.pseudoElement, ':'],
+        [CHAR.ANY, CHAR.COLON, MODE.pseudoGlobal, 'global'],
+        [
+            CHAR.ANY,
+            CHAR.COLON,
+            MODE.pseudoClassWithSelector,
+            'has',
+            'host-context',
+            'not',
+            'where',
+            'is',
+            'matches',
+            'any',
+        ],
+        [CHAR.ANY, CHAR.COLON, MODE.pseudoClass],
+        [CHAR.ANY, CHAR.IDENT, MODE.elementClassIdSelector],
+        [CHAR.ANY, CHAR.DOT, MODE.elementClassIdSelector],
+        [CHAR.ANY, CHAR.HASH, MODE.elementClassIdSelector],
+        [CHAR.ANY, CHAR.AT, MODE.atRuleSelector, 'keyframe'],
+        [CHAR.ANY, CHAR.AT, MODE.atRuleBlock, 'media', 'supports'],
+        [CHAR.ANY, CHAR.AT, MODE.atRuleInert],
         [CHAR.ANY, CHAR.OPEN_BRACE, MODE.body],
         [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
-    ] /*selector*/,
-    [
+        [CHAR.ANY, CHAR.SEMICOLON, MODE.EXIT],
         [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
-        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
-        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.selector],
-        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
-    ] /*media*/,
+        [CHAR.ANY, CHAR.CLOSE_PARENTHESIS, MODE.EXIT],
+        ...STRINGS_COMMENTS,
+    ],
     [
-        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        /// elementClassIdSelector
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// starSelector
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoClassWithSelector
+        [CHAR.ANY, CHAR.OPEN_PARENTHESIS, MODE.rule],
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoClass
+        [CHAR.ANY, CHAR.OPEN_PARENTHESIS, MODE.inertParenthesis],
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoGlobal
+        [CHAR.ANY, CHAR.OPEN_PARENTHESIS, MODE.rule],
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT],
+    ],
+    [
+        /// pseudoElement
+        [CHAR.ANY, CHAR.NOT_IDENT, MODE.EXIT],
+    ],
+    [
+        /// attrSelector
+        [CHAR.ANY, CHAR.CLOSE_BRACKET, MODE.EXIT_INSERT_SCOPE],
         [CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.stringSingle],
         [CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.stringDouble],
-        [CHAR.FORWARD_SLASH, CHAR.STAR, MODE.commentMultiline],
-    ] /*body*/,
-    [[CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.EXIT]] /*stringSingle*/,
-    [[CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.EXIT]] /*stringDouble*/,
-    [[CHAR.STAR, CHAR.FORWARD_SLASH, MODE.EXIT]] /*commentMultiline*/,
+    ],
+    [
+        /// inertParenthesis
+        [CHAR.ANY, CHAR.CLOSE_PARENTHESIS, MODE.EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// inertBlock
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleSelector
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        [CHAR.WHITESPACE, CHAR.IDENT, MODE.elementClassIdSelector],
+        [CHAR.ANY, CHAR.COLON, MODE.pseudoGlobal, 'global'],
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.body],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleBlock
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.rule],
+        [CHAR.ANY, CHAR.SEMICOLON, MODE.EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleInert
+        [CHAR.ANY, CHAR.SEMICOLON, MODE.EXIT],
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.inertBlock],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// body
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
+        [CHAR.ANY, CHAR.OPEN_BRACE, MODE.body],
+        [CHAR.ANY, CHAR.OPEN_PARENTHESIS, MODE.inertParenthesis],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// stringSingle
+        [CHAR.ANY, CHAR.SINGLE_QUOTE, MODE.EXIT],
+    ],
+    [
+        /// stringDouble
+        [CHAR.ANY, CHAR.DOUBLE_QUOTE, MODE.EXIT],
+    ],
+    [
+        /// commentMultiline
+        [CHAR.STAR, CHAR.FORWARD_SLASH, MODE.EXIT],
+    ],
 ];
 
 // <docs markdown="../readme.md#useStyles">
