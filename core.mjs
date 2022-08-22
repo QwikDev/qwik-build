@@ -6294,6 +6294,7 @@ function scopeStylesheet(css, scopeId) {
     let lastIdx = idx;
     let mode = MODE.rule;
     let lastCh = 0;
+    let lastMarkIdx = 0;
     while (idx < end) {
         let ch = css.charCodeAt(idx++);
         if (ch === CHAR.BACKSLASH) {
@@ -6314,8 +6315,16 @@ function scopeStylesheet(css, scopeId) {
                     (expectCh === CHAR.NOT_IDENT && !isIdent(ch) && ch !== CHAR.DOT) ||
                     (expectCh === CHAR.WHITESPACE && isWhiteSpace(ch))) {
                     if (arc.length == 3 || lookAhead(arc)) {
+                        if (arc.length > 3) {
+                            // If matched on lookAhead than we we have to update current `ch`
+                            ch = css.charCodeAt(idx - 1);
+                        }
                         // We found a match!
-                        if (newMode === MODE.EXIT || newMode == MODE.EXIT_INSERT_SCOPE) {
+                        if (newMode === MODE.MARK_INSERT_LOCATION) {
+                            lastMarkIdx = idx - 1;
+                            continue; // pretend no match.
+                        }
+                        else if (newMode === MODE.EXIT || newMode == MODE.EXIT_INSERT_SCOPE) {
                             if (newMode === MODE.EXIT_INSERT_SCOPE) {
                                 if (mode === MODE.starSelector && !isInGlobal()) {
                                     // Replace `*` with the scoping elementClassIdSelector.
@@ -6328,6 +6337,9 @@ function scopeStylesheet(css, scopeId) {
                                         insertScopingSelector(idx - 2);
                                     }
                                     lastIdx++;
+                                }
+                                else if (mode === MODE.animation) {
+                                    insertScopingSelector(lastMarkIdx);
                                 }
                                 else {
                                     if (!isChainedSelector(ch)) {
@@ -6383,19 +6395,30 @@ function scopeStylesheet(css, scopeId) {
         if (mode === MODE.pseudoGlobal || isInGlobal())
             return;
         flush(idx);
-        const separator = stack.length && stack[stack.length - 1] === MODE.atRuleSelector ? '-' : '.';
+        const parentMode = stack.length && stack[stack.length - 1];
+        const separator = parentMode === MODE.atRuleSelector || mode === MODE.animation ? '-' : '.';
         out.push(separator, ComponentStylesPrefixContent, scopeId);
     }
     function lookAhead(arc) {
+        let prefix = 0; // Ignore vendor prefixes such as `-webkit-`.
+        if (css.charCodeAt(idx) === CHAR.DASH) {
+            for (let i = 1; i < 10; i++) {
+                // give up after 10 characters
+                if (css.charCodeAt(idx + i) === CHAR.DASH) {
+                    prefix = i + 1;
+                    break;
+                }
+            }
+        }
         words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
             const txt = arc[arcIndx];
             for (let i = 0; i < txt.length; i++) {
-                if ((css.charCodeAt(idx + i) | CHAR.LOWERCASE) !== txt.charCodeAt(i)) {
+                if ((css.charCodeAt(idx + i + prefix) | CHAR.LOWERCASE) !== txt.charCodeAt(i)) {
                     continue words;
                 }
             }
             // we found a match;
-            idx += txt.length;
+            idx += txt.length + prefix;
             return true;
         }
         return false;
@@ -6447,9 +6470,11 @@ var MODE;
     MODE[MODE["stringSingle"] = 14] = "stringSingle";
     MODE[MODE["stringDouble"] = 15] = "stringDouble";
     MODE[MODE["commentMultiline"] = 16] = "commentMultiline";
+    MODE[MODE["animation"] = 17] = "animation";
     // NOT REAL MODES
-    MODE[MODE["EXIT"] = 17] = "EXIT";
-    MODE[MODE["EXIT_INSERT_SCOPE"] = 18] = "EXIT_INSERT_SCOPE";
+    MODE[MODE["EXIT"] = 18] = "EXIT";
+    MODE[MODE["EXIT_INSERT_SCOPE"] = 19] = "EXIT_INSERT_SCOPE";
+    MODE[MODE["MARK_INSERT_LOCATION"] = 20] = "MARK_INSERT_LOCATION";
 })(MODE || (MODE = {}));
 var CHAR;
 (function (CHAR) {
@@ -6601,6 +6626,7 @@ const STATE_MACHINE = [
         [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT],
         [CHAR.ANY, CHAR.OPEN_BRACE, MODE.body],
         [CHAR.ANY, CHAR.OPEN_PARENTHESIS, MODE.inertParenthesis],
+        [CHAR.ANY, CHAR.a, MODE.animation, 'nimation-name:', 'nimation:'],
         ...STRINGS_COMMENTS,
     ],
     [
@@ -6614,6 +6640,13 @@ const STATE_MACHINE = [
     [
         /// commentMultiline
         [CHAR.STAR, CHAR.FORWARD_SLASH, MODE.EXIT],
+    ],
+    [
+        /// animation
+        [CHAR.IDENT, CHAR.NOT_IDENT, MODE.MARK_INSERT_LOCATION],
+        [CHAR.ANY, CHAR.SEMICOLON, MODE.EXIT_INSERT_SCOPE],
+        [CHAR.ANY, CHAR.CLOSE_BRACE, MODE.EXIT_INSERT_SCOPE],
+        ...STRINGS_COMMENTS,
     ],
 ];
 
