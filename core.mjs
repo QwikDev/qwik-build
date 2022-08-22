@@ -1802,13 +1802,13 @@ const PROP_HANDLER_MAP = {
     [dangerouslySetInnerHTML]: setInnerHTML,
     innerHTML: noop,
 };
-const updateProperties$1 = (ctx, rctx, expectProps, isSvg) => {
+const updateProperties$1 = (elCtx, rctx, expectProps, isSvg) => {
     const keys = Object.keys(expectProps);
     if (keys.length === 0) {
         return false;
     }
-    let cache = ctx.$cache$;
-    const elm = ctx.$element$;
+    let cache = elCtx.$cache$;
+    const elm = elCtx.$element$;
     for (const key of keys) {
         if (key === 'children') {
             continue;
@@ -1821,7 +1821,7 @@ const updateProperties$1 = (ctx, rctx, expectProps, isSvg) => {
         // Early exit if value didnt change
         const cacheKey = key;
         if (!cache) {
-            cache = ctx.$cache$ = new Map();
+            cache = elCtx.$cache$ = new Map();
         }
         const oldValue = cache.get(cacheKey);
         if (newValue === oldValue) {
@@ -1834,7 +1834,7 @@ const updateProperties$1 = (ctx, rctx, expectProps, isSvg) => {
             continue;
         }
         if (isOnProp(key)) {
-            setEvent(ctx, key, newValue);
+            setEvent(elCtx, key, newValue);
             continue;
         }
         // Check if its an exception
@@ -1852,11 +1852,16 @@ const updateProperties$1 = (ctx, rctx, expectProps, isSvg) => {
         // Fallback to render attribute
         setAttribute(rctx, elm, key, newValue);
     }
-    if (ctx.$listeners$) {
-        ctx.$listeners$.forEach((value, key) => {
-            setAttribute(rctx, elm, fromCamelToKebabCase(key), serializeQRLs(value, ctx));
+    const cmp = rctx.$currentComponent$;
+    if (cmp && !cmp.$attachedListeners$) {
+        cmp.$attachedListeners$ = true;
+        cmp.$ctx$.$listeners$?.forEach((qrl, eventName) => {
+            addQRLListener(elCtx, eventName, qrl);
         });
     }
+    elCtx.$listeners$?.forEach((value, key) => {
+        setAttribute(rctx, elm, fromCamelToKebabCase(key), serializeQRLs(value, elCtx));
+    });
     return false;
 };
 const updateComponentProperties$1 = (ctx, rctx, expectProps) => {
