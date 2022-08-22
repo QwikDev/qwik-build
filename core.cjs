@@ -5896,24 +5896,6 @@
         }
     };
 
-    // <docs markdown="../readme.md#useDocument">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useDocument instead)
-    /**
-     * Retrieves the document of the current element. It's important to use this method instead of
-     * accessing `document` directly because during SSR, the global document might not exist.
-     *
-     * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
-     * any `await` statements.)
-     *
-     * @alpha
-     */
-    // </docs>
-    const useDocument = () => {
-        const ctx = useInvokeContext();
-        return ctx.$doc$;
-    };
-
     // <docs markdown="../readme.md#useStore">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useStore instead)
@@ -6835,7 +6817,6 @@
     exports.useClientEffectQrl = useClientEffectQrl;
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
-    exports.useDocument = useDocument;
     exports.useEnvData = useEnvData;
     exports.useLexicalScope = useLexicalScope;
     exports.useMount$ = useMount$;

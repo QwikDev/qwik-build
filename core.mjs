@@ -5884,24 +5884,6 @@ const escapeAttr = (s) => {
     }
 };
 
-// <docs markdown="../readme.md#useDocument">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useDocument instead)
-/**
- * Retrieves the document of the current element. It's important to use this method instead of
- * accessing `document` directly because during SSR, the global document might not exist.
- *
- * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
- * any `await` statements.)
- *
- * @alpha
- */
-// </docs>
-const useDocument = () => {
-    const ctx = useInvokeContext();
-    return ctx.$doc$;
-};
-
 // <docs markdown="../readme.md#useStore">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useStore instead)
@@ -6791,5 +6773,5 @@ const _useStyles = (styleQrl, transform, scoped) => {
     return styleId;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStreamBlock, SkipRerender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useDocument, useEnvData, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Resource, SSRComment, SSRStreamBlock, SkipRerender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

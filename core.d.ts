@@ -2763,17 +2763,6 @@ export declare const useContext: <STATE extends object>(context: Context<STATE>)
 export declare const useContextProvider: <STATE extends object>(context: Context<STATE>, newValue: STATE) => void;
 
 /**
- * Retrieves the document of the current element. It's important to use this method instead of
- * accessing `document` directly because during SSR, the global document might not exist.
- *
- * NOTE: `useDocument` method can only be used in the synchronous portion of the callback (before
- * any `await` statements.)
- *
- * @alpha
- */
-export declare const useDocument: () => Document;
-
-/**
  * @public
  */
 export declare interface UseEffectOptions {
