@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.101
+ * @builder.io/qwik 0.0.102
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -4106,6 +4106,10 @@
         },
         fill: undefined,
     };
+    const StringSerializer = {
+        test: () => false,
+        prepare: (data) => data,
+    };
     const serializers = [
         UndefinedSerializer,
         QRLSerializer,
@@ -4117,7 +4121,9 @@
         DateSerializer,
         ComponentSerializer,
         PureFunctionSerializer,
-        ErrorSerializer,
+        StringSerializer,
+        StringSerializer,
+        ErrorSerializer, // 12
     ];
     const canSerialize = (obj) => {
         for (const s of serializers) {
@@ -5236,7 +5242,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.101";
+    const version = "0.0.102";
 
     /**
      * Render JSX.
