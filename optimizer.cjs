@@ -1608,6 +1608,8 @@ globalThis.qwikOptimizer = function(module) {
         } else if ("client" === opts.target) {
           "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
+        } else {
+          "lib" === opts.target && (updatedViteConfig.build.minify = false);
         }
         return updatedViteConfig;
       },
