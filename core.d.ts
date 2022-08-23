@@ -862,6 +862,8 @@ export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes
     is?: string | undefined;
 }
 
+declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
+
 declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
@@ -907,7 +909,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
-    crossOrigin?: 'anonymous' | 'use-credentials' | '' | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     decoding?: 'async' | 'auto' | 'sync' | undefined;
     height?: number | string | undefined;
     loading?: 'eager' | 'lazy' | undefined;
@@ -969,7 +971,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     capture?: boolean | 'user' | 'environment' | undefined;
     checked?: boolean | undefined;
-    crossOrigin?: string | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     disabled?: boolean | undefined;
     enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
     form?: string | undefined;
@@ -1242,7 +1244,7 @@ declare interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     as?: string | undefined;
-    crossOrigin?: string | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     href?: string | undefined;
     hrefLang?: string | undefined;
     integrity?: string | undefined;
@@ -1269,7 +1271,7 @@ declare interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     autoPlay?: boolean | undefined;
     controls?: boolean | undefined;
     controlsList?: string | undefined;
-    crossOrigin?: string | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     loop?: boolean | undefined;
     mediaGroup?: string | undefined;
     muted?: boolean | undefined;
@@ -2054,7 +2056,7 @@ declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
     charSet?: string | undefined;
-    crossOrigin?: string | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     defer?: boolean | undefined;
     integrity?: string | undefined;
     noModule?: boolean | undefined;
@@ -2224,7 +2226,7 @@ declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     width?: number | string | undefined;
     role?: string | undefined;
     tabindex?: number | undefined;
-    crossOrigin?: 'anonymous' | 'use-credentials' | '' | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
     'accent-height'?: number | string | undefined;
     accumulate?: 'none' | 'sum' | undefined;
     additive?: 'replace' | 'sum' | undefined;
@@ -3355,7 +3357,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.102
+ * 0.0.103
  * @public
  */
 export declare const version: string;
