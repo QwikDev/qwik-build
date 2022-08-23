@@ -2817,30 +2817,35 @@ const _pauseFromContexts = async (elements, containerState) => {
         .filter(isNotNullable);
     // Serialize objects
     const convertedObjs = objs.map((obj) => {
-        const value = serializeValue(obj, getObjId, containerState);
-        if (value !== undefined) {
-            return value;
+        if (obj === null) {
+            return null;
         }
-        switch (typeof obj) {
-            case 'object':
-                if (obj === null) {
-                    return null;
-                }
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    Object.entries(obj).forEach(([key, value]) => {
-                        output[key] = mustGetObjId(value);
-                    });
-                    return output;
-                }
-                break;
+        const typeObj = typeof obj;
+        switch (typeObj) {
+            case 'undefined':
+                return UNDEFINED_PREFIX;
             case 'string':
             case 'number':
             case 'boolean':
                 return obj;
+            default:
+                const value = serializeValue(obj, getObjId, containerState);
+                if (value !== undefined) {
+                    return value;
+                }
+                if (typeObj === 'object') {
+                    if (isArray(obj)) {
+                        return obj.map(mustGetObjId);
+                    }
+                    if (isSerializableObject(obj)) {
+                        const output = {};
+                        Object.entries(obj).forEach(([key, value]) => {
+                            output[key] = mustGetObjId(value);
+                        });
+                        return output;
+                    }
+                }
+                break;
         }
         throw qError(QError_verifySerializable, obj);
     });
@@ -2977,7 +2982,7 @@ const reviveValues = (objs, subs, getObject, containerState, parser) => {
     for (let i = 0; i < objs.length; i++) {
         const value = objs[i];
         if (isString(value)) {
-            objs[i] = parser.prepare(value);
+            objs[i] = value === UNDEFINED_PREFIX ? undefined : parser.prepare(value);
         }
     }
     for (let i = 0; i < subs.length; i++) {
@@ -3966,11 +3971,22 @@ const parseResourceReturn = (data) => {
     return result;
 };
 
-const UndefinedSerializer = {
-    test: (obj) => obj === undefined,
-    prepare: () => undefined,
-};
+/**
+ * 0, 8, 9, A, B, C, D
+\0: null character (U+0000 NULL) (only if the next character is not a decimal digit; else it’s an octal escape sequence)
+\b: backspace (U+0008 BACKSPACE)
+\t: horizontal tab (U+0009 CHARACTER TABULATION)
+\n: line feed (U+000A LINE FEED)
+\v: vertical tab (U+000B LINE TABULATION)
+\f: form feed (U+000C FORM FEED)
+\r: carriage return (U+000D CARRIAGE RETURN)
+\": double quote (U+0022 QUOTATION MARK)
+\': single quote (U+0027 APOSTROPHE)
+\\: backslash (U+005C REVERSE SOLIDUS)
+ */
+const UNDEFINED_PREFIX = '\u0001';
 const QRLSerializer = {
+    prefix: '\u0002',
     test: (v) => isQrl(v),
     serialize: (obj, getObjId, containerState) => {
         return stringifyQRL(obj, {
@@ -3988,24 +4004,21 @@ const QRLSerializer = {
         }
     },
 };
-const ErrorSerializer = {
-    test: (v) => v instanceof Error,
-    serialize: (obj) => {
-        return obj.message;
-    },
-    prepare: (text) => {
-        const err = new Error(text);
-        err.stack = undefined;
-        return err;
-    },
-};
-const DocumentSerializer = {
-    test: (v) => isDocument(v),
-    prepare: (_, _c, doc) => {
-        return doc;
+const WatchSerializer = {
+    prefix: '\u0003',
+    test: (v) => isSubscriberDescriptor(v),
+    serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
+    prepare: (data) => parseWatch(data),
+    fill: (watch, getObject) => {
+        watch.$el$ = getObject(watch.$el$);
+        watch.$qrl$ = getObject(watch.$qrl$);
+        if (watch.$resource$) {
+            watch.$resource$ = getObject(watch.$resource$);
+        }
     },
 };
 const ResourceSerializer = {
+    prefix: '\u0004',
     test: (v) => isResourceReturn(v),
     serialize: (obj, getObjId) => {
         return serializeResource(obj, getObjId);
@@ -4026,29 +4039,20 @@ const ResourceSerializer = {
         }
     },
 };
-const WatchSerializer = {
-    test: (v) => isSubscriberDescriptor(v),
-    serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
-    prepare: (data) => parseWatch(data),
-    fill: (watch, getObject) => {
-        watch.$el$ = getObject(watch.$el$);
-        watch.$qrl$ = getObject(watch.$qrl$);
-        if (watch.$resource$) {
-            watch.$resource$ = getObject(watch.$resource$);
-        }
-    },
-};
 const URLSerializer = {
+    prefix: '\u0005',
     test: (v) => v instanceof URL,
     serialize: (obj) => obj.href,
     prepare: (data) => new URL(data),
 };
 const DateSerializer = {
+    prefix: '\u0006',
     test: (v) => v instanceof Date,
     serialize: (obj) => obj.toISOString(),
     prepare: (data) => new Date(data),
 };
 const RegexSerializer = {
+    prefix: '\u0007',
     test: (v) => v instanceof RegExp,
     serialize: (obj) => `${obj.flags} ${obj.source}`,
     prepare: (data) => {
@@ -4058,8 +4062,28 @@ const RegexSerializer = {
         return new RegExp(source, flags);
     },
 };
+const ErrorSerializer = {
+    prefix: '\u000E',
+    test: (v) => v instanceof Error,
+    serialize: (obj) => {
+        return obj.message;
+    },
+    prepare: (text) => {
+        const err = new Error(text);
+        err.stack = undefined;
+        return err;
+    },
+};
+const DocumentSerializer = {
+    prefix: '\u000F',
+    test: (v) => isDocument(v),
+    prepare: (_, _c, doc) => {
+        return doc;
+    },
+};
 const SERIALIZABLE_STATE = Symbol('serializable-data');
 const ComponentSerializer = {
+    prefix: '\u0010',
     test: (obj) => isQwikComponent(obj),
     serialize: (obj, getObjId, containerState) => {
         const [qrl] = obj[SERIALIZABLE_STATE];
@@ -4083,6 +4107,7 @@ const ComponentSerializer = {
     },
 };
 const PureFunctionSerializer = {
+    prefix: '\u0011',
     test: (obj) => typeof obj === 'function' && obj.__qwik_serializable__ !== undefined,
     serialize: (obj) => {
         return obj.toString();
@@ -4094,24 +4119,17 @@ const PureFunctionSerializer = {
     },
     fill: undefined,
 };
-const StringSerializer = {
-    test: () => false,
-    prepare: (data) => data,
-};
 const serializers = [
-    UndefinedSerializer,
     QRLSerializer,
-    DocumentSerializer,
-    ResourceSerializer,
     WatchSerializer,
+    ResourceSerializer,
     URLSerializer,
-    RegexSerializer,
     DateSerializer,
+    RegexSerializer,
+    ErrorSerializer,
+    DocumentSerializer,
     ComponentSerializer,
     PureFunctionSerializer,
-    StringSerializer,
-    StringSerializer,
-    ErrorSerializer, // 12
 ];
 const canSerialize = (obj) => {
     for (const s of serializers) {
@@ -4122,10 +4140,9 @@ const canSerialize = (obj) => {
     return false;
 };
 const serializeValue = (obj, getObjID, containerState) => {
-    for (let i = 0; i < serializers.length; i++) {
-        const s = serializers[i];
+    for (const s of serializers) {
         if (s.test(obj)) {
-            let value = String.fromCharCode(i);
+            let value = s.prefix;
             if (s.serialize) {
                 value += s.serialize(obj, getObjID, containerState);
             }
@@ -4138,9 +4155,8 @@ const createParser = (getObject, containerState, doc) => {
     const map = new Map();
     return {
         prepare(data) {
-            for (let i = 0; i < serializers.length; i++) {
-                const s = serializers[i];
-                const prefix = String.fromCodePoint(i);
+            for (const s of serializers) {
+                const prefix = s.prefix;
                 if (data.startsWith(prefix)) {
                     const value = s.prepare(data.slice(prefix.length), containerState, doc);
                     if (s.fill) {
