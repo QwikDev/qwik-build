@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.0.103
+ * @builder.io/qwik/optimizer 0.0.104
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -47,9 +47,9 @@ globalThis.qwikOptimizer = function(module) {
     versions: () => versions
   });
   module.exports = __toCommonJS(src_exports);
-  var qDev = false !== globalThis.qDev;
+  var qDev = true === globalThis.qDev;
   globalThis.qDynamicPlatform;
-  globalThis.describe;
+  globalThis.qTest;
   var isNode = value => value && "number" == typeof value.nodeType;
   var isElement = value => isNode(value) && 1 === value.nodeType;
   var Q_CTX = "__ctx__";
@@ -504,7 +504,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.103"
+    qwik: "0.0.104"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1595,6 +1595,12 @@ globalThis.qwikOptimizer = function(module) {
             }
           }
         };
+        if ("development" === buildMode) {
+          globalThis.qDev = true;
+          updatedViteConfig.define = {
+            "globalThis.qDev": true
+          };
+        }
         if ("ssr" === opts.target) {
           if ("serve" === viteCommand) {
             updatedViteConfig.ssr = {

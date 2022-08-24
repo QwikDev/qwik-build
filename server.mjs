@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 0.0.103
+ * @builder.io/qwik/server 0.0.104
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -41,7 +41,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.103",
+  qwik: "0.0.104",
   qwikDom: "2.1.18"
 };
 
@@ -447,6 +447,11 @@ function createSimpleDocument() {
   return doc;
 }
 
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev === true;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
@@ -547,10 +552,11 @@ async function renderToStream(rootNode, opts) {
       const snapshotTimer = createTimer();
       snapshotResult = await _pauseFromContexts(contexts, containerState);
       prefetchResources = getPrefetchResources(snapshotResult, opts, mapper);
+      const jsonData = JSON.stringify(snapshotResult.state, void 0, qDev ? "  " : void 0);
       const children = [
         jsx2("script", {
           type: "qwik/json",
-          dangerouslySetInnerHTML: escapeText(JSON.stringify(snapshotResult.state))
+          dangerouslySetInnerHTML: escapeText(jsonData)
         })
       ];
       if (prefetchResources.length > 0) {

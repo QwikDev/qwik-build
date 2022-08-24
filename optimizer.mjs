@@ -1,15 +1,15 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.0.103
+ * @builder.io/qwik/optimizer 0.0.104
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-var qDev = false !== globalThis.qDev;
+var qDev = true === globalThis.qDev;
 
 var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
 
-var qTest = !!globalThis.describe;
+var qTest = true === globalThis.qTest;
 
 var isNode = value => value && "number" == typeof value.nodeType;
 
@@ -474,7 +474,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.103"
+  qwik: "0.0.104"
 };
 
 async function getSystem() {
@@ -1561,6 +1561,12 @@ function qwikVite(qwikViteOpts = {}) {
           }
         }
       };
+      if ("development" === buildMode) {
+        globalThis.qDev = true;
+        updatedViteConfig.define = {
+          "globalThis.qDev": true
+        };
+      }
       if ("ssr" === opts.target) {
         if ("serve" === viteCommand) {
           updatedViteConfig.ssr = {

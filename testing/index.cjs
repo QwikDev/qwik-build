@@ -1,7 +1,7 @@
 "use strict";
 /**
  * @license
- * @builder.io/qwik/testing 0.0.103
+ * @builder.io/qwik/testing 0.0.104
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -20558,9 +20558,9 @@ var isObject = (v) => {
 };
 
 // packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev !== false;
+var qDev = globalThis.qDev === true;
 var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-var qTest = !!globalThis.describe;
+var qTest = globalThis.qTest === true;
 
 // packages/qwik/src/core/util/dom.ts
 var getDocument = (node) => {

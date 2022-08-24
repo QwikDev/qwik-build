@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.103
+ * @builder.io/qwik 0.0.104
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -19,9 +19,9 @@
 
     // minification can replace the `globalThis.qDev` with `false`
     // which will remove all dev code within from the build
-    const qDev = true;
+    const qDev = globalThis.qDev === true;
     const qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-    const qTest = !!globalThis.describe;
+    const qTest = globalThis.qTest === true;
 
     const EMPTY_ARRAY = [];
     const EMPTY_OBJ = {};
@@ -187,17 +187,17 @@
         return container;
     };
 
-    const isNode = (value) => {
+    const isNode$1 = (value) => {
         return value && typeof value.nodeType == 'number';
     };
     const isDocument = (value) => {
         return value && value.nodeType === 9;
     };
-    const isElement = (value) => {
-        return isNode(value) && value.nodeType === 1;
+    const isElement$1 = (value) => {
+        return isNode$1(value) && value.nodeType === 1;
     };
     const isQwikElement = (value) => {
-        return isNode(value) && (value.nodeType === 1 || value.nodeType === 111);
+        return isNode$1(value) && (value.nodeType === 1 || value.nodeType === 111);
     };
     const isVirtualElement = (value) => {
         return isObject(value) && value.nodeType === 111;
@@ -423,6 +423,23 @@
     };
     const ensureQrl = (value) => {
         return isQrl(value) ? value : $(value);
+    };
+    const getDomListeners = (el) => {
+        const attributes = el.attributes;
+        const listeners = new Map();
+        for (let i = 0; i < attributes.length; i++) {
+            const { name, value } = attributes.item(i);
+            if (name.startsWith('on:') ||
+                name.startsWith('on-window:') ||
+                name.startsWith('on-document:')) {
+                let array = listeners.get(name);
+                if (!array) {
+                    listeners.set(name, (array = []));
+                }
+                array.push(parseQRL(value, el));
+            }
+        }
+        return listeners;
     };
 
     const useSequentialScope = () => {
@@ -1126,7 +1143,7 @@
         };
         const querySelector = (query) => {
             for (const el of virtual.childNodes) {
-                if (isElement(el)) {
+                if (isElement$1(el)) {
                     if (el.matches(query)) {
                         return el;
                     }
@@ -1892,10 +1909,6 @@
     };
     const setEvent = (ctx, prop, value) => {
         assertTrue(prop.endsWith('$'), 'render: event property does not end with $', prop);
-        // TODO
-        // if (!ctx.$listeners$) {
-        //   ctx.$listeners$ = getDomListeners(ctx.$element$);
-        // }
         addQRLListener(ctx, normalizeOnProp(prop.slice(0, -1)), value);
     };
     const setAttribute = (ctx, el, prop, value) => {
@@ -2596,7 +2609,9 @@
             const contexts = ctxMeta.c;
             const watches = ctxMeta.w;
             if (qobj) {
+                assertTrue(isElement$1(el), 'el must be an actual DOM element');
                 ctx.$refMap$.push(...qobj.split(' ').map((part) => getObject(part)));
+                ctx.$listeners$ = getDomListeners(el);
             }
             if (seq) {
                 ctx.$seq$ = seq.split(' ').map((part) => getObject(part));
@@ -2639,13 +2654,14 @@
         const collector = createCollector(containerState);
         const listeners = [];
         for (const ctx of elements) {
-            if (ctx.$listeners$) {
+            const el = ctx.$element$;
+            if (ctx.$listeners$ && isElement$1(el)) {
                 ctx.$listeners$.forEach((qrls, key) => {
                     qrls.forEach((qrl) => {
                         listeners.push({
                             key,
                             qrl,
-                            el: ctx.$element$,
+                            el,
                         });
                     });
                 });
@@ -3204,7 +3220,7 @@
                 }
                 const target = getProxyTarget(obj);
                 // Handle dom nodes
-                if (!target && isNode(obj)) {
+                if (!target && isNode$1(obj)) {
                     if (isDocument(obj)) {
                         collector.$objMap$.set(obj, obj);
                     }
@@ -3249,7 +3265,7 @@
         collector.$objMap$.set(obj, obj);
     };
     const isContainer = (el) => {
-        return isElement(el) && el.hasAttribute(QContainerAttr);
+        return isElement$1(el) && el.hasAttribute(QContainerAttr);
     };
     const hasQId = (el) => {
         const node = processVirtualNodes(el);
@@ -3895,22 +3911,22 @@
         const isBrowser = !qDev || !useIsServer();
         if (isBrowser) {
             if (props.onRejected) {
-                props.resource.promise.catch(() => { });
-                if (props.resource.state === 'rejected') {
-                    return props.onRejected(props.resource.error);
+                props.value.promise.catch(() => { });
+                if (props.value.state === 'rejected') {
+                    return props.onRejected(props.value.error);
                 }
             }
             if (props.onPending) {
-                const state = props.resource.state;
+                const state = props.value.state;
                 if (state === 'pending') {
                     return props.onPending();
                 }
                 else if (state === 'resolved') {
-                    return props.onResolved(props.resource.resolved);
+                    return props.onResolved(props.value.resolved);
                 }
             }
         }
-        const promise = props.resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+        const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
         // if (isServer) {
         //   const onPending = props.onPending;
         //   if (props.ssrWait && onPending) {
@@ -4315,7 +4331,7 @@
                 // already a proxy return;
                 return value;
             }
-            if (isNode(nakedValue)) {
+            if (isNode$1(nakedValue)) {
                 return value;
             }
             if (!shouldSerialize(nakedValue)) {
@@ -4636,7 +4652,7 @@
     const printParams = (optionalParams) => {
         if (qDev) {
             return optionalParams.map((p) => {
-                if (isElement(p)) {
+                if (isElement$1(p)) {
                     return printElement(p);
                 }
                 return p;
@@ -4823,6 +4839,13 @@
         }
     }
 
+    function isElement(value) {
+        return isNode(value) && value.nodeType == 1;
+    }
+    function isNode(value) {
+        return value && typeof value.nodeType == 'number';
+    }
+
     let runtimeSymbolId = 0;
     const RUNTIME_QRL = '/runtimeQRL';
     const INLINED_QRL = '/inlinedQRL';
@@ -4950,11 +4973,12 @@
         }
         return qrlString;
     };
-    const serializeQRLs = (existingQRLs, ctx) => {
+    const serializeQRLs = (existingQRLs, elCtx) => {
+        assertTrue(isElement(elCtx.$element$), 'Element must be an actual element');
         const opts = {
-            $platform$: getPlatform(ctx.$element$),
-            $element$: ctx.$element$,
-            $addRefMap$: (obj) => addToArray(ctx.$refMap$, obj),
+            $platform$: getPlatform(elCtx.$element$),
+            $element$: elCtx.$element$,
+            $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
         };
         return existingQRLs.map((qrl) => stringifyQRL(qrl, opts)).join('\n');
     };
@@ -5258,7 +5282,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.103";
+    const version = "0.0.104";
 
     /**
      * Render JSX.
@@ -5310,8 +5334,9 @@
         return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     };
     const injectQContainer = (containerEl) => {
-        directSetAttribute(containerEl, 'q:version', version || '');
+        directSetAttribute(containerEl, 'q:version', version ?? 'dev');
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
+        directSetAttribute(containerEl, 'q:render', qDev ? 'dom-dev' : 'dom');
     };
 
     const IS_HEAD = 1 << 0;
@@ -5339,7 +5364,7 @@
             ...opts.containerAttributes,
             'q:container': 'paused',
             'q:version': version ?? 'dev',
-            'q:render': 'ssr',
+            'q:render': qDev ? 'ssr-dev' : 'ssr',
         };
         if (opts.base) {
             containerAttributes['q:base'] = opts.base;

@@ -2017,7 +2017,7 @@ export declare interface ResourcePending<T> {
  * @public
  */
 export declare interface ResourceProps<T> {
-    resource: ResourceReturn<T>;
+    value: ResourceReturn<T>;
     onResolved: (value: T) => JSXNode;
     onPending?: () => JSXNode;
     onRejected?: (reason: any) => JSXNode;
@@ -3357,7 +3357,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.103
+ * 0.0.104
  * @public
  */
 export declare const version: string;
