@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.104
+ * @builder.io/qwik 0.0.105
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2219,7 +2219,7 @@
      * @public
      */
     const notifyRender = (hostElement, containerState) => {
-        const isServer = qDev && !qTest && containerState.$platform$.isServer;
+        const isServer = qDynamicPlatform && !qTest && containerState.$platform$.isServer;
         if (!isServer) {
             resumeIfNeeded(containerState.$containerEl$);
         }
@@ -5282,7 +5282,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.104";
+    const version = "0.0.105";
 
     /**
      * Render JSX.
