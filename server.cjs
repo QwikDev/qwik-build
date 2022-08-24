@@ -1,4 +1,3 @@
-"use strict";
 /**
  * @license
  * @builder.io/qwik/server 0.0.104
@@ -32,6 +31,7 @@ if (typeof require !== 'function' && typeof location !== 'undefined' && typeof n
     throw new Error('Unable to require() path "' + path + '" from a browser environment.');
   };
 }
+"use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -616,10 +616,12 @@ async function renderToStream(rootNode, opts) {
           events: (_b2 = opts.qwikLoader) == null ? void 0 : _b2.events,
           debug: opts.debug
         });
-        children.push((0, import_qwik3.jsx)("script", {
-          id: "qwikloader",
-          dangerouslySetInnerHTML: qwikLoaderScript
-        }));
+        children.push(
+          (0, import_qwik3.jsx)("script", {
+            id: "qwikloader",
+            dangerouslySetInnerHTML: qwikLoaderScript
+          })
+        );
       }
       snapshotTime = snapshotTimer();
       return (0, import_qwik3.jsx)(import_qwik3.Fragment, { children });

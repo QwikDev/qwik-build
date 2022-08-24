@@ -22,7 +22,10 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 
 // node_modules/@builder.io/qwik-dom/lib/Event.js
 var require_Event = __commonJS({
@@ -501,7 +504,9 @@ var require_EventTarget = __commonJS({
             } else {
               var f = handler.handleEvent;
               if (typeof f !== "function")
-                throw new TypeError("handleEvent property of event handler object isnot a function.");
+                throw new TypeError(
+                  "handleEvent property of event handler object isnot a function."
+                );
               rv = f.call(handler, event2);
             }
             switch (event2.type) {
@@ -601,7 +606,23 @@ var require_EventTarget = __commonJS({
           activated._pre_click_activation_steps();
         }
         var click = this.ownerDocument.createEvent("MouseEvent");
-        click.initMouseEvent("click", true, true, this.ownerDocument.defaultView, 1, event.screenX, event.screenY, event.clientX, event.clientY, event.ctrlKey, event.altKey, event.shiftKey, event.metaKey, event.button, null);
+        click.initMouseEvent(
+          "click",
+          true,
+          true,
+          this.ownerDocument.defaultView,
+          1,
+          event.screenX,
+          event.screenY,
+          event.clientX,
+          event.clientY,
+          event.ctrlKey,
+          event.altKey,
+          event.shiftKey,
+          event.metaKey,
+          event.button,
+          null
+        );
         var result = this._dispatchEvent(click, true);
         if (activated) {
           if (result) {
@@ -2225,9 +2246,13 @@ var require_select = __commonJS({
         return !prev(el) && !next(el) && parentIsElement(el);
       },
       ":nth-child": function(param, last) {
-        return nth(param, function() {
-          return true;
-        }, last);
+        return nth(
+          param,
+          function() {
+            return true;
+          },
+          last
+        );
       },
       ":nth-last-child": function(param) {
         return selectors[":nth-child"](param, true);
@@ -2268,9 +2293,13 @@ var require_select = __commonJS({
         return selectors[":first-of-type"](el) && selectors[":last-of-type"](el);
       },
       ":nth-of-type": function(param, last) {
-        return nth(param, function(rel, el) {
-          return rel.nodeName === el.nodeName;
-        }, last);
+        return nth(
+          param,
+          function(rel, el) {
+            return rel.nodeName === el.nodeName;
+          },
+          last
+        );
       },
       ":nth-last-of-type": function(param) {
         return selectors[":nth-of-type"](param, true);
@@ -3123,7 +3152,10 @@ var require_Element = __commonJS({
           if (!(context instanceof Element) || context.ownerDocument.isHTML && context.localName === "html" && context.namespaceURI === NAMESPACE.HTML) {
             context = context.ownerDocument.createElementNS(NAMESPACE.HTML, "body");
           }
-          var parser = this.ownerDocument.implementation.mozHTMLParser(this.ownerDocument._address, context);
+          var parser = this.ownerDocument.implementation.mozHTMLParser(
+            this.ownerDocument._address,
+            context
+          );
           parser.parse(text, true);
           this._insertAdjacent(position, parser._asDocumentFragment());
         }
@@ -3254,7 +3286,10 @@ var require_Element = __commonJS({
         value: function clone() {
           var e;
           if (this.namespaceURI !== NAMESPACE.HTML || this.prefix || !this.ownerDocument.isHTML) {
-            e = this.ownerDocument.createElementNS(this.namespaceURI, this.prefix !== null ? this.prefix + ":" + this.localName : this.localName);
+            e = this.ownerDocument.createElementNS(
+              this.namespaceURI,
+              this.prefix !== null ? this.prefix + ":" + this.localName : this.localName
+            );
           } else {
             e = this.ownerDocument.createElement(this.localName);
           }
@@ -3695,11 +3730,14 @@ var require_Element = __commonJS({
           if (this._classList) {
             return this._classList;
           }
-          var dtlist = new DOMTokenList(function() {
-            return self2.className || "";
-          }, function(v) {
-            self2.className = v;
-          });
+          var dtlist = new DOMTokenList(
+            function() {
+              return self2.className || "";
+            },
+            function(v) {
+              self2.className = v;
+            }
+          );
           this._classList = dtlist;
           return dtlist;
         },
@@ -4270,7 +4308,10 @@ var require_DocumentFragment = __commonJS({
           var context = Object.create(this);
           context.isHTML = true;
           context.getElementsByTagName = Element.prototype.getElementsByTagName;
-          context.nextElement = Object.getOwnPropertyDescriptor(Element.prototype, "firstElementChild").get;
+          context.nextElement = Object.getOwnPropertyDescriptor(
+            Element.prototype,
+            "firstElementChild"
+          ).get;
           var nodes = select(selector, context);
           return nodes.item ? nodes : new NodeList(nodes);
         }
@@ -5186,7 +5227,9 @@ var require_cssparser = __commonJS({
             if (c) {
               buffer += c;
             } else {
-              throw new Error('Expected "' + pattern + '" at line ' + this._line + ", col " + this._col + ".");
+              throw new Error(
+                'Expected "' + pattern + '" at line ' + this._line + ", col " + this._col + "."
+              );
             }
           }
           return buffer;
@@ -5296,7 +5339,11 @@ var require_cssparser = __commonJS({
           }
           if (!this.match.apply(this, arguments)) {
             token = this.LT(1);
-            throw new SyntaxError2("Expected " + this._tokenData[tokenTypes[0]].name + " at line " + token.startLine + ", col " + token.startCol + ".", token.startLine, token.startCol);
+            throw new SyntaxError2(
+              "Expected " + this._tokenData[tokenTypes[0]].name + " at line " + token.startLine + ", col " + token.startCol + ".",
+              token.startLine,
+              token.startCol
+            );
           }
         },
         advance: function(tokenTypes, channel) {
@@ -5603,14 +5650,26 @@ var require_cssparser = __commonJS({
       Combinator.prototype = new SyntaxUnit();
       Combinator.prototype.constructor = Combinator;
       function MediaFeature(name, value) {
-        SyntaxUnit.call(this, "(" + name + (value !== null ? ":" + value : "") + ")", name.startLine, name.startCol, Parser.MEDIA_FEATURE_TYPE);
+        SyntaxUnit.call(
+          this,
+          "(" + name + (value !== null ? ":" + value : "") + ")",
+          name.startLine,
+          name.startCol,
+          Parser.MEDIA_FEATURE_TYPE
+        );
         this.name = name;
         this.value = value;
       }
       MediaFeature.prototype = new SyntaxUnit();
       MediaFeature.prototype.constructor = MediaFeature;
       function MediaQuery(modifier, mediaType, features, line, col) {
-        SyntaxUnit.call(this, (modifier ? modifier + " " : "") + (mediaType ? mediaType : "") + (mediaType && features.length > 0 ? " and " : "") + features.join(" and "), line, col, Parser.MEDIA_QUERY_TYPE);
+        SyntaxUnit.call(
+          this,
+          (modifier ? modifier + " " : "") + (mediaType ? mediaType : "") + (mediaType && features.length > 0 ? " and " : "") + features.join(" and "),
+          line,
+          col,
+          Parser.MEDIA_QUERY_TYPE
+        );
         this.modifier = modifier;
         this.mediaType = mediaType;
         this.features = features;
@@ -5706,7 +5765,11 @@ var require_cssparser = __commonJS({
                         count--;
                       }
                     } else {
-                      throw new SyntaxError2("Unknown @ rule.", tokenStream.LT(0).startLine, tokenStream.LT(0).startCol);
+                      throw new SyntaxError2(
+                        "Unknown @ rule.",
+                        tokenStream.LT(0).startLine,
+                        tokenStream.LT(0).startCol
+                      );
                     }
                     break;
                   case Tokens.S:
@@ -5718,15 +5781,27 @@ var require_cssparser = __commonJS({
                         case Tokens.CHARSET_SYM:
                           token = tokenStream.LT(1);
                           this._charset(false);
-                          throw new SyntaxError2("@charset not allowed here.", token.startLine, token.startCol);
+                          throw new SyntaxError2(
+                            "@charset not allowed here.",
+                            token.startLine,
+                            token.startCol
+                          );
                         case Tokens.IMPORT_SYM:
                           token = tokenStream.LT(1);
                           this._import(false);
-                          throw new SyntaxError2("@import not allowed here.", token.startLine, token.startCol);
+                          throw new SyntaxError2(
+                            "@import not allowed here.",
+                            token.startLine,
+                            token.startCol
+                          );
                         case Tokens.NAMESPACE_SYM:
                           token = tokenStream.LT(1);
                           this._namespace(false);
-                          throw new SyntaxError2("@namespace not allowed here.", token.startLine, token.startCol);
+                          throw new SyntaxError2(
+                            "@namespace not allowed here.",
+                            token.startLine,
+                            token.startCol
+                          );
                         default:
                           tokenStream.get();
                           this._unexpectedToken(tokenStream.token());
@@ -5921,7 +5996,10 @@ var require_cssparser = __commonJS({
             }
             tokenStream.mustMatch(Tokens.RPAREN);
             this._readWhitespace();
-            return new MediaFeature(feature, expression ? new SyntaxUnit(expression, token.startLine, token.startCol) : null);
+            return new MediaFeature(
+              feature,
+              expression ? new SyntaxUnit(expression, token.startLine, token.startCol) : null
+            );
           },
           _media_feature: function() {
             var tokenStream = this._tokenStream;
@@ -6147,7 +6225,12 @@ var require_cssparser = __commonJS({
                 hack = "_";
                 tokenValue = tokenValue.substring(1);
               }
-              value = new PropertyName(tokenValue, hack, line || token.startLine, col || token.startCol);
+              value = new PropertyName(
+                tokenValue,
+                hack,
+                line || token.startLine,
+                col || token.startCol
+              );
               this._readWhitespace();
             }
             return value;
@@ -6228,7 +6311,11 @@ var require_cssparser = __commonJS({
                 }
               } else {
                 if (this._readWhitespace()) {
-                  ws = new Combinator(tokenStream.token().value, tokenStream.token().startLine, tokenStream.token().startCol);
+                  ws = new Combinator(
+                    tokenStream.token().value,
+                    tokenStream.token().startLine,
+                    tokenStream.token().startCol
+                  );
                   combinator = this._combinator();
                   nextSelector = this._simple_selector_sequence();
                   if (nextSelector === null) {
@@ -6253,7 +6340,12 @@ var require_cssparser = __commonJS({
           _simple_selector_sequence: function() {
             var tokenStream = this._tokenStream, elementName = null, modifiers = [], selectorText = "", components = [
               function() {
-                return tokenStream.match(Tokens.HASH) ? new SelectorSubPart(tokenStream.token().value, "id", tokenStream.token().startLine, tokenStream.token().startCol) : null;
+                return tokenStream.match(Tokens.HASH) ? new SelectorSubPart(
+                  tokenStream.token().value,
+                  "id",
+                  tokenStream.token().startLine,
+                  tokenStream.token().startCol
+                ) : null;
               },
               this._class,
               this._attrib,
@@ -6314,7 +6406,12 @@ var require_cssparser = __commonJS({
             if (tokenStream.match(Tokens.DOT)) {
               tokenStream.mustMatch(Tokens.IDENT);
               token = tokenStream.token();
-              return new SelectorSubPart("." + token.value, "class", token.startLine, token.startCol - 1);
+              return new SelectorSubPart(
+                "." + token.value,
+                "class",
+                token.startLine,
+                token.startCol - 1
+              );
             } else {
               return null;
             }
@@ -6458,7 +6555,12 @@ var require_cssparser = __commonJS({
               this._type_selector,
               this._universal,
               function() {
-                return tokenStream.match(Tokens.HASH) ? new SelectorSubPart(tokenStream.token().value, "id", tokenStream.token().startLine, tokenStream.token().startCol) : null;
+                return tokenStream.match(Tokens.HASH) ? new SelectorSubPart(
+                  tokenStream.token().value,
+                  "id",
+                  tokenStream.token().startLine,
+                  tokenStream.token().startCol
+                ) : null;
               },
               this._class,
               this._attrib,
@@ -6672,7 +6774,11 @@ var require_cssparser = __commonJS({
               token = tokenStream.token();
               color = token.value;
               if (!/#[a-f0-9]{3,6}/i.test(color)) {
-                throw new SyntaxError2("Expected a hex color but found '" + color + "' at line " + token.startLine + ", col " + token.startCol + ".", token.startLine, token.startCol);
+                throw new SyntaxError2(
+                  "Expected a hex color but found '" + color + "' at line " + token.startLine + ", col " + token.startCol + ".",
+                  token.startLine,
+                  token.startCol
+                );
               }
               this._readWhitespace();
             }
@@ -6811,7 +6917,11 @@ var require_cssparser = __commonJS({
             return ws;
           },
           _unexpectedToken: function(token) {
-            throw new SyntaxError2("Unexpected token '" + token.value + "' at line " + token.startLine + ", col " + token.startCol + ".", token.startLine, token.startCol);
+            throw new SyntaxError2(
+              "Unexpected token '" + token.value + "' at line " + token.startLine + ", col " + token.startCol + ".",
+              token.startLine,
+              token.startCol
+            );
           },
           _verifyEnd: function() {
             if (this._tokenStream.LA(1) !== Tokens.EOF) {
@@ -6933,9 +7043,17 @@ var require_cssparser = __commonJS({
           if (expression.hasNext()) {
             part = expression.next();
             if (valid) {
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
-              throw new ValidationError("Expected (<'azimuth'>) but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected (<'azimuth'>) but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             }
           }
         },
@@ -6990,9 +7108,17 @@ var require_cssparser = __commonJS({
           if (expression.hasNext()) {
             part = expression.next();
             if (valid) {
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
-              throw new ValidationError("Expected ([<number> | <percentage>]{1,4} && fill?) but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected ([<number> | <percentage>]{1,4} && fill?) but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             }
           }
         },
@@ -7020,9 +7146,17 @@ var require_cssparser = __commonJS({
           if (expression.hasNext()) {
             part = expression.next();
             if (valid) {
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
-              throw new ValidationError("Expected (<'border-radius'>) but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected (<'border-radius'>) but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             }
           }
         },
@@ -7067,7 +7201,11 @@ var require_cssparser = __commonJS({
           } else {
             if (expression.hasNext()) {
               part = expression.next();
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             }
           }
         },
@@ -7916,7 +8054,9 @@ var require_cssparser = __commonJS({
           if (isIdentStart(c)) {
             ident = this.readName(reader.read());
             value += ident;
-            if (/^em$|^ex$|^px$|^gd$|^rem$|^vw$|^vh$|^vmax$|^vmin$|^ch$|^cm$|^mm$|^in$|^pt$|^pc$/i.test(ident)) {
+            if (/^em$|^ex$|^px$|^gd$|^rem$|^vw$|^vh$|^vmax$|^vmin$|^ch$|^cm$|^mm$|^in$|^pt$|^pc$/i.test(
+              ident
+            )) {
               tt = Tokens.LENGTH;
             } else if (/^deg|^rad$|^grad$/i.test(ident)) {
               tt = Tokens.ANGLE;
@@ -8279,7 +8419,11 @@ var require_cssparser = __commonJS({
           var name = property.toString().toLowerCase(), expression = new PropertyValueIterator(value), spec = Properties[name];
           if (!spec) {
             if (name.indexOf("-") !== 0) {
-              throw new ValidationError("Unknown property '" + property + "'.", property.line, property.col);
+              throw new ValidationError(
+                "Unknown property '" + property + "'.",
+                property.line,
+                property.col
+              );
             }
           } else if (typeof spec !== "number") {
             if (typeof spec === "string") {
@@ -8307,13 +8451,25 @@ var require_cssparser = __commonJS({
           if (!result) {
             if (expression.hasNext() && !expression.isFirst()) {
               part = expression.peek();
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
-              throw new ValidationError("Expected (" + types + ") but found '" + value + "'.", value.line, value.col);
+              throw new ValidationError(
+                "Expected (" + types + ") but found '" + value + "'.",
+                value.line,
+                value.col
+              );
             }
           } else if (expression.hasNext()) {
             part = expression.next();
-            throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+            throw new ValidationError(
+              "Expected end of value but found '" + part + "'.",
+              part.line,
+              part.col
+            );
           }
         },
         multiProperty: function(types, expression, comma, max) {
@@ -8337,18 +8493,34 @@ var require_cssparser = __commonJS({
           if (!result) {
             if (expression.hasNext() && !expression.isFirst()) {
               part = expression.peek();
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
               part = expression.previous();
               if (comma && String(part) === ",") {
-                throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+                throw new ValidationError(
+                  "Expected end of value but found '" + part + "'.",
+                  part.line,
+                  part.col
+                );
               } else {
-                throw new ValidationError("Expected (" + types + ") but found '" + value + "'.", value.line, value.col);
+                throw new ValidationError(
+                  "Expected (" + types + ") but found '" + value + "'.",
+                  value.line,
+                  value.col
+                );
               }
             }
           } else if (expression.hasNext()) {
             part = expression.next();
-            throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+            throw new ValidationError(
+              "Expected end of value but found '" + part + "'.",
+              part.line,
+              part.col
+            );
           }
         },
         groupProperty: function(types, expression, comma) {
@@ -8373,13 +8545,25 @@ var require_cssparser = __commonJS({
           if (!result) {
             if (partial && expression.hasNext()) {
               part = expression.peek();
-              throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected end of value but found '" + part + "'.",
+                part.line,
+                part.col
+              );
             } else {
-              throw new ValidationError("Expected (" + types + ") but found '" + value + "'.", value.line, value.col);
+              throw new ValidationError(
+                "Expected (" + types + ") but found '" + value + "'.",
+                value.line,
+                value.col
+              );
             }
           } else if (expression.hasNext()) {
             part = expression.next();
-            throw new ValidationError("Expected end of value but found '" + part + "'.", part.line, part.col);
+            throw new ValidationError(
+              "Expected end of value but found '" + part + "'.",
+              part.line,
+              part.col
+            );
           }
         }
       };
@@ -8439,7 +8623,10 @@ var require_cssparser = __commonJS({
         simple: {
           __proto__: null,
           "<absolute-size>": function(part) {
-            return ValidationTypes.isLiteral(part, "xx-small | x-small | small | medium | large | x-large | xx-large");
+            return ValidationTypes.isLiteral(
+              part,
+              "xx-small | x-small | small | medium | large | x-large | xx-large"
+            );
           },
           "<attachment>": function(part) {
             return ValidationTypes.isLiteral(part, "scroll | fixed | local");
@@ -8500,10 +8687,16 @@ var require_cssparser = __commonJS({
             return this["<length>"](part) || ValidationTypes.isLiteral(part, "thin | medium | thick");
           },
           "<border-style>": function(part) {
-            return ValidationTypes.isLiteral(part, "none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset");
+            return ValidationTypes.isLiteral(
+              part,
+              "none | hidden | dotted | dashed | solid | double | groove | ridge | inset | outset"
+            );
           },
           "<content-sizing>": function(part) {
-            return ValidationTypes.isLiteral(part, "fill-available | -moz-available | -webkit-fill-available | max-content | -moz-max-content | -webkit-max-content | min-content | -moz-min-content | -webkit-min-content | fit-content | -moz-fit-content | -webkit-fit-content");
+            return ValidationTypes.isLiteral(
+              part,
+              "fill-available | -moz-available | -webkit-fill-available | max-content | -moz-max-content | -webkit-max-content | min-content | -moz-min-content | -webkit-min-content | fit-content | -moz-fit-content | -webkit-fit-content"
+            );
           },
           "<margin-width>": function(part) {
             return this["<length>"](part) || this["<percentage>"](part) || ValidationTypes.isLiteral(part, "auto");
@@ -8670,7 +8863,11 @@ var require_cssparser = __commonJS({
             }
             if (!result) {
               part = expression.peek();
-              throw new ValidationError("Expected (none | [ <flex-grow> <flex-shrink>? || <flex-basis> ]) but found '" + expression.value.text + "'.", part.line, part.col);
+              throw new ValidationError(
+                "Expected (none | [ <flex-grow> <flex-shrink>? || <flex-basis> ]) but found '" + expression.value.text + "'.",
+                part.line,
+                part.col
+              );
             }
             return result;
           }
@@ -9666,7 +9863,10 @@ var require_htmlelts = __commonJS({
             return this.serialize();
           },
           set: function(v) {
-            var parser = this.ownerDocument.implementation.mozHTMLParser(this.ownerDocument._address, this);
+            var parser = this.ownerDocument.implementation.mozHTMLParser(
+              this.ownerDocument._address,
+              this
+            );
             parser.parse(v === null ? "" : String(v), true);
             var target = this instanceof htmlNameToImpl.template ? this.content : this;
             while (target.hasChildNodes())
@@ -9702,7 +9902,23 @@ var require_htmlelts = __commonJS({
               if (this._pre_click_activation_steps)
                 this._pre_click_activation_steps();
               var event = this.ownerDocument.createEvent("MouseEvent");
-              event.initMouseEvent("click", true, true, this.ownerDocument.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+              event.initMouseEvent(
+                "click",
+                true,
+                true,
+                this.ownerDocument.defaultView,
+                1,
+                0,
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                false,
+                0,
+                null
+              );
               var success = this.dispatchEvent(event);
               if (success) {
                 if (this._post_click_activation_steps)
@@ -11689,27 +11905,51 @@ var require_Document = __commonJS({
           elt.textContent = value;
         }
       },
-      dir: mirrorAttr(function() {
-        var htmlElement = this.documentElement;
-        if (htmlElement && htmlElement.tagName === "HTML") {
-          return htmlElement;
-        }
-      }, "dir", ""),
-      fgColor: mirrorAttr(function() {
-        return this.body;
-      }, "text", ""),
-      linkColor: mirrorAttr(function() {
-        return this.body;
-      }, "link", ""),
-      vlinkColor: mirrorAttr(function() {
-        return this.body;
-      }, "vLink", ""),
-      alinkColor: mirrorAttr(function() {
-        return this.body;
-      }, "aLink", ""),
-      bgColor: mirrorAttr(function() {
-        return this.body;
-      }, "bgColor", ""),
+      dir: mirrorAttr(
+        function() {
+          var htmlElement = this.documentElement;
+          if (htmlElement && htmlElement.tagName === "HTML") {
+            return htmlElement;
+          }
+        },
+        "dir",
+        ""
+      ),
+      fgColor: mirrorAttr(
+        function() {
+          return this.body;
+        },
+        "text",
+        ""
+      ),
+      linkColor: mirrorAttr(
+        function() {
+          return this.body;
+        },
+        "link",
+        ""
+      ),
+      vlinkColor: mirrorAttr(
+        function() {
+          return this.body;
+        },
+        "vLink",
+        ""
+      ),
+      alinkColor: mirrorAttr(
+        function() {
+          return this.body;
+        },
+        "aLink",
+        ""
+      ),
+      bgColor: mirrorAttr(
+        function() {
+          return this.body;
+        },
+        "bgColor",
+        ""
+      ),
       charset: {
         get: function() {
           return this.characterSet;
@@ -15547,7 +15787,12 @@ var require_HTMLParser = __commonJS({
         }
       }
       function emitDoctype() {
-        insertToken(DOCTYPE, buf2str(doctypenamebuf), doctypepublicbuf ? buf2str(doctypepublicbuf) : void 0, doctypesystembuf ? buf2str(doctypesystembuf) : void 0);
+        insertToken(
+          DOCTYPE,
+          buf2str(doctypenamebuf),
+          doctypepublicbuf ? buf2str(doctypepublicbuf) : void 0,
+          doctypesystembuf ? buf2str(doctypesystembuf) : void 0
+        );
       }
       function emitEOF() {
         flushText();

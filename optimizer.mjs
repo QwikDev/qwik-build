@@ -1786,8 +1786,8 @@ function qwikVite(qwikViteOpts = {}) {
                 res.writeHead(status);
                 const result = await render(renderOpts);
                 if ("html" in result) {
-                  res.write('<script type="module" src="/@vite/client"><\/script>');
-                  res.end(result.html);
+                  res.write(result.html);
+                  res.end('<script type="module" src="/@vite/client"><\/script>');
                 } else {
                   res.write('<script type="module" src="/@vite/client"><\/script>');
                   res.end();

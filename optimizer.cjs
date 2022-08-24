@@ -5,14 +5,13 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-"use strict";
-
 if ("undefined" == typeof globalThis) {
   const g = "undefined" != typeof global ? global : "undefined" != typeof window ? window : "undefined" != typeof self ? self : {};
   g.globalThis = g;
 }
 
 globalThis.qwikOptimizer = function(module) {
+  "use strict";
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -1822,8 +1821,8 @@ globalThis.qwikOptimizer = function(module) {
                   res.writeHead(status);
                   const result = await render(renderOpts);
                   if ("html" in result) {
-                    res.write('<script type="module" src="/@vite/client"><\/script>');
-                    res.end(result.html);
+                    res.write(result.html);
+                    res.end('<script type="module" src="/@vite/client"><\/script>');
                   } else {
                     res.write('<script type="module" src="/@vite/client"><\/script>');
                     res.end();

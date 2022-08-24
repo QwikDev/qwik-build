@@ -570,10 +570,12 @@ async function renderToStream(rootNode, opts) {
           events: opts.qwikLoader?.events,
           debug: opts.debug
         });
-        children.push(jsx2("script", {
-          id: "qwikloader",
-          dangerouslySetInnerHTML: qwikLoaderScript
-        }));
+        children.push(
+          jsx2("script", {
+            id: "qwikloader",
+            dangerouslySetInnerHTML: qwikLoaderScript
+          })
+        );
       }
       snapshotTime = snapshotTimer();
       return jsx2(Fragment2, { children });
