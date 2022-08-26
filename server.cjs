@@ -178,6 +178,12 @@ function workerFetchScript() {
   s += `w.onmessage=()=>{w.terminate()};`;
   return s;
 }
+function prefetchUrlsEventScript(prefetchResources) {
+  const data = {
+    urls: flattenPrefetchResources(prefetchResources)
+  };
+  return `dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
+}
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -199,20 +205,35 @@ function applyPrefetchImplementation(opts, prefetchResources) {
   const { prefetchStrategy } = opts;
   if (prefetchStrategy !== null) {
     const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy == null ? void 0 : prefetchStrategy.implementation);
+    const prefetchNodes = [];
+    if (prefetchImpl.prefetchEvent === "always") {
+      prefetchUrlsEvent(prefetchNodes, prefetchResources);
+    }
     if (prefetchImpl.linkInsert === "html-append") {
-      return linkHtmlImplementation(prefetchResources, prefetchImpl);
-    } else if (prefetchImpl.linkInsert === "js-append") {
-      return linkJsImplementation(prefetchResources, prefetchImpl);
+      linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl);
+    }
+    if (prefetchImpl.linkInsert === "js-append") {
+      linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl);
     } else if (prefetchImpl.workerFetchInsert === "always") {
-      return workerFetchImplementation(prefetchResources);
+      workerFetchImplementation(prefetchNodes, prefetchResources);
+    }
+    if (prefetchNodes.length > 0) {
+      return (0, import_qwik2.jsx)(import_qwik2.Fragment, { children: prefetchNodes });
     }
   }
   return null;
 }
-function linkHtmlImplementation(prefetchResources, prefetchImpl) {
+function prefetchUrlsEvent(prefetchNodes, prefetchResources) {
+  prefetchNodes.push(
+    (0, import_qwik2.jsx)("script", {
+      type: "module",
+      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources)
+    })
+  );
+}
+function linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
   const urls = flattenPrefetchResources(prefetchResources);
   const rel = prefetchImpl.linkRel || "prefetch";
-  const children = [];
   for (const url of urls) {
     const attributes = {};
     attributes["href"] = url;
@@ -222,14 +243,10 @@ function linkHtmlImplementation(prefetchResources, prefetchImpl) {
         attributes["as"] = "script";
       }
     }
-    children.push((0, import_qwik2.jsx)("link", attributes, void 0));
+    prefetchNodes.push((0, import_qwik2.jsx)("link", attributes, void 0));
   }
-  if (prefetchImpl.workerFetchInsert === "always") {
-    children.push(workerFetchImplementation(prefetchResources));
-  }
-  return (0, import_qwik2.jsx)(import_qwik2.Fragment, { children });
 }
-function linkJsImplementation(prefetchResources, prefetchImpl) {
+function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
   const rel = prefetchImpl.linkRel || "prefetch";
   let s = ``;
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
@@ -257,18 +274,22 @@ function linkJsImplementation(prefetchResources, prefetchImpl) {
   if (prefetchImpl.workerFetchInsert === "always") {
     s += workerFetchScript();
   }
-  return (0, import_qwik2.jsx)("script", {
-    type: "module",
-    dangerouslySetInnerHTML: s
-  });
+  prefetchNodes.push(
+    (0, import_qwik2.jsx)("script", {
+      type: "module",
+      dangerouslySetInnerHTML: s
+    })
+  );
 }
-function workerFetchImplementation(prefetchResources) {
+function workerFetchImplementation(prefetchNodes, prefetchResources) {
   let s = `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
   s += workerFetchScript();
-  return (0, import_qwik2.jsx)("script", {
-    type: "module",
-    dangerouslySetInnerHTML: s
-  });
+  prefetchNodes.push(
+    (0, import_qwik2.jsx)("script", {
+      type: "module",
+      dangerouslySetInnerHTML: s
+    })
+  );
 }
 function normalizePrefetchImplementation(input) {
   if (typeof input === "string") {
@@ -277,116 +298,125 @@ function normalizePrefetchImplementation(input) {
         return {
           linkInsert: "html-append",
           linkRel: "prefetch",
-          workerFetchInsert: null
+          workerFetchInsert: null,
+          prefetchEvent: null
         };
       }
       case "link-prefetch": {
         return {
           linkInsert: "js-append",
           linkRel: "prefetch",
-          workerFetchInsert: "no-link-support"
+          workerFetchInsert: "no-link-support",
+          prefetchEvent: null
         };
       }
       case "link-preload-html": {
         return {
           linkInsert: "html-append",
           linkRel: "preload",
-          workerFetchInsert: null
+          workerFetchInsert: null,
+          prefetchEvent: null
         };
       }
       case "link-preload": {
         return {
           linkInsert: "js-append",
           linkRel: "preload",
-          workerFetchInsert: "no-link-support"
+          workerFetchInsert: "no-link-support",
+          prefetchEvent: null
         };
       }
       case "link-modulepreload-html": {
         return {
           linkInsert: "html-append",
           linkRel: "modulepreload",
-          workerFetchInsert: null
+          workerFetchInsert: null,
+          prefetchEvent: null
         };
       }
       case "link-modulepreload": {
         return {
           linkInsert: "js-append",
           linkRel: "modulepreload",
-          workerFetchInsert: "no-link-support"
+          workerFetchInsert: "no-link-support",
+          prefetchEvent: null
         };
       }
     }
     return {
       linkInsert: null,
       linkRel: null,
-      workerFetchInsert: "always"
+      workerFetchInsert: "always",
+      prefetchEvent: null
     };
   }
   if (input && typeof input === "object") {
     return input;
   }
   const defaultImplementation = {
-    linkInsert: "html-append",
-    linkRel: "prefetch",
-    workerFetchInsert: "always"
+    linkInsert: null,
+    linkRel: null,
+    workerFetchInsert: "always",
+    prefetchEvent: null
   };
   return defaultImplementation;
 }
 
 // packages/qwik/src/optimizer/src/manifest.ts
 var EVENT_PRIORITY = [
-  "onClick$",
-  "onDblClick$",
-  "onContextMenu$",
-  "onAuxClick$",
-  "onPointerDown$",
-  "onPointerUp$",
-  "onPointerMove$",
-  "onPointerOver$",
-  "onPointerEnter$",
-  "onPointerLeave$",
-  "onPointerOut$",
-  "onPointerCancel$",
-  "onGotPointerCapture$",
-  "onLostPointerCapture$",
-  "onTouchStart$",
-  "onTouchEnd$",
-  "onTouchMove$",
-  "onTouchCancel$",
-  "onMouseDown$",
-  "onMouseUp$",
-  "onMouseMove$",
-  "onMouseEnter$",
-  "onMouseLeave$",
-  "onMouseOver$",
-  "onMouseOut$",
-  "onWheel$",
-  "onGestureStart$",
-  "onGestureChange$",
-  "onGestureEnd$",
-  "onKeyDown$",
-  "onKeyUp$",
-  "onKeyPress$",
-  "onInput$",
-  "onChange$",
-  "onSearch$",
-  "onInvalid$",
-  "onBeforeInput$",
-  "onSelect$",
-  "onFocusIn$",
-  "onFocusOut$",
-  "onFocus$",
-  "onBlur$",
-  "onSubmit$",
-  "onReset$",
-  "onScroll$"
-].map((n) => n.toLowerCase());
+  "click",
+  "dblclick",
+  "contextmenu",
+  "auxclick",
+  "pointerdown",
+  "pointerup",
+  "pointermove",
+  "pointerover",
+  "pointerenter",
+  "pointerleave",
+  "pointerout",
+  "pointercancel",
+  "gotpointercapture",
+  "lostpointercapture",
+  "touchstart",
+  "touchend",
+  "touchmove",
+  "touchcancel",
+  "mousedown",
+  "mouseup",
+  "mousemove",
+  "mouseenter",
+  "mouseleave",
+  "mouseover",
+  "mouseout",
+  "wheel",
+  "gesturestart",
+  "gesturechange",
+  "gestureend",
+  "keydown",
+  "keyup",
+  "keypress",
+  "input",
+  "change",
+  "search",
+  "invalid",
+  "beforeinput",
+  "select",
+  "focusin",
+  "focusout",
+  "focus",
+  "blur",
+  "submit",
+  "reset",
+  "scroll"
+].map((n) => `on${n.toLowerCase()}$`);
 var FUNCTION_PRIORITY = [
+  "useWatch$",
   "useClientEffect$",
   "useEffect$",
   "component$",
   "useStyles$",
-  "useStyles$"
+  "useStylesScoped$"
 ].map((n) => n.toLowerCase());
 function getValidManifest(manifest) {
   if (manifest != null && manifest.mapping != null && typeof manifest.mapping === "object" && manifest.symbols != null && typeof manifest.symbols === "object" && manifest.bundles != null && typeof manifest.bundles === "object") {

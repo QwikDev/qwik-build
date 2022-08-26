@@ -805,8 +805,8 @@ globalThis.qwikOptimizer = function(module) {
       return 0;
     }));
   }
-  var EVENT_PRIORITY = [ "onClick$", "onDblClick$", "onContextMenu$", "onAuxClick$", "onPointerDown$", "onPointerUp$", "onPointerMove$", "onPointerOver$", "onPointerEnter$", "onPointerLeave$", "onPointerOut$", "onPointerCancel$", "onGotPointerCapture$", "onLostPointerCapture$", "onTouchStart$", "onTouchEnd$", "onTouchMove$", "onTouchCancel$", "onMouseDown$", "onMouseUp$", "onMouseMove$", "onMouseEnter$", "onMouseLeave$", "onMouseOver$", "onMouseOut$", "onWheel$", "onGestureStart$", "onGestureChange$", "onGestureEnd$", "onKeyDown$", "onKeyUp$", "onKeyPress$", "onInput$", "onChange$", "onSearch$", "onInvalid$", "onBeforeInput$", "onSelect$", "onFocusIn$", "onFocusOut$", "onFocus$", "onBlur$", "onSubmit$", "onReset$", "onScroll$" ].map((n => n.toLowerCase()));
-  var FUNCTION_PRIORITY = [ "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStyles$" ].map((n => n.toLowerCase()));
+  var EVENT_PRIORITY = [ "click", "dblclick", "contextmenu", "auxclick", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerenter", "pointerleave", "pointerout", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchend", "touchmove", "touchcancel", "mousedown", "mouseup", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "wheel", "gesturestart", "gesturechange", "gestureend", "keydown", "keyup", "keypress", "input", "change", "search", "invalid", "beforeinput", "select", "focusin", "focusout", "focus", "blur", "submit", "reset", "scroll" ].map((n => `on${n.toLowerCase()}$`));
+  var FUNCTION_PRIORITY = [ "useWatch$", "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase()));
   function sortBundleNames(manifest) {
     return Object.keys(manifest.bundles).sort(sortAlphabetical);
   }
@@ -1490,7 +1490,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -1561,7 +1561,9 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
-        clientDevInput = "string" === typeof (null == (_l = qwikViteOpts.client) ? void 0 : _l.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
+        globalThis.QWIK_MANIFEST = pluginOpts.manifestInput;
+        globalThis.QWIK_CLIENT_OUT_DIR = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_l = qwikViteOpts.client) ? void 0 : _l.outDir) || CLIENT_OUT_DIR));
+        clientDevInput = "string" === typeof (null == (_m = qwikViteOpts.client) ? void 0 : _m.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
         clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         const vendorIds = vendorRoots.map((v => v.id));
         const updatedViteConfig = {
@@ -1609,7 +1611,7 @@ globalThis.qwikOptimizer = function(module) {
             updatedViteConfig.publicDir = false;
             updatedViteConfig.build.ssr = true;
           }
-          "boolean" === typeof (null == (_m = viteConfig.build) ? void 0 : _m.emptyOutDir) ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
+          "boolean" === typeof (null == (_n = viteConfig.build) ? void 0 : _n.emptyOutDir) ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
         } else if ("client" === opts.target) {
           "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
