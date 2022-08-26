@@ -1006,7 +1006,7 @@ globalThis.qwikOptimizer = function(module) {
       };
     };
     let hasValidatedSource = false;
-    const validateSource = async () => {
+    const validateSource = async resolver => {
       if (!hasValidatedSource) {
         hasValidatedSource = true;
         const sys = getSys();
@@ -1020,7 +1020,8 @@ globalThis.qwikOptimizer = function(module) {
           }
           for (const alias in opts.input) {
             const input = opts.input[alias];
-            if (!fs.existsSync(input)) {
+            const resolved = await resolver(input);
+            if (!resolved) {
               throw new Error(`Qwik input "${input}" not found.`);
             }
           }
@@ -1621,7 +1622,8 @@ globalThis.qwikOptimizer = function(module) {
         return updatedViteConfig;
       },
       async buildStart() {
-        await qwikPlugin.validateSource();
+        const resolver = this.resolve;
+        await qwikPlugin.validateSource(resolver);
         qwikPlugin.onAddWatchFile(((ctx, path) => {
           ctx.addWatchFile(path);
         }));

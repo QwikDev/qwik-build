@@ -955,7 +955,7 @@ function createPlugin(optimizerOptions = {}) {
     };
   };
   let hasValidatedSource = false;
-  const validateSource = async () => {
+  const validateSource = async resolver => {
     if (!hasValidatedSource) {
       hasValidatedSource = true;
       const sys = getSys();
@@ -969,7 +969,8 @@ function createPlugin(optimizerOptions = {}) {
         }
         for (const alias in opts.input) {
           const input = opts.input[alias];
-          if (!fs.existsSync(input)) {
+          const resolved = await resolver(input);
+          if (!resolved) {
             throw new Error(`Qwik input "${input}" not found.`);
           }
         }
@@ -1588,7 +1589,8 @@ function qwikVite(qwikViteOpts = {}) {
       return updatedViteConfig;
     },
     async buildStart() {
-      await qwikPlugin.validateSource();
+      const resolver = this.resolve;
+      await qwikPlugin.validateSource(resolver);
       qwikPlugin.onAddWatchFile(((ctx, path) => {
         ctx.addWatchFile(path);
       }));
