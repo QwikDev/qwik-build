@@ -465,7 +465,7 @@ const useSequentialScope = () => {
  * const Cmp = component$(() => {
  *   useCleanup$(() => {
  *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resouces, abort network requets, stop timers...
+ *     // Can be used to release resources, abort network requests, stop timers...
  *     console.log('component is destroyed');
  *   });
  *   return <div>Hello world</div>;
@@ -500,7 +500,7 @@ const useCleanupQrl = (unmountFn) => {
  * const Cmp = component$(() => {
  *   useCleanup$(() => {
  *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resouces, abort network requets, stop timers...
+ *     // Can be used to release resources, abort network requests, stop timers...
  *     console.log('component is destroyed');
  *   });
  *   return <div>Hello world</div>;
@@ -518,8 +518,7 @@ const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
  * Register a listener on the current component's host element.
  *
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
- * have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better
- * idea.
+ * have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better idea.
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
@@ -5390,7 +5389,6 @@ const renderRoot = async (node, ssrCtx, stream, containerState, opts) => {
     if (qDev) {
         if (ssrCtx.headNodes.length > 0) {
             logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
-            throw new Error('dfd');
         }
     }
     return ssrCtx.rctx;
