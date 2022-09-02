@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 0.0.105
+ * @builder.io/qwik/server 0.0.107
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -85,7 +85,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.0.105",
+  qwik: "0.0.107",
   qwikDom: "2.1.18"
 };
 
@@ -180,7 +180,7 @@ function workerFetchScript() {
 }
 function prefetchUrlsEventScript(prefetchResources) {
   const data = {
-    urls: flattenPrefetchResources(prefetchResources)
+    bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split("/").pop())
   };
   return `dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
 }
@@ -615,6 +615,7 @@ async function renderToStream(rootNode, opts) {
   const renderTimer = createTimer();
   let renderTime = 0;
   let snapshotTime = 0;
+  const renderSymbols = [];
   await (0, import_qwik3.renderSSR)(doc, rootNode, {
     stream,
     containerTagName,
@@ -653,6 +654,7 @@ async function renderToStream(rootNode, opts) {
           })
         );
       }
+      collectRenderSymbols(renderSymbols, contexts);
       snapshotTime = snapshotTimer();
       return (0, import_qwik3.jsx)(import_qwik3.Fragment, { children });
     }
@@ -662,12 +664,14 @@ async function renderToStream(rootNode, opts) {
     prefetchResources,
     snapshotResult,
     flushes: networkFlushes,
+    manifest: opts.manifest,
     size: totalSize,
     timing: {
       render: renderTime,
       snapshot: snapshotTime,
       firstFlush: firstFlushTime
-    }
+    },
+    _symbols: renderSymbols
   };
   return result;
 }
@@ -700,6 +704,15 @@ function computeSymbolMapper(manifest) {
 var escapeText = (str) => {
   return str.replace(/<(\/?script)/g, "\\x3C$1");
 };
+function collectRenderSymbols(renderSymbols, elements) {
+  var _a;
+  for (const ctx of elements) {
+    const symbol = (_a = ctx.$renderQrl$) == null ? void 0 : _a.getSymbol();
+    if (symbol && !renderSymbols.includes(symbol)) {
+      renderSymbols.push(symbol);
+    }
+  }
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   createTimer,

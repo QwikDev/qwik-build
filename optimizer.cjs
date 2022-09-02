@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.0.105
+ * @builder.io/qwik/optimizer 0.0.107
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -503,7 +503,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.105"
+    qwik: "0.0.107"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -825,10 +825,14 @@ globalThis.qwikOptimizer = function(module) {
       const bundle = manifest.bundles[bundleName];
       Array.isArray(bundle.imports) && bundle.imports.sort(sortAlphabetical);
       Array.isArray(bundle.dynamicImports) && bundle.dynamicImports.sort(sortAlphabetical);
+      const symbols = [];
       for (const symbolName of prioritorizedSymbolNames) {
-        bundleName === prioritorizedMapping[symbolName] && bundle.symbols.push(symbolName);
+        bundleName === prioritorizedMapping[symbolName] && symbols.push(symbolName);
       }
-      bundle.symbols.sort(sortAlphabetical);
+      if (symbols.length > 0) {
+        symbols.sort(sortAlphabetical);
+        bundle.symbols = symbols;
+      }
     }
     manifest.symbols = prioritorizedSymbols;
     manifest.mapping = prioritorizedMapping;
@@ -896,13 +900,14 @@ globalThis.qwikOptimizer = function(module) {
     if (!manifest.bundles[bundleFileName]) {
       const buildDirName = path.dirname(outputBundle.fileName);
       const bundle = {
-        size: outputBundle.size,
-        symbols: []
+        size: outputBundle.size
       };
       const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
       bundleImports.length > 0 && (bundle.imports = bundleImports);
       const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
+      const modulePaths = Object.keys(outputBundle.modules);
+      modulePaths.length > 0 && (bundle.origins = modulePaths);
       manifest.bundles[bundleFileName] = bundle;
     }
   }
@@ -1233,7 +1238,17 @@ globalThis.qwikOptimizer = function(module) {
         const optimizer = getOptimizer();
         const path = optimizer.sys.path;
         const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-        return generateManifestFromBundles(path, hooks, injections, outputBundles, opts);
+        const manifest = generateManifestFromBundles(path, hooks, injections, outputBundles, opts);
+        for (const symbol of Object.values(manifest.symbols)) {
+          symbol.origin && (symbol.origin = normalizePath(symbol.origin));
+        }
+        for (const bundle of Object.values(manifest.bundles)) {
+          bundle.origins && (bundle.origins = bundle.origins.map((abs => {
+            const relPath = path.relative(opts.rootDir, abs);
+            return normalizePath(relPath);
+          })).sort());
+        }
+        return manifest;
       };
       return {
         addBundle: addBundle,

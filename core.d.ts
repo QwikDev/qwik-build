@@ -3356,7 +3356,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.105
+ * 0.0.107
  * @public
  */
 export declare const version: string;

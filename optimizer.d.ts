@@ -183,9 +183,10 @@ export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib';
  */
 export declare interface QwikBundle {
     size: number;
-    symbols: string[];
+    symbols?: string[];
     imports?: string[];
     dynamicImports?: string[];
+    origins?: string[];
 }
 
 /**
