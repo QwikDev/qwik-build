@@ -20775,42 +20775,29 @@ var require_lib = __commonJS({
   }
 });
 
+// packages/qwik/src/testing/html.ts
+function isNode(value) {
+  return value && typeof value.nodeType === "number";
+}
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev === true;
+var qSerialize = globalThis.qSerialize !== false;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+
 // packages/qwik/src/core/util/types.ts
 var isObject = (v) => {
   return v && typeof v === "object";
 };
 
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev === true;
-var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-var qTest = globalThis.qTest === true;
-
-// packages/qwik/src/core/util/dom.ts
-var getDocument = (node) => {
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  if (node.nodeType === 9) {
-    return node;
-  }
-  const doc = node.ownerDocument;
-  assertDefined(doc, "doc must be defined");
-  return doc;
-};
-
 // packages/qwik/src/core/util/element.ts
-var isNode = (value) => {
-  return value && typeof value.nodeType == "number";
-};
 var isElement = (value) => {
-  return isNode(value) && value.nodeType === 1;
+  return value.nodeType === 1;
 };
-
-// packages/qwik/src/core/util/markers.ts
-var QContainerSelector = "[q\\:container]";
 
 // packages/qwik/src/core/props/props.ts
-var Q_CTX = "__ctx__";
+var Q_CTX = "_qc_";
 var tryGetContext = (element) => {
   return element[Q_CTX];
 };
@@ -20830,7 +20817,7 @@ var logErrorAndStop = (message, ...optionalParams) => {
 var printParams = (optionalParams) => {
   if (qDev) {
     return optionalParams.map((p) => {
-      if (isElement(p)) {
+      if (isNode(p) && isElement(p)) {
         return printElement(p);
       }
       return p;
@@ -20858,15 +20845,17 @@ function assertDefined(value, text, ...parts) {
   }
 }
 
-// packages/qwik/src/core/use/use-core.ts
-var CONTAINER = Symbol("container");
-var getContainer = (el) => {
-  let container = el[CONTAINER];
-  if (!container) {
-    container = el.closest(QContainerSelector);
-    el[CONTAINER] = container;
+// packages/qwik/src/core/util/dom.ts
+var getDocument = (node) => {
+  if (typeof document !== "undefined") {
+    return document;
   }
-  return container;
+  if (node.nodeType === 9) {
+    return node;
+  }
+  const doc = node.ownerDocument;
+  assertDefined(doc, "doc must be defined");
+  return doc;
 };
 
 // packages/qwik/src/core/platform/platform.ts
@@ -20874,8 +20863,8 @@ var createPlatform = (doc) => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
     isServer: false,
-    importSymbol(element, url, symbolName) {
-      const urlDoc = toUrl(doc, element, url).toString();
+    importSymbol(containerEl, url, symbolName) {
+      const urlDoc = toUrl(doc, containerEl, url).toString();
       const urlCopy = new URL(urlDoc);
       urlCopy.hash = "";
       urlCopy.search = "";
@@ -20918,9 +20907,9 @@ var findModule = (module) => {
 var isModule = (module) => {
   return isObject(module) && module[Symbol.toStringTag] === "Module";
 };
-var toUrl = (doc, element, url) => {
-  const containerEl = getContainer(element);
-  const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
+var toUrl = (doc, containerEl, url) => {
+  const baseURI = doc.baseURI;
+  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
   return new URL(url, base);
 };
 var setPlatform = (doc, plt) => doc[DocumentPlatform] = plt;
@@ -20942,8 +20931,8 @@ function createPlatform2(document2) {
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform = {
     isServer: true,
-    importSymbol(element, url, symbolName) {
-      const urlDoc = toUrl2(element.ownerDocument, element, url);
+    importSymbol(containerEl, url, symbolName) {
+      const urlDoc = toUrl2(containerEl.ownerDocument, containerEl, url);
       const importPath = toPath(urlDoc);
       const mod = moduleCache.get(importPath);
       if (mod) {
@@ -20999,8 +20988,7 @@ function setTestPlatform(document2) {
   const platform = createPlatform2(document2);
   setPlatform(document2, platform);
 }
-function toUrl2(doc, element, url) {
-  const containerEl = getContainer(element);
+function toUrl2(doc, containerEl, url) {
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
 }

@@ -5,7 +5,7 @@
     function isModule(module) {
         return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
     }
-    ((doc, hasInitialized, prefetchWorker) => {
+    ((doc, hasInitialized) => {
         const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));
@@ -23,8 +23,15 @@
             return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, onPrefix, eventName, ev) => {
+            var _a, _b;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
-            const attrValue = element.getAttribute("on" + onPrefix + ":" + eventName);
+            const attrName = "on" + onPrefix + ":" + eventName;
+            const qrls = null == (_b = null == (_a = element._qc_) ? void 0 : _a.li) ? void 0 : _b.get(attrName);
+            if (qrls) {
+                qrls.forEach((q => q.getFn([ element, ev ])(ev, element)));
+                return;
+            }
+            const attrValue = element.getAttribute(attrName);
             if (attrValue) {
                 for (const qrl of attrValue.split("\n")) {
                     const url = qrlResolver(element, qrl);
@@ -35,7 +42,7 @@
                         if (element.isConnected) {
                             try {
                                 doc.__q_context__ = [ element, ev, url ];
-                                handler(ev, element, url);
+                                handler(ev, element);
                             } finally {
                                 doc.__q_context__ = previousCtx;
                                 emitEvent(element, "qsymbol", symbolName);
@@ -46,20 +53,19 @@
             }
         };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
-        const processDocumentEvent = (ev, element) => {
-            element = ev.target;
+        const processDocumentEvent = ev => {
+            let element = ev.target;
             broadcast("-document", ev.type, ev);
             while (element && element.getAttribute) {
                 dispatch(element, "", ev.type, ev);
                 element = ev.bubbles ? element.parentElement : null;
             }
         };
-        const processWindowEvent = (ev, element) => {
-            ev.target;
+        const processWindowEvent = ev => {
             broadcast("-window", ev.type, ev);
         };
-        const processReadyStateChange = readyState => {
-            readyState = doc.readyState;
+        const processReadyStateChange = () => {
+            const readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
                 broadcast("", "qinit", new CustomEvent("qinit"));

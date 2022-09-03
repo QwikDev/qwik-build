@@ -187,6 +187,11 @@ export declare interface AriaAttributes {
      */
     'aria-hidden'?: Booleanish | undefined;
     /**
+     * Indicates whether the element is exposed to an accessibility API.
+     * @see aria-disabled.
+     */
+    ariaHidden?: Booleanish | undefined;
+    /**
      * Indicates the entered value does not conform to the format expected by the application.
      * @see aria-errormessage.
      */
@@ -423,12 +428,6 @@ export declare interface ComponentBaseProps {
     children?: JSXChildren;
 }
 
-declare interface ComponentCtx {
-    $ctx$: QContext;
-    $slots$: ProcessedJSXNode[];
-    $attachedListeners$: boolean;
-}
-
 /**
  * Declare a Qwik component that can be used to create UI.
  *
@@ -494,7 +493,7 @@ declare interface ContainerState {
     $hostsNext$: Set<QwikElement>;
     $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;
-    $renderPromise$: Promise<RenderContext> | undefined;
+    $renderPromise$: Promise<RenderStaticContext> | undefined;
     $envData$: Record<string, any>;
     $elementIndex$: number;
     $styleIds$: Set<string>;
@@ -602,7 +601,7 @@ export declare interface CorePlatform {
      * @param symbol - The name of the symbol to import.
      * @returns A promise that resolves to the imported symbol.
      */
-    importSymbol: (element: QwikElement, url: string | URL, symbol: string) => ValueOrPromise<any>;
+    importSymbol: (containerEl: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
     /**
      * Perform operation on next request-animation-frame.
      *
@@ -1183,18 +1182,20 @@ declare interface IntrinsicElements {
 }
 
 declare interface InvokeContext {
-    $url$: URL | null;
+    $url$: URL | undefined;
     $seq$: number;
-    $doc$?: Document;
-    $hostElement$?: QwikElement;
-    $element$?: Element;
-    $event$: any;
-    $qrl$?: QRL<any>;
-    $waitOn$?: ValueOrPromise<any>[];
-    $props$?: Props;
-    $subscriber$?: Subscriber | null;
-    $renderCtx$?: RenderContext;
+    $doc$: Document | undefined;
+    $hostElement$: QwikElement | undefined;
+    $element$: Element | undefined;
+    $event$: any | undefined;
+    $qrl$: QRL<any> | undefined;
+    $waitOn$: ValueOrPromise<any>[] | undefined;
+    $props$: Props | undefined;
+    $subscriber$: Subscriber | null | undefined;
+    $renderCtx$: RenderContext | undefined;
 }
+
+declare type InvokeTuple = [Element, Event, URL?];
 
 /**
  * @public
@@ -1495,18 +1496,19 @@ declare interface QContext {
     $element$: QwikElement;
     $refMap$: any[];
     $dirty$: boolean;
+    $attachedListeners$: boolean;
     $id$: string;
     $mounted$: boolean;
-    $cache$: Map<string, any> | null;
     $props$: Record<string, any> | null;
     $renderQrl$: QRLInternal<OnRenderFn<any>> | null;
-    $component$: ComponentCtx | null;
-    $listeners$: Map<string, QRLInternal<any>[]> | null;
+    li: Map<string, QRLInternal<any>[]> | null;
     $seq$: any[];
     $watches$: SubscriberDescriptor[];
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
+    $vdom$: ProcessedJSXNode | null;
+    $slots$: ProcessedJSXNode[] | null;
 }
 
 /**
@@ -1668,23 +1670,15 @@ declare interface QRLInternalMethods<TYPE> {
     readonly $chunk$: string;
     readonly $symbol$: string;
     readonly $refSymbol$: string | null;
+    readonly $hash$: string;
     $capture$: string[] | null;
     $captureRef$: any[] | null;
     resolve(el?: QwikElement): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
-    $setContainer$(el: QwikElement): void;
-    $resolveLazy$(el: QwikElement): void;
-    $invokeFn$(el?: QwikElement, currentCtx?: InvokeContext, beforeFn?: () => void): any;
-    $copy$(): QRLInternal<TYPE>;
-    $serialize$(options?: QRLSerializeOptions): string;
-}
-
-declare interface QRLSerializeOptions {
-    $platform$?: CorePlatform;
-    $element$?: QwikElement;
-    $getObjId$?: (obj: any) => string | null;
-    $addRefMap$?: (obj: any) => number;
+    getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): any;
+    $setContainer$(containerEl: Element): void;
+    $resolveLazy$(): void;
 }
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1917,26 +1911,17 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode<unkno
  * @alpha
  */
 declare interface RenderContext {
-    $doc$: Document;
-    $roots$: QwikElement[];
-    $hostElements$: Set<QwikElement>;
-    $operations$: RenderOperation[];
-    $postOperations$: RenderOperation[];
+    $static$: RenderStaticContext;
     $localStack$: QContext[];
-    $currentComponent$: ComponentCtx | undefined;
-    $containerState$: ContainerState;
-    $containerEl$: Element;
-    $perf$: RenderPerf;
+    $cmpCtx$: QContext | undefined;
 }
 
 /**
  * @alpha
  */
 declare interface RenderOperation {
-    $el$: Node | VirtualElement;
-    $operation$: string;
+    $operation$: (...args: any[]) => void;
     $args$: any[];
-    $fn$: () => void;
 }
 
 /**
@@ -1944,13 +1929,6 @@ declare interface RenderOperation {
  */
 export declare interface RenderOptions {
     envData?: Record<string, any>;
-}
-
-/**
- * @alpha
- */
-declare interface RenderPerf {
-    $visited$: number;
 }
 
 /**
@@ -1970,6 +1948,18 @@ export declare interface RenderSSROptions {
     url?: string;
     beforeContent?: JSXNode[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
+}
+
+declare interface RenderStaticContext {
+    $doc$: Document;
+    $roots$: QContext[];
+    $hostElements$: Set<QwikElement>;
+    $operations$: RenderOperation[];
+    $postOperations$: RenderOperation[];
+    $containerState$: ContainerState;
+    $containerEl$: Element;
+    $addSlots$: [QwikElement, QwikElement][];
+    $rmSlots$: QwikElement[];
 }
 
 /**
@@ -2194,7 +2184,7 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare type Subscriber = SubscriberDescriptor | VirtualElement | Element;
+declare type Subscriber = SubscriberDescriptor | QwikElement;
 
 declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
 
