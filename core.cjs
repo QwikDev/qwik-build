@@ -674,7 +674,8 @@
                 throw qError(QError_invalidJsxNodeType, type);
             }
         }
-        return new JSXNodeImpl(type, props, key);
+        const processed = key == null ? null : String(key);
+        return new JSXNodeImpl(type, props, processed);
     };
     const SKIP_RENDER_TYPE = ':skipRender';
     class JSXNodeImpl {
@@ -710,6 +711,12 @@
      * @alpha
      */
     const SkipRender = Symbol('skip render');
+    const RenderOnce = (props, key) => {
+        return jsx(Virtual, {
+            ...props,
+            [QOnce]: '',
+        }, key);
+    };
     /**
      * @alpha
      */
@@ -728,6 +735,11 @@
             jsx(SSRComment, { data: 'qkssr-po' }),
         ];
     };
+    /**
+     * @alpha
+     */
+    const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+    const InternalSSRStream = () => null;
 
     const fromCamelToKebabCase = (text) => {
         return text.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -1023,7 +1035,7 @@
         if (parent) {
             if (el.nodeType === 1 || el.nodeType === 111) {
                 const subsManager = staticCtx.$containerState$.$subsManager$;
-                cleanupTree(el, staticCtx, subsManager);
+                cleanupTree(el, staticCtx, subsManager, true);
             }
             directRemoveChild(parent, el);
         }
@@ -1054,6 +1066,7 @@
     };
     const resolveSlotProjection = (ctx) => {
         // Slots removed
+        const subsManager = ctx.$containerState$.$subsManager$;
         ctx.$rmSlots$.forEach((slotEl) => {
             const key = getKey(slotEl);
             assertDefined(key, 'slots must have a key');
@@ -1068,6 +1081,11 @@
                         directAppendChild(template, child);
                     }
                     directInsertBefore(hostElm, template, hostElm.firstChild);
+                }
+                else {
+                    // If slot content cannot be relocated, it means it's content is definively removed
+                    // Cleanup needs to be executed
+                    cleanupTree(slotEl, ctx, subsManager, false);
                 }
             }
         });
@@ -2217,15 +2235,15 @@
         }
         return ctx.$dirty$;
     };
-    const cleanupTree = (parent, rctx, subsManager) => {
-        if (parent.hasAttribute(QSlotS)) {
+    const cleanupTree = (parent, rctx, subsManager, stopSlots) => {
+        if (stopSlots && parent.hasAttribute(QSlotS)) {
             rctx.$rmSlots$.push(parent);
             return;
         }
         cleanupElement(parent, subsManager);
         const ch = getChildren(parent, 'elements');
         for (const child of ch) {
-            cleanupTree(child, rctx, subsManager);
+            cleanupTree(child, rctx, subsManager, stopSlots);
         }
     };
     const cleanupElement = (el, subsManager) => {
@@ -2413,12 +2431,15 @@
         for (const el of renderingQueue) {
             if (!staticCtx.$hostElements$.has(el)) {
                 const elCtx = getContext(el);
-                staticCtx.$roots$.push(elCtx);
-                try {
-                    await renderComponent(ctx, elCtx, getFlags(el.parentElement));
-                }
-                catch (e) {
-                    logError(codeToText(QError_errorWhileRendering), e);
+                if (elCtx.$renderQrl$) {
+                    assertTrue(el.isConnected, 'element must be connected to the dom');
+                    staticCtx.$roots$.push(elCtx);
+                    try {
+                        await renderComponent(ctx, elCtx, getFlags(el.parentElement));
+                    }
+                    catch (e) {
+                        logError(codeToText(QError_errorWhileRendering), e);
+                    }
                 }
             }
         }
@@ -4940,14 +4961,14 @@
                 const fn = resolveLazy();
                 return then(fn, (fn) => {
                     if (isFunction(fn)) {
+                        if (beforeFn && beforeFn() === false) {
+                            return;
+                        }
                         const baseContext = createInvokationContext(currentCtx);
                         const context = {
                             ...baseContext,
                             $qrl$: QRL,
                         };
-                        if (beforeFn) {
-                            beforeFn();
-                        }
                         return invoke(context, fn, ...args);
                     }
                     throw qError(QError_qrlIsNotFunction);
@@ -5042,7 +5063,7 @@
         else if (isFunction(chunkOrFn)) {
             symbolFn = chunkOrFn;
             const cached = QRLcache.get(symbol);
-            if (cached) {
+            if (!qDev && cached) {
                 chunk = cached;
             }
             else {
@@ -5576,6 +5597,9 @@
             stream.write(`<!--${node.props.data ?? ''}-->`);
             return;
         }
+        if (fn === InternalSSRStream) {
+            return renderGenerator(node, ssrCtx, stream, flags);
+        }
         if (fn === Virtual) {
             const elCtx = getContext(ssrCtx.rctx.$static$.$doc$.createElement(VIRTUAL));
             return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
@@ -5584,6 +5608,23 @@
             ? invoke(ssrCtx.invocationContext, () => node.type(node.props, node.key))
             : node.type(node.props, node.key);
         return processData(res, ssrCtx, stream, flags, beforeClose);
+    };
+    const renderGenerator = async (node, ssrCtx, stream, flags) => {
+        const generator = node.props.children;
+        let value;
+        if (isFunction(generator)) {
+            const v = generator(stream);
+            if (isPromise(v)) {
+                return v;
+            }
+            value = v;
+        }
+        else {
+            value = generator;
+        }
+        for await (const chunk of value) {
+            await processData(chunk, ssrCtx, stream, flags, undefined);
+        }
     };
     const renderNodeVirtual = (node, elCtx, extraNodes, ssrCtx, stream, flags, beforeClose) => {
         const props = node.props;
@@ -5946,6 +5987,7 @@
         else if (isJSXNode(children) &&
             isFunction(children.type) &&
             children.type !== SSRComment &&
+            children.type !== InternalSSRStream &&
             children.type !== Virtual) {
             const fn = children.type;
             const res = ssrCtx.invocationContext
@@ -6966,6 +7008,7 @@
     exports.Fragment = Fragment;
     exports.Resource = Resource;
     exports.SSRComment = SSRComment;
+    exports.SSRStream = SSRStream;
     exports.SSRStreamBlock = SSRStreamBlock;
     exports.SkipRender = SkipRender;
     exports.Slot = Slot;

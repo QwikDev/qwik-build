@@ -331,8 +331,8 @@ export declare const Fragment: FunctionComponent<{
 /**
  * @public
  */
-export declare interface FunctionComponent<P = {}> {
-    (props: P, key?: string): JSXNode | null;
+export declare interface FunctionComponent<P = Record<string, any>> {
+    (props: P, key: string | null): JSXNode | null;
 }
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
@@ -664,7 +664,7 @@ declare interface IntrinsicElements {
 /**
  * @public
  */
-declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number | null) => JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -688,15 +688,15 @@ export { JSX_2 as JSX }
 /**
  * @public
  */
-declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
+declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode;
 
 /**
  * @public
  */
-export declare interface JSXNode<T = any> {
+export declare interface JSXNode<T = string | FunctionComponent> {
     type: T;
-    props: Record<string, any>;
-    key: string | number | null;
+    props: T extends FunctionComponent<infer B> ? B : Record<string, any>;
+    key: string | null;
 }
 
 declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {

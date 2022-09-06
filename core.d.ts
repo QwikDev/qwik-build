@@ -756,8 +756,8 @@ export declare const Fragment: FunctionComponent<{
 /**
  * @public
  */
-export declare interface FunctionComponent<P = {}> {
-    (props: P, key?: string): JSXNode | null;
+export declare interface FunctionComponent<P = Record<string, any>> {
+    (props: P, key: string | null): JSXNode | null;
 }
 
 /**
@@ -1200,7 +1200,7 @@ declare type InvokeTuple = [Element, Event, URL?];
 /**
  * @public
  */
-declare const jsx: <T extends string | FunctionComponent<PROPS>, PROPS>(type: T, props: PROPS, key?: string | number | null) => JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxDEV }
 export { jsx as jsxs }
@@ -1208,15 +1208,15 @@ export { jsx as jsxs }
 /**
  * @public
  */
-export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode<any>;
+export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode;
 
 /**
  * @public
  */
-export declare interface JSXNode<T = any> {
+export declare interface JSXNode<T = string | FunctionComponent> {
     type: T;
-    props: Record<string, any>;
-    key: string | number | null;
+    props: T extends FunctionComponent<infer B> ? B : Record<string, any>;
+    key: string | null;
 }
 
 /**
@@ -1905,7 +1905,7 @@ export declare interface Ref<T> {
  * @param jsxNode - JSX to render
  * @alpha
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXNode<unknown> | FunctionComponent<any>, opts?: RenderOptions) => Promise<void>;
+export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<void>;
 
 /**
  * @alpha
@@ -1946,7 +1946,7 @@ export declare interface RenderSSROptions {
     base?: string;
     envData?: Record<string, any>;
     url?: string;
-    beforeContent?: JSXNode[];
+    beforeContent?: JSXNode<string>[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
 }
 
@@ -2161,9 +2161,21 @@ export declare const SSRComment: FunctionComponent<{
 /**
  * @alpha
  */
+export declare const SSRStream: FunctionComponent<StreamProps>;
+
+/**
+ * @alpha
+ */
 export declare const SSRStreamBlock: FunctionComponent<{
     children?: any;
 }>;
+
+/**
+ * @alpha
+ */
+export declare interface StreamProps {
+    children: AsyncGenerator<JSXChildren, void, any> | ((stream: StreamWriter) => Promise<void>) | (() => AsyncGenerator<JSXChildren, void, any>);
+}
 
 /**
  * @alpha

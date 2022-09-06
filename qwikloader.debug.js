@@ -28,7 +28,7 @@
             const attrName = "on" + onPrefix + ":" + eventName;
             const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];
             if (qrls) {
-                qrls.forEach((q => q.getFn([ element, ev ])(ev, element)));
+                qrls.forEach((q => q.getFn([ element, ev ], (() => element.isConnected))(ev, element)));
                 return;
             }
             const attrValue = element.getAttribute(attrName);

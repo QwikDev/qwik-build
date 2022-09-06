@@ -894,6 +894,21 @@ var require_Node = __commonJS({
       hasChildNodes: { value: utils.shouldOverride },
       firstChild: { get: utils.shouldOverride },
       lastChild: { get: utils.shouldOverride },
+      isConnected: {
+        get: function() {
+          let node = this;
+          while (node != null) {
+            if (node.nodeType === Node.DOCUMENT_NODE) {
+              return true;
+            }
+            node = node.parentNode;
+            if (node != null && node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
+              node = node.host;
+            }
+          }
+          return false;
+        }
+      },
       previousSibling: {
         get: function() {
           var parent = this.parentNode;
@@ -3185,21 +3200,6 @@ var require_Element = __commonJS({
             this._attributes = new AttributesArray(this);
           }
           return this._attributes;
-        }
-      },
-      isConnected: {
-        get: function() {
-          let node = this;
-          while (node != null) {
-            if (node.nodeType === Node.DOCUMENT_NODE) {
-              return true;
-            }
-            node = node.parentNode;
-            if (node != null && node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-              node = node.host;
-            }
-          }
-          return false;
         }
       },
       firstElementChild: {
