@@ -23,10 +23,10 @@
             return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
         };
         const dispatch = async (element, onPrefix, eventName, ev) => {
-            var _a, _b;
+            var _a;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
             const attrName = "on" + onPrefix + ":" + eventName;
-            const qrls = null == (_b = null == (_a = element._qc_) ? void 0 : _a.li) ? void 0 : _b.get(attrName);
+            const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];
             if (qrls) {
                 qrls.forEach((q => q.getFn([ element, ev ])(ev, element)));
                 return;

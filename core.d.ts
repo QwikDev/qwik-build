@@ -1501,9 +1501,9 @@ declare interface QContext {
     $mounted$: boolean;
     $props$: Record<string, any> | null;
     $renderQrl$: QRLInternal<OnRenderFn<any>> | null;
-    li: Map<string, QRLInternal<any>[]> | null;
-    $seq$: any[];
-    $watches$: SubscriberDescriptor[];
+    li: Record<string, QRLInternal<any>[]>;
+    $seq$: any[] | null;
+    $watches$: SubscriberDescriptor[] | null;
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
@@ -2083,7 +2083,7 @@ export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlat
 /**
  * @alpha
  */
-export declare const SkipRerender: FunctionComponent<{}>;
+export declare const SkipRender: JSXNode;
 
 /**
  * @public

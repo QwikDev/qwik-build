@@ -415,13 +415,10 @@ const ON_PROP_REGEX = /^(on|window:|document:)/;
 const isOnProp = (prop) => {
     return ON_PROP_REGEX.test(prop);
 };
-const addQRLListener = (ctx, prop, input) => {
-    if (!ctx.li) {
-        ctx.li = new Map();
-    }
-    let existingListeners = ctx.li.get(prop);
+const addQRLListener = (listenersMap, prop, input) => {
+    let existingListeners = listenersMap[prop];
     if (!existingListeners) {
-        ctx.li.set(prop, (existingListeners = []));
+        listenersMap[prop] = existingListeners = [];
     }
     for (const qrl of input) {
         const hash = qrl.$hash$;
@@ -440,11 +437,11 @@ const addQRLListener = (ctx, prop, input) => {
     }
     return false;
 };
-const setEvent = (ctx, prop, input) => {
+const setEvent = (listenerMap, prop, input) => {
     assertTrue(prop.endsWith('$'), 'render: event property does not end with $', prop);
     const qrls = isArray(input) ? input.map(ensureQrl) : [ensureQrl(input)];
     prop = normalizeOnProp(prop.slice(0, -1));
-    addQRLListener(ctx, prop, qrls);
+    addQRLListener(listenerMap, prop, qrls);
     return prop;
 };
 const ensureQrl = (value) => {
@@ -452,15 +449,15 @@ const ensureQrl = (value) => {
 };
 const getDomListeners = (ctx, containerEl) => {
     const attributes = ctx.$element$.attributes;
-    const listeners = new Map();
+    const listeners = {};
     for (let i = 0; i < attributes.length; i++) {
         const { name, value } = attributes.item(i);
         if (name.startsWith('on:') ||
             name.startsWith('on-window:') ||
             name.startsWith('on-document:')) {
-            let array = listeners.get(name);
+            let array = listeners[name];
             if (!array) {
-                listeners.set(name, (array = []));
+                listeners[name] = array = [];
             }
             const urls = value.split('\n');
             for (const url of urls) {
@@ -479,16 +476,17 @@ const useSequentialScope = () => {
     const ctx = useInvokeContext();
     const i = ctx.$seq$;
     const hostElement = ctx.$hostElement$;
-    const elementCtx = getContext(hostElement);
+    const elCtx = getContext(hostElement);
+    const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
     ctx.$seq$++;
     const set = (value) => {
         if (qDev) {
             verifySerializable(value);
         }
-        return (elementCtx.$seq$[i] = value);
+        return (seq[i] = value);
     };
     return {
-        get: elementCtx.$seq$[i],
+        get: seq[i],
         set,
         i,
         ctx,
@@ -526,8 +524,12 @@ const useCleanupQrl = (unmountFn) => {
         assertQrl(unmountFn);
         const el = ctx.$hostElement$;
         const watch = new Watch(WatchFlagsIsCleanup, i, el, unmountFn, undefined);
+        const elCtx = getContext(el);
         set(true);
-        getContext(el).$watches$.push(watch);
+        if (!elCtx.$watches$) {
+            elCtx.$watches$ = [];
+        }
+        elCtx.$watches$.push(watch);
     }
 };
 // <docs markdown="../readme.md#useCleanup">
@@ -638,7 +640,7 @@ const _useOn = (eventName, eventQrl) => {
     const invokeCtx = useInvokeContext();
     const ctx = getContext(invokeCtx.$hostElement$);
     assertQrl(eventQrl);
-    addQRLListener(ctx, normalizeOnProp(eventName), [eventQrl]);
+    addQRLListener(ctx.li, normalizeOnProp(eventName), [eventQrl]);
 };
 
 const emitEvent = (el, eventName, detail, bubbles) => {
@@ -691,10 +693,11 @@ const isJSXNode = (n) => {
  */
 const Fragment = (props) => props.children;
 
+const QOnce = 'qonce';
 /**
  * @alpha
  */
-const SkipRerender = ((props) => props.children);
+const SkipRender = Symbol('skip render');
 /**
  * @alpha
  */
@@ -823,7 +826,7 @@ const parseClassAny = (obj) => {
     return [];
 };
 const parseClassListRegex = /\s/;
-const parseClassList = (value) => !value ? [] : value.split(parseClassListRegex);
+const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
 const stringifyStyle = (obj) => {
     if (obj == null)
         return '';
@@ -1440,9 +1443,6 @@ const processNode = (node, invocationContext) => {
     else if (nodeType === Virtual) {
         textType = VIRTUAL;
     }
-    else if (nodeType === SkipRerender) {
-        textType = SKIP_RENDER_TYPE;
-    }
     else if (isFunction(nodeType)) {
         const res = invocationContext
             ? invoke(invocationContext, () => nodeType(props, node.key))
@@ -1483,12 +1483,15 @@ const processData$1 = (node, invocationContext) => {
     else if (isJSXNode(node)) {
         return processNode(node, invocationContext);
     }
-    if (isArray(node)) {
+    else if (isArray(node)) {
         const output = promiseAll(node.flatMap((n) => processData$1(n, invocationContext)));
         return then(output, (array) => array.flat(100).filter(isNotNullable));
     }
     else if (isPromise(node)) {
         return node.then((node) => processData$1(node, invocationContext));
+    }
+    else if (node === SkipRender) {
+        return new ProcessedJSXNodeImpl(SKIP_RENDER_TYPE, EMPTY_OBJ, EMPTY_ARRAY, null);
     }
     else {
         logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
@@ -1505,16 +1508,13 @@ const visitJsxNode = (ctx, oldVnode, newVnode, flags) => {
 };
 const smartUpdateChildren = (ctx, oldVnode, newVnode, mode, flags) => {
     assertQwikElement(oldVnode.$elm$);
-    let ch = newVnode.$children$;
+    const ch = newVnode.$children$;
+    if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
+        return;
+    }
     const elm = oldVnode.$elm$;
     const needsDOMRead = oldVnode.$children$ === CHILDREN_PLACEHOLDER;
     if (needsDOMRead) {
-        if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
-            if (elm.firstChild !== null) {
-                return;
-            }
-            ch = ch[0].$children$;
-        }
         const isHead = elm.nodeName === 'HEAD';
         if (isHead) {
             mode = 'head';
@@ -1668,7 +1668,8 @@ const getChildrenVnodes = (elm, mode) => {
 };
 const domToVnode = (node) => {
     if (isQwikElement(node)) {
-        const t = new ProcessedJSXNodeImpl(node.localName, {}, CHILDREN_PLACEHOLDER, getKey(node));
+        const props = isVirtualElement(node) ? EMPTY_OBJ : getProps(node);
+        const t = new ProcessedJSXNodeImpl(node.localName, props, CHILDREN_PLACEHOLDER, getKey(node));
         t.$elm$ = node;
         return t;
     }
@@ -1679,6 +1680,23 @@ const domToVnode = (node) => {
         return t;
     }
     throw new Error('invalid node');
+};
+const getProps = (node) => {
+    const props = {};
+    const attributes = node.attributes;
+    const len = attributes.length;
+    for (let i = 0; i < len; i++) {
+        const a = attributes.item(i);
+        assertDefined(a, 'attribute must be defined');
+        const name = a.name;
+        if (!name.includes(':')) {
+            props[name] =
+                name === 'class'
+                    ? parseClassAny(a.value).filter((c) => !c.startsWith(ComponentStylesPrefixContent))
+                    : a.value;
+        }
+    }
+    return props;
 };
 const isHeadChildren = (node) => {
     const type = node.nodeType;
@@ -1733,10 +1751,7 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
         }
         return;
     }
-    // Early exit for a skip render node
-    if (tag === SKIP_RENDER_TYPE) {
-        return;
-    }
+    assertQwikElement(elm);
     // Track SVG state
     let isSvg = !!(flags & IS_SVG);
     if (!isSvg && tag === 'svg') {
@@ -1744,10 +1759,21 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
         isSvg = true;
     }
     const props = newVnode.$props$;
-    const ctx = getContext(elm);
     const isComponent = isVirtual && OnRenderProp in props;
+    const elCtx = getContext(elm);
     if (!isComponent) {
-        updateProperties$1(ctx, rctx, oldVnode.$props$, props, isSvg);
+        const listenerMap = updateProperties$1(elCtx, staticCtx, oldVnode.$props$, props, isSvg);
+        const currentComponent = rctx.$cmpCtx$;
+        if (currentComponent && !currentComponent.$attachedListeners$) {
+            currentComponent.$attachedListeners$ = true;
+            Object.entries(currentComponent.li).forEach(([key, value]) => {
+                addQRLListener(listenerMap, key, value);
+                addGlobalListener(staticCtx, elm, key);
+            });
+        }
+        if (qSerialize) {
+            Object.entries(listenerMap).forEach(([key, value]) => setAttribute(staticCtx, elm, key, serializeQRLs(value, elCtx)));
+        }
         if (isSvg && newVnode.$type$ === 'foreignObject') {
             flags &= ~IS_SVG;
             isSvg = false;
@@ -1767,14 +1793,18 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
             }
             return;
         }
+        const isRenderOnce = isVirtual && QOnce in props;
+        if (isRenderOnce) {
+            return;
+        }
         return smartUpdateChildren(rctx, oldVnode, newVnode, 'root', flags);
     }
-    let needsRender = updateComponentProperties$1(ctx, rctx, props);
+    let needsRender = setComponentProps(elCtx, rctx, props);
     // TODO: review this corner case
-    if (!needsRender && !ctx.$renderQrl$ && !ctx.$element$.hasAttribute(ELEMENT_ID)) {
-        setQId(rctx, ctx);
-        ctx.$renderQrl$ = props[OnRenderProp];
-        assertQrl(ctx.$renderQrl$);
+    if (!needsRender && !elCtx.$renderQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
+        setQId(rctx, elCtx);
+        elCtx.$renderQrl$ = props[OnRenderProp];
+        assertQrl(elCtx.$renderQrl$);
         needsRender = true;
     }
     // Rendering of children of component is more complicated,
@@ -1783,9 +1813,9 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
     // we need to render the nested component, and wait before projecting the content
     // since otherwise we don't know where the slots
     if (needsRender) {
-        return then(renderComponent(rctx, ctx, flags), () => renderContentProjection(rctx, ctx, newVnode, flags));
+        return then(renderComponent(rctx, elCtx, flags), () => renderContentProjection(rctx, elCtx, newVnode, flags));
     }
-    return renderContentProjection(rctx, ctx, newVnode, flags);
+    return renderContentProjection(rctx, elCtx, newVnode, flags);
 };
 const renderContentProjection = (rctx, hostCtx, vnode, flags) => {
     const newChildren = vnode.$children$;
@@ -1889,6 +1919,9 @@ const createElm = (rctx, vnode, flags) => {
         isSvg = true;
     }
     const isVirtual = tag === VIRTUAL;
+    const props = vnode.$props$;
+    const isComponent = OnRenderProp in props;
+    const staticCtx = rctx.$static$;
     if (isVirtual) {
         elm = newVirtualElement(doc);
     }
@@ -1902,22 +1935,19 @@ const createElm = (rctx, vnode, flags) => {
         flags &= ~IS_HEAD$1;
     }
     vnode.$elm$ = elm;
-    const props = vnode.$props$;
-    const isComponent = OnRenderProp in props;
-    const staticCtx = rctx.$static$;
     if (isSvg && tag === 'foreignObject') {
         isSvg = false;
         flags &= ~IS_SVG;
     }
+    const elCtx = getContext(elm);
     if (isComponent) {
         setKey(elm, vnode.$key$);
         assertTrue(isVirtual, 'component must be a virtual element');
-        const elCtx = getContext(elm);
-        updateComponentProperties$1(elCtx, rctx, props);
-        setQId(rctx, elCtx);
-        // Run mount hook
         const renderQRL = props[OnRenderProp];
         assertQrl(renderQRL);
+        setComponentProps(elCtx, rctx, props);
+        setQId(rctx, elCtx);
+        // Run mount hook
         elCtx.$renderQrl$ = renderQRL;
         return then(renderComponent(rctx, elCtx, flags), () => {
             let children = vnode.$children$;
@@ -1942,6 +1972,7 @@ const createElm = (rctx, vnode, flags) => {
     const currentComponent = rctx.$cmpCtx$;
     const isSlot = isVirtual && QSlotS in props;
     const hasRef = !isVirtual && 'ref' in props;
+    const listenerMap = setProperties(staticCtx, elCtx, props, isSvg);
     if (currentComponent && !isVirtual) {
         const scopedIds = currentComponent.$scopeIds$;
         if (scopedIds) {
@@ -1949,11 +1980,10 @@ const createElm = (rctx, vnode, flags) => {
                 elm.classList.add(styleId);
             });
         }
-        if (!currentComponent.$attachedListeners$ && currentComponent.li) {
-            const elCtx = getContext(elm);
+        if (!currentComponent.$attachedListeners$) {
             currentComponent.$attachedListeners$ = true;
-            currentComponent.li.forEach((qrls, eventName) => {
-                addQRLListener(elCtx, eventName, qrls);
+            Object.entries(currentComponent.li).forEach(([eventName, qrls]) => {
+                addQRLListener(listenerMap, eventName, qrls);
             });
         }
     }
@@ -1968,21 +1998,17 @@ const createElm = (rctx, vnode, flags) => {
     else if (qSerialize) {
         setKey(elm, vnode.$key$);
     }
-    setProperties(staticCtx, elm, props, isSvg);
     if (qSerialize) {
-        const elCtx = getContext(elm);
-        const listeners = elCtx.li;
+        const listeners = Object.entries(listenerMap);
         if (isHead && !isVirtual) {
             directSetAttribute(elm, 'q:head', '');
         }
-        if (listeners || hasRef) {
+        if (listeners.length > 0 || hasRef) {
             setQId(rctx, elCtx);
         }
-        if (listeners) {
-            listeners.forEach((qrl, key) => {
-                setAttribute(staticCtx, elm, key, serializeQRLs(qrl, elCtx));
-            });
-        }
+        listeners.forEach(([key, qrls]) => {
+            setAttribute(staticCtx, elm, key, serializeQRLs(qrls, elCtx));
+        });
     }
     const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
     if (setsInnerHTML) {
@@ -2077,13 +2103,12 @@ const PROP_HANDLER_MAP = {
     [dangerouslySetInnerHTML]: setInnerHTML,
     innerHTML: noop,
 };
-const updateProperties$1 = (elCtx, rctx, oldProps, newProps, isSvg) => {
-    const keys = Object.keys(newProps);
+const updateProperties$1 = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
+    const keys = getKeys(oldProps, newProps);
+    const listenersMap = (elCtx.li = {});
     if (keys.length === 0) {
-        return false;
+        return listenersMap;
     }
-    let renderListeners = false;
-    const staticCtx = rctx.$static$;
     const elm = elCtx.$element$;
     for (const key of keys) {
         if (key === 'children') {
@@ -2099,11 +2124,7 @@ const updateProperties$1 = (elCtx, rctx, oldProps, newProps, isSvg) => {
             continue;
         }
         if (isOnProp(key)) {
-            if (areExactQRLs(newValue, oldValue)) {
-                continue;
-            }
-            addGlobalListener(staticCtx, elm, setEvent(elCtx, key, newValue));
-            renderListeners = true;
+            setEvent(listenersMap, key, newValue);
             continue;
         }
         // Check if its an exception
@@ -2121,54 +2142,24 @@ const updateProperties$1 = (elCtx, rctx, oldProps, newProps, isSvg) => {
         // Fallback to render attribute
         setAttribute(staticCtx, elm, key, newValue);
     }
-    const cmp = rctx.$cmpCtx$;
-    if (cmp && !cmp.$attachedListeners$) {
-        cmp.$attachedListeners$ = true;
-        cmp.li?.forEach((qrls, eventName) => {
-            addQRLListener(elCtx, eventName, qrls);
-            addGlobalListener(staticCtx, elm, eventName);
-            renderListeners = true;
-        });
-    }
-    if (qSerialize && renderListeners) {
-        elCtx.li?.forEach((value, key) => {
-            setAttribute(staticCtx, elm, key, serializeQRLs(value, elCtx));
-        });
-    }
-    return false;
+    return listenersMap;
+};
+const getKeys = (oldProps, newProps) => {
+    const keys = Object.keys(newProps);
+    keys.push(...Object.keys(oldProps).filter((p) => !keys.includes(p)));
+    return keys;
 };
 const addGlobalListener = (staticCtx, elm, prop) => {
     if (!qSerialize && prop.includes(':')) {
         setAttribute(staticCtx, elm, prop, '');
     }
 };
-const areExactQRLs = (oldValue, newValue) => {
-    if (!isQrl(oldValue) || !isQrl(newValue) || oldValue.$hash$ !== newValue.$hash$) {
-        return false;
-    }
-    const cA = oldValue.$captureRef$;
-    const cB = newValue.$captureRef$;
-    if (cA && cB) {
-        return sameArrays(cA, cB);
-    }
-    return false;
-};
-const sameArrays = (a1, a2) => {
-    const len = a1.length;
-    if (len !== a2.length) {
-        return false;
-    }
-    for (let i = 0; i < len; i++) {
-        if (a1[i] !== a2[i]) {
-            return false;
-        }
-    }
-    return true;
-};
-const setProperties = (rctx, elm, newProps, isSvg) => {
+const setProperties = (rctx, elCtx, newProps, isSvg) => {
+    const elm = elCtx.$element$;
     const keys = Object.keys(newProps);
+    const listenerMap = elCtx.li;
     if (keys.length === 0) {
-        return false;
+        return listenerMap;
     }
     for (const key of keys) {
         if (key === 'children') {
@@ -2180,7 +2171,7 @@ const setProperties = (rctx, elm, newProps, isSvg) => {
             continue;
         }
         if (isOnProp(key)) {
-            addGlobalListener(rctx, elm, setEvent(getContext(elm), key, newValue));
+            addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue));
             continue;
         }
         // Check if its an exception
@@ -2198,9 +2189,9 @@ const setProperties = (rctx, elm, newProps, isSvg) => {
         // Fallback to render attribute
         setAttribute(rctx, elm, key, newValue);
     }
-    return false;
+    return listenerMap;
 };
-const updateComponentProperties$1 = (ctx, rctx, expectProps) => {
+const setComponentProps = (ctx, rctx, expectProps) => {
     const keys = Object.keys(expectProps);
     if (keys.length === 0) {
         return false;
@@ -2779,8 +2770,8 @@ const _pauseFromContexts = async (elements, containerState) => {
     const listeners = [];
     for (const ctx of elements) {
         const el = ctx.$element$;
-        if (ctx.li && isElement(el)) {
-            ctx.li.forEach((qrls, key) => {
+        if (isElement(el)) {
+            Object.entries(ctx.li).forEach(([key, qrls]) => {
                 qrls.forEach((qrl) => {
                     listeners.push({
                         key,
@@ -2790,8 +2781,10 @@ const _pauseFromContexts = async (elements, containerState) => {
                 });
             });
         }
-        for (const watch of ctx.$watches$) {
-            collector.$watches$.push(watch);
+        if (ctx.$watches$) {
+            for (const watch of ctx.$watches$) {
+                collector.$watches$.push(watch);
+            }
         }
     }
     // No listeners implies static page
@@ -3036,14 +3029,14 @@ const _pauseFromContexts = async (elements, containerState) => {
                     add = true;
                 }
             }
-            if (watches.length > 0) {
+            if (watches && watches.length > 0) {
                 const value = watches.map(getObjId).filter(isNotNullable).join(' ');
                 if (value) {
                     metaValue.w = value;
                     add = true;
                 }
             }
-            if (elementCaptured && seq.length > 0) {
+            if (elementCaptured && seq && seq.length > 0) {
                 const value = seq.map(mustGetObjId).join(' ');
                 if (value) {
                     metaValue.s = value;
@@ -3256,11 +3249,15 @@ const collectElement = async (el, collector) => {
         if (ctx.$renderQrl$) {
             await collectValue(ctx.$renderQrl$, collector, false);
         }
-        for (const obj of ctx.$seq$) {
-            await collectValue(obj, collector, false);
+        if (ctx.$seq$) {
+            for (const obj of ctx.$seq$) {
+                await collectValue(obj, collector, false);
+            }
         }
-        for (const obj of ctx.$watches$) {
-            await collectValue(obj, collector, false);
+        if (ctx.$watches$) {
+            for (const obj of ctx.$watches$) {
+                await collectValue(obj, collector, false);
+            }
         }
         if (ctx.$contexts$) {
             for (const obj of ctx.$contexts$.values()) {
@@ -3483,9 +3480,13 @@ const useWatchQrl = (qrl, opts) => {
     const el = ctx.$hostElement$;
     const containerState = ctx.$renderCtx$.$static$.$containerState$;
     const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, undefined);
+    const elCtx = getContext(el);
     set(true);
     qrl.$resolveLazy$();
-    getContext(el).$watches$.push(watch);
+    if (!elCtx.$watches$) {
+        elCtx.$watches$ = [];
+    }
+    elCtx.$watches$.push(watch);
     waitAndRun(ctx, () => runSubscriber(watch, containerState));
     if (isServer(ctx)) {
         useRunWatch(watch, opts?.eagerness);
@@ -3590,8 +3591,12 @@ const useClientEffectQrl = (qrl, opts) => {
     const el = ctx.$hostElement$;
     const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
     const eagerness = opts?.eagerness ?? 'visible';
+    const elCtx = getContext(el);
     set(true);
-    getContext(el).$watches$.push(watch);
+    if (!elCtx.$watches$) {
+        elCtx.$watches$ = [];
+    }
+    elCtx.$watches$.push(watch);
     useRunWatch(watch, eagerness);
     if (!isServer(ctx)) {
         qrl.$resolveLazy$();
@@ -4019,8 +4024,12 @@ const useResourceQrl = (qrl, opts) => {
     const el = ctx.$hostElement$;
     const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
     const previousWait = Promise.all(ctx.$waitOn$.slice());
+    const elCtx = getContext(el);
     runResource(watch, containerState, previousWait);
-    getContext(el).$watches$.push(watch);
+    if (!elCtx.$watches$) {
+        elCtx.$watches$ = [];
+    }
+    elCtx.$watches$.push(watch);
     set(resource);
     return resource;
 };
@@ -4650,15 +4659,15 @@ const getContext = (element) => {
             $id$: '',
             $element$: element,
             $refMap$: [],
-            $seq$: [],
-            $watches$: [],
+            li: {},
+            $watches$: null,
+            $seq$: null,
             $slots$: null,
             $scopeIds$: null,
             $appendStyles$: null,
             $props$: null,
             $vdom$: null,
             $renderQrl$: null,
-            li: null,
             $contexts$: null,
         };
     }
@@ -4666,7 +4675,7 @@ const getContext = (element) => {
 };
 const cleanupContext = (ctx, subsManager) => {
     const el = ctx.$element$;
-    ctx.$watches$.forEach((watch) => {
+    ctx.$watches$?.forEach((watch) => {
         subsManager.$clearSub$(watch);
         destroyWatch(watch);
     });
@@ -4674,8 +4683,8 @@ const cleanupContext = (ctx, subsManager) => {
         subsManager.$clearSub$(el);
     }
     ctx.$renderQrl$ = null;
-    ctx.$seq$.length = 0;
-    ctx.$watches$.length = 0;
+    ctx.$seq$ = null;
+    ctx.$watches$ = null;
     ctx.$dirty$ = false;
     el[Q_CTX] = undefined;
 };
@@ -5550,11 +5559,12 @@ const renderRoot = async (node, ssrCtx, stream, containerState, opts) => {
     return ssrCtx.rctx.$static$;
 };
 const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
-    if (node.type === SSRComment) {
+    const fn = node.type;
+    if (fn === SSRComment) {
         stream.write(`<!--${node.props.data ?? ''}-->`);
         return;
     }
-    if (node.type === Virtual) {
+    if (fn === Virtual) {
         const elCtx = getContext(ssrCtx.rctx.$static$.$doc$.createElement(VIRTUAL));
         return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
     }
@@ -5629,8 +5639,8 @@ const renderNodeElement = (node, extraAttributes, extraNodes, ssrCtx, stream, fl
         const cmp = hostCtx;
         if (!cmp.$attachedListeners$) {
             cmp.$attachedListeners$ = true;
-            hostCtx.li?.forEach((qrls, eventName) => {
-                addQRLListener(elCtx, eventName, qrls);
+            Object.entries(hostCtx.li).forEach(([eventName, qrls]) => {
+                addQRLListener(elCtx.li, eventName, qrls);
             });
         }
     }
@@ -5638,12 +5648,12 @@ const renderNodeElement = (node, extraAttributes, extraNodes, ssrCtx, stream, fl
     if (textType === 'head') {
         flags |= IS_HEAD;
     }
-    const hasEvents = elCtx.li;
+    const listeners = Object.entries(elCtx.li);
     const isHead = flags & IS_HEAD;
     if (key != null) {
         attributes['q:key'] = key;
     }
-    if (hasRef || hasEvents) {
+    if (hasRef || listeners.length > 0) {
         const newID = getNextIndex(ssrCtx.rctx);
         attributes[ELEMENT_ID] = newID;
         elCtx.$id$ = newID;
@@ -5655,11 +5665,9 @@ const renderNodeElement = (node, extraAttributes, extraNodes, ssrCtx, stream, fl
     if (extraAttributes) {
         Object.assign(attributes, extraAttributes);
     }
-    if (elCtx.li) {
-        elCtx.li.forEach((value, key) => {
-            attributes[key] = serializeQRLs(value, elCtx);
-        });
-    }
+    listeners.forEach(([key, value]) => {
+        attributes[key] = serializeQRLs(value, elCtx);
+    });
     if (renderNodeElementSync(textType, attributes, stream)) {
         return;
     }
@@ -5961,7 +5969,7 @@ const updateProperties = (ctx, expectProps) => {
             continue;
         }
         if (isOnProp(key)) {
-            setEvent(ctx, key, newValue);
+            setEvent(ctx.li, key, newValue);
             continue;
         }
         // Check if its an exception
@@ -6942,5 +6950,5 @@ const _useStyles = (styleQrl, transform, scoped) => {
     return styleId;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStreamBlock, SkipRerender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Resource, SSRComment, SSRStreamBlock, SkipRender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map
