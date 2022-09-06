@@ -2668,6 +2668,11 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  */
 export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
+declare interface UseContext {
+    <STATE extends object, T>(context: Context<STATE>, defaultValue: T): STATE | T;
+    <STATE extends object>(context: Context<STATE>): STATE;
+}
+
 /**
  * Retrive Context value.
  *
@@ -2713,7 +2718,7 @@ export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOpt
  * @param context - The context to retrieve a value from.
  * @public
  */
-export declare const useContext: <STATE extends object>(context: Context<STATE>) => STATE;
+export declare const useContext: UseContext;
 
 /**
  * Assign a value to a Context.
@@ -3358,7 +3363,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.0.107
+ * 0.0.108
  * @public
  */
 export declare const version: string;

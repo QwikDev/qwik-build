@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.107
+ * @builder.io/qwik 0.0.108
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -5453,7 +5453,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.107";
+const version = "0.0.108";
 
 /**
  * Render JSX.
@@ -6373,7 +6373,7 @@ const createContext = (name) => {
 // </docs>
 const useContextProvider = (context, newValue) => {
     const { get, set, ctx } = useSequentialScope();
-    if (get) {
+    if (get !== undefined) {
         return;
     }
     if (qDev) {
@@ -6440,9 +6440,9 @@ const useContextProvider = (context, newValue) => {
  * @public
  */
 // </docs>
-const useContext = (context) => {
+const useContext = (context, defaultValue) => {
     const { get, set, ctx } = useSequentialScope();
-    if (get) {
+    if (get !== undefined) {
         return get;
     }
     if (qDev) {
@@ -6456,17 +6456,18 @@ const useContext = (context) => {
         if (ctx.$contexts$) {
             const found = ctx.$contexts$.get(context.id);
             if (found) {
-                set(found);
-                return found;
+                return set(found);
             }
         }
     }
     if (hostElement.closest) {
         const value = queryContextFromDom(hostElement, context.id);
         if (value !== undefined) {
-            set(value);
-            return value;
+            return set(value);
         }
+    }
+    if (defaultValue !== undefined) {
+        return set(defaultValue);
     }
     throw qError(QError_notFoundContext, context.id);
 };
