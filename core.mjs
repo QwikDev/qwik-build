@@ -732,6 +732,9 @@ const InternalSSRStream = () => null;
 const fromCamelToKebabCase = (text) => {
     return text.replace(/([A-Z])/g, '-$1').toLowerCase();
 };
+const fromKebabToCamelCase = (text) => {
+    return text.replace(/-./g, (x) => x[1].toUpperCase());
+};
 
 const executeComponent = (rctx, elCtx) => {
     elCtx.$dirty$ = false;
@@ -2171,6 +2174,14 @@ const addGlobalListener = (staticCtx, elm, prop) => {
     if (!qSerialize && prop.includes(':')) {
         setAttribute(staticCtx, elm, prop, '');
     }
+    try {
+        if (window.qwikevents) {
+            window.qwikevents.push(getEventName(prop));
+        }
+    }
+    catch (err) {
+        logWarn(err);
+    }
 };
 const setProperties = (rctx, elCtx, newProps, isSvg) => {
     const elm = elCtx.$element$;
@@ -2798,6 +2809,7 @@ const _pauseFromContexts = async (elements, containerState) => {
                         key,
                         qrl,
                         el,
+                        eventName: getEventName(key),
                     });
                 });
             });
@@ -3423,6 +3435,11 @@ const intToStr = (nu) => {
 };
 const strToInt = (nu) => {
     return parseInt(nu, 36);
+};
+const getEventName = (attribute) => {
+    const colonPos = attribute.indexOf(':');
+    assertTrue(colonPos >= 0, 'colon not found in attribute');
+    return fromKebabToCamelCase(attribute.slice(colonPos + 1));
 };
 
 const WatchFlagsIsEffect = 1 << 0;

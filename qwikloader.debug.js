@@ -6,15 +6,15 @@
         return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
     }
     ((doc, hasInitialized) => {
+        const win = window;
         const broadcast = (infix, type, ev) => {
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));
         };
-        const emitEvent = (el, eventName, detail) => el.dispatchEvent(new CustomEvent(eventName, {
+        const createEvent = (eventName, detail, bubbles = !1) => new CustomEvent(eventName, {
             detail: detail,
-            bubbles: !0,
-            composed: !0
-        }));
+            bubbles: bubbles
+        });
         const error = msg => {
             throw new Error("QWIK " + msg);
         };
@@ -37,7 +37,7 @@
                     const url = qrlResolver(element, qrl);
                     if (url) {
                         const symbolName = getSymbolName(url);
-                        const handler = (window[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
+                        const handler = (win[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
                         const previousCtx = doc.__q_context__;
                         if (element.isConnected) {
                             try {
@@ -45,7 +45,7 @@
                                 handler(ev, element);
                             } finally {
                                 doc.__q_context__ = previousCtx;
-                                emitEvent(element, "qsymbol", symbolName);
+                                element.dispatchEvent(createEvent("qsymbol", symbolName, !0));
                             }
                         }
                     }
@@ -68,42 +68,39 @@
             const readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "qinit", new CustomEvent("qinit"));
-                if ("undefined" != typeof IntersectionObserver) {
+                broadcast("", "qinit", createEvent("qinit"));
+                const results = doc.querySelectorAll("[on\\:qvisible]");
+                if (results.length > 0) {
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "", "qvisible", new CustomEvent("qvisible", {
-                                    bubbles: !1,
-                                    detail: entry
-                                }));
+                                dispatch(entry.target, "", "qvisible", createEvent("qvisible", entry));
                             }
                         }
                     }));
-                    doc.qO = observer;
-                    doc.querySelectorAll("[on\\:qvisible]").forEach((el => observer.observe(el)));
+                    results.forEach((el => observer.observe(el)));
                 }
             }
         };
-        const addDocEventListener = eventName => {
-            document.addEventListener(eventName, processDocumentEvent, {
-                capture: !0
-            });
-            window.addEventListener(eventName, processWindowEvent);
+        const events =  new Set;
+        const push = eventNames => {
+            for (const eventName of eventNames) {
+                if (!events.has(eventName)) {
+                    document.addEventListener(eventName, processDocumentEvent, {
+                        capture: !0
+                    });
+                    win.addEventListener(eventName, processWindowEvent);
+                    events.add(eventName);
+                }
+            }
         };
         if (!doc.qR) {
-            doc.qR = 1;
-            {
-                const scriptTag = doc.querySelector("script[events]");
-                if (scriptTag) {
-                    scriptTag.getAttribute("events").split(/[\s,;]+/).forEach(addDocEventListener);
-                } else {
-                    for (const key in doc) {
-                        key.startsWith("on") && addDocEventListener(key.slice(2));
-                    }
-                }
-            }
+            const qwikevents = win.qwikevents;
+            Array.isArray(qwikevents) && push(qwikevents);
+            win.qwikevents = {
+                push: (...e) => push(e)
+            };
             doc.addEventListener("readystatechange", processReadyStateChange);
             processReadyStateChange();
         }

@@ -2101,6 +2101,7 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare interface SnapshotListener {
     key: string;
+    eventName: string;
     qrl: QRL<any>;
     el: Element;
 }
