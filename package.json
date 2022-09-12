@@ -10,9 +10,13 @@
     ".": {
       "import": {
         "min": "./core.min.mjs",
+        "production": "./core.prod.mjs",
         "default": "./core.mjs"
       },
-      "require": "./core.cjs"
+      "require": {
+        "production": "./core.prod.cjs",
+        "default": "./core.cjs"
+      }
     },
     "./jsx-runtime": {
       "import": "./jsx-runtime.mjs",
@@ -69,6 +73,8 @@
     "core.min.mjs",
     "core.mjs",
     "core.mjs.map",
+    "core.prod.cjs",
+    "core.prod.mjs",
     "core/package.json",
     "jsx-runtime.cjs",
     "jsx-runtime.cjs.map",

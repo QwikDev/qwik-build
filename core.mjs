@@ -5,8 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-// minification can replace the `globalThis.qDev` with `false`
-// which will remove all dev code within from the build
 const qDev = globalThis.qDev === true;
 const qSerialize = globalThis.qSerialize !== false;
 const qDynamicPlatform = globalThis.qDynamicPlatform !== false;
