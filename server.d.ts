@@ -7,13 +7,6 @@ import type { SymbolMapper } from './core/optimizer';
 import type { SymbolMapperFn } from './core/optimizer';
 
 /**
- * Utility timer function for performance profiling.
- * Returns a duration of 0 in environments that do not support performance.
- * @alpha
- */
-export declare function createTimer(): () => number;
-
-/**
  * `link-prefetch-html`: Render link rel=prefetch within the html
  *
  * `link-prefetch`: Use JS to add link rel=prefetch, add worker-fetch if not supported
@@ -50,8 +43,15 @@ export declare function getQwikLoaderScript(opts?: {
  */
 export declare interface InOrderAuto {
     strategy: 'auto';
-    minimunChunkSize?: number;
-    initialChunkSize?: number;
+    maximunInitialChunk?: number;
+    maximunChunk?: number;
+}
+
+/**
+ * @alpha
+ */
+declare interface InOrderDirect {
+    strategy: 'direct';
 }
 
 /**
@@ -64,7 +64,7 @@ export declare interface InOrderDisabled {
 /**
  * @alpha
  */
-export declare type InOrderStreaming = InOrderAuto | InOrderDisabled;
+export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDirect;
 
 /**
  * @alpha
@@ -235,22 +235,24 @@ export declare interface RenderToStringResult extends RenderResult {
     };
 }
 
+declare interface ResolvedManifest {
+    mapper: SymbolMapper;
+    manifest: QwikManifest;
+}
+
+/**
+ * @alpha
+ */
+export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest | undefined): ResolvedManifest | undefined;
+
 /**
  * @alpha
  */
 export declare interface SerializeDocumentOptions {
-    manifest?: QwikManifest;
+    manifest?: QwikManifest | ResolvedManifest;
     symbolMapper?: SymbolMapperFn;
     debug?: boolean;
 }
-
-/**
- * Applies NodeJS specific platform APIs to the passed in document instance.
- *
- * @alpha
- *
- */
-export declare function setServerPlatform(document: any, opts: SerializeDocumentOptions, mapper: SymbolMapper | undefined): Promise<void>;
 
 /**
  * @alpha

@@ -2809,12 +2809,12 @@ var require_ChildNode = __commonJS({
     "use strict";
     var Node = require_Node();
     var LinkedList = require_LinkedList();
-    var createDocumentFragmentFromArguments = function(document2, args) {
-      var docFrag = document2.createDocumentFragment();
+    var createDocumentFragmentFromArguments = function(document, args) {
+      var docFrag = document.createDocumentFragment();
       for (var i = 0; i < args.length; i++) {
         var argItem = args[i];
-        var isNode2 = argItem instanceof Node;
-        docFrag.appendChild(isNode2 ? argItem : document2.createTextNode(String(argItem)));
+        var isNode = argItem instanceof Node;
+        docFrag.appendChild(isNode ? argItem : document.createTextNode(String(argItem)));
       }
       return docFrag;
     };
@@ -3091,7 +3091,7 @@ var require_Element = __commonJS({
           return NodeUtils.serializeOne(this, { nodeType: 0 });
         },
         set: function(v) {
-          var document2 = this.ownerDocument;
+          var document = this.ownerDocument;
           var parent = this.parentNode;
           if (parent === null) {
             return;
@@ -3102,7 +3102,7 @@ var require_Element = __commonJS({
           if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
             parent = parent.ownerDocument.createElement("body");
           }
-          var parser = document2.implementation.mozHTMLParser(document2._address, parent);
+          var parser = document.implementation.mozHTMLParser(document._address, parent);
           parser.parse(v === null ? "" : String(v), true);
           this.replaceWith(parser._asDocumentFragment());
         }
@@ -9732,9 +9732,9 @@ var require_defineElement = __commonJS({
       });
       return c;
     };
-    function EventHandlerBuilder(body, document2, form, element) {
+    function EventHandlerBuilder(body, document, form, element) {
       this.body = body;
-      this.document = document2;
+      this.document = document;
       this.form = form;
       this.element = element;
     }
@@ -20667,8 +20667,8 @@ var require_Window = __commonJS({
     var Location = require_Location();
     var utils = require_utils();
     module.exports = Window;
-    function Window(document2) {
-      this.document = document2 || new DOMImplementation(null).createHTMLDocument("");
+    function Window(document) {
+      this.document = document || new DOMImplementation(null).createHTMLDocument("");
       this.document._scripting_enabled = true;
       this.document.defaultView = this;
       this.location = new Location(this, this.document._address || "about:blank");
@@ -20775,96 +20775,18 @@ var require_lib = __commonJS({
   }
 });
 
-// packages/qwik/src/testing/html.ts
-function isNode(value) {
-  return value && typeof value.nodeType === "number";
-}
-
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev === true;
-var qSerialize = globalThis.qSerialize !== false;
-var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-var qTest = globalThis.qTest === true;
-
 // packages/qwik/src/core/util/types.ts
 var isObject = (v) => {
   return v && typeof v === "object";
 };
 
-// packages/qwik/src/core/util/element.ts
-var isElement = (value) => {
-  return value.nodeType === 1;
-};
-
-// packages/qwik/src/core/props/props.ts
-var Q_CTX = "_qc_";
-var tryGetContext = (element) => {
-  return element[Q_CTX];
-};
-
-// packages/qwik/src/core/util/log.ts
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  const err = message instanceof Error ? message : new Error(message);
-  console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
-  return err;
-};
-var logErrorAndStop = (message, ...optionalParams) => {
-  const err = logError(message, ...optionalParams);
-  debugger;
-  return err;
-};
-var printParams = (optionalParams) => {
-  if (qDev) {
-    return optionalParams.map((p) => {
-      if (isNode(p) && isElement(p)) {
-        return printElement(p);
-      }
-      return p;
-    });
-  }
-  return optionalParams;
-};
-var printElement = (el) => {
-  const ctx = tryGetContext(el);
-  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
-  return {
-    tagName: el.tagName,
-    renderQRL: ctx?.$renderQrl$?.getSymbol(),
-    element: isServer ? void 0 : el,
-    ctx: isServer ? void 0 : ctx
-  };
-};
-
-// packages/qwik/src/core/assert/assert.ts
-function assertDefined(value, text, ...parts) {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw logErrorAndStop(text, ...parts);
-  }
-}
-
-// packages/qwik/src/core/util/dom.ts
-var getDocument = (node) => {
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  if (node.nodeType === 9) {
-    return node;
-  }
-  const doc = node.ownerDocument;
-  assertDefined(doc, "doc must be defined");
-  return doc;
-};
-
 // packages/qwik/src/core/platform/platform.ts
-var createPlatform = (doc) => {
+var createPlatform = () => {
   const moduleCache = /* @__PURE__ */ new Map();
   return {
     isServer: false,
     importSymbol(containerEl, url, symbolName) {
-      const urlDoc = toUrl(doc, containerEl, url).toString();
+      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
       const urlCopy = new URL(urlDoc);
       urlCopy.hash = "";
       urlCopy.search = "";
@@ -20912,25 +20834,17 @@ var toUrl = (doc, containerEl, url) => {
   const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
   return new URL(url, base);
 };
-var setPlatform = (doc, plt) => doc[DocumentPlatform] = plt;
-var getPlatform = (docOrNode) => {
-  const doc = getDocument(docOrNode);
-  return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
-};
-var DocumentPlatform = ":platform:";
+var _platform = createPlatform();
+var setPlatform = (plt) => _platform = plt;
 
 // packages/qwik/src/testing/platform.ts
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
-function createPlatform2(document2) {
-  if (!document2 || document2.nodeType !== 9) {
-    throw new Error(`Invalid Document implementation`);
-  }
-  const doc = document2;
+function createPlatform2() {
   let render = null;
   const moduleCache = /* @__PURE__ */ new Map();
-  const testPlatform = {
-    isServer: true,
+  const testPlatform2 = {
+    isServer: false,
     importSymbol(containerEl, url, symbolName) {
       const urlDoc = toUrl2(containerEl.ownerDocument, containerEl, url);
       const importPath = toPath(urlDoc);
@@ -20971,7 +20885,7 @@ function createPlatform2(document2) {
       await Promise.resolve();
       if (render) {
         try {
-          render.resolve(await render.fn(doc));
+          render.resolve(await render.fn());
         } catch (e) {
           render.reject(e);
         }
@@ -20982,11 +20896,10 @@ function createPlatform2(document2) {
       return void 0;
     }
   };
-  return testPlatform;
+  return testPlatform2;
 }
-function setTestPlatform(document2) {
-  const platform = createPlatform2(document2);
-  setPlatform(document2, platform);
+function setTestPlatform() {
+  setPlatform(testPlatform);
 }
 function toUrl2(doc, containerEl, url) {
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
@@ -21005,14 +20918,8 @@ function toPath(url) {
   }
   throw new Error(`Unable to find path for import "${url}"`);
 }
-function getTestPlatform(document2) {
-  const testPlatform = getPlatform(document2);
-  if (!testPlatform) {
-    throw new Error(`Test platform was not applied to the document`);
-  }
-  if (typeof testPlatform.flush !== "function") {
-    throw new Error(`Invalid Test platform applied to the document`);
-  }
+var testPlatform = createPlatform2();
+function getTestPlatform() {
   return testPlatform;
 }
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
@@ -21044,7 +20951,7 @@ var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefi
 function createDocument(opts) {
   const doc = import_qwik_dom.default.createDocument(opts?.html);
   ensureGlobals(doc, opts);
-  setTestPlatform(doc);
+  setTestPlatform();
   return doc;
 }
 function createWindow(opts = {}) {

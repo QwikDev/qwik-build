@@ -108,16 +108,40 @@
     const ELEMENT_ID = 'q:id';
     const ELEMENT_ID_PREFIX = '#';
 
-    const getDocument = (node) => {
-        if (typeof document !== 'undefined') {
-            return document;
+    const isPromise = (value) => {
+        return value instanceof Promise;
+    };
+    const safeCall = (call, thenFn, rejectFn) => {
+        try {
+            const promise = call();
+            if (isPromise(promise)) {
+                return promise.then(thenFn, rejectFn);
+            }
+            else {
+                return thenFn(promise);
+            }
         }
-        if (node.nodeType === 9) {
-            return node;
+        catch (e) {
+            return rejectFn(e);
         }
-        const doc = node.ownerDocument;
-        assertDefined(doc, 'doc must be defined');
-        return doc;
+    };
+    const then = (promise, thenFn) => {
+        return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+    };
+    const promiseAll = (promises) => {
+        const hasPromise = promises.some(isPromise);
+        if (hasPromise) {
+            return Promise.all(promises);
+        }
+        return promises;
+    };
+    const isNotNullable = (v) => {
+        return v != null;
+    };
+    const delay = (timeout) => {
+        return new Promise((resolve) => {
+            setTimeout(resolve, timeout);
+        });
     };
 
     let _context;
@@ -149,7 +173,6 @@
         assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
         assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
         assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
-        assertDefined(ctx.$doc$, `invoke: $doc$ must be defined`, ctx);
         assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
         return ctx;
     };
@@ -175,17 +198,24 @@
         return returnValue;
     };
     const waitAndRun = (ctx, callback) => {
-        const previousWait = ctx.$waitOn$.slice();
-        ctx.$waitOn$.push(Promise.allSettled(previousWait).then(callback));
+        const waitOn = ctx.$waitOn$;
+        if (waitOn.length === 0) {
+            const result = callback();
+            if (isPromise(result)) {
+                waitOn.push(result);
+            }
+        }
+        else {
+            waitOn.push(Promise.allSettled(waitOn).then(callback));
+        }
     };
     const newInvokeContextFromTuple = (context) => {
         const element = context[0];
-        return newInvokeContext(getDocument(element), undefined, element, context[1], context[2]);
+        return newInvokeContext(undefined, element, context[1], context[2]);
     };
-    const newInvokeContext = (doc, hostElement, element, event, url) => {
+    const newInvokeContext = (hostElement, element, event, url) => {
         const ctx = {
             $seq$: 0,
-            $doc$: doc,
             $hostElement$: hostElement,
             $element$: element,
             $event$: event,
@@ -229,48 +259,12 @@
         }
     }
 
-    const isPromise = (value) => {
-        return value instanceof Promise;
-    };
-    const safeCall = (call, thenFn, rejectFn) => {
-        try {
-            const promise = call();
-            if (isPromise(promise)) {
-                return promise.then(thenFn, rejectFn);
-            }
-            else {
-                return thenFn(promise);
-            }
-        }
-        catch (e) {
-            return rejectFn(e);
-        }
-    };
-    const then = (promise, thenFn) => {
-        return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
-    };
-    const promiseAll = (promises) => {
-        const hasPromise = promises.some(isPromise);
-        if (hasPromise) {
-            return Promise.all(promises);
-        }
-        return promises;
-    };
-    const isNotNullable = (v) => {
-        return v != null;
-    };
-    const delay = (timeout) => {
-        return new Promise((resolve) => {
-            setTimeout(resolve, timeout);
-        });
-    };
-
-    const createPlatform = (doc) => {
+    const createPlatform = () => {
         const moduleCache = new Map();
         return {
             isServer: false,
             importSymbol(containerEl, url, symbolName) {
-                const urlDoc = toUrl(doc, containerEl, url).toString();
+                const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
                 const urlCopy = new URL(urlDoc);
                 urlCopy.hash = '';
                 urlCopy.search = '';
@@ -326,6 +320,7 @@
         const base = new URL(containerEl.getAttribute('q:base') ?? baseURI, baseURI);
         return new URL(url, base);
     };
+    let _platform = createPlatform();
     // <docs markdown="./readme.md#setPlatform">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ./readme.md#setPlatform instead)
@@ -340,7 +335,7 @@
      * @alpha
      */
     // </docs>
-    const setPlatform = (doc, plt) => (doc[DocumentPlatform] = plt);
+    const setPlatform = (plt) => (_platform = plt);
     // <docs markdown="./readme.md#getPlatform">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ./readme.md#getPlatform instead)
@@ -357,18 +352,15 @@
      * @alpha
      */
     // </docs>
-    const getPlatform = (docOrNode) => {
-        const doc = getDocument(docOrNode);
-        return doc[DocumentPlatform] || (doc[DocumentPlatform] = createPlatform(doc));
+    const getPlatform = () => {
+        return _platform;
     };
-    const isServer = (ctx) => {
+    const isServer = () => {
         if (qDynamicPlatform) {
-            return (ctx.$renderCtx$?.$static$.$containerState$.$platform$.isServer ??
-                getPlatform(ctx.$doc$).isServer);
+            return _platform.isServer;
         }
         return false;
     };
-    const DocumentPlatform = ':platform:';
 
     // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -655,6 +647,21 @@
         addQRLListener(ctx.li, normalizeOnProp(eventName), [eventQrl]);
     };
 
+    const getDocument = (node) => {
+        if (!qDynamicPlatform) {
+            return document;
+        }
+        if (typeof document !== 'undefined') {
+            return document;
+        }
+        if (node.nodeType === 9) {
+            return node;
+        }
+        const doc = node.ownerDocument;
+        assertDefined(doc, 'doc must be defined');
+        return doc;
+    };
+
     const emitEvent = (el, eventName, detail, bubbles) => {
         if (el && typeof CustomEvent === 'function') {
             el.dispatchEvent(new CustomEvent(eventName, {
@@ -754,11 +761,9 @@
         elCtx.$slots$ = [];
         const hostElement = elCtx.$element$;
         const onRenderQRL = elCtx.$renderQrl$;
-        const staticCtx = rctx.$static$;
-        const containerState = staticCtx.$containerState$;
         const props = elCtx.$props$;
         const newCtx = pushRenderContext(rctx, elCtx);
-        const invocatinContext = newInvokeContext(staticCtx.$doc$, hostElement, undefined, RenderEvent);
+        const invocatinContext = newInvokeContext(hostElement, undefined, RenderEvent);
         const waitOn = (invocatinContext.$waitOn$ = []);
         assertDefined(onRenderQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
         assertDefined(props, `render: host element to render must has defined props`, elCtx);
@@ -767,31 +772,34 @@
         // Invoke render hook
         invocatinContext.$subscriber$ = hostElement;
         invocatinContext.$renderCtx$ = rctx;
-        // Component is not dirty any more
-        containerState.$hostsStaging$.delete(hostElement);
-        // Clean current subscription before render
-        containerState.$subsManager$.$clearSub$(hostElement);
         // Resolve render function
         const onRenderFn = onRenderQRL.getFn(invocatinContext);
         return safeCall(() => onRenderFn(props), (jsxNode) => {
-            staticCtx.$hostElements$.add(hostElement);
-            const waitOnPromise = promiseAll(waitOn);
-            return then(waitOnPromise, () => {
-                if (isFunction(jsxNode)) {
-                    elCtx.$dirty$ = false;
-                    jsxNode = jsxNode();
-                }
-                else if (elCtx.$dirty$) {
-                    return executeComponent(rctx, elCtx);
-                }
-                elCtx.$attachedListeners$ = false;
-                return {
-                    node: jsxNode,
-                    rctx: newCtx,
-                };
-            });
+            elCtx.$attachedListeners$ = false;
+            if (waitOn.length > 0) {
+                return Promise.allSettled(waitOn).then(() => {
+                    if (elCtx.$dirty$) {
+                        return executeComponent(rctx, elCtx);
+                    }
+                    return {
+                        node: jsxNode,
+                        rctx: newCtx,
+                    };
+                });
+            }
+            if (elCtx.$dirty$) {
+                return executeComponent(rctx, elCtx);
+            }
+            return {
+                node: jsxNode,
+                rctx: newCtx,
+            };
         }, (err) => {
             logError(err);
+            return {
+                node: SkipRender,
+                rctx: newCtx,
+            };
         });
     };
     const createRenderContext = (doc, containerState) => {
@@ -799,7 +807,6 @@
             $static$: {
                 $doc$: doc,
                 $containerState$: containerState,
-                $containerEl$: containerState.$containerEl$,
                 $hostElements$: new Set(),
                 $operations$: [],
                 $postOperations$: [],
@@ -821,13 +828,6 @@
             $localStack$: ctx.$localStack$.concat(elCtx),
         };
         return newCtx;
-    };
-    const joinClasses = (...input) => {
-        const set = new Set();
-        input.forEach((value) => {
-            parseClassAny(value).forEach((v) => set.add(v));
-        });
-        return Array.from(set).join(' ');
     };
     const parseClassAny = (obj) => {
         if (isString(obj)) {
@@ -896,7 +896,6 @@
     const hasStyle = (containerState, styleId) => {
         return containerState.$styleIds$.has(styleId);
     };
-    const ALLOWS_PROPS = [QSlot];
     const SKIPS_PROPS = [QSlot, OnRenderProp, 'children'];
 
     const hashCode = (text, hash = 0) => {
@@ -945,7 +944,7 @@
             directSetAttribute(el, prop, str);
         }
     };
-    const setProperty$1 = (ctx, node, key, value) => {
+    const setProperty = (ctx, node, key, value) => {
         if (ctx) {
             ctx.$operations$.push({
                 $operation$: _setProperty,
@@ -986,7 +985,7 @@
         ctx.$containerState$.$styleIds$.add(styleTask.styleId);
         ctx.$postOperations$.push({
             $operation$: _appendHeadStyle,
-            $args$: [ctx.$doc$, ctx.$containerEl$, styleTask],
+            $args$: [ctx.$containerState$.$containerEl$, styleTask],
         });
     };
     const setClasslist = (ctx, elm, toRemove, toAdd) => {
@@ -1005,7 +1004,8 @@
         classList.remove(...toRemove);
         classList.add(...toAdd);
     };
-    const _appendHeadStyle = (doc, containerEl, styleTask) => {
+    const _appendHeadStyle = (containerEl, styleTask) => {
+        const doc = getDocument(containerEl);
         const isDoc = doc.documentElement === containerEl;
         const headEl = doc.head;
         const style = doc.createElement('style');
@@ -1158,7 +1158,7 @@
                 attributes.push(`${key}`);
             }
             else {
-                attributes.push(`${key}=${escape$1(value)}`);
+                attributes.push(`${key}=${escape(value)}`);
             }
         });
         return attributes.join(' ');
@@ -1186,7 +1186,7 @@
         }
         return pars;
     };
-    const escape$1 = (s) => {
+    const escape = (s) => {
         return s.replace(/ /g, '+');
     };
     const unescape = (s) => {
@@ -1416,35 +1416,40 @@
 
     const renderComponent = (rctx, ctx, flags) => {
         const justMounted = !ctx.$mounted$;
+        const hostElement = ctx.$element$;
+        const containerState = rctx.$static$.$containerState$;
+        // Component is not dirty any more
+        containerState.$hostsStaging$.delete(hostElement);
+        // Clean current subscription before render
+        containerState.$subsManager$.$clearSub$(hostElement);
         // TODO, serialize scopeIds
         return then(executeComponent(rctx, ctx), (res) => {
-            if (res) {
-                const hostElement = ctx.$element$;
-                const newCtx = res.rctx;
-                const invocatinContext = newInvokeContext(rctx.$static$.$doc$, hostElement);
-                invocatinContext.$subscriber$ = hostElement;
-                invocatinContext.$renderCtx$ = newCtx;
-                if (justMounted) {
-                    if (ctx.$appendStyles$) {
-                        for (const style of ctx.$appendStyles$) {
-                            appendHeadStyle(rctx.$static$, style);
-                        }
-                    }
-                    if (ctx.$scopeIds$) {
-                        const value = serializeSStyle(ctx.$scopeIds$);
-                        if (value) {
-                            hostElement.setAttribute(QScopedStyle, value);
-                        }
+            const staticCtx = rctx.$static$;
+            const newCtx = res.rctx;
+            const invocatinContext = newInvokeContext(hostElement);
+            staticCtx.$hostElements$.add(hostElement);
+            invocatinContext.$subscriber$ = hostElement;
+            invocatinContext.$renderCtx$ = newCtx;
+            if (justMounted) {
+                if (ctx.$appendStyles$) {
+                    for (const style of ctx.$appendStyles$) {
+                        appendHeadStyle(staticCtx, style);
                     }
                 }
-                const processedJSXNode = processData$1(res.node, invocatinContext);
-                return then(processedJSXNode, (processedJSXNode) => {
-                    const newVdom = wrapJSX(hostElement, processedJSXNode);
-                    const oldVdom = getVdom(ctx);
-                    ctx.$vdom$ = newVdom;
-                    return visitJsxNode(newCtx, oldVdom, newVdom, flags);
-                });
+                if (ctx.$scopeIds$) {
+                    const value = serializeSStyle(ctx.$scopeIds$);
+                    if (value) {
+                        hostElement.setAttribute(QScopedStyle, value);
+                    }
+                }
             }
+            const processedJSXNode = processData$1(res.node, invocatinContext);
+            return then(processedJSXNode, (processedJSXNode) => {
+                const newVdom = wrapJSX(hostElement, processedJSXNode);
+                const oldVdom = getVdom(ctx);
+                ctx.$vdom$ = newVdom;
+                return visitJsxNode(newCtx, oldVdom, newVdom, flags);
+            });
         });
     };
     const getVdom = (ctx) => {
@@ -1477,9 +1482,7 @@
             textType = VIRTUAL;
         }
         else if (isFunction(nodeType)) {
-            const res = invocationContext
-                ? invoke(invocationContext, () => nodeType(props, node.key))
-                : nodeType(props, node.key);
+            const res = invoke(invocationContext, nodeType, props, node.key);
             return processData$1(res, invocationContext);
         }
         else {
@@ -1780,7 +1783,7 @@
         // Render text nodes
         if (tag === '#text') {
             if (oldVnode.$text$ !== newVnode.$text$) {
-                setProperty$1(staticCtx, elm, 'data', newVnode.$text$);
+                setProperty(staticCtx, elm, 'data', newVnode.$text$);
             }
             return;
         }
@@ -1795,17 +1798,19 @@
         const isComponent = isVirtual && OnRenderProp in props;
         const elCtx = getContext(elm);
         if (!isComponent) {
-            const listenerMap = updateProperties$1(elCtx, staticCtx, oldVnode.$props$, props, isSvg);
+            const listenerMap = updateProperties(elCtx, staticCtx, oldVnode.$props$, props, isSvg);
             const currentComponent = rctx.$cmpCtx$;
             if (currentComponent && !currentComponent.$attachedListeners$) {
                 currentComponent.$attachedListeners$ = true;
-                Object.entries(currentComponent.li).forEach(([key, value]) => {
-                    addQRLListener(listenerMap, key, value);
+                for (const key of Object.keys(currentComponent.li)) {
+                    addQRLListener(listenerMap, key, currentComponent.li[key]);
                     addGlobalListener(staticCtx, elm, key);
-                });
+                }
             }
             if (qSerialize) {
-                Object.entries(listenerMap).forEach(([key, value]) => setAttribute(staticCtx, elm, key, serializeQRLs(value, elCtx)));
+                for (const key of Object.keys(listenerMap)) {
+                    setAttribute(staticCtx, elm, key, serializeQRLs(listenerMap[key], elCtx));
+                }
             }
             if (isSvg && newVnode.$type$ === 'foreignObject') {
                 flags &= ~IS_SVG;
@@ -1832,7 +1837,7 @@
             }
             return smartUpdateChildren(rctx, oldVnode, newVnode, 'root', flags);
         }
-        let needsRender = setComponentProps(elCtx, rctx, props);
+        let needsRender = setComponentProps$1(elCtx, rctx, props);
         // TODO: review this corner case
         if (!needsRender && !elCtx.$renderQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
             setQId(rctx, elCtx);
@@ -1857,8 +1862,9 @@
         const slotRctx = pushRenderContext(rctx, hostCtx);
         const slotMaps = getSlotMap(hostCtx);
         // Remove content from empty slots
-        Object.entries(slotMaps.slots).forEach(([key, slotEl]) => {
+        for (const key of Object.keys(slotMaps.slots)) {
             if (!splittedNewChidren[key]) {
+                const slotEl = slotMaps.slots[key];
                 const oldCh = getChildrenVnodes(slotEl, 'root');
                 if (oldCh.length > 0) {
                     const slotCtx = tryGetContext(slotEl);
@@ -1868,18 +1874,20 @@
                     removeVnodes(staticCtx, oldCh, 0, oldCh.length - 1);
                 }
             }
-        });
+        }
         // Remove empty templates
-        Object.entries(slotMaps.templates).forEach(([key, templateEl]) => {
+        for (const key of Object.keys(slotMaps.templates)) {
+            const templateEl = slotMaps.templates[key];
             if (templateEl) {
                 if (!splittedNewChidren[key] || slotMaps.slots[key]) {
                     removeNode(staticCtx, templateEl);
                     slotMaps.templates[key] = undefined;
                 }
             }
-        });
+        }
         // Render into slots
-        return promiseAll(Object.entries(splittedNewChidren).map(([key, newVdom]) => {
+        return promiseAll(Object.keys(splittedNewChidren).map((key) => {
+            const newVdom = splittedNewChidren[key];
             const slotElm = getSlotElement(staticCtx, slotMaps, hostCtx.$element$, key);
             const slotCtx = getContext(slotElm);
             const oldVdom = getVdom(slotCtx);
@@ -1978,7 +1986,7 @@
             assertTrue(isVirtual, 'component must be a virtual element');
             const renderQRL = props[OnRenderProp];
             assertQrl(renderQRL);
-            setComponentProps(elCtx, rctx, props);
+            setComponentProps$1(elCtx, rctx, props);
             setQId(rctx, elCtx);
             // Run mount hook
             elCtx.$renderQrl$ = renderQRL;
@@ -2015,9 +2023,9 @@
             }
             if (!currentComponent.$attachedListeners$) {
                 currentComponent.$attachedListeners$ = true;
-                Object.entries(currentComponent.li).forEach(([eventName, qrls]) => {
-                    addQRLListener(listenerMap, eventName, qrls);
-                });
+                for (const eventName of Object.keys(currentComponent.li)) {
+                    addQRLListener(listenerMap, eventName, currentComponent.li[eventName]);
+                }
             }
         }
         if (isSlot) {
@@ -2032,16 +2040,16 @@
             setKey(elm, vnode.$key$);
         }
         if (qSerialize) {
-            const listeners = Object.entries(listenerMap);
+            const listeners = Object.keys(listenerMap);
             if (isHead && !isVirtual) {
                 directSetAttribute(elm, 'q:head', '');
             }
             if (listeners.length > 0 || hasRef) {
                 setQId(rctx, elCtx);
             }
-            listeners.forEach(([key, qrls]) => {
-                setAttribute(staticCtx, elm, key, serializeQRLs(qrls, elCtx));
-            });
+            for (const key of listeners) {
+                setAttribute(staticCtx, elm, key, serializeQRLs(listenerMap[key], elCtx));
+            }
         }
         const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
         if (setsInnerHTML) {
@@ -2097,7 +2105,7 @@
         return queryAllVirtualByAttribute(parent, QSlotRef, ctx.$id$).map(domToVnode);
     };
     const handleStyle = (ctx, elm, _, newValue) => {
-        setProperty$1(ctx, elm.style, 'cssText', stringifyStyle(newValue));
+        setProperty(ctx, elm.style, 'cssText', stringifyStyle(newValue));
         return true;
     };
     const handleClass = (ctx, elm, _, newValue, oldValue) => {
@@ -2109,7 +2117,7 @@
     const checkBeforeAssign = (ctx, elm, prop, newValue) => {
         if (prop in elm) {
             if (elm[prop] !== newValue) {
-                setProperty$1(ctx, elm, prop, newValue);
+                setProperty(ctx, elm, prop, newValue);
             }
         }
         return true;
@@ -2117,10 +2125,10 @@
     const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
     const setInnerHTML = (ctx, elm, _, newValue) => {
         if (dangerouslySetInnerHTML in elm) {
-            setProperty$1(ctx, elm, dangerouslySetInnerHTML, newValue);
+            setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
         }
         else if ('innerHTML' in elm) {
-            setProperty$1(ctx, elm, 'innerHTML', newValue);
+            setProperty(ctx, elm, 'innerHTML', newValue);
         }
         return true;
     };
@@ -2136,7 +2144,7 @@
         [dangerouslySetInnerHTML]: setInnerHTML,
         innerHTML: noop,
     };
-    const updateProperties$1 = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
+    const updateProperties = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
         const keys = getKeys(oldProps, newProps);
         const listenersMap = (elCtx.li = {});
         if (keys.length === 0) {
@@ -2169,7 +2177,7 @@
             }
             // Check if property in prototype
             if (!isSvg && key in elm) {
-                setProperty$1(staticCtx, elm, key, newValue);
+                setProperty(staticCtx, elm, key, newValue);
                 continue;
             }
             // Fallback to render attribute
@@ -2224,7 +2232,7 @@
             }
             // Check if property in prototype
             if (!isSvg && key in elm) {
-                setProperty$1(rctx, elm, key, newValue);
+                setProperty(rctx, elm, key, newValue);
                 continue;
             }
             // Fallback to render attribute
@@ -2232,7 +2240,7 @@
         }
         return listenerMap;
     };
-    const setComponentProps = (ctx, rctx, expectProps) => {
+    const setComponentProps$1 = (ctx, rctx, expectProps) => {
         const keys = Object.keys(expectProps);
         if (keys.length === 0) {
             return false;
@@ -2369,8 +2377,8 @@
      * @public
      */
     const notifyRender = (hostElement, containerState) => {
-        const isServer = qDynamicPlatform && !qTest && containerState.$platform$.isServer;
-        if (!isServer) {
+        const server = isServer();
+        if (!server) {
             resumeIfNeeded(containerState.$containerEl$);
         }
         const ctx = getContext(hostElement);
@@ -2385,7 +2393,7 @@
             containerState.$hostsStaging$.add(hostElement);
         }
         else {
-            if (isServer) {
+            if (server) {
                 logWarn('Can not rerender in server platform');
                 return undefined;
             }
@@ -2410,7 +2418,7 @@
     };
     const scheduleFrame = (containerState) => {
         if (containerState.$renderPromise$ === undefined) {
-            containerState.$renderPromise$ = containerState.$platform$.nextTick(() => renderMarked(containerState));
+            containerState.$renderPromise$ = getPlatform().nextTick(() => renderMarked(containerState));
         }
         return containerState.$renderPromise$;
     };
@@ -2434,7 +2442,6 @@
         });
         containerState.$hostsStaging$.clear();
         const doc = getDocument(containerState.$containerEl$);
-        const platform = containerState.$platform$;
         const renderingQueue = Array.from(hostsRendering);
         sortNodes(renderingQueue);
         const ctx = createRenderContext(doc, containerState);
@@ -2460,13 +2467,13 @@
         if (staticCtx.$operations$.length === 0) {
             printRenderStats(staticCtx);
             postRendering(containerState, staticCtx);
-            return ctx;
+            return;
         }
-        return platform.raf(() => {
+        return getPlatform().raf(() => {
             executeContextWithSlots(ctx);
             printRenderStats(staticCtx);
             postRendering(containerState, staticCtx);
-            return ctx;
+            return;
         });
     };
     const getFlags = (el) => {
@@ -2593,26 +2600,29 @@
     const getContainerState = (containerEl) => {
         let set = containerEl[CONTAINER_STATE];
         if (!set) {
-            containerEl[CONTAINER_STATE] = set = {
-                $containerEl$: containerEl,
-                $proxyMap$: new WeakMap(),
-                $subsManager$: null,
-                $platform$: getPlatform(containerEl),
-                $watchNext$: new Set(),
-                $watchStaging$: new Set(),
-                $hostsNext$: new Set(),
-                $hostsStaging$: new Set(),
-                $renderPromise$: undefined,
-                $hostsRendering$: undefined,
-                $envData$: {},
-                $elementIndex$: 0,
-                $styleIds$: new Set(),
-                $mutableProps$: false,
-            };
-            seal(set);
-            set.$subsManager$ = createSubscriptionManager(set);
+            containerEl[CONTAINER_STATE] = set = createContainerState(containerEl);
         }
         return set;
+    };
+    const createContainerState = (containerEl) => {
+        const containerState = {
+            $containerEl$: containerEl,
+            $proxyMap$: new WeakMap(),
+            $subsManager$: null,
+            $watchNext$: new Set(),
+            $watchStaging$: new Set(),
+            $hostsNext$: new Set(),
+            $hostsStaging$: new Set(),
+            $renderPromise$: undefined,
+            $hostsRendering$: undefined,
+            $envData$: {},
+            $elementIndex$: 0,
+            $styleIds$: new Set(),
+            $mutableProps$: false,
+        };
+        seal(containerState);
+        containerState.$subsManager$ = createSubscriptionManager(containerState);
+        return containerState;
     };
     const createSubscriptionManager = (containerState) => {
         const objToSubs = new Map();
@@ -2758,7 +2768,8 @@
         for (const obj of meta.objs) {
             reviveNestedObjects(obj, getObject, parser);
         }
-        Object.entries(meta.ctx).forEach(([elementID, ctxMeta]) => {
+        for (const elementID of Object.keys(meta.ctx)) {
+            const ctxMeta = meta.ctx[elementID];
             const el = getObject(elementID);
             assertDefined(el, `resume: cant find dom node for id`, elementID);
             const ctx = getContext(el);
@@ -2795,7 +2806,7 @@
                 ctx.$props$ = getObject(props);
                 ctx.$renderQrl$ = getObject(renderQrl);
             }
-        });
+        }
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
         logDebug('Container resumed');
         emitEvent(containerEl, 'qresume', undefined, true);
@@ -2808,28 +2819,26 @@
     /**
      * @internal
      */
-    const _pauseFromContexts = async (elements, containerState) => {
-        const elementToIndex = new Map();
+    const _pauseFromContexts = async (allContexts, containerState) => {
         const collector = createCollector(containerState);
         const listeners = [];
-        for (const ctx of elements) {
+        for (const ctx of allContexts) {
             const el = ctx.$element$;
             if (isElement(el)) {
-                Object.entries(ctx.li).forEach(([key, qrls]) => {
-                    qrls.forEach((qrl) => {
+                const ctxLi = ctx.li;
+                for (const key of Object.keys(ctxLi)) {
+                    for (const qrl of ctxLi[key]) {
                         listeners.push({
                             key,
                             qrl,
                             el,
                             eventName: getEventName(key),
                         });
-                    });
-                });
+                    }
+                }
             }
             if (ctx.$watches$) {
-                for (const watch of ctx.$watches$) {
-                    collector.$watches$.push(watch);
-                }
+                collector.$watches$.push(...ctx.$watches$);
             }
         }
         // No listeners implies static page
@@ -2842,7 +2851,6 @@
                 },
                 objs: [],
                 listeners: [],
-                pendingContent: [],
                 mode: 'static',
             };
         }
@@ -2852,45 +2860,55 @@
             const captured = listener.qrl.$captureRef$;
             if (captured) {
                 for (const obj of captured) {
-                    await collectValue(obj, collector, true);
+                    collectValue(obj, collector, true);
                 }
             }
-            const ctx = tryGetContext(listener.el);
-            for (const obj of ctx.$refMap$) {
-                await collectValue(obj, collector, true);
-            }
+            // const ctx = tryGetContext(listener.el)!;
+            // for (const obj of ctx.$refMap$) {
+            //   collectValue(obj, collector, true);
+            // }
+        }
+        // Wait for remaining promises
+        let promises;
+        while ((promises = collector.$promises$).length > 0) {
+            collector.$promises$ = [];
+            await Promise.allSettled(promises);
         }
         // If at this point any component can render, we need to capture Context and Props
         const canRender = collector.$elements$.length > 0;
         if (canRender) {
-            for (const ctx of elements) {
-                if (isVirtualElement(ctx.$element$)) {
-                    await collectProps(ctx.$element$, ctx.$props$, collector);
+            for (const element of collector.$elements$) {
+                collectElementData(tryGetContext(element), collector);
+            }
+            for (const ctx of allContexts) {
+                if (ctx.$props$) {
+                    collectMutableProps(ctx.$element$, ctx.$props$, collector);
                 }
                 if (ctx.$contexts$) {
                     for (const item of ctx.$contexts$.values()) {
-                        await collectValue(item, collector, false);
+                        collectValue(item, collector, false);
                     }
                 }
             }
         }
+        // Wait for remaining promises
+        while ((promises = collector.$promises$).length > 0) {
+            collector.$promises$ = [];
+            await Promise.allSettled(promises);
+        }
         // Convert objSet to array
-        const objs = Array.from(new Set(collector.$objMap$.values()));
+        const elementToIndex = new Map();
+        const objs = Array.from(collector.$objSet$.keys());
         const objToId = new Map();
         const getElementID = (el) => {
             let id = elementToIndex.get(el);
             if (id === undefined) {
-                if (el.isConnected) {
-                    id = getQId(el);
-                    if (!id) {
-                        console.warn('Missing ID', el);
-                    }
-                    else {
-                        id = ELEMENT_ID_PREFIX + id;
-                    }
+                id = getQId(el);
+                if (!id) {
+                    console.warn('Missing ID', el);
                 }
                 else {
-                    id = null;
+                    id = ELEMENT_ID_PREFIX + id;
                 }
                 elementToIndex.set(el, id);
             }
@@ -2898,27 +2916,27 @@
         };
         const getObjId = (obj) => {
             let suffix = '';
-            if (isMutable(obj)) {
-                obj = obj.v;
-                suffix = '%';
-            }
-            if (isPromise(obj)) {
-                const { value, resolved } = getPromiseValue(obj);
-                obj = value;
-                if (resolved) {
-                    suffix += '~';
-                }
-                else {
-                    suffix += '_';
-                }
-            }
             if (isObject(obj)) {
+                if (isMutable(obj)) {
+                    obj = obj.mut;
+                    suffix = '%';
+                }
+                if (isPromise(obj)) {
+                    const { value, resolved } = getPromiseValue(obj);
+                    obj = value;
+                    if (resolved) {
+                        suffix += '~';
+                    }
+                    else {
+                        suffix += '_';
+                    }
+                }
                 const target = getProxyTarget(obj);
                 if (target) {
                     suffix += '!';
                     obj = target;
                 }
-                if (!target && isQwikElement(obj)) {
+                else if (isQwikElement(obj)) {
                     const elID = getElementID(obj);
                     if (elID) {
                         return elID + suffix;
@@ -2926,11 +2944,9 @@
                     return null;
                 }
             }
-            if (collector.$objMap$.has(obj)) {
-                const value = collector.$objMap$.get(obj);
-                const id = objToId.get(value);
-                assertTrue(typeof id === 'number', 'Can not find ID for object');
-                return intToStr(id) + suffix;
+            const id = objToId.get(obj);
+            if (id) {
+                return id + suffix;
             }
             return null;
         };
@@ -2944,7 +2960,8 @@
         // Compute subscriptions
         const subsMap = new Map();
         objs.forEach((obj) => {
-            const flags = getProxyFlags(containerState.$proxyMap$.get(obj));
+            const proxy = containerState.$proxyMap$.get(obj);
+            const flags = getProxyFlags(proxy);
             if (flags === undefined) {
                 return;
             }
@@ -2955,20 +2972,19 @@
                     data: flags,
                 });
             }
-            const subs = containerState.$subsManager$.$tryGetLocal$(obj)?.$subs$;
-            if (subs) {
-                subs.forEach((set, key) => {
-                    if (isNode(key) && isVirtualElement(key)) {
-                        if (!collector.$elements$.includes(key)) {
-                            return;
-                        }
+            const subs = getProxySubs(proxy);
+            assertDefined(subs, 'subs must be defined');
+            subs.forEach((set, key) => {
+                if (isNode(key) && isVirtualElement(key)) {
+                    if (!collector.$elements$.includes(key)) {
+                        return;
                     }
-                    subsObj.push({
-                        subscriber: key,
-                        data: set ? Array.from(set) : null,
-                    });
+                }
+                subsObj.push({
+                    subscriber: key,
+                    data: set ? Array.from(set) : null,
                 });
-            }
+            });
             if (subsObj.length > 0) {
                 subsMap.set(obj, subsObj);
             }
@@ -2982,15 +2998,22 @@
         // Generate object ID by using a monotonic counter
         let count = 0;
         for (const obj of objs) {
-            objToId.set(obj, count);
+            objToId.set(obj, intToStr(count));
             count++;
+        }
+        if (collector.$noSerialize$.length > 0) {
+            const undefinedID = objToId.get(undefined);
+            assertDefined(undefinedID, 'undefined ID must be defined');
+            for (const obj of collector.$noSerialize$) {
+                objToId.set(obj, undefinedID);
+            }
         }
         // Serialize object subscriptions
         const subs = objs
             .map((obj) => {
             const sub = subsMap.get(obj);
             if (!sub) {
-                return null;
+                return undefined;
             }
             const subsObj = {};
             sub.forEach(({ subscriber, data }) => {
@@ -3031,9 +3054,9 @@
                         }
                         if (isSerializableObject(obj)) {
                             const output = {};
-                            Object.entries(obj).forEach(([key, value]) => {
-                                output[key] = mustGetObjId(value);
-                            });
+                            for (const key of Object.keys(obj)) {
+                                output[key] = mustGetObjId(obj[key]);
+                            }
                             return output;
                         }
                     }
@@ -3043,9 +3066,9 @@
         });
         const meta = {};
         // Write back to the dom
-        elements.forEach((ctx) => {
+        allContexts.forEach((ctx) => {
+            assertDefined(ctx, `pause: missing context for dom node`);
             const node = ctx.$element$;
-            assertDefined(ctx, `pause: missing context for dom node`, node);
             const ref = ctx.$refMap$;
             const props = ctx.$props$;
             const contexts = ctx.$contexts$;
@@ -3064,15 +3087,8 @@
             }
             if (canRender) {
                 if (elementCaptured && props) {
-                    const objs = [props];
-                    if (renderQrl) {
-                        objs.push(renderQrl);
-                    }
-                    const value = objs.map(mustGetObjId).join(' ');
-                    if (value) {
-                        metaValue.h = value;
-                        add = true;
-                    }
+                    metaValue.h = mustGetObjId(props) + ' ' + mustGetObjId(renderQrl);
+                    add = true;
                 }
                 if (watches && watches.length > 0) {
                     const value = watches.map(getObjId).filter(isNotNullable).join(' ');
@@ -3083,10 +3099,8 @@
                 }
                 if (elementCaptured && seq && seq.length > 0) {
                     const value = seq.map(mustGetObjId).join(' ');
-                    if (value) {
-                        metaValue.s = value;
-                        add = true;
-                    }
+                    metaValue.s = value;
+                    add = true;
                 }
                 if (contexts) {
                     const serializedContexts = [];
@@ -3106,7 +3120,6 @@
                 meta[elementID] = metaValue;
             }
         });
-        const pendingContent = [];
         for (const watch of collector.$watches$) {
             if (qDev) {
                 if (watch.$flags$ & WatchFlagsIsDirty) {
@@ -3132,7 +3145,6 @@
                 objs: convertedObjs,
                 subs,
             },
-            pendingContent,
             objs,
             listeners,
             mode: canRender ? 'render' : 'listeners',
@@ -3183,19 +3195,20 @@
             if (sub) {
                 const converted = new Map();
                 let flags = 0;
-                Object.entries(sub).forEach((entry) => {
-                    if (entry[0] === '$') {
-                        flags = entry[1];
-                        return;
+                for (const key of Object.keys(sub)) {
+                    const v = sub[key];
+                    if (key === '$') {
+                        flags = v;
+                        continue;
                     }
-                    const el = getObject(entry[0]);
+                    const el = getObject(key);
                     if (!el) {
-                        logWarn('QWIK can not revive subscriptions because of missing element ID', entry, value);
-                        return;
+                        logWarn('QWIK can not revive subscriptions because of missing element ID', key, value);
+                        continue;
                     }
-                    const set = entry[1] === null ? null : new Set(entry[1]);
+                    const set = v === null ? null : new Set(v);
                     converted.set(el, set);
-                });
+                }
                 createProxy(value, containerState, flags, converted);
             }
         }
@@ -3217,15 +3230,13 @@
                 }
             }
             else if (isSerializableObject(obj)) {
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        if (typeof value == 'string') {
-                            obj[key] = getObject(value);
-                        }
-                        else {
-                            reviveNestedObjects(value, getObject, parser);
-                        }
+                for (const key of Object.keys(obj)) {
+                    const value = obj[key];
+                    if (typeof value == 'string') {
+                        obj[key] = getObject(value);
+                    }
+                    else {
+                        reviveNestedObjects(value, getObject, parser);
                     }
                 }
             }
@@ -3264,50 +3275,60 @@
         }
         return obj;
     };
-    const collectProps = async (el, props, collector) => {
-        const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(getProxyTarget(props))?.$subs$;
+    const collectMutableProps = (el, props, collector) => {
+        const subs = getProxySubs(props);
         if (subs && subs.has(el)) {
             // The host element read the props
-            await collectElement(el, collector);
+            collectElement(el, collector);
         }
     };
     const createCollector = (containerState) => {
         return {
+            $containerState$: containerState,
             $seen$: new Set(),
-            $seenLeaks$: new Set(),
-            $objMap$: new Map(),
+            $objSet$: new Set(),
+            $noSerialize$: [],
             $elements$: [],
             $watches$: [],
-            $containerState$: containerState,
+            $promises$: [],
         };
     };
-    const collectElement = async (el, collector) => {
+    const collectDeferElement = (el, collector) => {
+        if (collector.$elements$.includes(el)) {
+            return;
+        }
+        collector.$elements$.push(el);
+    };
+    const collectElement = (el, collector) => {
         if (collector.$elements$.includes(el)) {
             return;
         }
         const ctx = tryGetContext(el);
         if (ctx) {
             collector.$elements$.push(el);
-            if (ctx.$props$) {
-                await collectValue(ctx.$props$, collector, false);
+            collectElementData(ctx, collector);
+        }
+    };
+    const collectElementData = (ctx, collector) => {
+        if (ctx.$props$) {
+            collectValue(ctx.$props$, collector, false);
+        }
+        if (ctx.$renderQrl$) {
+            collectValue(ctx.$renderQrl$, collector, false);
+        }
+        if (ctx.$seq$) {
+            for (const obj of ctx.$seq$) {
+                collectValue(obj, collector, false);
             }
-            if (ctx.$renderQrl$) {
-                await collectValue(ctx.$renderQrl$, collector, false);
+        }
+        if (ctx.$watches$) {
+            for (const obj of ctx.$watches$) {
+                collectValue(obj, collector, false);
             }
-            if (ctx.$seq$) {
-                for (const obj of ctx.$seq$) {
-                    await collectValue(obj, collector, false);
-                }
-            }
-            if (ctx.$watches$) {
-                for (const obj of ctx.$watches$) {
-                    await collectValue(obj, collector, false);
-                }
-            }
-            if (ctx.$contexts$) {
-                for (const obj of ctx.$contexts$.values()) {
-                    await collectValue(obj, collector, false);
-                }
+        }
+        if (ctx.$contexts$) {
+            for (const obj of ctx.$contexts$.values()) {
+                collectValue(obj, collector, false);
             }
         }
     };
@@ -3317,20 +3338,19 @@
     const unescapeText = (str) => {
         return str.replace(/\\x3C(\/?script)/g, '<$1');
     };
-    const collectSubscriptions = async (target, collector) => {
-        const subs = collector.$containerState$.$subsManager$.$tryGetLocal$(target)?.$subs$;
-        if (subs) {
-            if (collector.$seen$.has(subs)) {
-                return;
+    const collectSubscriptions = (proxy, collector) => {
+        const subs = getProxySubs(proxy);
+        assertDefined(subs, 'subs must be defined');
+        if (collector.$seen$.has(subs)) {
+            return;
+        }
+        collector.$seen$.add(subs);
+        for (const key of Array.from(subs.keys())) {
+            if (isNode(key) && isVirtualElement(key)) {
+                collectDeferElement(key, collector);
             }
-            collector.$seen$.add(subs);
-            for (const key of Array.from(subs.keys())) {
-                if (isNode(key) && isVirtualElement(key)) {
-                    await collectElement(key, collector);
-                }
-                else {
-                    await collectValue(key, collector, true);
-                }
+            else {
+                collectValue(key, collector, true);
             }
         }
     };
@@ -3356,81 +3376,85 @@
         assertTrue(PROMISE_VALUE in promise, 'pause: promise was not resolved previously', promise);
         return promise[PROMISE_VALUE];
     };
-    const collectValue = async (obj, collector, leaks) => {
-        const input = obj;
-        const seen = leaks ? collector.$seenLeaks$ : collector.$seen$;
-        if (seen.has(obj)) {
-            return;
-        }
-        seen.add(obj);
-        if (!shouldSerialize(obj) || obj === undefined) {
-            collector.$objMap$.set(obj, undefined);
-            return;
-        }
-        if (obj != null) {
-            // Handle QRL
-            if (isQrl(obj)) {
-                collector.$objMap$.set(obj, obj);
-                if (obj.$captureRef$) {
-                    for (const item of obj.$captureRef$) {
-                        await collectValue(item, collector, leaks);
-                    }
-                }
-                return;
-            }
-            // Handle Objets
-            if (typeof obj === 'object') {
-                // Handle promises
-                if (isPromise(obj)) {
-                    const value = await resolvePromise(obj);
-                    await collectValue(value, collector, leaks);
-                    return;
-                }
-                const target = getProxyTarget(obj);
-                // Handle dom nodes
-                if (!target && isNode(obj)) {
-                    if (isDocument(obj)) {
-                        collector.$objMap$.set(obj, obj);
-                    }
-                    else if (!isQwikElement(obj)) {
-                        throw qError(QError_verifySerializable, obj);
-                    }
-                    return;
-                }
-                // If proxy collect subscriptions
-                if (target) {
-                    if (leaks) {
-                        await collectSubscriptions(target, collector);
-                    }
-                    obj = target;
+    const collectValue = (obj, collector, leaks) => {
+        if (obj !== null) {
+            const objType = typeof obj;
+            const seen = collector.$seen$;
+            switch (objType) {
+                case 'function': {
                     if (seen.has(obj)) {
                         return;
                     }
                     seen.add(obj);
-                    if (isResourceReturn(obj)) {
-                        collector.$objMap$.set(target, target);
-                        await collectValue(obj.promise, collector, leaks);
-                        await collectValue(obj.resolved, collector, leaks);
+                    if (!fastShouldSerialize(obj)) {
+                        collector.$objSet$.add(undefined);
+                        collector.$noSerialize$.push(obj);
                         return;
                     }
-                }
-                collector.$objMap$.set(obj, obj);
-                if (isArray(obj)) {
-                    for (let i = 0; i < obj.length; i++) {
-                        await collectValue(input[i], collector, leaks);
+                    if (isQrl(obj)) {
+                        collector.$objSet$.add(obj);
+                        if (obj.$captureRef$) {
+                            for (const item of obj.$captureRef$) {
+                                collectValue(item, collector, leaks);
+                            }
+                        }
+                        return;
                     }
+                    break;
                 }
-                else {
-                    for (const key in obj) {
-                        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                            await collectValue(input[key], collector, leaks);
+                case 'object': {
+                    if (seen.has(obj)) {
+                        return;
+                    }
+                    seen.add(obj);
+                    if (!fastShouldSerialize(obj)) {
+                        collector.$objSet$.add(undefined);
+                        collector.$noSerialize$.push(obj);
+                        return;
+                    }
+                    if (isPromise(obj)) {
+                        collector.$promises$.push(resolvePromise(obj).then((value) => {
+                            collectValue(value, collector, leaks);
+                        }));
+                        return;
+                    }
+                    const target = getProxyTarget(obj);
+                    const input = obj;
+                    // If proxy collect subscriptions
+                    if (target) {
+                        if (leaks) {
+                            collectSubscriptions(input, collector);
+                        }
+                        obj = target;
+                        if (seen.has(obj)) {
+                            return;
+                        }
+                        seen.add(obj);
+                        if (isResourceReturn(obj)) {
+                            collector.$objSet$.add(target);
+                            collectValue(obj.promise, collector, leaks);
+                            collectValue(obj.resolved, collector, leaks);
+                            return;
                         }
                     }
+                    else if (isNode(obj)) {
+                        return;
+                    }
+                    if (isArray(obj)) {
+                        for (let i = 0; i < obj.length; i++) {
+                            collectValue(input[i], collector, leaks);
+                        }
+                    }
+                    else {
+                        for (const key of Object.keys(obj)) {
+                            collectValue(input[key], collector, leaks);
+                        }
+                    }
+                    break;
                 }
-                return;
             }
         }
-        collector.$objMap$.set(obj, obj);
+        collector.$objSet$.add(obj);
     };
     const isContainer = (el) => {
         return isElement(el) && el.hasAttribute(QContainerAttr);
@@ -3538,7 +3562,7 @@
         }
         elCtx.$watches$.push(watch);
         waitAndRun(ctx, () => runSubscriber(watch, containerState));
-        if (isServer(ctx)) {
+        if (isServer()) {
             useRunWatch(watch, opts?.eagerness);
         }
     };
@@ -3648,7 +3672,7 @@
         }
         elCtx.$watches$.push(watch);
         useRunWatch(watch, eagerness);
-        if (!isServer(ctx)) {
+        if (!isServer()) {
             qrl.$resolveLazy$();
             notifyWatch(watch, ctx.$renderCtx$.$static$.$containerState$);
         }
@@ -3727,7 +3751,7 @@
         if (get) {
             return;
         }
-        if (isServer(ctx)) {
+        if (isServer()) {
             waitAndRun(ctx, mountQrl);
             set(true);
         }
@@ -3857,21 +3881,20 @@
     const isResourceWatch = (watch) => {
         return !!watch.$resource$;
     };
-    const runSubscriber = async (watch, containerState) => {
+    const runSubscriber = (watch, containerState) => {
         assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
         if (isResourceWatch(watch)) {
-            await runResource(watch, containerState);
+            return runResource(watch, containerState);
         }
         else {
-            await runWatch(watch, containerState);
+            return runWatch(watch, containerState);
         }
     };
     const runResource = (watch, containerState, waitOn) => {
         watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const el = watch.$el$;
-        const doc = getDocument(el);
-        const invokationContext = newInvokeContext(doc, el, undefined, 'WatchEvent');
+        const invokationContext = newInvokeContext(el, undefined, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
         const watchFn = watch.$qrl$.getFn(invokationContext, () => {
             subsManager.$clearSub$(watch);
@@ -3961,8 +3984,7 @@
         watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const el = watch.$el$;
-        const doc = getDocument(el);
-        const invokationContext = newInvokeContext(doc, el, undefined, 'WatchEvent');
+        const invokationContext = newInvokeContext(el, undefined, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
         const watchFn = watch.$qrl$.getFn(invokationContext, () => {
             subsManager.$clearSub$(watch);
@@ -4093,7 +4115,7 @@
      * @public
      */
     const Resource = (props) => {
-        const isBrowser = !qDev || !useIsServer();
+        const isBrowser = !qDev || !isServer();
         if (isBrowser) {
             if (props.onRejected) {
                 props.value.promise.catch(() => { });
@@ -4145,10 +4167,6 @@
         result.promise = initialPromise;
         const resource = createProxy(result, containerState, 0, undefined);
         return resource;
-    };
-    const useIsServer = () => {
-        const ctx = getInvokeContext();
-        return isServer(ctx);
     };
     const isResourceReturn = (obj) => {
         return isObject(obj) && obj.__brand === 'resource';
@@ -4203,7 +4221,6 @@
         test: (v) => isQrl(v),
         serialize: (obj, getObjId, containerState) => {
             return stringifyQRL(obj, {
-                $platform$: containerState.$platform$,
                 $getObjId$: getObjId,
             });
         },
@@ -4307,7 +4324,6 @@
         serialize: (obj, getObjId, containerState) => {
             const [qrl] = obj[SERIALIZABLE_STATE];
             return stringifyQRL(qrl, {
-                $platform$: containerState.$platform$,
                 $getObjId$: getObjId,
             });
         },
@@ -4412,18 +4428,15 @@
     const createProxy = (target, containerState, flags, subs) => {
         assertEqual(unwrapProxy(target), target, 'Unexpected proxy at this location', target);
         assertTrue(!containerState.$proxyMap$.has(target), 'Proxy was already created', target);
-        if (!isObject(target)) {
-            throw qError(QError_onlyObjectWrapped, target);
-        }
-        if (target.constructor !== Object && !isArray(target)) {
-            throw qError(QError_onlyLiteralWrapped, target);
-        }
+        assertTrue(isObject(target), 'Target must be an object');
+        assertTrue(isSerializableObject(target) || isArray(target), 'Target must be a serializable object');
         const manager = containerState.$subsManager$.$getLocal$(target, subs);
         const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager, flags));
         containerState.$proxyMap$.set(target, proxy);
         return proxy;
     };
     const QOjectTargetSymbol = Symbol();
+    const QOjectSubsSymbol = Symbol();
     const QOjectFlagsSymbol = Symbol();
     class ReadWriteProxyHandler {
         constructor($containerState$, $manager$, $flags$) {
@@ -4437,6 +4450,8 @@
                     return target;
                 if (prop === QOjectFlagsSymbol)
                     return this.$flags$;
+                if (prop === QOjectSubsSymbol)
+                    return this.$manager$.$subs$;
                 return target[prop];
             }
             let subscriber;
@@ -4448,7 +4463,7 @@
             }
             let value = target[prop];
             if (isMutable(value)) {
-                value = value.v;
+                value = value.mut;
             }
             else if (immutable) {
                 subscriber = null;
@@ -4563,6 +4578,9 @@
                         return value;
                     if (isDocument(unwrapped))
                         return value;
+                    if (isMutable(unwrapped)) {
+                        return _verifySerializable(unwrapped.mut, seen);
+                    }
                     if (isArray(unwrapped)) {
                         for (const item of unwrapped) {
                             _verifySerializable(item, seen);
@@ -4591,6 +4609,9 @@
             return !noSerializeSet.has(obj);
         }
         return true;
+    };
+    const fastShouldSerialize = (obj) => {
+        return !noSerializeSet.has(obj);
     };
     // <docs markdown="../readme.md#noSerialize">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4644,11 +4665,13 @@
      */
     // </docs>
     const mutable = (v) => {
-        return {
-            [MUTABLE]: true,
-            v,
-        };
+        return new MutableImpl(v);
     };
+    class MutableImpl {
+        constructor(mut) {
+            this.mut = mut;
+        }
+    }
     const isConnected = (sub) => {
         if (isQwikElement(sub)) {
             return !!tryGetContext(sub) || sub.isConnected;
@@ -4657,21 +4680,20 @@
             return isConnected(sub.$el$);
         }
     };
-    const MUTABLE = Symbol('mutable');
     const isMutable = (v) => {
-        return isObject(v) && v[MUTABLE] === true;
+        return v instanceof MutableImpl;
     };
     /**
      * @alpha
      */
     const unwrapProxy = (proxy) => {
-        return getProxyTarget(proxy) ?? proxy;
+        return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     };
     const getProxyTarget = (obj) => {
-        if (isObject(obj)) {
-            return obj[QOjectTargetSymbol];
-        }
-        return undefined;
+        return obj[QOjectTargetSymbol];
+    };
+    const getProxySubs = (obj) => {
+        return obj[QOjectSubsSymbol];
     };
     const getProxyFlags = (obj) => {
         if (isObject(obj)) {
@@ -4763,7 +4785,7 @@
     };
     const getPropsMutator = (ctx, containerState) => {
         let props = ctx.$props$;
-        if (!ctx.$props$) {
+        if (!props) {
             ctx.$props$ = props = createProps({}, containerState);
         }
         const target = getProxyTarget(props);
@@ -4775,12 +4797,12 @@
                 let oldValue = target[prop];
                 let mut = false;
                 if (isMutable(oldValue)) {
-                    oldValue = oldValue.v;
+                    oldValue = oldValue.mut;
                 }
                 if (containerState.$mutableProps$) {
                     mut = true;
                     if (isMutable(value)) {
-                        value = value.v;
+                        value = value.mut;
                         target[prop] = value;
                     }
                     else {
@@ -4790,7 +4812,7 @@
                 else {
                     target[prop] = value;
                     if (isMutable(value)) {
-                        value = value.v;
+                        value = value.mut;
                         mut = true;
                     }
                 }
@@ -4878,8 +4900,6 @@
     const QError_errorWhileRendering = 4; // Crash while rendering
     const QError_cannotRenderOverExistingContainer = 5; //'You can render over a existing q:container. Skipping render().'
     const QError_setProperty = 6; //'Set property'
-    const QError_onlyObjectWrapped = 8;
-    const QError_onlyLiteralWrapped = 9;
     const QError_qrlIsNotFunction = 10;
     const QError_dynamicImportFailed = 11;
     const QError_unknownTypeArgument = 12;
@@ -4964,14 +4984,14 @@
                 if (!containerEl) {
                     throw new Error(`QRL '${chunk}#${symbol || 'default'}' does not have an attached container`);
                 }
-                const symbol2 = getPlatform(containerEl).importSymbol(containerEl, chunk, symbol);
+                const symbol2 = getPlatform().importSymbol(containerEl, chunk, symbol);
                 return (symbolRef = then(symbol2, (ref) => {
                     return (symbolRef = ref);
                 }));
             }
         };
         const resolveLazy = () => {
-            return isFunction(symbolRef) ? symbolRef : resolve();
+            return symbolRef ? symbolRef : resolve();
         };
         const invokeFn = (currentCtx, beforeFn) => {
             return ((...args) => {
@@ -5129,8 +5149,7 @@
         let symbol = qrl.$symbol$;
         let chunk = qrl.$chunk$;
         const refSymbol = qrl.$refSymbol$ ?? symbol;
-        const platform = opts.$platform$;
-        const element = opts.$element$;
+        const platform = getPlatform();
         if (platform) {
             const result = platform.chunkForSymbol(refSymbol);
             if (result) {
@@ -5165,17 +5184,11 @@
         else if (capture && capture.length > 0) {
             parts.push(`[${capture.join(' ')}]`);
         }
-        const qrlString = parts.join('');
-        if (qrl.$chunk$ === RUNTIME_QRL && element) {
-            const qrls = element.__qrls__ || (element.__qrls__ = new Set());
-            qrls.add(qrl);
-        }
-        return qrlString;
+        return parts.join('');
     };
     const serializeQRLs = (existingQRLs, elCtx) => {
         assertTrue(isElement$1(elCtx.$element$), 'Element must be an actual element');
         const opts = {
-            $platform$: getPlatform(elCtx.$element$),
             $element$: elCtx.$element$,
             $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
         };
@@ -5541,16 +5554,22 @@
         directSetAttribute(containerEl, 'q:render', qDev ? 'dom-dev' : 'dom');
     };
 
+    const FLUSH_COMMENT = '<!--qkssr-f-->';
     const IS_HEAD = 1 << 0;
-    const IS_RAW_CONTENT = 1 << 1;
     const IS_HTML = 1 << 2;
+    const createDocument = () => {
+        const doc = { nodeType: 9 };
+        seal(doc);
+        return doc;
+    };
     /**
      * @alpha
      */
-    const renderSSR = async (doc, node, opts) => {
+    const renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
-        const containerEl = doc.createElement(root);
-        const containerState = getContainerState(containerEl);
+        const containerEl = createContext$1(1).$element$;
+        const containerState = createContainerState(containerEl);
+        const doc = createDocument();
         const rctx = createRenderContext(doc, containerState);
         const headNodes = opts.beforeContent ?? [];
         const ssrCtx = {
@@ -5567,40 +5586,26 @@
             'q:container': 'paused',
             'q:version': version ?? 'dev',
             'q:render': qDev ? 'ssr-dev' : 'ssr',
+            'q:base': opts.base,
+            children: root === 'html' ? [node] : [headNodes, node],
         };
-        if (opts.base) {
-            containerAttributes['q:base'] = opts.base;
-        }
-        if (opts.url) {
-            containerState.$envData$['url'] = opts.url;
-        }
-        if (opts.envData) {
-            Object.assign(containerState.$envData$, opts.envData);
-        }
-        if (root === 'html') {
-            node = jsx(root, {
-                ...containerAttributes,
-                children: [node],
-            });
-        }
-        else {
-            node = jsx(root, {
-                ...containerAttributes,
-                children: [...(headNodes ?? []), node],
-            });
-        }
+        containerState.$envData$ = {
+            url: opts.url,
+            ...opts.envData,
+        };
+        node = jsx(root, containerAttributes);
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = Promise.resolve().then(() => renderRoot(node, ssrCtx, opts.stream, containerState, opts));
         await containerState.$renderPromise$;
     };
     const renderRoot = async (node, ssrCtx, stream, containerState, opts) => {
         const beforeClose = opts.beforeClose;
-        await renderNode(node, ssrCtx, stream, 0, (stream) => {
-            const result = beforeClose?.(ssrCtx.$contexts$, containerState);
-            if (result) {
+        await renderNode(node, ssrCtx, stream, 0, beforeClose
+            ? (stream) => {
+                const result = beforeClose(ssrCtx.$contexts$, containerState);
                 return processData(result, ssrCtx, stream, 0, undefined);
             }
-        });
+            : undefined);
         if (qDev) {
             if (ssrCtx.headNodes.length > 0) {
                 logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
@@ -5608,29 +5613,17 @@
         }
         return ssrCtx.rctx.$static$;
     };
-    const renderNodeFunction = (node, ssrCtx, stream, flags, beforeClose) => {
-        const fn = node.type;
-        if (fn === SSRComment) {
-            stream.write(`<!--${node.props.data ?? ''}-->`);
-            return;
-        }
-        if (fn === InternalSSRStream) {
-            return renderGenerator(node, ssrCtx, stream, flags);
-        }
-        if (fn === Virtual) {
-            const elCtx = getContext(ssrCtx.rctx.$static$.$doc$.createElement(VIRTUAL));
-            return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
-        }
-        const res = ssrCtx.invocationContext
-            ? invoke(ssrCtx.invocationContext, () => node.type(node.props, node.key))
-            : node.type(node.props, node.key);
-        return processData(res, ssrCtx, stream, flags, beforeClose);
-    };
     const renderGenerator = async (node, ssrCtx, stream, flags) => {
+        stream.write(FLUSH_COMMENT);
         const generator = node.props.children;
         let value;
         if (isFunction(generator)) {
-            const v = generator(stream);
+            const v = generator({
+                write(chunk) {
+                    stream.write(chunk);
+                    stream.write(FLUSH_COMMENT);
+                },
+            });
             if (isPromise(v)) {
                 return v;
             }
@@ -5641,6 +5634,7 @@
         }
         for await (const chunk of value) {
             await processData(chunk, ssrCtx, stream, flags, undefined);
+            stream.write(FLUSH_COMMENT);
         }
     };
     const renderNodeVirtual = (node, elCtx, extraNodes, ssrCtx, stream, flags, beforeClose) => {
@@ -5650,24 +5644,24 @@
             elCtx.$renderQrl$ = renderQrl;
             return renderSSRComponent(ssrCtx, stream, elCtx, node, flags, beforeClose);
         }
-        const { children, ...attributes } = node.props;
+        let virtualComment = '<!--qv' + renderVirtualAttributes(props);
         const isSlot = QSlotS in props;
         const key = node.key != null ? String(node.key) : null;
         if (isSlot) {
             assertDefined(ssrCtx.hostCtx?.$id$, 'hostId must be defined for a slot');
-            attributes[QSlotRef] = ssrCtx.hostCtx.$id$;
+            virtualComment += ' q:sref=' + ssrCtx.hostCtx.$id$;
         }
         if (key != null) {
-            attributes['q:key'] = key;
+            virtualComment += ' q:key=' + key;
         }
-        const url = new Map(Object.entries(attributes));
-        stream.write(`<!--qv ${serializeVirtualAttributes(url)}-->`);
+        virtualComment += '-->';
+        stream.write(virtualComment);
         if (extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
             }
         }
-        const promise = processData(props.children, ssrCtx, stream, flags);
+        const promise = walkChildren(props.children, ssrCtx, stream, flags);
         return then(promise, () => {
             // Fast path
             if (!isSlot && !beforeClose) {
@@ -5693,140 +5687,78 @@
         });
     };
     const CLOSE_VIRTUAL = `<!--/qv-->`;
-    const renderNodeElement = (node, extraAttributes, extraNodes, ssrCtx, stream, flags, beforeClose) => {
-        const key = node.key != null ? String(node.key) : null;
-        const props = node.props;
-        const textType = node.type;
-        const elCtx = getContext(ssrCtx.rctx.$static$.$doc$.createElement(node.type));
-        const hasRef = 'ref' in props;
-        const attributes = updateProperties(elCtx, props);
-        const hostCtx = ssrCtx.hostCtx;
-        if (hostCtx) {
-            if (textType === 'html') {
-                throw qError(QError_canNotRenderHTML);
+    const renderElementAttributes = (elCtx, attributes) => {
+        let text = '';
+        for (const prop of Object.keys(attributes)) {
+            if (prop === 'children' ||
+                prop === 'key' ||
+                prop === 'class' ||
+                prop === 'className' ||
+                prop === 'dangerouslySetInnerHTML') {
+                continue;
             }
-            attributes['class'] = joinClasses(hostCtx.$scopeIds$, attributes['class']);
-            const cmp = hostCtx;
-            if (!cmp.$attachedListeners$) {
-                cmp.$attachedListeners$ = true;
-                Object.entries(hostCtx.li).forEach(([eventName, qrls]) => {
-                    addQRLListener(elCtx.li, eventName, qrls);
-                });
+            const value = attributes[prop];
+            if (prop === 'ref') {
+                value.current = elCtx.$element$;
+                continue;
             }
-        }
-        // Reset HOST flags
-        if (textType === 'head') {
-            flags |= IS_HEAD;
-        }
-        const listeners = Object.entries(elCtx.li);
-        const isHead = flags & IS_HEAD;
-        if (key != null) {
-            attributes['q:key'] = key;
-        }
-        if (hasRef || listeners.length > 0) {
-            const newID = getNextIndex(ssrCtx.rctx);
-            attributes[ELEMENT_ID] = newID;
-            elCtx.$id$ = newID;
-            ssrCtx.$contexts$.push(elCtx);
-        }
-        if (isHead) {
-            attributes['q:head'] = '';
-        }
-        if (extraAttributes) {
-            Object.assign(attributes, extraAttributes);
-        }
-        listeners.forEach(([key, value]) => {
-            attributes[key] = serializeQRLs(value, elCtx);
-        });
-        if (renderNodeElementSync(textType, attributes, stream)) {
-            return;
-        }
-        if (textType !== 'head') {
-            flags &= ~IS_HEAD;
-        }
-        if (textType === 'html') {
-            flags |= IS_HTML;
-        }
-        else {
-            flags &= ~IS_HTML;
-        }
-        if (hasRawContent[textType]) {
-            flags |= IS_RAW_CONTENT;
-        }
-        else {
-            flags &= ~IS_RAW_CONTENT;
-        }
-        if (extraNodes) {
-            for (const node of extraNodes) {
-                renderNodeElementSync(node.type, node.props, stream);
+            if (isOnProp(prop)) {
+                setEvent(elCtx.li, prop, value);
+                continue;
+            }
+            const attrName = processPropKey(prop);
+            const attrValue = processPropValue(attrName, value);
+            if (attrValue != null) {
+                text += ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
             }
         }
-        const promise = processData(props.children, ssrCtx, stream, flags);
-        return then(promise, () => {
-            // If head inject base styles
-            if (textType === 'head') {
-                ssrCtx.headNodes.forEach((node) => {
-                    renderNodeElementSync(node.type, node.props, stream);
-                });
-                ssrCtx.headNodes.length = 0;
+        return text;
+    };
+    const renderAttributes = (attributes) => {
+        let text = '';
+        for (const prop of Object.keys(attributes)) {
+            if (prop === 'dangerouslySetInnerHTML') {
+                continue;
             }
-            // Fast path
-            if (!beforeClose) {
-                stream.write(`</${textType}>`);
-                return;
+            const value = attributes[prop];
+            if (value != null) {
+                text += ' ' + (value === '' ? prop : prop + '="' + value + '"');
             }
-            // Inject before close
-            return then(beforeClose(stream), () => {
-                stream.write(`</${textType}>`);
-            });
-        });
+        }
+        return text;
+    };
+    const renderVirtualAttributes = (attributes) => {
+        let text = '';
+        for (const prop of Object.keys(attributes)) {
+            if (prop === 'children') {
+                continue;
+            }
+            const value = attributes[prop];
+            if (value != null) {
+                text += ' ' + (value === '' ? prop : prop + '=' + value + '');
+            }
+        }
+        return text;
     };
     const renderNodeElementSync = (tagName, attributes, stream) => {
-        stream.write(`<${tagName}`);
-        Object.entries(attributes).forEach(([key, value]) => {
-            if (key !== 'dangerouslySetInnerHTML' && key !== 'children') {
-                if (key === 'class' && !value) {
-                    return;
-                }
-                const chunk = value === '' ? ` ${key}` : ` ${key}="${escapeAttr(value)}"`;
-                stream.write(chunk);
-            }
-        });
-        stream.write(`>`);
+        stream.write('<' + tagName + renderAttributes(attributes) + '>');
         const empty = !!emptyElements[tagName];
         if (empty) {
-            return true;
+            return;
         }
         // Render innerHTML
         const innerHTML = attributes.dangerouslySetInnerHTML;
         if (innerHTML) {
             stream.write(innerHTML);
-            stream.write(`</${tagName}>`);
-            return true;
         }
-        return false;
+        stream.write(`</${tagName}>`);
     };
     const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => {
-        const attributes = updateComponentProperties(ssrCtx.rctx, elCtx, node.props);
+        setComponentProps(ssrCtx.rctx, elCtx, node.props);
         return then(executeComponent(ssrCtx.rctx, elCtx), (res) => {
-            if (!res) {
-                logError('component was not rendered during SSR');
-                return;
-            }
             const hostElement = elCtx.$element$;
             const newCtx = res.rctx;
-            let children = node.props.children;
-            if (children) {
-                if (isArray(children)) {
-                    if (children.filter(isNotNullable).length === 0) {
-                        children = undefined;
-                    }
-                }
-                else {
-                    children = [children];
-                }
-            }
-            const invocationContext = newInvokeContext(newCtx.$static$.$doc$, hostElement, undefined);
+            const invocationContext = newInvokeContext(hostElement, undefined);
             invocationContext.$subscriber$ = hostElement;
             invocationContext.$renderCtx$ = newCtx;
             const projectedContext = {
@@ -5835,7 +5767,7 @@
             };
             const newSSrContext = {
                 ...ssrCtx,
-                projectedChildren: splitProjectedChildren(children, ssrCtx),
+                projectedChildren: splitProjectedChildren(node.props.children, ssrCtx),
                 projectedContext,
                 rctx: newCtx,
                 invocationContext,
@@ -5851,27 +5783,23 @@
                     }));
                 }
             }
-            if (elCtx.$scopeIds$) {
-                for (const styleId of elCtx.$scopeIds$) {
-                }
-                const value = serializeSStyle(elCtx.$scopeIds$);
-                if (value) {
-                    attributes[QScopedStyle] = value;
-                }
-            }
             const newID = getNextIndex(ssrCtx.rctx);
-            attributes[ELEMENT_ID] = newID;
-            elCtx.$id$ = newID;
-            ssrCtx.$contexts$.push(elCtx);
+            const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : undefined;
             const processedNode = jsx(node.type, {
-                ...attributes,
+                [QScopedStyle]: scopeId,
+                [ELEMENT_ID]: newID,
                 children: res.node,
             }, node.key);
+            elCtx.$id$ = newID;
+            ssrCtx.$contexts$.push(elCtx);
             newSSrContext.hostCtx = elCtx;
             return renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream) => {
-                return then(renderQTemplates(newSSrContext, stream), () => {
-                    return beforeClose?.(stream);
-                });
+                if (beforeClose) {
+                    return then(renderQTemplates(newSSrContext, stream), () => beforeClose(stream));
+                }
+                else {
+                    return renderQTemplates(newSSrContext, stream);
+                }
             });
         });
     };
@@ -5911,35 +5839,134 @@
         }
         return slotMap;
     };
+    const createContext$1 = (nodeType) => {
+        const elm = {
+            nodeType,
+            [Q_CTX]: null,
+        };
+        seal(elm);
+        return getContext(elm);
+    };
     const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
-        if (typeof node.type === 'string') {
-            return renderNodeElement(node, undefined, undefined, ssrCtx, stream, flags, beforeClose);
+        const tagName = node.type;
+        if (typeof tagName === 'string') {
+            const key = node.key;
+            const props = node.props;
+            const elCtx = createContext$1(1);
+            const isHead = tagName === 'head';
+            const hostCtx = ssrCtx.hostCtx;
+            let openingElement = '<' + tagName + renderElementAttributes(elCtx, props);
+            let classStr = stringifyClass(props.class ?? props.className);
+            if (hostCtx) {
+                if (qDev) {
+                    if (tagName === 'html') {
+                        throw qError(QError_canNotRenderHTML);
+                    }
+                }
+                if (hostCtx.$scopeIds$) {
+                    classStr = hostCtx.$scopeIds$.join(' ') + ' ' + classStr;
+                }
+                if (!hostCtx.$attachedListeners$) {
+                    hostCtx.$attachedListeners$ = true;
+                    for (const eventName of Object.keys(hostCtx.li)) {
+                        addQRLListener(elCtx.li, eventName, hostCtx.li[eventName]);
+                    }
+                }
+            }
+            // Reset HOST flags
+            if (isHead) {
+                flags |= IS_HEAD;
+            }
+            classStr = classStr.trim();
+            if (classStr) {
+                openingElement += ' class="' + classStr + '"';
+            }
+            const listeners = Object.keys(elCtx.li);
+            for (const key of listeners) {
+                openingElement += ' ' + key + '="' + serializeQRLs(elCtx.li[key], elCtx) + '"';
+            }
+            if (key != null) {
+                openingElement += ' q:key="' + key + '"';
+            }
+            if ('ref' in props || listeners.length > 0) {
+                const newID = getNextIndex(ssrCtx.rctx);
+                openingElement += ' q:id="' + newID + '"';
+                elCtx.$id$ = newID;
+                ssrCtx.$contexts$.push(elCtx);
+            }
+            if (flags & IS_HEAD) {
+                openingElement += ' q:head';
+            }
+            openingElement += '>';
+            stream.write(openingElement);
+            if (emptyElements[tagName]) {
+                return;
+            }
+            const innerHTML = props.dangerouslySetInnerHTML;
+            if (innerHTML) {
+                stream.write(innerHTML);
+                stream.write(`</${tagName}>`);
+                return;
+            }
+            if (!isHead) {
+                flags &= ~IS_HEAD;
+            }
+            if (tagName === 'html') {
+                flags |= IS_HTML;
+            }
+            else {
+                flags &= ~IS_HTML;
+            }
+            const promise = processData(props.children, ssrCtx, stream, flags);
+            return then(promise, () => {
+                // If head inject base styles
+                if (isHead) {
+                    for (const node of ssrCtx.headNodes) {
+                        renderNodeElementSync(node.type, node.props, stream);
+                    }
+                    ssrCtx.headNodes.length = 0;
+                }
+                // Fast path
+                if (!beforeClose) {
+                    stream.write(`</${tagName}>`);
+                    return;
+                }
+                // Inject before close
+                return then(beforeClose(stream), () => {
+                    stream.write(`</${tagName}>`);
+                });
+            });
         }
-        else {
-            return renderNodeFunction(node, ssrCtx, stream, flags, beforeClose);
+        if (tagName === Virtual) {
+            const elCtx = createContext$1(111);
+            return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
         }
+        if (tagName === SSRComment) {
+            stream.write('<!--' + node.props.data + '-->');
+            return;
+        }
+        if (tagName === InternalSSRStream) {
+            return renderGenerator(node, ssrCtx, stream, flags);
+        }
+        const res = invoke(ssrCtx.invocationContext, tagName, node.props, node.key);
+        return processData(res, ssrCtx, stream, flags, beforeClose);
     };
     const processData = (node, ssrCtx, stream, flags, beforeClose) => {
         if (node == null || typeof node === 'boolean') {
             return;
         }
-        if (isJSXNode(node)) {
+        if (isString(node) || typeof node === 'number') {
+            stream.write(escapeHtml(String(node)));
+        }
+        else if (isJSXNode(node)) {
             return renderNode(node, ssrCtx, stream, flags, beforeClose);
         }
-        else if (isPromise(node)) {
-            return node.then((node) => processData(node, ssrCtx, stream, flags, beforeClose));
-        }
         else if (isArray(node)) {
-            node = _flatVirtualChildren(node, ssrCtx);
             return walkChildren(node, ssrCtx, stream, flags);
         }
-        else if (isString(node) || typeof node === 'number') {
-            if ((flags & IS_RAW_CONTENT) !== 0) {
-                stream.write(String(node));
-            }
-            else {
-                stream.write(escape(String(node)));
-            }
+        else if (isPromise(node)) {
+            stream.write(FLUSH_COMMENT);
+            return node.then((node) => processData(node, ssrCtx, stream, flags, beforeClose));
         }
         else {
             logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
@@ -5963,24 +5990,33 @@
         return children.reduce((prevPromise, child, index) => {
             const buffer = [];
             buffers.push(buffer);
-            const localStream = {
-                write(chunk) {
-                    if (currentIndex === index) {
-                        stream.write(chunk);
-                    }
-                    else {
-                        buffer.push(chunk);
-                    }
-                },
-            };
-            return then(processData(child, ssrContext, localStream, flags), () => {
-                return then(prevPromise, () => {
-                    currentIndex++;
-                    if (buffers.length > currentIndex) {
-                        buffers[currentIndex].forEach((chunk) => stream.write(chunk));
-                    }
+            const localStream = prevPromise
+                ? {
+                    write(chunk) {
+                        if (currentIndex === index) {
+                            stream.write(chunk);
+                        }
+                        else {
+                            buffer.push(chunk);
+                        }
+                    },
+                }
+                : stream;
+            const rendered = processData(child, ssrContext, localStream, flags);
+            if (isPromise(rendered) || prevPromise) {
+                return then(rendered, () => {
+                    return then(prevPromise, () => {
+                        currentIndex++;
+                        if (buffers.length > currentIndex) {
+                            buffers[currentIndex].forEach((chunk) => stream.write(chunk));
+                        }
+                    });
                 });
-            });
+            }
+            else {
+                currentIndex++;
+                return undefined;
+            }
         }, undefined);
     }
     const flatVirtualChildren = (children, ssrCtx) => {
@@ -5994,6 +6030,27 @@
         }
         return nodes;
     };
+    const stringifyClass = (str) => {
+        if (!str) {
+            return '';
+        }
+        if (typeof str === 'string') {
+            return str;
+        }
+        if (Array.isArray(str)) {
+            return str.join(' ');
+        }
+        const output = [];
+        for (const key in str) {
+            if (Object.prototype.hasOwnProperty.call(str, key)) {
+                const value = str[key];
+                if (value) {
+                    output.push(key);
+                }
+            }
+        }
+        return output.join(' ');
+    };
     const _flatVirtualChildren = (children, ssrCtx) => {
         if (children == null) {
             return null;
@@ -6006,93 +6063,29 @@
             children.type !== SSRComment &&
             children.type !== InternalSSRStream &&
             children.type !== Virtual) {
-            const fn = children.type;
-            const res = ssrCtx.invocationContext
-                ? invoke(ssrCtx.invocationContext, () => fn(children.props, children.key))
-                : fn(children.props, children.key);
+            const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
             return flatVirtualChildren(res, ssrCtx);
         }
         return children;
     };
-    const updateProperties = (ctx, expectProps) => {
-        const attributes = {};
-        if (!expectProps) {
-            return attributes;
-        }
+    const setComponentProps = (rctx, ctx, expectProps) => {
         const keys = Object.keys(expectProps);
         if (keys.length === 0) {
-            return attributes;
+            return;
         }
-        const elm = ctx.$element$;
+        const target = {};
+        ctx.$props$ = createProps(target, rctx.$static$.$containerState$);
         for (const key of keys) {
             if (key === 'children' || key === OnRenderProp) {
                 continue;
             }
-            const newValue = expectProps[key];
-            if (key === 'ref') {
-                newValue.current = elm;
-                continue;
-            }
-            // Early exit if value didnt change
-            // Check of data- or aria-
-            if (key.startsWith('data-') || key.startsWith('aria-')) {
-                attributes[key] = newValue;
-                continue;
-            }
-            if (isOnProp(key)) {
-                setEvent(ctx.li, key, newValue);
-                continue;
-            }
-            // Check if its an exception
-            setProperty(attributes, key, newValue);
+            target[key] = expectProps[key];
         }
-        return attributes;
     };
-    const updateComponentProperties = (rctx, ctx, expectProps) => {
-        const attributes = {};
-        if (!expectProps) {
-            return attributes;
-        }
-        const keys = Object.keys(expectProps);
-        if (keys.length === 0) {
-            return attributes;
-        }
-        const qwikProps = getPropsMutator(ctx, rctx.$static$.$containerState$);
-        for (const key of keys) {
-            if (key === 'children' || key === OnRenderProp) {
-                continue;
-            }
-            const newValue = expectProps[key];
-            const skipProperty = ALLOWS_PROPS.includes(key);
-            if (!skipProperty) {
-                // Qwik props
-                qwikProps.set(key, newValue);
-                continue;
-            }
-            setProperty(attributes, key, newValue);
-        }
-        return attributes;
-    };
-    function setProperty(attributes, prop, value) {
-        if (value != null && value !== false) {
-            prop = processPropKey(prop);
-            const attrValue = processPropValue(prop, value, attributes[prop]);
-            if (attrValue !== null) {
-                attributes[prop] = attrValue;
-            }
-        }
-    }
     function processPropKey(prop) {
-        if (prop === 'className') {
-            return 'class';
-        }
         return prop;
     }
-    function processPropValue(prop, value, prevValue) {
-        if (prop === 'class') {
-            const str = joinClasses(value, prevValue);
-            return str === '' ? null : str;
-        }
+    function processPropValue(prop, value) {
         if (prop === 'style') {
             return stringifyStyle(value);
         }
@@ -6104,10 +6097,6 @@
         }
         return String(value);
     }
-    const hasRawContent = {
-        style: true,
-        script: true,
-    };
     const emptyElements = {
         area: true,
         base: true,
@@ -6128,8 +6117,10 @@
         track: true,
         wbr: true,
     };
-    const escape = (s) => {
-        return s.replace(/[&<>\u00A0]/g, (c) => {
+    const ESCAPE_HTML = /[&<>]/g;
+    const ESCAPE_ATTRIBUTES = /[&"]/g;
+    const escapeHtml = (s) => {
+        return s.replace(ESCAPE_HTML, (c) => {
             switch (c) {
                 case '&':
                     return '&amp;';
@@ -6137,33 +6128,22 @@
                     return '&lt;';
                 case '>':
                     return '&gt;';
-                case '\u00A0':
-                    return '&nbsp;';
                 default:
                     return '';
             }
         });
     };
     const escapeAttr = (s) => {
-        const toEscape = /[&"\u00A0]/g;
-        if (!toEscape.test(s)) {
-            // nothing to do, fast path
-            return s;
-        }
-        else {
-            return s.replace(toEscape, (c) => {
-                switch (c) {
-                    case '&':
-                        return '&amp;';
-                    case '"':
-                        return '&quot;';
-                    case '\u00A0':
-                        return '&nbsp;';
-                    default:
-                        return '';
-                }
-            });
-        }
+        return s.replace(ESCAPE_ATTRIBUTES, (c) => {
+            switch (c) {
+                case '&':
+                    return '&amp;';
+                case '"':
+                    return '&quot;';
+                default:
+                    return '';
+            }
+        });
     };
 
     // <docs markdown="../readme.md#useStore">
@@ -6556,6 +6536,14 @@
     const useUserContext = useEnvData;
 
     /* eslint-disable no-console */
+    const STYLE_CACHE = new Map();
+    const getScopedStyles = (css, scopeId) => {
+        let styleCss = STYLE_CACHE.get(scopeId);
+        if (!styleCss) {
+            STYLE_CACHE.set(scopeId, (styleCss = scopeStylesheet(css, scopeId)));
+        }
+        return styleCss;
+    };
     const scopeStylesheet = (css, scopeId) => {
         const end = css.length;
         const out = [];
@@ -6963,7 +6951,7 @@
      */
     // </docs>
     const useStylesScopedQrl = (styles) => {
-        _useStyles(styles, scopeStylesheet, true);
+        _useStyles(styles, getScopedStyles, true);
     };
     // <docs markdown="../readme.md#useStylesScoped">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -6991,13 +6979,13 @@
     // </docs>
     const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
+        assertQrl(styleQrl);
         const { get, set, ctx, i } = useSequentialScope();
         if (get) {
             return get;
         }
         const renderCtx = ctx.$renderCtx$;
         const styleId = styleKey(styleQrl, i);
-        const hostElement = ctx.$hostElement$;
         const containerState = renderCtx.$static$.$containerState$;
         const elCtx = getContext(ctx.$hostElement$);
         set(styleId);
@@ -7010,14 +6998,24 @@
         if (scoped) {
             elCtx.$scopeIds$.push(styleContent(styleId));
         }
-        if (!hasStyle(containerState, styleId)) {
-            containerState.$styleIds$.add(styleId);
-            ctx.$waitOn$.push(styleQrl.resolve(hostElement).then((styleText) => {
-                elCtx.$appendStyles$.push({
-                    styleId,
-                    content: transform(styleText, styleId),
-                });
-            }));
+        if (hasStyle(containerState, styleId)) {
+            return styleId;
+        }
+        containerState.$styleIds$.add(styleId);
+        styleQrl.$setContainer$(containerState.$containerEl$);
+        const value = styleQrl.$resolveLazy$();
+        const appendStyle = (styleText) => {
+            assertDefined(elCtx.$appendStyles$, 'appendStyles must be defined');
+            elCtx.$appendStyles$.push({
+                styleId,
+                content: transform(styleText, styleId),
+            });
+        };
+        if (isPromise(value)) {
+            ctx.$waitOn$.push(value.then(appendStyle));
+        }
+        else {
+            appendStyle(value);
         }
         return styleId;
     };

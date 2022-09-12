@@ -51,7 +51,7 @@ export declare interface ElementFixtureOptions {
 /**
  * @alpha
  */
-export declare function getTestPlatform(document: any): TestPlatform;
+export declare function getTestPlatform(): TestPlatform;
 
 /**
  * @alpha

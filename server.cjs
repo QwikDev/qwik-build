@@ -53,11 +53,10 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // packages/qwik/src/server/index.ts
 var server_exports = {};
 __export(server_exports, {
-  createTimer: () => createTimer,
   getQwikLoaderScript: () => getQwikLoaderScript,
   renderToStream: () => renderToStream,
   renderToString: () => renderToString,
-  setServerPlatform: () => setServerPlatform,
+  resolveManifest: () => resolveManifest,
   versions: () => versions
 });
 module.exports = __toCommonJS(server_exports);
@@ -94,10 +93,8 @@ var import_qwik3 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
 var import_qwik = require("@builder.io/qwik");
-function createPlatform(document, opts, mapper) {
-  if (!document || document.nodeType !== 9) {
-    throw new Error(`Invalid Document implementation`);
-  }
+function createPlatform(opts, resolvedManifest) {
+  const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
   const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
     if (mapper) {
       const hash = getSymbolHash(symbolName);
@@ -139,9 +136,9 @@ function createPlatform(document, opts, mapper) {
   };
   return serverPlatform;
 }
-async function setServerPlatform(document, opts, mapper) {
-  const platform = createPlatform(document, opts, mapper);
-  (0, import_qwik.setPlatform)(document, platform);
+async function setServerPlatform(opts, manifest) {
+  const platform = createPlatform(opts, manifest);
+  (0, import_qwik.setPlatform)(platform);
 }
 var getSymbolHash = (symbolName) => {
   const index = symbolName.lastIndexOf("_");
@@ -162,6 +159,157 @@ function getQwikLoaderScript(opts = {}) {
     return loader.replace("window.qEvents", JSON.stringify(opts.events));
   }
   return opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED;
+}
+
+// packages/qwik/src/server/prefetch-strategy.ts
+function getPrefetchResources(snapshotResult, opts, resolvedManifest) {
+  if (!resolvedManifest) {
+    return [];
+  }
+  const prefetchStrategy = opts.prefetchStrategy;
+  const buildBase = getBuildBase(opts);
+  if (prefetchStrategy !== null) {
+    if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "auto") {
+      return getAutoPrefetch(snapshotResult, resolvedManifest, buildBase);
+    }
+    if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
+      try {
+        return prefetchStrategy.symbolsToPrefetch({ manifest: resolvedManifest.manifest });
+      } catch (e) {
+        console.error("getPrefetchUrls, symbolsToPrefetch()", e);
+      }
+    }
+  }
+  return [];
+}
+function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
+  const prefetchResources = [];
+  const listeners = snapshotResult == null ? void 0 : snapshotResult.listeners;
+  const stateObjs = snapshotResult == null ? void 0 : snapshotResult.objs;
+  const { mapper, manifest } = resolvedManifest;
+  const urls = /* @__PURE__ */ new Set();
+  if (Array.isArray(listeners)) {
+    for (const prioritizedSymbolName in mapper) {
+      const hasSymbol = listeners.some((l) => {
+        return l.qrl.getHash() === prioritizedSymbolName;
+      });
+      if (hasSymbol) {
+        addBundle(manifest, urls, prefetchResources, buildBase, mapper[prioritizedSymbolName][1]);
+      }
+    }
+  }
+  if (Array.isArray(stateObjs)) {
+    for (const obj of stateObjs) {
+      if (isQrl(obj)) {
+        const qrlSymbolName = obj.getHash();
+        const resolvedSymbol = mapper[qrlSymbolName];
+        if (resolvedSymbol) {
+          addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[0]);
+        }
+      }
+    }
+  }
+  return prefetchResources;
+}
+function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
+  const url = buildBase + bundleFileName;
+  if (!urls.has(url)) {
+    urls.add(url);
+    const bundle = manifest.bundles[bundleFileName];
+    if (bundle) {
+      const prefetchResource = {
+        url,
+        imports: []
+      };
+      prefetchResources.push(prefetchResource);
+      if (Array.isArray(bundle.imports)) {
+        for (const importedFilename of bundle.imports) {
+          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
+        }
+      }
+    }
+  }
+}
+var isQrl = (value) => {
+  return typeof value === "function" && typeof value.getSymbol === "function";
+};
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev === true;
+var qSerialize = globalThis.qSerialize !== false;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+
+// packages/qwik/src/core/util/flyweight.ts
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+if (qDev) {
+  Object.freeze(EMPTY_ARRAY);
+  Object.freeze(EMPTY_OBJ);
+  Error.stackTraceLimit = 9999;
+}
+
+// packages/qwik/src/optimizer/src/manifest.ts
+var EVENT_PRIORITY = [
+  "click",
+  "dblclick",
+  "contextmenu",
+  "auxclick",
+  "pointerdown",
+  "pointerup",
+  "pointermove",
+  "pointerover",
+  "pointerenter",
+  "pointerleave",
+  "pointerout",
+  "pointercancel",
+  "gotpointercapture",
+  "lostpointercapture",
+  "touchstart",
+  "touchend",
+  "touchmove",
+  "touchcancel",
+  "mousedown",
+  "mouseup",
+  "mousemove",
+  "mouseenter",
+  "mouseleave",
+  "mouseover",
+  "mouseout",
+  "wheel",
+  "gesturestart",
+  "gesturechange",
+  "gestureend",
+  "keydown",
+  "keyup",
+  "keypress",
+  "input",
+  "change",
+  "search",
+  "invalid",
+  "beforeinput",
+  "select",
+  "focusin",
+  "focusout",
+  "focus",
+  "blur",
+  "submit",
+  "reset",
+  "scroll"
+].map((n) => `on${n.toLowerCase()}$`);
+var FUNCTION_PRIORITY = [
+  "useWatch$",
+  "useClientEffect$",
+  "useEffect$",
+  "component$",
+  "useStyles$",
+  "useStylesScoped$"
+].map((n) => n.toLowerCase());
+function getValidManifest(manifest) {
+  if (manifest != null && manifest.mapping != null && typeof manifest.mapping === "object" && manifest.symbols != null && typeof manifest.symbols === "object" && manifest.bundles != null && typeof manifest.bundles === "object") {
+    return manifest;
+  }
+  return void 0;
 }
 
 // packages/qwik/src/server/prefetch-implementation.ts
@@ -362,214 +510,40 @@ function normalizePrefetchImplementation(input) {
   return defaultImplementation;
 }
 
-// packages/qwik/src/optimizer/src/manifest.ts
-var EVENT_PRIORITY = [
-  "click",
-  "dblclick",
-  "contextmenu",
-  "auxclick",
-  "pointerdown",
-  "pointerup",
-  "pointermove",
-  "pointerover",
-  "pointerenter",
-  "pointerleave",
-  "pointerout",
-  "pointercancel",
-  "gotpointercapture",
-  "lostpointercapture",
-  "touchstart",
-  "touchend",
-  "touchmove",
-  "touchcancel",
-  "mousedown",
-  "mouseup",
-  "mousemove",
-  "mouseenter",
-  "mouseleave",
-  "mouseover",
-  "mouseout",
-  "wheel",
-  "gesturestart",
-  "gesturechange",
-  "gestureend",
-  "keydown",
-  "keyup",
-  "keypress",
-  "input",
-  "change",
-  "search",
-  "invalid",
-  "beforeinput",
-  "select",
-  "focusin",
-  "focusout",
-  "focus",
-  "blur",
-  "submit",
-  "reset",
-  "scroll"
-].map((n) => `on${n.toLowerCase()}$`);
-var FUNCTION_PRIORITY = [
-  "useWatch$",
-  "useClientEffect$",
-  "useEffect$",
-  "component$",
-  "useStyles$",
-  "useStylesScoped$"
-].map((n) => n.toLowerCase());
-function getValidManifest(manifest) {
-  if (manifest != null && manifest.mapping != null && typeof manifest.mapping === "object" && manifest.symbols != null && typeof manifest.symbols === "object" && manifest.bundles != null && typeof manifest.bundles === "object") {
-    return manifest;
-  }
-  return void 0;
-}
-
-// packages/qwik/src/server/prefetch-strategy.ts
-function getPrefetchResources(snapshotResult, opts, mapper) {
-  const manifest = getValidManifest(opts.manifest);
-  if (manifest && mapper) {
-    const prefetchStrategy = opts.prefetchStrategy;
-    const buildBase = getBuildBase(opts);
-    if (prefetchStrategy !== null) {
-      if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "auto") {
-        return getAutoPrefetch(snapshotResult, manifest, mapper, buildBase);
-      }
-      if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
-        try {
-          return prefetchStrategy.symbolsToPrefetch({ manifest });
-        } catch (e) {
-          console.error("getPrefetchUrls, symbolsToPrefetch()", e);
-        }
-      }
-    }
-  }
-  return [];
-}
-function getAutoPrefetch(snapshotResult, manifest, mapper, buildBase) {
-  const prefetchResources = [];
-  const listeners = snapshotResult == null ? void 0 : snapshotResult.listeners;
-  const stateObjs = snapshotResult == null ? void 0 : snapshotResult.objs;
-  const urls = /* @__PURE__ */ new Set();
-  if (Array.isArray(listeners)) {
-    for (const prioritizedSymbolName in mapper) {
-      const hasSymbol = listeners.some((l) => {
-        return l.qrl.getHash() === prioritizedSymbolName;
-      });
-      if (hasSymbol) {
-        addBundle(manifest, urls, prefetchResources, buildBase, mapper[prioritizedSymbolName][1]);
-      }
-    }
-  }
-  if (Array.isArray(stateObjs)) {
-    for (const obj of stateObjs) {
-      if (isQrl(obj)) {
-        const qrlSymbolName = obj.getHash();
-        const resolvedSymbol = mapper[qrlSymbolName];
-        if (resolvedSymbol) {
-          addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[0]);
-        }
-      }
-    }
-  }
-  return prefetchResources;
-}
-function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
-  const url = buildBase + bundleFileName;
-  if (!urls.has(url)) {
-    urls.add(url);
-    const bundle = manifest.bundles[bundleFileName];
-    if (bundle) {
-      const prefetchResource = {
-        url,
-        imports: []
-      };
-      prefetchResources.push(prefetchResource);
-      if (Array.isArray(bundle.imports)) {
-        for (const importedFilename of bundle.imports) {
-          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
-        }
-      }
-    }
-  }
-}
-var isQrl = (value) => {
-  return typeof value === "function" && typeof value.getSymbol === "function";
-};
-
-// packages/qwik/src/server/document.ts
-function createEl(tagName, doc) {
-  return {
-    nodeType: tagName === ":virtual" ? 111 : 1,
-    nodeName: tagName.toUpperCase(),
-    localName: tagName,
-    ownerDocument: doc,
-    isConnected: true,
-    _qc_: null,
-    __virtual: null,
-    "q:id": null
-  };
-}
-function createSimpleDocument() {
-  const doc = {
-    nodeType: 9,
-    parentElement: null,
-    ownerDocument: null,
-    createElement(tagName) {
-      return createEl(tagName, doc);
-    }
-  };
-  return doc;
-}
-
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev === true;
-var qSerialize = globalThis.qSerialize !== false;
-var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-var qTest = globalThis.qTest === true;
-
-// packages/qwik/src/core/util/flyweight.ts
-var EMPTY_ARRAY = [];
-var EMPTY_OBJ = {};
-if (qDev) {
-  Object.freeze(EMPTY_ARRAY);
-  Object.freeze(EMPTY_OBJ);
-  Error.stackTraceLimit = 9999;
-}
-
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
-  var _a, _b;
+  var _a;
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
   let networkFlushes = 0;
   let firstFlushTime = 0;
-  const doc = createSimpleDocument();
   const inOrderStreaming = ((_a = opts.streaming) == null ? void 0 : _a.inOrder) ?? {
     strategy: "auto",
-    initialChunkSize: 3e4,
-    minimunChunkSize: 1024
+    maximunInitialChunk: 5e4,
+    maximunChunk: 3e4
   };
   const containerTagName = opts.containerTagName ?? "html";
   const containerAttributes = opts.containerAttributes ?? {};
-  const buffer = [];
+  let buffer = "";
   const nativeStream = stream;
   const firstFlushTimer = createTimer();
   function flush() {
-    buffer.forEach((chunk) => nativeStream.write(chunk));
-    buffer.length = 0;
-    bufferSize = 0;
-    networkFlushes++;
-    if (networkFlushes === 1) {
-      firstFlushTime = firstFlushTimer();
+    if (buffer) {
+      nativeStream.write(buffer);
+      buffer = "";
+      bufferSize = 0;
+      networkFlushes++;
+      if (networkFlushes === 1) {
+        firstFlushTime = firstFlushTimer();
+      }
     }
   }
   function enqueue(chunk) {
     bufferSize += chunk.length;
     totalSize += chunk.length;
-    buffer.push(chunk);
+    buffer += chunk;
   }
   switch (inOrderStreaming.strategy) {
     case "disabled":
@@ -577,20 +551,28 @@ async function renderToStream(rootNode, opts) {
         write: enqueue
       };
       break;
+    case "direct":
+      stream = nativeStream;
+      break;
     case "auto":
       let count = 0;
-      const minimunChunkSize = inOrderStreaming.minimunChunkSize ?? 0;
-      const initialChunkSize = inOrderStreaming.initialChunkSize ?? 0;
+      let forceFlush = false;
+      const minimunChunkSize = inOrderStreaming.maximunChunk ?? 0;
+      const initialChunkSize = inOrderStreaming.maximunInitialChunk ?? 0;
       stream = {
         write(chunk) {
-          enqueue(chunk);
-          if (chunk === "<!--qkssr-pu-->") {
+          if (chunk === "<!--qkssr-f-->") {
+            forceFlush || (forceFlush = true);
+          } else if (chunk === "<!--qkssr-pu-->") {
             count++;
-          } else if (count > 0 && chunk === "<!--qkssr-po-->") {
+          } else if (chunk === "<!--qkssr-po-->") {
             count--;
+          } else {
+            enqueue(chunk);
           }
           const chunkSize = networkFlushes === 0 ? initialChunkSize : minimunChunkSize;
-          if (count === 0 && bufferSize >= chunkSize) {
+          if (count === 0 && (forceFlush || bufferSize >= chunkSize)) {
+            forceFlush = false;
             flush();
           }
         }
@@ -617,17 +599,17 @@ async function renderToStream(rootNode, opts) {
     console.warn("Missing client manifest, loading symbols in the client might 404");
   }
   const buildBase = getBuildBase(opts);
-  const mapper = computeSymbolMapper(opts.manifest);
-  await setServerPlatform(doc, opts, mapper);
+  const resolvedManifest = resolveManifest(opts.manifest);
+  await setServerPlatform(opts, resolvedManifest);
   let prefetchResources = [];
   let snapshotResult = null;
-  const injections = (_b = opts.manifest) == null ? void 0 : _b.injections;
+  const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? EMPTY_OBJ)) : void 0;
   const renderTimer = createTimer();
+  const renderSymbols = [];
   let renderTime = 0;
   let snapshotTime = 0;
-  const renderSymbols = [];
-  await (0, import_qwik3.renderSSR)(doc, rootNode, {
+  await (0, import_qwik3.renderSSR)(rootNode, {
     stream,
     containerTagName,
     containerAttributes,
@@ -635,11 +617,11 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState) => {
-      var _a2, _b2;
+      var _a2, _b;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState);
-      prefetchResources = getPrefetchResources(snapshotResult, opts, mapper);
+      prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, qDev ? "  " : void 0);
       const children = [
         (0, import_qwik3.jsx)("script", {
@@ -655,7 +637,7 @@ async function renderToStream(rootNode, opts) {
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
-          events: (_b2 = opts.qwikLoader) == null ? void 0 : _b2.events,
+          events: (_b = opts.qwikLoader) == null ? void 0 : _b.events,
           debug: opts.debug
         });
         children.push(
@@ -688,10 +670,10 @@ async function renderToStream(rootNode, opts) {
   });
   flush();
   const result = {
-    prefetchResources,
+    prefetchResources: void 0,
     snapshotResult,
     flushes: networkFlushes,
-    manifest: opts.manifest,
+    manifest: resolvedManifest == null ? void 0 : resolvedManifest.manifest,
     size: totalSize,
     timing: {
       render: renderTime,
@@ -718,13 +700,23 @@ async function renderToString(rootNode, opts = {}) {
     html: chunks.join("")
   };
 }
-function computeSymbolMapper(manifest) {
+function resolveManifest(manifest) {
+  if (!manifest) {
+    return void 0;
+  }
+  if ("mapper" in manifest) {
+    return manifest;
+  }
+  manifest = getValidManifest(manifest);
   if (manifest) {
     const mapper = {};
     Object.entries(manifest.mapping).forEach(([key, value]) => {
       mapper[getSymbolHash(key)] = [key, value];
     });
-    return mapper;
+    return {
+      mapper,
+      manifest
+    };
   }
   return void 0;
 }
@@ -742,11 +734,10 @@ function collectRenderSymbols(renderSymbols, elements) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  createTimer,
   getQwikLoaderScript,
   renderToStream,
   renderToString,
-  setServerPlatform,
+  resolveManifest,
   versions
 });
 return module.exports; })(typeof module === 'object' && module.exports ? module : { exports: {} });

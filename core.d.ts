@@ -487,7 +487,6 @@ declare interface ContainerState {
     $containerEl$: Element;
     $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
-    $platform$: CorePlatform;
     $watchNext$: Set<SubscriberDescriptor>;
     $watchStaging$: Set<SubscriberDescriptor>;
     $hostsNext$: Set<QwikElement>;
@@ -772,7 +771,7 @@ export declare interface FunctionComponent<P = Record<string, any>> {
  * @param docOrNode - The document (or node) of the application for which the platform is needed.
  * @alpha
  */
-export declare const getPlatform: (docOrNode: Document | QwikElement) => CorePlatform;
+export declare const getPlatform: () => CorePlatform;
 
 /**
  * @public
@@ -1184,12 +1183,11 @@ declare interface IntrinsicElements {
 declare interface InvokeContext {
     $url$: URL | undefined;
     $seq$: number;
-    $doc$: Document | undefined;
     $hostElement$: QwikElement | undefined;
     $element$: Element | undefined;
     $event$: any | undefined;
     $qrl$: QRL<any> | undefined;
-    $waitOn$: ValueOrPromise<any>[] | undefined;
+    $waitOn$: Promise<any>[] | undefined;
     $props$: Props | undefined;
     $subscriber$: Subscriber | null | undefined;
     $renderCtx$: RenderContext | undefined;
@@ -1308,8 +1306,6 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare type MountFn<T> = () => ValueOrPromise<T>;
 
-declare const MUTABLE: unique symbol;
-
 /**
  * Mark property as mutable.
  *
@@ -1347,13 +1343,9 @@ declare type MutableProps<PROPS extends {}> = {
  */
 export declare interface MutableWrapper<T> {
     /**
-     * A marker symbol.
-     */
-    [MUTABLE]: true;
-    /**
      * Mutable value.
      */
-    v: T;
+    mut: T;
 }
 
 /**
@@ -1409,7 +1401,7 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null | (() => JSXNode<any>);
+export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null;
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
@@ -1437,7 +1429,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @internal
  */
-export declare const _pauseFromContexts: (elements: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
+export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
 
 declare type PreventDefault = {
     [K in keyof QwikEventMap as `prevent${'default' | 'Default'}:${Lowercase<K>}`]?: boolean;
@@ -1643,7 +1635,7 @@ export declare interface QRL<TYPE = any> {
     /**
      * Resolve the QRL and return the actual value.
      */
-    resolve(el?: QwikElement): Promise<TYPE>;
+    resolve(): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
 }
@@ -1673,12 +1665,12 @@ declare interface QRLInternalMethods<TYPE> {
     readonly $hash$: string;
     $capture$: string[] | null;
     $captureRef$: any[] | null;
-    resolve(el?: QwikElement): Promise<TYPE>;
+    resolve(): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
-    getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): any;
+    getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer Return ? (...args: ARGS) => ValueOrPromise<Return> : any;
     $setContainer$(containerEl: Element): void;
-    $resolveLazy$(): void;
+    $resolveLazy$(): ValueOrPromise<TYPE>;
 }
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1934,7 +1926,7 @@ export declare interface RenderOptions {
 /**
  * @alpha
  */
-export declare const renderSSR: (doc: Document, node: JSXNode, opts: RenderSSROptions) => Promise<void>;
+export declare const renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
 
 /**
  * @alpha
@@ -1957,7 +1949,6 @@ declare interface RenderStaticContext {
     $operations$: RenderOperation[];
     $postOperations$: RenderOperation[];
     $containerState$: ContainerState;
-    $containerEl$: Element;
     $addSlots$: [QwikElement, QwikElement][];
     $rmSlots$: QwikElement[];
 }
@@ -2078,7 +2069,7 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
  * @param platform - The platform to use.
  * @alpha
  */
-export declare const setPlatform: (doc: Document, plt: CorePlatform) => CorePlatform;
+export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 
 /**
  * @alpha
@@ -2130,7 +2121,6 @@ export declare interface SnapshotResult {
     listeners: SnapshotListener[];
     objs: any[];
     mode: 'render' | 'listeners' | 'static';
-    pendingContent: Promise<string>[];
 }
 
 /**
