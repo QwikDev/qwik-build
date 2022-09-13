@@ -1491,6 +1491,176 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
+  async function configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput) {
+    if ("function" !== typeof fetch && "node" === sys.env) {
+      try {
+        if (!globalThis.fetch) {
+          const nodeFetch = await sys.strictDynamicImport("node-fetch");
+          global.fetch = nodeFetch;
+          global.Headers = nodeFetch.Headers;
+          global.Request = nodeFetch.Request;
+          global.Response = nodeFetch.Response;
+        }
+      } catch {
+        console.warn("Global fetch() was not installed");
+      }
+    }
+    server.middlewares.use((async (req, res, next) => {
+      try {
+        const domain = "http://" + (req.headers.host ?? "localhost");
+        const url = new URL(req.originalUrl, domain);
+        if (skipSsrRender(url)) {
+          next();
+          return;
+        }
+        if (req.headers.accept && req.headers.accept.includes("text/html")) {
+          const envData = {
+            ...res._qwikEnvData,
+            url: url.href
+          };
+          const status = "number" === typeof res.statusCode ? res.statusCode : 200;
+          if (isClientDevOnly) {
+            const relPath = path.relative(opts.rootDir, clientDevInput);
+            const entryUrl = "/" + relPath.replace(/\\/g, "/");
+            let html = getViteDevIndexHtml(entryUrl, envData);
+            html = await server.transformIndexHtml(url.pathname, html);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
+            res.writeHead(status);
+            res.end(html);
+            return;
+          }
+          const ssrModule = await server.ssrLoadModule(opts.input[0], {
+            fixStacktrace: true
+          });
+          const render = ssrModule.default ?? ssrModule.render;
+          if ("function" === typeof render) {
+            const manifest = {
+              symbols: {},
+              mapping: {},
+              bundles: {},
+              injections: [],
+              version: "1"
+            };
+            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
+              entry[1].forEach((v => {
+                var _a, _b;
+                const hook = null == (_b = null == (_a = v.info) ? void 0 : _a.meta) ? void 0 : _b.hook;
+                let url2 = v.url;
+                v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
+                hook && (manifest.mapping[hook.name] = url2);
+                const {pathId: pathId, query: query} = parseId(v.url);
+                "" === query && pathId.endsWith(".css") && manifest.injections.push({
+                  tag: "link",
+                  location: "head",
+                  attributes: {
+                    rel: "stylesheet",
+                    href: url2
+                  }
+                });
+              }));
+            }));
+            const renderOpts = {
+              debug: true,
+              stream: res,
+              snapshot: !isClientDevOnly,
+              manifest: isClientDevOnly ? void 0 : manifest,
+              symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
+                if (mapper) {
+                  const hash = getSymbolHash(symbolName);
+                  return mapper[hash];
+                }
+              },
+              prefetchStrategy: null,
+              envData: envData
+            };
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
+            res.writeHead(status);
+            const result = await render(renderOpts);
+            if ("html" in result) {
+              res.write('<script type="module" src="/@vite/client"><\/script>');
+              res.end(result.html);
+            } else {
+              res.write('<script type="module" src="/@vite/client"><\/script>');
+              res.end();
+            }
+          } else {
+            next();
+          }
+        } else {
+          next();
+        }
+      } catch (e) {
+        next(e);
+      }
+    }));
+  }
+  async function configurePreviewServer(middlewares, opts, sys, path) {
+    const fs = await sys.dynamicImport("fs");
+    const entryPreviewPaths = [ "js", "mjs", "cjs" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
+    const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
+    if (!entryPreviewModulePath) {
+      return invalidPreviewMessage(middlewares, 'Unable to find output "server/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.');
+    }
+    try {
+      const previewModuleImport = await sys.strictDynamicImport(entryPreviewModulePath);
+      let previewMiddleware = null;
+      let preview404Middleware = null;
+      if (previewModuleImport.default) {
+        if ("function" === typeof previewModuleImport.default) {
+          previewMiddleware = previewModuleImport.default;
+        } else if ("object" === typeof previewModuleImport.default) {
+          previewMiddleware = previewModuleImport.default.router;
+          preview404Middleware = previewModuleImport.default.notFound;
+        }
+      }
+      if ("function" !== typeof previewMiddleware) {
+        return invalidPreviewMessage(middlewares, `Entry preview module "${entryPreviewModulePath}" does not export a default middleware function`);
+      }
+      middlewares.use(previewMiddleware);
+      "function" === typeof preview404Middleware && middlewares.use(preview404Middleware);
+    } catch (e) {
+      return invalidPreviewMessage(middlewares, String(e));
+    }
+  }
+  function invalidPreviewMessage(middlewares, msg) {
+    console.log(`\n❌ ${msg}\n`);
+    middlewares.use(((_, res) => {
+      res.writeHead(400, {
+        "Content-Type": "text/plain"
+      });
+      res.end(msg);
+    }));
+  }
+  var FS_PREFIX = "/@fs/";
+  var VALID_ID_PREFIX = "/@id/";
+  var VITE_PUBLIC_PATH = "/@vite/";
+  var internalPrefixes = [ FS_PREFIX, VALID_ID_PREFIX, VITE_PUBLIC_PATH ];
+  var InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join("|")})`);
+  var skipSsrRender = url => {
+    const pathname = url.pathname;
+    const hasExtension = /\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html");
+    const isHtmlProxy = url.searchParams.has("html-proxy");
+    const isVitePing = pathname.includes("__vite_ping");
+    const skipSSR = "false" === url.searchParams.get("ssr");
+    return hasExtension || isHtmlProxy || isVitePing || skipSSR || InternalPrefixRE.test(url.pathname);
+  };
+  function getViteDevIndexHtml(entryUrl, envData) {
+    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
+  }
+  var VITE_DEV_CLIENT_QS = "qwik-vite-dev-client";
+  var getSymbolHash = symbolName => {
+    const index = symbolName.lastIndexOf("_");
+    if (index > -1) {
+      return symbolName.slice(index + 1);
+    }
+    return symbolName;
+  };
   var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{function e(e){return"object"==typeof e&&e&&"Module"===e[Symbol.toStringTag]}((t,n)=>{const o="__q_context__",r=window,i=(e,n,o)=>{n=n.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),t.querySelectorAll("[on"+e+"\\\\:"+n+"]").forEach((t=>l(t,e,n,o)))},s=(e,t,n=!1)=>new CustomEvent(e,{detail:t,bubbles:n}),a=e=>{throw Error("QWIK "+e)},c=(e,n)=>(e=e.closest("[q\\\\:container]"),new URL(n,new URL(e?e.getAttribute("q:base"):t.baseURI,t.baseURI))),l=async(n,i,l,f)=>{var u;n.hasAttribute("preventdefault:"+l)&&f.preventDefault();const b="on"+i+":"+l,v=null==(u=n._qc_)?void 0:u.li[b];if(v)return void v.forEach((e=>e.getFn([n,f],(()=>n.isConnected))(f,n)));const p=n.getAttribute(b);if(p)for(const i of p.split("\\n")){const l=c(n,i);if(l){const i=d(l),c=(r[l.pathname]||(q=await import(l.href.split("#")[0]),Object.values(q).find(e)||q))[i]||a(l+" does not export "+i),u=t[o];if(n.isConnected)try{t[o]=[n,f,l],c(f,n)}finally{t[o]=u,n.dispatchEvent(s("qsymbol",i,!0))}}}var q},d=e=>e.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",f=e=>{let t=e.target;for(i("-document",e.type,e);t&&t.getAttribute;)l(t,"",e.type,e),t=e.bubbles?t.parentElement:null},u=e=>{i("-window",e.type,e)},b=()=>{const e=t.readyState;if(!n&&("interactive"==e||"complete"==e)){n=1,i("","qinit",s("qinit"));const e=t.querySelectorAll("[on\\\\:qvisible]");if(e.length>0){const t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),l(n.target,"","qvisible",s("qvisible",n)))}));e.forEach((e=>t.observe(e)))}}},v=new Set,p=e=>{for(const t of e)v.has(t)||(document.addEventListener(t,f,{capture:!0}),r.addEventListener(t,u),v.add(t))};if(!t.qR){const e=r.qwikevents;Array.isArray(e)&&p(e),r.qwikevents={push:(...e)=>p(e)},t.addEventListener("readystatechange",b),b()}})(document)})();';
   var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    function findModule(module) {\n        return Object.values(module).find(isModule) || module;\n    }\n    function isModule(module) {\n        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];\n    }\n    ((doc, hasInitialized) => {\n        const win = window;\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));\n        };\n        const createEvent = (eventName, detail, bubbles = !1) => new CustomEvent(eventName, {\n            detail: detail,\n            bubbles: bubbles\n        });\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, onPrefix, eventName, ev) => {\n            var _a;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const attrName = "on" + onPrefix + ":" + eventName;\n            const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];\n            if (qrls) {\n                qrls.forEach((q => q.getFn([ element, ev ], (() => element.isConnected))(ev, element)));\n                return;\n            }\n            const attrValue = element.getAttribute(attrName);\n            if (attrValue) {\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (win[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        if (element.isConnected) {\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                handler(ev, element);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                element.dispatchEvent(createEvent("qsymbol", symbolName, !0));\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processDocumentEvent = ev => {\n            let element = ev.target;\n            broadcast("-document", ev.type, ev);\n            while (element && element.getAttribute) {\n                dispatch(element, "", ev.type, ev);\n                element = ev.bubbles ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev.type, ev);\n        };\n        const processReadyStateChange = () => {\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qinit", createEvent("qinit"));\n                const results = doc.querySelectorAll("[on\\\\:qvisible]");\n                if (results.length > 0) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", "qvisible", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const events =  new Set;\n        const push = eventNames => {\n            for (const eventName of eventNames) {\n                if (!events.has(eventName)) {\n                    document.addEventListener(eventName, processDocumentEvent, {\n                        capture: !0\n                    });\n                    win.addEventListener(eventName, processWindowEvent);\n                    events.add(eventName);\n                }\n            }\n        };\n        if (!doc.qR) {\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && push(qwikevents);\n            win.qwikevents = {\n                push: (...e) => push(e)\n            };\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
   var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ];
@@ -1738,122 +1908,46 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
       },
+      async writeBundle(_, rollupBundle) {
+        const opts = qwikPlugin.getOptions();
+        if ("ssr" === opts.target) {
+          const sys = qwikPlugin.getSys();
+          if ("node" === sys.env) {
+            const outputs = Object.keys(rollupBundle);
+            const patchModuleFormat = async buildType => {
+              try {
+                const js = `entry.${buildType}.js`;
+                const cjs = `entry.${buildType}.cjs`;
+                const mjs = `entry.${buildType}.mjs`;
+                if (!outputs.includes(js)) {
+                  if (outputs.includes(mjs)) {
+                    const fs = await sys.dynamicImport("fs");
+                    await fs.promises.writeFile(sys.path.join(opts.outDir, js), `import("./${mjs}").catch((e) => { console.error(e); process.exit(1); });`);
+                  } else if (outputs.includes(cjs)) {
+                    const fs = await sys.dynamicImport("fs");
+                    await fs.promises.writeFile(sys.path.join(opts.outDir, js), `require("./${cjs}");`);
+                  }
+                }
+              } catch (e) {
+                console.error("patchModuleFormat", e);
+              }
+            };
+            await patchModuleFormat("server");
+            await patchModuleFormat("static");
+          }
+        }
+      },
       async configureServer(server) {
         const opts = qwikPlugin.getOptions();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
-        qwikPlugin.log(`configureServer(), entry module: ${clientDevInput}`);
-        if ("function" !== typeof fetch && "node" === sys.env) {
-          qwikPlugin.log("configureServer(), patch fetch()");
-          try {
-            if (!globalThis.fetch) {
-              const nodeFetch = await sys.strictDynamicImport("node-fetch");
-              global.fetch = nodeFetch;
-              global.Headers = nodeFetch.Headers;
-              global.Request = nodeFetch.Request;
-              global.Response = nodeFetch.Response;
-            }
-          } catch {
-            console.warn("Global fetch() was not installed");
-          }
-        }
-        server.middlewares.use((async (req, res, next) => {
-          try {
-            const domain = "http://" + (req.headers.host ?? "localhost");
-            const url = new URL(req.originalUrl, domain);
-            if (skipSsrRender(url)) {
-              next();
-              return;
-            }
-            if (req.headers.accept && req.headers.accept.includes("text/html")) {
-              const envData = {
-                ...res._qwikEnvData,
-                url: url.href
-              };
-              const status = "number" === typeof res.statusCode ? res.statusCode : 200;
-              if (isClientDevOnly) {
-                qwikPlugin.log(`handleClientEntry("${url}")`);
-                const relPath = path.relative(opts.rootDir, clientDevInput);
-                const entryUrl = "/" + qwikPlugin.normalizePath(relPath);
-                let html = getViteDevIndexHtml(entryUrl, envData);
-                html = await server.transformIndexHtml(url.pathname, html);
-                res.setHeader("Content-Type", "text/html; charset=utf-8");
-                res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
-                res.setHeader("Access-Control-Allow-Origin", "*");
-                res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
-                res.writeHead(status);
-                res.end(html);
-                return;
-              }
-              qwikPlugin.log(`handleSSR("${url}"), ssr input: ${opts.input[0]}`);
-              const ssrModule = await server.ssrLoadModule(opts.input[0], {
-                fixStacktrace: true
-              });
-              const render = ssrModule.default ?? ssrModule.render;
-              if ("function" === typeof render) {
-                const manifest = {
-                  symbols: {},
-                  mapping: {},
-                  bundles: {},
-                  injections: [],
-                  version: "1"
-                };
-                Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
-                  entry[1].forEach((v => {
-                    var _a, _b;
-                    const hook = null == (_b = null == (_a = v.info) ? void 0 : _a.meta) ? void 0 : _b.hook;
-                    let url2 = v.url;
-                    v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
-                    hook && (manifest.mapping[hook.name] = url2);
-                    const {pathId: pathId, query: query} = parseId(v.url);
-                    "" === query && pathId.endsWith(".css") && manifest.injections.push({
-                      tag: "link",
-                      location: "head",
-                      attributes: {
-                        rel: "stylesheet",
-                        href: url2
-                      }
-                    });
-                  }));
-                }));
-                qwikPlugin.log("handleSSR()", "symbols", manifest);
-                const renderOpts = {
-                  debug: true,
-                  stream: res,
-                  snapshot: !isClientDevOnly,
-                  manifest: isClientDevOnly ? void 0 : manifest,
-                  symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
-                    if (mapper) {
-                      const hash = getSymbolHash(symbolName);
-                      return mapper[hash];
-                    }
-                  },
-                  prefetchStrategy: null,
-                  envData: envData
-                };
-                res.setHeader("Content-Type", "text/html; charset=utf-8");
-                res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
-                res.setHeader("Access-Control-Allow-Origin", "*");
-                res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
-                res.writeHead(status);
-                const result = await render(renderOpts);
-                if ("html" in result) {
-                  res.write('<script type="module" src="/@vite/client"><\/script>');
-                  res.end(result.html);
-                } else {
-                  res.write('<script type="module" src="/@vite/client"><\/script>');
-                  res.end();
-                }
-              } else {
-                next();
-              }
-            } else {
-              next();
-            }
-          } catch (e) {
-            next(e);
-          }
-        }));
+        await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
+      },
+      configurePreviewServer: server => async () => {
+        const opts = qwikPlugin.getOptions();
+        const sys = qwikPlugin.getSys();
+        const path = qwikPlugin.getPath();
+        await configurePreviewServer(server.middlewares, opts, sys, path);
       },
       handleHotUpdate(ctx) {
         qwikPlugin.log("handleHotUpdate()", ctx);
@@ -1868,9 +1962,6 @@ globalThis.qwikOptimizer = function(module) {
     };
     return vitePlugin;
   }
-  function getViteDevIndexHtml(entryUrl, envData) {
-    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
-  }
   function updateEntryDev(code) {
     code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);
     return code;
@@ -1879,13 +1970,6 @@ globalThis.qwikOptimizer = function(module) {
     const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
     return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
   }
-  var getSymbolHash = symbolName => {
-    const index = symbolName.lastIndexOf("_");
-    if (index > -1) {
-      return symbolName.slice(index + 1);
-    }
-    return symbolName;
-  };
   var findQwikRoots = async (sys, packageJsonPath) => {
     if ("node" === sys.env) {
       const fs = await sys.dynamicImport("fs");
@@ -1924,21 +2008,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   var isNotNullable = v => null != v;
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
-  var VITE_DEV_CLIENT_QS = "qwik-vite-dev-client";
   var CLIENT_DEV_INPUT = "entry.dev.tsx";
-  var FS_PREFIX = "/@fs/";
-  var VALID_ID_PREFIX = "/@id/";
-  var VITE_PUBLIC_PATH = "/@vite/";
-  var internalPrefixes = [ FS_PREFIX, VALID_ID_PREFIX, VITE_PUBLIC_PATH ];
-  var InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join("|")})`);
-  var skipSsrRender = url => {
-    const pathname = url.pathname;
-    const hasExtension = /\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html");
-    const isHtmlProxy = url.searchParams.has("html-proxy");
-    const isVitePing = pathname.includes("__vite_ping");
-    const skipSSR = "false" === url.searchParams.get("ssr");
-    return hasExtension || isHtmlProxy || isVitePing || skipSSR || InternalPrefixRE.test(url.pathname);
-  };
   return module.exports;
 }("object" === typeof module && module.exports ? module : {
   exports: {}

@@ -5,6 +5,9 @@
   "license": "MIT",
   "main": "./core.cjs",
   "types": "./core.d.ts",
+  "bin": {
+    "qwik": "./qwik.cjs"
+  },
   "type": "module",
   "exports": {
     ".": {
@@ -17,6 +20,9 @@
         "production": "./core.prod.cjs",
         "default": "./core.cjs"
       }
+    },
+    "./cli": {
+      "require": "./cli.cjs"
     },
     "./jsx-runtime": {
       "import": "./jsx-runtime.mjs",
@@ -67,6 +73,7 @@
     "build/index.mjs",
     "build/index.mjs.map",
     "build/package.json",
+    "cli.cjs",
     "core.cjs",
     "core.cjs.map",
     "core.d.ts",
@@ -90,6 +97,7 @@
     "optimizer.d.ts",
     "optimizer.mjs",
     "optimizer/package.json",
+    "qwik.cjs",
     "qwikloader.debug.js",
     "qwikloader.js",
     "qwikloader.optimize.debug.js",
@@ -99,6 +107,9 @@
     "server.d.ts",
     "server.mjs",
     "server/package.json",
+    "starters/features",
+    "starters/servers",
+    "starters/static-generators",
     "testing/index.cjs",
     "testing/index.d.ts",
     "testing/index.mjs",
