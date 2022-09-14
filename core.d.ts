@@ -425,8 +425,13 @@ export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<
 export declare interface ComponentBaseProps {
     key?: string | number;
     'q:slot'?: string;
-    children?: JSXChildren;
 }
+
+declare type ComponentChildren<PROPS extends {}> = PROPS extends {
+    children: any;
+} ? never : {
+    children?: JSXChildren;
+};
 
 /**
  * Declare a Qwik component that can be used to create UI.
@@ -1333,7 +1338,7 @@ export declare const mutable: <T>(v: T) => MutableWrapper<T>;
  * @public
  */
 declare type MutableProps<PROPS extends {}> = {
-    [K in keyof PROPS]: PROPS[K] | MutableWrapper<PROPS[K]>;
+    [K in keyof PROPS]: K extends 'children' ? PROPS[K] : PROPS[K] | MutableWrapper<PROPS[K]>;
 };
 
 /**
@@ -1482,7 +1487,7 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
 /**
  * @public
  */
-export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps;
+export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
 
 declare interface QContext {
     $element$: QwikElement;
