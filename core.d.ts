@@ -45,6 +45,7 @@
  * import { importedFn } from './import/example';
  * import { createContext, useContext, useContextProvider } from './use/use-context';
  * import { useRef } from './use/use-ref';
+ * import { Resource, useResource$ } from './use/use-resource';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}
@@ -733,6 +734,10 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+declare interface ErrorBoundaryStore {
+    error: any | undefined;
+}
+
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
@@ -1193,7 +1198,6 @@ declare interface InvokeContext {
     $event$: any | undefined;
     $qrl$: QRL<any> | undefined;
     $waitOn$: Promise<any>[] | undefined;
-    $props$: Props | undefined;
     $subscriber$: Subscriber | null | undefined;
     $renderCtx$: RenderContext | undefined;
 }
@@ -1359,6 +1363,9 @@ export declare interface MutableWrapper<T> {
 declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | BivariantEventHandler<T>[];
 
 /**
+ * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
+ *
+ * @see noSerialize
  * @public
  */
 export declare type NoSerialize<T> = (T & {
@@ -1465,11 +1472,6 @@ export declare interface PropFnInterface<ARGS extends any[], RET> {
  * @public
  */
 export declare type PropFunction<T extends Function> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
-
-/**
- * @public
- */
-export declare type Props<T extends {} = {}> = Record<string, any> & T;
 
 /**
  * Infers `Props` from the component.
@@ -1675,7 +1677,7 @@ declare interface QRLInternalMethods<TYPE> {
     getHash(): string;
     getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer Return ? (...args: ARGS) => ValueOrPromise<Return> : any;
     $setContainer$(containerEl: Element): void;
-    $resolveLazy$(): ValueOrPromise<TYPE>;
+    $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1884,6 +1886,8 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
+ * Type of the value returned by `useRef()`.
+ *
  * @public
  */
 export declare interface Ref<T> {
@@ -1908,8 +1912,8 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode | Fun
  * @alpha
  */
 declare interface RenderContext {
-    $static$: RenderStaticContext;
-    $localStack$: QContext[];
+    readonly $static$: RenderStaticContext;
+    readonly $localStack$: QContext[];
     $cmpCtx$: QContext | undefined;
 }
 
@@ -1948,17 +1952,70 @@ export declare interface RenderSSROptions {
 }
 
 declare interface RenderStaticContext {
-    $doc$: Document;
-    $roots$: QContext[];
-    $hostElements$: Set<QwikElement>;
-    $operations$: RenderOperation[];
-    $postOperations$: RenderOperation[];
-    $containerState$: ContainerState;
-    $addSlots$: [QwikElement, QwikElement][];
-    $rmSlots$: QwikElement[];
+    readonly $doc$: Document;
+    readonly $roots$: QContext[];
+    readonly $hostElements$: Set<QwikElement>;
+    readonly $operations$: RenderOperation[];
+    readonly $postOperations$: RenderOperation[];
+    readonly $containerState$: ContainerState;
+    readonly $addSlots$: [QwikElement, QwikElement][];
+    readonly $rmSlots$: QwikElement[];
 }
 
 /**
+ * This method works like an async memoized function that runs whenever some tracked value
+ * changes and returns some data.
+ *
+ * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * state that indicates if the data is available or not.
+ *
+ * The status can be one of the following:
+ *
+ * - 'pending' - the data is not yet available.
+ * - 'resolved' - the data is available.
+ * - 'rejected' - the data is not available due to an error or timeout.
+ *
+ * ## Example
+ *
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+ * input city name changes.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     city: '',
+ *   });
+ *
+ *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+ *     const cityName = track(store, 'city');
+ *     const abortController = new AbortController();
+ *     cleanup(() => abortController.abort('cleanup'));
+ *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal
+ *     });
+ *     const data = res.json();
+ *     return data;
+ *   });
+ *
+ *   return (
+ *     <div>
+ *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <Resource
+ *         value={weatherResource}
+ *         onResolved={(weather) => {
+ *           return (
+ *             <div>Temperature: {weather.temp}</div>
+ *           );
+ *         }}
+ *       />
+ *     </div>
+ *   );
+ * });
+ * ```
+ *
+ * @see Resource
+ * @see ResourceReturn
+ *
  * @public
  */
 export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
@@ -1981,9 +2038,16 @@ declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, Re
 export declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
 
 /**
+ * Options to pass to `useResource$()`
+ *
+ * @see useResource
  * @public
  */
 export declare interface ResourceOptions {
+    /**
+     * Timeout in milliseconds. If the resource takes more than the specified millisecond, it will timeout.
+     * Resulting on a rejected resource.
+     */
     timeout?: number;
 }
 
@@ -2082,6 +2146,8 @@ export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 export declare const SkipRender: JSXNode;
 
 /**
+ * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
+ *
  * @public
  */
 export declare const Slot: FunctionComponent<{
@@ -2789,6 +2855,11 @@ export declare function useEnvData<T>(key: string): T | undefined;
 export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
+ * @alpha
+ */
+export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
+
+/**
  * Used by the Qwik Optimizer to restore the lexically scoped variables.
  *
  * This method should not be present in the application source code.
@@ -2971,11 +3042,117 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
 /**
+ * This method works like an async memoized function that runs whenever some tracked value
+ * changes and returns some data.
+ *
+ * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * state that indicates if the data is available or not.
+ *
+ * The status can be one of the following:
+ *
+ * - 'pending' - the data is not yet available.
+ * - 'resolved' - the data is available.
+ * - 'rejected' - the data is not available due to an error or timeout.
+ *
+ * ## Example
+ *
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+ * input city name changes.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     city: '',
+ *   });
+ *
+ *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+ *     const cityName = track(store, 'city');
+ *     const abortController = new AbortController();
+ *     cleanup(() => abortController.abort('cleanup'));
+ *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal
+ *     });
+ *     const data = res.json();
+ *     return data;
+ *   });
+ *
+ *   return (
+ *     <div>
+ *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <Resource
+ *         value={weatherResource}
+ *         onResolved={(weather) => {
+ *           return (
+ *             <div>Temperature: {weather.temp}</div>
+ *           );
+ *         }}
+ *       />
+ *     </div>
+ *   );
+ * });
+ * ```
+ *
+ * @see Resource
+ * @see ResourceReturn
+ *
  * @public
  */
 export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
+ * This method works like an async memoized function that runs whenever some tracked value
+ * changes and returns some data.
+ *
+ * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * state that indicates if the data is available or not.
+ *
+ * The status can be one of the following:
+ *
+ * - 'pending' - the data is not yet available.
+ * - 'resolved' - the data is available.
+ * - 'rejected' - the data is not available due to an error or timeout.
+ *
+ * ## Example
+ *
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+ * input city name changes.
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const store = useStore({
+ *     city: '',
+ *   });
+ *
+ *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+ *     const cityName = track(store, 'city');
+ *     const abortController = new AbortController();
+ *     cleanup(() => abortController.abort('cleanup'));
+ *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal
+ *     });
+ *     const data = res.json();
+ *     return data;
+ *   });
+ *
+ *   return (
+ *     <div>
+ *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <Resource
+ *         value={weatherResource}
+ *         onResolved={(weather) => {
+ *           return (
+ *             <div>Temperature: {weather.temp}</div>
+ *           );
+ *         }}
+ *       />
+ *     </div>
+ *   );
+ * });
+ * ```
+ *
+ * @see Resource
+ * @see ResourceReturn
+ *
  * @public
  */
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;

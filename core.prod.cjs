@@ -242,100 +242,6 @@
     const Virtual = props => props.children;
     const InternalSSRStream = () => null;
     const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
-    const executeComponent = (rctx, elCtx) => {
-        elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
-        const hostElement = elCtx.$element$;
-        const onRenderQRL = elCtx.$renderQrl$;
-        const props = elCtx.$props$;
-        const newCtx = pushRenderContext(rctx, elCtx);
-        const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
-        const waitOn = invocatinContext.$waitOn$ = [];
-        newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rctx;
-        const onRenderFn = onRenderQRL.getFn(invocatinContext);
-        return safeCall((() => onRenderFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
-        waitOn.length > 0 ? Promise.allSettled(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
-            node: jsxNode,
-            rctx: newCtx
-        })) : elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
-            node: jsxNode,
-            rctx: newCtx
-        })), (err => (logError(err), {
-            node: SkipRender,
-            rctx: newCtx
-        })));
-    };
-    const createRenderContext = (doc, containerState) => ({
-        $static$: {
-            $doc$: doc,
-            $containerState$: containerState,
-            $hostElements$: new Set,
-            $operations$: [],
-            $postOperations$: [],
-            $roots$: [],
-            $addSlots$: [],
-            $rmSlots$: []
-        },
-        $cmpCtx$: void 0,
-        $localStack$: []
-    });
-    const pushRenderContext = (ctx, elCtx) => ({
-        $static$: ctx.$static$,
-        $cmpCtx$: ctx.$cmpCtx$,
-        $localStack$: ctx.$localStack$.concat(elCtx)
-    });
-    const parseClassAny = obj => {
-        if (isString(obj)) {
-            return parseClassList(obj);
-        }
-        if (isObject(obj)) {
-            if (isArray(obj)) {
-                return obj;
-            }
-            {
-                const output = [];
-                for (const key in obj) {
-                    Object.prototype.hasOwnProperty.call(obj, key) && obj[key] && output.push(key);
-                }
-                return output;
-            }
-        }
-        return [];
-    };
-    const parseClassListRegex = /\s/;
-    const parseClassList = value => value ? value.split(parseClassListRegex) : EMPTY_ARRAY;
-    const stringifyStyle = obj => {
-        if (null == obj) {
-            return "";
-        }
-        if ("object" == typeof obj) {
-            if (isArray(obj)) {
-                throw qError(QError_stringifyClassOrStyle, obj, "style");
-            }
-            {
-                const chunks = [];
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        value && chunks.push(fromCamelToKebabCase(key) + ":" + value);
-                    }
-                }
-                return chunks.join(";");
-            }
-        }
-        return String(obj);
-    };
-    const getNextIndex = ctx => intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-    const setQId = (rctx, ctx) => {
-        const id = getNextIndex(rctx);
-        ctx.$id$ = id, ctx.$element$.setAttribute("q:id", id);
-    };
-    const SKIPS_PROPS = [ QSlot, "q:renderFn", "children" ];
-    const serializeSStyle = scopeIds => {
-        const value = scopeIds.join(" ");
-        if (value.length > 0) {
-            return value;
-        }
-    };
     const setAttribute = (ctx, el, prop, value) => {
         ctx ? ctx.$operations$.push({
             $operation$: _setAttribute,
@@ -624,6 +530,178 @@
     };
     const isComment = node => 8 === node.nodeType;
     const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
+    const createContext$1 = name => Object.freeze({
+        id: fromCamelToKebabCase(name)
+    });
+    const useContextProvider = (context, newValue) => {
+        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        if (void 0 !== get) {
+            return;
+        }
+        const hostElement = ctx.$hostElement$;
+        const hostCtx = getContext(hostElement);
+        let contexts = hostCtx.$contexts$;
+        contexts || (hostCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
+        set(true);
+    };
+    const resolveContext = (context, hostElement, rctx) => {
+        const contextID = context.id;
+        if (rctx) {
+            const contexts = rctx.$localStack$;
+            for (let i = contexts.length - 1; i >= 0; i--) {
+                const ctx = contexts[i];
+                if (hostElement = ctx.$element$, ctx.$contexts$) {
+                    const found = ctx.$contexts$.get(contextID);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+        }
+        if (hostElement.closest) {
+            const value = queryContextFromDom(hostElement, contextID);
+            if (void 0 !== value) {
+                return value;
+            }
+        }
+    };
+    const queryContextFromDom = (hostElement, contextId) => {
+        let element = hostElement;
+        for (;element; ) {
+            let node = element;
+            let virtual;
+            for (;node && (virtual = findVirtual(node)); ) {
+                const contexts = tryGetContext(virtual)?.$contexts$;
+                if (contexts && contexts.has(contextId)) {
+                    return contexts.get(contextId);
+                }
+                node = virtual;
+            }
+            element = element.parentElement;
+        }
+    };
+    const findVirtual = el => {
+        let node = el;
+        let stack = 1;
+        for (;node = node.previousSibling; ) {
+            if (isComment(node)) {
+                if ("/qv" === node.data) {
+                    stack++;
+                } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
+                    return getVirtualElement(node);
+                }
+            }
+        }
+        return null;
+    };
+    const ERROR_CONTEXT = createContext$1("qk-error");
+    const handleError = (err, hostElement, rctx) => {
+        if (isServer()) {
+            throw err;
+        }
+        {
+            const errorStore = resolveContext(ERROR_CONTEXT, hostElement, rctx);
+            if (void 0 === errorStore) {
+                throw err;
+            }
+            errorStore.error = err;
+        }
+    };
+    const executeComponent = (rctx, elCtx) => {
+        elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
+        const hostElement = elCtx.$element$;
+        const onRenderQRL = elCtx.$renderQrl$;
+        const props = elCtx.$props$;
+        const newCtx = pushRenderContext(rctx, elCtx);
+        const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
+        const waitOn = invocatinContext.$waitOn$ = [];
+        newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rctx, 
+        onRenderQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
+        const onRenderFn = onRenderQRL.getFn(invocatinContext);
+        return safeCall((() => onRenderFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
+        waitOn.length > 0 ? Promise.allSettled(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
+            node: jsxNode,
+            rctx: newCtx
+        })) : elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
+            node: jsxNode,
+            rctx: newCtx
+        })), (err => (handleError(err, hostElement, rctx), {
+            node: SkipRender,
+            rctx: newCtx
+        })));
+    };
+    const createRenderContext = (doc, containerState) => ({
+        $static$: {
+            $doc$: doc,
+            $containerState$: containerState,
+            $hostElements$: new Set,
+            $operations$: [],
+            $postOperations$: [],
+            $roots$: [],
+            $addSlots$: [],
+            $rmSlots$: []
+        },
+        $cmpCtx$: void 0,
+        $localStack$: []
+    });
+    const pushRenderContext = (ctx, elCtx) => ({
+        $static$: ctx.$static$,
+        $cmpCtx$: ctx.$cmpCtx$,
+        $localStack$: ctx.$localStack$.concat(elCtx)
+    });
+    const parseClassAny = obj => {
+        if (isString(obj)) {
+            return parseClassList(obj);
+        }
+        if (isObject(obj)) {
+            if (isArray(obj)) {
+                return obj;
+            }
+            {
+                const output = [];
+                for (const key in obj) {
+                    Object.prototype.hasOwnProperty.call(obj, key) && obj[key] && output.push(key);
+                }
+                return output;
+            }
+        }
+        return [];
+    };
+    const parseClassListRegex = /\s/;
+    const parseClassList = value => value ? value.split(parseClassListRegex) : EMPTY_ARRAY;
+    const stringifyStyle = obj => {
+        if (null == obj) {
+            return "";
+        }
+        if ("object" == typeof obj) {
+            if (isArray(obj)) {
+                throw qError(QError_stringifyClassOrStyle, obj, "style");
+            }
+            {
+                const chunks = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        value && chunks.push(fromCamelToKebabCase(key) + ":" + value);
+                    }
+                }
+                return chunks.join(";");
+            }
+        }
+        return String(obj);
+    };
+    const getNextIndex = ctx => intToStr(ctx.$static$.$containerState$.$elementIndex$++);
+    const setQId = (rctx, ctx) => {
+        const id = getNextIndex(rctx);
+        ctx.$id$ = id, ctx.$element$.setAttribute("q:id", id);
+    };
+    const SKIPS_PROPS = [ QSlot, "q:renderFn", "children" ];
+    const serializeSStyle = scopeIds => {
+        const value = scopeIds.join(" ");
+        if (value.length > 0) {
+            return value;
+        }
+    };
     const renderComponent = (rctx, ctx, flags) => {
         const justMounted = !ctx.$mounted$;
         const hostElement = ctx.$element$;
@@ -649,7 +727,9 @@
             return then(processedJSXNode, (processedJSXNode => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 const oldVdom = getVdom(ctx);
-                return ctx.$vdom$ = newVdom, visitJsxNode(newCtx, oldVdom, newVdom, flags);
+                return then(visitJsxNode(newCtx, oldVdom, newVdom, flags), (() => {
+                    ctx.$vdom$ = newVdom;
+                }));
             }));
         }));
     };
@@ -1262,8 +1342,8 @@
                     el.isConnected, staticCtx.$roots$.push(elCtx);
                     try {
                         await renderComponent(ctx, elCtx, getFlags(el.parentElement));
-                    } catch (e) {
-                        logError(codeToText(QError_errorWhileRendering), e);
+                    } catch (err) {
+                        logError(err);
                     }
                 }
             }
@@ -1288,17 +1368,18 @@
     };
     const executeWatchesBefore = async containerState => {
         const resourcesPromises = [];
+        const containerEl = containerState.$containerEl$;
         const watchPromises = [];
         const isWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsWatch);
         const isResourceWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
         containerState.$watchNext$.forEach((watch => {
-            isWatch(watch) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))), 
-            containerState.$watchNext$.delete(watch)), isResourceWatch(watch) && (resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))), 
+            isWatch(watch) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
+            containerState.$watchNext$.delete(watch)), isResourceWatch(watch) && (resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
             containerState.$watchNext$.delete(watch));
         }));
         do {
             if (containerState.$watchStaging$.forEach((watch => {
-                isWatch(watch) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))) : isResourceWatch(watch) ? resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))) : containerState.$watchNext$.add(watch);
+                isWatch(watch) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : isResourceWatch(watch) ? resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch);
             })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
                 const watches = await Promise.all(watchPromises);
                 sortWatches(watches), await Promise.all(watches.map((watch => runSubscriber(watch, containerState)))), 
@@ -1312,13 +1393,14 @@
     };
     const executeWatchesAfter = async (containerState, watchPred) => {
         const watchPromises = [];
+        const containerEl = containerState.$containerEl$;
         containerState.$watchNext$.forEach((watch => {
-            watchPred(watch, false) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))), 
+            watchPred(watch, false) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
             containerState.$watchNext$.delete(watch));
         }));
         do {
             if (containerState.$watchStaging$.forEach((watch => {
-                watchPred(watch, true) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(), (() => watch))) : containerState.$watchNext$.add(watch);
+                watchPred(watch, true) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch);
             })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
                 const watches = await Promise.all(watchPromises);
                 sortWatches(watches), await Promise.all(watches.map((watch => runSubscriber(watch, containerState)))), 
@@ -1581,8 +1663,9 @@
         const containerState = ctx.$renderCtx$.$static$.$containerState$;
         const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, void 0);
         const elCtx = getContext(el);
-        set(true), qrl.$resolveLazy$(), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), 
-        waitAndRun(ctx, (() => runSubscriber(watch, containerState))), isServer() && useRunWatch(watch, opts?.eagerness);
+        set(true), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
+        elCtx.$watches$.push(watch), waitAndRun(ctx, (() => runSubscriber(watch, containerState, ctx.$renderCtx$))), 
+        isServer() && useRunWatch(watch, opts?.eagerness);
     };
     const useWatch$ = implicit$FirstArg(useWatchQrl);
     const useClientEffectQrl = (qrl, opts) => {
@@ -1594,8 +1677,10 @@
         const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, void 0);
         const eagerness = opts?.eagerness ?? "visible";
         const elCtx = getContext(el);
+        const containerState = ctx.$renderCtx$.$static$.$containerState$;
         set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), 
-        useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(), notifyWatch(watch, ctx.$renderCtx$.$static$.$containerState$));
+        useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
+        notifyWatch(watch, containerState));
     };
     const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
     const useServerMountQrl = mountQrl => {
@@ -1610,11 +1695,12 @@
     const useServerMount$ = implicit$FirstArg(useServerMountQrl);
     const useMountQrl = mountQrl => {
         const {get: get, set: set, ctx: ctx} = useSequentialScope();
-        get || (mountQrl.$resolveLazy$(), waitAndRun(ctx, mountQrl), set(true));
+        get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(ctx, mountQrl), set(true));
     };
     const useMount$ = implicit$FirstArg(useMountQrl);
     const isResourceWatch = watch => !!watch.$resource$;
-    const runSubscriber = (watch, containerState) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState));
+    const runSubscriber = (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState, rctx));
     const runResource = (watch, containerState, waitOn) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const el = watch.$el$;
@@ -1661,10 +1747,10 @@
             setState(false, "timeout") && cleanupWatch(watch);
         })) ]) : promise;
     };
-    const runWatch = (watch, containerState) => {
+    const runWatch = (watch, containerState, rctx) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
-        const el = watch.$el$;
-        const invokationContext = newInvokeContext(el, void 0, "WatchEvent");
+        const hostElement = watch.$el$;
+        const invokationContext = newInvokeContext(hostElement, void 0, "WatchEvent");
         const {$subsManager$: subsManager} = containerState;
         const watchFn = watch.$qrl$.getFn(invokationContext, (() => {
             subsManager.$clearSub$(watch);
@@ -1686,7 +1772,7 @@
         return safeCall((() => watchFn(opts)), (returnValue => {
             isFunction(returnValue) && cleanups.push(returnValue);
         }), (reason => {
-            logError(reason);
+            handleError(reason, hostElement, rctx);
         }));
     };
     const cleanupWatch = watch => {
@@ -1842,7 +1928,7 @@
         fill: void 0
     };
     const SERIALIZABLE_STATE = Symbol("serializable-data");
-    const serializers = [ QRLSerializer, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, {
+    const ComponentSerializer = {
         prefix: "",
         test: obj => isQwikComponent(obj),
         serialize: (obj, getObjId, containerState) => {
@@ -1862,7 +1948,8 @@
             qrl.$capture$ && qrl.$capture$.length > 0 && (qrl.$captureRef$ = qrl.$capture$.map(getObject), 
             qrl.$capture$ = null);
         }
-    }, {
+    };
+    const serializers = [ QRLSerializer, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, {
         prefix: "",
         test: obj => "function" == typeof obj && void 0 !== obj.__qwik_serializable__,
         serialize: obj => obj.toString(),
@@ -2157,7 +2244,7 @@
     })));
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
-        return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
+        return "function" == typeof globalThis._handleError && message instanceof Error ? globalThis._handleError(message, optionalParams) : console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
         err;
     };
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
@@ -2165,7 +2252,6 @@
     const logDebug = (message, ...optionalParams) => {};
     const printParams = optionalParams => optionalParams;
     const QError_stringifyClassOrStyle = 0;
-    const QError_errorWhileRendering = 4;
     const QError_setProperty = 6;
     const QError_useMethodOutsideContext = 14;
     const QError_immutableProps = 17;
@@ -2180,23 +2266,26 @@
     const codeToText = code => `Code(${code})`;
     const isQrl = value => "function" == typeof value && "function" == typeof value.getSymbol;
     const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
-        let containerEl;
-        const resolve = async () => {
-            if (symbolRef) {
+        let _containerEl;
+        const setContainer = el => {
+            _containerEl || (_containerEl = el);
+        };
+        const resolve = async containerEl => {
+            if (containerEl && setContainer(containerEl), symbolRef) {
                 return symbolRef;
             }
             if (symbolFn) {
                 return symbolRef = symbolFn().then((module => symbolRef = module[symbol]));
             }
             {
-                if (!containerEl) {
+                if (!_containerEl) {
                     throw new Error(`QRL '${chunk}#${symbol || "default"}' does not have an attached container`);
                 }
-                const symbol2 = getPlatform().importSymbol(containerEl, chunk, symbol);
+                const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 return symbolRef = then(symbol2, (ref => symbolRef = ref));
             }
         };
-        const resolveLazy = () => symbolRef || resolve();
+        const resolveLazy = containerEl => symbolRef || resolve(containerEl);
         const invokeFn = (currentCtx, beforeFn) => (...args) => {
             const fn = resolveLazy();
             return then(fn, (fn => {
@@ -2226,9 +2315,7 @@
             getHash: () => hash,
             resolve: resolve,
             $resolveLazy$: resolveLazy,
-            $setContainer$: el => {
-                containerEl || (containerEl = el);
-            },
+            $setContainer$: setContainer,
             $chunk$: chunk,
             $symbol$: symbol,
             $refSymbol$: refSymbol,
@@ -2248,6 +2335,42 @@
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
     const QRLcache = new Map;
+    const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
+        let chunk = "";
+        let symbolFn = null;
+        if (isString(chunkOrFn)) {
+            chunk = chunkOrFn;
+        } else {
+            if (!isFunction(chunkOrFn)) {
+                throw qError(12, chunkOrFn);
+            }
+            {
+                symbolFn = chunkOrFn;
+                const cached = QRLcache.get(symbol);
+                if (cached) {
+                    chunk = cached;
+                } else {
+                    let match;
+                    const srcCode = String(chunkOrFn);
+                    if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
+                        chunk = match[2];
+                    } else {
+                        if (!(match = srcCode.match(EXTRACT_SELF_IMPORT))) {
+                            throw qError(11, srcCode);
+                        }
+                        {
+                            const ref = "QWIK-SELF";
+                            const frames = new Error(ref).stack.split("\n");
+                            const start = frames.findIndex((f => f.includes(ref)));
+                            match = frames[start + 2].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
+                        }
+                    }
+                    QRLcache.set(symbol, chunk);
+                }
+            }
+        }
+        return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    };
     const stringifyQRL = (qrl, opts = {}) => {
         let symbol = qrl.$symbol$;
         let chunk = qrl.$chunk$;
@@ -2458,7 +2581,7 @@
         }
         return slotMap;
     };
-    const createContext$1 = nodeType => getContext({
+    const createContext = nodeType => getContext({
         nodeType: nodeType,
         _qc_: null
     });
@@ -2467,7 +2590,7 @@
         if ("string" == typeof tagName) {
             const key = node.key;
             const props = node.props;
-            const elCtx = createContext$1(1);
+            const elCtx = createContext(1);
             const isHead = "head" === tagName;
             const hostCtx = ssrCtx.hostCtx;
             let openingElement = "<" + tagName + ((elCtx, attributes) => {
@@ -2534,7 +2657,7 @@
             }));
         }
         if (tagName === Virtual) {
-            const elCtx = createContext$1(111);
+            const elCtx = createContext(111);
             return renderNodeVirtual(node, elCtx, void 0, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRComment) {
@@ -2727,20 +2850,6 @@
             return set(newStore), newStore;
         }
     };
-    const findVirtual = el => {
-        let node = el;
-        let stack = 1;
-        for (;node = node.previousSibling; ) {
-            if (isComment(node)) {
-                if ("/qv" === node.data) {
-                    stack++;
-                } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
-                    return getVirtualElement(node);
-                }
-            }
-        }
-        return null;
-    };
     function useEnvData(key, defaultValue) {
         return useInvokeContext().$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
     }
@@ -2882,8 +2991,8 @@
         scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
             return styleId;
         }
-        containerState.$styleIds$.add(styleId), styleQrl.$setContainer$(containerState.$containerEl$);
-        const value = styleQrl.$resolveLazy$();
+        containerState.$styleIds$.add(styleId);
+        const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
         const appendStyle = styleText => {
             elCtx.$appendStyles$, elCtx.$appendStyles$.push({
                 styleId: styleId,
@@ -2904,6 +3013,9 @@
             }
             if ("resolved" === state) {
                 return props.onResolved(props.value.resolved);
+            }
+            if ("rejected" === state) {
+                throw props.value.error;
             }
         }
         const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
@@ -2934,17 +3046,21 @@
         const listeners = [];
         for (const ctx of allContexts) {
             const el = ctx.$element$;
-            if (isElement(el)) {
-                const ctxLi = ctx.li;
-                for (const key of Object.keys(ctxLi)) {
-                    for (const qrl of ctxLi[key]) {
-                        listeners.push({
-                            key: key,
-                            qrl: qrl,
-                            el: el,
-                            eventName: getEventName(key)
-                        });
+            const ctxLi = ctx.li;
+            for (const key of Object.keys(ctxLi)) {
+                for (const qrl of ctxLi[key]) {
+                    const captured = qrl.$captureRef$;
+                    if (captured) {
+                        for (const obj of captured) {
+                            collectValue(obj, collector, true);
+                        }
                     }
+                    isElement(el) && listeners.push({
+                        key: key,
+                        qrl: qrl,
+                        el: el,
+                        eventName: getEventName(key)
+                    });
                 }
             }
             ctx.$watches$ && collector.$watches$.push(...ctx.$watches$);
@@ -2960,15 +3076,6 @@
                 listeners: [],
                 mode: "static"
             };
-        }
-        for (const listener of listeners) {
-            listener.qrl;
-            const captured = listener.qrl.$captureRef$;
-            if (captured) {
-                for (const obj of captured) {
-                    collectValue(obj, collector, true);
-                }
-            }
         }
         let promises;
         for (;(promises = collector.$promises$).length > 0; ) {
@@ -3171,9 +3278,7 @@
         const ctx = getWrappingContainer(element);
         getContainerState(ctx).$mutableProps$ = mutable;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
-    exports.createContext = name => Object.freeze({
-        id: fromCamelToKebabCase(name)
-    }), exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
+    exports.createContext = createContext$1, exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
         const normalizedProps = {
             children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY
         };
@@ -3185,42 +3290,7 @@
         return new JSXNodeImpl(type, normalizedProps, key);
     }, exports.implicit$FirstArg = implicit$FirstArg, exports.inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL("/inlinedQRL", symbolName, symbol, null, null, lexicalScopeCapture, null), 
     exports.jsx = jsx, exports.jsxDEV = jsx, exports.jsxs = jsx, exports.mutable = mutable, 
-    exports.noSerialize = noSerialize, exports.qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
-        let chunk = "";
-        let symbolFn = null;
-        if (isString(chunkOrFn)) {
-            chunk = chunkOrFn;
-        } else {
-            if (!isFunction(chunkOrFn)) {
-                throw qError(12, chunkOrFn);
-            }
-            {
-                symbolFn = chunkOrFn;
-                const cached = QRLcache.get(symbol);
-                if (cached) {
-                    chunk = cached;
-                } else {
-                    let match;
-                    const srcCode = String(chunkOrFn);
-                    if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
-                        chunk = match[2];
-                    } else {
-                        if (!(match = srcCode.match(EXTRACT_SELF_IMPORT))) {
-                            throw qError(11, srcCode);
-                        }
-                        {
-                            const ref = "QWIK-SELF";
-                            const frames = new Error(ref).stack.split("\n");
-                            const start = frames.findIndex((f => f.includes(ref)));
-                            match = frames[start + 2].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
-                        }
-                    }
-                    QRLcache.set(symbol, chunk);
-                }
-            }
-        }
-        return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
-    }, exports.render = async (parent, jsxNode, opts) => {
+    exports.noSerialize = noSerialize, exports.qrl = qrl, exports.render = async (parent, jsxNode, opts) => {
         isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
         const doc = getDocument(parent);
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
@@ -3235,16 +3305,21 @@
         containerState.$renderPromise$ = (async (parent, jsxNode, doc, containerState, containerEl) => {
             const ctx = createRenderContext(doc, containerState);
             const staticCtx = ctx.$static$;
-            const processedNodes = await processData$1(jsxNode);
-            const rootJsx = domToVnode(parent);
-            return await visitJsxNode(ctx, rootJsx, wrapJSX(parent, processedNodes), 0), staticCtx.$operations$.push(...staticCtx.$postOperations$), 
-            executeDOMRender(staticCtx), staticCtx;
+            try {
+                const processedNodes = await processData$1(jsxNode);
+                const rootJsx = domToVnode(parent);
+                await visitJsxNode(ctx, rootJsx, wrapJSX(parent, processedNodes), 0);
+            } catch (err) {
+                logError(err);
+            }
+            return staticCtx.$operations$.push(...staticCtx.$postOperations$), executeDOMRender(staticCtx), 
+            staticCtx;
         })(containerEl, jsxNode, doc, containerState);
         const renderCtx = await containerState.$renderPromise$;
         await postRendering(containerState, renderCtx);
     }, exports.renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
-        const containerEl = createContext$1(1).$element$;
+        const containerEl = createContext(1).$element$;
         const containerState = createContainerState(containerEl);
         const rctx = createRenderContext({
             nodeType: 9
@@ -3285,53 +3360,23 @@
         if (void 0 !== get) {
             return get;
         }
-        let hostElement = ctx.$hostElement$;
-        const contexts = ctx.$renderCtx$.$localStack$;
-        for (let i = contexts.length - 1; i >= 0; i--) {
-            const ctx = contexts[i];
-            if (hostElement = ctx.$element$, ctx.$contexts$) {
-                const found = ctx.$contexts$.get(context.id);
-                if (found) {
-                    return set(found);
-                }
-            }
-        }
-        if (hostElement.closest) {
-            const value = ((hostElement, contextId) => {
-                let element = hostElement;
-                for (;element; ) {
-                    let node = element;
-                    let virtual;
-                    for (;node && (virtual = findVirtual(node)); ) {
-                        const contexts = tryGetContext(virtual)?.$contexts$;
-                        if (contexts && contexts.has(contextId)) {
-                            return contexts.get(contextId);
-                        }
-                        node = virtual;
-                    }
-                    element = element.parentElement;
-                }
-            })(hostElement, context.id);
-            if (void 0 !== value) {
-                return set(value);
-            }
+        const value = resolveContext(context, ctx.$hostElement$, ctx.$renderCtx$);
+        if (void 0 !== value) {
+            return set(value);
         }
         if (void 0 !== defaultValue) {
             return set(defaultValue);
         }
         throw qError(13, context.id);
-    }, exports.useContextProvider = (context, newValue) => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
-        if (void 0 !== get) {
-            return;
-        }
-        const hostElement = ctx.$hostElement$;
-        const hostCtx = getContext(hostElement);
-        let contexts = hostCtx.$contexts$;
-        contexts || (hostCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
-        set(true);
-    }, exports.useEnvData = useEnvData, exports.useLexicalScope = useLexicalScope, exports.useMount$ = useMount$, 
-    exports.useMountQrl = useMountQrl, exports.useOn = useOn, exports.useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl), 
+    }, exports.useContextProvider = useContextProvider, exports.useEnvData = useEnvData, 
+    exports.useErrorBoundary = () => {
+        const store = useStore({
+            error: void 0
+        });
+        return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
+        store;
+    }, exports.useLexicalScope = useLexicalScope, exports.useMount$ = useMount$, exports.useMountQrl = useMountQrl, 
+    exports.useOn = useOn, exports.useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl), 
     exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useRef = current => useStore({
         current: current

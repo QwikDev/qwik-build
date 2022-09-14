@@ -1010,6 +1010,8 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
+ * Type of the value returned by `useRef()`.
+ *
  * @public
  */
 declare interface Ref<T> {

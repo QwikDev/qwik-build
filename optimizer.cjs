@@ -1076,7 +1076,7 @@ globalThis.qwikOptimizer = function(module) {
           log("buildStart() add transformedOutput", key, null == (_a = output.hook) ? void 0 : _a.displayName);
           transformedOutputs.set(key, [ output, key ]);
         }
-        diagnosticsCallback(result.diagnostics, optimizer);
+        diagnosticsCallback(result.diagnostics, optimizer, srcDir);
         results.set("@buildStart", result);
       }
     };
@@ -1192,6 +1192,7 @@ globalThis.qwikOptimizer = function(module) {
         let filePath = base;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
+        const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
         const newOutput = optimizer.transformModulesSync({
           input: [ {
             code: code,
@@ -1202,11 +1203,11 @@ globalThis.qwikOptimizer = function(module) {
           sourceMaps: false,
           transpile: true,
           explicitExtensions: true,
-          srcDir: opts.srcDir ? opts.srcDir : normalizePath(dir),
+          srcDir: srcDir,
           dev: "development" === opts.buildMode,
           scope: opts.scope ? opts.scope : void 0
         });
-        diagnosticsCallback(newOutput.diagnostics, optimizer);
+        diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
         results.set(normalizePath(pathId), newOutput);
         for (const [id3, output] of results.entries()) {
           const justChanged = newOutput === output;
@@ -1393,9 +1394,10 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.onAddWatchFile(((ctx, path) => {
           ctx.addWatchFile(path);
         }));
-        qwikPlugin.onDiagnostics(((diagnostics, optimizer) => {
+        qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
-            "error" === d.category ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
+            const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
+            "error" === d.category ? this.error(createRollupError(id, d)) : this.warn(createRollupError(id, d));
           }));
         }));
         await qwikPlugin.buildStart(this);
@@ -1477,9 +1479,8 @@ globalThis.qwikOptimizer = function(module) {
     "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
     return outputOpts;
   }
-  function createRollupError(optimizer, diagnostic) {
+  function createRollupError(id, diagnostic) {
     const loc = diagnostic.highlights[0] ?? {};
-    const id = optimizer ? optimizer.sys.path.join(optimizer.sys.cwd(), diagnostic.file) : diagnostic.file;
     const err = Object.assign(new Error(diagnostic.message), {
       id: id,
       plugin: "qwik",
@@ -1583,10 +1584,10 @@ globalThis.qwikOptimizer = function(module) {
             res.writeHead(status);
             const result = await render(renderOpts);
             if ("html" in result) {
-              res.write('<script type="module" src="/@vite/client"><\/script>');
+              res.write(END_SSR_SCRIPT);
               res.end(result.html);
             } else {
-              res.write('<script type="module" src="/@vite/client"><\/script>');
+              res.write(END_SSR_SCRIPT);
               res.end();
             }
           } else {
@@ -1648,10 +1649,13 @@ globalThis.qwikOptimizer = function(module) {
     const isHtmlProxy = url.searchParams.has("html-proxy");
     const isVitePing = pathname.includes("__vite_ping");
     const skipSSR = "false" === url.searchParams.get("ssr");
-    return hasExtension || isHtmlProxy || isVitePing || skipSSR || InternalPrefixRE.test(url.pathname);
+    const openInEditor = pathname.includes("__open-in-editor");
+    return openInEditor || hasExtension || isHtmlProxy || isVitePing || skipSSR || InternalPrefixRE.test(url.pathname);
   };
+  var DEV_ERROR_HANDLING = "\n<script>\ndocument.addEventListener('qerror', ev => {\n  const ErrorOverlay = customElements.get('vite-error-overlay');\n  if (!ErrorOverlay) {\n    return;\n  }\n  const err = ev.detail.error;\n  const overlay = new ErrorOverlay(err);\n  document.body.appendChild(overlay);\n});\n<\/script>";
+  var END_SSR_SCRIPT = `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n`;
   function getViteDevIndexHtml(entryUrl, envData) {
-    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n  </body>\n</html>`;
+    return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n    ${DEV_ERROR_HANDLING}\n  </body>\n</html>`;
   }
   var VITE_DEV_CLIENT_QS = "qwik-vite-dev-client";
   var getSymbolHash = symbolName => {
@@ -1816,9 +1820,10 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.onAddWatchFile(((ctx, path) => {
           ctx.addWatchFile(path);
         }));
-        qwikPlugin.onDiagnostics(((diagnostics, optimizer) => {
+        qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
-            "error" === d.category ? this.error(createRollupError(optimizer, d)) : this.warn(createRollupError(optimizer, d));
+            const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
+            "error" === d.category ? this.error(createRollupError(id, d)) : this.warn(createRollupError(id, d));
           }));
         }));
         await qwikPlugin.buildStart(this);
@@ -1968,7 +1973,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   function getViteDevModule(opts) {
     const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
-    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    document.head.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
+    return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    const parent = document.head ?? document.body ?? document.documentElement;\n    parent.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Dev Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
   }
   var findQwikRoots = async (sys, packageJsonPath) => {
     if ("node" === sys.env) {

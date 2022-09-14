@@ -753,175 +753,6 @@
         return text.replace(/-./g, (x) => x[1].toUpperCase());
     };
 
-    const executeComponent = (rctx, elCtx) => {
-        elCtx.$dirty$ = false;
-        elCtx.$mounted$ = true;
-        elCtx.$slots$ = [];
-        const hostElement = elCtx.$element$;
-        const onRenderQRL = elCtx.$renderQrl$;
-        const props = elCtx.$props$;
-        const newCtx = pushRenderContext(rctx, elCtx);
-        const invocatinContext = newInvokeContext(hostElement, undefined, RenderEvent);
-        const waitOn = (invocatinContext.$waitOn$ = []);
-        assertDefined(onRenderQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
-        assertDefined(props, `render: host element to render must has defined props`, elCtx);
-        // Set component context
-        newCtx.$cmpCtx$ = elCtx;
-        // Invoke render hook
-        invocatinContext.$subscriber$ = hostElement;
-        invocatinContext.$renderCtx$ = rctx;
-        // Resolve render function
-        const onRenderFn = onRenderQRL.getFn(invocatinContext);
-        return safeCall(() => onRenderFn(props), (jsxNode) => {
-            elCtx.$attachedListeners$ = false;
-            if (waitOn.length > 0) {
-                return Promise.allSettled(waitOn).then(() => {
-                    if (elCtx.$dirty$) {
-                        return executeComponent(rctx, elCtx);
-                    }
-                    return {
-                        node: jsxNode,
-                        rctx: newCtx,
-                    };
-                });
-            }
-            if (elCtx.$dirty$) {
-                return executeComponent(rctx, elCtx);
-            }
-            return {
-                node: jsxNode,
-                rctx: newCtx,
-            };
-        }, (err) => {
-            logError(err);
-            return {
-                node: SkipRender,
-                rctx: newCtx,
-            };
-        });
-    };
-    const createRenderContext = (doc, containerState) => {
-        const ctx = {
-            $static$: {
-                $doc$: doc,
-                $containerState$: containerState,
-                $hostElements$: new Set(),
-                $operations$: [],
-                $postOperations$: [],
-                $roots$: [],
-                $addSlots$: [],
-                $rmSlots$: [],
-            },
-            $cmpCtx$: undefined,
-            $localStack$: [],
-        };
-        seal(ctx);
-        seal(ctx.$static$);
-        return ctx;
-    };
-    const pushRenderContext = (ctx, elCtx) => {
-        const newCtx = {
-            $static$: ctx.$static$,
-            $cmpCtx$: ctx.$cmpCtx$,
-            $localStack$: ctx.$localStack$.concat(elCtx),
-        };
-        return newCtx;
-    };
-    const parseClassAny = (obj) => {
-        if (isString(obj)) {
-            return parseClassList(obj);
-        }
-        else if (isObject(obj)) {
-            if (isArray(obj)) {
-                return obj;
-            }
-            else {
-                const output = [];
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        if (value) {
-                            output.push(key);
-                        }
-                    }
-                }
-                return output;
-            }
-        }
-        return [];
-    };
-    const parseClassListRegex = /\s/;
-    const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
-    const stringifyStyle = (obj) => {
-        if (obj == null)
-            return '';
-        if (typeof obj == 'object') {
-            if (isArray(obj)) {
-                throw qError(QError_stringifyClassOrStyle, obj, 'style');
-            }
-            else {
-                const chunks = [];
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        if (value) {
-                            chunks.push(fromCamelToKebabCase(key) + ':' + value);
-                        }
-                    }
-                }
-                return chunks.join(';');
-            }
-        }
-        return String(obj);
-    };
-    const getNextIndex = (ctx) => {
-        return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-    };
-    const getQId = (el) => {
-        const ctx = tryGetContext(el);
-        if (ctx) {
-            return ctx.$id$;
-        }
-        return null;
-    };
-    const setQId = (rctx, ctx) => {
-        const id = getNextIndex(rctx);
-        ctx.$id$ = id;
-        if (qSerialize) {
-            ctx.$element$.setAttribute(ELEMENT_ID, id);
-        }
-    };
-    const hasStyle = (containerState, styleId) => {
-        return containerState.$styleIds$.has(styleId);
-    };
-    const SKIPS_PROPS = [QSlot, OnRenderProp, 'children'];
-
-    const hashCode = (text, hash = 0) => {
-        if (text.length === 0)
-            return hash;
-        for (let i = 0; i < text.length; i++) {
-            const chr = text.charCodeAt(i);
-            hash = (hash << 5) - hash + chr;
-            hash |= 0; // Convert to 32bit integer
-        }
-        return Number(Math.abs(hash)).toString(36);
-    };
-
-    const styleKey = (qStyles, index) => {
-        assertQrl(qStyles);
-        return `${hashCode(qStyles.$hash$)}-${index}`;
-    };
-    const styleContent = (styleId) => {
-        return ComponentStylesPrefixContent + styleId;
-    };
-    const serializeSStyle = (scopeIds) => {
-        const value = scopeIds.join(' ');
-        if (value.length > 0) {
-            return value;
-        }
-        return undefined;
-    };
-
     const setAttribute = (ctx, el, prop, value) => {
         if (ctx) {
             ctx.$operations$.push({
@@ -1412,6 +1243,470 @@
         }
     };
 
+    // <docs markdown="../readme.md#createContext">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#createContext instead)
+    /**
+     * Create a context ID to be used in your application.
+     *
+     * Context is a way to pass stores to the child components without prop-drilling.
+     *
+     * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+     * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
+     * for the values. Qwik needs a serializable ID for the context so that the it can track context
+     * providers and consumers in a way that survives resumability.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContext<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     * @param name - The name of the context.
+     * @public
+     */
+    // </docs>
+    const createContext$1 = (name) => {
+        return /*#__PURE__*/ Object.freeze({
+            id: fromCamelToKebabCase(name),
+        });
+    };
+    // <docs markdown="../readme.md#useContextProvider">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useContextProvider instead)
+    /**
+     * Assign a value to a Context.
+     *
+     * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
+     * component's function. Once assign use `useContext()` in any child component to retrieve the
+     * value.
+     *
+     * Context is a way to pass stores to the child components without prop-drilling.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContext<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     * @param context - The context to assign a value to.
+     * @param value - The value to assign to the context.
+     * @public
+     */
+    // </docs>
+    const useContextProvider = (context, newValue) => {
+        const { get, set, ctx } = useSequentialScope();
+        if (get !== undefined) {
+            return;
+        }
+        if (qDev) {
+            validateContext(context);
+        }
+        const hostElement = ctx.$hostElement$;
+        const hostCtx = getContext(hostElement);
+        let contexts = hostCtx.$contexts$;
+        if (!contexts) {
+            hostCtx.$contexts$ = contexts = new Map();
+        }
+        if (qDev) {
+            verifySerializable(newValue);
+        }
+        contexts.set(context.id, newValue);
+        set(true);
+    };
+    // <docs markdown="../readme.md#useContext">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useContext instead)
+    /**
+     * Retrive Context value.
+     *
+     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
+     * parent component needs to invoke `useContextProvider()` to assign a value.
+     *
+     * ## Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContext<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     * @param context - The context to retrieve a value from.
+     * @public
+     */
+    // </docs>
+    const useContext = (context, defaultValue) => {
+        const { get, set, ctx } = useSequentialScope();
+        if (get !== undefined) {
+            return get;
+        }
+        if (qDev) {
+            validateContext(context);
+        }
+        const value = resolveContext(context, ctx.$hostElement$, ctx.$renderCtx$);
+        if (value !== undefined) {
+            return set(value);
+        }
+        if (defaultValue !== undefined) {
+            return set(defaultValue);
+        }
+        throw qError(QError_notFoundContext, context.id);
+    };
+    const resolveContext = (context, hostElement, rctx) => {
+        const contextID = context.id;
+        if (rctx) {
+            const contexts = rctx.$localStack$;
+            for (let i = contexts.length - 1; i >= 0; i--) {
+                const ctx = contexts[i];
+                hostElement = ctx.$element$;
+                if (ctx.$contexts$) {
+                    const found = ctx.$contexts$.get(contextID);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+        }
+        if (hostElement.closest) {
+            const value = queryContextFromDom(hostElement, contextID);
+            if (value !== undefined) {
+                return value;
+            }
+        }
+        return undefined;
+    };
+    const queryContextFromDom = (hostElement, contextId) => {
+        let element = hostElement;
+        while (element) {
+            let node = element;
+            let virtual;
+            while (node && (virtual = findVirtual(node))) {
+                const contexts = tryGetContext(virtual)?.$contexts$;
+                if (contexts) {
+                    if (contexts.has(contextId)) {
+                        return contexts.get(contextId);
+                    }
+                }
+                node = virtual;
+            }
+            element = element.parentElement;
+        }
+        return undefined;
+    };
+    const findVirtual = (el) => {
+        let node = el;
+        let stack = 1;
+        while ((node = node.previousSibling)) {
+            if (isComment(node)) {
+                if (node.data === '/qv') {
+                    stack++;
+                }
+                else if (node.data.startsWith('qv ')) {
+                    stack--;
+                    if (stack === 0) {
+                        return getVirtualElement(node);
+                    }
+                }
+            }
+        }
+        return null;
+    };
+    const validateContext = (context) => {
+        if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
+            throw qError(QError_invalidContext, context);
+        }
+    };
+
+    const ERROR_CONTEXT = /*#__PURE__*/ createContext$1('qk-error');
+    const handleError = (err, hostElement, rctx) => {
+        if (qDev) {
+            if (err && err instanceof Error) {
+                if (!('hostElement' in err)) {
+                    err['hostElement'] = hostElement;
+                }
+            }
+            if (!isRecoverable(err)) {
+                throw err;
+            }
+        }
+        if (isServer()) {
+            throw err;
+        }
+        else {
+            const errorStore = resolveContext(ERROR_CONTEXT, hostElement, rctx);
+            if (errorStore === undefined) {
+                throw err;
+            }
+            errorStore.error = err;
+        }
+    };
+    const isRecoverable = (err) => {
+        if (err && err instanceof Error) {
+            if ('plugin' in err) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const executeComponent = (rctx, elCtx) => {
+        elCtx.$dirty$ = false;
+        elCtx.$mounted$ = true;
+        elCtx.$slots$ = [];
+        const hostElement = elCtx.$element$;
+        const onRenderQRL = elCtx.$renderQrl$;
+        const props = elCtx.$props$;
+        const newCtx = pushRenderContext(rctx, elCtx);
+        const invocatinContext = newInvokeContext(hostElement, undefined, RenderEvent);
+        const waitOn = (invocatinContext.$waitOn$ = []);
+        assertDefined(onRenderQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
+        assertDefined(props, `render: host element to render must has defined props`, elCtx);
+        // Set component context
+        newCtx.$cmpCtx$ = elCtx;
+        // Invoke render hook
+        invocatinContext.$subscriber$ = hostElement;
+        invocatinContext.$renderCtx$ = rctx;
+        // Resolve render function
+        onRenderQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
+        const onRenderFn = onRenderQRL.getFn(invocatinContext);
+        return safeCall(() => onRenderFn(props), (jsxNode) => {
+            elCtx.$attachedListeners$ = false;
+            if (waitOn.length > 0) {
+                return Promise.allSettled(waitOn).then(() => {
+                    if (elCtx.$dirty$) {
+                        return executeComponent(rctx, elCtx);
+                    }
+                    return {
+                        node: jsxNode,
+                        rctx: newCtx,
+                    };
+                });
+            }
+            if (elCtx.$dirty$) {
+                return executeComponent(rctx, elCtx);
+            }
+            return {
+                node: jsxNode,
+                rctx: newCtx,
+            };
+        }, (err) => {
+            handleError(err, hostElement, rctx);
+            return {
+                node: SkipRender,
+                rctx: newCtx,
+            };
+        });
+    };
+    const createRenderContext = (doc, containerState) => {
+        const ctx = {
+            $static$: {
+                $doc$: doc,
+                $containerState$: containerState,
+                $hostElements$: new Set(),
+                $operations$: [],
+                $postOperations$: [],
+                $roots$: [],
+                $addSlots$: [],
+                $rmSlots$: [],
+            },
+            $cmpCtx$: undefined,
+            $localStack$: [],
+        };
+        seal(ctx);
+        seal(ctx.$static$);
+        return ctx;
+    };
+    const pushRenderContext = (ctx, elCtx) => {
+        const newCtx = {
+            $static$: ctx.$static$,
+            $cmpCtx$: ctx.$cmpCtx$,
+            $localStack$: ctx.$localStack$.concat(elCtx),
+        };
+        return newCtx;
+    };
+    const parseClassAny = (obj) => {
+        if (isString(obj)) {
+            return parseClassList(obj);
+        }
+        else if (isObject(obj)) {
+            if (isArray(obj)) {
+                return obj;
+            }
+            else {
+                const output = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        if (value) {
+                            output.push(key);
+                        }
+                    }
+                }
+                return output;
+            }
+        }
+        return [];
+    };
+    const parseClassListRegex = /\s/;
+    const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
+    const stringifyStyle = (obj) => {
+        if (obj == null)
+            return '';
+        if (typeof obj == 'object') {
+            if (isArray(obj)) {
+                throw qError(QError_stringifyClassOrStyle, obj, 'style');
+            }
+            else {
+                const chunks = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        if (value) {
+                            chunks.push(fromCamelToKebabCase(key) + ':' + value);
+                        }
+                    }
+                }
+                return chunks.join(';');
+            }
+        }
+        return String(obj);
+    };
+    const getNextIndex = (ctx) => {
+        return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
+    };
+    const getQId = (el) => {
+        const ctx = tryGetContext(el);
+        if (ctx) {
+            return ctx.$id$;
+        }
+        return null;
+    };
+    const setQId = (rctx, ctx) => {
+        const id = getNextIndex(rctx);
+        ctx.$id$ = id;
+        if (qSerialize) {
+            ctx.$element$.setAttribute(ELEMENT_ID, id);
+        }
+    };
+    const hasStyle = (containerState, styleId) => {
+        return containerState.$styleIds$.has(styleId);
+    };
+    const SKIPS_PROPS = [QSlot, OnRenderProp, 'children'];
+
+    const hashCode = (text, hash = 0) => {
+        if (text.length === 0)
+            return hash;
+        for (let i = 0; i < text.length; i++) {
+            const chr = text.charCodeAt(i);
+            hash = (hash << 5) - hash + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return Number(Math.abs(hash)).toString(36);
+    };
+
+    const styleKey = (qStyles, index) => {
+        assertQrl(qStyles);
+        return `${hashCode(qStyles.$hash$)}-${index}`;
+    };
+    const styleContent = (styleId) => {
+        return ComponentStylesPrefixContent + styleId;
+    };
+    const serializeSStyle = (scopeIds) => {
+        const value = scopeIds.join(' ');
+        if (value.length > 0) {
+            return value;
+        }
+        return undefined;
+    };
+
     const renderComponent = (rctx, ctx, flags) => {
         const justMounted = !ctx.$mounted$;
         const hostElement = ctx.$element$;
@@ -1445,8 +1740,9 @@
             return then(processedJSXNode, (processedJSXNode) => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 const oldVdom = getVdom(ctx);
-                ctx.$vdom$ = newVdom;
-                return visitJsxNode(newCtx, oldVdom, newVdom, flags);
+                return then(visitJsxNode(newCtx, oldVdom, newVdom, flags), () => {
+                    ctx.$vdom$ = newVdom;
+                });
             });
         });
     };
@@ -2372,7 +2668,7 @@
      *
      * @param hostElement - Host-element of the component to re-render.
      * @returns A promise which is resolved when the component has been rendered.
-     * @public
+     *
      */
     const notifyRender = (hostElement, containerState) => {
         const server = isServer();
@@ -2453,8 +2749,18 @@
                     try {
                         await renderComponent(ctx, elCtx, getFlags(el.parentElement));
                     }
-                    catch (e) {
-                        logError(codeToText(QError_errorWhileRendering), e);
+                    catch (err) {
+                        logError(err);
+                        if (qDev) {
+                            if (err && err instanceof Error) {
+                                doc.dispatchEvent(new CustomEvent('qerror', {
+                                    bubbles: true,
+                                    detail: {
+                                        error: err,
+                                    },
+                                }));
+                            }
+                        }
                     }
                 }
             }
@@ -2509,16 +2815,17 @@
     };
     const executeWatchesBefore = async (containerState) => {
         const resourcesPromises = [];
+        const containerEl = containerState.$containerEl$;
         const watchPromises = [];
         const isWatch = (watch) => (watch.$flags$ & WatchFlagsIsWatch) !== 0;
         const isResourceWatch = (watch) => (watch.$flags$ & WatchFlagsIsResource) !== 0;
         containerState.$watchNext$.forEach((watch) => {
             if (isWatch(watch)) {
-                watchPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
             if (isResourceWatch(watch)) {
-                resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
         });
@@ -2526,10 +2833,10 @@
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
                 if (isWatch(watch)) {
-                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 }
                 else if (isResourceWatch(watch)) {
-                    resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                    resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 }
                 else {
                     containerState.$watchNext$.add(watch);
@@ -2554,9 +2861,10 @@
     };
     const executeWatchesAfter = async (containerState, watchPred) => {
         const watchPromises = [];
+        const containerEl = containerState.$containerEl$;
         containerState.$watchNext$.forEach((watch) => {
             if (watchPred(watch, false)) {
-                watchPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 containerState.$watchNext$.delete(watch);
             }
         });
@@ -2564,7 +2872,7 @@
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
                 if (watchPred(watch, true)) {
-                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(), () => watch));
+                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
                 }
                 else {
                     containerState.$watchNext$.add(watch);
@@ -2822,10 +3130,16 @@
         const listeners = [];
         for (const ctx of allContexts) {
             const el = ctx.$element$;
-            if (isElement(el)) {
-                const ctxLi = ctx.li;
-                for (const key of Object.keys(ctxLi)) {
-                    for (const qrl of ctxLi[key]) {
+            const ctxLi = ctx.li;
+            for (const key of Object.keys(ctxLi)) {
+                for (const qrl of ctxLi[key]) {
+                    const captured = qrl.$captureRef$;
+                    if (captured) {
+                        for (const obj of captured) {
+                            collectValue(obj, collector, true);
+                        }
+                    }
+                    if (isElement(el)) {
                         listeners.push({
                             key,
                             qrl,
@@ -2851,20 +3165,6 @@
                 listeners: [],
                 mode: 'static',
             };
-        }
-        // Listeners becomes the app roots
-        for (const listener of listeners) {
-            assertQrl(listener.qrl);
-            const captured = listener.qrl.$captureRef$;
-            if (captured) {
-                for (const obj of captured) {
-                    collectValue(obj, collector, true);
-                }
-            }
-            // const ctx = tryGetContext(listener.el)!;
-            // for (const obj of ctx.$refMap$) {
-            //   collectValue(obj, collector, true);
-            // }
         }
         // Wait for remaining promises
         let promises;
@@ -3554,12 +3854,12 @@
         const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, undefined);
         const elCtx = getContext(el);
         set(true);
-        qrl.$resolveLazy$();
+        qrl.$resolveLazy$(containerState.$containerEl$);
         if (!elCtx.$watches$) {
             elCtx.$watches$ = [];
         }
         elCtx.$watches$.push(watch);
-        waitAndRun(ctx, () => runSubscriber(watch, containerState));
+        waitAndRun(ctx, () => runSubscriber(watch, containerState, ctx.$renderCtx$));
         if (isServer()) {
             useRunWatch(watch, opts?.eagerness);
         }
@@ -3664,6 +3964,7 @@
         const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
         const eagerness = opts?.eagerness ?? 'visible';
         const elCtx = getContext(el);
+        const containerState = ctx.$renderCtx$.$static$.$containerState$;
         set(true);
         if (!elCtx.$watches$) {
             elCtx.$watches$ = [];
@@ -3671,8 +3972,8 @@
         elCtx.$watches$.push(watch);
         useRunWatch(watch, eagerness);
         if (!isServer()) {
-            qrl.$resolveLazy$();
-            notifyWatch(watch, ctx.$renderCtx$.$static$.$containerState$);
+            qrl.$resolveLazy$(containerState.$containerEl$);
+            notifyWatch(watch, containerState);
         }
     };
     // <docs markdown="../readme.md#useClientEffect">
@@ -3838,7 +4139,7 @@
             return;
         }
         assertQrl(mountQrl);
-        mountQrl.$resolveLazy$();
+        mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$);
         waitAndRun(ctx, mountQrl);
         set(true);
     };
@@ -3879,13 +4180,13 @@
     const isResourceWatch = (watch) => {
         return !!watch.$resource$;
     };
-    const runSubscriber = (watch, containerState) => {
+    const runSubscriber = (watch, containerState, rctx) => {
         assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
         if (isResourceWatch(watch)) {
             return runResource(watch, containerState);
         }
         else {
-            return runWatch(watch, containerState);
+            return runWatch(watch, containerState, rctx);
         }
     };
     const runResource = (watch, containerState, waitOn) => {
@@ -3978,11 +4279,11 @@
         }
         return promise;
     };
-    const runWatch = (watch, containerState) => {
+    const runWatch = (watch, containerState, rctx) => {
         watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
-        const el = watch.$el$;
-        const invokationContext = newInvokeContext(el, undefined, 'WatchEvent');
+        const hostElement = watch.$el$;
+        const invokationContext = newInvokeContext(hostElement, undefined, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
         const watchFn = watch.$qrl$.getFn(invokationContext, () => {
             subsManager.$clearSub$(watch);
@@ -4018,7 +4319,7 @@
                 cleanups.push(returnValue);
             }
         }, (reason) => {
-            logError(reason);
+            handleError(reason, hostElement, rctx);
         });
     };
     const cleanupWatch = (watch) => {
@@ -4080,9 +4381,66 @@
         }
     }
 
+    // <docs markdown="../readme.md#useResource">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useResource instead)
     /**
+     * This method works like an async memoized function that runs whenever some tracked value
+     * changes and returns some data.
+     *
+     * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+     * state that indicates if the data is available or not.
+     *
+     * The status can be one of the following:
+     *
+     * - 'pending' - the data is not yet available.
+     * - 'resolved' - the data is available.
+     * - 'rejected' - the data is not available due to an error or timeout.
+     *
+     * ## Example
+     *
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+     * input city name changes.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     city: '',
+     *   });
+     *
+     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+     *     const cityName = track(store, 'city');
+     *     const abortController = new AbortController();
+     *     cleanup(() => abortController.abort('cleanup'));
+     *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+     *       signal: abortController.signal
+     *     });
+     *     const data = res.json();
+     *     return data;
+     *   });
+     *
+     *   return (
+     *     <div>
+     *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+     *       <Resource
+     *         value={weatherResource}
+     *         onResolved={(weather) => {
+     *           return (
+     *             <div>Temperature: {weather.temp}</div>
+     *           );
+     *         }}
+     *       />
+     *     </div>
+     *   );
+     * });
+     * ```
+     *
+     * @see Resource
+     * @see ResourceReturn
+     *
      * @public
      */
+    // </docs>
     const useResourceQrl = (qrl, opts) => {
         const { get, set, i, ctx } = useSequentialScope();
         if (get != null) {
@@ -4103,15 +4461,129 @@
         set(resource);
         return resource;
     };
+    // <docs markdown="../readme.md#useResource">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useResource instead)
     /**
+     * This method works like an async memoized function that runs whenever some tracked value
+     * changes and returns some data.
+     *
+     * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+     * state that indicates if the data is available or not.
+     *
+     * The status can be one of the following:
+     *
+     * - 'pending' - the data is not yet available.
+     * - 'resolved' - the data is available.
+     * - 'rejected' - the data is not available due to an error or timeout.
+     *
+     * ## Example
+     *
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+     * input city name changes.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     city: '',
+     *   });
+     *
+     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+     *     const cityName = track(store, 'city');
+     *     const abortController = new AbortController();
+     *     cleanup(() => abortController.abort('cleanup'));
+     *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+     *       signal: abortController.signal
+     *     });
+     *     const data = res.json();
+     *     return data;
+     *   });
+     *
+     *   return (
+     *     <div>
+     *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+     *       <Resource
+     *         value={weatherResource}
+     *         onResolved={(weather) => {
+     *           return (
+     *             <div>Temperature: {weather.temp}</div>
+     *           );
+     *         }}
+     *       />
+     *     </div>
+     *   );
+     * });
+     * ```
+     *
+     * @see Resource
+     * @see ResourceReturn
+     *
      * @public
      */
+    // </docs>
     const useResource$ = (generatorFn, opts) => {
         return useResourceQrl($(generatorFn), opts);
     };
+    // <docs markdown="../readme.md#useResource">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useResource instead)
     /**
+     * This method works like an async memoized function that runs whenever some tracked value
+     * changes and returns some data.
+     *
+     * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+     * state that indicates if the data is available or not.
+     *
+     * The status can be one of the following:
+     *
+     * - 'pending' - the data is not yet available.
+     * - 'resolved' - the data is available.
+     * - 'rejected' - the data is not available due to an error or timeout.
+     *
+     * ## Example
+     *
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
+     * input city name changes.
+     *
+     * ```tsx
+     * const Cmp = component$(() => {
+     *   const store = useStore({
+     *     city: '',
+     *   });
+     *
+     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
+     *     const cityName = track(store, 'city');
+     *     const abortController = new AbortController();
+     *     cleanup(() => abortController.abort('cleanup'));
+     *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
+     *       signal: abortController.signal
+     *     });
+     *     const data = res.json();
+     *     return data;
+     *   });
+     *
+     *   return (
+     *     <div>
+     *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+     *       <Resource
+     *         value={weatherResource}
+     *         onResolved={(weather) => {
+     *           return (
+     *             <div>Temperature: {weather.temp}</div>
+     *           );
+     *         }}
+     *       />
+     *     </div>
+     *   );
+     * });
+     * ```
+     *
+     * @see Resource
+     * @see ResourceReturn
+     *
      * @public
      */
+    // </docs>
     const Resource = (props) => {
         const isBrowser = !qDev || !isServer();
         if (isBrowser) {
@@ -4128,6 +4600,9 @@
                 }
                 else if (state === 'resolved') {
                     return props.onResolved(props.value.resolved);
+                }
+                else if (state === 'rejected') {
+                    throw props.value.error;
                 }
             }
         }
@@ -4849,7 +5324,12 @@
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
         // eslint-disable-next-line no-console
-        console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
+        if (typeof globalThis._handleError === 'function' && message instanceof Error) {
+            globalThis._handleError(message, optionalParams);
+        }
+        else {
+            console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
+        }
         return err;
     };
     const logErrorAndStop = (message, ...optionalParams) => {
@@ -4895,7 +5375,6 @@
     const QError_stringifyClassOrStyle = 0;
     const QError_runtimeQrlNoElement = 2; // `Q-ERROR: '${qrl}' is runtime but no instance found on element.`
     const QError_verifySerializable = 3; // 'Only primitive and object literals can be serialized', value,
-    const QError_errorWhileRendering = 4; // Crash while rendering
     const QError_cannotRenderOverExistingContainer = 5; //'You can render over a existing q:container. Skipping render().'
     const QError_setProperty = 6; //'Set property'
     const QError_qrlIsNotFunction = 10;
@@ -4965,13 +5444,16 @@
         if (qDev) {
             verifySerializable(captureRef);
         }
-        let containerEl;
+        let _containerEl;
         const setContainer = (el) => {
-            if (!containerEl) {
-                containerEl = el;
+            if (!_containerEl) {
+                _containerEl = el;
             }
         };
-        const resolve = async () => {
+        const resolve = async (containerEl) => {
+            if (containerEl) {
+                setContainer(containerEl);
+            }
             if (symbolRef) {
                 return symbolRef;
             }
@@ -4979,17 +5461,17 @@
                 return (symbolRef = symbolFn().then((module) => (symbolRef = module[symbol])));
             }
             else {
-                if (!containerEl) {
+                if (!_containerEl) {
                     throw new Error(`QRL '${chunk}#${symbol || 'default'}' does not have an attached container`);
                 }
-                const symbol2 = getPlatform().importSymbol(containerEl, chunk, symbol);
+                const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 return (symbolRef = then(symbol2, (ref) => {
                     return (symbolRef = ref);
                 }));
             }
         };
-        const resolveLazy = () => {
-            return symbolRef ? symbolRef : resolve();
+        const resolveLazy = (containerEl) => {
+            return symbolRef ? symbolRef : resolve(containerEl);
         };
         const invokeFn = (currentCtx, beforeFn) => {
             return ((...args) => {
@@ -5282,6 +5764,7 @@
      * import { importedFn } from './import/example';
      * import { createContext, useContext, useContextProvider } from './use/use-context';
      * import { useRef } from './use/use-ref';
+     * import { Resource, useResource$ } from './use/use-resource';
      *
      * export const greet = () => console.log('greet');
      * function topLevelFn() {}
@@ -5480,6 +5963,8 @@
     }
 
     /**
+     * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
+     *
      * @public
      */
     const Slot = (props) => {
@@ -5532,9 +6017,24 @@
         const ctx = createRenderContext(doc, containerState);
         const staticCtx = ctx.$static$;
         // staticCtx.$roots$.push(parent as Element);
-        const processedNodes = await processData$1(jsxNode);
-        const rootJsx = domToVnode(parent);
-        await visitJsxNode(ctx, rootJsx, wrapJSX(parent, processedNodes), 0);
+        try {
+            const processedNodes = await processData$1(jsxNode);
+            const rootJsx = domToVnode(parent);
+            await visitJsxNode(ctx, rootJsx, wrapJSX(parent, processedNodes), 0);
+        }
+        catch (err) {
+            logError(err);
+            if (qDev) {
+                if (err && err instanceof Error) {
+                    doc.dispatchEvent(new CustomEvent('qerror', {
+                        bubbles: true,
+                        detail: {
+                            error: err,
+                        },
+                    }));
+                }
+            }
+        }
         staticCtx.$operations$.push(...staticCtx.$postOperations$);
         executeDOMRender(staticCtx);
         if (qDev) {
@@ -5565,7 +6065,7 @@
      */
     const renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
-        const containerEl = createContext$1(1).$element$;
+        const containerEl = createContext(1).$element$;
         const containerState = createContainerState(containerEl);
         const doc = createDocument();
         const rctx = createRenderContext(doc, containerState);
@@ -5837,7 +6337,7 @@
         }
         return slotMap;
     };
-    const createContext$1 = (nodeType) => {
+    const createContext = (nodeType) => {
         const elm = {
             nodeType,
             [Q_CTX]: null,
@@ -5850,7 +6350,7 @@
         if (typeof tagName === 'string') {
             const key = node.key;
             const props = node.props;
-            const elCtx = createContext$1(1);
+            const elCtx = createContext(1);
             const isHead = tagName === 'head';
             const hostCtx = ssrCtx.hostCtx;
             let openingElement = '<' + tagName + renderElementAttributes(elCtx, props);
@@ -5936,7 +6436,7 @@
             });
         }
         if (tagName === Virtual) {
-            const elCtx = createContext$1(111);
+            const elCtx = createContext(111);
             return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRComment) {
@@ -6265,259 +6765,6 @@
     // </docs>
     const useRef = (current) => {
         return useStore({ current });
-    };
-
-    // <docs markdown="../readme.md#createContext">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#createContext instead)
-    /**
-     * Create a context ID to be used in your application.
-     *
-     * Context is a way to pass stores to the child components without prop-drilling.
-     *
-     * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
-     * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
-     * for the values. Qwik needs a serializable ID for the context so that the it can track context
-     * providers and consumers in a way that survives resumability.
-     *
-     * ## Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     * @param name - The name of the context.
-     * @public
-     */
-    // </docs>
-    const createContext = (name) => {
-        return Object.freeze({
-            id: fromCamelToKebabCase(name),
-        });
-    };
-    // <docs markdown="../readme.md#useContextProvider">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContextProvider instead)
-    /**
-     * Assign a value to a Context.
-     *
-     * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
-     * component's function. Once assign use `useContext()` in any child component to retrieve the
-     * value.
-     *
-     * Context is a way to pass stores to the child components without prop-drilling.
-     *
-     * ## Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     * @param context - The context to assign a value to.
-     * @param value - The value to assign to the context.
-     * @public
-     */
-    // </docs>
-    const useContextProvider = (context, newValue) => {
-        const { get, set, ctx } = useSequentialScope();
-        if (get !== undefined) {
-            return;
-        }
-        if (qDev) {
-            validateContext(context);
-        }
-        const hostElement = ctx.$hostElement$;
-        const hostCtx = getContext(hostElement);
-        let contexts = hostCtx.$contexts$;
-        if (!contexts) {
-            hostCtx.$contexts$ = contexts = new Map();
-        }
-        if (qDev) {
-            verifySerializable(newValue);
-        }
-        contexts.set(context.id, newValue);
-        set(true);
-    };
-    // <docs markdown="../readme.md#useContext">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContext instead)
-    /**
-     * Retrive Context value.
-     *
-     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
-     * parent component needs to invoke `useContextProvider()` to assign a value.
-     *
-     * ## Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     * @param context - The context to retrieve a value from.
-     * @public
-     */
-    // </docs>
-    const useContext = (context, defaultValue) => {
-        const { get, set, ctx } = useSequentialScope();
-        if (get !== undefined) {
-            return get;
-        }
-        if (qDev) {
-            validateContext(context);
-        }
-        let hostElement = ctx.$hostElement$;
-        const contexts = ctx.$renderCtx$.$localStack$;
-        for (let i = contexts.length - 1; i >= 0; i--) {
-            const ctx = contexts[i];
-            hostElement = ctx.$element$;
-            if (ctx.$contexts$) {
-                const found = ctx.$contexts$.get(context.id);
-                if (found) {
-                    return set(found);
-                }
-            }
-        }
-        if (hostElement.closest) {
-            const value = queryContextFromDom(hostElement, context.id);
-            if (value !== undefined) {
-                return set(value);
-            }
-        }
-        if (defaultValue !== undefined) {
-            return set(defaultValue);
-        }
-        throw qError(QError_notFoundContext, context.id);
-    };
-    const queryContextFromDom = (hostElement, contextId) => {
-        let element = hostElement;
-        while (element) {
-            let node = element;
-            let virtual;
-            while (node && (virtual = findVirtual(node))) {
-                const contexts = tryGetContext(virtual)?.$contexts$;
-                if (contexts) {
-                    if (contexts.has(contextId)) {
-                        return contexts.get(contextId);
-                    }
-                }
-                node = virtual;
-            }
-            element = element.parentElement;
-        }
-        return undefined;
-    };
-    const findVirtual = (el) => {
-        let node = el;
-        let stack = 1;
-        while ((node = node.previousSibling)) {
-            if (isComment(node)) {
-                if (node.data === '/qv') {
-                    stack++;
-                }
-                else if (node.data.startsWith('qv ')) {
-                    stack--;
-                    if (stack === 0) {
-                        return getVirtualElement(node);
-                    }
-                }
-            }
-        }
-        return null;
-    };
-    const validateContext = (context) => {
-        if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
-            throw qError(QError_invalidContext, context);
-        }
     };
 
     /**
@@ -7000,8 +7247,7 @@
             return styleId;
         }
         containerState.$styleIds$.add(styleId);
-        styleQrl.$setContainer$(containerState.$containerEl$);
-        const value = styleQrl.$resolveLazy$();
+        const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
         const appendStyle = (styleText) => {
             assertDefined(elCtx.$appendStyles$, 'appendStyles must be defined');
             elCtx.$appendStyles$.push({
@@ -7018,6 +7264,18 @@
         return styleId;
     };
 
+    /**
+     * @alpha
+     */
+    const useErrorBoundary = () => {
+        const store = useStore({
+            error: undefined,
+        });
+        useOn('error-boundary', qrl('/runtime', 'error', [store]));
+        useContextProvider(ERROR_CONTEXT, store);
+        return store;
+    };
+
     exports.$ = $;
     exports.Fragment = Fragment;
     exports.Resource = Resource;
@@ -7031,7 +7289,7 @@
     exports._useMutableProps = _useMutableProps;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
-    exports.createContext = createContext;
+    exports.createContext = createContext$1;
     exports.getPlatform = getPlatform;
     exports.h = h;
     exports.implicit$FirstArg = implicit$FirstArg;
@@ -7052,6 +7310,7 @@
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
     exports.useEnvData = useEnvData;
+    exports.useErrorBoundary = useErrorBoundary;
     exports.useLexicalScope = useLexicalScope;
     exports.useMount$ = useMount$;
     exports.useMountQrl = useMountQrl;
