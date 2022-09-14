@@ -1657,11 +1657,11 @@ const _pauseFromContexts = async (allContexts, containerState) => {
     };
     const getObjId = obj => {
         let suffix = "";
+        if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
+            const {value: value, resolved: resolved} = getPromiseValue(obj);
+            obj = value, suffix += resolved ? "~" : "_";
+        }
         if (isObject(obj)) {
-            if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
-                const {value: value, resolved: resolved} = getPromiseValue(obj);
-                obj = value, suffix += resolved ? "~" : "_";
-            }
             const target = getProxyTarget(obj);
             if (target) {
                 suffix += "!", obj = target;

@@ -2914,21 +2914,21 @@
         };
         const getObjId = (obj) => {
             let suffix = '';
+            if (isMutable(obj)) {
+                obj = obj.mut;
+                suffix = '%';
+            }
+            if (isPromise(obj)) {
+                const { value, resolved } = getPromiseValue(obj);
+                obj = value;
+                if (resolved) {
+                    suffix += '~';
+                }
+                else {
+                    suffix += '_';
+                }
+            }
             if (isObject(obj)) {
-                if (isMutable(obj)) {
-                    obj = obj.mut;
-                    suffix = '%';
-                }
-                if (isPromise(obj)) {
-                    const { value, resolved } = getPromiseValue(obj);
-                    obj = value;
-                    if (resolved) {
-                        suffix += '~';
-                    }
-                    else {
-                        suffix += '_';
-                    }
-                }
                 const target = getProxyTarget(obj);
                 if (target) {
                     suffix += '!';

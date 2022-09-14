@@ -3003,11 +3003,11 @@
         };
         const getObjId = obj => {
             let suffix = "";
+            if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
+                const {value: value, resolved: resolved} = obj[PROMISE_VALUE];
+                obj = value, suffix += resolved ? "~" : "_";
+            }
             if (isObject(obj)) {
-                if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
-                    const {value: value, resolved: resolved} = obj[PROMISE_VALUE];
-                    obj = value, suffix += resolved ? "~" : "_";
-                }
                 const target = getProxyTarget(obj);
                 if (target) {
                     suffix += "!", obj = target;
