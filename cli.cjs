@@ -11868,7 +11868,7 @@ async function mergeReadmes(fileUpdates, srcPath, destPath) {
   let destContent = "";
   try {
     destContent = await import_fs4.default.promises.readFile(destPath, "utf-8");
-    destContent += "\n\n" + srcContent;
+    destContent = destContent.trim() + "\n\n" + srcContent;
     type = "modify";
   } catch (e) {
     destContent = srcContent;
