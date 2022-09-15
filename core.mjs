@@ -192,7 +192,7 @@ const waitAndRun = (ctx, callback) => {
         }
     }
     else {
-        waitOn.push(Promise.allSettled(waitOn).then(callback));
+        waitOn.push(Promise.all(waitOn).then(callback));
     }
 };
 const newInvokeContextFromTuple = (context) => {
@@ -1497,6 +1497,15 @@ const validateContext = (context) => {
 const ERROR_CONTEXT = /*#__PURE__*/ createContext$1('qk-error');
 const handleError = (err, hostElement, rctx) => {
     if (qDev) {
+        // Clean vdom
+        if (!isServer() && isVirtualElement(hostElement)) {
+            getContext(hostElement).$vdom$ = null;
+            const errorDiv = document.createElement('errored-host');
+            errorDiv.props = { error: err };
+            errorDiv.setAttribute('q:key', '_error_');
+            errorDiv.append(...hostElement.childNodes);
+            hostElement.appendChild(errorDiv);
+        }
         if (err && err instanceof Error) {
             if (!('hostElement' in err)) {
                 err['hostElement'] = hostElement;
@@ -1549,7 +1558,7 @@ const executeComponent = (rctx, elCtx) => {
     return safeCall(() => onRenderFn(props), (jsxNode) => {
         elCtx.$attachedListeners$ = false;
         if (waitOn.length > 0) {
-            return Promise.allSettled(waitOn).then(() => {
+            return Promise.all(waitOn).then(() => {
                 if (elCtx.$dirty$) {
                     return executeComponent(rctx, elCtx);
                 }
@@ -5811,7 +5820,7 @@ const $ = (expression) => {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * ### Example:
+ * ### Example
  *
  * An example showing how to create a counter component:
  *
@@ -5879,7 +5888,7 @@ const isQwikComponent = (component) => {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * ### Example:
+ * ### Example
  *
  * An example showing how to create a counter component:
  *

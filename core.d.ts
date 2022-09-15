@@ -363,7 +363,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * ### Example:
+ * ### Example
  *
  * An example showing how to create a counter component:
  *
@@ -447,7 +447,7 @@ declare type ComponentChildren<PROPS extends {}> = PROPS extends {
  * Qwik component is a facade that describes how the component should be used without forcing the
  * implementation of the component to be eagerly loaded. A minimum Qwik definition consists of:
  *
- * ### Example:
+ * ### Example
  *
  * An example showing how to create a counter component:
  *
@@ -1340,13 +1340,6 @@ export declare type MountFn<T> = () => ValueOrPromise<T>;
 export declare const mutable: <T>(v: T) => MutableWrapper<T>;
 
 /**
- * @public
- */
-declare type MutableProps<PROPS extends {}> = {
-    [K in keyof PROPS]: K extends 'children' ? PROPS[K] : PROPS[K] | MutableWrapper<PROPS[K]>;
-};
-
-/**
  * A marker object returned by `mutable()` to identify that the binding is mutable.
  *
  * @alpha
@@ -1488,9 +1481,10 @@ export declare type PropFunction<T extends Function> = T extends (...args: infer
 export declare type PropsOf<COMP extends Component<any>> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : never;
 
 /**
+ * Extends the defined component PROPS, adding the default ones (children and q:slot) as well as the mutable variations.
  * @public
  */
-export declare type PublicProps<PROPS extends {}> = MutableProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
+export declare type PublicProps<PROPS extends {}> = TransformProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
 
 declare interface QContext {
     $element$: QwikElement;
@@ -2634,6 +2628,19 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     srcLang?: string | undefined;
 }
+
+/**
+ * @public
+ */
+declare type TransformProp<T> = T extends PropFnInterface<infer ARGS, infer RET> ? (...args: ARGS) => ValueOrPromise<RET> : T | MutableWrapper<T>;
+
+/**
+ * Transform the component PROPS adding the mutable equivalents, so `mutable()` can be used natively.
+ * @public
+ */
+declare type TransformProps<PROPS extends {}> = {
+    [K in keyof PROPS]: TransformProp<PROPS[K]>;
+};
 
 /**
  * A lazy-loadable reference to a component's cleanup hook.

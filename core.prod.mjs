@@ -99,7 +99,7 @@ const waitAndRun = (ctx, callback) => {
         const result = callback();
         isPromise(result) && waitOn.push(result);
     } else {
-        waitOn.push(Promise.allSettled(waitOn).then(callback));
+        waitOn.push(Promise.all(waitOn).then(callback));
     }
 };
 
@@ -734,7 +734,7 @@ const executeComponent = (rctx, elCtx) => {
     onRenderQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
     const onRenderFn = onRenderQRL.getFn(invocatinContext);
     return safeCall((() => onRenderFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
-    waitOn.length > 0 ? Promise.allSettled(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
+    waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
         node: jsxNode,
         rctx: newCtx
     })) : elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
