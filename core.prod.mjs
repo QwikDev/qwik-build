@@ -1320,18 +1320,6 @@ const readDOMSlots = ctx => ((el, prop, value) => {
     return pars;
 })(ctx.$element$.parentElement, 0, ctx.$id$).map(domToVnode);
 
-const handleClass = (ctx, elm, _, newValue, oldValue) => {
-    const oldClasses = parseClassAny(oldValue);
-    const newClasses = parseClassAny(newValue);
-    return ((ctx, elm, toRemove, toAdd) => {
-        ctx ? ctx.$operations$.push({
-            $operation$: _setClasslist,
-            $args$: [ elm, toRemove, toAdd ]
-        }) : _setClasslist(elm, toRemove, toAdd);
-    })(ctx, elm, oldClasses.filter((c => c && !newClasses.includes(c))), newClasses.filter((c => c && !oldClasses.includes(c)))), 
-    true;
-};
-
 const checkBeforeAssign = (ctx, elm, prop, newValue) => (prop in elm && elm[prop] !== newValue && setProperty(ctx, elm, prop, newValue), 
 true);
 
@@ -1340,8 +1328,17 @@ const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 const PROP_HANDLER_MAP = {
     style: (ctx, elm, _, newValue) => (setProperty(ctx, elm.style, "cssText", stringifyStyle(newValue)), 
     true),
-    class: handleClass,
-    className: handleClass,
+    class: (ctx, elm, _, newValue, oldValue) => {
+        const oldClasses = parseClassAny(oldValue);
+        const newClasses = parseClassAny(newValue);
+        return ((ctx, elm, toRemove, toAdd) => {
+            ctx ? ctx.$operations$.push({
+                $operation$: _setClasslist,
+                $args$: [ elm, toRemove, toAdd ]
+            }) : _setClasslist(elm, toRemove, toAdd);
+        })(ctx, elm, oldClasses.filter((c => c && !newClasses.includes(c))), newClasses.filter((c => c && !oldClasses.includes(c)))), 
+        true;
+    },
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
     [dangerouslySetInnerHTML]: (ctx, elm, _, newValue) => (dangerouslySetInnerHTML in elm ? setProperty(ctx, elm, dangerouslySetInnerHTML, newValue) : "innerHTML" in elm && setProperty(ctx, elm, "innerHTML", newValue), 
@@ -1356,11 +1353,12 @@ const updateProperties = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
         return listenersMap;
     }
     const elm = elCtx.$element$;
-    for (const key of keys) {
+    for (let key of keys) {
         if ("children" === key) {
             continue;
         }
         const newValue = newProps[key];
+        "className" === key && (newProps.class = newValue, key = "class");
         const oldValue = oldProps[key];
         if (oldValue === newValue) {
             continue;
@@ -1399,12 +1397,12 @@ const setProperties = (rctx, elCtx, newProps, isSvg) => {
     if (0 === keys.length) {
         return listenerMap;
     }
-    for (const key of keys) {
+    for (let key of keys) {
         if ("children" === key) {
             continue;
         }
         const newValue = newProps[key];
-        if ("ref" === key) {
+        if ("className" === key && (newProps.class = newValue, key = "class"), "ref" === key) {
             newValue.current = elm;
             continue;
         }

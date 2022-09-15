@@ -991,7 +991,7 @@ declare type QwikKnownEvents = {
 declare interface QwikProps extends PreventDefault {
     class?: string | {
         [className: string]: boolean;
-    };
+    } | string[];
     dangerouslySetInnerHTML?: string;
     ref?: Ref<Element>;
     /**

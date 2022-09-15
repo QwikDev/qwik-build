@@ -2432,7 +2432,6 @@
     const PROP_HANDLER_MAP = {
         style: handleStyle,
         class: handleClass,
-        className: handleClass,
         value: checkBeforeAssign,
         checked: checkBeforeAssign,
         [dangerouslySetInnerHTML]: setInnerHTML,
@@ -2445,11 +2444,15 @@
             return listenersMap;
         }
         const elm = elCtx.$element$;
-        for (const key of keys) {
+        for (let key of keys) {
             if (key === 'children') {
                 continue;
             }
             const newValue = newProps[key];
+            if (key === 'className') {
+                newProps['class'] = newValue;
+                key = 'class';
+            }
             const oldValue = oldProps[key];
             if (oldValue === newValue) {
                 continue;
@@ -2504,11 +2507,15 @@
         if (keys.length === 0) {
             return listenerMap;
         }
-        for (const key of keys) {
+        for (let key of keys) {
             if (key === 'children') {
                 continue;
             }
             const newValue = newProps[key];
+            if (key === 'className') {
+                newProps['class'] = newValue;
+                key = 'class';
+            }
             if (key === 'ref') {
                 newValue.current = elm;
                 continue;
