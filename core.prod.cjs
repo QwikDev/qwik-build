@@ -398,7 +398,7 @@
         }
         insertBeforeTo(newParent, child) {
             const ch = Array.from(this.childNodes);
-            this.parentElement && console.warn("already attached"), newParent.insertBefore(this.open, child);
+            newParent.insertBefore(this.open, child);
             for (const c of ch) {
                 newParent.insertBefore(c, child);
             }

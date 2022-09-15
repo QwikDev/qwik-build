@@ -1063,9 +1063,10 @@
         }
         insertBeforeTo(newParent, child) {
             const ch = Array.from(this.childNodes);
-            if (this.parentElement) {
-                console.warn('already attached');
-            }
+            // TODO
+            // if (this.parentElement) {
+            //   console.warn('already attached');
+            // }
             newParent.insertBefore(this.open, child);
             for (const c of ch) {
                 newParent.insertBefore(c, child);
