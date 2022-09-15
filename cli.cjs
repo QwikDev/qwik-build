@@ -12478,18 +12478,20 @@ async function logUpdateAppResult(result) {
   console.log(``);
   console.clear();
   console.log(
-    `\u{1F916} ${kleur_default.bgCyan(` Ready? `)} Apply ${kleur_default.yellow(result.integration.id)} to your app?`
+    `\u{1F984} ${kleur_default.bgCyan(` Ready? `)} Apply ${kleur_default.bold(
+      kleur_default.magenta(result.integration.id)
+    )} to your app?`
   );
   console.log(``);
   if (modifyFiles.length > 0) {
-    console.log(`\u{1F699} ${kleur_default.cyan(`Modify`)}`);
+    console.log(`\u{1F47B} ${kleur_default.cyan(`Modify`)}`);
     for (const f of modifyFiles) {
       console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (overwriteFiles.length > 0) {
-    console.log(`\u{1F697} ${kleur_default.cyan(`Overwrite`)}`);
+    console.log(`\u{1F310} ${kleur_default.cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
       console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
     }
@@ -12498,7 +12500,7 @@ async function logUpdateAppResult(result) {
   if (installDeps2) {
     const pkgManager = getPackageManager();
     console.log(
-      `\u{1F3CE} ${kleur_default.cyan(
+      `\u{1F4BF} ${kleur_default.cyan(
         `Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`
       )}`
     );
@@ -12511,7 +12513,9 @@ async function logUpdateAppResult(result) {
     {
       type: "select",
       name: "commit",
-      message: `Ready to apply the ${kleur_default.yellow(result.integration.id)} updates to your app?`,
+      message: `Ready to apply the ${kleur_default.bold(
+        kleur_default.magenta(result.integration.id)
+      )} updates to your app?`,
       choices: [
         { title: "Yes looks good, finish update!", value: true },
         { title: "Nope, cancel update", value: false }
@@ -12534,7 +12538,9 @@ async function logUpdateAppResult(result) {
 function logUpdateAppCommitResult(result) {
   console.clear();
   console.log(
-    `\u2B50\uFE0F ${kleur_default.bgGreen(` Success! `)} ${kleur_default.yellow(result.integration.id)} added to your app`
+    `\u{1F984} ${kleur_default.magenta(` Success! `)} ${kleur_default.bold(
+      kleur_default.cyan(result.integration.id)
+    )} added to your app`
   );
   console.log(``);
   logSuccessFooter();
@@ -12570,7 +12576,7 @@ async function printAddHelp() {
   const servers = integrations2.filter((i) => i.type === "server");
   const staticGenerators = integrations2.filter((i) => i.type === "static-generator");
   const features = integrations2.filter((i) => i.type === "feature");
-  console.log(`${kleur_default.green(`qwik add`)} [integration]`);
+  console.log(`${kleur_default.magenta(`qwik add`)} [integration]`);
   console.log(``);
   console.log(`  ${kleur_default.cyan("Servers")}`);
   for (const s of servers) {
@@ -13542,7 +13548,7 @@ async function runBuildCommand(app) {
     process.exit(1);
   });
   console.log(``);
-  console.log(`${kleur_default.green("\u2713")} Built client modules`);
+  console.log(`${kleur_default.cyan("\u2713")} Built client modules`);
   const step2 = [];
   if (buildPreviewScript) {
     const previewScript = parseScript(buildPreviewScript);
@@ -13607,16 +13613,16 @@ async function runBuildCommand(app) {
   if (step2.length > 0) {
     await Promise.all(step2).then(() => {
       if (buildPreviewScript) {
-        console.log(`${kleur_default.green("\u2713")} Built preview (ssr) modules`);
+        console.log(`${kleur_default.cyan("\u2713")} Built preview (ssr) modules`);
       }
       if (buildServerScript) {
-        console.log(`${kleur_default.green("\u2713")} Built server (ssr) modules`);
+        console.log(`${kleur_default.cyan("\u2713")} Built server (ssr) modules`);
       }
       if (buildStaticScript) {
-        console.log(`${kleur_default.green("\u2713")} Built static (ssg) modules`);
+        console.log(`${kleur_default.cyan("\u2713")} Built static (ssg) modules`);
       }
       if (typecheck) {
-        console.log(`${kleur_default.green("\u2713")} Type checked`);
+        console.log(`${kleur_default.cyan("\u2713")} Type checked`);
       }
       if (isPreviewBuild && buildStaticScript && runSsgScript) {
         const ssgScript = parseScript(buildStaticScript);
@@ -13685,7 +13691,7 @@ async function runCommand(app) {
   process.exit(1);
 }
 async function printHelp() {
-  console.log(kleur_default.bgCyan(` Qwik Help `));
+  console.log(kleur_default.bgMagenta(` Qwik Help `));
   console.log(``);
   console.log(`  qwik add     ${kleur_default.dim(`Add an integration`)}`);
   console.log(`  qwik build   ${kleur_default.dim(`Parallelize client/server builds and type checking`)}`);
