@@ -1511,11 +1511,7 @@ globalThis.qwikOptimizer = function(module) {
       try {
         const domain = "http://" + (req.headers.host ?? "localhost");
         const url = new URL(req.originalUrl, domain);
-        if (skipSsrRender(url)) {
-          next();
-          return;
-        }
-        if (req.headers.accept && req.headers.accept.includes("text/html")) {
+        if (shouldSsrRender(req, url)) {
           const envData = {
             ...res._qwikEnvData,
             url: url.href
@@ -1644,14 +1640,31 @@ globalThis.qwikOptimizer = function(module) {
   var VITE_PUBLIC_PATH = "/@vite/";
   var internalPrefixes = [ FS_PREFIX, VALID_ID_PREFIX, VITE_PUBLIC_PATH ];
   var InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join("|")})`);
-  var skipSsrRender = url => {
+  var shouldSsrRender = (req, url) => {
     const pathname = url.pathname;
-    const hasExtension = /\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html");
-    const isHtmlProxy = url.searchParams.has("html-proxy");
-    const isVitePing = pathname.includes("__vite_ping");
-    const skipSSR = "false" === url.searchParams.get("ssr");
-    const openInEditor = pathname.includes("__open-in-editor");
-    return openInEditor || hasExtension || isHtmlProxy || isVitePing || skipSSR || InternalPrefixRE.test(url.pathname);
+    if (/\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html")) {
+      return false;
+    }
+    if (pathname.includes("__vite_ping")) {
+      return false;
+    }
+    if (pathname.includes("__open-in-editor")) {
+      return false;
+    }
+    if (url.searchParams.has("html-proxy")) {
+      return false;
+    }
+    if ("false" === url.searchParams.get("ssr")) {
+      return false;
+    }
+    if (InternalPrefixRE.test(url.pathname)) {
+      return false;
+    }
+    const acceptHeader = req.headers.accept || "";
+    if (!acceptHeader.includes("text/html")) {
+      return false;
+    }
+    return true;
   };
   var DEV_ERROR_HANDLING = "\n<script>\n\ndocument.addEventListener('qerror', ev => {\n  const ErrorOverlay = customElements.get('vite-error-overlay');\n  if (!ErrorOverlay) {\n    return;\n  }\n  const err = ev.detail.error;\n  const overlay = new ErrorOverlay(err);\n  document.body.appendChild(overlay);\n});\n<\/script>";
   var END_SSR_SCRIPT = `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n`;
