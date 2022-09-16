@@ -2617,7 +2617,7 @@
                         setEvent(elCtx.li, prop, value);
                         continue;
                     }
-                    const attrName = prop;
+                    const attrName = processPropKey(prop);
                     const attrValue = processPropValue(attrName, value);
                     null != attrValue && (text += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
                 }
@@ -2792,6 +2792,9 @@
             "children" !== key && "q:renderFn" !== key && (target[key] = expectProps[key]);
         }
     };
+    function processPropKey(prop) {
+        return "htmlFor" === prop ? "for" : prop;
+    }
     function processPropValue(prop, value) {
         return "style" === prop ? stringifyStyle(value) : false === value || null == value ? null : true === value ? "" : String(value);
     }

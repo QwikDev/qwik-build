@@ -6599,6 +6599,9 @@ const setComponentProps = (rctx, ctx, expectProps) => {
     }
 };
 function processPropKey(prop) {
+    if (prop === 'htmlFor') {
+        return 'for';
+    }
     return prop;
 }
 function processPropValue(prop, value) {
