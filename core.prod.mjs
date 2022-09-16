@@ -185,7 +185,7 @@ const directGetAttribute = (el, prop) => el.getAttribute(prop);
 
 const ON_PROP_REGEX = /^(on|window:|document:)/;
 
-const isOnProp = prop => ON_PROP_REGEX.test(prop);
+const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
 
 const addQRLListener = (listenersMap, prop, input) => {
     let existingListeners = listenersMap[prop];
