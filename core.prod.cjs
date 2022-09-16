@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.108
+ * @builder.io/qwik 0.0.109
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2520,7 +2520,7 @@
             return;
         }
         const innerHTML = attributes.dangerouslySetInnerHTML;
-        innerHTML && stream.write(innerHTML), stream.write(`</${tagName}>`);
+        null != innerHTML && stream.write(innerHTML), stream.write(`</${tagName}>`);
     };
     const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => (setComponentProps(ssrCtx.rctx, elCtx, node.props), 
     then(executeComponent(ssrCtx.rctx, elCtx), (res => {
@@ -2645,8 +2645,8 @@
                 return;
             }
             const innerHTML = props.dangerouslySetInnerHTML;
-            if (innerHTML) {
-                return stream.write(innerHTML), void stream.write(`</${tagName}>`);
+            if (null != innerHTML) {
+                return stream.write(String(innerHTML)), void stream.write(`</${tagName}>`);
             }
             isHead || (flags &= -2), "html" === tagName ? flags |= 4 : flags &= -5;
             const promise = processData(props.children, ssrCtx, stream, flags);
@@ -3308,7 +3308,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.0.108"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.0.109"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3349,7 +3349,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.0.108",
+            "q:version": "0.0.109",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3397,7 +3397,7 @@
     exports.useServerMountQrl = useServerMountQrl, exports.useStore = useStore, exports.useStyles$ = useStyles$, 
     exports.useStylesQrl = useStylesQrl, exports.useStylesScoped$ = useStylesScoped$, 
     exports.useStylesScopedQrl = useStylesScopedQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.108", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.109", 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.0.108
+ * @builder.io/qwik/cli 0.0.109
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -5372,9 +5372,9 @@ var require_signal_exit = __commonJS({
   }
 });
 
-// node_modules/ora/node_modules/cli-spinners/spinners.json
+// node_modules/cli-spinners/spinners.json
 var require_spinners = __commonJS({
-  "node_modules/ora/node_modules/cli-spinners/spinners.json"(exports, module2) {
+  "node_modules/cli-spinners/spinners.json"(exports, module2) {
     module2.exports = {
       dots: {
         interval: 80,
@@ -6846,9 +6846,9 @@ var require_spinners = __commonJS({
   }
 });
 
-// node_modules/ora/node_modules/cli-spinners/index.js
+// node_modules/cli-spinners/index.js
 var require_cli_spinners = __commonJS({
-  "node_modules/ora/node_modules/cli-spinners/index.js"(exports, module2) {
+  "node_modules/cli-spinners/index.js"(exports, module2) {
     "use strict";
     var spinners = Object.assign({}, require_spinners());
     var spinnersList = Object.keys(spinners);
@@ -11348,7 +11348,7 @@ function isUnicodeSupported() {
   if (import_node_process3.default.platform !== "win32") {
     return import_node_process3.default.env.TERM !== "linux";
   }
-  return Boolean(import_node_process3.default.env.CI) || Boolean(import_node_process3.default.env.WT_SESSION) || import_node_process3.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process3.default.env.TERM_PROGRAM === "vscode" || import_node_process3.default.env.TERM === "xterm-256color" || import_node_process3.default.env.TERM === "alacritty" || import_node_process3.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
+  return Boolean(import_node_process3.default.env.CI) || Boolean(import_node_process3.default.env.WT_SESSION) || Boolean(import_node_process3.default.env.TERMINUS_SUBLIME) || import_node_process3.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process3.default.env.TERM_PROGRAM === "Terminus-Sublime" || import_node_process3.default.env.TERM_PROGRAM === "vscode" || import_node_process3.default.env.TERM === "xterm-256color" || import_node_process3.default.env.TERM === "alacritty" || import_node_process3.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
 }
 
 // node_modules/ora/node_modules/log-symbols/index.js
@@ -13696,7 +13696,7 @@ async function printHelp() {
   console.log(``);
 }
 function printVersion() {
-  console.log("0.0.108");
+  console.log("0.0.109");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

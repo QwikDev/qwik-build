@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.108
+ * @builder.io/qwik 0.0.109
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -6008,7 +6008,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.0.108";
+    const version = "0.0.109";
 
     /**
      * Render JSX.
@@ -6276,7 +6276,7 @@
         }
         // Render innerHTML
         const innerHTML = attributes.dangerouslySetInnerHTML;
-        if (innerHTML) {
+        if (innerHTML != null) {
             stream.write(innerHTML);
         }
         stream.write(`</${tagName}>`);
@@ -6431,8 +6431,8 @@
                 return;
             }
             const innerHTML = props.dangerouslySetInnerHTML;
-            if (innerHTML) {
-                stream.write(innerHTML);
+            if (innerHTML != null) {
+                stream.write(String(innerHTML));
                 stream.write(`</${tagName}>`);
                 return;
             }
