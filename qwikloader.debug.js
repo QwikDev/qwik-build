@@ -27,7 +27,9 @@
             const attrName = "on" + onPrefix + ":" + eventName;
             const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];
             if (qrls) {
-                qrls.forEach((q => q.getFn([ element, ev ], (() => element.isConnected))(ev, element)));
+                for (const q of qrls) {
+                    await q.getFn([ element, ev ], (() => element.isConnected))(ev, element);
+                }
                 return;
             }
             const attrValue = element.getAttribute(attrName);
@@ -41,7 +43,7 @@
                         if (element.isConnected) {
                             try {
                                 doc.__q_context__ = [ element, ev, url ];
-                                handler(ev, element);
+                                await handler(ev, element);
                             } finally {
                                 doc.__q_context__ = previousCtx;
                                 doc.dispatchEvent(createEvent("qsymbol", {
@@ -55,12 +57,12 @@
             }
         };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
-        const processDocumentEvent = ev => {
+        const processDocumentEvent = async ev => {
             let element = ev.target;
             broadcast("-document", ev.type, ev);
             while (element && element.getAttribute) {
-                dispatch(element, "", ev.type, ev);
-                element = ev.bubbles ? element.parentElement : null;
+                await dispatch(element, "", ev.type, ev);
+                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;
             }
         };
         const processWindowEvent = ev => {
