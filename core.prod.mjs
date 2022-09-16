@@ -2862,7 +2862,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     ...createInvokationContext(currentCtx),
                     $qrl$: QRL
                 };
-                return invoke(context, fn, ...args);
+                return emitUsedSymbol(symbol, context.$element$), invoke(context, fn, ...args);
             }
             throw qError(10);
         }));
@@ -2895,6 +2895,17 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
 const getSymbolHash = symbolName => {
     const index = symbolName.lastIndexOf("_");
     return index > -1 ? symbolName.slice(index + 1) : symbolName;
+};
+
+const emitUsedSymbol = (symbol, element) => {
+    isServer() || document.dispatchEvent(new CustomEvent("qsymbol", {
+        bubbles: false,
+        detail: {
+            symbol: symbol,
+            element: element,
+            timestamp: performance.now()
+        }
+    }));
 };
 
 let runtimeSymbolId = 0;

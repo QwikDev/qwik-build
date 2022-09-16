@@ -3,6 +3,7 @@
  */
 export declare interface ComponentEntryStrategy {
     type: 'component';
+    manual?: Record<string, string>;
 }
 
 /**
@@ -31,7 +32,7 @@ export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 /**
  * @alpha
  */
-export declare type EntryStrategy = InlineEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy | ManualEntryStrategy;
+export declare type EntryStrategy = InlineEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /**
  * @alpha
@@ -74,14 +75,6 @@ export declare interface HookEntryStrategy {
  */
 export declare interface InlineEntryStrategy {
     type: 'inline';
-}
-
-/**
- * @alpha
- */
-export declare interface ManualEntryStrategy {
-    type: 'manual';
-    entries: string[][];
 }
 
 /**
@@ -389,6 +382,7 @@ export declare interface QwikVitePluginOptions {
  */
 export declare interface SingleEntryStrategy {
     type: 'single';
+    manual?: Record<string, string>;
 }
 
 /**
@@ -396,6 +390,7 @@ export declare interface SingleEntryStrategy {
  */
 export declare interface SmartEntryStrategy {
     type: 'smart';
+    manual?: Record<string, string>;
 }
 
 /**

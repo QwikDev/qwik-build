@@ -2296,7 +2296,7 @@
                         ...createInvokationContext(currentCtx),
                         $qrl$: QRL
                     };
-                    return invoke(context, fn, ...args);
+                    return emitUsedSymbol(symbol, context.$element$), invoke(context, fn, ...args);
                 }
                 throw qError(10);
             }));
@@ -2328,6 +2328,16 @@
     const getSymbolHash = symbolName => {
         const index = symbolName.lastIndexOf("_");
         return index > -1 ? symbolName.slice(index + 1) : symbolName;
+    };
+    const emitUsedSymbol = (symbol, element) => {
+        isServer() || document.dispatchEvent(new CustomEvent("qsymbol", {
+            bubbles: false,
+            detail: {
+                symbol: symbol,
+                element: element,
+                timestamp: performance.now()
+            }
+        }));
     };
     let runtimeSymbolId = 0;
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;

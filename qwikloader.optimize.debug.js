@@ -11,9 +11,8 @@
             type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
             doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));
         };
-        const createEvent = (eventName, detail, bubbles = !1) => new CustomEvent(eventName, {
-            detail: detail,
-            bubbles: bubbles
+        const createEvent = (eventName, detail) => new CustomEvent(eventName, {
+            detail: detail
         });
         const error = msg => {
             throw new Error("QWIK " + msg);
@@ -45,7 +44,10 @@
                                 handler(ev, element);
                             } finally {
                                 doc.__q_context__ = previousCtx;
-                                element.dispatchEvent(createEvent("qsymbol", symbolName, !0));
+                                doc.dispatchEvent(createEvent("qsymbol", {
+                                    symbol: symbolName,
+                                    element: element
+                                }));
                             }
                         }
                     }

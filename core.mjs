@@ -5491,6 +5491,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         ...baseContext,
                         $qrl$: QRL,
                     };
+                    emitUsedSymbol(symbol, context.$element$);
                     return invoke(context, fn, ...args);
                 }
                 throw qError(QError_qrlIsNotFunction);
@@ -5548,6 +5549,18 @@ function assertQrl(qrl) {
         }
     }
 }
+const emitUsedSymbol = (symbol, element) => {
+    if (!qTest && !isServer()) {
+        document.dispatchEvent(new CustomEvent('qsymbol', {
+            bubbles: false,
+            detail: {
+                symbol,
+                element,
+                timestamp: performance.now(),
+            },
+        }));
+    }
+};
 
 let runtimeSymbolId = 0;
 const RUNTIME_QRL = '/runtimeQRL';

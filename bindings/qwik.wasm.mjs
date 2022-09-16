@@ -286,6 +286,10 @@ async function init(input) {
         const ret = getObject(arg0)[takeObject(arg1)];
         return addHeapObject(ret);
     };
+    imports.wbg.__wbg_values_6ff06259269d296c = function(arg0) {
+        const ret = getObject(arg0).values();
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbg_length_3b0ecd9be9d5f14e = function(arg0) {
         const ret = getObject(arg0).length;
         return ret;
@@ -339,10 +343,6 @@ async function init(input) {
     }, arguments) };
     imports.wbg.__wbg_next_f613b44647788059 = function(arg0) {
         const ret = getObject(arg0).next;
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_values_6ff06259269d296c = function(arg0) {
-        const ret = getObject(arg0).values();
         return addHeapObject(ret);
     };
     imports.wbg.__wbg_length_3a5138f465b971ad = function(arg0) {
