@@ -11228,6 +11228,13 @@ function getPackageManager() {
   var _a;
   return ((_a = (0, import_which_pm_runs.default)()) == null ? void 0 : _a.name) || "npm";
 }
+function pmRunCmd() {
+  const pm = getPackageManager();
+  if (pm === "yarn") {
+    return pm;
+  }
+  return `${pm} run`;
+}
 function panic(msg) {
   console.error(`
 \u274C ${kleur_default.red(msg)}
@@ -12381,7 +12388,9 @@ function logSuccessFooter() {
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
 async function runAddInteractive(app) {
+  console.log(``);
   console.clear();
+  console.log(``);
   const integrations2 = await loadIntegrations();
   const staticGenerator = integrations2.find((i) => i.type === "static-generator");
   const features = integrations2.filter((i) => i.type === "feature");
@@ -12397,7 +12406,7 @@ async function runAddInteractive(app) {
           return { title: f.name, value: f.id };
         })
       ],
-      hint: " "
+      hint: "(use \u2193\u2191 arrows, hit enter)"
     },
     {
       onCancel: () => {
@@ -12475,6 +12484,7 @@ async function logUpdateAppResult(result) {
   }
   console.log(``);
   console.clear();
+  console.log(``);
   console.log(
     `\u{1F984} ${kleur_default.bgCyan(` Ready? `)} Apply ${kleur_default.bold(
       kleur_default.magenta(result.integration.id)
@@ -12536,9 +12546,9 @@ async function logUpdateAppResult(result) {
 function logUpdateAppCommitResult(result) {
   console.clear();
   console.log(
-    `\u{1F984} ${kleur_default.magenta(` Success! `)} ${kleur_default.bold(
+    `\u{1F984} ${kleur_default.bgMagenta(` Success! `)} Added ${kleur_default.bold(
       kleur_default.cyan(result.integration.id)
-    )} added to your app`
+    )} to your app`
   );
   console.log(``);
   logSuccessFooter();
@@ -12574,7 +12584,9 @@ async function printAddHelp() {
   const servers = integrations2.filter((i) => i.type === "server");
   const staticGenerators = integrations2.filter((i) => i.type === "static-generator");
   const features = integrations2.filter((i) => i.type === "feature");
-  console.log(`${kleur_default.magenta(`qwik add`)} [integration]`);
+  const pmRun = pmRunCmd();
+  console.log(``);
+  console.log(`${kleur_default.magenta(`${pmRun} qwik add`)} [integration]`);
   console.log(``);
   console.log(`  ${kleur_default.cyan("Servers")}`);
   for (const s of servers) {
@@ -13689,10 +13701,23 @@ async function runCommand(app) {
   process.exit(1);
 }
 async function printHelp() {
+  const pmRun = pmRunCmd();
+  console.log(``);
   console.log(kleur_default.bgMagenta(` Qwik Help `));
   console.log(``);
-  console.log(`  qwik add     ${kleur_default.dim(`Add an integration`)}`);
-  console.log(`  qwik build   ${kleur_default.dim(`Parallelize client/server builds and type checking`)}`);
+  console.log(
+    `  ${pmRun} qwik ${kleur_default.cyan(`add`)}      ${kleur_default.dim(`Add an integration to this app`)}`
+  );
+  console.log(
+    `  ${pmRun} qwik ${kleur_default.cyan(`build`)}    ${kleur_default.dim(
+      `Parallelize client/server builds and type checking`
+    )}`
+  );
+  console.log(
+    `  ${pmRun} qwik ${kleur_default.cyan(`preview`)}  ${kleur_default.dim(
+      `Parallelize builds and starts preview server`
+    )}`
+  );
   console.log(``);
 }
 function printVersion() {
