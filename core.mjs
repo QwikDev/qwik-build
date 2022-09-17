@@ -1610,28 +1610,31 @@ const pushRenderContext = (ctx, elCtx) => {
     };
     return newCtx;
 };
-const parseClassAny = (obj) => {
+const serializeClass = (obj) => {
     if (isString(obj)) {
-        return parseClassList(obj);
+        return obj;
     }
     else if (isObject(obj)) {
         if (isArray(obj)) {
-            return obj;
+            return obj.join(' ');
         }
         else {
-            const output = [];
-            for (const key in obj) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const value = obj[key];
-                    if (value) {
-                        output.push(key);
+            let buffer = '';
+            let previous = false;
+            for (const key of Object.keys(obj)) {
+                const value = obj[key];
+                if (value) {
+                    if (previous) {
+                        buffer += ' ';
                     }
+                    buffer += key;
+                    previous = true;
                 }
             }
-            return output;
+            return buffer;
         }
     }
-    return [];
+    return '';
 };
 const parseClassListRegex = /\s/;
 const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
@@ -2018,13 +2021,15 @@ const getProps = (node) => {
         assertDefined(a, 'attribute must be defined');
         const name = a.name;
         if (!name.includes(':')) {
-            props[name] =
-                name === 'class'
-                    ? parseClassAny(a.value).filter((c) => !c.startsWith(ComponentStylesPrefixContent))
-                    : a.value;
+            props[name] = name === 'class' ? parseDomClass(a.value) : a.value;
         }
     }
     return props;
+};
+const parseDomClass = (value) => {
+    return parseClassList(value)
+        .filter((c) => !c.startsWith(ComponentStylesPrefixContent))
+        .join(' ');
 };
 const isHeadChildren = (node) => {
     const type = node.nodeType;
@@ -2401,8 +2406,10 @@ const handleStyle = (ctx, elm, _, newValue) => {
     return true;
 };
 const handleClass = (ctx, elm, _, newValue, oldValue) => {
-    const oldClasses = parseClassAny(oldValue);
-    const newClasses = parseClassAny(newValue);
+    assertTrue(oldValue == null || typeof oldValue === 'string', 'class oldValue must be either nullish or string', oldValue);
+    assertTrue(newValue == null || typeof newValue === 'string', 'class newValue must be either nullish or string', newValue);
+    const oldClasses = parseClassList(oldValue);
+    const newClasses = parseClassList(newValue);
     setClasslist(ctx, elm, oldClasses.filter((c) => c && !newClasses.includes(c)), newClasses.filter((c) => c && !oldClasses.includes(c)));
     return true;
 };
@@ -2446,10 +2453,13 @@ const updateProperties = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
         if (key === 'children') {
             continue;
         }
-        const newValue = newProps[key];
+        let newValue = newProps[key];
         if (key === 'className') {
             newProps['class'] = newValue;
             key = 'class';
+        }
+        if (key === 'class') {
+            newProps['class'] = newValue = serializeClass(newValue);
         }
         const oldValue = oldProps[key];
         if (oldValue === newValue) {
@@ -2509,10 +2519,13 @@ const setProperties = (rctx, elCtx, newProps, isSvg) => {
         if (key === 'children') {
             continue;
         }
-        const newValue = newProps[key];
+        let newValue = newProps[key];
         if (key === 'className') {
             newProps['class'] = newValue;
             key = 'class';
+        }
+        if (key === 'class') {
+            newProps['class'] = newValue = serializeClass(newValue);
         }
         if (key === 'ref') {
             newValue.current = elm;
@@ -6042,7 +6055,7 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
     }
     catch (err) {
         logError(err);
-        if (qDev) {
+        if (qDev && !qTest) {
             if (err && err instanceof Error) {
                 doc.dispatchEvent(new CustomEvent('qerror', {
                     bubbles: true,

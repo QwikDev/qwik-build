@@ -767,23 +767,24 @@ const pushRenderContext = (ctx, elCtx) => ({
     $localStack$: ctx.$localStack$.concat(elCtx)
 });
 
-const parseClassAny = obj => {
+const serializeClass = obj => {
     if (isString(obj)) {
-        return parseClassList(obj);
+        return obj;
     }
     if (isObject(obj)) {
         if (isArray(obj)) {
-            return obj;
+            return obj.join(" ");
         }
         {
-            const output = [];
-            for (const key in obj) {
-                Object.prototype.hasOwnProperty.call(obj, key) && obj[key] && output.push(key);
+            let buffer = "";
+            let previous = false;
+            for (const key of Object.keys(obj)) {
+                obj[key] && (previous && (buffer += " "), buffer += key, previous = true);
             }
-            return output;
+            return buffer;
         }
     }
-    return [];
+    return "";
 };
 
 const parseClassListRegex = /\s/;
@@ -1049,10 +1050,12 @@ const getProps = node => {
     for (let i = 0; i < len; i++) {
         const a = attributes.item(i);
         const name = a.name;
-        name.includes(":") || (props[name] = "class" === name ? parseClassAny(a.value).filter((c => !c.startsWith("⭐️"))) : a.value);
+        name.includes(":") || (props[name] = "class" === name ? parseDomClass(a.value) : a.value);
     }
     return props;
 };
+
+const parseDomClass = value => parseClassList(value).filter((c => !c.startsWith("⭐️"))).join(" ");
 
 const isHeadChildren = node => {
     const type = node.nodeType;
@@ -1329,8 +1332,8 @@ const PROP_HANDLER_MAP = {
     style: (ctx, elm, _, newValue) => (setProperty(ctx, elm.style, "cssText", stringifyStyle(newValue)), 
     true),
     class: (ctx, elm, _, newValue, oldValue) => {
-        const oldClasses = parseClassAny(oldValue);
-        const newClasses = parseClassAny(newValue);
+        const oldClasses = parseClassList(oldValue);
+        const newClasses = parseClassList(newValue);
         return ((ctx, elm, toRemove, toAdd) => {
             ctx ? ctx.$operations$.push({
                 $operation$: _setClasslist,
@@ -1357,8 +1360,8 @@ const updateProperties = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
         if ("children" === key) {
             continue;
         }
-        const newValue = newProps[key];
-        "className" === key && (newProps.class = newValue, key = "class");
+        let newValue = newProps[key];
+        "className" === key && (newProps.class = newValue, key = "class"), "class" === key && (newProps.class = newValue = serializeClass(newValue));
         const oldValue = oldProps[key];
         if (oldValue === newValue) {
             continue;
@@ -1401,8 +1404,9 @@ const setProperties = (rctx, elCtx, newProps, isSvg) => {
         if ("children" === key) {
             continue;
         }
-        const newValue = newProps[key];
-        if ("className" === key && (newProps.class = newValue, key = "class"), "ref" === key) {
+        let newValue = newProps[key];
+        if ("className" === key && (newProps.class = newValue, key = "class"), "class" === key && (newProps.class = newValue = serializeClass(newValue)), 
+        "ref" === key) {
             newValue.current = elm;
             continue;
         }
