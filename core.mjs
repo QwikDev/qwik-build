@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.109
+ * @builder.io/qwik 0.0.110
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1730,7 +1730,7 @@ const renderComponent = (rctx, ctx, flags) => {
                     appendHeadStyle(staticCtx, style);
                 }
             }
-            if (ctx.$scopeIds$) {
+            if (qSerialize && ctx.$scopeIds$) {
                 const value = serializeSStyle(ctx.$scopeIds$);
                 if (value) {
                     hostElement.setAttribute(QScopedStyle, value);
@@ -3080,7 +3080,6 @@ const resumeContainer = (containerEl) => {
         assertDefined(id, `resume: element missed q:id`, el);
         const ctx = getContext(el);
         ctx.$id$ = id;
-        ctx.$mounted$ = true;
         elements.set(ELEMENT_ID_PREFIX + id, el);
         maxId = Math.max(maxId, strToInt(id));
     });
@@ -3093,8 +3092,9 @@ const resumeContainer = (containerEl) => {
         reviveNestedObjects(obj, getObject, parser);
     }
     for (const elementID of Object.keys(meta.ctx)) {
+        assertTrue(elementID.startsWith('#'), 'elementId must start with #');
         const ctxMeta = meta.ctx[elementID];
-        const el = getObject(elementID);
+        const el = elements.get(elementID);
         assertDefined(el, `resume: cant find dom node for id`, elementID);
         const ctx = getContext(el);
         const qobj = ctxMeta.r;
@@ -3114,19 +3114,20 @@ const resumeContainer = (containerEl) => {
             ctx.$watches$ = watches.split(' ').map(getObject);
         }
         if (contexts) {
-            contexts.split(' ').map((part) => {
+            ctx.$contexts$ = new Map();
+            for (const part of contexts.split(' ')) {
                 const [key, value] = part.split('=');
-                if (!ctx.$contexts$) {
-                    ctx.$contexts$ = new Map();
-                }
                 ctx.$contexts$.set(key, getObject(value));
-            });
+            }
         }
         // Restore sequence scoping
         if (host) {
             const [props, renderQrl] = host.split(' ');
+            const styleIds = el.getAttribute(QScopedStyle);
             assertDefined(props, `resume: props missing in host metadata`, host);
             assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
+            ctx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
+            ctx.$mounted$ = true;
             ctx.$props$ = getObject(props);
             ctx.$renderQrl$ = getObject(renderQrl);
         }
@@ -6009,7 +6010,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.109";
+const version = "0.0.110";
 
 /**
  * Render JSX.

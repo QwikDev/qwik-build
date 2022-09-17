@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.109
+ * @builder.io/qwik 0.0.110
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2099,8 +2099,7 @@
                 return pars;
             })(containerEl, hasQId).forEach((el => {
                 const id = directGetAttribute(el, "q:id");
-                const ctx = getContext(el);
-                ctx.$id$ = id, ctx.$mounted$ = true, elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
+                getContext(el).$id$ = id, elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
             })), containerState.$elementIndex$ = ++maxId;
             const parser = ((getObject, containerState, doc) => {
                 const map = new Map;
@@ -2154,8 +2153,9 @@
                 reviveNestedObjects(obj, getObject, parser);
             }
             for (const elementID of Object.keys(meta.ctx)) {
+                elementID.startsWith("#");
                 const ctxMeta = meta.ctx[elementID];
-                const el = getObject(elementID);
+                const el = elements.get(elementID);
                 const ctx = getContext(el);
                 const qobj = ctxMeta.r;
                 const seq = ctxMeta.s;
@@ -2164,12 +2164,18 @@
                 const watches = ctxMeta.w;
                 if (qobj && (isElement(el), ctx.$refMap$.push(...qobj.split(" ").map(getObject)), 
                 ctx.li = getDomListeners(ctx, containerEl)), seq && (ctx.$seq$ = seq.split(" ").map(getObject)), 
-                watches && (ctx.$watches$ = watches.split(" ").map(getObject)), contexts && contexts.split(" ").map((part => {
-                    const [key, value] = part.split("=");
-                    ctx.$contexts$ || (ctx.$contexts$ = new Map), ctx.$contexts$.set(key, getObject(value));
-                })), host) {
+                watches && (ctx.$watches$ = watches.split(" ").map(getObject)), contexts) {
+                    ctx.$contexts$ = new Map;
+                    for (const part of contexts.split(" ")) {
+                        const [key, value] = part.split("=");
+                        ctx.$contexts$.set(key, getObject(value));
+                    }
+                }
+                if (host) {
                     const [props, renderQrl] = host.split(" ");
-                    ctx.$props$ = getObject(props), ctx.$renderQrl$ = getObject(renderQrl);
+                    const styleIds = el.getAttribute("q:sstyle");
+                    ctx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, ctx.$mounted$ = true, ctx.$props$ = getObject(props), 
+                    ctx.$renderQrl$ = getObject(renderQrl);
                 }
             }
             var el;
@@ -3311,7 +3317,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.0.109"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.0.110"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3352,7 +3358,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.0.109",
+            "q:version": "0.0.110",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3400,7 +3406,7 @@
     exports.useServerMountQrl = useServerMountQrl, exports.useStore = useStore, exports.useStyles$ = useStyles$, 
     exports.useStylesQrl = useStylesQrl, exports.useStylesScoped$ = useStylesScoped$, 
     exports.useStylesScopedQrl = useStylesScopedQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.109", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.110", 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
