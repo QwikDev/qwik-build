@@ -11266,7 +11266,6 @@ async function loadIntegrations() {
                 const integration = {
                   id: dirItem,
                   name: dashToTitlelCase(dirItem),
-                  description: pkgJson.description ?? "",
                   type: integrationType,
                   dir: dirPath,
                   pkgJson,
@@ -12425,7 +12424,7 @@ async function runAddInteractive(app) {
         name: "id",
         message: `Which server would you like to add?`,
         choices: servers.map((f) => {
-          return { title: f.name, value: f.id, description: f.description };
+          return { title: f.name, value: f.id, description: f.pkgJson.description };
         }),
         hint: " "
       },
@@ -12590,17 +12589,17 @@ async function printAddHelp() {
   console.log(``);
   console.log(`  ${kleur_default.cyan("Servers")}`);
   for (const s of servers) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.description)}`);
+    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);
   console.log(`  ${kleur_default.cyan("Static Generator")}`);
   for (const s of staticGenerators) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.description)}`);
+    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);
   console.log(`  ${kleur_default.cyan("Features")}`);
   for (const s of features) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.description)}`);
+    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);
 }
@@ -13521,12 +13520,20 @@ async function runBuildCommand(app) {
   const buildStaticScript = pkgJsonScripts["build.static"];
   const runSsgScript = pkgJsonScripts["ssg"];
   const typecheckScript = !isPreviewBuild ? pkgJsonScripts.typecheck : void 0;
-  const scripts = [typecheckScript, buildClientScript, buildPreviewScript, buildServerScript, buildStaticScript].filter((s) => typeof s === "string" && s.trim().length > 0);
+  const scripts = [
+    typecheckScript,
+    buildClientScript,
+    buildPreviewScript,
+    buildServerScript,
+    buildStaticScript
+  ].filter((s) => typeof s === "string" && s.trim().length > 0);
   if (!buildClientScript) {
     throw new Error(`"build.client" script not found in package.json`);
   }
   if (isPreviewBuild && !buildPreviewScript && !buildStaticScript) {
-    throw new Error(`Neither "build.preview" or "build.static" script found in package.json for preview`);
+    throw new Error(
+      `Neither "build.preview" or "build.static" script found in package.json for preview`
+    );
   }
   console.log(``);
   for (const script of scripts) {
@@ -13633,6 +13640,14 @@ async function runBuildCommand(app) {
       }
       if (typecheck) {
         console.log(`${kleur_default.cyan("\u2713")} Type checked`);
+      }
+      if (!isPreviewBuild && !buildServerScript && !buildStaticScript) {
+        const pmRun = pmRunCmd();
+        console.log(``);
+        console.log(`${kleur_default.bgMagenta(" Missing an integration ")}`);
+        console.log(``);
+        console.log(`${kleur_default.magenta("\u30FB")} Use ${kleur_default.magenta(pmRun + " qwik add")} to add an integration`);
+        console.log(`${kleur_default.magenta("\u30FB")} Use ${kleur_default.magenta(pmRun + " preview")} to preview the build`);
       }
       if (isPreviewBuild && buildStaticScript && runSsgScript) {
         const ssgScript = parseScript(buildStaticScript);
