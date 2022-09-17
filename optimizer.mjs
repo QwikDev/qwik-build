@@ -1916,26 +1916,26 @@ function qwikVite(qwikViteOpts = {}) {
         const sys = qwikPlugin.getSys();
         if ("node" === sys.env) {
           const outputs = Object.keys(rollupBundle);
-          const patchModuleFormat = async buildType => {
+          const patchModuleFormat = async bundeName => {
             try {
-              const js = `entry.${buildType}.js`;
-              const cjs = `entry.${buildType}.cjs`;
-              const mjs = `entry.${buildType}.mjs`;
-              if (!outputs.includes(js)) {
-                if (outputs.includes(mjs)) {
+              const bundleFileName = sys.path.basename(bundeName);
+              const ext = sys.path.extname(bundleFileName);
+              if (bundleFileName.startsWith("entry.") && (".mjs" === ext || ".cjs" === ext)) {
+                const extlessName = sys.path.basename(bundleFileName, ext);
+                const js = `${extlessName}.js`;
+                const moduleName = extlessName + ext;
+                const hasJsScript = outputs.some((f => sys.path.basename(f) === js));
+                if (!hasJsScript) {
+                  const bundleOutDir = sys.path.dirname(bundeName);
                   const fs = await sys.dynamicImport("fs");
-                  await fs.promises.writeFile(sys.path.join(opts.outDir, js), `import("./${mjs}").catch((e) => { console.error(e); process.exit(1); });`);
-                } else if (outputs.includes(cjs)) {
-                  const fs = await sys.dynamicImport("fs");
-                  await fs.promises.writeFile(sys.path.join(opts.outDir, js), `require("./${cjs}");`);
+                  await fs.promises.writeFile(sys.path.join(opts.outDir, bundleOutDir, js), `import("./${moduleName}").catch((e) => { console.error(e); process.exit(1); });`);
                 }
               }
             } catch (e) {
               console.error("patchModuleFormat", e);
             }
           };
-          await patchModuleFormat("server");
-          await patchModuleFormat("static");
+          await Promise.all(outputs.map(patchModuleFormat));
         }
       }
     },
