@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.110
+ * @builder.io/qwik 0.0.111
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -889,7 +889,8 @@
             return getCh(elm, isQwikElement);
         }
     };
-    const getChildrenVnodes = (elm, mode) => getChildren(elm, mode).map(domToVnode);
+    const getChildrenVnodes = (elm, mode) => getChildren(elm, mode).map(getVnodeFromEl);
+    const getVnodeFromEl = el => isElement(el) ? tryGetContext(el)?.$vdom$ ?? domToVnode(el) : domToVnode(el);
     const domToVnode = node => {
         if (isQwikElement(node)) {
             const props = isVirtualElement(node) ? EMPTY_OBJ : getProps(node);
@@ -907,9 +908,9 @@
         const attributes = node.attributes;
         const len = attributes.length;
         for (let i = 0; i < len; i++) {
-            const a = attributes.item(i);
-            const name = a.name;
-            name.includes(":") || (props[name] = "class" === name ? parseDomClass(a.value) : a.value);
+            const attr = attributes.item(i);
+            const name = attr.name;
+            name.includes(":") || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
         }
         return props;
     };
@@ -2099,7 +2100,9 @@
                 return pars;
             })(containerEl, hasQId).forEach((el => {
                 const id = directGetAttribute(el, "q:id");
-                getContext(el).$id$ = id, elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
+                const ctx = getContext(el);
+                ctx.$id$ = id, isElement(el) && (ctx.$vdom$ = domToVnode(el)), elements.set("#" + id, el), 
+                maxId = Math.max(maxId, strToInt(id));
             })), containerState.$elementIndex$ = ++maxId;
             const parser = ((getObject, containerState, doc) => {
                 const map = new Map;
@@ -2157,14 +2160,14 @@
                 const ctxMeta = meta.ctx[elementID];
                 const el = elements.get(elementID);
                 const ctx = getContext(el);
-                const qobj = ctxMeta.r;
+                const refMap = ctxMeta.r;
                 const seq = ctxMeta.s;
                 const host = ctxMeta.h;
                 const contexts = ctxMeta.c;
                 const watches = ctxMeta.w;
-                if (qobj && (isElement(el), ctx.$refMap$.push(...qobj.split(" ").map(getObject)), 
-                ctx.li = getDomListeners(ctx, containerEl)), seq && (ctx.$seq$ = seq.split(" ").map(getObject)), 
-                watches && (ctx.$watches$ = watches.split(" ").map(getObject)), contexts) {
+                if (refMap && (isElement(el), ctx.$refMap$ = refMap.split(" ").map(getObject), ctx.li = getDomListeners(ctx, containerEl)), 
+                seq && (ctx.$seq$ = seq.split(" ").map(getObject)), watches && (ctx.$watches$ = watches.split(" ").map(getObject)), 
+                contexts) {
                     ctx.$contexts$ = new Map;
                     for (const part of contexts.split(" ")) {
                         const [key, value] = part.split("=");
@@ -3317,7 +3320,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.0.110"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.0.111"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3358,7 +3361,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.0.110",
+            "q:version": "0.0.111",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3406,7 +3409,7 @@
     exports.useServerMountQrl = useServerMountQrl, exports.useStore = useStore, exports.useStyles$ = useStyles$, 
     exports.useStylesQrl = useStylesQrl, exports.useStylesScoped$ = useStylesScoped$, 
     exports.useStylesScopedQrl = useStylesScopedQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.110", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.111", 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });

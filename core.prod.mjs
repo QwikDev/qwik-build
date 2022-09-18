@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.110
+ * @builder.io/qwik 0.0.111
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1028,7 +1028,9 @@ const getChildren = (elm, mode) => {
     }
 };
 
-const getChildrenVnodes = (elm, mode) => getChildren(elm, mode).map(domToVnode);
+const getChildrenVnodes = (elm, mode) => getChildren(elm, mode).map(getVnodeFromEl);
+
+const getVnodeFromEl = el => isElement(el) ? tryGetContext(el)?.$vdom$ ?? domToVnode(el) : domToVnode(el);
 
 const domToVnode = node => {
     if (isQwikElement(node)) {
@@ -1048,9 +1050,9 @@ const getProps = node => {
     const attributes = node.attributes;
     const len = attributes.length;
     for (let i = 0; i < len; i++) {
-        const a = attributes.item(i);
-        const name = a.name;
-        name.includes(":") || (props[name] = "class" === name ? parseDomClass(a.value) : a.value);
+        const attr = attributes.item(i);
+        const name = attr.name;
+        name.includes(":") || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
     }
     return props;
 };
@@ -2629,7 +2631,9 @@ const resumeIfNeeded = containerEl => {
             return pars;
         })(containerEl, hasQId).forEach((el => {
             const id = directGetAttribute(el, "q:id");
-            getContext(el).$id$ = id, elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
+            const ctx = getContext(el);
+            ctx.$id$ = id, isElement(el) && (ctx.$vdom$ = domToVnode(el)), elements.set("#" + id, el), 
+            maxId = Math.max(maxId, strToInt(id));
         })), containerState.$elementIndex$ = ++maxId;
         const parser = ((getObject, containerState, doc) => {
             const map = new Map;
@@ -2687,14 +2691,14 @@ const resumeIfNeeded = containerEl => {
             const ctxMeta = meta.ctx[elementID];
             const el = elements.get(elementID);
             const ctx = getContext(el);
-            const qobj = ctxMeta.r;
+            const refMap = ctxMeta.r;
             const seq = ctxMeta.s;
             const host = ctxMeta.h;
             const contexts = ctxMeta.c;
             const watches = ctxMeta.w;
-            if (qobj && (isElement(el), ctx.$refMap$.push(...qobj.split(" ").map(getObject)), 
-            ctx.li = getDomListeners(ctx, containerEl)), seq && (ctx.$seq$ = seq.split(" ").map(getObject)), 
-            watches && (ctx.$watches$ = watches.split(" ").map(getObject)), contexts) {
+            if (refMap && (isElement(el), ctx.$refMap$ = refMap.split(" ").map(getObject), ctx.li = getDomListeners(ctx, containerEl)), 
+            seq && (ctx.$seq$ = seq.split(" ").map(getObject)), watches && (ctx.$watches$ = watches.split(" ").map(getObject)), 
+            contexts) {
                 ctx.$contexts$ = new Map;
                 for (const part of contexts.split(" ")) {
                     const [key, value] = part.split("=");
@@ -3079,7 +3083,7 @@ const Slot = props => {
     }, name);
 };
 
-const version = "0.0.110";
+const version = "0.0.111";
 
 const render = async (parent, jsxNode, opts) => {
     isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
@@ -3111,7 +3115,7 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "0.0.110"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "0.0.111"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -3135,7 +3139,7 @@ const renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "0.0.110",
+        "q:version": "0.0.111",
         "q:render": "ssr",
         "q:base": opts.base,
         children: "html" === root ? [ node ] : [ headNodes, node ]

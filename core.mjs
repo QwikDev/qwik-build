@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.110
+ * @builder.io/qwik 0.0.111
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1995,7 +1995,13 @@ const getChildren = (elm, mode) => {
     }
 };
 const getChildrenVnodes = (elm, mode) => {
-    return getChildren(elm, mode).map(domToVnode);
+    return getChildren(elm, mode).map(getVnodeFromEl);
+};
+const getVnodeFromEl = (el) => {
+    if (isElement(el)) {
+        return tryGetContext(el)?.$vdom$ ?? domToVnode(el);
+    }
+    return domToVnode(el);
 };
 const domToVnode = (node) => {
     if (isQwikElement(node)) {
@@ -2017,11 +2023,11 @@ const getProps = (node) => {
     const attributes = node.attributes;
     const len = attributes.length;
     for (let i = 0; i < len; i++) {
-        const a = attributes.item(i);
-        assertDefined(a, 'attribute must be defined');
-        const name = a.name;
+        const attr = attributes.item(i);
+        assertDefined(attr, 'attribute must be defined');
+        const name = attr.name;
         if (!name.includes(':')) {
-            props[name] = name === 'class' ? parseDomClass(a.value) : a.value;
+            props[name] = name === 'class' ? parseDomClass(attr.value) : attr.value;
         }
     }
     return props;
@@ -3080,6 +3086,9 @@ const resumeContainer = (containerEl) => {
         assertDefined(id, `resume: element missed q:id`, el);
         const ctx = getContext(el);
         ctx.$id$ = id;
+        if (isElement(el)) {
+            ctx.$vdom$ = domToVnode(el);
+        }
         elements.set(ELEMENT_ID_PREFIX + id, el);
         maxId = Math.max(maxId, strToInt(id));
     });
@@ -3097,14 +3106,14 @@ const resumeContainer = (containerEl) => {
         const el = elements.get(elementID);
         assertDefined(el, `resume: cant find dom node for id`, elementID);
         const ctx = getContext(el);
-        const qobj = ctxMeta.r;
+        const refMap = ctxMeta.r;
         const seq = ctxMeta.s;
         const host = ctxMeta.h;
         const contexts = ctxMeta.c;
         const watches = ctxMeta.w;
-        if (qobj) {
+        if (refMap) {
             assertTrue(isElement(el), 'el must be an actual DOM element');
-            ctx.$refMap$.push(...qobj.split(' ').map(getObject));
+            ctx.$refMap$ = refMap.split(' ').map(getObject);
             ctx.li = getDomListeners(ctx, containerEl);
         }
         if (seq) {
@@ -6010,7 +6019,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.110";
+const version = "0.0.111";
 
 /**
  * Render JSX.
@@ -6818,6 +6827,9 @@ const useUserContext = useEnvData;
 /* eslint-disable no-console */
 const STYLE_CACHE = new Map();
 const getScopedStyles = (css, scopeId) => {
+    if (qDev) {
+        return scopeStylesheet(css, scopeId);
+    }
     let styleCss = STYLE_CACHE.get(scopeId);
     if (!styleCss) {
         STYLE_CACHE.set(scopeId, (styleCss = scopeStylesheet(css, scopeId)));
