@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.0.111
+ * @builder.io/qwik/cli 0.0.112
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -12412,7 +12412,7 @@ async function runAddInteractive(app, id) {
         name: "featureType",
         message: `What feature would you like to add?`,
         choices: [
-          { title: "Server (SSR)", value: "__server" },
+          { title: "Server Adaptors (SSR)", value: "__server" },
           { title: "Static Generator (SSG)", value: staticGenerator.id },
           ...features.map((f) => {
             return { title: f.name, value: f.id };
@@ -12434,7 +12434,7 @@ async function runAddInteractive(app, id) {
         {
           type: "select",
           name: "id",
-          message: `Which server would you like to add?`,
+          message: `Which server adaptor would you like to add?`,
           choices: servers.map((f) => {
             return { title: f.name, value: f.id, description: f.pkgJson.description };
           }),
@@ -13745,7 +13745,7 @@ async function printHelp() {
   console.log(``);
 }
 function printVersion() {
-  console.log("0.0.111");
+  console.log("0.0.112");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

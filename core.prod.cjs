@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.111
+ * @builder.io/qwik 0.0.112
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3320,7 +3320,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.0.111"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.0.112"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3361,7 +3361,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.0.111",
+            "q:version": "0.0.112",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3409,7 +3409,7 @@
     exports.useServerMountQrl = useServerMountQrl, exports.useStore = useStore, exports.useStyles$ = useStyles$, 
     exports.useStylesQrl = useStylesQrl, exports.useStylesScoped$ = useStylesScoped$, 
     exports.useStylesScopedQrl = useStylesScopedQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.111", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.0.112", 
     Object.defineProperty(exports, "__esModule", {
         value: true
     });

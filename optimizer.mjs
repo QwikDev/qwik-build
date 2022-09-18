@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.0.111
+ * @builder.io/qwik/optimizer 0.0.112
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -478,7 +478,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.0.111"
+  qwik: "0.0.112"
 };
 
 async function getSystem() {
@@ -1569,13 +1569,15 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
 
 async function configurePreviewServer(middlewares, opts, sys, path) {
   const fs = await sys.dynamicImport("fs");
+  const url = await sys.dynamicImport("url");
   const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
   const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
   if (!entryPreviewModulePath) {
     return invalidPreviewMessage(middlewares, 'Unable to find output "server/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.');
   }
   try {
-    const previewModuleImport = await sys.strictDynamicImport(entryPreviewModulePath);
+    const entryPreviewImportPath = url.pathToFileURL(entryPreviewModulePath).href;
+    const previewModuleImport = await sys.strictDynamicImport(entryPreviewImportPath);
     let previewMiddleware = null;
     let preview404Middleware = null;
     if (previewModuleImport.default) {
