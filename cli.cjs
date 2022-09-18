@@ -12386,47 +12386,39 @@ function logSuccessFooter() {
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
-async function runAddInteractive(app) {
+async function runAddInteractive(app, id) {
   console.log(``);
   console.clear();
   console.log(``);
   const integrations2 = await loadIntegrations();
-  const staticGenerator = integrations2.find((i) => i.type === "static-generator");
-  const features = integrations2.filter((i) => i.type === "feature");
-  const featureAnswer = await (0, import_prompts.default)(
-    {
-      type: "select",
-      name: "featureType",
-      message: `What feature would you like to add?`,
-      choices: [
-        { title: "Server (SSR)", value: "__server" },
-        { title: "Static Generator (SSG)", value: staticGenerator.id },
-        ...features.map((f) => {
-          return { title: f.name, value: f.id };
-        })
-      ],
-      hint: "(use \u2193\u2191 arrows, hit enter)"
-    },
-    {
-      onCancel: () => {
-        console.log(``);
-        process.exit(0);
-      }
+  let integration;
+  if (typeof id === "string") {
+    integration = integrations2.find((i) => i.id === id);
+    if (!integration) {
+      throw new Error(`Invalid integration: ${id}`);
     }
-  );
-  console.log(``);
-  let integrationId;
-  if (featureAnswer.featureType === "__server") {
-    const servers = integrations2.filter((i) => i.type === "server");
-    const serverAnswer = await (0, import_prompts.default)(
+    console.log(
+      `\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)} ${kleur_default.bold(kleur_default.magenta(integration.id))}`
+    );
+    console.log(``);
+  } else {
+    console.log(`\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)}`);
+    console.log(``);
+    const staticGenerator = integrations2.find((i) => i.type === "static-generator");
+    const features = integrations2.filter((i) => i.type === "feature");
+    const featureAnswer = await (0, import_prompts.default)(
       {
         type: "select",
-        name: "id",
-        message: `Which server would you like to add?`,
-        choices: servers.map((f) => {
-          return { title: f.name, value: f.id, description: f.pkgJson.description };
-        }),
-        hint: " "
+        name: "featureType",
+        message: `What feature would you like to add?`,
+        choices: [
+          { title: "Server (SSR)", value: "__server" },
+          { title: "Static Generator (SSG)", value: staticGenerator.id },
+          ...features.map((f) => {
+            return { title: f.name, value: f.id };
+          })
+        ],
+        hint: "(use \u2193\u2191 arrows, hit enter)"
       },
       {
         onCancel: () => {
@@ -12435,15 +12427,38 @@ async function runAddInteractive(app) {
         }
       }
     );
-    integrationId = serverAnswer.id;
     console.log(``);
-  } else {
-    integrationId = featureAnswer.featureType;
+    if (featureAnswer.featureType === "__server") {
+      const servers = integrations2.filter((i) => i.type === "server");
+      const serverAnswer = await (0, import_prompts.default)(
+        {
+          type: "select",
+          name: "id",
+          message: `Which server would you like to add?`,
+          choices: servers.map((f) => {
+            return { title: f.name, value: f.id, description: f.pkgJson.description };
+          }),
+          hint: " "
+        },
+        {
+          onCancel: () => {
+            console.log(``);
+            process.exit(0);
+          }
+        }
+      );
+      integration = integrations2.find((i) => i.id === serverAnswer.id);
+      console.log(``);
+    } else {
+      integration = integrations2.find((i) => i.id === featureAnswer.featureType);
+    }
+    if (!integration) {
+      throw new Error(`Invalid integration: ${id}`);
+    }
   }
-  const selectedIntegration = integrations2.find((i) => i.id === integrationId);
   const integrationHasDeps = Object.keys({
-    ...selectedIntegration == null ? void 0 : selectedIntegration.pkgJson.dependencies,
-    ...selectedIntegration == null ? void 0 : selectedIntegration.pkgJson.devDependencies
+    ...integration.pkgJson.dependencies,
+    ...integration.pkgJson.devDependencies
   }).length > 0;
   let runInstall = false;
   if (integrationHasDeps) {
@@ -12467,7 +12482,7 @@ async function runAddInteractive(app) {
   }
   const result = await updateApp({
     rootDir: app.rootDir,
-    integration: integrationId,
+    integration: integration.id,
     installDeps: runInstall
   });
   await logUpdateAppResult(result);
@@ -12485,20 +12500,20 @@ async function logUpdateAppResult(result) {
   console.clear();
   console.log(``);
   console.log(
-    `\u{1F984} ${kleur_default.bgCyan(` Ready? `)} Apply ${kleur_default.bold(
+    `\u{1F47B} ${kleur_default.bgCyan(` Ready? `)} Add ${kleur_default.bold(
       kleur_default.magenta(result.integration.id)
     )} to your app?`
   );
   console.log(``);
   if (modifyFiles.length > 0) {
-    console.log(`\u{1F47B} ${kleur_default.cyan(`Modify`)}`);
+    console.log(`\u{1F42C} ${kleur_default.cyan(`Modify`)}`);
     for (const f of modifyFiles) {
       console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (overwriteFiles.length > 0) {
-    console.log(`\u{1F310} ${kleur_default.cyan(`Overwrite`)}`);
+    console.log(`\u{1F433} ${kleur_default.cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
       console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
     }
@@ -12507,7 +12522,7 @@ async function logUpdateAppResult(result) {
   if (installDeps2) {
     const pkgManager = getPackageManager();
     console.log(
-      `\u{1F4BF} ${kleur_default.cyan(
+      `\u{1F4BE} ${kleur_default.cyan(
         `Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`
       )}`
     );
@@ -12553,31 +12568,7 @@ function logUpdateAppCommitResult(result) {
   logSuccessFooter();
 }
 
-// packages/qwik/src/cli/add/run-add-command.ts
-async function runAddCommand(app) {
-  const id = app.args[1];
-  if (id === "help") {
-    await printAddHelp();
-    return;
-  }
-  if (typeof id === "string") {
-    try {
-      const result = await updateApp({
-        rootDir: app.rootDir,
-        integration: id
-      });
-      await result.commit();
-      return;
-    } catch (e) {
-      console.error(`
-\u274C ${kleur_default.red(String(e))}
-`);
-      await printAddHelp();
-      process.exit(1);
-    }
-  }
-  await runAddInteractive(app);
-}
+// packages/qwik/src/cli/add/print-add-help.ts
 async function printAddHelp() {
   const integrations2 = await loadIntegrations();
   const servers = integrations2.filter((i) => i.type === "server");
@@ -12585,7 +12576,7 @@ async function printAddHelp() {
   const features = integrations2.filter((i) => i.type === "feature");
   const pmRun = pmRunCmd();
   console.log(``);
-  console.log(`${kleur_default.magenta(`${pmRun} qwik add`)} [integration]`);
+  console.log(`${pmRun} qwik ${kleur_default.magenta(`add`)} [integration]`);
   console.log(``);
   console.log(`  ${kleur_default.cyan("Servers")}`);
   for (const s of servers) {
@@ -12602,6 +12593,24 @@ async function printAddHelp() {
     console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);
+}
+
+// packages/qwik/src/cli/add/run-add-command.ts
+async function runAddCommand(app) {
+  try {
+    const id = app.args[1];
+    if (id === "help") {
+      await printAddHelp();
+    } else {
+      await runAddInteractive(app, id);
+    }
+  } catch (e) {
+    console.error(`
+\u274C ${kleur_default.red(String(e))}
+`);
+    await printAddHelp();
+    process.exit(1);
+  }
 }
 
 // node_modules/execa/index.js
@@ -13721,16 +13730,16 @@ async function printHelp() {
   console.log(kleur_default.bgMagenta(` Qwik Help `));
   console.log(``);
   console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`add`)}      ${kleur_default.dim(`Add an integration to this app`)}`
+    `  ${pmRun} qwik ${kleur_default.cyan(`add`)}            ${kleur_default.dim(`Add an integration to this app`)}`
   );
   console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`build`)}    ${kleur_default.dim(
-      `Parallelize client/server builds and type checking`
+    `  ${pmRun} qwik ${kleur_default.cyan(`build`)}          ${kleur_default.dim(
+      `Parallelize builds and type checking`
     )}`
   );
   console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`preview`)}  ${kleur_default.dim(
-      `Parallelize builds and starts preview server`
+    `  ${pmRun} qwik ${kleur_default.cyan(`build preview`)}  ${kleur_default.dim(
+      `Same as "build", but for preview server`
     )}`
   );
   console.log(``);
