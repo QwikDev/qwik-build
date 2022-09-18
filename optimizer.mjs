@@ -1569,7 +1569,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
 
 async function configurePreviewServer(middlewares, opts, sys, path) {
   const fs = await sys.dynamicImport("fs");
-  const entryPreviewPaths = [ "js", "mjs", "cjs" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
+  const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
   const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
   if (!entryPreviewModulePath) {
     return invalidPreviewMessage(middlewares, 'Unable to find output "server/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.');
@@ -1920,7 +1920,7 @@ function qwikVite(qwikViteOpts = {}) {
             try {
               const bundleFileName = sys.path.basename(bundeName);
               const ext = sys.path.extname(bundleFileName);
-              if (bundleFileName.startsWith("entry.") && (".mjs" === ext || ".cjs" === ext)) {
+              if (bundleFileName.startsWith("entry.") && !bundleFileName.includes("preview") && (".mjs" === ext || ".cjs" === ext)) {
                 const extlessName = sys.path.basename(bundleFileName, ext);
                 const js = `${extlessName}.js`;
                 const moduleName = extlessName + ext;
