@@ -1503,6 +1503,241 @@
         };
         return manager;
     };
+    const _pauseFromContexts = async (allContexts, containerState) => {
+        const collector = createCollector(containerState);
+        const listeners = [];
+        for (const ctx of allContexts) {
+            const el = ctx.$element$;
+            const ctxLi = ctx.li;
+            for (const key of Object.keys(ctxLi)) {
+                for (const qrl of ctxLi[key]) {
+                    const captured = qrl.$captureRef$;
+                    if (captured) {
+                        for (const obj of captured) {
+                            collectValue(obj, collector, true);
+                        }
+                    }
+                    isElement(el) && listeners.push({
+                        key: key,
+                        qrl: qrl,
+                        el: el,
+                        eventName: getEventName(key)
+                    });
+                }
+            }
+            ctx.$watches$ && collector.$watches$.push(...ctx.$watches$);
+        }
+        if (0 === listeners.length) {
+            return {
+                state: {
+                    ctx: {},
+                    objs: [],
+                    subs: []
+                },
+                objs: [],
+                listeners: [],
+                mode: "static"
+            };
+        }
+        let promises;
+        for (;(promises = collector.$promises$).length > 0; ) {
+            collector.$promises$ = [], await Promise.allSettled(promises);
+        }
+        const canRender = collector.$elements$.length > 0;
+        if (canRender) {
+            for (const element of collector.$elements$) {
+                collectElementData(tryGetContext(element), collector);
+            }
+            for (const ctx of allContexts) {
+                if (ctx.$props$ && collectMutableProps(ctx.$element$, ctx.$props$, collector), ctx.$contexts$) {
+                    for (const item of ctx.$contexts$.values()) {
+                        collectValue(item, collector, false);
+                    }
+                }
+            }
+        }
+        for (;(promises = collector.$promises$).length > 0; ) {
+            collector.$promises$ = [], await Promise.allSettled(promises);
+        }
+        const elementToIndex = new Map;
+        const objs = Array.from(collector.$objSet$.keys());
+        const objToId = new Map;
+        const getElementID = el => {
+            let id = elementToIndex.get(el);
+            return void 0 === id && (id = (el => {
+                const ctx = tryGetContext(el);
+                return ctx ? ctx.$id$ : null;
+            })(el), id ? id = "#" + id : console.warn("Missing ID", el), elementToIndex.set(el, id)), 
+            id;
+        };
+        const getObjId = obj => {
+            let suffix = "";
+            if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
+                const {value: value, resolved: resolved} = getPromiseValue(obj);
+                obj = value, suffix += resolved ? "~" : "_";
+            }
+            if (isObject(obj)) {
+                const target = getProxyTarget(obj);
+                if (target) {
+                    suffix += "!", obj = target;
+                } else if (isQwikElement(obj)) {
+                    const elID = getElementID(obj);
+                    return elID ? elID + suffix : null;
+                }
+            }
+            const id = objToId.get(obj);
+            return id ? id + suffix : null;
+        };
+        const mustGetObjId = obj => {
+            const key = getObjId(obj);
+            if (null === key) {
+                throw qError(QError_missingObjectId, obj);
+            }
+            return key;
+        };
+        const subsMap = new Map;
+        objs.forEach((obj => {
+            const proxy = containerState.$proxyMap$.get(obj);
+            const flags = getProxyFlags(proxy);
+            if (void 0 === flags) {
+                return;
+            }
+            const subsObj = [];
+            flags > 0 && subsObj.push({
+                subscriber: "$",
+                data: flags
+            }), getProxySubs(proxy).forEach(((set, key) => {
+                isNode(key) && isVirtualElement(key) && !collector.$elements$.includes(key) || subsObj.push({
+                    subscriber: key,
+                    data: set ? Array.from(set) : null
+                });
+            })), subsObj.length > 0 && subsMap.set(obj, subsObj);
+        })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
+        let count = 0;
+        for (const obj of objs) {
+            objToId.set(obj, intToStr(count)), count++;
+        }
+        if (collector.$noSerialize$.length > 0) {
+            const undefinedID = objToId.get(void 0);
+            for (const obj of collector.$noSerialize$) {
+                objToId.set(obj, undefinedID);
+            }
+        }
+        const subs = objs.map((obj => {
+            const sub = subsMap.get(obj);
+            if (!sub) {
+                return;
+            }
+            const subsObj = {};
+            return sub.forEach((({subscriber: subscriber, data: data}) => {
+                if ("$" === subscriber) {
+                    subsObj[subscriber] = data;
+                } else {
+                    const id = getObjId(subscriber);
+                    null !== id && (subsObj[id] = data);
+                }
+            })), subsObj;
+        })).filter(isNotNullable);
+        const convertedObjs = objs.map((obj => {
+            if (null === obj) {
+                return null;
+            }
+            const typeObj = typeof obj;
+            switch (typeObj) {
+              case "undefined":
+                return UNDEFINED_PREFIX;
+
+              case "string":
+              case "number":
+              case "boolean":
+                return obj;
+
+              default:
+                const value = serializeValue(obj, getObjId, containerState);
+                if (void 0 !== value) {
+                    return value;
+                }
+                if ("object" === typeObj) {
+                    if (isArray(obj)) {
+                        return obj.map(mustGetObjId);
+                    }
+                    if (isSerializableObject(obj)) {
+                        const output = {};
+                        for (const key of Object.keys(obj)) {
+                            output[key] = mustGetObjId(obj[key]);
+                        }
+                        return output;
+                    }
+                }
+            }
+            throw qError(QError_verifySerializable, obj);
+        }));
+        const meta = {};
+        allContexts.forEach((ctx => {
+            const node = ctx.$element$;
+            const ref = ctx.$refMap$;
+            const props = ctx.$props$;
+            const contexts = ctx.$contexts$;
+            const watches = ctx.$watches$;
+            const renderQrl = ctx.$renderQrl$;
+            const seq = ctx.$seq$;
+            const metaValue = {};
+            const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
+            let add = false;
+            if (ref.length > 0) {
+                const value = ref.map(mustGetObjId).join(" ");
+                value && (metaValue.r = value, add = true);
+            }
+            if (canRender) {
+                if (elementCaptured && props && (metaValue.h = mustGetObjId(props) + " " + mustGetObjId(renderQrl), 
+                add = true), watches && watches.length > 0) {
+                    const value = watches.map(getObjId).filter(isNotNullable).join(" ");
+                    value && (metaValue.w = value, add = true);
+                }
+                if (elementCaptured && seq && seq.length > 0) {
+                    const value = seq.map(mustGetObjId).join(" ");
+                    metaValue.s = value, add = true;
+                }
+                if (contexts) {
+                    const serializedContexts = [];
+                    contexts.forEach(((value, key) => {
+                        serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+                    }));
+                    const value = serializedContexts.join(" ");
+                    value && (metaValue.c = value, add = true);
+                }
+            }
+            if (add) {
+                const elementID = getElementID(node);
+                meta[elementID] = metaValue;
+            }
+        }));
+        for (const watch of collector.$watches$) {
+            destroyWatch(watch);
+        }
+        return {
+            state: {
+                ctx: meta,
+                objs: convertedObjs,
+                subs: subs
+            },
+            objs: objs,
+            listeners: listeners,
+            mode: canRender ? "render" : "listeners"
+        };
+    };
+    const getNodesInScope = (parent, predicate) => {
+        predicate(parent);
+        const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
+            acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
+        });
+        const pars = [];
+        let currentNode = null;
+        for (;currentNode = walker.nextNode(); ) {
+            pars.push(processVirtualNodes(currentNode));
+        }
+        return pars;
+    };
     const reviveNestedObjects = (obj, getObject, parser) => {
         if (!parser.fill(obj) && obj && "object" == typeof obj) {
             if (isArray(obj)) {
@@ -1528,6 +1763,15 @@
         const subs = getProxySubs(props);
         subs && subs.has(el) && collectElement(el, collector);
     };
+    const createCollector = containerState => ({
+        $containerState$: containerState,
+        $seen$: new Set,
+        $objSet$: new Set,
+        $noSerialize$: [],
+        $elements$: [],
+        $watches$: [],
+        $promises$: []
+    });
     const collectDeferElement = (el, collector) => {
         collector.$elements$.includes(el) || collector.$elements$.push(el);
     };
@@ -1557,6 +1801,7 @@
         }
     };
     const PROMISE_VALUE = Symbol();
+    const getPromiseValue = promise => promise[PROMISE_VALUE];
     const collectValue = (obj, collector, leaks) => {
         if (null !== obj) {
             const objType = typeof obj;
@@ -1962,6 +2207,14 @@
         },
         fill: void 0
     } ];
+    const serializeValue = (obj, getObjID, containerState) => {
+        for (const s of serializers) {
+            if (s.test(obj)) {
+                let value = s.prefix;
+                return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
+            }
+        }
+    };
     const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || createProxy(target, containerState, flags, void 0);
     const createProxy = (target, containerState, flags, subs) => {
         unwrapProxy(target), containerState.$proxyMap$.has(target), isObject(target), isSerializableObject(target) || isArray(target);
@@ -2041,8 +2294,13 @@
     const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     const getProxyTarget = obj => obj[QOjectTargetSymbol];
     const getProxySubs = obj => obj[QOjectSubsSymbol];
+    const getProxyFlags = obj => {
+        if (isObject(obj)) {
+            return obj[QOjectFlagsSymbol];
+        }
+    };
     const resumeIfNeeded = containerEl => {
-        "paused" === directGetAttribute(containerEl, "q:container") && (containerEl => {
+        "paused" === directGetAttribute(containerEl, "q:container") && ((containerEl => {
             if (!isContainer(containerEl)) {
                 return void logWarn("Skipping hydration because parent element is not q:container");
             }
@@ -2087,18 +2345,7 @@
                 return obj;
             })(id, elements, meta.objs, containerState);
             let maxId = 0;
-            ((parent, predicate) => {
-                predicate(parent);
-                const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
-                    acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
-                });
-                const pars = [];
-                let currentNode = null;
-                for (;currentNode = walker.nextNode(); ) {
-                    pars.push(processVirtualNodes(currentNode));
-                }
-                return pars;
-            })(containerEl, hasQId).forEach((el => {
+            getNodesInScope(containerEl, hasQId).forEach((el => {
                 const id = directGetAttribute(el, "q:id");
                 const ctx = getContext(el);
                 ctx.$id$ = id, isElement(el) && (ctx.$vdom$ = domToVnode(el)), elements.set("#" + id, el), 
@@ -2188,7 +2435,30 @@
                 bubbles: true,
                 composed: true
             }));
-        })(containerEl);
+        })(containerEl), appendQwikDevTools(containerEl));
+    };
+    const appendQwikDevTools = containerEl => {
+        containerEl.qwik = {
+            pause: () => (async (elmOrDoc, defaultParentJSON) => {
+                const doc = getDocument(elmOrDoc);
+                const documentElement = doc.documentElement;
+                const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+                if ("paused" === directGetAttribute(containerEl, "q:container")) {
+                    throw qError(QError_containerAlreadyPaused);
+                }
+                const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+                const data = await (async containerEl => {
+                    const containerState = getContainerState(containerEl);
+                    const contexts = getNodesInScope(containerEl, hasQId).map(tryGetContext);
+                    return _pauseFromContexts(contexts, containerState);
+                })(containerEl);
+                const script = doc.createElement("script");
+                return directSetAttribute(script, "type", "qwik/json"), script.textContent = JSON.stringify(data.state, void 0, void 0).replace(/<(\/?script)/g, "\\x3C$1"), 
+                parentJSON.appendChild(script), directSetAttribute(containerEl, "q:container", "paused"), 
+                data;
+            })(containerEl),
+            state: getContainerState(containerEl)
+        };
     };
     const tryGetContext = element => element._qc_;
     const getContext = element => {
@@ -2263,13 +2533,16 @@
     const logDebug = (message, ...optionalParams) => {};
     const printParams = optionalParams => optionalParams;
     const QError_stringifyClassOrStyle = 0;
+    const QError_verifySerializable = 3;
     const QError_setProperty = 6;
     const QError_useMethodOutsideContext = 14;
     const QError_immutableProps = 17;
     const QError_useInvokeContext = 20;
+    const QError_containerAlreadyPaused = 21;
     const QError_canNotMountUseServerMount = 22;
     const QError_invalidJsxNodeType = 25;
     const QError_trackUseStore = 26;
+    const QError_missingObjectId = 27;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
@@ -3057,248 +3330,7 @@
         return jsx(Virtual, {
             "q:s": ""
         }, name);
-    }, exports._hW = _hW, exports._pauseFromContexts = async (allContexts, containerState) => {
-        const collector = (containerState => ({
-            $containerState$: containerState,
-            $seen$: new Set,
-            $objSet$: new Set,
-            $noSerialize$: [],
-            $elements$: [],
-            $watches$: [],
-            $promises$: []
-        }))(containerState);
-        const listeners = [];
-        for (const ctx of allContexts) {
-            const el = ctx.$element$;
-            const ctxLi = ctx.li;
-            for (const key of Object.keys(ctxLi)) {
-                for (const qrl of ctxLi[key]) {
-                    const captured = qrl.$captureRef$;
-                    if (captured) {
-                        for (const obj of captured) {
-                            collectValue(obj, collector, true);
-                        }
-                    }
-                    isElement(el) && listeners.push({
-                        key: key,
-                        qrl: qrl,
-                        el: el,
-                        eventName: getEventName(key)
-                    });
-                }
-            }
-            ctx.$watches$ && collector.$watches$.push(...ctx.$watches$);
-        }
-        if (0 === listeners.length) {
-            return {
-                state: {
-                    ctx: {},
-                    objs: [],
-                    subs: []
-                },
-                objs: [],
-                listeners: [],
-                mode: "static"
-            };
-        }
-        let promises;
-        for (;(promises = collector.$promises$).length > 0; ) {
-            collector.$promises$ = [], await Promise.allSettled(promises);
-        }
-        const canRender = collector.$elements$.length > 0;
-        if (canRender) {
-            for (const element of collector.$elements$) {
-                collectElementData(tryGetContext(element), collector);
-            }
-            for (const ctx of allContexts) {
-                if (ctx.$props$ && collectMutableProps(ctx.$element$, ctx.$props$, collector), ctx.$contexts$) {
-                    for (const item of ctx.$contexts$.values()) {
-                        collectValue(item, collector, false);
-                    }
-                }
-            }
-        }
-        for (;(promises = collector.$promises$).length > 0; ) {
-            collector.$promises$ = [], await Promise.allSettled(promises);
-        }
-        const elementToIndex = new Map;
-        const objs = Array.from(collector.$objSet$.keys());
-        const objToId = new Map;
-        const getElementID = el => {
-            let id = elementToIndex.get(el);
-            return void 0 === id && (id = (el => {
-                const ctx = tryGetContext(el);
-                return ctx ? ctx.$id$ : null;
-            })(el), id ? id = "#" + id : console.warn("Missing ID", el), elementToIndex.set(el, id)), 
-            id;
-        };
-        const getObjId = obj => {
-            let suffix = "";
-            if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
-                const {value: value, resolved: resolved} = obj[PROMISE_VALUE];
-                obj = value, suffix += resolved ? "~" : "_";
-            }
-            if (isObject(obj)) {
-                const target = getProxyTarget(obj);
-                if (target) {
-                    suffix += "!", obj = target;
-                } else if (isQwikElement(obj)) {
-                    const elID = getElementID(obj);
-                    return elID ? elID + suffix : null;
-                }
-            }
-            const id = objToId.get(obj);
-            return id ? id + suffix : null;
-        };
-        const mustGetObjId = obj => {
-            const key = getObjId(obj);
-            if (null === key) {
-                throw qError(27, obj);
-            }
-            return key;
-        };
-        const subsMap = new Map;
-        objs.forEach((obj => {
-            const proxy = containerState.$proxyMap$.get(obj);
-            const flags = (obj => {
-                if (isObject(obj)) {
-                    return obj[QOjectFlagsSymbol];
-                }
-            })(proxy);
-            if (void 0 === flags) {
-                return;
-            }
-            const subsObj = [];
-            flags > 0 && subsObj.push({
-                subscriber: "$",
-                data: flags
-            }), getProxySubs(proxy).forEach(((set, key) => {
-                isNode(key) && isVirtualElement(key) && !collector.$elements$.includes(key) || subsObj.push({
-                    subscriber: key,
-                    data: set ? Array.from(set) : null
-                });
-            })), subsObj.length > 0 && subsMap.set(obj, subsObj);
-        })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
-        let count = 0;
-        for (const obj of objs) {
-            objToId.set(obj, intToStr(count)), count++;
-        }
-        if (collector.$noSerialize$.length > 0) {
-            const undefinedID = objToId.get(void 0);
-            for (const obj of collector.$noSerialize$) {
-                objToId.set(obj, undefinedID);
-            }
-        }
-        const subs = objs.map((obj => {
-            const sub = subsMap.get(obj);
-            if (!sub) {
-                return;
-            }
-            const subsObj = {};
-            return sub.forEach((({subscriber: subscriber, data: data}) => {
-                if ("$" === subscriber) {
-                    subsObj[subscriber] = data;
-                } else {
-                    const id = getObjId(subscriber);
-                    null !== id && (subsObj[id] = data);
-                }
-            })), subsObj;
-        })).filter(isNotNullable);
-        const convertedObjs = objs.map((obj => {
-            if (null === obj) {
-                return null;
-            }
-            const typeObj = typeof obj;
-            switch (typeObj) {
-              case "undefined":
-                return UNDEFINED_PREFIX;
-
-              case "string":
-              case "number":
-              case "boolean":
-                return obj;
-
-              default:
-                const value = ((obj, getObjID, containerState) => {
-                    for (const s of serializers) {
-                        if (s.test(obj)) {
-                            let value = s.prefix;
-                            return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
-                        }
-                    }
-                })(obj, getObjId, containerState);
-                if (void 0 !== value) {
-                    return value;
-                }
-                if ("object" === typeObj) {
-                    if (isArray(obj)) {
-                        return obj.map(mustGetObjId);
-                    }
-                    if (isSerializableObject(obj)) {
-                        const output = {};
-                        for (const key of Object.keys(obj)) {
-                            output[key] = mustGetObjId(obj[key]);
-                        }
-                        return output;
-                    }
-                }
-            }
-            throw qError(3, obj);
-        }));
-        const meta = {};
-        allContexts.forEach((ctx => {
-            const node = ctx.$element$;
-            const ref = ctx.$refMap$;
-            const props = ctx.$props$;
-            const contexts = ctx.$contexts$;
-            const watches = ctx.$watches$;
-            const renderQrl = ctx.$renderQrl$;
-            const seq = ctx.$seq$;
-            const metaValue = {};
-            const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
-            let add = false;
-            if (ref.length > 0) {
-                const value = ref.map(mustGetObjId).join(" ");
-                value && (metaValue.r = value, add = true);
-            }
-            if (canRender) {
-                if (elementCaptured && props && (metaValue.h = mustGetObjId(props) + " " + mustGetObjId(renderQrl), 
-                add = true), watches && watches.length > 0) {
-                    const value = watches.map(getObjId).filter(isNotNullable).join(" ");
-                    value && (metaValue.w = value, add = true);
-                }
-                if (elementCaptured && seq && seq.length > 0) {
-                    const value = seq.map(mustGetObjId).join(" ");
-                    metaValue.s = value, add = true;
-                }
-                if (contexts) {
-                    const serializedContexts = [];
-                    contexts.forEach(((value, key) => {
-                        serializedContexts.push(`${key}=${mustGetObjId(value)}`);
-                    }));
-                    const value = serializedContexts.join(" ");
-                    value && (metaValue.c = value, add = true);
-                }
-            }
-            if (add) {
-                const elementID = getElementID(node);
-                meta[elementID] = metaValue;
-            }
-        }));
-        for (const watch of collector.$watches$) {
-            destroyWatch(watch);
-        }
-        return {
-            state: {
-                ctx: meta,
-                objs: convertedObjs,
-                subs: subs
-            },
-            objs: objs,
-            listeners: listeners,
-            mode: canRender ? "render" : "listeners"
-        };
-    }, exports._useMutableProps = (element, mutable) => {
+    }, exports._hW = _hW, exports._pauseFromContexts = _pauseFromContexts, exports._useMutableProps = (element, mutable) => {
         const ctx = getWrappingContainer(element);
         getContainerState(ctx).$mutableProps$ = mutable;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 

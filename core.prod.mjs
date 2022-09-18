@@ -1915,6 +1915,19 @@ const _pauseFromContexts = async (allContexts, containerState) => {
     };
 };
 
+const getNodesInScope = (parent, predicate) => {
+    predicate(parent);
+    const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
+        acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
+    });
+    const pars = [];
+    let currentNode = null;
+    for (;currentNode = walker.nextNode(); ) {
+        pars.push(processVirtualNodes(currentNode));
+    }
+    return pars;
+};
+
 const reviveNestedObjects = (obj, getObject, parser) => {
     if (!parser.fill(obj) && obj && "object" == typeof obj) {
         if (isArray(obj)) {
@@ -2573,7 +2586,7 @@ const getProxyFlags = obj => {
 };
 
 const resumeIfNeeded = containerEl => {
-    "paused" === directGetAttribute(containerEl, "q:container") && (containerEl => {
+    "paused" === directGetAttribute(containerEl, "q:container") && ((containerEl => {
         if (!isContainer(containerEl)) {
             return void logWarn("Skipping hydration because parent element is not q:container");
         }
@@ -2618,18 +2631,7 @@ const resumeIfNeeded = containerEl => {
             return obj;
         })(id, elements, meta.objs, containerState);
         let maxId = 0;
-        ((parent, predicate) => {
-            predicate(parent);
-            const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
-                acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
-            });
-            const pars = [];
-            let currentNode = null;
-            for (;currentNode = walker.nextNode(); ) {
-                pars.push(processVirtualNodes(currentNode));
-            }
-            return pars;
-        })(containerEl, hasQId).forEach((el => {
+        getNodesInScope(containerEl, hasQId).forEach((el => {
             const id = directGetAttribute(el, "q:id");
             const ctx = getContext(el);
             ctx.$id$ = id, isElement(el) && (ctx.$vdom$ = domToVnode(el)), elements.set("#" + id, el), 
@@ -2719,7 +2721,31 @@ const resumeIfNeeded = containerEl => {
             bubbles: true,
             composed: true
         }));
-    })(containerEl);
+    })(containerEl), appendQwikDevTools(containerEl));
+};
+
+const appendQwikDevTools = containerEl => {
+    containerEl.qwik = {
+        pause: () => (async (elmOrDoc, defaultParentJSON) => {
+            const doc = getDocument(elmOrDoc);
+            const documentElement = doc.documentElement;
+            const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+            if ("paused" === directGetAttribute(containerEl, "q:container")) {
+                throw qError(QError_containerAlreadyPaused);
+            }
+            const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+            const data = await (async containerEl => {
+                const containerState = getContainerState(containerEl);
+                const contexts = getNodesInScope(containerEl, hasQId).map(tryGetContext);
+                return _pauseFromContexts(contexts, containerState);
+            })(containerEl);
+            const script = doc.createElement("script");
+            return directSetAttribute(script, "type", "qwik/json"), script.textContent = JSON.stringify(data.state, void 0, void 0).replace(/<(\/?script)/g, "\\x3C$1"), 
+            parentJSON.appendChild(script), directSetAttribute(containerEl, "q:container", "paused"), 
+            data;
+        })(containerEl),
+        state: getContainerState(containerEl)
+    };
 };
 
 const tryGetContext = element => element._qc_;
@@ -2826,6 +2852,8 @@ const QError_useMethodOutsideContext = 14;
 const QError_immutableProps = 17;
 
 const QError_useInvokeContext = 20;
+
+const QError_containerAlreadyPaused = 21;
 
 const QError_canNotMountUseServerMount = 22;
 

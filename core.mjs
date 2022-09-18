@@ -5208,7 +5208,7 @@ const resumeIfNeeded = (containerEl) => {
     const isResumed = directGetAttribute(containerEl, QContainerAttr);
     if (isResumed === 'paused') {
         resumeContainer(containerEl);
-        if (qDev) {
+        if (qSerialize) {
             appendQwikDevTools(containerEl);
         }
     }
