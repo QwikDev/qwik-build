@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.0.113
+ * @builder.io/qwik/cli 0.9.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -13523,20 +13523,24 @@ async function runBuildCommand(app) {
     throw new Error(`No "scripts" property found in package.json`);
   }
   const isPreviewBuild = app.args.includes("preview");
+  const buildLibScript = pkgJsonScripts["build.lib"];
+  const isLibraryBuild = !!buildLibScript;
   const buildClientScript = pkgJsonScripts["build.client"];
   const buildPreviewScript = isPreviewBuild ? pkgJsonScripts["build.preview"] : void 0;
   const buildServerScript = !isPreviewBuild ? pkgJsonScripts["build.server"] : void 0;
   const buildStaticScript = pkgJsonScripts["build.static"];
   const runSsgScript = pkgJsonScripts["ssg"];
-  const typecheckScript = !isPreviewBuild ? pkgJsonScripts.typecheck : void 0;
+  const buildTypes = !isPreviewBuild ? pkgJsonScripts["build.types"] : void 0;
   const scripts = [
-    typecheckScript,
+    buildTypes,
     buildClientScript,
+    buildLibScript,
     buildPreviewScript,
     buildServerScript,
     buildStaticScript
   ].filter((s) => typeof s === "string" && s.trim().length > 0);
-  if (!buildClientScript) {
+  if (!isLibraryBuild && !buildClientScript) {
+    console.log(pkgJsonScripts);
     throw new Error(`"build.client" script not found in package.json`);
   }
   if (isPreviewBuild && !buildPreviewScript && !buildStaticScript) {
@@ -13550,8 +13554,8 @@ async function runBuildCommand(app) {
   }
   console.log(``);
   let typecheck = null;
-  if (typecheckScript && typecheckScript.startsWith("tsc")) {
-    const tscScript = parseScript(typecheckScript);
+  if (buildTypes && buildTypes.startsWith("tsc")) {
+    const tscScript = parseScript(buildTypes);
     if (!tscScript.flags.includes("--pretty")) {
       tscScript.flags.push("--pretty");
     }
@@ -13566,16 +13570,37 @@ async function runBuildCommand(app) {
       process.exit(1);
     });
   }
-  const clientScript = parseScript(buildClientScript);
-  await execa(clientScript.cmd, clientScript.flags, {
-    stdio: "inherit",
-    cwd: app.rootDir
-  }).catch(() => {
-    process.exit(1);
-  });
-  console.log(``);
-  console.log(`${kleur_default.cyan("\u2713")} Built client modules`);
+  if (buildClientScript) {
+    const clientScript = parseScript(buildClientScript);
+    await execa(clientScript.cmd, clientScript.flags, {
+      stdio: "inherit",
+      cwd: app.rootDir
+    }).catch(() => {
+      process.exit(1);
+    });
+    console.log(``);
+    console.log(`${kleur_default.cyan("\u2713")} Built client modules`);
+  }
   const step2 = [];
+  if (buildLibScript) {
+    const libScript = parseScript(buildLibScript);
+    const libBuild = execa(libScript.cmd, libScript.flags, {
+      cwd: app.rootDir,
+      env: {
+        FORCE_COLOR: "true"
+      }
+    }).catch((e) => {
+      console.log(``);
+      if (e.stderr) {
+        console.log(e.stderr);
+      } else {
+        console.log(e.stdout);
+      }
+      console.log(``);
+      process.exit(1);
+    });
+    step2.push(libBuild);
+  }
   if (buildPreviewScript) {
     const previewScript = parseScript(buildPreviewScript);
     const previewBuild = execa(previewScript.cmd, previewScript.flags, {
@@ -13638,6 +13663,9 @@ async function runBuildCommand(app) {
   }
   if (step2.length > 0) {
     await Promise.all(step2).then(() => {
+      if (buildLibScript) {
+        console.log(`${kleur_default.cyan("\u2713")} Built library modules`);
+      }
       if (buildPreviewScript) {
         console.log(`${kleur_default.cyan("\u2713")} Built preview (ssr) modules`);
       }
@@ -13650,7 +13678,7 @@ async function runBuildCommand(app) {
       if (typecheck) {
         console.log(`${kleur_default.cyan("\u2713")} Type checked`);
       }
-      if (!isPreviewBuild && !buildServerScript && !buildStaticScript) {
+      if (!isPreviewBuild && !buildServerScript && !buildStaticScript && !isLibraryBuild) {
         const pmRun = pmRunCmd();
         console.log(``);
         console.log(`${kleur_default.bgMagenta(" Missing an integration ")}`);
@@ -13745,7 +13773,7 @@ async function printHelp() {
   console.log(``);
 }
 function printVersion() {
-  console.log("0.0.113");
+  console.log("0.9.0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.0.113
+ * @builder.io/qwik 0.9.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -5573,7 +5573,7 @@ function assertQrl(qrl) {
     }
 }
 const emitUsedSymbol = (symbol, element) => {
-    if (!qTest && !isServer()) {
+    if (!qTest && !isServer() && typeof document === 'object') {
         document.dispatchEvent(new CustomEvent('qsymbol', {
             bubbles: false,
             detail: {
@@ -6019,7 +6019,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.0.113";
+const version = "0.9.0";
 
 /**
  * Render JSX.
