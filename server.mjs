@@ -306,25 +306,22 @@ function flattenPrefetchResources(prefetchResources) {
 }
 
 // packages/qwik/src/server/prefetch-implementation.ts
-function applyPrefetchImplementation(opts, prefetchResources) {
-  const { prefetchStrategy } = opts;
-  if (prefetchStrategy !== null) {
-    const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy?.implementation);
-    const prefetchNodes = [];
-    if (prefetchImpl.prefetchEvent === "always") {
-      prefetchUrlsEvent(prefetchNodes, prefetchResources);
-    }
-    if (prefetchImpl.linkInsert === "html-append") {
-      linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl);
-    }
-    if (prefetchImpl.linkInsert === "js-append") {
-      linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl);
-    } else if (prefetchImpl.workerFetchInsert === "always") {
-      workerFetchImplementation(prefetchNodes, prefetchResources);
-    }
-    if (prefetchNodes.length > 0) {
-      return jsx(Fragment, { children: prefetchNodes });
-    }
+function applyPrefetchImplementation(prefetchStrategy, prefetchResources) {
+  const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy?.implementation);
+  const prefetchNodes = [];
+  if (prefetchImpl.prefetchEvent === "always") {
+    prefetchUrlsEvent(prefetchNodes, prefetchResources);
+  }
+  if (prefetchImpl.linkInsert === "html-append") {
+    linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl);
+  }
+  if (prefetchImpl.linkInsert === "js-append") {
+    linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl);
+  } else if (prefetchImpl.workerFetchInsert === "always") {
+    workerFetchImplementation(prefetchNodes, prefetchResources);
+  }
+  if (prefetchNodes.length > 0) {
+    return jsx(Fragment, { children: prefetchNodes });
   }
   return null;
 }
@@ -400,6 +397,7 @@ function normalizePrefetchImplementation(input) {
   if (typeof input === "string") {
     switch (input) {
       case "link-prefetch-html": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "html-append",
           linkRel: "prefetch",
@@ -408,6 +406,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
       case "link-prefetch": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "js-append",
           linkRel: "prefetch",
@@ -416,6 +415,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
       case "link-preload-html": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "html-append",
           linkRel: "preload",
@@ -424,6 +424,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
       case "link-preload": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "js-append",
           linkRel: "preload",
@@ -432,6 +433,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
       case "link-modulepreload-html": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "html-append",
           linkRel: "modulepreload",
@@ -440,6 +442,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
       case "link-modulepreload": {
+        deprecatedWarning(input, "linkInsert");
         return {
           linkInsert: "js-append",
           linkRel: "modulepreload",
@@ -448,6 +451,7 @@ function normalizePrefetchImplementation(input) {
         };
       }
     }
+    deprecatedWarning(input, "workerFetchInsert");
     return {
       linkInsert: null,
       linkRel: null,
@@ -458,13 +462,18 @@ function normalizePrefetchImplementation(input) {
   if (input && typeof input === "object") {
     return input;
   }
-  const defaultImplementation = {
-    linkInsert: null,
-    linkRel: null,
-    workerFetchInsert: "always",
-    prefetchEvent: null
-  };
-  return defaultImplementation;
+  return PrefetchImplementationDefault;
+}
+var PrefetchImplementationDefault = {
+  linkInsert: null,
+  linkRel: null,
+  workerFetchInsert: null,
+  prefetchEvent: "always"
+};
+function deprecatedWarning(oldApi, newApi) {
+  console.warn(
+    `The Prefetch Strategy Implementation "${oldApi}" has been deprecated and will be removed in an upcoming release. Please update to use the "prefetchStrategy.implementation.${newApi}" interface.`
+  );
 }
 
 // packages/qwik/src/server/render.ts
@@ -557,7 +566,6 @@ async function renderToStream(rootNode, opts) {
   const buildBase = getBuildBase(opts);
   const resolvedManifest = resolveManifest(opts.manifest);
   await setServerPlatform(opts, resolvedManifest);
-  let prefetchResources = [];
   let snapshotResult = null;
   const injections = resolvedManifest?.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? EMPTY_OBJ)) : void 0;
@@ -576,7 +584,6 @@ async function renderToStream(rootNode, opts) {
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await _pauseFromContexts(contexts, containerState);
-      prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, qDev ? "  " : void 0);
       const children = [
         jsx2("script", {
@@ -584,8 +591,17 @@ async function renderToStream(rootNode, opts) {
           dangerouslySetInnerHTML: escapeText(jsonData)
         })
       ];
-      if (prefetchResources.length > 0) {
-        children.push(applyPrefetchImplementation(opts, prefetchResources));
+      if (opts.prefetchStrategy !== null) {
+        const prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
+        if (prefetchResources.length > 0) {
+          const prefetchImpl = applyPrefetchImplementation(
+            opts.prefetchStrategy,
+            prefetchResources
+          );
+          if (prefetchImpl) {
+            children.push(prefetchImpl);
+          }
+        }
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
       const includeMode = opts.qwikLoader?.include ?? "auto";
