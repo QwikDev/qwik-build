@@ -2563,7 +2563,7 @@
                 return symbolRef = then(symbol2, (ref => symbolRef = ref));
             }
         };
-        const resolveLazy = containerEl => symbolRef || resolve(containerEl);
+        const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
         const invokeFn = (currentCtx, beforeFn) => (...args) => {
             const fn = resolveLazy();
             return then(fn, (fn => {

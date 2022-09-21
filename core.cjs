@@ -4977,8 +4977,9 @@
             if (immutable) {
                 // If property is not declared in the target
                 // or the prop is immutable, then we dont need to subscribe
-                if (!(prop in target) || target[_IMMUTABLE]?.includes(prop))
+                if (!(prop in target) || target[_IMMUTABLE]?.includes(prop)) {
                     subscriber = null;
+                }
             }
             if (subscriber) {
                 const isA = isArray(target);
@@ -5445,7 +5446,7 @@
             }
         };
         const resolveLazy = (containerEl) => {
-            return symbolRef ? symbolRef : resolve(containerEl);
+            return symbolRef !== null ? symbolRef : resolve(containerEl);
         };
         const invokeFn = (currentCtx, beforeFn) => {
             return ((...args) => {
