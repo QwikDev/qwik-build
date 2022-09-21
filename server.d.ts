@@ -96,7 +96,7 @@ export declare interface PrefetchImplementation {
      *
      * ```
      * <script type="module">
-     *   dispatchEvent(new CustomEvent("qprefetch", { detail:{ "bundles": [...] } }))
+     *   document.dispatchEvent(new CustomEvent("qprefetch", { detail:{ "bundles": [...] } }))
      * </script>
      * ```
      *

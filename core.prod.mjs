@@ -1622,8 +1622,7 @@ const createContainerState = containerEl => {
         $hostsRendering$: void 0,
         $envData$: {},
         $elementIndex$: 0,
-        $styleIds$: new Set,
-        $mutableProps$: false
+        $styleIds$: new Set
     };
     return containerState.$subsManager$ = createSubscriptionManager(containerState), 
     containerState;
@@ -1737,7 +1736,7 @@ const _pauseFromContexts = async (allContexts, containerState) => {
             collectElementData(tryGetContext(element), collector);
         }
         for (const ctx of allContexts) {
-            if (ctx.$props$ && collectMutableProps(ctx.$element$, ctx.$props$, collector), ctx.$contexts$) {
+            if (ctx.$props$ && collectProps(ctx, collector), ctx.$contexts$) {
                 for (const item of ctx.$contexts$.values()) {
                     collectValue(item, collector, false);
                 }
@@ -1760,7 +1759,7 @@ const _pauseFromContexts = async (allContexts, containerState) => {
     };
     const getObjId = obj => {
         let suffix = "";
-        if (isMutable(obj) && (obj = obj.mut, suffix = "%"), isPromise(obj)) {
+        if (isPromise(obj)) {
             const {value: value, resolved: resolved} = getPromiseValue(obj);
             obj = value, suffix += resolved ? "~" : "_";
         }
@@ -1946,14 +1945,17 @@ const reviveNestedObjects = (obj, getObject, parser) => {
 
 const OBJECT_TRANSFORMS = {
     "!": (obj, containerState) => containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState),
-    "%": obj => mutable(obj),
     "~": obj => Promise.resolve(obj),
     _: obj => Promise.reject(obj)
 };
 
-const collectMutableProps = (el, props, collector) => {
-    const subs = getProxySubs(props);
-    subs && subs.has(el) && collectElement(el, collector);
+const collectProps = (elCtx, collector) => {
+    const parentCtx = elCtx.$parent$;
+    if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
+        const subs = getProxySubs(elCtx.$props$);
+        const el = elCtx.$element$;
+        subs && subs.has(el) && collectElement(el, collector);
+    }
 };
 
 const createCollector = containerState => ({
@@ -2483,6 +2485,8 @@ const serializeValue = (obj, getObjID, containerState) => {
     }
 };
 
+const _IMMUTABLE = Symbol("IMMUTABLE");
+
 const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || createProxy(target, containerState, flags, void 0);
 
 const createProxy = (target, containerState, flags, subs) => {
@@ -2510,9 +2514,9 @@ class ReadWriteProxyHandler {
         const invokeCtx = tryGetInvokeContext();
         const recursive = 0 != (1 & this.$flags$);
         const immutable = 0 != (2 & this.$flags$);
-        invokeCtx && (subscriber = invokeCtx.$subscriber$);
-        let value = target[prop];
-        if (isMutable(value) ? value = value.mut : immutable && (subscriber = null), subscriber) {
+        const value = target[prop];
+        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), immutable && (prop in target && !target[_IMMUTABLE]?.includes(prop) || (subscriber = null)), 
+        subscriber) {
             const isA = isArray(target);
             this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
         }
@@ -2563,15 +2567,8 @@ const fastShouldSerialize = obj => !noSerializeSet.has(obj);
 
 const noSerialize = input => (null != input && noSerializeSet.add(input), input);
 
-const mutable = v => new MutableImpl(v);
-
-class MutableImpl {
-    constructor(mut) {
-        this.mut = mut;
-    }
-}
-
-const isMutable = v => v instanceof MutableImpl;
+const mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
+v);
 
 const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
 
@@ -2768,7 +2765,8 @@ const getContext = element => {
         $props$: null,
         $vdom$: null,
         $renderQrl$: null,
-        $contexts$: null
+        $contexts$: null,
+        $parent$: null
     }), ctx;
 };
 
@@ -2805,18 +2803,10 @@ const getPropsMutator = (ctx, containerState) => {
     const manager = containerState.$subsManager$.$getLocal$(target);
     return {
         set(prop, value) {
-            let oldValue = target[prop];
-            let mut = false;
-            isMutable(oldValue) && (oldValue = oldValue.mut), containerState.$mutableProps$ ? (mut = true, 
-            isMutable(value) ? (value = value.mut, target[prop] = value) : target[prop] = mutable(value)) : (target[prop] = value, 
-            isMutable(value) && (value = value.mut, mut = true)), oldValue !== value && manager.$notifySubs$(prop);
+            const oldValue = target[prop];
+            target[prop] = value, oldValue !== value && manager.$notifySubs$(prop);
         }
     };
-};
-
-const _useMutableProps = (element, mutable) => {
-    const ctx = getWrappingContainer(element);
-    getContainerState(ctx).$mutableProps$ = mutable;
 };
 
 const inflateQrl = (qrl, elCtx) => (qrl.$capture$, qrl.$captureRef$ = qrl.$capture$.map((idx => {
@@ -2940,13 +2930,20 @@ const getSymbolHash = symbolName => {
 };
 
 const emitUsedSymbol = (symbol, element) => {
-    isServer() || "object" != typeof document || document.dispatchEvent(new CustomEvent("qsymbol", {
+    emitEvent("qsymbol", {
         bubbles: false,
         detail: {
             symbol: symbol,
             element: element,
             timestamp: performance.now()
         }
+    });
+};
+
+const emitEvent = (eventName, detail) => {
+    isServer() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
+        bubbles: false,
+        detail: detail
     }));
 };
 
@@ -2990,7 +2987,9 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
                         match = frames[start + 2].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
                     }
                 }
-                QRLcache.set(symbol, chunk);
+                QRLcache.set(symbol, chunk), emitEvent("qprefetch", {
+                    symbols: [ getSymbolHash(symbol) ]
+                });
             }
         }
     }
@@ -3160,7 +3159,7 @@ const renderSSR = async (node, opts) => {
         $contexts$: [],
         projectedChildren: void 0,
         projectedContext: void 0,
-        hostCtx: void 0,
+        hostCtx: null,
         invocationContext: void 0,
         headNodes: "html" === root ? headNodes : []
     };
@@ -3401,7 +3400,7 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
     }
     if (tagName === Virtual) {
         const elCtx = createContext(111);
-        return renderNodeVirtual(node, elCtx, void 0, ssrCtx, stream, flags, beforeClose);
+        return elCtx.$parent$ = ssrCtx.hostCtx, renderNodeVirtual(node, elCtx, void 0, ssrCtx, stream, flags, beforeClose);
     }
     if (tagName === SSRComment) {
         return void stream.write("\x3c!--" + node.props.data + "--\x3e");
@@ -3823,4 +3822,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _hW, _pauseFromContexts, _useMutableProps, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, jsx, jsx as jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };

@@ -660,7 +660,7 @@
         return doc;
     };
 
-    const emitEvent = (el, eventName, detail, bubbles) => {
+    const emitEvent$1 = (el, eventName, detail, bubbles) => {
         if (el && typeof CustomEvent === 'function') {
             el.dispatchEvent(new CustomEvent(eventName, {
                 detail,
@@ -2960,7 +2960,6 @@
             $envData$: {},
             $elementIndex$: 0,
             $styleIds$: new Set(),
-            $mutableProps$: false,
         };
         seal(containerState);
         containerState.$subsManager$ = createSubscriptionManager(containerState);
@@ -3155,7 +3154,7 @@
         }
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
         logDebug('Container resumed');
-        emitEvent(containerEl, 'qresume', undefined, true);
+        emitEvent$1(containerEl, 'qresume', undefined, true);
     };
     const pauseFromContainer = async (containerEl) => {
         const containerState = getContainerState(containerEl);
@@ -3220,7 +3219,7 @@
             }
             for (const ctx of allContexts) {
                 if (ctx.$props$) {
-                    collectMutableProps(ctx.$element$, ctx.$props$, collector);
+                    collectProps(ctx, collector);
                 }
                 if (ctx.$contexts$) {
                     for (const item of ctx.$contexts$.values()) {
@@ -3254,10 +3253,6 @@
         };
         const getObjId = (obj) => {
             let suffix = '';
-            if (isMutable(obj)) {
-                obj = obj.mut;
-                suffix = '%';
-            }
             if (isPromise(obj)) {
                 const { value, resolved } = getPromiseValue(obj);
                 obj = value;
@@ -3584,9 +3579,6 @@
         '!': (obj, containerState) => {
             return containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
         },
-        '%': (obj) => {
-            return mutable(obj);
-        },
         '~': (obj) => {
             return Promise.resolve(obj);
         },
@@ -3613,11 +3605,14 @@
         }
         return obj;
     };
-    const collectMutableProps = (el, props, collector) => {
-        const subs = getProxySubs(props);
-        if (subs && subs.has(el)) {
-            // The host element read the props
-            collectElement(el, collector);
+    const collectProps = (elCtx, collector) => {
+        const parentCtx = elCtx.$parent$;
+        if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
+            const subs = getProxySubs(elCtx.$props$);
+            const el = elCtx.$element$;
+            if (subs && subs.has(el)) {
+                collectElement(el, collector);
+            }
         }
     };
     const createCollector = (containerState) => {
@@ -4929,6 +4924,10 @@
     const QObjectRecursive = 1 << 0;
     const QObjectImmutable = 1 << 1;
     /**
+     * @internal
+     */
+    const _IMMUTABLE = Symbol('IMMUTABLE');
+    /**
      * Creates a proxy that notifies of any writes.
      */
     const getOrCreateProxy = (target, containerState, flags = 0) => {
@@ -4971,15 +4970,15 @@
             const invokeCtx = tryGetInvokeContext();
             const recursive = (this.$flags$ & QObjectRecursive) !== 0;
             const immutable = (this.$flags$ & QObjectImmutable) !== 0;
+            const value = target[prop];
             if (invokeCtx) {
                 subscriber = invokeCtx.$subscriber$;
             }
-            let value = target[prop];
-            if (isMutable(value)) {
-                value = value.mut;
-            }
-            else if (immutable) {
-                subscriber = null;
+            if (immutable) {
+                // If property is not declared in the target
+                // or the prop is immutable, then we dont need to subscribe
+                if (!(prop in target) || target[_IMMUTABLE]?.includes(prop))
+                    subscriber = null;
             }
             if (subscriber) {
                 const isA = isArray(target);
@@ -5091,9 +5090,6 @@
                         return value;
                     if (isDocument(unwrapped))
                         return value;
-                    if (isMutable(unwrapped)) {
-                        return _verifySerializable(unwrapped.mut, seen);
-                    }
                     if (isArray(unwrapped)) {
                         for (const item of unwrapped) {
                             _verifySerializable(item, seen);
@@ -5152,39 +5148,14 @@
         }
         return input;
     };
-    // <docs markdown="../readme.md#mutable">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#mutable instead)
     /**
-     * Mark property as mutable.
-     *
-     * Qwik assumes that all bindings in components are immutable by default. This is done for two
-     * reasons:
-     *
-     * 1. JSX does not allow Qwik runtime to know if a binding is static or mutable.
-     *    `<Example valueA={123} valueB={exp}>` At runtime there is no way to know if `valueA` is
-     * immutable.
-     * 2. If Qwik assumes that properties are immutable, then it can do a better job data-shaking the
-     * amount of code that needs to be serialized to the client.
-     *
-     * Because Qwik assumes that bindings are immutable by default, it needs a way for a developer to
-     * let it know that binding is mutable. `mutable()` function serves that purpose.
-     * `<Example valueA={123} valueB={mutable(exp)}>`. In this case, the Qwik runtime can correctly
-     * recognize that the `Example` props are mutable and need to be serialized.
-     *
-     * See: [Mutable Props Tutorial](http://qwik.builder.io/tutorial/props/mutable) for an example
-     *
      * @alpha
+     * @deprecated Remove it, not needed anymore
      */
-    // </docs>
     const mutable = (v) => {
-        return new MutableImpl(v);
+        console.warn('mutable() is deprecated, you can safely remove all usages of mutable() in your code');
+        return v;
     };
-    class MutableImpl {
-        constructor(mut) {
-            this.mut = mut;
-        }
-    }
     const isConnected = (sub) => {
         if (isQwikElement(sub)) {
             return !!tryGetContext(sub) || sub.isConnected;
@@ -5192,9 +5163,6 @@
         else {
             return isConnected(sub.$el$);
         }
-    };
-    const isMutable = (v) => {
-        return v instanceof MutableImpl;
     };
     /**
      * @alpha
@@ -5254,6 +5222,7 @@
                 $vdom$: null,
                 $renderQrl$: null,
                 $contexts$: null,
+                $parent$: null,
             };
         }
         return ctx;
@@ -5306,47 +5275,13 @@
         const manager = containerState.$subsManager$.$getLocal$(target);
         return {
             set(prop, value) {
-                const didSet = prop in target;
-                let oldValue = target[prop];
-                let mut = false;
-                if (isMutable(oldValue)) {
-                    oldValue = oldValue.mut;
-                }
-                if (containerState.$mutableProps$) {
-                    mut = true;
-                    if (isMutable(value)) {
-                        value = value.mut;
-                        target[prop] = value;
-                    }
-                    else {
-                        target[prop] = mutable(value);
-                    }
-                }
-                else {
-                    target[prop] = value;
-                    if (isMutable(value)) {
-                        value = value.mut;
-                        mut = true;
-                    }
-                }
+                const oldValue = target[prop];
+                target[prop] = value;
                 if (oldValue !== value) {
-                    if (qDev) {
-                        if (didSet && !mut && !isQrl(value)) {
-                            const displayName = ctx.$renderQrl$?.getSymbol() ?? ctx.$element$.localName;
-                            logError(codeToText(QError_immutableJsxProps), `If you need to change a value of a passed in prop, please wrap the prop with "mutable()" <${displayName} ${prop}={mutable(...)}>`, '\n - Component:', displayName, '\n - Prop:', prop, '\n - Old value:', oldValue, '\n - New value:', value);
-                        }
-                    }
                     manager.$notifySubs$(prop);
                 }
             },
         };
-    };
-    /**
-     * @internal
-     */
-    const _useMutableProps = (element, mutable) => {
-        const ctx = getWrappingContainer(element);
-        getContainerState(ctx).$mutableProps$ = mutable;
     };
     const inflateQrl = (qrl, elCtx) => {
         assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()', qrl);
@@ -5423,7 +5358,6 @@
     const QError_notFoundContext = 13;
     const QError_useMethodOutsideContext = 14;
     const QError_immutableProps = 17;
-    const QError_immutableJsxProps = 19;
     const QError_useInvokeContext = 20;
     const QError_containerAlreadyPaused = 21;
     const QError_canNotMountUseServerMount = 22;
@@ -5585,14 +5519,20 @@
         }
     }
     const emitUsedSymbol = (symbol, element) => {
+        emitEvent('qsymbol', {
+            bubbles: false,
+            detail: {
+                symbol,
+                element,
+                timestamp: performance.now(),
+            },
+        });
+    };
+    const emitEvent = (eventName, detail) => {
         if (!qTest && !isServer() && typeof document === 'object') {
-            document.dispatchEvent(new CustomEvent('qsymbol', {
+            document.dispatchEvent(new CustomEvent(eventName, {
                 bubbles: false,
-                detail: {
-                    symbol,
-                    element,
-                    timestamp: performance.now(),
-                },
+                detail,
             }));
         }
     };
@@ -5658,7 +5598,14 @@
                 else {
                     throw qError(QError_dynamicImportFailed, srcCode);
                 }
-                QRLcache.set(symbol, chunk);
+                if (!qDev) {
+                    // Add to cache
+                    QRLcache.set(symbol, chunk);
+                    // Emit event
+                    emitEvent('qprefetch', {
+                        symbols: [getSymbolHash(symbol)],
+                    });
+                }
             }
         }
         else {
@@ -6128,7 +6075,7 @@
             $contexts$: [],
             projectedChildren: undefined,
             projectedContext: undefined,
-            hostCtx: undefined,
+            hostCtx: null,
             invocationContext: undefined,
             headNodes: root === 'html' ? headNodes : [],
         };
@@ -6490,6 +6437,7 @@
         }
         if (tagName === Virtual) {
             const elCtx = createContext(111);
+            elCtx.$parent$ = ssrCtx.hostCtx;
             return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRComment) {
@@ -7343,9 +7291,9 @@
     exports.SSRStreamBlock = SSRStreamBlock;
     exports.SkipRender = SkipRender;
     exports.Slot = Slot;
+    exports._IMMUTABLE = _IMMUTABLE;
     exports._hW = _hW;
     exports._pauseFromContexts = _pauseFromContexts;
-    exports._useMutableProps = _useMutableProps;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
     exports.createContext = createContext$1;

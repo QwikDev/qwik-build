@@ -502,7 +502,6 @@ declare interface ContainerState {
     $envData$: Record<string, any>;
     $elementIndex$: number;
     $styleIds$: Set<string>;
-    $mutableProps$: boolean;
 }
 
 /**
@@ -930,6 +929,11 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @internal
+ */
+export declare const _IMMUTABLE: unique symbol;
+
+/**
  * Create a `____$(...)` convenience method from `___(...)`.
  *
  * It is very common for functions to take a lazy-loadable resource as a first argument. For this
@@ -1317,39 +1321,10 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare type MountFn<T> = () => ValueOrPromise<T>;
 
 /**
- * Mark property as mutable.
- *
- * Qwik assumes that all bindings in components are immutable by default. This is done for two
- * reasons:
- *
- * 1. JSX does not allow Qwik runtime to know if a binding is static or mutable.
- *    `<Example valueA={123} valueB={exp}>` At runtime there is no way to know if `valueA` is
- * immutable.
- * 2. If Qwik assumes that properties are immutable, then it can do a better job data-shaking the
- * amount of code that needs to be serialized to the client.
- *
- * Because Qwik assumes that bindings are immutable by default, it needs a way for a developer to
- * let it know that binding is mutable. `mutable()` function serves that purpose.
- * `<Example valueA={123} valueB={mutable(exp)}>`. In this case, the Qwik runtime can correctly
- * recognize that the `Example` props are mutable and need to be serialized.
- *
- * See: [Mutable Props Tutorial](http://qwik.builder.io/tutorial/props/mutable) for an example
- *
  * @alpha
+ * @deprecated Remove it, not needed anymore
  */
-export declare const mutable: <T>(v: T) => MutableWrapper<T>;
-
-/**
- * A marker object returned by `mutable()` to identify that the binding is mutable.
- *
- * @alpha
- */
-export declare interface MutableWrapper<T> {
-    /**
-     * Mutable value.
-     */
-    mut: T;
-}
+export declare const mutable: <T>(v: T) => T;
 
 /**
  * @public
@@ -1481,7 +1456,7 @@ export declare type PropFunction<T extends Function> = T extends (...args: infer
 export declare type PropsOf<COMP extends Component<any>> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : never;
 
 /**
- * Extends the defined component PROPS, adding the default ones (children and q:slot) as well as the mutable variations.
+ * Extends the defined component PROPS, adding the default ones (children and q:slot)..
  * @public
  */
 export declare type PublicProps<PROPS extends {}> = TransformProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
@@ -1503,6 +1478,7 @@ declare interface QContext {
     $scopeIds$: string[] | null;
     $vdom$: ProcessedJSXNode | null;
     $slots$: ProcessedJSXNode[] | null;
+    $parent$: QContext | null;
 }
 
 /**
@@ -2632,10 +2608,10 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-declare type TransformProp<T> = T extends PropFnInterface<infer ARGS, infer RET> ? (...args: ARGS) => ValueOrPromise<RET> : T | MutableWrapper<T>;
+declare type TransformProp<T> = T extends PropFnInterface<infer ARGS, infer RET> ? (...args: ARGS) => ValueOrPromise<RET> : T;
 
 /**
- * Transform the component PROPS adding the mutable equivalents, so `mutable()` can be used natively.
+ * Transform the component PROPS.
  * @public
  */
 declare type TransformProps<PROPS extends {}> = {
@@ -2940,11 +2916,6 @@ export declare const useMount$: <T>(first: MountFn<T>) => void;
  * @public
  */
 export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
-
-/**
- * @internal
- */
-export declare const _useMutableProps: (element: Element, mutable: boolean) => void;
 
 /**
  * Register a listener on the current component's host element.
