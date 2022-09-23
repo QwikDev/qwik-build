@@ -46,7 +46,7 @@ var printElement = el => {
   const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
   return {
     tagName: el.tagName,
-    renderQRL: ctx?.$renderQrl$?.getSymbol(),
+    renderQRL: ctx?.$componentQrl$?.getSymbol(),
     element: isServer ? void 0 : el,
     ctx: isServer ? void 0 : ctx
   };

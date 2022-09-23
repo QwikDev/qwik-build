@@ -363,7 +363,7 @@ const isServer = () => {
  *
  * For example, these function calls are equivalent:
  *
- * - `component$(() => {...})` is same as `onRender($(() => {...}))`
+ * - `component$(() => {...})` is same as `component($(() => {...}))`
  *
  * ```tsx
  * export function myApi(callback: QRL<() => void>): void {
@@ -1540,12 +1540,12 @@ const executeComponent = (rctx, elCtx) => {
     elCtx.$mounted$ = true;
     elCtx.$slots$ = [];
     const hostElement = elCtx.$element$;
-    const onRenderQRL = elCtx.$renderQrl$;
+    const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
     const newCtx = pushRenderContext(rctx, elCtx);
     const invocatinContext = newInvokeContext(hostElement, undefined, RenderEvent);
     const waitOn = (invocatinContext.$waitOn$ = []);
-    assertDefined(onRenderQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
+    assertDefined(componentQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
     assertDefined(props, `render: host element to render must has defined props`, elCtx);
     // Set component context
     newCtx.$cmpCtx$ = elCtx;
@@ -1553,9 +1553,9 @@ const executeComponent = (rctx, elCtx) => {
     invocatinContext.$subscriber$ = hostElement;
     invocatinContext.$renderCtx$ = rctx;
     // Resolve render function
-    onRenderQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
-    const onRenderFn = onRenderQRL.getFn(invocatinContext);
-    return safeCall(() => onRenderFn(props), (jsxNode) => {
+    componentQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
+    const componentFn = componentQRL.getFn(invocatinContext);
+    return safeCall(() => componentFn(props), (jsxNode) => {
         elCtx.$attachedListeners$ = false;
         if (waitOn.length > 0) {
             return Promise.all(waitOn).then(() => {
@@ -2142,10 +2142,10 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
     }
     let needsRender = setComponentProps$1(elCtx, rctx, props);
     // TODO: review this corner case
-    if (!needsRender && !elCtx.$renderQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
+    if (!needsRender && !elCtx.$componentQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
         setQId(rctx, elCtx);
-        elCtx.$renderQrl$ = props[OnRenderProp];
-        assertQrl(elCtx.$renderQrl$);
+        elCtx.$componentQrl$ = props[OnRenderProp];
+        assertQrl(elCtx.$componentQrl$);
         needsRender = true;
     }
     // Rendering of children of component is more complicated,
@@ -2292,7 +2292,7 @@ const createElm = (rctx, vnode, flags) => {
         setComponentProps$1(elCtx, rctx, props);
         setQId(rctx, elCtx);
         // Run mount hook
-        elCtx.$renderQrl$ = renderQRL;
+        elCtx.$componentQrl$ = renderQRL;
         return then(renderComponent(rctx, elCtx, flags), () => {
             let children = vnode.$children$;
             if (children.length === 0) {
@@ -2700,7 +2700,7 @@ const notifyRender = (hostElement, containerState) => {
         resumeIfNeeded(containerState.$containerEl$);
     }
     const ctx = getContext(hostElement);
-    assertDefined(ctx.$renderQrl$, `render: notified host element must have a defined $renderQrl$`, ctx);
+    assertDefined(ctx.$componentQrl$, `render: notified host element must have a defined $renderQrl$`, ctx);
     if (ctx.$dirty$) {
         return;
     }
@@ -2767,7 +2767,7 @@ const renderMarked = async (containerState) => {
     for (const el of renderingQueue) {
         if (!staticCtx.$hostElements$.has(el)) {
             const elCtx = getContext(el);
-            if (elCtx.$renderQrl$) {
+            if (elCtx.$componentQrl$) {
                 assertTrue(el.isConnected, 'element must be connected to the dom');
                 staticCtx.$roots$.push(elCtx);
                 try {
@@ -3137,7 +3137,7 @@ const resumeContainer = (containerEl) => {
             ctx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
             ctx.$mounted$ = true;
             ctx.$props$ = getObject(props);
-            ctx.$renderQrl$ = getObject(renderQrl);
+            ctx.$componentQrl$ = getObject(renderQrl);
         }
     }
     directSetAttribute(containerEl, QContainerAttr, 'resumed');
@@ -3394,7 +3394,7 @@ const _pauseFromContexts = async (allContexts, containerState) => {
         const props = ctx.$props$;
         const contexts = ctx.$contexts$;
         const watches = ctx.$watches$;
-        const renderQrl = ctx.$renderQrl$;
+        const renderQrl = ctx.$componentQrl$;
         const seq = ctx.$seq$;
         const metaValue = {};
         const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
@@ -3634,8 +3634,8 @@ const collectElementData = (ctx, collector) => {
     if (ctx.$props$) {
         collectValue(ctx.$props$, collector, false);
     }
-    if (ctx.$renderQrl$) {
-        collectValue(ctx.$renderQrl$, collector, false);
+    if (ctx.$componentQrl$) {
+        collectValue(ctx.$componentQrl$, collector, false);
     }
     if (ctx.$seq$) {
         for (const obj of ctx.$seq$) {
@@ -5209,7 +5209,7 @@ const getContext = (element) => {
             $appendStyles$: null,
             $props$: null,
             $vdom$: null,
-            $renderQrl$: null,
+            $componentQrl$: null,
             $contexts$: null,
             $parent$: null,
         };
@@ -5222,10 +5222,10 @@ const cleanupContext = (ctx, subsManager) => {
         subsManager.$clearSub$(watch);
         destroyWatch(watch);
     });
-    if (ctx.$renderQrl$) {
+    if (ctx.$componentQrl$) {
         subsManager.$clearSub$(el);
     }
-    ctx.$renderQrl$ = null;
+    ctx.$componentQrl$ = null;
     ctx.$seq$ = null;
     ctx.$watches$ = null;
     ctx.$dirty$ = false;
@@ -5249,7 +5249,7 @@ const normalizeOnProp = (prop) => {
     else {
         prop = prop.toLowerCase();
     }
-    return scope + ":" + prop;
+    return scope + ':' + prop;
 };
 const createProps = (target, containerState) => {
     return createProxy(target, containerState, QObjectImmutable);
@@ -5274,12 +5274,12 @@ const getPropsMutator = (ctx, containerState) => {
 };
 const inflateQrl = (qrl, elCtx) => {
     assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()', qrl);
-    return qrl.$captureRef$ = qrl.$capture$.map((idx) => {
+    return (qrl.$captureRef$ = qrl.$capture$.map((idx) => {
         const int = parseInt(idx, 10);
         const obj = elCtx.$refMap$[int];
         assertTrue(elCtx.$refMap$.length > int, 'out of bounds inflate access', idx);
         return obj;
-    });
+    }));
 };
 
 const STYLE = qDev
@@ -5330,7 +5330,7 @@ const printElement = (el) => {
     const isServer = /*#__PURE__*/ (() => typeof process !== 'undefined' && !!process.versions && !!process.versions.node)();
     return {
         tagName: el.tagName,
-        renderQRL: ctx?.$renderQrl$?.getSymbol(),
+        renderQRL: ctx?.$componentQrl$?.getSymbol(),
         element: isServer ? undefined : el,
         ctx: isServer ? undefined : ctx,
     };
@@ -5842,15 +5842,15 @@ const $ = (expression) => {
  * @public
  */
 // </docs>
-const componentQrl = (onRenderQrl) => {
+const componentQrl = (componentQrl) => {
     // Return a QComponent Factory function.
     function QwikComponent(props, key) {
-        assertQrl(onRenderQrl);
-        const hash = qTest ? 'sX' : onRenderQrl.$hash$;
+        assertQrl(componentQrl);
+        const hash = qTest ? 'sX' : componentQrl.$hash$;
         const finalKey = hash + ':' + (key ? key : '');
-        return jsx(Virtual, { [OnRenderProp]: onRenderQrl, ...props }, finalKey);
+        return jsx(Virtual, { [OnRenderProp]: componentQrl, ...props }, finalKey);
     }
-    QwikComponent[SERIALIZABLE_STATE] = [onRenderQrl];
+    QwikComponent[SERIALIZABLE_STATE] = [componentQrl];
     return QwikComponent;
 };
 const isQwikComponent = (component) => {
@@ -6128,7 +6128,7 @@ const renderNodeVirtual = (node, elCtx, extraNodes, ssrCtx, stream, flags, befor
     const props = node.props;
     const renderQrl = props[OnRenderProp];
     if (renderQrl) {
-        elCtx.$renderQrl$ = renderQrl;
+        elCtx.$componentQrl$ = renderQrl;
         return renderSSRComponent(ssrCtx, stream, elCtx, node, flags, beforeClose);
     }
     let virtualComment = '<!--qv' + renderVirtualAttributes(props);

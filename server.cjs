@@ -742,7 +742,7 @@ var escapeText = (str) => {
 function collectRenderSymbols(renderSymbols, elements) {
   var _a;
   for (const ctx of elements) {
-    const symbol = (_a = ctx.$renderQrl$) == null ? void 0 : _a.getSymbol();
+    const symbol = (_a = ctx.$componentQrl$) == null ? void 0 : _a.getSymbol();
     if (symbol && !renderSymbols.includes(symbol)) {
       renderSymbols.push(symbol);
     }

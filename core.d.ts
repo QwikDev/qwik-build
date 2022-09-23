@@ -484,7 +484,7 @@ declare type ComponentChildren<PROPS extends {}> = PROPS extends {
  *
  * @public
  */
-export declare const componentQrl: <PROPS extends {}>(onRenderQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
+export declare const componentQrl: <PROPS extends {}>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
 /**
  * @alpha
@@ -945,7 +945,7 @@ export declare const _IMMUTABLE: unique symbol;
  *
  * For example, these function calls are equivalent:
  *
- * - `component$(() => {...})` is same as `onRender($(() => {...}))`
+ * - `component$(() => {...})` is same as `component($(() => {...}))`
  *
  * ```tsx
  * export function myApi(callback: QRL<() => void>): void {
@@ -1469,7 +1469,7 @@ declare interface QContext {
     $id$: string;
     $mounted$: boolean;
     $props$: Record<string, any> | null;
-    $renderQrl$: QRLInternal<OnRenderFn<any>> | null;
+    $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
     li: Record<string, QRLInternal<any>[]>;
     $seq$: any[] | null;
     $watches$: SubscriberDescriptor[] | null;

@@ -610,15 +610,15 @@
     const executeComponent = (rctx, elCtx) => {
         elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
         const hostElement = elCtx.$element$;
-        const onRenderQRL = elCtx.$renderQrl$;
+        const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
         const newCtx = pushRenderContext(rctx, elCtx);
         const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
         const waitOn = invocatinContext.$waitOn$ = [];
         newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rctx, 
-        onRenderQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
-        const onRenderFn = onRenderQRL.getFn(invocatinContext);
-        return safeCall((() => onRenderFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
+        componentQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
+        const componentFn = componentQRL.getFn(invocatinContext);
+        return safeCall((() => componentFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
         waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
             node: jsxNode,
             rctx: newCtx
@@ -971,8 +971,8 @@
             return smartUpdateChildren(rctx, oldVnode, newVnode, "root", flags);
         }
         let needsRender = setComponentProps$1(elCtx, rctx, props);
-        return needsRender || elCtx.$renderQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rctx, elCtx), 
-        elCtx.$renderQrl$ = props["q:renderFn"], elCtx.$renderQrl$, needsRender = true), 
+        return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rctx, elCtx), 
+        elCtx.$componentQrl$ = props["q:renderFn"], elCtx.$componentQrl$, needsRender = true), 
         needsRender ? then(renderComponent(rctx, elCtx, flags), (() => renderContentProjection(rctx, elCtx, newVnode, flags))) : renderContentProjection(rctx, elCtx, newVnode, flags);
     };
     const renderContentProjection = (rctx, hostCtx, vnode, flags) => {
@@ -1080,7 +1080,7 @@
         if (isComponent) {
             setKey(elm, vnode.$key$);
             const renderQRL = props["q:renderFn"];
-            return setComponentProps$1(elCtx, rctx, props), setQId(rctx, elCtx), elCtx.$renderQrl$ = renderQRL, 
+            return setComponentProps$1(elCtx, rctx, props), setQId(rctx, elCtx), elCtx.$componentQrl$ = renderQRL, 
             then(renderComponent(rctx, elCtx, flags), (() => {
                 let children = vnode.$children$;
                 if (0 === children.length) {
@@ -1341,7 +1341,7 @@
         for (const el of renderingQueue) {
             if (!staticCtx.$hostElements$.has(el)) {
                 const elCtx = getContext(el);
-                if (elCtx.$renderQrl$) {
+                if (elCtx.$componentQrl$) {
                     el.isConnected, staticCtx.$roots$.push(elCtx);
                     try {
                         await renderComponent(ctx, elCtx, getFlags(el.parentElement));
@@ -1475,7 +1475,7 @@
                                         const server = isServer();
                                         server || resumeIfNeeded(containerState.$containerEl$);
                                         const ctx = getContext(hostElement);
-                                        if (ctx.$renderQrl$, !ctx.$dirty$) {
+                                        if (ctx.$componentQrl$, !ctx.$dirty$) {
                                             if (ctx.$dirty$ = true, void 0 !== containerState.$hostsRendering$) {
                                                 containerState.$renderPromise$, containerState.$hostsStaging$.add(hostElement);
                                             } else {
@@ -1678,7 +1678,7 @@
             const props = ctx.$props$;
             const contexts = ctx.$contexts$;
             const watches = ctx.$watches$;
-            const renderQrl = ctx.$renderQrl$;
+            const renderQrl = ctx.$componentQrl$;
             const seq = ctx.$seq$;
             const metaValue = {};
             const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
@@ -1785,7 +1785,7 @@
         ctx && (collector.$elements$.push(el), collectElementData(ctx, collector));
     };
     const collectElementData = (ctx, collector) => {
-        if (ctx.$props$ && collectValue(ctx.$props$, collector, false), ctx.$renderQrl$ && collectValue(ctx.$renderQrl$, collector, false), 
+        if (ctx.$props$ && collectValue(ctx.$props$, collector, false), ctx.$componentQrl$ && collectValue(ctx.$componentQrl$, collector, false), 
         ctx.$seq$) {
             for (const obj of ctx.$seq$) {
                 collectValue(obj, collector, false);
@@ -2421,7 +2421,7 @@
                     const [props, renderQrl] = host.split(" ");
                     const styleIds = el.getAttribute("q:sstyle");
                     ctx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, ctx.$mounted$ = true, ctx.$props$ = getObject(props), 
-                    ctx.$renderQrl$ = getObject(renderQrl);
+                    ctx.$componentQrl$ = getObject(renderQrl);
                 }
             }
             var el;
@@ -2474,7 +2474,7 @@
             $appendStyles$: null,
             $props$: null,
             $vdom$: null,
-            $renderQrl$: null,
+            $componentQrl$: null,
             $contexts$: null,
             $parent$: null
         }), ctx;
@@ -2483,8 +2483,8 @@
         const el = ctx.$element$;
         ctx.$watches$?.forEach((watch => {
             subsManager.$clearSub$(watch), destroyWatch(watch);
-        })), ctx.$renderQrl$ && subsManager.$clearSub$(el), ctx.$renderQrl$ = null, ctx.$seq$ = null, 
-        ctx.$watches$ = null, ctx.$dirty$ = false, el._qc_ = void 0;
+        })), ctx.$componentQrl$ && subsManager.$clearSub$(el), ctx.$componentQrl$ = null, 
+        ctx.$seq$ = null, ctx.$watches$ = null, ctx.$dirty$ = false, el._qc_ = void 0;
     };
     const PREFIXES = [ "on", "window:on", "document:on" ];
     const SCOPED = [ "on", "on-window", "on-document" ];
@@ -2731,15 +2731,15 @@
         return -1 === index ? (array.push(obj), array.length - 1) : index;
     };
     const $ = expression => ((symbol, lexicalScopeCapture = EMPTY_ARRAY) => createQRL("/runtimeQRL", "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null))(expression);
-    const componentQrl = onRenderQrl => {
+    const componentQrl = componentQrl => {
         function QwikComponent(props, key) {
-            const hash = onRenderQrl.$hash$;
+            const hash = componentQrl.$hash$;
             return jsx(Virtual, {
-                "q:renderFn": onRenderQrl,
+                "q:renderFn": componentQrl,
                 ...props
             }, hash + ":" + (key || ""));
         }
-        return QwikComponent[SERIALIZABLE_STATE] = [ onRenderQrl ], QwikComponent;
+        return QwikComponent[SERIALIZABLE_STATE] = [ componentQrl ], QwikComponent;
     };
     const isQwikComponent = component => "function" == typeof component && void 0 !== component[SERIALIZABLE_STATE];
     const flattenArray = (array, dst) => {
@@ -2753,7 +2753,7 @@
         const props = node.props;
         const renderQrl = props["q:renderFn"];
         if (renderQrl) {
-            return elCtx.$renderQrl$ = renderQrl, renderSSRComponent(ssrCtx, stream, elCtx, node, flags, beforeClose);
+            return elCtx.$componentQrl$ = renderQrl, renderSSRComponent(ssrCtx, stream, elCtx, node, flags, beforeClose);
         }
         let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
         const isSlot = "q:s" in props;

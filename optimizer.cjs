@@ -77,7 +77,7 @@ globalThis.qwikOptimizer = function(module) {
     const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
     return {
       tagName: el.tagName,
-      renderQRL: null == (_a = null == ctx ? void 0 : ctx.$renderQrl$) ? void 0 : _a.getSymbol(),
+      renderQRL: null == (_a = null == ctx ? void 0 : ctx.$componentQrl$) ? void 0 : _a.getSymbol(),
       element: isServer ? void 0 : el,
       ctx: isServer ? void 0 : ctx
     };
