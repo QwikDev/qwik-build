@@ -1647,7 +1647,7 @@ declare interface QRLInternalMethods<TYPE> {
     getSymbol(): string;
     getHash(): string;
     getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer Return ? (...args: ARGS) => ValueOrPromise<Return> : any;
-    $setContainer$(containerEl: Element): void;
+    $setContainer$(containerEl: Element | undefined): void;
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 

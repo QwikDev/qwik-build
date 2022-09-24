@@ -168,13 +168,16 @@
         }
         return false;
     };
-    const setEvent = (listenerMap, prop, input) => {
+    const setEvent = (listenerMap, prop, input, containerEl) => {
         prop.endsWith("$");
-        const qrls = isArray(input) ? input.map(ensureQrl) : [ ensureQrl(input) ];
+        const qrls = isArray(input) ? input.map((i => ensureQrl(i, containerEl))) : [ ensureQrl(input, containerEl) ];
         return prop = normalizeOnProp(prop.slice(0, -1)), addQRLListener(listenerMap, prop, qrls), 
         prop;
     };
-    const ensureQrl = value => isQrl(value) ? value : $(value);
+    const ensureQrl = (value, containerEl) => {
+        const qrl = isQrl(value) ? value : $(value);
+        return qrl.$setContainer$(containerEl), qrl;
+    };
     const getDomListeners = (ctx, containerEl) => {
         const attributes = ctx.$element$.attributes;
         const listeners = {};
@@ -1213,7 +1216,7 @@
                 continue;
             }
             if (isOnProp(key)) {
-                setEvent(listenersMap, key, newValue);
+                setEvent(listenersMap, key, newValue, staticCtx.$containerState$.$containerEl$);
                 continue;
             }
             const exception = PROP_HANDLER_MAP[key];
@@ -1250,7 +1253,7 @@
                 continue;
             }
             if (isOnProp(key)) {
-                addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue));
+                addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue, rctx.$containerState$.$containerEl$));
                 continue;
             }
             const exception = PROP_HANDLER_MAP[key];
@@ -2901,7 +2904,7 @@
                         continue;
                     }
                     if (isOnProp(prop)) {
-                        setEvent(elCtx.li, prop, value);
+                        setEvent(elCtx.li, prop, value, void 0);
                         continue;
                     }
                     const attrName = processPropKey(prop);

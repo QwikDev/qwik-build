@@ -439,15 +439,19 @@
         }
         return false;
     };
-    const setEvent = (listenerMap, prop, input) => {
+    const setEvent = (listenerMap, prop, input, containerEl) => {
         assertTrue(prop.endsWith('$'), 'render: event property does not end with $', prop);
-        const qrls = isArray(input) ? input.map(ensureQrl) : [ensureQrl(input)];
+        const qrls = isArray(input)
+            ? input.map((i) => ensureQrl(i, containerEl))
+            : [ensureQrl(input, containerEl)];
         prop = normalizeOnProp(prop.slice(0, -1));
         addQRLListener(listenerMap, prop, qrls);
         return prop;
     };
-    const ensureQrl = (value) => {
-        return isQrl(value) ? value : $(value);
+    const ensureQrl = (value, containerEl) => {
+        const qrl = isQrl(value) ? value : $(value);
+        qrl.$setContainer$(containerEl);
+        return qrl;
     };
     const getDomListeners = (ctx, containerEl) => {
         const attributes = ctx.$element$.attributes;
@@ -2488,7 +2492,7 @@
                 continue;
             }
             if (isOnProp(key)) {
-                setEvent(listenersMap, key, newValue);
+                setEvent(listenersMap, key, newValue, staticCtx.$containerState$.$containerEl$);
                 continue;
             }
             // Check if its an exception
@@ -2550,7 +2554,7 @@
                 continue;
             }
             if (isOnProp(key)) {
-                addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue));
+                addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue, rctx.$containerState$.$containerEl$));
                 continue;
             }
             // Check if its an exception
@@ -6202,7 +6206,7 @@
                 continue;
             }
             if (isOnProp(prop)) {
-                setEvent(elCtx.li, prop, value);
+                setEvent(elCtx.li, prop, value, undefined);
                 continue;
             }
             const attrName = processPropKey(prop);
