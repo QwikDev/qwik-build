@@ -1331,34 +1331,37 @@
         notifyWatch(watch, getContainerState(getWrappingContainer(watch.$el$)));
     };
     const renderMarked = async containerState => {
-        const hostsRendering = containerState.$hostsRendering$ = new Set(containerState.$hostsNext$);
-        containerState.$hostsNext$.clear(), await executeWatchesBefore(containerState), 
-        containerState.$hostsStaging$.forEach((host => {
-            hostsRendering.add(host);
-        })), containerState.$hostsStaging$.clear();
         const doc = getDocument(containerState.$containerEl$);
-        const renderingQueue = Array.from(hostsRendering);
-        sortNodes(renderingQueue);
-        const ctx = createRenderContext(doc, containerState);
-        const staticCtx = ctx.$static$;
-        for (const el of renderingQueue) {
-            if (!staticCtx.$hostElements$.has(el)) {
-                const elCtx = getContext(el);
-                if (elCtx.$componentQrl$) {
-                    el.isConnected, staticCtx.$roots$.push(elCtx);
-                    try {
-                        await renderComponent(ctx, elCtx, getFlags(el.parentElement));
-                    } catch (err) {
-                        logError(err);
+        try {
+            const ctx = createRenderContext(doc, containerState);
+            const staticCtx = ctx.$static$;
+            const hostsRendering = containerState.$hostsRendering$ = new Set(containerState.$hostsNext$);
+            containerState.$hostsNext$.clear(), await executeWatchesBefore(containerState), 
+            containerState.$hostsStaging$.forEach((host => {
+                hostsRendering.add(host);
+            })), containerState.$hostsStaging$.clear();
+            const renderingQueue = Array.from(hostsRendering);
+            sortNodes(renderingQueue);
+            for (const el of renderingQueue) {
+                if (!staticCtx.$hostElements$.has(el)) {
+                    const elCtx = getContext(el);
+                    if (elCtx.$componentQrl$) {
+                        el.isConnected, staticCtx.$roots$.push(elCtx);
+                        try {
+                            await renderComponent(ctx, elCtx, getFlags(el.parentElement));
+                        } catch (err) {}
                     }
                 }
             }
-        }
-        return staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? void postRendering(containerState, staticCtx) : getPlatform().raf((() => {
-            (({$static$: ctx}) => {
+            if (staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length) {
+                return void await postRendering(containerState, staticCtx);
+            }
+            await getPlatform().raf((() => ((({$static$: ctx}) => {
                 executeDOMRender(ctx);
-            })(ctx), postRendering(containerState, staticCtx);
-        }));
+            })(ctx), postRendering(containerState, staticCtx))));
+        } catch (err) {
+            logError(err);
+        }
     };
     const getFlags = el => {
         let flags = 0;
@@ -3029,9 +3032,10 @@
                     currentIndex === index ? stream.write(chunk) : buffer.push(chunk);
                 }
             } : stream, flags);
-            return isPromise(rendered) || prevPromise ? then(rendered, (() => then(prevPromise, (() => {
+            const next = () => {
                 currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
-            })))) : void currentIndex++;
+            };
+            return isPromise(rendered) && prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : isPromise(rendered) ? rendered.then(next) : prevPromise ? prevPromise.then(next) : void 0;
         }), void 0);
     }
     const flatVirtualChildren = (children, ssrCtx) => {

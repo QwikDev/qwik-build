@@ -1505,7 +1505,9 @@ const handleError = (err, hostElement, rctx) => {
         if (!isServer() && isVirtualElement(hostElement)) {
             getContext(hostElement).$vdom$ = null;
             const errorDiv = document.createElement('errored-host');
-            errorDiv.props = { error: err };
+            if (err && err instanceof Error) {
+                errorDiv.props = { error: err };
+            }
             errorDiv.setAttribute('q:key', '_error_');
             errorDiv.append(...hostElement.childNodes);
             hostElement.appendChild(errorDiv);
@@ -2756,57 +2758,53 @@ const _hW = () => {
     notifyWatch(watch, getContainerState(getWrappingContainer(watch.$el$)));
 };
 const renderMarked = async (containerState) => {
-    const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
-    containerState.$hostsNext$.clear();
-    await executeWatchesBefore(containerState);
-    containerState.$hostsStaging$.forEach((host) => {
-        hostsRendering.add(host);
-    });
-    containerState.$hostsStaging$.clear();
     const doc = getDocument(containerState.$containerEl$);
-    const renderingQueue = Array.from(hostsRendering);
-    sortNodes(renderingQueue);
-    const ctx = createRenderContext(doc, containerState);
-    const staticCtx = ctx.$static$;
-    for (const el of renderingQueue) {
-        if (!staticCtx.$hostElements$.has(el)) {
-            const elCtx = getContext(el);
-            if (elCtx.$componentQrl$) {
-                assertTrue(el.isConnected, 'element must be connected to the dom');
-                staticCtx.$roots$.push(elCtx);
-                try {
-                    await renderComponent(ctx, elCtx, getFlags(el.parentElement));
-                }
-                catch (err) {
-                    logError(err);
-                    if (qDev) {
-                        if (err && err instanceof Error) {
-                            doc.dispatchEvent(new CustomEvent('qerror', {
-                                bubbles: true,
-                                detail: {
-                                    error: err,
-                                },
-                            }));
+    try {
+        const ctx = createRenderContext(doc, containerState);
+        const staticCtx = ctx.$static$;
+        const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
+        containerState.$hostsNext$.clear();
+        await executeWatchesBefore(containerState);
+        containerState.$hostsStaging$.forEach((host) => {
+            hostsRendering.add(host);
+        });
+        containerState.$hostsStaging$.clear();
+        const renderingQueue = Array.from(hostsRendering);
+        sortNodes(renderingQueue);
+        for (const el of renderingQueue) {
+            if (!staticCtx.$hostElements$.has(el)) {
+                const elCtx = getContext(el);
+                if (elCtx.$componentQrl$) {
+                    assertTrue(el.isConnected, 'element must be connected to the dom');
+                    staticCtx.$roots$.push(elCtx);
+                    try {
+                        await renderComponent(ctx, elCtx, getFlags(el.parentElement));
+                    }
+                    catch (err) {
+                        if (qDev) {
+                            throw err;
                         }
                     }
                 }
             }
         }
+        // Add post operations
+        staticCtx.$operations$.push(...staticCtx.$postOperations$);
+        // Early exist, no dom operations
+        if (staticCtx.$operations$.length === 0) {
+            printRenderStats(staticCtx);
+            await postRendering(containerState, staticCtx);
+            return;
+        }
+        await getPlatform().raf(() => {
+            executeContextWithSlots(ctx);
+            printRenderStats(staticCtx);
+            return postRendering(containerState, staticCtx);
+        });
     }
-    // Add post operations
-    staticCtx.$operations$.push(...staticCtx.$postOperations$);
-    // Early exist, no dom operations
-    if (staticCtx.$operations$.length === 0) {
-        printRenderStats(staticCtx);
-        postRendering(containerState, staticCtx);
-        return;
+    catch (err) {
+        logError(err);
     }
-    return getPlatform().raf(() => {
-        executeContextWithSlots(ctx);
-        printRenderStats(staticCtx);
-        postRendering(containerState, staticCtx);
-        return;
-    });
 };
 const getFlags = (el) => {
     let flags = 0;
@@ -6017,16 +6015,6 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
     }
     catch (err) {
         logError(err);
-        if (qDev && !qTest) {
-            if (err && err instanceof Error) {
-                doc.dispatchEvent(new CustomEvent('qerror', {
-                    bubbles: true,
-                    detail: {
-                        error: err,
-                    },
-                }));
-            }
-        }
     }
     staticCtx.$operations$.push(...staticCtx.$postOperations$);
     executeDOMRender(staticCtx);
@@ -6495,18 +6483,22 @@ function walkChildren(children, ssrContext, stream, flags) {
             }
             : stream;
         const rendered = processData(child, ssrContext, localStream, flags);
-        if (isPromise(rendered) || prevPromise) {
-            return then(rendered, () => {
-                return then(prevPromise, () => {
-                    currentIndex++;
-                    if (buffers.length > currentIndex) {
-                        buffers[currentIndex].forEach((chunk) => stream.write(chunk));
-                    }
-                });
-            });
+        const next = () => {
+            currentIndex++;
+            if (buffers.length > currentIndex) {
+                buffers[currentIndex].forEach((chunk) => stream.write(chunk));
+            }
+        };
+        if (isPromise(rendered) && prevPromise) {
+            return Promise.all([rendered, prevPromise]).then(next);
+        }
+        else if (isPromise(rendered)) {
+            return rendered.then(next);
+        }
+        else if (prevPromise) {
+            return prevPromise.then(next);
         }
         else {
-            currentIndex++;
             return undefined;
         }
     }, undefined);
