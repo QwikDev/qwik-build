@@ -32,6 +32,11 @@ export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 /**
  * @alpha
  */
+declare type EmitMode = 'dev' | 'prod' | 'lib';
+
+/**
+ * @alpha
+ */
 export declare type EntryStrategy = InlineEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /**
@@ -468,7 +473,7 @@ export declare interface TransformOptions {
     sourceMaps?: boolean;
     transpile?: boolean;
     explicitExtensions?: boolean;
-    dev?: boolean;
+    mode?: EmitMode;
     scope?: string;
 }
 

@@ -17,6 +17,8 @@ var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
 
 var qTest = true === globalThis.qTest;
 
+var qRuntimeQrl = true === globalThis.qRuntimeQrl;
+
 var isElement = value => 1 === value.nodeType;
 
 var Q_CTX = "_qc_";
@@ -660,7 +662,7 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       minify: fsOpts.minify,
       sourceMaps: fsOpts.sourceMaps,
       transpile: fsOpts.transpile,
-      dev: fsOpts.dev,
+      mode: fsOpts.mode,
       scope: fsOpts.scope,
       input: input
     };
@@ -675,7 +677,7 @@ var convertOptions = opts => {
     sourceMaps: false,
     transpile: false,
     explicitExtensions: false,
-    dev: true,
+    mode: "lib",
     manualChunks: void 0,
     scope: void 0,
     stripExports: void 0
@@ -1011,6 +1013,7 @@ function createPlugin(optimizerOptions = {}) {
       vendorRoots.length > 0 && log("vendorRoots", vendorRoots);
       log("transformedOutput.clear()");
       transformedOutputs.clear();
+      const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
       const transformOpts = {
         srcDir: srcDir,
         vendorRoots: vendorRoots,
@@ -1018,7 +1021,7 @@ function createPlugin(optimizerOptions = {}) {
         minify: "simplify",
         transpile: true,
         explicitExtensions: true,
-        dev: "development" === opts.buildMode,
+        mode: mode,
         scope: opts.scope ? opts.scope : void 0
       };
       const result = await optimizer.transformFs(transformOpts);
@@ -1144,6 +1147,7 @@ function createPlugin(optimizerOptions = {}) {
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
       filePath = normalizePath(filePath);
       const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
+      const mode = "development" === opts.buildMode ? "dev" : "prod";
       const newOutput = optimizer.transformModulesSync({
         input: [ {
           code: code,
@@ -1155,7 +1159,7 @@ function createPlugin(optimizerOptions = {}) {
         transpile: true,
         explicitExtensions: true,
         srcDir: srcDir,
-        dev: "development" === opts.buildMode,
+        mode: mode,
         scope: opts.scope ? opts.scope : void 0
       });
       diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
@@ -1306,6 +1310,8 @@ var QWIK_CORE_ID = "@builder.io/qwik";
 var QWIK_BUILD_ID = "@builder.io/qwik/build";
 
 var QWIK_JSX_RUNTIME_ID = "@builder.io/qwik/jsx-runtime";
+
+var QWIK_JSX_DEV_RUNTIME_ID = "@builder.io/qwik/jsx-dev-runtime";
 
 var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
 
@@ -1791,7 +1797,7 @@ var QWIK_LOADER_DEFAULT_MINIFIED = '(()=>{function e(e){return"object"==typeof e
 
 var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    function findModule(module) {\n        return Object.values(module).find(isModule) || module;\n    }\n    function isModule(module) {\n        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];\n    }\n    ((doc, hasInitialized) => {\n        const win = window;\n        const broadcast = (infix, type, ev) => {\n            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n            doc.querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));\n        };\n        const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n            detail: detail\n        });\n        const error = msg => {\n            throw new Error("QWIK " + msg);\n        };\n        const qrlResolver = (element, qrl) => {\n            element = element.closest("[q\\\\:container]");\n            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));\n        };\n        const dispatch = async (element, onPrefix, eventName, ev) => {\n            var _a;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const attrName = "on" + onPrefix + ":" + eventName;\n            const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];\n            if (qrls) {\n                for (const q of qrls) {\n                    await q.getFn([ element, ev ], (() => element.isConnected))(ev, element);\n                }\n                return;\n            }\n            const attrValue = element.getAttribute(attrName);\n            if (attrValue) {\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = qrlResolver(element, qrl);\n                    if (url) {\n                        const symbolName = getSymbolName(url);\n                        const handler = (win[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);\n                        const previousCtx = doc.__q_context__;\n                        if (element.isConnected) {\n                            try {\n                                doc.__q_context__ = [ element, ev, url ];\n                                await handler(ev, element);\n                            } finally {\n                                doc.__q_context__ = previousCtx;\n                                doc.dispatchEvent(createEvent("qsymbol", {\n                                    symbol: symbolName,\n                                    element: element\n                                }));\n                            }\n                        }\n                    }\n                }\n            }\n        };\n        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n        const processDocumentEvent = async ev => {\n            let element = ev.target;\n            broadcast("-document", ev.type, ev);\n            while (element && element.getAttribute) {\n                await dispatch(element, "", ev.type, ev);\n                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev.type, ev);\n        };\n        const processReadyStateChange = () => {\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                broadcast("", "qinit", createEvent("qinit"));\n                const results = doc.querySelectorAll("[on\\\\:qvisible]");\n                if (results.length > 0) {\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", "qvisible", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const events =  new Set;\n        const push = eventNames => {\n            for (const eventName of eventNames) {\n                if (!events.has(eventName)) {\n                    document.addEventListener(eventName, processDocumentEvent, {\n                        capture: !0\n                    });\n                    win.addEventListener(eventName, processWindowEvent);\n                    events.add(eventName);\n                }\n            }\n        };\n        if (!doc.qR) {\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && push(qwikevents);\n            win.qwikevents = {\n                push: (...e) => push(e)\n            };\n            doc.addEventListener("readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
 
-var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID ];
+var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID ];
 
 function qwikVite(qwikViteOpts = {}) {
   let isClientDevOnly = false;
@@ -1888,8 +1894,12 @@ function qwikVite(qwikViteOpts = {}) {
           dedupe: [ ...DEDUPE, ...vendorIds ],
           conditions: []
         },
+        esbuild: "development" !== opts.buildMode && {
+          logLevel: "error",
+          jsx: "preserve"
+        },
         optimizeDeps: {
-          exclude: [ "@vite/client", "@vite/env", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
+          exclude: [ "@vite/client", "@vite/env", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
         },
         build: {
           outDir: opts.outDir,
@@ -1928,6 +1938,7 @@ function qwikVite(qwikViteOpts = {}) {
         } else {
           updatedViteConfig.publicDir = false;
           updatedViteConfig.build.ssr = true;
+          "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
         }
         "boolean" === typeof viteConfig.build?.emptyOutDir ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
       } else if ("client" === opts.target) {

@@ -107,8 +107,8 @@ function createPlatform(opts, resolvedManifest) {
   };
   const serverPlatform = {
     isServer: true,
-    async importSymbol(_element, qrl, symbolName) {
-      let [modulePath] = String(qrl).split("#");
+    async importSymbol(_containerEl, url, symbolName) {
+      let modulePath = String(url);
       if (!modulePath.endsWith(".js")) {
         modulePath += ".js";
       }
@@ -239,6 +239,7 @@ var qDev = globalThis.qDev === true;
 var qSerialize = globalThis.qSerialize !== false;
 var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
 var qTest = globalThis.qTest === true;
+var qRuntimeQrl = globalThis.qRuntimeQrl === true;
 
 // packages/qwik/src/core/util/flyweight.ts
 var EMPTY_ARRAY = [];

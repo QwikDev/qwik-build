@@ -709,6 +709,14 @@ declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
+declare interface DevJSX {
+    ctx: any;
+    isStatic: boolean;
+    fileName: string;
+    lineNumber: number;
+    columnNumber: number;
+}
+
 declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
@@ -972,9 +980,14 @@ export declare const _IMMUTABLE: unique symbol;
 export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
 
 /**
- * @alpha
+ * @internal
  */
 export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
+
+/**
+ * @internal
+ */
+export declare const inlinedQrlDEV: <T = any>(symbol: T, symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
 declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string | undefined;
@@ -1213,7 +1226,6 @@ declare type InvokeTuple = [Element, Event, URL?];
  */
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
-export { jsx as jsxDEV }
 export { jsx as jsxs }
 
 /**
@@ -1224,10 +1236,22 @@ export declare type JSXChildren = string | number | boolean | null | undefined |
 /**
  * @public
  */
+export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, isStatic: boolean, opts: JsxDevOpts, ctx: any) => JSXNode<T>;
+
+declare interface JsxDevOpts {
+    fileName: string;
+    lineNumber: number;
+    columnNumber: number;
+}
+
+/**
+ * @public
+ */
 export declare interface JSXNode<T = string | FunctionComponent> {
     type: T;
     props: T extends FunctionComponent<infer B> ? B : Record<string, any>;
     key: string | null;
+    dev?: DevJSX;
 }
 
 /**
@@ -1329,7 +1353,7 @@ export declare const mutable: <T>(v: T) => T;
 /**
  * @public
  */
-declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | BivariantEventHandler<T>[];
+declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | QRL<BivariantEventHandler<T>>[];
 
 /**
  * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
@@ -1629,20 +1653,32 @@ export declare interface QRL<TYPE = any> {
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @alpha
+ * @internal
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
+
+declare interface QRLDev {
+    file: string;
+    lo: number;
+    hi: number;
+}
+
+/**
+ * @internal
+ */
+export declare const qrlDEV: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
 declare interface QRLInternal<TYPE = any> extends QRL<TYPE>, QRLInternalMethods<TYPE> {
 }
 
 declare interface QRLInternalMethods<TYPE> {
-    readonly $chunk$: string;
+    readonly $chunk$: string | null;
     readonly $symbol$: string;
     readonly $refSymbol$: string | null;
     readonly $hash$: string;
     $capture$: string[] | null;
     $captureRef$: any[] | null;
+    $dev$: QRLDev | null;
     resolve(): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;

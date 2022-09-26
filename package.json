@@ -83,6 +83,7 @@
     "core.prod.cjs",
     "core.prod.mjs",
     "core/package.json",
+    "jsx-dev-runtime/package.json",
     "jsx-runtime.cjs",
     "jsx-runtime.cjs.map",
     "jsx-runtime.d.ts",

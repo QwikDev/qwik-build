@@ -13,8 +13,6 @@
         const g = "undefined" != typeof global ? global : "undefined" != typeof window ? window : "undefined" != typeof self ? self : {};
         g.globalThis = g;
     }
-    const EMPTY_ARRAY = [];
-    const EMPTY_OBJ = {};
     const isSerializableObject = v => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || null === proto;
@@ -112,6 +110,8 @@
     const isElement = value => 1 === value.nodeType;
     const isQwikElement = value => isNode(value) && (1 === value.nodeType || 111 === value.nodeType);
     const isVirtualElement = value => 111 === value.nodeType;
+    const EMPTY_ARRAY = [];
+    const EMPTY_OBJ = {};
     const isModule = module => isObject(module) && "Module" === module[Symbol.toStringTag];
     let _platform = (() => {
         const moduleCache = new Map;
@@ -145,6 +145,107 @@
     })();
     const getPlatform = () => _platform;
     const isServer = () => _platform.isServer;
+    const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
+    const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
+    const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
+    const announcedQRL = new Set;
+    const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
+        let chunk = null;
+        let symbolFn = null;
+        if (isFunction(chunkOrFn)) {
+            symbolFn = chunkOrFn;
+            {
+                let match;
+                const srcCode = String(chunkOrFn);
+                if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
+                    chunk = match[2];
+                } else {
+                    if (!(match = srcCode.match(EXTRACT_SELF_IMPORT))) {
+                        throw qError(QError_dynamicImportFailed, srcCode);
+                    }
+                    {
+                        const ref = "QWIK-SELF";
+                        const frames = new Error(ref).stack.split("\n");
+                        const start = frames.findIndex((f => f.includes(ref)));
+                        match = frames[start + 2].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
+                    }
+                }
+            }
+        } else {
+            if (!isString(chunkOrFn)) {
+                throw qError(QError_unknownTypeArgument, chunkOrFn);
+            }
+            chunk = chunkOrFn;
+        }
+        return announcedQRL.has(symbol) && (announcedQRL.add(symbol), emitEvent("qprefetch", {
+            symbols: [ getSymbolHash(symbol) ]
+        })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    };
+    const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
+    const serializeQRL = (qrl, opts = {}) => {
+        let symbol = qrl.$symbol$;
+        let chunk = qrl.$chunk$;
+        const refSymbol = qrl.$refSymbol$ ?? symbol;
+        const platform = getPlatform();
+        if (platform) {
+            const result = platform.chunkForSymbol(refSymbol);
+            result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
+        }
+        if (!chunk) {
+            throw qError(Qerror_qrlMissingChunk, qrl);
+        }
+        chunk.startsWith("./") && (chunk = chunk.slice(2));
+        const parts = [ chunk, "#", symbol ];
+        const capture = qrl.$capture$;
+        const captureRef = qrl.$captureRef$;
+        if (captureRef && captureRef.length) {
+            if (opts.$getObjId$) {
+                const capture = captureRef.map(opts.$getObjId$);
+                parts.push(`[${capture.join(" ")}]`);
+            } else if (opts.$addRefMap$) {
+                const capture = captureRef.map(opts.$addRefMap$);
+                parts.push(`[${capture.join(" ")}]`);
+            }
+        } else {
+            capture && capture.length > 0 && parts.push(`[${capture.join(" ")}]`);
+        }
+        return parts.join("");
+    };
+    const serializeQRLs = (existingQRLs, elCtx) => {
+        var value;
+        (function(value) {
+            return value && "number" == typeof value.nodeType;
+        })(value = elCtx.$element$) && value.nodeType;
+        const opts = {
+            $element$: elCtx.$element$,
+            $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
+        };
+        return existingQRLs.map((qrl => serializeQRL(qrl, opts))).join("\n");
+    };
+    const parseQRL = (qrl, containerEl) => {
+        const endIdx = qrl.length;
+        const hashIdx = indexOf(qrl, 0, "#");
+        const captureIdx = indexOf(qrl, hashIdx, "[");
+        const chunkEndIdx = Math.min(hashIdx, captureIdx);
+        const chunk = qrl.substring(0, chunkEndIdx);
+        const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+        const symbolEndIdx = captureIdx;
+        const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
+        const captureStartIdx = captureIdx;
+        const captureEndIdx = endIdx;
+        const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
+        const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
+        return containerEl && iQrl.$setContainer$(containerEl), iQrl;
+    };
+    const indexOf = (text, startIdx, char) => {
+        const endIdx = text.length;
+        const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+        return -1 == charIdx ? endIdx : charIdx;
+    };
+    const addToArray = (array, obj) => {
+        const index = array.indexOf(obj);
+        return -1 === index ? (array.push(obj), array.length - 1) : index;
+    };
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
     };
@@ -170,14 +271,11 @@
     };
     const setEvent = (listenerMap, prop, input, containerEl) => {
         prop.endsWith("$");
-        const qrls = isArray(input) ? input.map((i => ensureQrl(i, containerEl))) : [ ensureQrl(input, containerEl) ];
+        const qrls = isArray(input) ? input : [ ensureQrl(input, containerEl) ];
         return prop = normalizeOnProp(prop.slice(0, -1)), addQRLListener(listenerMap, prop, qrls), 
         prop;
     };
-    const ensureQrl = (value, containerEl) => {
-        const qrl = isQrl(value) ? value : $(value);
-        return qrl.$setContainer$(containerEl), qrl;
-    };
+    const ensureQrl = (value, containerEl) => (value.$setContainer$(containerEl), value);
     const getDomListeners = (ctx, containerEl) => {
         const attributes = ctx.$element$.attributes;
         const listeners = {};
@@ -2090,7 +2188,7 @@
     const QRLSerializer = {
         prefix: "",
         test: v => isQrl(v),
-        serialize: (obj, getObjId, containerState) => stringifyQRL(obj, {
+        serialize: (obj, getObjId, containerState) => serializeQRL(obj, {
             $getObjId$: getObjId
         }),
         prepare: (data, containerState) => parseQRL(data, containerState.$containerEl$),
@@ -2189,7 +2287,7 @@
         test: obj => isQwikComponent(obj),
         serialize: (obj, getObjId, containerState) => {
             const [qrl] = obj[SERIALIZABLE_STATE];
-            return stringifyQRL(qrl, {
+            return serializeQRL(qrl, {
                 $getObjId$: getObjId
             });
         },
@@ -2535,6 +2633,8 @@
     const QError_stringifyClassOrStyle = 0;
     const QError_verifySerializable = 3;
     const QError_setProperty = 6;
+    const QError_dynamicImportFailed = 11;
+    const QError_unknownTypeArgument = 12;
     const QError_useMethodOutsideContext = 14;
     const QError_immutableProps = 17;
     const QError_useInvokeContext = 20;
@@ -2543,6 +2643,7 @@
     const QError_invalidJsxNodeType = 25;
     const QError_trackUseStore = 26;
     const QError_missingObjectId = 27;
+    const Qerror_qrlMissingChunk = 31;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
@@ -2555,15 +2656,18 @@
             _containerEl || (_containerEl = el);
         };
         const resolve = async containerEl => {
-            if (containerEl && setContainer(containerEl), symbolRef) {
+            if (containerEl && setContainer(containerEl), null !== symbolRef) {
                 return symbolRef;
             }
-            if (symbolFn) {
+            if (null !== symbolFn) {
                 return symbolRef = symbolFn().then((module => symbolRef = module[symbol]));
             }
             {
+                if (!chunk) {
+                    throw qError(Qerror_qrlMissingChunk, symbol);
+                }
                 if (!_containerEl) {
-                    throw new Error(`QRL '${chunk}#${symbol || "default"}' does not have an attached container`);
+                    throw qError(30, chunk, symbol);
                 }
                 const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
                 return symbolRef = then(symbol2, (ref => symbolRef = ref));
@@ -2606,7 +2710,8 @@
             $hash$: hash,
             getFn: invokeFn,
             $capture$: capture,
-            $captureRef$: captureRef
+            $captureRef$: captureRef,
+            $dev$: null
         };
         return Object.assign(invokeQRL, methods);
     };
@@ -2630,120 +2735,16 @@
             detail: detail
         }));
     };
-    let runtimeSymbolId = 0;
-    const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
-    const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
-    const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-    const QRLcache = new Map;
-    const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
-        let chunk = "";
-        let symbolFn = null;
-        if (isString(chunkOrFn)) {
-            chunk = chunkOrFn;
-        } else {
-            if (!isFunction(chunkOrFn)) {
-                throw qError(12, chunkOrFn);
-            }
-            {
-                symbolFn = chunkOrFn;
-                const cached = QRLcache.get(symbol);
-                if (cached) {
-                    chunk = cached;
-                } else {
-                    let match;
-                    const srcCode = String(chunkOrFn);
-                    if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
-                        chunk = match[2];
-                    } else {
-                        if (!(match = srcCode.match(EXTRACT_SELF_IMPORT))) {
-                            throw qError(11, srcCode);
-                        }
-                        {
-                            const ref = "QWIK-SELF";
-                            const frames = new Error(ref).stack.split("\n");
-                            const start = frames.findIndex((f => f.includes(ref)));
-                            match = frames[start + 2].match(EXTRACT_FILE_NAME), chunk = match ? match[1] : "main";
-                        }
-                    }
-                    QRLcache.set(symbol, chunk), emitEvent("qprefetch", {
-                        symbols: [ getSymbolHash(symbol) ]
-                    });
-                }
-            }
-        }
-        return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+    const $ = expression => {
+        throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
     };
-    const stringifyQRL = (qrl, opts = {}) => {
-        let symbol = qrl.$symbol$;
-        let chunk = qrl.$chunk$;
-        const refSymbol = qrl.$refSymbol$ ?? symbol;
-        const platform = getPlatform();
-        if (platform) {
-            const result = platform.chunkForSymbol(refSymbol);
-            result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
-        }
-        chunk.startsWith("./") && (chunk = chunk.slice(2));
-        const parts = [ chunk ];
-        symbol && "default" !== symbol && parts.push("#", symbol);
-        const capture = qrl.$capture$;
-        const captureRef = qrl.$captureRef$;
-        if (captureRef && captureRef.length) {
-            if (opts.$getObjId$) {
-                const capture = captureRef.map(opts.$getObjId$);
-                parts.push(`[${capture.join(" ")}]`);
-            } else if (opts.$addRefMap$) {
-                const capture = captureRef.map(opts.$addRefMap$);
-                parts.push(`[${capture.join(" ")}]`);
-            }
-        } else {
-            capture && capture.length > 0 && parts.push(`[${capture.join(" ")}]`);
-        }
-        return parts.join("");
-    };
-    const serializeQRLs = (existingQRLs, elCtx) => {
-        var value;
-        (function(value) {
-            return value && "number" == typeof value.nodeType;
-        })(value = elCtx.$element$) && value.nodeType;
-        const opts = {
-            $element$: elCtx.$element$,
-            $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
-        };
-        return existingQRLs.map((qrl => stringifyQRL(qrl, opts))).join("\n");
-    };
-    const parseQRL = (qrl, containerEl) => {
-        const endIdx = qrl.length;
-        const hashIdx = indexOf(qrl, 0, "#");
-        const captureIdx = indexOf(qrl, hashIdx, "[");
-        const chunkEndIdx = Math.min(hashIdx, captureIdx);
-        const chunk = qrl.substring(0, chunkEndIdx);
-        const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-        const symbolEndIdx = captureIdx;
-        const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
-        const captureStartIdx = captureIdx;
-        const captureEndIdx = endIdx;
-        const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-        "/runtimeQRL" === chunk && logError(codeToText(2), qrl);
-        const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
-        return containerEl && iQrl.$setContainer$(containerEl), iQrl;
-    };
-    const indexOf = (text, startIdx, char) => {
-        const endIdx = text.length;
-        const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-        return -1 == charIdx ? endIdx : charIdx;
-    };
-    const addToArray = (array, obj) => {
-        const index = array.indexOf(obj);
-        return -1 === index ? (array.push(obj), array.length - 1) : index;
-    };
-    const $ = expression => ((symbol, lexicalScopeCapture = EMPTY_ARRAY) => createQRL("/runtimeQRL", "s" + runtimeSymbolId++, symbol, null, null, lexicalScopeCapture, null))(expression);
     const componentQrl = componentQrl => {
         function QwikComponent(props, key) {
-            const hash = componentQrl.$hash$;
+            const finalKey = componentQrl.$hash$ + ":" + (key || "");
             return jsx(Virtual, {
                 "q:renderFn": componentQrl,
                 ...props
-            }, hash + ":" + (key || ""));
+            }, finalKey);
         }
         return QwikComponent[SERIALIZABLE_STATE] = [ componentQrl ], QwikComponent;
     };
@@ -3351,9 +3352,23 @@
             "key" == i ? key = props[i] : normalizedProps[i] = props[i];
         }
         return new JSXNodeImpl(type, normalizedProps, key);
-    }, exports.implicit$FirstArg = implicit$FirstArg, exports.inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL("/inlinedQRL", symbolName, symbol, null, null, lexicalScopeCapture, null), 
-    exports.jsx = jsx, exports.jsxDEV = jsx, exports.jsxs = jsx, exports.mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
-    v), exports.noSerialize = noSerialize, exports.qrl = qrl, exports.render = async (parent, jsxNode, opts) => {
+    }, exports.implicit$FirstArg = implicit$FirstArg, exports.inlinedQrl = inlinedQrl, 
+    exports.inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+        const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
+        return qrl.$dev$ = opts, qrl;
+    }, exports.jsx = jsx, exports.jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+        const processed = null == key ? null : String(key);
+        const node = new JSXNodeImpl(type, props, processed);
+        return node.dev = {
+            isStatic: isStatic,
+            ctx: ctx,
+            ...opts
+        }, node;
+    }, exports.jsxs = jsx, exports.mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
+    v), exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+        const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture);
+        return newQrl.$dev$ = opts, newQrl;
+    }, exports.render = async (parent, jsxNode, opts) => {
         isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
         const doc = getDocument(parent);
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
