@@ -6567,6 +6567,7 @@
                 return prevPromise.then(next);
             }
             else {
+                currentIndex++;
                 return undefined;
             }
         }, undefined);

@@ -6555,6 +6555,7 @@ function walkChildren(children, ssrContext, stream, flags) {
             return prevPromise.then(next);
         }
         else {
+            currentIndex++;
             return undefined;
         }
     }, undefined);
