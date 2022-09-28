@@ -12382,6 +12382,10 @@ function logSuccessFooter() {
   console.log(`\u{1F4AC} ${kleur_default.cyan("Questions? Start the conversation at:")}`);
   console.log(`   https://qwik.builder.io/chat`);
   console.log(`   https://twitter.com/QwikDev`);
+  console.log(`   https://twitter.com/QwikDev`);
+  console.log(``);
+  console.log(`\u{1F4FA} ${kleur_default.cyan("Presentations, Podcasts and Videos:")}`);
+  console.log(`   https://qwik.builder.io/media/`);
   console.log(``);
 }
 
