@@ -5731,14 +5731,16 @@ function assertQrl(qrl) {
     }
 }
 const emitUsedSymbol = (symbol, element) => {
-    emitEvent('qsymbol', {
-        bubbles: false,
-        detail: {
-            symbol,
-            element,
-            timestamp: performance.now(),
-        },
-    });
+    if (!qTest && !isServer()) {
+        emitEvent('qsymbol', {
+            bubbles: false,
+            detail: {
+                symbol,
+                element,
+                timestamp: performance.now(),
+            },
+        });
+    }
 };
 const emitEvent = (eventName, detail) => {
     if (!qTest && !isServer() && typeof document === 'object') {

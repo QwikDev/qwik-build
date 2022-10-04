@@ -2720,7 +2720,7 @@
         return index > -1 ? symbolName.slice(index + 1) : symbolName;
     };
     const emitUsedSymbol = (symbol, element) => {
-        emitEvent("qsymbol", {
+        isServer() || emitEvent("qsymbol", {
             bubbles: false,
             detail: {
                 symbol: symbol,
