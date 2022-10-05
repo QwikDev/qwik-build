@@ -5,6 +5,37 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+const isNode = value => value && "number" == typeof value.nodeType;
+
+const isDocument = value => value && 9 === value.nodeType;
+
+const isElement = value => 1 === value.nodeType;
+
+const isQwikElement = value => isNode(value) && (1 === value.nodeType || 111 === value.nodeType);
+
+const isVirtualElement = value => 111 === value.nodeType;
+
+const isText = value => 3 === value.nodeType;
+
+const isComment = value => 8 === value.nodeType;
+
+const logError = (message, ...optionalParams) => {
+    const err = message instanceof Error ? message : new Error(message);
+    return "function" == typeof globalThis._handleError && message instanceof Error ? globalThis._handleError(message, optionalParams) : console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
+    err;
+};
+
+const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
+
+const printParams = optionalParams => optionalParams;
+
+const qError = (code, ...parts) => {
+    const text = codeToText(code);
+    return logErrorAndStop(text, ...parts);
+};
+
+const codeToText = code => `Code(${code})`;
+
 const isSerializableObject = v => {
     const proto = Object.getPrototypeOf(v);
     return proto === Object.prototype || null === proto;
@@ -57,7 +88,7 @@ const tryGetInvokeContext = () => {
 const getInvokeContext = () => {
     const ctx = tryGetInvokeContext();
     if (!ctx) {
-        throw qError(QError_useMethodOutsideContext);
+        throw qError(14);
     }
     return ctx;
 };
@@ -65,7 +96,7 @@ const getInvokeContext = () => {
 const useInvokeContext = () => {
     const ctx = getInvokeContext();
     if ("qRender" !== ctx.$event$) {
-        throw qError(QError_useInvokeContext);
+        throw qError(20);
     }
     return ctx.$hostElement$, ctx.$waitOn$, ctx.$renderCtx$, ctx.$subscriber$, ctx;
 };
@@ -119,19 +150,7 @@ const newInvokeContext = (hostElement, element, event, url) => ({
 
 const getWrappingContainer = el => el.closest("[q\\:container]");
 
-const isNode = value => value && "number" == typeof value.nodeType;
-
-const isDocument = value => value && 9 === value.nodeType;
-
-const isElement = value => 1 === value.nodeType;
-
-const isQwikElement = value => isNode(value) && (1 === value.nodeType || 111 === value.nodeType);
-
-const isVirtualElement = value => 111 === value.nodeType;
-
-const EMPTY_ARRAY = [];
-
-const EMPTY_OBJ = {};
+const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
 
 const isModule = module => isObject(module) && "Module" === module[Symbol.toStringTag];
 
@@ -175,6 +194,14 @@ const getPlatform = () => _platform;
 
 const isServer = () => _platform.isServer;
 
+const implicit$FirstArg = fn => function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+};
+
+const EMPTY_ARRAY = [];
+
+const EMPTY_OBJ = {};
+
 const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
 
 const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
@@ -195,7 +222,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
                 chunk = match[2];
             } else {
                 if (!(match = srcCode.match(EXTRACT_SELF_IMPORT))) {
-                    throw qError(QError_dynamicImportFailed, srcCode);
+                    throw qError(11, srcCode);
                 }
                 {
                     const ref = "QWIK-SELF";
@@ -207,7 +234,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY) => {
         }
     } else {
         if (!isString(chunkOrFn)) {
-            throw qError(QError_unknownTypeArgument, chunkOrFn);
+            throw qError(12, chunkOrFn);
         }
         chunk = chunkOrFn;
     }
@@ -238,7 +265,7 @@ const serializeQRL = (qrl, opts = {}) => {
         result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
     }
     if (!chunk) {
-        throw qError(Qerror_qrlMissingChunk, qrl);
+        throw qError(31, qrl);
     }
     chunk.startsWith("./") && (chunk = chunk.slice(2));
     const parts = [ chunk, "#", symbol ];
@@ -259,10 +286,7 @@ const serializeQRL = (qrl, opts = {}) => {
 };
 
 const serializeQRLs = (existingQRLs, elCtx) => {
-    var value;
-    (function(value) {
-        return value && "number" == typeof value.nodeType;
-    })(value = elCtx.$element$) && value.nodeType;
+    elCtx.$element$;
     const opts = {
         $element$: elCtx.$element$,
         $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
@@ -297,10 +321,6 @@ const addToArray = (array, obj) => {
     return -1 === index ? (array.push(obj), array.length - 1) : index;
 };
 
-const implicit$FirstArg = fn => function(first, ...rest) {
-    return fn.call(null, $(first), ...rest);
-};
-
 const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
 
 const directGetAttribute = (el, prop) => el.getAttribute(prop);
@@ -309,44 +329,56 @@ const ON_PROP_REGEX = /^(on|window:|document:)/;
 
 const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
 
-const addQRLListener = (listenersMap, prop, input) => {
-    let existingListeners = listenersMap[prop];
-    existingListeners || (listenersMap[prop] = existingListeners = []);
-    for (const qrl of input) {
-        const hash = qrl.$hash$;
+const addQRLListener = (listeners, add) => {
+    for (const entry of add) {
+        const prop = entry[0];
+        const hash = entry[1].$hash$;
         let replaced = false;
-        for (let i = 0; i < existingListeners.length; i++) {
-            if (existingListeners[i].$hash$ === hash) {
-                existingListeners.splice(i, 1, qrl), replaced = true;
+        for (let i = 0; i < listeners.length; i++) {
+            const existing = listeners[i];
+            if (existing[0] === prop && existing[1].$hash$ === hash) {
+                listeners.splice(i, 1, entry), replaced = true;
                 break;
             }
         }
-        replaced || existingListeners.push(qrl);
+        replaced || listeners.push(entry);
     }
-    return false;
 };
 
-const setEvent = (listenerMap, prop, input, containerEl) => {
-    prop.endsWith("$");
-    const qrls = isArray(input) ? input : [ ensureQrl(input, containerEl) ];
-    return prop = normalizeOnProp(prop.slice(0, -1)), addQRLListener(listenerMap, prop, qrls), 
-    prop;
+const groupListeners = listeners => {
+    if (0 === listeners.length) {
+        return EMPTY_ARRAY;
+    }
+    if (1 === listeners.length) {
+        const listener = listeners[0];
+        return [ [ listener[0], [ listener[1] ] ] ];
+    }
+    const keys = [];
+    for (let i = 0; i < listeners.length; i++) {
+        const eventName = listeners[i][0];
+        keys.includes(eventName) || keys.push(eventName);
+    }
+    return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
+};
+
+const setEvent = (existingListeners, prop, input, containerEl) => {
+    prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1));
+    const listeners = isArray(input) ? input.map((q => [ prop, ensureQrl(q, containerEl) ])) : [ [ prop, ensureQrl(input, containerEl) ] ];
+    return addQRLListener(existingListeners, listeners), prop;
 };
 
 const ensureQrl = (value, containerEl) => (value.$setContainer$(containerEl), value);
 
-const getDomListeners = (ctx, containerEl) => {
-    const attributes = ctx.$element$.attributes;
-    const listeners = {};
+const getDomListeners = (elCtx, containerEl) => {
+    const attributes = elCtx.$element$.attributes;
+    const listeners = [];
     for (let i = 0; i < attributes.length; i++) {
         const {name: name, value: value} = attributes.item(i);
         if (name.startsWith("on:") || name.startsWith("on-window:") || name.startsWith("on-document:")) {
-            let array = listeners[name];
-            array || (listeners[name] = array = []);
             const urls = value.split("\n");
             for (const url of urls) {
                 const qrl = parseQRL(url, containerEl);
-                qrl.$capture$ && inflateQrl(qrl, ctx), array.push(qrl);
+                qrl.$capture$ && inflateQrl(qrl, elCtx), listeners.push([ name, qrl ]);
             }
         }
     }
@@ -387,11 +419,9 @@ const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
 
 const _useOn = (eventName, eventQrl) => {
     const invokeCtx = useInvokeContext();
-    const ctx = getContext(invokeCtx.$hostElement$);
-    addQRLListener(ctx.li, normalizeOnProp(eventName), [ eventQrl ]);
+    const elCtx = getContext(invokeCtx.$hostElement$);
+    addQRLListener(elCtx.li, [ [ normalizeOnProp(eventName), eventQrl ] ]), elCtx.$needAttachListeners$ = true;
 };
-
-const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
 
 const jsx = (type, props, key) => {
     const processed = null == key ? null : String(key);
@@ -470,7 +500,7 @@ const _setProperty = (node, key, value) => {
     try {
         node[key] = value;
     } catch (err) {
-        logError(codeToText(QError_setProperty), {
+        logError(codeToText(6), {
             node: node,
             key: key,
             value: value
@@ -490,13 +520,6 @@ const appendChild = (ctx, parent, newChild) => (ctx.$operations$.push({
     $args$: [ parent, newChild ]
 }), newChild);
 
-const appendHeadStyle = (ctx, styleTask) => {
-    ctx.$containerState$.$styleIds$.add(styleTask.styleId), ctx.$postOperations$.push({
-        $operation$: _appendHeadStyle,
-        $args$: [ ctx.$containerState$.$containerEl$, styleTask ]
-    });
-};
-
 const _setClasslist = (elm, toRemove, toAdd) => {
     const classList = elm.classList;
     classList.remove(...toRemove), classList.add(...toAdd);
@@ -507,8 +530,8 @@ const _appendHeadStyle = (containerEl, styleTask) => {
     const isDoc = doc.documentElement === containerEl;
     const headEl = doc.head;
     const style = doc.createElement("style");
-    isDoc && !headEl && logWarn("document.head is undefined"), directSetAttribute(style, "q:style", styleTask.styleId), 
-    style.textContent = styleTask.content, isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
+    directSetAttribute(style, "q:style", styleTask.styleId), style.textContent = styleTask.content, 
+    isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
 };
 
 const removeNode = (ctx, el) => {
@@ -751,13 +774,11 @@ const findClose = open => {
     throw new Error("close not found");
 };
 
-const isComment = node => 8 === node.nodeType;
-
 const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
 
-const createContext$1 = name => Object.freeze({
+const createContext$1 = name => (/^[\w/.-]+$/.test(name), Object.freeze({
     id: fromCamelToKebabCase(name)
-});
+}));
 
 const useContextProvider = (context, newValue) => {
     const {get: get, set: set, ctx: ctx} = useSequentialScope();
@@ -783,7 +804,7 @@ const useContext = (context, defaultValue) => {
     if (void 0 !== defaultValue) {
         return set(defaultValue);
     }
-    throw qError(QError_notFoundContext, context.id);
+    throw qError(13, context.id);
 };
 
 const resolveContext = (context, hostElement, rctx) => {
@@ -854,27 +875,26 @@ const handleError = (err, hostElement, rctx) => {
     }
 };
 
-const executeComponent = (rctx, elCtx) => {
+const executeComponent = (rCtx, elCtx) => {
     elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
-    const newCtx = pushRenderContext(rctx, elCtx);
+    const newCtx = pushRenderContext(rCtx, elCtx);
     const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
     const waitOn = invocatinContext.$waitOn$ = [];
-    newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rctx, 
-    componentQRL.$setContainer$(rctx.$static$.$containerState$.$containerEl$);
+    newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rCtx, 
+    componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(invocatinContext);
-    return safeCall((() => componentFn(props)), (jsxNode => (elCtx.$attachedListeners$ = false, 
-    waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
+    return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rCtx, elCtx) : {
         node: jsxNode,
-        rctx: newCtx
-    })) : elCtx.$dirty$ ? executeComponent(rctx, elCtx) : {
+        rCtx: newCtx
+    })) : elCtx.$dirty$ ? executeComponent(rCtx, elCtx) : {
         node: jsxNode,
-        rctx: newCtx
-    })), (err => (handleError(err, hostElement, rctx), {
+        rCtx: newCtx
+    }), (err => (handleError(err, hostElement, rCtx), {
         node: SkipRender,
-        rctx: newCtx
+        rCtx: newCtx
     })));
 };
 
@@ -929,7 +949,7 @@ const stringifyStyle = obj => {
     }
     if ("object" == typeof obj) {
         if (isArray(obj)) {
-            throw qError(QError_stringifyClassOrStyle, obj, "style");
+            throw qError(0, obj, "style");
         }
         {
             const chunks = [];
@@ -947,12 +967,12 @@ const stringifyStyle = obj => {
 
 const getNextIndex = ctx => intToStr(ctx.$static$.$containerState$.$elementIndex$++);
 
-const setQId = (rctx, ctx) => {
-    const id = getNextIndex(rctx);
-    ctx.$id$ = id, ctx.$element$.setAttribute("q:id", id);
+const setQId = (rCtx, elCtx) => {
+    const id = getNextIndex(rCtx);
+    elCtx.$id$ = id, elCtx.$element$.setAttribute("q:id", id);
 };
 
-const SKIPS_PROPS = [ QSlot, "q:renderFn", "children" ];
+const SKIPS_PROPS = [ QSlot, "children" ];
 
 const serializeSStyle = scopeIds => {
     const value = scopeIds.join(" ");
@@ -961,45 +981,50 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const renderComponent = (rctx, ctx, flags) => {
-    const justMounted = !ctx.$mounted$;
-    const hostElement = ctx.$element$;
-    const containerState = rctx.$static$.$containerState$;
+const renderComponent = (rCtx, elCtx, flags) => {
+    const justMounted = !elCtx.$mounted$;
+    const hostElement = elCtx.$element$;
+    const containerState = rCtx.$static$.$containerState$;
     return containerState.$hostsStaging$.delete(hostElement), containerState.$subsManager$.$clearSub$(hostElement), 
-    then(executeComponent(rctx, ctx), (res => {
-        const staticCtx = rctx.$static$;
-        const newCtx = res.rctx;
+    then(executeComponent(rCtx, elCtx), (res => {
+        const staticCtx = rCtx.$static$;
+        const newCtx = res.rCtx;
         const invocatinContext = newInvokeContext(hostElement);
         if (staticCtx.$hostElements$.add(hostElement), invocatinContext.$subscriber$ = hostElement, 
         invocatinContext.$renderCtx$ = newCtx, justMounted) {
-            if (ctx.$appendStyles$) {
-                for (const style of ctx.$appendStyles$) {
-                    appendHeadStyle(staticCtx, style);
+            if (elCtx.$appendStyles$) {
+                for (const style of elCtx.$appendStyles$) {
+                    styleTask = style, (ctx = staticCtx).$containerState$.$styleIds$.add(styleTask.styleId), 
+                    ctx.$postOperations$.push({
+                        $operation$: _appendHeadStyle,
+                        $args$: [ ctx.$containerState$.$containerEl$, styleTask ]
+                    });
                 }
             }
-            if (ctx.$scopeIds$) {
-                const value = serializeSStyle(ctx.$scopeIds$);
+            if (elCtx.$scopeIds$) {
+                const value = serializeSStyle(elCtx.$scopeIds$);
                 value && hostElement.setAttribute("q:sstyle", value);
             }
         }
+        var ctx, styleTask;
         const processedJSXNode = processData$1(res.node, invocatinContext);
         return then(processedJSXNode, (processedJSXNode => {
             const newVdom = wrapJSX(hostElement, processedJSXNode);
-            const oldVdom = getVdom(ctx);
+            const oldVdom = getVdom(elCtx);
             return then(visitJsxNode(newCtx, oldVdom, newVdom, flags), (() => {
-                ctx.$vdom$ = newVdom;
+                elCtx.$vdom$ = newVdom;
             }));
         }));
     }));
 };
 
-const getVdom = ctx => (ctx.$vdom$ || (ctx.$vdom$ = domToVnode(ctx.$element$)), 
-ctx.$vdom$);
+const getVdom = elCtx => (elCtx.$vdom$ || (elCtx.$vdom$ = domToVnode(elCtx.$element$)), 
+elCtx.$vdom$);
 
 class ProcessedJSXNodeImpl {
     constructor($type$, $props$, $children$, $key$) {
         this.$type$ = $type$, this.$props$ = $props$, this.$children$ = $children$, this.$key$ = $key$, 
-        this.$elm$ = null, this.$text$ = "";
+        this.$elm$ = null, this.$text$ = "", this.$signal$ = null;
     }
 }
 
@@ -1011,7 +1036,7 @@ const wrapJSX = (element, input) => {
 
 const processData$1 = (node, invocationContext) => {
     if (null != node && "boolean" != typeof node) {
-        if (isString(node) || "number" == typeof node) {
+        if (isPrimitive(node)) {
             const newNode = new ProcessedJSXNodeImpl("#text", EMPTY_OBJ, EMPTY_ARRAY, null);
             return newNode.$text$ = String(node), newNode;
         }
@@ -1030,7 +1055,7 @@ const processData$1 = (node, invocationContext) => {
                             const res = invoke(invocationContext, nodeType, props, node.key);
                             return processData$1(res, invocationContext);
                         }
-                        throw qError(QError_invalidJsxNodeType, nodeType);
+                        throw qError(25, nodeType);
                     }
                     textType = ":virtual";
                 }
@@ -1039,12 +1064,146 @@ const processData$1 = (node, invocationContext) => {
                 new ProcessedJSXNodeImpl(textType, props, children, key)))) : new ProcessedJSXNodeImpl(textType, props, children, key);
             })(node, invocationContext);
         }
+        if (isSignal(node)) {
+            const value = node.value;
+            const newNode = new ProcessedJSXNodeImpl("#text", EMPTY_OBJ, EMPTY_ARRAY, null);
+            return isPrimitive(value), newNode.$text$ = String(value), newNode.$signal$ = node, 
+            newNode;
+        }
         if (isArray(node)) {
             const output = promiseAll(node.flatMap((n => processData$1(n, invocationContext))));
             return then(output, (array => array.flat(100).filter(isNotNullable)));
         }
-        return isPromise(node) ? node.then((node => processData$1(node, invocationContext))) : node === SkipRender ? new ProcessedJSXNodeImpl(":skipRender", EMPTY_OBJ, EMPTY_ARRAY, null) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
+        return isPromise(node) ? node.then((node => processData$1(node, invocationContext))) : node === SkipRender ? new ProcessedJSXNodeImpl(":skipRender", EMPTY_OBJ, EMPTY_ARRAY, null) : void 0;
     }
+};
+
+const isPrimitive = obj => isString(obj) || "number" == typeof obj;
+
+const CONTAINER_STATE = Symbol("ContainerState");
+
+const getContainerState = containerEl => {
+    let set = containerEl[CONTAINER_STATE];
+    return set || (containerEl[CONTAINER_STATE] = set = createContainerState(containerEl)), 
+    set;
+};
+
+const createContainerState = containerEl => {
+    const containerState = {
+        $containerEl$: containerEl,
+        $proxyMap$: new WeakMap,
+        $subsManager$: null,
+        $opsNext$: new Set,
+        $watchNext$: new Set,
+        $watchStaging$: new Set,
+        $hostsNext$: new Set,
+        $hostsStaging$: new Set,
+        $renderPromise$: void 0,
+        $hostsRendering$: void 0,
+        $envData$: {},
+        $elementIndex$: 0,
+        $styleIds$: new Set
+    };
+    return containerState.$subsManager$ = createSubscriptionManager(containerState), 
+    containerState;
+};
+
+const serializeSubscription = (sub, getObjId) => {
+    const type = sub[0];
+    const host = getObjId(sub[1]);
+    if (!host) {
+        return;
+    }
+    let base = type + " " + host;
+    if (0 === sub[0]) {
+        sub[2] && (base += " " + sub[2]);
+    } else {
+        const nodeID = "string" == typeof sub[3] ? sub[3] : must(getObjId(sub[3]));
+        base += ` ${must(getObjId(sub[2]))} ${nodeID} ${sub[4]}`, sub[5] && (base += ` ${sub[5]}`);
+    }
+    return base;
+};
+
+const parseSubscription = (sub, getObject) => {
+    const parts = sub.split(" ");
+    const type = parseInt(parts[0], 10);
+    parts.length;
+    const subscription = [ type, getObject(parts[1]) ];
+    return 0 === type ? (parts.length, subscription.push(parts[2])) : (5 === parts.length || parts.length, 
+    subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5])), 
+    subscription;
+};
+
+const createSubscriptionManager = containerState => {
+    const groupToManagers = new Map;
+    return {
+        $createManager$: initialMap => new LocalSubscriptionManager(groupToManagers, containerState, initialMap),
+        $clearSub$: group => {
+            const managers = groupToManagers.get(group);
+            if (managers) {
+                for (const manager of managers) {
+                    manager.$unsubGroup$(group);
+                }
+                groupToManagers.delete(group), managers.length = 0;
+            }
+        }
+    };
+};
+
+class LocalSubscriptionManager {
+    constructor($groupToManagers$, $containerState$, initialMap) {
+        this.$groupToManagers$ = $groupToManagers$, this.$containerState$ = $containerState$, 
+        this.$subs$ = initialMap || [];
+        for (const sub of this.$subs$) {
+            this.$addToGroup$(sub[1], this);
+        }
+    }
+    $addToGroup$(group, manager) {
+        let managers = this.$groupToManagers$.get(group);
+        managers || this.$groupToManagers$.set(group, managers = []), managers.includes(manager) || managers.push(manager);
+    }
+    $unsubGroup$(group) {
+        const subs = this.$subs$;
+        for (let i = 0; i < subs.length; i++) {
+            subs[i][1] === group && (subs.splice(i, 1), i--);
+        }
+    }
+    $addSub$(sub) {
+        const subs = this.$subs$;
+        const [type, group] = sub;
+        const key = sub[sub.length - 1];
+        0 === type && subs.some((([_type, _group, _key]) => _type === type && _group === group && _key === key)) || (subs.push(sub), 
+        this.$addToGroup$(group, this));
+    }
+    $notifySubs$(key) {
+        const subs = this.$subs$;
+        for (const sub of subs) {
+            const compare = sub[sub.length - 1];
+            key && compare && compare !== key || notifyChange(sub, this.$containerState$);
+        }
+    }
+}
+
+const setRef = (value, elm) => {
+    if (isFunction(value)) {
+        return value(elm);
+    }
+    if (isObject(value)) {
+        if ("current" in value) {
+            return value.current = elm;
+        }
+        if ("value" in value) {
+            return value.value = elm;
+        }
+    }
+    throw qError(32, value);
+};
+
+const must = a => {
+    if (null == a) {
+        throw logError("must be non null", a);
+    }
+    return a;
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -1114,7 +1273,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
             idxInOld = oldKeyToIdx[newStartVnode.$key$], void 0 === idxInOld) {
                 const newElm = createElm(ctx, newStartVnode, flags);
                 results.push(then(newElm, (newElm => {
-                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode.$elm$);
+                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                 })));
             } else if (elmToMove = oldCh[idxInOld], isTagName(elmToMove, newStartVnode.$type$)) {
                 results.push(patchVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
@@ -1122,7 +1281,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
             } else {
                 const newElm = createElm(ctx, newStartVnode, flags);
                 results.push(then(newElm, (newElm => {
-                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode.$elm$);
+                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                 })));
             }
             newStartVnode = newCh[++newStartIdx];
@@ -1170,7 +1329,7 @@ const domToVnode = node => {
         const t = new ProcessedJSXNodeImpl(node.localName, props, CHILDREN_PLACEHOLDER, getKey(node));
         return t.$elm$ = node, t;
     }
-    if (3 === node.nodeType) {
+    if (isText(node)) {
         const t = new ProcessedJSXNodeImpl(node.nodeName, {}, CHILDREN_PLACEHOLDER, null);
         return t.$text$ = node.data, t.$elm$ = node, t;
     }
@@ -1183,7 +1342,7 @@ const getProps = node => {
     const len = attributes.length;
     for (let i = 0; i < len; i++) {
         const attr = attributes.item(i);
-        const name = attr.name;
+        const name = attr.name.toLowerCase();
         name.includes(":") || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
     }
     return props;
@@ -1210,35 +1369,36 @@ const isChildComponent = node => {
     return "Q:TEMPLATE" !== nodeName && ("HEAD" !== nodeName || node.hasAttribute("q:head"));
 };
 
-const patchVnode = (rctx, oldVnode, newVnode, flags) => {
+const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
     oldVnode.$type$, newVnode.$type$;
     const elm = oldVnode.$elm$;
     const tag = newVnode.$type$;
-    const staticCtx = rctx.$static$;
+    const staticCtx = rCtx.$static$;
     const isVirtual = ":virtual" === tag;
+    const currentComponent = rCtx.$cmpCtx$;
     if (newVnode.$elm$ = elm, "#text" === tag) {
-        return void (oldVnode.$text$ !== newVnode.$text$ && setProperty(staticCtx, elm, "data", newVnode.$text$));
+        const signal = newVnode.$signal$;
+        return signal && addSignalSub(2, currentComponent.$element$, signal, elm, "data"), 
+        void (oldVnode.$text$ !== newVnode.$text$ && setProperty(staticCtx, elm, "data", newVnode.$text$));
     }
     let isSvg = !!(1 & flags);
     isSvg || "svg" !== tag || (flags |= 1, isSvg = true);
     const props = newVnode.$props$;
     const isComponent = isVirtual && "q:renderFn" in props;
     const elCtx = getContext(elm);
-    if (!isComponent) {
-        const listenerMap = updateProperties(elCtx, staticCtx, oldVnode.$props$, props, isSvg);
-        const currentComponent = rctx.$cmpCtx$;
-        if (currentComponent && !currentComponent.$attachedListeners$) {
-            currentComponent.$attachedListeners$ = true;
-            for (const key of Object.keys(currentComponent.li)) {
-                addQRLListener(listenerMap, key, currentComponent.li[key]), addGlobalListener(staticCtx, elm, key);
+    if (staticCtx.$containerState$.$containerEl$, !isComponent) {
+        const pendingListeners = currentComponent.li;
+        const listeners = elCtx.li;
+        if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props), 
+        pendingListeners.length > 0 && (addQRLListener(listeners, pendingListeners), pendingListeners.length = 0), 
+        listeners.length > 0) {
+            const groups = groupListeners(listeners);
+            for (const listener of groups) {
+                setAttribute(staticCtx, elm, listener[0], serializeQRLs(listener[1], elCtx));
             }
-        }
-        for (const key of Object.keys(listenerMap)) {
-            setAttribute(staticCtx, elm, key, serializeQRLs(listenerMap[key], elCtx));
         }
         if (isSvg && "foreignObject" === newVnode.$type$ && (flags &= -2, isSvg = false), 
         isVirtual && "q:s" in props) {
-            const currentComponent = rctx.$cmpCtx$;
             return currentComponent.$slots$, void currentComponent.$slots$.push(newVnode);
         }
         if (void 0 !== props[dangerouslySetInnerHTML]) {
@@ -1247,17 +1407,18 @@ const patchVnode = (rctx, oldVnode, newVnode, flags) => {
         if (isVirtual && "qonce" in props) {
             return;
         }
-        return smartUpdateChildren(rctx, oldVnode, newVnode, "root", flags);
+        return smartUpdateChildren(rCtx, oldVnode, newVnode, "root", flags);
     }
-    let needsRender = setComponentProps$1(elCtx, rctx, props);
-    return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rctx, elCtx), 
-    elCtx.$componentQrl$ = props["q:renderFn"], elCtx.$componentQrl$, needsRender = true), 
-    needsRender ? then(renderComponent(rctx, elCtx, flags), (() => renderContentProjection(rctx, elCtx, newVnode, flags))) : renderContentProjection(rctx, elCtx, newVnode, flags);
+    const cmpProps = props.props;
+    let needsRender = setComponentProps$1(elCtx, rCtx, cmpProps);
+    return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rCtx, elCtx), 
+    elCtx.$componentQrl$ = cmpProps["q:renderFn"], elCtx.$componentQrl$, needsRender = true), 
+    needsRender ? then(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
 };
 
-const renderContentProjection = (rctx, hostCtx, vnode, flags) => {
+const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
     const newChildren = vnode.$children$;
-    const staticCtx = rctx.$static$;
+    const staticCtx = rCtx.$static$;
     const splittedNewChidren = (input => {
         const output = {};
         for (const item of input) {
@@ -1268,7 +1429,7 @@ const renderContentProjection = (rctx, hostCtx, vnode, flags) => {
         }
         return output;
     })(newChildren);
-    const slotRctx = pushRenderContext(rctx, hostCtx);
+    const slotRctx = pushRenderContext(rCtx, hostCtx);
     const slotMaps = getSlotMap(hostCtx);
     for (const key of Object.keys(slotMaps.slots)) {
         if (!splittedNewChidren[key]) {
@@ -1341,11 +1502,15 @@ const getSlotElement = (ctx, slotMaps, parentEl, slotName) => {
 
 const getSlotName = node => node.$props$[QSlot] ?? "";
 
-const createElm = (rctx, vnode, flags) => {
+const createElm = (rCtx, vnode, flags) => {
     const tag = vnode.$type$;
-    const doc = rctx.$static$.$doc$;
+    const doc = rCtx.$static$.$doc$;
+    const currentComponent = rCtx.$cmpCtx$;
     if ("#text" === tag) {
-        return vnode.$elm$ = ((doc, text) => doc.createTextNode(text))(doc, vnode.$text$);
+        const signal = vnode.$signal$;
+        const elm = ((doc, text) => doc.createTextNode(text))(doc, vnode.$text$);
+        return signal && currentComponent && addSignalSub(2, currentComponent.$element$, signal, elm, "data"), 
+        vnode.$elm$ = elm;
     }
     let elm;
     let isHead = !!(2 & flags);
@@ -1354,7 +1519,7 @@ const createElm = (rctx, vnode, flags) => {
     const isVirtual = ":virtual" === tag;
     const props = vnode.$props$;
     const isComponent = "q:renderFn" in props;
-    const staticCtx = rctx.$static$;
+    const staticCtx = rCtx.$static$;
     isVirtual ? elm = (doc => {
         const open = doc.createComment("qv ");
         const close = doc.createComment("/qv");
@@ -1366,14 +1531,14 @@ const createElm = (rctx, vnode, flags) => {
     if (isComponent) {
         setKey(elm, vnode.$key$);
         const renderQRL = props["q:renderFn"];
-        return setComponentProps$1(elCtx, rctx, props), setQId(rctx, elCtx), elCtx.$componentQrl$ = renderQRL, 
-        then(renderComponent(rctx, elCtx, flags), (() => {
+        return setComponentProps$1(elCtx, rCtx, props.props), setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL, 
+        then(renderComponent(rCtx, elCtx, flags), (() => {
             let children = vnode.$children$;
             if (0 === children.length) {
                 return elm;
             }
             1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
-            const slotRctx = pushRenderContext(rctx, elCtx);
+            const slotRctx = pushRenderContext(rCtx, elCtx);
             const slotMap = getSlotMap(elCtx);
             const elements = children.map((ch => createElm(slotRctx, ch, flags)));
             return then(promiseAll(elements), (() => {
@@ -1384,28 +1549,24 @@ const createElm = (rctx, vnode, flags) => {
             }));
         }));
     }
-    const currentComponent = rctx.$cmpCtx$;
     const isSlot = isVirtual && "q:s" in props;
     const hasRef = !isVirtual && "ref" in props;
-    const listenerMap = setProperties(staticCtx, elCtx, props, isSvg);
-    if (currentComponent && !isVirtual) {
+    const listeners = elCtx.li;
+    if (vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props), 
+    currentComponent && !isVirtual) {
         const scopedIds = currentComponent.$scopeIds$;
-        if (scopedIds && scopedIds.forEach((styleId => {
+        scopedIds && scopedIds.forEach((styleId => {
             elm.classList.add(styleId);
-        })), !currentComponent.$attachedListeners$) {
-            currentComponent.$attachedListeners$ = true;
-            for (const eventName of Object.keys(currentComponent.li)) {
-                addQRLListener(listenerMap, eventName, currentComponent.li[eventName]);
-            }
-        }
+        })), currentComponent.$needAttachListeners$ && (addQRLListener(listeners, currentComponent.li), 
+        currentComponent.$needAttachListeners$ = false);
     }
     isSlot ? (currentComponent.$slots$, setKey(elm, vnode.$key$), directSetAttribute(elm, "q:sref", currentComponent.$id$), 
     currentComponent.$slots$.push(vnode), staticCtx.$addSlots$.push([ elm, currentComponent.$element$ ])) : setKey(elm, vnode.$key$);
     {
-        const listeners = Object.keys(listenerMap);
-        isHead && !isVirtual && directSetAttribute(elm, "q:head", ""), (listeners.length > 0 || hasRef) && setQId(rctx, elCtx);
-        for (const key of listeners) {
-            setAttribute(staticCtx, elm, key, serializeQRLs(listenerMap[key], elCtx));
+        isHead && !isVirtual && directSetAttribute(elm, "q:head", ""), (listeners.length > 0 || hasRef) && setQId(rCtx, elCtx);
+        const groups = groupListeners(listeners);
+        for (const listener of groups) {
+            setAttribute(staticCtx, elm, listener[0], serializeQRLs(listener[1], elCtx));
         }
     }
     if (void 0 !== props[dangerouslySetInnerHTML]) {
@@ -1416,20 +1577,20 @@ const createElm = (rctx, vnode, flags) => {
         return elm;
     }
     1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
-    const promises = children.map((ch => createElm(rctx, ch, flags)));
+    const promises = children.map((ch => createElm(rCtx, ch, flags)));
     return then(promiseAll(promises), (() => {
         for (const node of children) {
-            node.$elm$, appendChild(rctx.$static$, elm, node.$elm$);
+            node.$elm$, appendChild(rCtx.$static$, elm, node.$elm$);
         }
         return elm;
     }));
 };
 
-const getSlotMap = ctx => {
-    const slotsArray = (ctx => ctx.$slots$ || (ctx.$element$.parentElement, ctx.$slots$ = readDOMSlots(ctx)))(ctx);
+const getSlotMap = elCtx => {
+    const slotsArray = (elCtx => elCtx.$slots$ || (elCtx.$element$.parentElement, elCtx.$slots$ = readDOMSlots(elCtx)))(elCtx);
     const slots = {};
     const templates = {};
-    const t = Array.from(ctx.$element$.childNodes).filter(isSlotTemplate);
+    const t = Array.from(elCtx.$element$.childNodes).filter(isSlotTemplate);
     for (const vnode of slotsArray) {
         vnode.$elm$, slots[vnode.$key$ ?? ""] = vnode.$elm$;
     }
@@ -1442,7 +1603,7 @@ const getSlotMap = ctx => {
     };
 };
 
-const readDOMSlots = ctx => ((el, prop, value) => {
+const readDOMSlots = elCtx => ((el, prop, value) => {
     const walker = ((el, prop, value) => el.ownerDocument.createTreeWalker(el, 128, {
         acceptNode(c) {
             const virtual = getVirtualElement(c);
@@ -1455,9 +1616,12 @@ const readDOMSlots = ctx => ((el, prop, value) => {
         pars.push(getVirtualElement(currentNode));
     }
     return pars;
-})(ctx.$element$.parentElement, 0, ctx.$id$).map(domToVnode);
+})(elCtx.$element$.parentElement, 0, elCtx.$id$).map(domToVnode);
 
 const checkBeforeAssign = (ctx, elm, prop, newValue) => (prop in elm && elm[prop] !== newValue && setProperty(ctx, elm, prop, newValue), 
+true);
+
+const forceAttribute = (ctx, elm, prop, newValue) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
 true);
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
@@ -1478,102 +1642,110 @@ const PROP_HANDLER_MAP = {
     },
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
+    href: forceAttribute,
+    list: forceAttribute,
+    form: forceAttribute,
+    tabIndex: forceAttribute,
+    download: forceAttribute,
     [dangerouslySetInnerHTML]: (ctx, elm, _, newValue) => (dangerouslySetInnerHTML in elm ? setProperty(ctx, elm, dangerouslySetInnerHTML, newValue) : "innerHTML" in elm && setProperty(ctx, elm, "innerHTML", newValue), 
     true),
     innerHTML: () => true
 };
 
-const updateProperties = (elCtx, staticCtx, oldProps, newProps, isSvg) => {
+const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps) => {
     const keys = getKeys(oldProps, newProps);
-    const listenersMap = elCtx.li = {};
+    const values = {};
     if (0 === keys.length) {
-        return listenersMap;
+        return values;
     }
+    const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
     const elm = elCtx.$element$;
-    for (let key of keys) {
-        if ("children" === key) {
+    for (let prop of keys) {
+        if ("ref" === prop) {
+            setRef(newProps[prop], elm);
             continue;
         }
-        let newValue = newProps[key];
-        "className" === key && (newProps.class = newValue, key = "class"), "class" === key && (newProps.class = newValue = serializeClass(newValue));
-        const oldValue = oldProps[key];
-        if (oldValue === newValue) {
+        let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
+        if (isOnProp(prop)) {
+            setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
             continue;
         }
-        if ("ref" === key) {
-            newValue.current = elm;
-            continue;
-        }
-        if (isOnProp(key)) {
-            setEvent(listenersMap, key, newValue, staticCtx.$containerState$.$containerEl$);
-            continue;
-        }
-        const exception = PROP_HANDLER_MAP[key];
-        exception && exception(staticCtx, elm, key, newValue, oldValue) || (isSvg || !(key in elm) ? setAttribute(staticCtx, elm, key, newValue) : setProperty(staticCtx, elm, key, newValue));
+        "className" === prop && (prop = "class"), isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
+        newValue = newValue.value), "class" === prop && (newProps.class = newValue = serializeClass(newValue));
+        const normalizedKey = prop.toLowerCase();
+        const oldValue = oldProps[normalizedKey];
+        values[normalizedKey] = newValue, oldValue !== newValue && smartSetProperty(staticCtx, elm, prop, newValue, oldValue);
     }
-    return listenersMap;
+    return values;
+};
+
+const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue) => {
+    const exception = PROP_HANDLER_MAP[prop];
+    exception && exception(staticCtx, elm, prop, newValue, oldValue) || (prop in elm ? setProperty(staticCtx, elm, prop, newValue) : setAttribute(staticCtx, elm, prop, newValue));
 };
 
 const getKeys = (oldProps, newProps) => {
     const keys = Object.keys(newProps);
-    return keys.push(...Object.keys(oldProps).filter((p => !keys.includes(p)))), keys;
+    const normalizedKeys = keys.map((s => s.toLowerCase()));
+    const oldKeys = Object.keys(oldProps);
+    return keys.push(...oldKeys.filter((p => !normalizedKeys.includes(p)))), keys.filter((c => "children" !== c));
 };
 
 const addGlobalListener = (staticCtx, elm, prop) => {
     try {
         window.qwikevents && window.qwikevents.push(getEventName(prop));
-    } catch (err) {
-        logWarn(err);
-    }
+    } catch (err) {}
 };
 
-const setProperties = (rctx, elCtx, newProps, isSvg) => {
+const setProperties = (staticCtx, elCtx, hostElm, newProps) => {
     const elm = elCtx.$element$;
     const keys = Object.keys(newProps);
-    const listenerMap = elCtx.li;
+    const values = {};
     if (0 === keys.length) {
-        return listenerMap;
+        return values;
     }
-    for (let key of keys) {
-        if ("children" === key) {
+    const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
+    for (let prop of keys) {
+        if ("children" === prop) {
             continue;
         }
-        let newValue = newProps[key];
-        if ("className" === key && (newProps.class = newValue, key = "class"), "class" === key && (newProps.class = newValue = serializeClass(newValue)), 
-        "ref" === key) {
-            newValue.current = elm;
+        if ("ref" === prop) {
+            setRef(newProps[prop], elm);
             continue;
         }
-        if (isOnProp(key)) {
-            addGlobalListener(rctx, elm, setEvent(listenerMap, key, newValue, rctx.$containerState$.$containerEl$));
-            continue;
-        }
-        const exception = PROP_HANDLER_MAP[key];
-        exception && exception(rctx, elm, key, newValue, void 0) || (isSvg || !(key in elm) ? setAttribute(rctx, elm, key, newValue) : setProperty(rctx, elm, key, newValue));
+        let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
+        isOnProp(prop) ? addGlobalListener(0, 0, setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$)) : ("className" === prop && (prop = "class"), 
+        hostElm && isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
+        newValue = newValue.value), "class" === prop && (newValue = serializeClass(newValue)), 
+        values[prop.toLowerCase()] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, void 0));
     }
-    return listenerMap;
+    return values;
 };
 
-const setComponentProps$1 = (ctx, rctx, expectProps) => {
+const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
     const keys = Object.keys(expectProps);
+    let props = elCtx.$props$;
+    props || (elCtx.$props$ = props = createProxy({
+        [QObjectFlagsSymbol]: QObjectImmutable
+    }, rCtx.$static$.$containerState$));
+    const qwikProps = getPropsMutator(props);
     if (0 === keys.length) {
         return false;
     }
-    const qwikProps = getPropsMutator(ctx, rctx.$static$.$containerState$);
     for (const key of keys) {
         SKIPS_PROPS.includes(key) || qwikProps.set(key, expectProps[key]);
     }
-    return ctx.$dirty$;
+    return elCtx.$dirty$;
 };
 
-const cleanupTree = (parent, rctx, subsManager, stopSlots) => {
+const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
     if (stopSlots && parent.hasAttribute("q:s")) {
-        return void rctx.$rmSlots$.push(parent);
+        return void staticCtx.$rmSlots$.push(parent);
     }
     cleanupElement(parent, subsManager);
     const ch = getChildren(parent, "elements");
     for (const child of ch) {
-        cleanupTree(child, rctx, subsManager, stopSlots);
+        cleanupTree(child, staticCtx, subsManager, stopSlots);
     }
 };
 
@@ -1615,11 +1787,41 @@ const useLexicalScope = () => {
     } else {
         const el = context.$element$;
         const container = getWrappingContainer(el);
-        const ctx = getContext(el);
+        const elCtx = getContext(el);
         qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), resumeIfNeeded(container), 
-        inflateQrl(qrl, ctx);
+        inflateQrl(qrl, elCtx);
     }
     return qrl.$captureRef$;
+};
+
+const notifyChange = (subAction, containerState) => {
+    if (0 === subAction[0]) {
+        const host = subAction[1];
+        isQwikElement(host) ? notifyRender(host, containerState) : notifyWatch(host, containerState);
+    } else {
+        notifySignalOperation(subAction, containerState);
+    }
+};
+
+const notifyRender = (hostElement, containerState) => {
+    const server = isServer();
+    server || resumeIfNeeded(containerState.$containerEl$);
+    const elCtx = getContext(hostElement);
+    if (elCtx.$componentQrl$, !elCtx.$dirty$) {
+        if (elCtx.$dirty$ = true, void 0 !== containerState.$hostsRendering$) {
+            containerState.$renderPromise$, containerState.$hostsStaging$.add(hostElement);
+        } else {
+            if (server) {
+                return;
+            }
+            containerState.$hostsNext$.add(hostElement), scheduleFrame(containerState);
+        }
+    }
+};
+
+const notifySignalOperation = (op, containerState) => {
+    void 0 !== containerState.$hostsRendering$ ? (containerState.$renderPromise$, containerState.$opsNext$.add(op)) : (containerState.$opsNext$.add(op), 
+    scheduleFrame(containerState));
 };
 
 const notifyWatch = (watch, containerState) => {
@@ -1659,7 +1861,28 @@ const renderMarked = async containerState => {
                 }
             }
         }
-        if (staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length) {
+        if (containerState.$opsNext$.forEach((op => ((staticCtx, operation) => {
+            const prop = operation[5] ?? "value";
+            const value = operation[2][prop];
+            switch (operation[0]) {
+              case 1:
+                {
+                    const prop = operation[4];
+                    const elm = operation[3];
+                    const ctx = tryGetContext(elm);
+                    let oldValue;
+                    if (ctx && ctx.$vdom$) {
+                        const normalizedProp = prop.toLowerCase();
+                        oldValue = ctx.$vdom$.$props$[normalizedProp], ctx.$vdom$.$props$[normalizedProp] = value;
+                    }
+                    return smartSetProperty(staticCtx, elm, prop, value, oldValue);
+                }
+
+              case 2:
+                return setProperty(staticCtx, operation[3], "data", value);
+            }
+        })(staticCtx, op))), containerState.$opsNext$.clear(), staticCtx.$operations$.push(...staticCtx.$postOperations$), 
+        0 === staticCtx.$operations$.length) {
             return void await postRendering(containerState, staticCtx);
         }
         await getPlatform().raf((() => ((({$static$: ctx}) => {
@@ -1681,12 +1904,12 @@ const postRendering = async (containerState, ctx) => {
     containerState.$hostsStaging$.forEach((el => {
         containerState.$hostsNext$.add(el);
     })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
-    containerState.$renderPromise$ = void 0, containerState.$hostsNext$.size + containerState.$watchNext$.size > 0 && scheduleFrame(containerState);
+    containerState.$renderPromise$ = void 0, containerState.$hostsNext$.size + containerState.$watchNext$.size + containerState.$opsNext$.size > 0 && scheduleFrame(containerState);
 };
 
 const executeWatchesBefore = async containerState => {
-    const resourcesPromises = [];
     const containerEl = containerState.$containerEl$;
+    const resourcesPromises = [];
     const watchPromises = [];
     const isWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsWatch);
     const isResourceWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
@@ -1736,509 +1959,6 @@ const sortWatches = watches => {
     watches.sort(((a, b) => a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
 };
 
-const CONTAINER_STATE = Symbol("ContainerState");
-
-const getContainerState = containerEl => {
-    let set = containerEl[CONTAINER_STATE];
-    return set || (containerEl[CONTAINER_STATE] = set = createContainerState(containerEl)), 
-    set;
-};
-
-const createContainerState = containerEl => {
-    const containerState = {
-        $containerEl$: containerEl,
-        $proxyMap$: new WeakMap,
-        $subsManager$: null,
-        $watchNext$: new Set,
-        $watchStaging$: new Set,
-        $hostsNext$: new Set,
-        $hostsStaging$: new Set,
-        $renderPromise$: void 0,
-        $hostsRendering$: void 0,
-        $envData$: {},
-        $elementIndex$: 0,
-        $styleIds$: new Set
-    };
-    return containerState.$subsManager$ = createSubscriptionManager(containerState), 
-    containerState;
-};
-
-const createSubscriptionManager = containerState => {
-    const objToSubs = new Map;
-    const subsToObjs = new Map;
-    const tryGetLocal = obj => (getProxyTarget(obj), objToSubs.get(obj));
-    const trackSubToObj = (subscriber, map) => {
-        let set = subsToObjs.get(subscriber);
-        set || subsToObjs.set(subscriber, set = new Set), set.add(map);
-    };
-    const manager = {
-        $tryGetLocal$: tryGetLocal,
-        $getLocal$: (obj, initialMap) => {
-            let local = tryGetLocal(obj);
-            if (local) {} else {
-                const map = initialMap || new Map;
-                map.forEach(((_, key) => {
-                    trackSubToObj(key, map);
-                })), objToSubs.set(obj, local = {
-                    $subs$: map,
-                    $addSub$(subscriber, key) {
-                        if (null == key) {
-                            map.set(subscriber, null);
-                        } else {
-                            let sub = map.get(subscriber);
-                            void 0 === sub && map.set(subscriber, sub = new Set), sub && sub.add(key);
-                        }
-                        trackSubToObj(subscriber, map);
-                    },
-                    $notifySubs$(key) {
-                        map.forEach(((value, subscriber) => {
-                            null !== value && key && !value.has(key) || ((subscriber, containerState) => {
-                                isQwikElement(subscriber) ? ((hostElement, containerState) => {
-                                    const server = isServer();
-                                    server || resumeIfNeeded(containerState.$containerEl$);
-                                    const ctx = getContext(hostElement);
-                                    if (ctx.$componentQrl$, !ctx.$dirty$) {
-                                        if (ctx.$dirty$ = true, void 0 !== containerState.$hostsRendering$) {
-                                            containerState.$renderPromise$, containerState.$hostsStaging$.add(hostElement);
-                                        } else {
-                                            if (server) {
-                                                return void logWarn("Can not rerender in server platform");
-                                            }
-                                            containerState.$hostsNext$.add(hostElement), scheduleFrame(containerState);
-                                        }
-                                    }
-                                })(subscriber, containerState) : notifyWatch(subscriber, containerState);
-                            })(subscriber, containerState);
-                        }));
-                    }
-                });
-            }
-            return local;
-        },
-        $clearSub$: sub => {
-            const subs = subsToObjs.get(sub);
-            subs && (subs.forEach((s => {
-                s.delete(sub);
-            })), subsToObjs.delete(sub), subs.clear());
-        }
-    };
-    return manager;
-};
-
-const _pauseFromContexts = async (allContexts, containerState) => {
-    const collector = createCollector(containerState);
-    const listeners = [];
-    for (const ctx of allContexts) {
-        const el = ctx.$element$;
-        const ctxLi = ctx.li;
-        for (const key of Object.keys(ctxLi)) {
-            for (const qrl of ctxLi[key]) {
-                const captured = qrl.$captureRef$;
-                if (captured) {
-                    for (const obj of captured) {
-                        collectValue(obj, collector, true);
-                    }
-                }
-                isElement(el) && listeners.push({
-                    key: key,
-                    qrl: qrl,
-                    el: el,
-                    eventName: getEventName(key)
-                });
-            }
-        }
-        ctx.$watches$ && collector.$watches$.push(...ctx.$watches$);
-    }
-    if (0 === listeners.length) {
-        return {
-            state: {
-                ctx: {},
-                objs: [],
-                subs: []
-            },
-            objs: [],
-            listeners: [],
-            mode: "static"
-        };
-    }
-    let promises;
-    for (;(promises = collector.$promises$).length > 0; ) {
-        collector.$promises$ = [], await Promise.allSettled(promises);
-    }
-    const canRender = collector.$elements$.length > 0;
-    if (canRender) {
-        for (const element of collector.$elements$) {
-            collectElementData(tryGetContext(element), collector);
-        }
-        for (const ctx of allContexts) {
-            if (ctx.$props$ && collectProps(ctx, collector), ctx.$contexts$) {
-                for (const item of ctx.$contexts$.values()) {
-                    collectValue(item, collector, false);
-                }
-            }
-        }
-    }
-    for (;(promises = collector.$promises$).length > 0; ) {
-        collector.$promises$ = [], await Promise.allSettled(promises);
-    }
-    const elementToIndex = new Map;
-    const objs = Array.from(collector.$objSet$.keys());
-    const objToId = new Map;
-    const getElementID = el => {
-        let id = elementToIndex.get(el);
-        return void 0 === id && (id = (el => {
-            const ctx = tryGetContext(el);
-            return ctx ? ctx.$id$ : null;
-        })(el), id ? id = "#" + id : console.warn("Missing ID", el), elementToIndex.set(el, id)), 
-        id;
-    };
-    const getObjId = obj => {
-        let suffix = "";
-        if (isPromise(obj)) {
-            const {value: value, resolved: resolved} = getPromiseValue(obj);
-            obj = value, suffix += resolved ? "~" : "_";
-        }
-        if (isObject(obj)) {
-            const target = getProxyTarget(obj);
-            if (target) {
-                suffix += "!", obj = target;
-            } else if (isQwikElement(obj)) {
-                const elID = getElementID(obj);
-                return elID ? elID + suffix : null;
-            }
-        }
-        const id = objToId.get(obj);
-        return id ? id + suffix : null;
-    };
-    const mustGetObjId = obj => {
-        const key = getObjId(obj);
-        if (null === key) {
-            throw qError(QError_missingObjectId, obj);
-        }
-        return key;
-    };
-    const subsMap = new Map;
-    objs.forEach((obj => {
-        const proxy = containerState.$proxyMap$.get(obj);
-        const flags = getProxyFlags(proxy);
-        if (void 0 === flags) {
-            return;
-        }
-        const subsObj = [];
-        flags > 0 && subsObj.push({
-            subscriber: "$",
-            data: flags
-        }), getProxySubs(proxy).forEach(((set, key) => {
-            isNode(key) && isVirtualElement(key) && !collector.$elements$.includes(key) || subsObj.push({
-                subscriber: key,
-                data: set ? Array.from(set) : null
-            });
-        })), subsObj.length > 0 && subsMap.set(obj, subsObj);
-    })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
-    let count = 0;
-    for (const obj of objs) {
-        objToId.set(obj, intToStr(count)), count++;
-    }
-    if (collector.$noSerialize$.length > 0) {
-        const undefinedID = objToId.get(void 0);
-        for (const obj of collector.$noSerialize$) {
-            objToId.set(obj, undefinedID);
-        }
-    }
-    const subs = objs.map((obj => {
-        const sub = subsMap.get(obj);
-        if (!sub) {
-            return;
-        }
-        const subsObj = {};
-        return sub.forEach((({subscriber: subscriber, data: data}) => {
-            if ("$" === subscriber) {
-                subsObj[subscriber] = data;
-            } else {
-                const id = getObjId(subscriber);
-                null !== id && (subsObj[id] = data);
-            }
-        })), subsObj;
-    })).filter(isNotNullable);
-    const convertedObjs = objs.map((obj => {
-        if (null === obj) {
-            return null;
-        }
-        const typeObj = typeof obj;
-        switch (typeObj) {
-          case "undefined":
-            return UNDEFINED_PREFIX;
-
-          case "string":
-          case "number":
-          case "boolean":
-            return obj;
-
-          default:
-            const value = serializeValue(obj, getObjId, containerState);
-            if (void 0 !== value) {
-                return value;
-            }
-            if ("object" === typeObj) {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key of Object.keys(obj)) {
-                        output[key] = mustGetObjId(obj[key]);
-                    }
-                    return output;
-                }
-            }
-        }
-        throw qError(QError_verifySerializable, obj);
-    }));
-    const meta = {};
-    allContexts.forEach((ctx => {
-        const node = ctx.$element$;
-        const ref = ctx.$refMap$;
-        const props = ctx.$props$;
-        const contexts = ctx.$contexts$;
-        const watches = ctx.$watches$;
-        const renderQrl = ctx.$componentQrl$;
-        const seq = ctx.$seq$;
-        const metaValue = {};
-        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
-        let add = false;
-        if (ref.length > 0) {
-            const value = ref.map(mustGetObjId).join(" ");
-            value && (metaValue.r = value, add = true);
-        }
-        if (canRender) {
-            if (elementCaptured && props && (metaValue.h = mustGetObjId(props) + " " + mustGetObjId(renderQrl), 
-            add = true), watches && watches.length > 0) {
-                const value = watches.map(getObjId).filter(isNotNullable).join(" ");
-                value && (metaValue.w = value, add = true);
-            }
-            if (elementCaptured && seq && seq.length > 0) {
-                const value = seq.map(mustGetObjId).join(" ");
-                metaValue.s = value, add = true;
-            }
-            if (contexts) {
-                const serializedContexts = [];
-                contexts.forEach(((value, key) => {
-                    serializedContexts.push(`${key}=${mustGetObjId(value)}`);
-                }));
-                const value = serializedContexts.join(" ");
-                value && (metaValue.c = value, add = true);
-            }
-        }
-        if (add) {
-            const elementID = getElementID(node);
-            meta[elementID] = metaValue;
-        }
-    }));
-    for (const watch of collector.$watches$) {
-        destroyWatch(watch);
-    }
-    return {
-        state: {
-            ctx: meta,
-            objs: convertedObjs,
-            subs: subs
-        },
-        objs: objs,
-        listeners: listeners,
-        mode: canRender ? "render" : "listeners"
-    };
-};
-
-const getNodesInScope = (parent, predicate) => {
-    predicate(parent);
-    const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
-        acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
-    });
-    const pars = [];
-    let currentNode = null;
-    for (;currentNode = walker.nextNode(); ) {
-        pars.push(processVirtualNodes(currentNode));
-    }
-    return pars;
-};
-
-const reviveNestedObjects = (obj, getObject, parser) => {
-    if (!parser.fill(obj) && obj && "object" == typeof obj) {
-        if (isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-                const value = obj[i];
-                "string" == typeof value ? obj[i] = getObject(value) : reviveNestedObjects(value, getObject, parser);
-            }
-        } else if (isSerializableObject(obj)) {
-            for (const key of Object.keys(obj)) {
-                const value = obj[key];
-                "string" == typeof value ? obj[key] = getObject(value) : reviveNestedObjects(value, getObject, parser);
-            }
-        }
-    }
-};
-
-const OBJECT_TRANSFORMS = {
-    "!": (obj, containerState) => containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState),
-    "~": obj => Promise.resolve(obj),
-    _: obj => Promise.reject(obj)
-};
-
-const collectProps = (elCtx, collector) => {
-    const parentCtx = elCtx.$parent$;
-    if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
-        const subs = getProxySubs(elCtx.$props$);
-        const el = elCtx.$element$;
-        subs && subs.has(el) && collectElement(el, collector);
-    }
-};
-
-const createCollector = containerState => ({
-    $containerState$: containerState,
-    $seen$: new Set,
-    $objSet$: new Set,
-    $noSerialize$: [],
-    $elements$: [],
-    $watches$: [],
-    $promises$: []
-});
-
-const collectDeferElement = (el, collector) => {
-    collector.$elements$.includes(el) || collector.$elements$.push(el);
-};
-
-const collectElement = (el, collector) => {
-    if (collector.$elements$.includes(el)) {
-        return;
-    }
-    const ctx = tryGetContext(el);
-    ctx && (collector.$elements$.push(el), collectElementData(ctx, collector));
-};
-
-const collectElementData = (ctx, collector) => {
-    if (ctx.$props$ && collectValue(ctx.$props$, collector, false), ctx.$componentQrl$ && collectValue(ctx.$componentQrl$, collector, false), 
-    ctx.$seq$) {
-        for (const obj of ctx.$seq$) {
-            collectValue(obj, collector, false);
-        }
-    }
-    if (ctx.$watches$) {
-        for (const obj of ctx.$watches$) {
-            collectValue(obj, collector, false);
-        }
-    }
-    if (ctx.$contexts$) {
-        for (const obj of ctx.$contexts$.values()) {
-            collectValue(obj, collector, false);
-        }
-    }
-};
-
-const PROMISE_VALUE = Symbol();
-
-const getPromiseValue = promise => promise[PROMISE_VALUE];
-
-const collectValue = (obj, collector, leaks) => {
-    if (null !== obj) {
-        const objType = typeof obj;
-        const seen = collector.$seen$;
-        switch (objType) {
-          case "function":
-            if (seen.has(obj)) {
-                return;
-            }
-            if (seen.add(obj), !fastShouldSerialize(obj)) {
-                return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
-            }
-            if (isQrl(obj)) {
-                if (collector.$objSet$.add(obj), obj.$captureRef$) {
-                    for (const item of obj.$captureRef$) {
-                        collectValue(item, collector, leaks);
-                    }
-                }
-                return;
-            }
-            break;
-
-          case "object":
-            {
-                if (seen.has(obj)) {
-                    return;
-                }
-                if (seen.add(obj), !fastShouldSerialize(obj)) {
-                    return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
-                }
-                if (isPromise(obj)) {
-                    return void collector.$promises$.push((promise = obj, promise.then((value => {
-                        const v = {
-                            resolved: true,
-                            value: value
-                        };
-                        return promise[PROMISE_VALUE] = v, value;
-                    }), (value => {
-                        const v = {
-                            resolved: false,
-                            value: value
-                        };
-                        return promise[PROMISE_VALUE] = v, value;
-                    }))).then((value => {
-                        collectValue(value, collector, leaks);
-                    })));
-                }
-                const target = getProxyTarget(obj);
-                const input = obj;
-                if (target) {
-                    if (leaks && ((proxy, collector) => {
-                        const subs = getProxySubs(proxy);
-                        if (!collector.$seen$.has(subs)) {
-                            collector.$seen$.add(subs);
-                            for (const key of Array.from(subs.keys())) {
-                                isNode(key) && isVirtualElement(key) ? collectDeferElement(key, collector) : collectValue(key, collector, true);
-                            }
-                        }
-                    })(input, collector), obj = target, seen.has(obj)) {
-                        return;
-                    }
-                    if (seen.add(obj), isResourceReturn(obj)) {
-                        return collector.$objSet$.add(target), collectValue(obj.promise, collector, leaks), 
-                        void collectValue(obj.resolved, collector, leaks);
-                    }
-                } else if (isNode(obj)) {
-                    return;
-                }
-                if (isArray(obj)) {
-                    for (let i = 0; i < obj.length; i++) {
-                        collectValue(input[i], collector, leaks);
-                    }
-                } else {
-                    for (const key of Object.keys(obj)) {
-                        collectValue(input[key], collector, leaks);
-                    }
-                }
-                break;
-            }
-        }
-    }
-    var promise;
-    collector.$objSet$.add(obj);
-};
-
-const isContainer = el => isElement(el) && el.hasAttribute("q:container");
-
-const hasQId = el => {
-    const node = processVirtualNodes(el);
-    return !!isQwikElement(node) && node.hasAttribute("q:id");
-};
-
-const intToStr = nu => nu.toString(36);
-
-const strToInt = nu => parseInt(nu, 36);
-
-const getEventName = attribute => {
-    const colonPos = attribute.indexOf(":");
-    return attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase()));
-};
-
 const WatchFlagsIsEffect = 1;
 
 const WatchFlagsIsWatch = 2;
@@ -2286,7 +2006,7 @@ const useServerMountQrl = mountQrl => {
     const {get: get, set: set, ctx: ctx} = useSequentialScope();
     if (!get) {
         if (!isServer()) {
-            throw qError(QError_canNotMountUseServerMount, ctx.$hostElement$);
+            throw qError(22, ctx.$hostElement$);
         }
         waitAndRun(ctx, mountQrl), set(true);
     }
@@ -2304,13 +2024,14 @@ const useMount$ = implicit$FirstArg(useMountQrl);
 
 const isResourceWatch = watch => !!watch.$resource$;
 
-const runSubscriber = (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState, rctx));
+const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState, rctx));
 
 const runResource = (watch, containerState, waitOn) => {
     watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
     const el = watch.$el$;
     const invokationContext = newInvokeContext(el, void 0, "WatchEvent");
     const {$subsManager$: subsManager} = containerState;
+    watch.$qrl$.$captureRef$;
     const watchFn = watch.$qrl$.getFn(invokationContext, (() => {
         subsManager.$clearSub$(watch);
     }));
@@ -2319,9 +2040,13 @@ const runResource = (watch, containerState, waitOn) => {
     const resourceTarget = unwrapProxy(resource);
     const opts = {
         track: (obj, prop) => {
-            const target = getProxyTarget(obj);
-            return target ? subsManager.$getLocal$(target).$addSub$(watch, prop) : logErrorAndStop(codeToText(QError_trackUseStore), obj), 
-            prop ? obj[prop] : obj;
+            if (isFunction(obj)) {
+                const ctx = newInvokeContext();
+                return ctx.$subscriber$ = watch, invoke(ctx, obj);
+            }
+            const manager = getProxyManager(obj);
+            return manager ? manager.$addSub$([ 0, watch, prop ]) : logErrorAndStop(codeToText(26), obj), 
+            prop ? obj[prop] : isSignal(obj) ? obj.value : obj;
         },
         cleanup(callback) {
             cleanups.push(callback);
@@ -2367,8 +2092,12 @@ const runWatch = (watch, containerState, rctx) => {
     }));
     const opts = {
         track: (obj, prop) => {
-            const target = getProxyTarget(obj);
-            return target ? subsManager.$getLocal$(target).$addSub$(watch, prop) : logErrorAndStop(codeToText(QError_trackUseStore), obj), 
+            if (isFunction(obj)) {
+                const ctx = newInvokeContext();
+                return ctx.$subscriber$ = watch, invoke(ctx, obj);
+            }
+            const manager = getProxyManager(obj);
+            return manager ? manager.$addSub$([ 0, watch, prop ]) : logErrorAndStop(codeToText(26), obj), 
             prop ? obj[prop] : obj;
         },
         cleanup(callback) {
@@ -2400,7 +2129,7 @@ const destroyWatch = watch => {
 };
 
 const useRunWatch = (watch, eagerness) => {
-    "load" === eagerness ? useOn("qinit", getWatchHandlerQrl(watch)) : "visible" === eagerness && useOn("qvisible", getWatchHandlerQrl(watch));
+    "visible" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" === eagerness && useOnDocument("qidle", getWatchHandlerQrl(watch));
 };
 
 const getWatchHandlerQrl = watch => {
@@ -2465,17 +2194,20 @@ const _createResourceReturn = opts => ({
 
 const createResourceReturn = (containerState, opts, initialPromise) => {
     const result = _createResourceReturn(opts);
-    return result.promise = initialPromise, createProxy(result, containerState, 0, void 0);
+    return result.promise = initialPromise, createProxy(result, containerState, void 0);
 };
-
-const isResourceReturn = obj => isObject(obj) && "resource" === obj.__brand;
-
-const UNDEFINED_PREFIX = "";
 
 const QRLSerializer = {
     prefix: "",
     test: v => isQrl(v),
-    serialize: (obj, getObjId, containerState) => serializeQRL(obj, {
+    collect: (v, collector, leaks) => {
+        if (v.$captureRef$) {
+            for (const item of v.$captureRef$) {
+                collectValue(item, collector, leaks);
+            }
+        }
+    },
+    serialize: (obj, getObjId) => serializeQRL(obj, {
         $getObjId$: getObjId
     }),
     prepare: (data, containerState) => parseQRL(data, containerState.$containerEl$),
@@ -2490,6 +2222,9 @@ const WatchSerializer = {
     test: v => {
         return isObject(obj = v) && obj instanceof Watch;
         var obj;
+    },
+    collect: (v, collector, leaks) => {
+        collectValue(v.$qrl$, collector, leaks), v.$resource$ && collectValue(v.$resource$, collector, leaks);
     },
     serialize: (obj, getObjId) => ((watch, getObjId) => {
         let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
@@ -2506,7 +2241,13 @@ const WatchSerializer = {
 
 const ResourceSerializer = {
     prefix: "",
-    test: v => isResourceReturn(v),
+    test: v => {
+        return isObject(obj = v) && "resource" === obj.__brand;
+        var obj;
+    },
+    collect: (obj, collector, leaks) => {
+        collectValue(obj.promise, collector, leaks), collectValue(obj.resolved, collector, leaks);
+    },
     serialize: (obj, getObjId) => ((resource, getObjId) => {
         const state = resource.state;
         return "resolved" === state ? `0 ${getObjId(resource.resolved)}` : "pending" === state ? "1" : `2 ${getObjId(resource.error)}`;
@@ -2581,7 +2322,7 @@ const SERIALIZABLE_STATE = Symbol("serializable-data");
 const ComponentSerializer = {
     prefix: "",
     test: obj => isQwikComponent(obj),
-    serialize: (obj, getObjId, containerState) => {
+    serialize: (obj, getObjId) => {
         const [qrl] = obj[SERIALIZABLE_STATE];
         return serializeQRL(qrl, {
             $getObjId$: getObjId
@@ -2600,7 +2341,32 @@ const ComponentSerializer = {
     }
 };
 
-const serializers = [ QRLSerializer, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, {
+const serializers = [ QRLSerializer, {
+    prefix: "",
+    test: v => v instanceof SignalImpl,
+    collect: (obj, collector, leaks) => (collectValue(obj.untrackedValue, collector, leaks), 
+    leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector), obj),
+    serialize: (obj, getObjId) => getObjId(obj.untrackedValue),
+    prepare: data => new SignalImpl(data, null),
+    subs: (signal, subs, containerState) => {
+        signal[QObjectManagerSymbol] = containerState.$subsManager$.$createManager$(subs);
+    },
+    fill: (signal, getObject) => {
+        signal.untrackedValue = getObject(signal.untrackedValue);
+    }
+}, {
+    prefix: "",
+    test: v => v instanceof SignalWrapper,
+    collect: (obj, collector, leaks) => (collectValue(obj.ref, collector, leaks), obj),
+    serialize: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
+    prepare: data => {
+        const [id, prop] = data.split(" ");
+        return new SignalWrapper(id, prop);
+    },
+    fill: (signal, getObject) => {
+        signal.ref = getObject(signal.ref);
+    }
+}, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, {
     prefix: "",
     test: obj => "function" == typeof obj && void 0 !== obj.__qwik_serializable__,
     serialize: obj => obj.toString(),
@@ -2611,49 +2377,743 @@ const serializers = [ QRLSerializer, WatchSerializer, ResourceSerializer, URLSer
     fill: void 0
 } ];
 
-const serializeValue = (obj, getObjID, containerState) => {
-    for (const s of serializers) {
-        if (s.test(obj)) {
-            let value = s.prefix;
-            return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
+const collectorSerializers = serializers.filter((a => a.collect));
+
+const _pauseFromContexts = async (allContexts, containerState) => {
+    const collector = createCollector(containerState);
+    const listeners = [];
+    for (const ctx of allContexts) {
+        if (ctx.$watches$) {
+            for (const watch of ctx.$watches$) {
+                destroyWatch(watch);
+            }
+        }
+    }
+    for (const ctx of allContexts) {
+        const el = ctx.$element$;
+        const ctxListeners = ctx.li;
+        for (const listener of ctxListeners) {
+            const key = listener[0];
+            const qrl = listener[1];
+            const captured = qrl.$captureRef$;
+            if (captured) {
+                for (const obj of captured) {
+                    collectValue(obj, collector, true);
+                }
+            }
+            isElement(el) && listeners.push({
+                key: key,
+                qrl: qrl,
+                el: el,
+                eventName: getEventName(key)
+            });
+        }
+    }
+    if (0 === listeners.length) {
+        return {
+            state: {
+                ctx: {},
+                objs: [],
+                subs: []
+            },
+            objs: [],
+            listeners: [],
+            mode: "static"
+        };
+    }
+    let promises;
+    for (;(promises = collector.$promises$).length > 0; ) {
+        collector.$promises$ = [], await Promise.allSettled(promises);
+    }
+    const canRender = collector.$elements$.length > 0;
+    if (canRender) {
+        for (const element of collector.$elements$) {
+            collectElementData(tryGetContext(element), collector);
+        }
+        for (const ctx of allContexts) {
+            if (ctx.$props$ && collectProps(ctx, collector), ctx.$contexts$) {
+                for (const item of ctx.$contexts$.values()) {
+                    collectValue(item, collector, false);
+                }
+            }
+        }
+    }
+    for (;(promises = collector.$promises$).length > 0; ) {
+        collector.$promises$ = [], await Promise.all(promises);
+    }
+    const elementToIndex = new Map;
+    const objs = Array.from(collector.$objSet$.keys());
+    const objToId = new Map;
+    const getElementID = el => {
+        let id = elementToIndex.get(el);
+        return void 0 === id && (id = (el => {
+            const ctx = tryGetContext(el);
+            return ctx ? ctx.$id$ : null;
+        })(el), id ? id = "#" + id : console.warn("Missing ID", el), elementToIndex.set(el, id)), 
+        id;
+    };
+    const getObjId = obj => {
+        let suffix = "";
+        if (isPromise(obj)) {
+            const {value: value, resolved: resolved} = getPromiseValue(obj);
+            obj = value, suffix += resolved ? "~" : "_";
+        }
+        if (isObject(obj)) {
+            const target = getProxyTarget(obj);
+            if (target) {
+                suffix += "!", obj = target;
+            } else if (isQwikElement(obj)) {
+                const elID = getElementID(obj);
+                return elID ? elID + suffix : null;
+            }
+        }
+        const id = objToId.get(obj);
+        return id ? id + suffix : null;
+    };
+    const mustGetObjId = obj => {
+        const key = getObjId(obj);
+        if (null === key) {
+            throw qError(27, obj);
+        }
+        return key;
+    };
+    const subsMap = new Map;
+    objs.forEach((obj => {
+        const subs = getManager(obj, containerState)?.$subs$;
+        if (!subs) {
+            return null;
+        }
+        const flags = getProxyFlags(obj) ?? 0;
+        const convered = [];
+        flags > 0 && convered.push(flags);
+        for (const sub of subs) {
+            const host = sub[1];
+            0 === sub[0] && isNode(host) && isVirtualElement(host) && !collector.$elements$.includes(host) || convered.push(sub);
+        }
+        convered.length > 0 && subsMap.set(obj, convered);
+    })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
+    let count = 0;
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count)), count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(void 0);
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    const subs = [];
+    for (const obj of objs) {
+        const value = subsMap.get(obj);
+        if (null == value) {
+            break;
+        }
+        subs.push(value.map((s => "number" == typeof s ? `_${s}` : serializeSubscription(s, getObjId))).filter(isNotNullable));
+    }
+    subs.length, subsMap.size;
+    const convertedObjs = objs.map((obj => {
+        if (null === obj) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+          case "undefined":
+            return "";
+
+          case "string":
+          case "number":
+          case "boolean":
+            return obj;
+
+          default:
+            const value = ((obj, getObjID, containerState) => {
+                for (const s of serializers) {
+                    if (s.test(obj)) {
+                        let value = s.prefix;
+                        return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
+                    }
+                }
+            })(obj, mustGetObjId, containerState);
+            if (void 0 !== value) {
+                return value;
+            }
+            if ("object" === typeObj) {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key of Object.keys(obj)) {
+                        output[key] = mustGetObjId(obj[key]);
+                    }
+                    return output;
+                }
+            }
+        }
+        throw qError(3, obj);
+    }));
+    const meta = {};
+    return allContexts.forEach((ctx => {
+        const node = ctx.$element$;
+        const ref = ctx.$refMap$;
+        const props = ctx.$props$;
+        const contexts = ctx.$contexts$;
+        const watches = ctx.$watches$;
+        const renderQrl = ctx.$componentQrl$;
+        const seq = ctx.$seq$;
+        const metaValue = {};
+        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
+        let add = false;
+        if (ref.length > 0) {
+            const value = ref.map(mustGetObjId).join(" ");
+            value && (metaValue.r = value, add = true);
+        }
+        if (canRender) {
+            if (elementCaptured && props && (metaValue.h = mustGetObjId(props) + " " + mustGetObjId(renderQrl), 
+            add = true), watches && watches.length > 0) {
+                const value = watches.map(getObjId).filter(isNotNullable).join(" ");
+                value && (metaValue.w = value, add = true);
+            }
+            if (elementCaptured && seq && seq.length > 0) {
+                const value = seq.map(mustGetObjId).join(" ");
+                metaValue.s = value, add = true;
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach(((value, key) => {
+                    serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+                }));
+                const value = serializedContexts.join(" ");
+                value && (metaValue.c = value, add = true);
+            }
+        }
+        if (add) {
+            const elementID = getElementID(node);
+            meta[elementID] = metaValue;
+        }
+    })), {
+        state: {
+            ctx: meta,
+            objs: convertedObjs,
+            subs: subs
+        },
+        objs: objs,
+        listeners: listeners,
+        mode: canRender ? "render" : "listeners"
+    };
+};
+
+const getManager = (obj, containerState) => {
+    if (!isObject(obj)) {
+        return;
+    }
+    if (obj instanceof SignalImpl) {
+        return getProxyManager(obj);
+    }
+    const proxy = containerState.$proxyMap$.get(obj);
+    return proxy ? getProxyManager(proxy) : void 0;
+};
+
+const reviveNestedObjects = (obj, getObject, parser) => {
+    if (!parser.fill(obj) && obj && "object" == typeof obj) {
+        if (isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+                obj[i] = getObject(obj[i]);
+            }
+        } else if (isSerializableObject(obj)) {
+            for (const key of Object.keys(obj)) {
+                obj[key] = getObject(obj[key]);
+            }
         }
     }
 };
+
+const OBJECT_TRANSFORMS = {
+    "!": (obj, containerState) => containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState),
+    "~": obj => Promise.resolve(obj),
+    _: obj => Promise.reject(obj)
+};
+
+const collectProps = (elCtx, collector) => {
+    const parentCtx = elCtx.$parent$;
+    if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
+        const subs = getProxyManager(elCtx.$props$)?.$subs$;
+        const el = elCtx.$element$;
+        subs && subs.some((e => 0 === e[0] && e[1] === el)) && collectElement(el, collector);
+    }
+};
+
+const createCollector = containerState => ({
+    $containerState$: containerState,
+    $seen$: new Set,
+    $objSet$: new Set,
+    $noSerialize$: [],
+    $elements$: [],
+    $promises$: []
+});
+
+const collectDeferElement = (el, collector) => {
+    collector.$elements$.includes(el) || collector.$elements$.push(el);
+};
+
+const collectElement = (el, collector) => {
+    if (collector.$elements$.includes(el)) {
+        return;
+    }
+    const ctx = tryGetContext(el);
+    ctx && (collector.$elements$.push(el), collectElementData(ctx, collector));
+};
+
+const collectElementData = (elCtx, collector) => {
+    if (elCtx.$props$ && collectValue(elCtx.$props$, collector, false), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, false), 
+    elCtx.$seq$) {
+        for (const obj of elCtx.$seq$) {
+            collectValue(obj, collector, false);
+        }
+    }
+    if (elCtx.$watches$) {
+        for (const obj of elCtx.$watches$) {
+            collectValue(obj, collector, false);
+        }
+    }
+    if (elCtx.$contexts$) {
+        for (const obj of elCtx.$contexts$.values()) {
+            collectValue(obj, collector, false);
+        }
+    }
+};
+
+const collectSubscriptions = (manager, collector) => {
+    if (collector.$seen$.has(manager)) {
+        return;
+    }
+    collector.$seen$.add(manager);
+    const subs = manager.$subs$;
+    for (const key of subs) {
+        const host = key[1];
+        isNode(host) && isVirtualElement(host) ? 0 === key[0] && collectDeferElement(host, collector) : collectValue(host, collector, true);
+    }
+};
+
+const PROMISE_VALUE = Symbol();
+
+const getPromiseValue = promise => promise[PROMISE_VALUE];
+
+const collectValue = (obj, collector, leaks) => {
+    if (null !== obj) {
+        const objType = typeof obj;
+        switch (objType) {
+          case "function":
+          case "object":
+            {
+                const seen = collector.$seen$;
+                if (seen.has(obj)) {
+                    return;
+                }
+                if (seen.add(obj), !fastShouldSerialize(obj)) {
+                    return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
+                }
+                const input = obj;
+                const target = getProxyTarget(obj);
+                if (target) {
+                    if (obj = target, seen.has(obj)) {
+                        return;
+                    }
+                    seen.add(obj), leaks && collectSubscriptions(getProxyManager(input), collector);
+                }
+                const collected = ((obj, collector, leaks) => {
+                    for (const s of collectorSerializers) {
+                        if (s.test(obj)) {
+                            return s.collect(obj, collector, leaks), true;
+                        }
+                    }
+                    return false;
+                })(obj, collector, leaks);
+                if (collected) {
+                    return void collector.$objSet$.add(obj);
+                }
+                if (isPromise(obj)) {
+                    return void collector.$promises$.push((promise = obj, promise.then((value => {
+                        const v = {
+                            resolved: true,
+                            value: value
+                        };
+                        return promise[PROMISE_VALUE] = v, value;
+                    }), (value => {
+                        const v = {
+                            resolved: false,
+                            value: value
+                        };
+                        return promise[PROMISE_VALUE] = v, value;
+                    }))).then((value => {
+                        collectValue(value, collector, leaks);
+                    })));
+                }
+                if ("object" === objType) {
+                    if (isNode(obj)) {
+                        return;
+                    }
+                    if (isArray(obj)) {
+                        for (let i = 0; i < obj.length; i++) {
+                            collectValue(obj[i], collector, leaks);
+                        }
+                    } else if (isSerializableObject(obj)) {
+                        for (const key of Object.keys(obj)) {
+                            collectValue(obj[key], collector, leaks);
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+    var promise;
+    collector.$objSet$.add(obj);
+};
+
+const isContainer = el => isElement(el) && el.hasAttribute("q:container");
+
+const hasQId = el => {
+    const node = processVirtualNodes(el);
+    return !!isQwikElement(node) && node.hasAttribute("q:id");
+};
+
+const intToStr = nu => nu.toString(36);
+
+const strToInt = nu => parseInt(nu, 36);
+
+const getEventName = attribute => {
+    const colonPos = attribute.indexOf(":");
+    return attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase()));
+};
+
+const resumeIfNeeded = containerEl => {
+    "paused" === directGetAttribute(containerEl, "q:container") && ((containerEl => {
+        if (!isContainer(containerEl)) {
+            return;
+        }
+        let maxId = 0;
+        const doc = getDocument(containerEl);
+        const script = (parentElm => {
+            let child = parentElm.lastElementChild;
+            for (;child; ) {
+                if ("SCRIPT" === child.tagName && "qwik/json" === directGetAttribute(child, "type")) {
+                    return child;
+                }
+                child = child.previousElementSibling;
+            }
+        })(containerEl === doc.documentElement ? doc.body : containerEl);
+        if (!script) {
+            return;
+        }
+        script.remove();
+        const containerState = getContainerState(containerEl);
+        ((containerEl, containerState) => {
+            const head = containerEl.ownerDocument.head;
+            containerEl.querySelectorAll("style[q\\:style]").forEach((el => {
+                containerState.$styleIds$.add(directGetAttribute(el, "q:style")), head.appendChild(el);
+            }));
+        })(containerEl, containerState);
+        const meta = JSON.parse((script.textContent || "{}").replace(/\\x3C(\/?script)/g, "<$1"));
+        const elements = new Map;
+        const getObject = id => ((id, elements, objs, containerState) => {
+            if ("string" == typeof id && id.length, id.startsWith("#")) {
+                return elements.has(id), elements.get(id);
+            }
+            const index = strToInt(id);
+            objs.length;
+            let obj = objs[index];
+            for (let i = id.length - 1; i >= 0; i--) {
+                const code = id[i];
+                const transform = OBJECT_TRANSFORMS[code];
+                if (!transform) {
+                    break;
+                }
+                obj = transform(obj, containerState);
+            }
+            return obj;
+        })(id, elements, meta.objs, containerState);
+        const elementWalker = doc.createTreeWalker(containerEl, 129, {
+            acceptNode(node) {
+                if (isComment(node)) {
+                    const data = node.data;
+                    if (data.startsWith("qv ")) {
+                        const close = findClose(node);
+                        const virtual = new VirtualElementImpl(node, close);
+                        const id = directGetAttribute(virtual, "q:id");
+                        id && (getContext(virtual).$id$ = id, elements.set("#" + id, virtual), maxId = Math.max(maxId, strToInt(id)));
+                    } else if (data.startsWith("t=")) {
+                        const id = data.slice(2);
+                        elements.set("#" + data.slice(2), (mark => {
+                            const nextNode = mark.nextSibling;
+                            if (isText(nextNode)) {
+                                return nextNode;
+                            }
+                            {
+                                const textNode = mark.ownerDocument.createTextNode("");
+                                return mark.parentElement.insertBefore(textNode, mark), textNode;
+                            }
+                        })(node)), maxId = Math.max(maxId, strToInt(id));
+                    }
+                    return 3;
+                }
+                return isContainer(node) ? 2 : node.hasAttribute("q:id") ? 1 : 3;
+            }
+        });
+        let el = null;
+        for (;el = elementWalker.nextNode(); ) {
+            const id = directGetAttribute(el, "q:id");
+            const elCtx = getContext(el);
+            elCtx.$id$ = id, elCtx.$vdom$ = domToVnode(el), elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
+        }
+        containerState.$elementIndex$ = ++maxId;
+        const parser = ((getObject, containerState, doc) => {
+            const fillMap = new Map;
+            const subsMap = new Map;
+            return {
+                prepare(data) {
+                    for (const s of serializers) {
+                        const prefix = s.prefix;
+                        if (data.startsWith(prefix)) {
+                            const value = s.prepare(data.slice(prefix.length), containerState, doc);
+                            return s.fill && fillMap.set(value, s), s.subs && subsMap.set(value, s), value;
+                        }
+                    }
+                    return data;
+                },
+                subs(obj, subs) {
+                    const serializer = subsMap.get(obj);
+                    return !!serializer && (serializer.subs(obj, subs, containerState), true);
+                },
+                fill(obj) {
+                    const serializer = fillMap.get(obj);
+                    return !!serializer && (serializer.fill(obj, getObject, containerState), true);
+                }
+            };
+        })(getObject, containerState, doc);
+        ((objs, parser) => {
+            for (let i = 0; i < objs.length; i++) {
+                const value = objs[i];
+                isString(value) && (objs[i] = "" === value ? void 0 : parser.prepare(value));
+            }
+        })(meta.objs, parser), ((objs, objsSubs, getObject, containerState, parser) => {
+            for (let i = 0; i < objsSubs.length; i++) {
+                const value = objs[i];
+                const subs = objsSubs[i];
+                if (subs) {
+                    const converted = [];
+                    let flag = 0;
+                    for (const sub of subs) {
+                        sub.startsWith("_") ? flag = parseInt(sub.slice(1), 10) : converted.push(parseSubscription(sub, getObject));
+                    }
+                    flag > 0 && (value[QObjectFlagsSymbol] = flag), parser.subs(value, converted) || createProxy(value, containerState, converted);
+                }
+            }
+        })(meta.objs, meta.subs, getObject, containerState, parser);
+        for (const obj of meta.objs) {
+            reviveNestedObjects(obj, getObject, parser);
+        }
+        for (const elementID of Object.keys(meta.ctx)) {
+            elementID.startsWith("#");
+            const ctxMeta = meta.ctx[elementID];
+            const el = elements.get(elementID);
+            const elCtx = getContext(el);
+            const refMap = ctxMeta.r;
+            const seq = ctxMeta.s;
+            const host = ctxMeta.h;
+            const contexts = ctxMeta.c;
+            const watches = ctxMeta.w;
+            if (refMap && (isElement(el), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
+            elCtx.li = getDomListeners(elCtx, containerEl)), seq && (elCtx.$seq$ = seq.split(" ").map(getObject)), 
+            watches && (elCtx.$watches$ = watches.split(" ").map(getObject)), contexts) {
+                elCtx.$contexts$ = new Map;
+                for (const part of contexts.split(" ")) {
+                    const [key, value] = part.split("=");
+                    elCtx.$contexts$.set(key, getObject(value));
+                }
+            }
+            if (host) {
+                const [props, renderQrl] = host.split(" ");
+                const styleIds = el.getAttribute("q:sstyle");
+                elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$mounted$ = true, 
+                elCtx.$props$ = getObject(props), elCtx.$componentQrl$ = getObject(renderQrl);
+            }
+        }
+        directSetAttribute(containerEl, "q:container", "resumed"), ((el, eventName, detail, bubbles) => {
+            el && "function" == typeof CustomEvent && el.dispatchEvent(new CustomEvent("qresume", {
+                detail: void 0,
+                bubbles: true,
+                composed: true
+            }));
+        })(containerEl);
+    })(containerEl), appendQwikDevTools(containerEl));
+};
+
+const appendQwikDevTools = containerEl => {
+    containerEl.qwik = {
+        pause: () => (async (elmOrDoc, defaultParentJSON) => {
+            const doc = getDocument(elmOrDoc);
+            const documentElement = doc.documentElement;
+            const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+            if ("paused" === directGetAttribute(containerEl, "q:container")) {
+                throw qError(21);
+            }
+            const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+            const data = await (async containerEl => {
+                const containerState = getContainerState(containerEl);
+                const contexts = ((parent, predicate) => {
+                    predicate(parent);
+                    const walker = parent.ownerDocument.createTreeWalker(parent, 129, {
+                        acceptNode: node => isContainer(node) ? 2 : predicate(node) ? 1 : 3
+                    });
+                    const pars = [];
+                    let currentNode = null;
+                    for (;currentNode = walker.nextNode(); ) {
+                        pars.push(processVirtualNodes(currentNode));
+                    }
+                    return pars;
+                })(containerEl, hasQId).map(tryGetContext);
+                return _pauseFromContexts(contexts, containerState);
+            })(containerEl);
+            const script = doc.createElement("script");
+            return directSetAttribute(script, "type", "qwik/json"), script.textContent = JSON.stringify(data.state, void 0, void 0).replace(/<(\/?script)/g, "\\x3C$1"), 
+            parentJSON.appendChild(script), directSetAttribute(containerEl, "q:container", "paused"), 
+            data;
+        })(containerEl),
+        state: getContainerState(containerEl)
+    };
+};
+
+const tryGetContext = element => element._qc_;
+
+const getContext = element => {
+    let ctx = tryGetContext(element);
+    return ctx || (element._qc_ = ctx = {
+        $dirty$: false,
+        $mounted$: false,
+        $needAttachListeners$: false,
+        $id$: "",
+        $element$: element,
+        $refMap$: [],
+        li: [],
+        $watches$: null,
+        $seq$: null,
+        $slots$: null,
+        $scopeIds$: null,
+        $appendStyles$: null,
+        $props$: null,
+        $vdom$: null,
+        $componentQrl$: null,
+        $contexts$: null,
+        $parent$: null
+    }), ctx;
+};
+
+const cleanupContext = (elCtx, subsManager) => {
+    const el = elCtx.$element$;
+    elCtx.$watches$?.forEach((watch => {
+        subsManager.$clearSub$(watch), destroyWatch(watch);
+    })), elCtx.$componentQrl$ && subsManager.$clearSub$(el), elCtx.$componentQrl$ = null, 
+    elCtx.$seq$ = null, elCtx.$watches$ = null, elCtx.$dirty$ = false, el._qc_ = void 0;
+};
+
+const PREFIXES = [ "on", "window:on", "document:on" ];
+
+const SCOPED = [ "on", "on-window", "on-document" ];
+
+const normalizeOnProp = prop => {
+    let scope = "on";
+    for (let i = 0; i < PREFIXES.length; i++) {
+        const prefix = PREFIXES[i];
+        if (prop.startsWith(prefix)) {
+            scope = SCOPED[i], prop = prop.slice(prefix.length);
+            break;
+        }
+    }
+    return scope + ":" + (prop.startsWith("-") ? fromCamelToKebabCase(prop.slice(1)) : prop.toLowerCase());
+};
+
+const getPropsMutator = props => {
+    const manager = getProxyManager(props);
+    const target = getProxyTarget(props);
+    return {
+        set(prop, value) {
+            const oldValue = target[prop];
+            target[prop] = value, oldValue !== value && manager.$notifySubs$(prop);
+        }
+    };
+};
+
+const inflateQrl = (qrl, elCtx) => (qrl.$capture$, qrl.$captureRef$ = qrl.$capture$.map((idx => {
+    const int = parseInt(idx, 10);
+    const obj = elCtx.$refMap$[int];
+    return elCtx.$refMap$.length, obj;
+})));
+
+const QObjectImmutable = 2;
+
+const QOjectTargetSymbol = Symbol("proxy target");
+
+const QObjectFlagsSymbol = Symbol("proxy flags");
+
+const QObjectManagerSymbol = Symbol("proxy manager");
 
 const _IMMUTABLE = Symbol("IMMUTABLE");
 
-const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || createProxy(target, containerState, flags, void 0);
+const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || (0 !== flags && (target[QObjectFlagsSymbol] = flags), 
+createProxy(target, containerState, void 0));
 
-const createProxy = (target, containerState, flags, subs) => {
+class SignalImpl {
+    constructor(v, manager) {
+        this.untrackedValue = v, this[QObjectManagerSymbol] = manager;
+    }
+    get value() {
+        const sub = tryGetInvokeContext()?.$subscriber$;
+        return sub && this[QObjectManagerSymbol].$addSub$([ 0, sub, void 0 ]), this.untrackedValue;
+    }
+    set value(v) {
+        const manager = this[QObjectManagerSymbol];
+        const oldValue = this.untrackedValue;
+        manager && oldValue !== v && (this.untrackedValue = v, manager.$notifySubs$());
+    }
+}
+
+const isSignal = obj => obj instanceof SignalImpl || obj instanceof SignalWrapper;
+
+const addSignalSub = (type, hostEl, signal, elm, property) => {
+    const subscription = signal instanceof SignalWrapper ? [ type, hostEl, getProxyTarget(signal.ref), elm, property, "value" === signal.prop ? void 0 : signal.prop ] : [ type, hostEl, signal, elm, property, void 0 ];
+    getProxyManager(signal).$addSub$(subscription);
+};
+
+const createProxy = (target, containerState, subs) => {
     unwrapProxy(target), containerState.$proxyMap$.has(target), isObject(target), isSerializableObject(target) || isArray(target);
-    const manager = containerState.$subsManager$.$getLocal$(target, subs);
-    const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager, flags));
+    const manager = containerState.$subsManager$.$createManager$(subs);
+    const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
     return containerState.$proxyMap$.set(target, proxy), proxy;
 };
 
-const QOjectTargetSymbol = Symbol();
-
-const QOjectSubsSymbol = Symbol();
-
-const QOjectFlagsSymbol = Symbol();
-
 class ReadWriteProxyHandler {
-    constructor($containerState$, $manager$, $flags$) {
-        this.$containerState$ = $containerState$, this.$manager$ = $manager$, this.$flags$ = $flags$;
+    constructor($containerState$, $manager$) {
+        this.$containerState$ = $containerState$, this.$manager$ = $manager$;
     }
     get(target, prop) {
         if ("symbol" == typeof prop) {
-            return prop === QOjectTargetSymbol ? target : prop === QOjectFlagsSymbol ? this.$flags$ : prop === QOjectSubsSymbol ? this.$manager$.$subs$ : target[prop];
+            return prop === QOjectTargetSymbol ? target : prop === QObjectManagerSymbol ? this.$manager$ : target[prop];
         }
         let subscriber;
+        const flags = target[QObjectFlagsSymbol] ?? 0;
         const invokeCtx = tryGetInvokeContext();
-        const recursive = 0 != (1 & this.$flags$);
-        const immutable = 0 != (2 & this.$flags$);
-        const value = target[prop];
-        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), immutable && (prop in target && !target[_IMMUTABLE]?.includes(prop) || (subscriber = null)), 
-        subscriber) {
+        const recursive = 0 != (1 & flags);
+        const immutable = 0 != (flags & QObjectImmutable);
+        let value = target[prop];
+        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), immutable) {
+            const hiddenSignal = target["$$" + prop];
+            prop in target && !hiddenSignal && !target[_IMMUTABLE]?.[prop] || (subscriber = null), 
+            hiddenSignal && (isSignal(hiddenSignal), value = hiddenSignal.value);
+        }
+        if (subscriber) {
             const isA = isArray(target);
-            this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+            this.$manager$.$addSub$([ 0, subscriber, isA ? void 0 : prop ]);
         }
         return recursive ? wrap(value, this.$containerState$) : value;
     }
@@ -2661,22 +3121,27 @@ class ReadWriteProxyHandler {
         if ("symbol" == typeof prop) {
             return target[prop] = newValue, true;
         }
-        if (0 != (2 & this.$flags$)) {
-            throw qError(QError_immutableProps);
+        const flags = target[QObjectFlagsSymbol] ?? 0;
+        if (0 != (flags & QObjectImmutable)) {
+            throw qError(17);
         }
-        const unwrappedNewValue = 0 != (1 & this.$flags$) ? unwrapProxy(newValue) : newValue;
+        const unwrappedNewValue = 0 != (1 & flags) ? unwrapProxy(newValue) : newValue;
         return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
         true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
         this.$manager$.$notifySubs$(prop)), true);
     }
     has(target, property) {
-        return property === QOjectTargetSymbol || property === QOjectFlagsSymbol || Object.prototype.hasOwnProperty.call(target, property);
+        if (property === QOjectTargetSymbol) {
+            return true;
+        }
+        const hasOwnProperty = Object.prototype.hasOwnProperty;
+        return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
     }
     ownKeys(target) {
         let subscriber = null;
         const invokeCtx = tryGetInvokeContext();
-        return invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber), 
-        Object.getOwnPropertyNames(target);
+        return invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$([ 0, subscriber, void 0 ]), 
+        Object.getOwnPropertyNames(target).map((a => a.startsWith("$$") ? a.slice("$$".length) : a));
     }
 }
 
@@ -2709,297 +3174,39 @@ const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : 
 
 const getProxyTarget = obj => obj[QOjectTargetSymbol];
 
-const getProxySubs = obj => obj[QOjectSubsSymbol];
+const getProxyManager = obj => obj[QObjectManagerSymbol];
 
-const getProxyFlags = obj => {
-    if (isObject(obj)) {
-        return obj[QOjectFlagsSymbol];
+const getProxyFlags = obj => obj[QObjectFlagsSymbol];
+
+class SignalWrapper {
+    constructor(ref, prop) {
+        this.ref = ref, this.prop = prop;
     }
-};
-
-const resumeIfNeeded = containerEl => {
-    "paused" === directGetAttribute(containerEl, "q:container") && ((containerEl => {
-        if (!isContainer(containerEl)) {
-            return void logWarn("Skipping hydration because parent element is not q:container");
-        }
-        const doc = getDocument(containerEl);
-        const script = (parentElm => {
-            let child = parentElm.lastElementChild;
-            for (;child; ) {
-                if ("SCRIPT" === child.tagName && "qwik/json" === directGetAttribute(child, "type")) {
-                    return child;
-                }
-                child = child.previousElementSibling;
-            }
-        })(containerEl === doc.documentElement ? doc.body : containerEl);
-        if (!script) {
-            return void logWarn("Skipping hydration qwik/json metadata was not found.");
-        }
-        script.remove();
-        const containerState = getContainerState(containerEl);
-        ((containerEl, containerState) => {
-            const head = containerEl.ownerDocument.head;
-            containerEl.querySelectorAll("style[q\\:style]").forEach((el => {
-                containerState.$styleIds$.add(directGetAttribute(el, "q:style")), head.appendChild(el);
-            }));
-        })(containerEl, containerState);
-        const meta = JSON.parse((script.textContent || "{}").replace(/\\x3C(\/?script)/g, "<$1"));
-        const elements = new Map;
-        const getObject = id => ((id, elements, objs, containerState) => {
-            if ("string" == typeof id && id.length, id.startsWith("#")) {
-                return elements.has(id), elements.get(id);
-            }
-            const index = strToInt(id);
-            objs.length;
-            let obj = objs[index];
-            for (let i = id.length - 1; i >= 0; i--) {
-                const code = id[i];
-                const transform = OBJECT_TRANSFORMS[code];
-                if (!transform) {
-                    break;
-                }
-                obj = transform(obj, containerState);
-            }
-            return obj;
-        })(id, elements, meta.objs, containerState);
-        let maxId = 0;
-        getNodesInScope(containerEl, hasQId).forEach((el => {
-            const id = directGetAttribute(el, "q:id");
-            const ctx = getContext(el);
-            ctx.$id$ = id, isElement(el) && (ctx.$vdom$ = domToVnode(el)), elements.set("#" + id, el), 
-            maxId = Math.max(maxId, strToInt(id));
-        })), containerState.$elementIndex$ = ++maxId;
-        const parser = ((getObject, containerState, doc) => {
-            const map = new Map;
-            return {
-                prepare(data) {
-                    for (const s of serializers) {
-                        const prefix = s.prefix;
-                        if (data.startsWith(prefix)) {
-                            const value = s.prepare(data.slice(prefix.length), containerState, doc);
-                            return s.fill && map.set(value, s), value;
-                        }
-                    }
-                    return data;
-                },
-                fill(obj) {
-                    const serializer = map.get(obj);
-                    return !!serializer && (serializer.fill(obj, getObject, containerState), true);
-                }
-            };
-        })(getObject, containerState, doc);
-        ((objs, subs, getObject, containerState, parser) => {
-            for (let i = 0; i < objs.length; i++) {
-                const value = objs[i];
-                isString(value) && (objs[i] = value === UNDEFINED_PREFIX ? void 0 : parser.prepare(value));
-            }
-            for (let i = 0; i < subs.length; i++) {
-                const value = objs[i];
-                const sub = subs[i];
-                if (sub) {
-                    const converted = new Map;
-                    let flags = 0;
-                    for (const key of Object.keys(sub)) {
-                        const v = sub[key];
-                        if ("$" === key) {
-                            flags = v;
-                            continue;
-                        }
-                        const el = getObject(key);
-                        if (!el) {
-                            logWarn("QWIK can not revive subscriptions because of missing element ID", key, value);
-                            continue;
-                        }
-                        const set = null === v ? null : new Set(v);
-                        converted.set(el, set);
-                    }
-                    createProxy(value, containerState, flags, converted);
-                }
-            }
-        })(meta.objs, meta.subs, getObject, containerState, parser);
-        for (const obj of meta.objs) {
-            reviveNestedObjects(obj, getObject, parser);
-        }
-        for (const elementID of Object.keys(meta.ctx)) {
-            elementID.startsWith("#");
-            const ctxMeta = meta.ctx[elementID];
-            const el = elements.get(elementID);
-            const ctx = getContext(el);
-            const refMap = ctxMeta.r;
-            const seq = ctxMeta.s;
-            const host = ctxMeta.h;
-            const contexts = ctxMeta.c;
-            const watches = ctxMeta.w;
-            if (refMap && (isElement(el), ctx.$refMap$ = refMap.split(" ").map(getObject), ctx.li = getDomListeners(ctx, containerEl)), 
-            seq && (ctx.$seq$ = seq.split(" ").map(getObject)), watches && (ctx.$watches$ = watches.split(" ").map(getObject)), 
-            contexts) {
-                ctx.$contexts$ = new Map;
-                for (const part of contexts.split(" ")) {
-                    const [key, value] = part.split("=");
-                    ctx.$contexts$.set(key, getObject(value));
-                }
-            }
-            if (host) {
-                const [props, renderQrl] = host.split(" ");
-                const styleIds = el.getAttribute("q:sstyle");
-                ctx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, ctx.$mounted$ = true, ctx.$props$ = getObject(props), 
-                ctx.$componentQrl$ = getObject(renderQrl);
-            }
-        }
-        var el;
-        directSetAttribute(containerEl, "q:container", "resumed"), logDebug("Container resumed"), 
-        (el = containerEl) && "function" == typeof CustomEvent && el.dispatchEvent(new CustomEvent("qresume", {
-            detail: void 0,
-            bubbles: true,
-            composed: true
-        }));
-    })(containerEl), appendQwikDevTools(containerEl));
-};
-
-const appendQwikDevTools = containerEl => {
-    containerEl.qwik = {
-        pause: () => (async (elmOrDoc, defaultParentJSON) => {
-            const doc = getDocument(elmOrDoc);
-            const documentElement = doc.documentElement;
-            const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
-            if ("paused" === directGetAttribute(containerEl, "q:container")) {
-                throw qError(QError_containerAlreadyPaused);
-            }
-            const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-            const data = await (async containerEl => {
-                const containerState = getContainerState(containerEl);
-                const contexts = getNodesInScope(containerEl, hasQId).map(tryGetContext);
-                return _pauseFromContexts(contexts, containerState);
-            })(containerEl);
-            const script = doc.createElement("script");
-            return directSetAttribute(script, "type", "qwik/json"), script.textContent = JSON.stringify(data.state, void 0, void 0).replace(/<(\/?script)/g, "\\x3C$1"), 
-            parentJSON.appendChild(script), directSetAttribute(containerEl, "q:container", "paused"), 
-            data;
-        })(containerEl),
-        state: getContainerState(containerEl)
-    };
-};
-
-const tryGetContext = element => element._qc_;
-
-const getContext = element => {
-    let ctx = tryGetContext(element);
-    return ctx || (element._qc_ = ctx = {
-        $dirty$: false,
-        $mounted$: false,
-        $attachedListeners$: false,
-        $id$: "",
-        $element$: element,
-        $refMap$: [],
-        li: {},
-        $watches$: null,
-        $seq$: null,
-        $slots$: null,
-        $scopeIds$: null,
-        $appendStyles$: null,
-        $props$: null,
-        $vdom$: null,
-        $componentQrl$: null,
-        $contexts$: null,
-        $parent$: null
-    }), ctx;
-};
-
-const cleanupContext = (ctx, subsManager) => {
-    const el = ctx.$element$;
-    ctx.$watches$?.forEach((watch => {
-        subsManager.$clearSub$(watch), destroyWatch(watch);
-    })), ctx.$componentQrl$ && subsManager.$clearSub$(el), ctx.$componentQrl$ = null, 
-    ctx.$seq$ = null, ctx.$watches$ = null, ctx.$dirty$ = false, el._qc_ = void 0;
-};
-
-const PREFIXES = [ "on", "window:on", "document:on" ];
-
-const SCOPED = [ "on", "on-window", "on-document" ];
-
-const normalizeOnProp = prop => {
-    let scope = "on";
-    for (let i = 0; i < PREFIXES.length; i++) {
-        const prefix = PREFIXES[i];
-        if (prop.startsWith(prefix)) {
-            scope = SCOPED[i], prop = prop.slice(prefix.length);
-            break;
-        }
+    get [QObjectManagerSymbol]() {
+        return getProxyManager(this.ref);
     }
-    return scope + ":" + (prop.startsWith("-") ? fromCamelToKebabCase(prop.slice(1)) : prop.toLowerCase());
+    get value() {
+        return this.ref[this.prop];
+    }
+    set value(value) {
+        this.ref[this.prop] = value;
+    }
+}
+
+const _wrapSignal = (obj, prop) => {
+    if (obj instanceof SignalImpl) {
+        return obj;
+    }
+    if (obj instanceof SignalWrapper) {
+        return obj;
+    }
+    const target = getProxyTarget(obj);
+    if (target) {
+        const signal = target["$$" + prop];
+        return signal ? (isSignal(signal), signal) : new SignalWrapper(obj, prop);
+    }
+    return obj[prop];
 };
-
-const createProps = (target, containerState) => createProxy(target, containerState, 2);
-
-const getPropsMutator = (ctx, containerState) => {
-    let props = ctx.$props$;
-    props || (ctx.$props$ = props = createProps({}, containerState));
-    const target = getProxyTarget(props);
-    const manager = containerState.$subsManager$.$getLocal$(target);
-    return {
-        set(prop, value) {
-            const oldValue = target[prop];
-            target[prop] = value, oldValue !== value && manager.$notifySubs$(prop);
-        }
-    };
-};
-
-const inflateQrl = (qrl, elCtx) => (qrl.$capture$, qrl.$captureRef$ = qrl.$capture$.map((idx => {
-    const int = parseInt(idx, 10);
-    const obj = elCtx.$refMap$[int];
-    return elCtx.$refMap$.length, obj;
-})));
-
-const logError = (message, ...optionalParams) => {
-    const err = message instanceof Error ? message : new Error(message);
-    return "function" == typeof globalThis._handleError && message instanceof Error ? globalThis._handleError(message, optionalParams) : console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
-    err;
-};
-
-const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
-
-const logWarn = (message, ...optionalParams) => {};
-
-const logDebug = (message, ...optionalParams) => {};
-
-const printParams = optionalParams => optionalParams;
-
-const QError_stringifyClassOrStyle = 0;
-
-const QError_verifySerializable = 3;
-
-const QError_setProperty = 6;
-
-const QError_dynamicImportFailed = 11;
-
-const QError_unknownTypeArgument = 12;
-
-const QError_notFoundContext = 13;
-
-const QError_useMethodOutsideContext = 14;
-
-const QError_immutableProps = 17;
-
-const QError_useInvokeContext = 20;
-
-const QError_containerAlreadyPaused = 21;
-
-const QError_canNotMountUseServerMount = 22;
-
-const QError_invalidJsxNodeType = 25;
-
-const QError_trackUseStore = 26;
-
-const QError_missingObjectId = 27;
-
-const Qerror_qrlMissingChunk = 31;
-
-const qError = (code, ...parts) => {
-    const text = codeToText(code);
-    return logErrorAndStop(text, ...parts);
-};
-
-const codeToText = code => `Code(${code})`;
 
 const isQrl = value => "function" == typeof value && "function" == typeof value.getSymbol;
 
@@ -3017,7 +3224,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
         {
             if (!chunk) {
-                throw qError(Qerror_qrlMissingChunk, symbol);
+                throw qError(31, symbol);
             }
             if (!_containerEl) {
                 throw qError(30, chunk, symbol);
@@ -3028,6 +3235,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
     const invokeFn = (currentCtx, beforeFn) => (...args) => {
+        const start = now();
         const fn = resolveLazy();
         return then(fn, (fn => {
             if (isFunction(fn)) {
@@ -3038,7 +3246,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     ...createInvokationContext(currentCtx),
                     $qrl$: QRL
                 };
-                return emitUsedSymbol(symbol, context.$element$), invoke(context, fn, ...args);
+                return emitUsedSymbol(symbol, context.$element$, start), invoke(context, fn, ...args);
             }
             throw qError(10);
         }));
@@ -3074,13 +3282,12 @@ const getSymbolHash = symbolName => {
     return index > -1 ? symbolName.slice(index + 1) : symbolName;
 };
 
-const emitUsedSymbol = (symbol, element) => {
-    isServer() || emitEvent("qsymbol", {
-        bubbles: false,
+const emitUsedSymbol = (symbol, element, reqTime) => {
+    emitEvent("qsymbol", {
         detail: {
             symbol: symbol,
             element: element,
-            timestamp: performance.now()
+            reqTime: reqTime
         }
     });
 };
@@ -3092,6 +3299,8 @@ const emitEvent = (eventName, detail) => {
     }));
 };
 
+const now = () => isServer() ? 0 : "object" == typeof performance ? performance.now() : 0;
+
 const $ = expression => {
     throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
 };
@@ -3101,7 +3310,8 @@ const componentQrl = componentQrl => {
         const finalKey = componentQrl.$hash$ + ":" + (key || "");
         return jsx(Virtual, {
             "q:renderFn": componentQrl,
-            ...props
+            children: props.children,
+            props: props
         }, finalKey);
     }
     return QwikComponent[SERIALIZABLE_STATE] = [ componentQrl ], QwikComponent;
@@ -3178,18 +3388,19 @@ const renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createContext(1).$element$;
     const containerState = createContainerState(containerEl);
-    const rctx = createRenderContext({
+    const rCtx = createRenderContext({
         nodeType: 9
     }, containerState);
     const headNodes = opts.beforeContent ?? [];
     const ssrCtx = {
-        rctx: rctx,
+        rCtx: rCtx,
         $contexts$: [],
         projectedChildren: void 0,
         projectedContext: void 0,
         hostCtx: null,
         invocationContext: void 0,
-        headNodes: "html" === root ? headNodes : []
+        headNodes: "html" === root ? headNodes : [],
+        $pendingListeners$: []
     };
     const containerAttributes = {
         ...opts.containerAttributes,
@@ -3212,7 +3423,7 @@ const renderRoot = async (node, ssrCtx, stream, containerState, opts) => {
     return await renderNode(node, ssrCtx, stream, 0, beforeClose ? stream => {
         const result = beforeClose(ssrCtx.$contexts$, containerState);
         return processData(result, ssrCtx, stream, 0, void 0);
-    } : void 0), ssrCtx.rctx.$static$;
+    } : void 0), ssrCtx.rCtx.$static$;
 };
 
 const renderNodeVirtual = (node, elCtx, extraNodes, ssrCtx, stream, flags, beforeClose) => {
@@ -3279,43 +3490,46 @@ const renderNodeElementSync = (tagName, attributes, stream) => {
     null != innerHTML && stream.write(innerHTML), stream.write(`</${tagName}>`);
 };
 
-const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => (setComponentProps(ssrCtx.rctx, elCtx, node.props), 
-then(executeComponent(ssrCtx.rctx, elCtx), (res => {
-    const hostElement = elCtx.$element$;
-    const newCtx = res.rctx;
-    const invocationContext = newInvokeContext(hostElement, void 0);
-    invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newCtx;
-    const projectedContext = {
-        ...ssrCtx,
-        rctx: newCtx
-    };
-    const newSSrContext = {
-        ...ssrCtx,
-        projectedChildren: splitProjectedChildren(node.props.children, ssrCtx),
-        projectedContext: projectedContext,
-        rctx: newCtx,
-        invocationContext: invocationContext
-    };
-    const extraNodes = [];
-    if (elCtx.$appendStyles$) {
-        const array = 4 & flags ? ssrCtx.headNodes : extraNodes;
-        for (const style of elCtx.$appendStyles$) {
-            array.push(jsx("style", {
-                "q:style": style.styleId,
-                dangerouslySetInnerHTML: style.content
-            }));
+const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => {
+    const props = node.props;
+    return setComponentProps(ssrCtx.rCtx, elCtx, props.props), then(executeComponent(ssrCtx.rCtx, elCtx), (res => {
+        const hostElement = elCtx.$element$;
+        const newCtx = res.rCtx;
+        const invocationContext = newInvokeContext(hostElement, void 0);
+        invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newCtx;
+        const projectedContext = {
+            ...ssrCtx,
+            rCtx: newCtx
+        };
+        const newSSrContext = {
+            ...ssrCtx,
+            projectedChildren: splitProjectedChildren(props.children, ssrCtx),
+            projectedContext: projectedContext,
+            rCtx: newCtx,
+            invocationContext: invocationContext
+        };
+        const extraNodes = [];
+        if (elCtx.$appendStyles$) {
+            const array = 4 & flags ? ssrCtx.headNodes : extraNodes;
+            for (const style of elCtx.$appendStyles$) {
+                array.push(jsx("style", {
+                    "q:style": style.styleId,
+                    dangerouslySetInnerHTML: style.content
+                }));
+            }
         }
-    }
-    const newID = getNextIndex(ssrCtx.rctx);
-    const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : void 0;
-    const processedNode = jsx(node.type, {
-        "q:sstyle": scopeId,
-        "q:id": newID,
-        children: res.node
-    }, node.key);
-    return elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx), newSSrContext.hostCtx = elCtx, 
-    renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream => beforeClose ? then(renderQTemplates(newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(newSSrContext, stream)));
-})));
+        const newID = getNextIndex(ssrCtx.rCtx);
+        const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : void 0;
+        const processedNode = jsx(node.type, {
+            "q:sstyle": scopeId,
+            "q:id": newID,
+            children: res.node
+        }, node.key);
+        return elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx), newSSrContext.hostCtx = elCtx, 
+        renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream => (elCtx.$needAttachListeners$, 
+        beforeClose ? then(renderQTemplates(newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(newSSrContext, stream))));
+    }));
+};
 
 const renderQTemplates = (ssrContext, stream) => {
     const projectedChildren = ssrContext.projectedChildren;
@@ -3360,45 +3574,51 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
     if ("string" == typeof tagName) {
         const key = node.key;
         const props = node.props;
+        const immutableMeta = props[_IMMUTABLE] ?? EMPTY_OBJ;
         const elCtx = createContext(1);
+        const elm = elCtx.$element$;
         const isHead = "head" === tagName;
         const hostCtx = ssrCtx.hostCtx;
-        let openingElement = "<" + tagName + ((elCtx, attributes) => {
-            let text = "";
-            for (const prop of Object.keys(attributes)) {
-                if ("children" === prop || "key" === prop || "class" === prop || "className" === prop || "dangerouslySetInnerHTML" === prop) {
-                    continue;
-                }
-                const value = attributes[prop];
-                if ("ref" === prop) {
-                    value.current = elCtx.$element$;
-                    continue;
-                }
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, void 0);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                const attrValue = processPropValue(attrName, value);
-                null != attrValue && (text += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+        let openingElement = "<" + tagName;
+        let useSignal = false;
+        for (const prop of Object.keys(props)) {
+            if ("children" === prop || "key" === prop || "class" === prop || "className" === prop || "dangerouslySetInnerHTML" === prop) {
+                continue;
             }
-            return text;
-        })(elCtx, props);
-        let classStr = stringifyClass(props.class ?? props.className);
+            if ("ref" === prop) {
+                setRef(props[prop], elm);
+                continue;
+            }
+            let value = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : props[prop];
+            if (isOnProp(prop)) {
+                setEvent(elCtx.li, prop, value, void 0);
+                continue;
+            }
+            const attrName = processPropKey(prop);
+            if (isSignal(value)) {
+                if (hostCtx) {
+                    const hostEl = hostCtx.$element$;
+                    addSignalSub(1, hostEl, value, elm, attrName), useSignal = true;
+                }
+                value = value.value;
+            }
+            const attrValue = processPropValue(attrName, value);
+            null != attrValue && (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+        }
+        const listeners = elCtx.li;
+        const classValue = props.class ?? props.className;
+        let classStr = stringifyClass(classValue);
         if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
-        !hostCtx.$attachedListeners$)) {
-            hostCtx.$attachedListeners$ = true;
-            for (const eventName of Object.keys(hostCtx.li)) {
-                addQRLListener(elCtx.li, eventName, hostCtx.li[eventName]);
+        hostCtx.$needAttachListeners$ && (addQRLListener(listeners, hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
+        isHead && (flags |= 1), classStr = classStr.trim(), classStr && (openingElement += ' class="' + classStr + '"'), 
+        listeners.length > 0) {
+            const groups = groupListeners(listeners);
+            for (const listener of groups) {
+                openingElement += " " + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"';
             }
         }
-        isHead && (flags |= 1), classStr = classStr.trim(), classStr && (openingElement += ' class="' + classStr + '"');
-        const listeners = Object.keys(elCtx.li);
-        for (const key of listeners) {
-            openingElement += " " + key + '="' + serializeQRLs(elCtx.li[key], elCtx) + '"';
-        }
-        if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || listeners.length > 0) {
-            const newID = getNextIndex(ssrCtx.rctx);
+        if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || listeners.length > 0 || useSignal) {
+            const newID = getNextIndex(ssrCtx.rCtx);
             openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx);
         }
         if (1 & flags && (openingElement += " q:head"), openingElement += ">", stream.write(openingElement), 
@@ -3471,10 +3691,14 @@ const processData = (node, ssrCtx, stream, flags, beforeClose) => {
             if (isArray(node)) {
                 return walkChildren(node, ssrCtx, stream, flags);
             }
-            if (isPromise(node)) {
+            if (isSignal(node)) {
+                const hostEl = ssrCtx.hostCtx?.$element$;
+                const value = node.value;
+                const id = getNextIndex(ssrCtx.rCtx);
+                hostEl && addSignalSub(2, hostEl, node, "#" + id, "data"), stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(String(value))}\x3c!----\x3e`);
+            } else if (isPromise(node)) {
                 return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, ssrCtx, stream, flags, beforeClose)));
             }
-            logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
         }
     }
 };
@@ -3549,15 +3773,17 @@ const _flatVirtualChildren = (children, ssrCtx) => {
     return children;
 };
 
-const setComponentProps = (rctx, ctx, expectProps) => {
+const setComponentProps = (rCtx, elCtx, expectProps) => {
     const keys = Object.keys(expectProps);
-    if (0 === keys.length) {
+    const target = {
+        [QObjectFlagsSymbol]: QObjectImmutable
+    };
+    if (elCtx.$props$ = createProxy(target, rCtx.$static$.$containerState$), 0 === keys.length) {
         return;
     }
-    const target = {};
-    ctx.$props$ = createProps(target, rctx.$static$.$containerState$);
+    const immutableMeta = target[_IMMUTABLE] = expectProps[_IMMUTABLE] ?? EMPTY_OBJ;
     for (const key of keys) {
-        "children" !== key && "q:renderFn" !== key && (target[key] = expectProps[key]);
+        "children" !== key && (isSignal(immutableMeta[key]) ? target["$$" + key] = immutableMeta[key] : target[key] = expectProps[key]);
     }
 };
 
@@ -3634,7 +3860,7 @@ const useStore = (initialState, opts) => {
     }
     {
         const containerState = ctx.$renderCtx$.$static$.$containerState$;
-        const newStore = createProxy(value, containerState, opts?.recursive ?? false ? 1 : 0, void 0);
+        const newStore = getOrCreateProxy(value, containerState, opts?.recursive ?? false ? 1 : 0);
         return set(newStore), newStore;
     }
 };
@@ -3843,6 +4069,18 @@ const _useStyles = (styleQrl, transform, scoped) => {
     styleId;
 };
 
+const useSignal = initialState => {
+    const {get: get, set: set, ctx: ctx} = useSequentialScope();
+    if (null != get) {
+        return get;
+    }
+    const signal = ((value, containerState, subcriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(void 0);
+        return new SignalImpl(value, manager);
+    })(initialState, ctx.$renderCtx$.$static$.$containerState$);
+    return set(signal), signal;
+};
+
 const useErrorBoundary = () => {
     const store = useStore({
         error: void 0
@@ -3851,4 +4089,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };

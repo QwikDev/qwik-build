@@ -76,6 +76,8 @@
  */
 export declare const $: <T>(expression: T) => QRL<T>;
 
+declare type A = [type: 0, subscriber: SubscriberEffect | SubscriberHost, key: string | undefined];
+
 declare interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
@@ -188,11 +190,6 @@ export declare interface AriaAttributes {
      */
     'aria-hidden'?: Booleanish | undefined;
     /**
-     * Indicates whether the element is exposed to an accessibility API.
-     * @see aria-disabled.
-     */
-    ariaHidden?: Booleanish | undefined;
-    /**
      * Indicates the entered value does not conform to the format expected by the application.
      * @see aria-errormessage.
      */
@@ -304,6 +301,15 @@ export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'articl
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
+declare type B = [
+type: 1,
+subscriber: SubscriberHost,
+signal: Record<string, any>,
+elm: QwikElement,
+prop: string,
+key: string | undefined
+];
+
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
@@ -332,6 +338,15 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: 'submit' | 'reset' | 'button' | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
+
+declare type C = [
+type: 2,
+subscriber: SubscriberHost,
+signal: Record<string, any>,
+elm: Node,
+attribute: string,
+key: string | undefined
+];
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -493,8 +508,9 @@ declare interface ContainerState {
     $containerEl$: Element;
     $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
-    $watchNext$: Set<SubscriberDescriptor>;
-    $watchStaging$: Set<SubscriberDescriptor>;
+    $watchNext$: Set<SubscriberEffect>;
+    $watchStaging$: Set<SubscriberEffect>;
+    $opsNext$: Set<SubscriberSignal>;
     $hostsNext$: Set<QwikElement>;
     $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;
@@ -514,7 +530,7 @@ declare interface ContainerState {
  * for the values. Qwik needs a serializable ID for the context so that the it can track context
  * providers and consumers in a way that survives resumability.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * // Declare the Context type.
@@ -643,7 +659,7 @@ export declare interface CorePlatform {
  * for the values. Qwik needs a serializable ID for the context so that the it can track context
  * providers and consumers in a way that survives resumability.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * // Declare the Context type.
@@ -732,7 +748,7 @@ export declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
 /**
  * @public
  */
-export declare type EagernessOptions = 'visible' | 'load';
+export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
 declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -789,6 +805,8 @@ export declare interface FunctionComponent<P = Record<string, any>> {
  * @alpha
  */
 export declare const getPlatform: () => CorePlatform;
+
+declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect, LocalSubscriptionManager[]>;
 
 /**
  * @public
@@ -1215,7 +1233,7 @@ declare interface InvokeContext {
     $event$: any | undefined;
     $qrl$: QRL<any> | undefined;
     $waitOn$: Promise<any>[] | undefined;
-    $subscriber$: Subscriber | null | undefined;
+    $subscriber$: SubscriberEffect | SubscriberHost | null | undefined;
     $renderCtx$: RenderContext | undefined;
 }
 
@@ -1271,7 +1289,7 @@ declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string | undefined;
-    htmlFor?: string | undefined;
+    for?: string | undefined;
 }
 
 declare interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1294,10 +1312,17 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     charSet?: string | undefined;
 }
 
-declare interface LocalSubscriptionManager {
-    $subs$: SubscriberMap;
-    $notifySubs$: (key?: string | undefined) => void;
-    $addSub$: (subscriber: Subscriber, key?: string) => void;
+declare type Listener = [eventName: string, qrl: QRLInternal];
+
+declare class LocalSubscriptionManager {
+    private $groupToManagers$;
+    private $containerState$;
+    readonly $subs$: Subscriptions[];
+    constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
+    $addToGroup$(group: SubscriberHost | SubscriberEffect, manager: LocalSubscriptionManager): void;
+    $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
+    $addSub$(sub: Subscriptions): void;
+    $notifySubs$(key?: string | undefined): void;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1422,7 +1447,7 @@ declare interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string | undefined;
-    htmlFor?: string | undefined;
+    for?: string | undefined;
     name?: string | undefined;
 }
 
@@ -1447,6 +1472,7 @@ declare interface ProcessedJSXNode {
     $key$: string | null;
     $elm$: Node | VirtualElement | null;
     $text$: string;
+    $signal$: Signal<any> | null;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1489,14 +1515,14 @@ declare interface QContext {
     $element$: QwikElement;
     $refMap$: any[];
     $dirty$: boolean;
-    $attachedListeners$: boolean;
+    $needAttachListeners$: boolean;
     $id$: string;
     $mounted$: boolean;
     $props$: Record<string, any> | null;
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
-    li: Record<string, QRLInternal<any>[]>;
+    li: Listener[];
     $seq$: any[] | null;
-    $watches$: SubscriberDescriptor[] | null;
+    $watches$: SubscriberEffect[] | null;
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
@@ -1653,7 +1679,7 @@ export declare interface QRL<TYPE = any> {
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @internal
+ * @alpha
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
@@ -1876,7 +1902,7 @@ declare interface QwikProps extends PreventDefault {
         [className: string]: boolean;
     } | string[];
     dangerouslySetInnerHTML?: string;
-    ref?: Ref<Element>;
+    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void);
     /**
      *
      */
@@ -1895,9 +1921,9 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 /**
  * Type of the value returned by `useRef()`.
  *
- * @public
+ * @alpha
  */
-export declare interface Ref<T> {
+export declare interface Ref<T = Element> {
     current: T | undefined;
 }
 
@@ -1982,7 +2008,7 @@ declare interface RenderStaticContext {
  * - 'resolved' - the data is available.
  * - 'rejected' - the data is not available due to an error or timeout.
  *
- * ## Example
+ * ### Example
  *
  * Example showing how `useResource` to perform a fetch to request the weather, whenever the
  * input city name changes.
@@ -1994,11 +2020,11 @@ declare interface RenderStaticContext {
  *   });
  *
  *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(store, 'city');
+ *     const cityName = track(() => store.city);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
- *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
- *       signal: abortController.signal
+ *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal,
  *     });
  *     const data = res.json();
  *     return data;
@@ -2006,13 +2032,11 @@ declare interface RenderStaticContext {
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
- *           return (
- *             <div>Temperature: {weather.temp}</div>
- *           );
+ *           return <div>Temperature: {weather.temp}</div>;
  *         }}
  *       />
  *     </div>
@@ -2150,6 +2174,13 @@ export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 /**
  * @alpha
  */
+export declare interface Signal<T = any> {
+    value: T;
+}
+
+/**
+ * @alpha
+ */
 export declare const SkipRender: JSXNode;
 
 /**
@@ -2265,17 +2296,18 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare type Subscriber = SubscriberDescriptor | QwikElement;
+declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any>;
 
-declare type SubscriberDescriptor = WatchDescriptor | ResourceDescriptor<any>;
+declare type SubscriberHost = QwikElement;
 
-declare type SubscriberMap = Map<Subscriber, Set<string> | null>;
+declare type SubscriberSignal = B | C;
 
 declare interface SubscriptionManager {
-    $tryGetLocal$(obj: any): LocalSubscriptionManager | undefined;
-    $getLocal$(obj: any, map?: SubscriberMap): LocalSubscriptionManager;
-    $clearSub$: (sub: Subscriber) => void;
+    $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
+    $clearSub$: (sub: SubscriberEffect | SubscriberHost) => void;
 }
+
+declare type Subscriptions = A | SubscriberSignal;
 
 declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     class?: string | {
@@ -2601,7 +2633,7 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * state objects in a read proxy which signals to Qwik which properties should be watched for
  * changes. A change to any of the properties causes the `watchFn` to rerun.
  *
- * ## Example
+ * ### Example
  *
  * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
  * Any changes to the `state.count` property will cause the `watchFn` to rerun.
@@ -2610,7 +2642,7 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
  *   useWatch$(({ track }) => {
- *     const count = track(store, 'count');
+ *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *   return (
@@ -2629,7 +2661,28 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
  * @public
  */
 export declare interface Tracker {
+    /**
+     * Include the expression using stores / signals to track:
+     *
+     * ```tsx
+     * track(() => store.value)
+     * ```
+     *
+     * The `track()` function also returns the value of the scoped expression:
+     *
+     * ```tsx
+     * const count = track(() => store.count);
+     * ```
+     */
+    <T>(ctx: () => T): T;
+    /**
+     * Used to track the whole object. If any property of the passed store changes,
+     * the watch will be scheduled to run.
+     */
     <T extends {}>(obj: T): T;
+    /**
+     * @deprecated Use the `track(() => store.value)` instead
+     */
     <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
 }
 
@@ -2655,48 +2708,20 @@ declare type TransformProps<PROPS extends {}> = {
 };
 
 /**
- * A lazy-loadable reference to a component's cleanup hook.
- *
- * Invoked when the component is destroyed (removed from render tree), or paused as part of the
- * SSR serialization.
- *
  * It can be used to release resources, abort network requests, stop timers...
  *
- * ```tsx
- * const Cmp = component$(() => {
- *   useCleanup$(() => {
- *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resources, abort network requests, stop timers...
- *     console.log('component is destroyed');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
  * @alpha
+ * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * `useClientEffect$()` instead.
  */
 export declare const useCleanup$: (first: () => void) => void;
 
 /**
- * A lazy-loadable reference to a component's cleanup hook.
- *
- * Invoked when the component is destroyed (removed from render tree), or paused as part of the
- * SSR serialization.
- *
  * It can be used to release resources, abort network requests, stop timers...
  *
- * ```tsx
- * const Cmp = component$(() => {
- *   useCleanup$(() => {
- *     // Executed after SSR (pause) or when the component gets removed from the DOM.
- *     // Can be used to release resources, abort network requests, stop timers...
- *     console.log('component is destroyed');
- *   });
- *   return <div>Hello world</div>;
- * });
- * ```
- *
  * @alpha
+ * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * `useClientEffect$()` instead.
  */
 export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
 
@@ -2761,7 +2786,7 @@ declare interface UseContext {
  * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
  * parent component needs to invoke `useContextProvider()` to assign a value.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * // Declare the Context type.
@@ -2811,7 +2836,7 @@ export declare const useContext: UseContext;
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * // Declare the Context type.
@@ -2894,7 +2919,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 /**
  * Register a server mount hook that runs only in the server when the component is first mounted.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -2925,7 +2950,7 @@ export declare const useMount$: <T>(first: MountFn<T>) => void;
 /**
  * Register a server mount hook that runs only in the server when the component is first mounted.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3032,14 +3057,14 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  * }
  * ```
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const input = useRef<HTMLInputElement>();
  *
  *   useClientEffect$(({ track }) => {
- *     const el = track(input, 'current')!;
+ *     const el = track(() => input.current)!;
  *     el.focus();
  *   });
  *
@@ -3052,7 +3077,7 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  *
  * ```
  *
- * @public
+ * @alpha
  */
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
@@ -3069,7 +3094,7 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
  * - 'resolved' - the data is available.
  * - 'rejected' - the data is not available due to an error or timeout.
  *
- * ## Example
+ * ### Example
  *
  * Example showing how `useResource` to perform a fetch to request the weather, whenever the
  * input city name changes.
@@ -3081,11 +3106,11 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
  *   });
  *
  *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(store, 'city');
+ *     const cityName = track(() => store.city);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
- *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
- *       signal: abortController.signal
+ *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal,
  *     });
  *     const data = res.json();
  *     return data;
@@ -3093,13 +3118,11 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
- *           return (
- *             <div>Temperature: {weather.temp}</div>
- *           );
+ *           return <div>Temperature: {weather.temp}</div>;
  *         }}
  *       />
  *     </div>
@@ -3127,7 +3150,7 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  * - 'resolved' - the data is available.
  * - 'rejected' - the data is not available due to an error or timeout.
  *
- * ## Example
+ * ### Example
  *
  * Example showing how `useResource` to perform a fetch to request the weather, whenever the
  * input city name changes.
@@ -3139,11 +3162,11 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  *   });
  *
  *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(store, 'city');
+ *     const cityName = track(() => store.city);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
- *     const res = await  fetch(`http://weatherdata.com?city=${cityName}`, {
- *       signal: abortController.signal
+ *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
+ *       signal: abortController.signal,
  *     });
  *     const data = res.json();
  *     return data;
@@ -3151,13 +3174,11 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => store.city = ev.target.value}/>
+ *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
- *           return (
- *             <div>Temperature: {weather.temp}</div>
- *           );
+ *           return <div>Temperature: {weather.temp}</div>;
  *         }}
  *       />
  *     </div>
@@ -3176,7 +3197,7 @@ export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: Resourc
  * Register's a server mount hook that runs only in the server when the component is first
  * mounted.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3215,7 +3236,7 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  * Register's a server mount hook that runs only in the server when the component is first
  * mounted.
  *
- * ## Example
+ * ### Example
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3251,12 +3272,25 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
+ * @alpha
+ */
+export declare interface UseSignal {
+    <T>(): Signal<T | undefined>;
+    <T>(value: T): Signal<T>;
+}
+
+/**
+ * @alpha
+ */
+export declare const useSignal: UseSignal;
+
+/**
  * Creates an object that Qwik can track across serializations.
  *
  * Use `useStore` to create a state for your application. The returned object is a proxy that has
  * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
- * ## Example
+ * ### Example
  *
  * Example showing how `useStore` is used in Counter example to keep track of the count.
  *
@@ -3427,7 +3461,7 @@ export declare const useUserContext: typeof useEnvData;
  *
  * @public
  *
- * ## Example
+ * ### Example
  *
  * The `useWatch` function is used to observe the `state.count` property. Any changes to the
  * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
@@ -3443,13 +3477,13 @@ export declare const useUserContext: typeof useEnvData;
  *
  *   // Double count watch
  *   useWatch$(({ track }) => {
- *     const count = track(store, 'count');
+ *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
  *   useWatch$(({ track }) => {
- *     const doubleCount = track(store, 'doubleCount');
+ *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
  *     }, 2000);
@@ -3498,7 +3532,7 @@ export declare interface UseWatchOptions {
  *
  * @public
  *
- * ## Example
+ * ### Example
  *
  * The `useWatch` function is used to observe the `state.count` property. Any changes to the
  * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
@@ -3514,13 +3548,13 @@ export declare interface UseWatchOptions {
  *
  *   // Double count watch
  *   useWatch$(({ track }) => {
- *     const count = track(store, 'count');
+ *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
  *   useWatch$(({ track }) => {
- *     const doubleCount = track(store, 'doubleCount');
+ *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
  *     }, 2000);
@@ -3629,5 +3663,10 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 }
+
+/**
+ * @internal
+ */
+export declare const _wrapSignal: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => Signal<T[P]>;
 
 export { }

@@ -1,34 +1,26 @@
 (() => {
-    function findModule(module) {
-        return Object.values(module).find(isModule) || module;
-    }
-    function isModule(module) {
-        return "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
-    }
     ((doc, hasInitialized) => {
         const win = window;
-        const broadcast = (infix, type, ev) => {
-            type = type.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
-            doc.querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, type, ev)));
+        const events =  new Set;
+        const querySelectorAll = query => doc.querySelectorAll(query);
+        const broadcast = (infix, ev, type = ev.type) => {
+            querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));
         };
         const createEvent = (eventName, detail) => new CustomEvent(eventName, {
             detail: detail
         });
-        const error = msg => {
-            throw new Error("QWIK " + msg);
-        };
         const qrlResolver = (element, qrl) => {
             element = element.closest("[q\\:container]");
-            return new URL(qrl, new URL(element ? element.getAttribute("q:base") : doc.baseURI, doc.baseURI));
+            return new URL(qrl, new URL(element.getAttribute("q:base"), doc.baseURI));
         };
-        const dispatch = async (element, onPrefix, eventName, ev) => {
-            var _a;
-            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
+        const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {
             const attrName = "on" + onPrefix + ":" + eventName;
-            const qrls = null == (_a = element._qc_) ? void 0 : _a.li[attrName];
-            if (qrls) {
+            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
+            const ctx = element._qc_;
+            const qrls = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));
+            if (qrls && qrls.length > 0) {
                 for (const q of qrls) {
-                    await q.getFn([ element, ev ], (() => element.isConnected))(ev, element);
+                    await q[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
                 }
                 return;
             }
@@ -36,50 +28,59 @@
             if (attrValue) {
                 for (const qrl of attrValue.split("\n")) {
                     const url = qrlResolver(element, qrl);
-                    if (url) {
-                        const symbolName = getSymbolName(url);
-                        const handler = (win[url.pathname] || findModule(await import(url.href.split("#")[0])))[symbolName] || error(url + " does not export " + symbolName);
-                        const previousCtx = doc.__q_context__;
-                        if (element.isConnected) {
-                            try {
-                                doc.__q_context__ = [ element, ev, url ];
-                                await handler(ev, element);
-                            } finally {
-                                doc.__q_context__ = previousCtx;
-                                doc.dispatchEvent(createEvent("qsymbol", {
-                                    symbol: symbolName,
-                                    element: element
-                                }));
-                            }
+                    const symbolName = getSymbolName(url);
+                    const reqTime = performance.now();
+                    const handler = findModule(await import(url.href.split("#")[0]))[symbolName];
+                    const previousCtx = doc.__q_context__;
+                    if (element.isConnected) {
+                        try {
+                            doc.__q_context__ = [ element, ev, url ];
+                            emitEvent("qsymbol", {
+                                symbol: symbolName,
+                                element: element,
+                                reqTime: reqTime
+                            });
+                            await handler(ev, element);
+                        } finally {
+                            doc.__q_context__ = previousCtx;
                         }
                     }
                 }
             }
         };
+        const emitEvent = (eventName, detail) => {
+            doc.dispatchEvent(createEvent(eventName, detail));
+        };
+        const findModule = module => Object.values(module).find(isModule) || module;
+        const isModule = module => "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
+        const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
         const processDocumentEvent = async ev => {
+            let type = camelToKebab(ev.type);
             let element = ev.target;
-            broadcast("-document", ev.type, ev);
+            broadcast("-document", ev, type);
             while (element && element.getAttribute) {
-                await dispatch(element, "", ev.type, ev);
+                await dispatch(element, "", ev, type);
                 element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;
             }
         };
         const processWindowEvent = ev => {
-            broadcast("-window", ev.type, ev);
+            broadcast("-window", ev, camelToKebab(ev.type));
         };
         const processReadyStateChange = () => {
+            var _a;
             const readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
                 hasInitialized = 1;
-                broadcast("", "qinit", createEvent("qinit"));
-                const results = doc.querySelectorAll("[on\\:qvisible]");
-                if (results.length > 0) {
+                emitEvent("qinit");
+                (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));
+                if (events.has("qvisible")) {
+                    const results = querySelectorAll("[on\\:qvisible]");
                     const observer = new IntersectionObserver((entries => {
                         for (const entry of entries) {
                             if (entry.isIntersecting) {
                                 observer.unobserve(entry.target);
-                                dispatch(entry.target, "", "qvisible", createEvent("qvisible", entry));
+                                dispatch(entry.target, "", createEvent("qvisible", entry));
                             }
                         }
                     }));
@@ -87,14 +88,14 @@
                 }
             }
         };
-        const events =  new Set;
+        const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {
+            capture: capture
+        });
         const push = eventNames => {
             for (const eventName of eventNames) {
                 if (!events.has(eventName)) {
-                    document.addEventListener(eventName, processDocumentEvent, {
-                        capture: !0
-                    });
-                    win.addEventListener(eventName, processWindowEvent);
+                    addEventListener(doc, eventName, processDocumentEvent, !0);
+                    addEventListener(win, eventName, processWindowEvent);
                     events.add(eventName);
                 }
             }
@@ -105,7 +106,7 @@
             win.qwikevents = {
                 push: (...e) => push(e)
             };
-            doc.addEventListener("readystatechange", processReadyStateChange);
+            addEventListener(doc, "readystatechange", processReadyStateChange);
             processReadyStateChange();
         }
     })(document);

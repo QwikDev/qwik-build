@@ -110,11 +110,6 @@ declare interface AriaAttributes {
      */
     'aria-hidden'?: Booleanish | undefined;
     /**
-     * Indicates whether the element is exposed to an accessibility API.
-     * @see aria-disabled.
-     */
-    ariaHidden?: Booleanish | undefined;
-    /**
      * Indicates the entered value does not conform to the format expected by the application.
      * @see aria-errormessage.
      */
@@ -730,7 +725,7 @@ declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string | undefined;
-    htmlFor?: string | undefined;
+    for?: string | undefined;
 }
 
 declare interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -829,7 +824,7 @@ declare interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
     form?: string | undefined;
-    htmlFor?: string | undefined;
+    for?: string | undefined;
     name?: string | undefined;
 }
 
@@ -1150,7 +1145,7 @@ declare interface QwikProps extends PreventDefault {
         [className: string]: boolean;
     } | string[];
     dangerouslySetInnerHTML?: string;
-    ref?: Ref<Element>;
+    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void);
     /**
      *
      */
@@ -1169,9 +1164,9 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 /**
  * Type of the value returned by `useRef()`.
  *
- * @public
+ * @alpha
  */
-declare interface Ref<T> {
+declare interface Ref<T = Element> {
     current: T | undefined;
 }
 
@@ -1199,6 +1194,13 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     required?: boolean | undefined;
     size?: number | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+}
+
+/**
+ * @alpha
+ */
+declare interface Signal<T = any> {
+    value: T;
 }
 
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
