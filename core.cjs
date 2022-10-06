@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.9.0
+ * @builder.io/qwik 0.10.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -6397,7 +6397,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.9.0";
+    const version = "0.10.0";
 
     /**
      * Render JSX.
@@ -6469,6 +6469,7 @@
     const FLUSH_COMMENT = '<!--qkssr-f-->';
     const IS_HEAD = 1 << 0;
     const IS_HTML = 1 << 2;
+    const IS_TEXT = 1 << 3;
     const createDocument = () => {
         const doc = { nodeType: 9 };
         seal(doc);
@@ -6803,6 +6804,9 @@
             if (isHead) {
                 flags |= IS_HEAD;
             }
+            if (textOnlyElements[tagName]) {
+                flags |= IS_TEXT;
+            }
             classStr = classStr.trim();
             if (classStr) {
                 openingElement += ' class="' + classStr + '"';
@@ -6894,13 +6898,23 @@
             return walkChildren(node, ssrCtx, stream, flags);
         }
         else if (isSignal(node)) {
+            const insideText = flags & IS_TEXT;
             const hostEl = ssrCtx.hostCtx?.$element$;
-            const value = node.value;
-            const id = getNextIndex(ssrCtx.rCtx);
+            let value;
             if (hostEl) {
-                addSignalSub(2, hostEl, node, '#' + id, 'data');
+                if (!insideText) {
+                    value = node.value;
+                    const id = getNextIndex(ssrCtx.rCtx);
+                    addSignalSub(2, hostEl, node, '#' + id, 'data');
+                    stream.write(`<!--t=${id}-->${escapeHtml(String(value))}<!---->`);
+                    return;
+                }
+                else {
+                    value = invoke(ssrCtx.invocationContext, () => node.value);
+                }
             }
-            stream.write(`<!--t=${id}-->${escapeHtml(String(value))}<!---->`);
+            stream.write(escapeHtml(String(value)));
+            return;
         }
         else if (isPromise(node)) {
             stream.write(FLUSH_COMMENT);
@@ -7052,6 +7066,13 @@
         }
         return String(value);
     }
+    const textOnlyElements = {
+        title: true,
+        style: true,
+        script: true,
+        noframes: true,
+        noscript: true,
+    };
     const emptyElements = {
         area: true,
         base: true,

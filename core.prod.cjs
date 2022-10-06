@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.9.0
+ * @builder.io/qwik 0.10.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3130,8 +3130,8 @@
             let classStr = stringifyClass(classValue);
             if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
             hostCtx.$needAttachListeners$ && (addQRLListener(listeners, hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
-            isHead && (flags |= 1), classStr = classStr.trim(), classStr && (openingElement += ' class="' + classStr + '"'), 
-            listeners.length > 0) {
+            isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr = classStr.trim(), 
+            classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 for (const listener of groups) {
                     openingElement += " " + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"';
@@ -3211,11 +3211,20 @@
                     return walkChildren(node, ssrCtx, stream, flags);
                 }
                 if (isSignal(node)) {
+                    const insideText = 8 & flags;
                     const hostEl = ssrCtx.hostCtx?.$element$;
-                    const value = node.value;
-                    const id = getNextIndex(ssrCtx.rCtx);
-                    hostEl && addSignalSub(2, hostEl, node, "#" + id, "data"), stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(String(value))}\x3c!----\x3e`);
-                } else if (isPromise(node)) {
+                    let value;
+                    if (hostEl) {
+                        if (!insideText) {
+                            value = node.value;
+                            const id = getNextIndex(ssrCtx.rCtx);
+                            return addSignalSub(2, hostEl, node, "#" + id, "data"), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(String(value))}\x3c!----\x3e`);
+                        }
+                        value = invoke(ssrCtx.invocationContext, (() => node.value));
+                    }
+                    return void stream.write(escapeHtml(String(value)));
+                }
+                if (isPromise(node)) {
                     return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, ssrCtx, stream, flags, beforeClose)));
                 }
             }
@@ -3306,6 +3315,13 @@
     function processPropValue(prop, value) {
         return "style" === prop ? stringifyStyle(value) : false === value || null == value ? null : true === value ? "" : String(value);
     }
+    const textOnlyElements = {
+        title: true,
+        style: true,
+        script: true,
+        noframes: true,
+        noscript: true
+    };
     const emptyElements = {
         area: true,
         base: true,
@@ -3600,7 +3616,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.9.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.10.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3642,7 +3658,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.9.0",
+            "q:version": "0.10.0",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3699,7 +3715,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useUserContext = useUserContext, exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, 
-    exports.version = "0.9.0", Object.defineProperty(exports, "__esModule", {
+    exports.version = "0.10.0", Object.defineProperty(exports, "__esModule", {
         value: true
     });
 }));
