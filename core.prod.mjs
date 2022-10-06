@@ -2375,6 +2375,12 @@ const serializers = [ QRLSerializer, {
         return fn.__qwik_serializable__ = true, fn;
     },
     fill: void 0
+}, {
+    prefix: "",
+    test: v => "number" == typeof v,
+    serialize: v => String(v),
+    prepare: data => Number(data),
+    fill: void 0
 } ];
 
 const collectorSerializers = serializers.filter((a => a.collect));
@@ -2520,34 +2526,37 @@ const _pauseFromContexts = async (allContexts, containerState) => {
           case "undefined":
             return "";
 
-          case "string":
           case "number":
-          case "boolean":
+            if (!Number.isFinite(obj)) {
+                break;
+            }
             return obj;
 
-          default:
-            const value = ((obj, getObjID, containerState) => {
-                for (const s of serializers) {
-                    if (s.test(obj)) {
-                        let value = s.prefix;
-                        return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
-                    }
+          case "string":
+          case "boolean":
+            return obj;
+        }
+        const value = ((obj, getObjID, containerState) => {
+            for (const s of serializers) {
+                if (s.test(obj)) {
+                    let value = s.prefix;
+                    return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
                 }
-            })(obj, mustGetObjId, containerState);
-            if (void 0 !== value) {
-                return value;
             }
-            if ("object" === typeObj) {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
+        })(obj, mustGetObjId, containerState);
+        if (void 0 !== value) {
+            return value;
+        }
+        if ("object" === typeObj) {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key of Object.keys(obj)) {
+                    output[key] = mustGetObjId(obj[key]);
                 }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key of Object.keys(obj)) {
-                        output[key] = mustGetObjId(obj[key]);
-                    }
-                    return output;
-                }
+                return output;
             }
         }
         throw qError(3, obj);

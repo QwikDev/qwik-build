@@ -4639,6 +4639,17 @@
             signal.ref = getObject(signal.ref);
         },
     };
+    const NoFiniteNumberSerializer = {
+        prefix: '\u0014',
+        test: (v) => typeof v === 'number',
+        serialize: (v) => {
+            return String(v);
+        },
+        prepare: (data) => {
+            return Number(data);
+        },
+        fill: undefined,
+    };
     const serializers = [
         QRLSerializer,
         SignalSerializer,
@@ -4652,6 +4663,7 @@
         DocumentSerializer,
         ComponentSerializer,
         PureFunctionSerializer,
+        NoFiniteNumberSerializer,
     ];
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
     const canSerialize = (obj) => {
@@ -5088,28 +5100,30 @@
             switch (typeObj) {
                 case 'undefined':
                     return UNDEFINED_PREFIX;
-                case 'string':
                 case 'number':
+                    if (!Number.isFinite(obj)) {
+                        break;
+                    }
+                    return obj;
+                case 'string':
                 case 'boolean':
                     return obj;
-                default:
-                    const value = serializeValue(obj, mustGetObjId, containerState);
-                    if (value !== undefined) {
-                        return value;
+            }
+            const value = serializeValue(obj, mustGetObjId, containerState);
+            if (value !== undefined) {
+                return value;
+            }
+            if (typeObj === 'object') {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key of Object.keys(obj)) {
+                        output[key] = mustGetObjId(obj[key]);
                     }
-                    if (typeObj === 'object') {
-                        if (isArray(obj)) {
-                            return obj.map(mustGetObjId);
-                        }
-                        if (isSerializableObject(obj)) {
-                            const output = {};
-                            for (const key of Object.keys(obj)) {
-                                output[key] = mustGetObjId(obj[key]);
-                            }
-                            return output;
-                        }
-                    }
-                    break;
+                    return output;
+                }
             }
             throw qError(QError_verifySerializable, obj);
         });
