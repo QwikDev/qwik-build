@@ -2270,11 +2270,17 @@
         constructor($groupToManagers$, $containerState$, initialMap) {
             this.$groupToManagers$ = $groupToManagers$;
             this.$containerState$ = $containerState$;
-            this.$subs$ = initialMap ? initialMap : [];
+            this.$subs$ = [];
+            if (initialMap) {
+                this.$addSubs$(initialMap);
+            }
+            seal(this);
+        }
+        $addSubs$(subs) {
+            this.$subs$.push(...subs);
             for (const sub of this.$subs$) {
                 this.$addToGroup$(sub[1], this);
             }
-            seal(this);
         }
         $addToGroup$(group, manager) {
             let managers = this.$groupToManagers$.get(group);
@@ -4611,11 +4617,11 @@
         serialize: (obj, getObjId) => {
             return getObjId(obj.untrackedValue);
         },
-        prepare: (data) => {
-            return new SignalImpl(data, null);
+        prepare: (data, containerState) => {
+            return new SignalImpl(data, containerState.$subsManager$.$createManager$());
         },
-        subs: (signal, subs, containerState) => {
-            signal[QObjectManagerSymbol] = containerState.$subsManager$.$createManager$(subs);
+        subs: (signal, subs) => {
+            signal[QObjectManagerSymbol].$addSubs$(subs);
         },
         fill: (signal, getObject) => {
             signal.untrackedValue = getObject(signal.untrackedValue);

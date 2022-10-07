@@ -979,7 +979,10 @@
     class LocalSubscriptionManager {
         constructor($groupToManagers$, $containerState$, initialMap) {
             this.$groupToManagers$ = $groupToManagers$, this.$containerState$ = $containerState$, 
-            this.$subs$ = initialMap || [];
+            this.$subs$ = [], initialMap && this.$addSubs$(initialMap);
+        }
+        $addSubs$(subs) {
+            this.$subs$.push(...subs);
             for (const sub of this.$subs$) {
                 this.$addToGroup$(sub[1], this);
             }
@@ -2053,9 +2056,9 @@
         collect: (obj, collector, leaks) => (collectValue(obj.untrackedValue, collector, leaks), 
         leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector), obj),
         serialize: (obj, getObjId) => getObjId(obj.untrackedValue),
-        prepare: data => new SignalImpl(data, null),
-        subs: (signal, subs, containerState) => {
-            signal[QObjectManagerSymbol] = containerState.$subsManager$.$createManager$(subs);
+        prepare: (data, containerState) => new SignalImpl(data, containerState.$subsManager$.$createManager$()),
+        subs: (signal, subs) => {
+            signal[QObjectManagerSymbol].$addSubs$(subs);
         },
         fill: (signal, getObject) => {
             signal.untrackedValue = getObject(signal.untrackedValue);

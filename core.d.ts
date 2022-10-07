@@ -1319,6 +1319,7 @@ declare class LocalSubscriptionManager {
     private $containerState$;
     readonly $subs$: Subscriptions[];
     constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
+    $addSubs$(subs: Subscriptions[]): void;
     $addToGroup$(group: SubscriberHost | SubscriberEffect, manager: LocalSubscriptionManager): void;
     $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
     $addSub$(sub: Subscriptions): void;
