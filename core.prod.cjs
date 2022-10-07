@@ -2816,7 +2816,7 @@
             let subscriber = null;
             const invokeCtx = tryGetInvokeContext();
             return invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$([ 0, subscriber, void 0 ]), 
-            Object.getOwnPropertyNames(target).map((a => a.startsWith("$$") ? a.slice("$$".length) : a));
+            Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
         }
     }
     const wrap = (value, containerState) => {
