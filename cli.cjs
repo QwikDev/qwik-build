@@ -12387,6 +12387,13 @@ function logSuccessFooter() {
   console.log(`   https://qwik.builder.io/media/`);
   console.log(``);
 }
+function logNextStep(steps) {
+  if (steps.length) {
+    console.log(`\u{1F534} ${kleur_default.bgGreen(` ACTION REQUIRED! `)}`);
+    steps.forEach((step) => console.log(`${step}`));
+    console.log(``);
+  }
+}
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
 async function runAddInteractive(app, id) {
@@ -12561,6 +12568,7 @@ async function logUpdateAppResult(result) {
   }
 }
 function logUpdateAppCommitResult(result) {
+  var _a;
   console.clear();
   console.log(
     `\u{1F984} ${kleur_default.bgMagenta(` Success! `)} Added ${kleur_default.bold(
@@ -12568,6 +12576,8 @@ function logUpdateAppCommitResult(result) {
     )} to your app`
   );
   console.log(``);
+  const isNextSteps = ((_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps) || [];
+  logNextStep(isNextSteps);
   logSuccessFooter();
 }
 
