@@ -4333,7 +4333,7 @@ const useResource$ = (generatorFn, opts) => {
  */
 // </docs>
 const Resource = (props) => {
-    const isBrowser = !qDev || !isServer();
+    const isBrowser = !isServer();
     if (isBrowser) {
         if (props.onRejected) {
             props.value.promise.catch(() => { });
@@ -4355,18 +4355,6 @@ const Resource = (props) => {
         }
     }
     const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
-    // if (isServer) {
-    //   const onPending = props.onPending;
-    //   if (props.ssrWait && onPending) {
-    //     promise = Promise.race([
-    //       delay(props.ssrWait).then(() => {
-    //         getInternalResource(props.resource).dirty = true;
-    //         return onPending();
-    //       }),
-    //       promise,
-    //     ]);
-    //   }
-    // }
     // Resource path
     return jsx(Fragment, {
         children: promise,

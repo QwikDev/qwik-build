@@ -3551,19 +3551,21 @@
         styleId;
     };
     exports.$ = $, exports.Fragment = Fragment, exports.Resource = props => {
-        if (props.onRejected && (props.value.promise.catch((() => {})), "rejected" === props.value.state)) {
-            return props.onRejected(props.value.error);
-        }
-        if (props.onPending) {
-            const state = props.value.state;
-            if ("pending" === state) {
-                return props.onPending();
+        if (!isServer()) {
+            if (props.onRejected && (props.value.promise.catch((() => {})), "rejected" === props.value.state)) {
+                return props.onRejected(props.value.error);
             }
-            if ("resolved" === state) {
-                return props.onResolved(props.value.resolved);
-            }
-            if ("rejected" === state) {
-                throw props.value.error;
+            if (props.onPending) {
+                const state = props.value.state;
+                if ("pending" === state) {
+                    return props.onPending();
+                }
+                if ("resolved" === state) {
+                    return props.onResolved(props.value.resolved);
+                }
+                if ("rejected" === state) {
+                    throw props.value.error;
+                }
             }
         }
         const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
