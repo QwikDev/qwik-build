@@ -30,7 +30,7 @@
                     const url = qrlResolver(element, qrl);
                     const symbolName = getSymbolName(url);
                     const reqTime = performance.now();
-                    const handler = findModule(await import(url.href.split("#")[0]))[symbolName];
+                    const handler = findSymbol(await import(url.href.split("#")[0]), symbolName);
                     const previousCtx = doc.__q_context__;
                     if (element.isConnected) {
                         try {
@@ -51,8 +51,16 @@
         const emitEvent = (eventName, detail) => {
             doc.dispatchEvent(createEvent(eventName, detail));
         };
-        const findModule = module => Object.values(module).find(isModule) || module;
-        const isModule = module => "object" == typeof module && module && "Module" === module[Symbol.toStringTag];
+        const findSymbol = (module, symbol) => {
+            if (symbol in module) {
+                return module[symbol];
+            }
+            for (const v of Object.values(module)) {
+                if ("object" == typeof v && v && symbol in v) {
+                    return v[symbol];
+                }
+            }
+        };
         const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
         const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
         const processDocumentEvent = async ev => {

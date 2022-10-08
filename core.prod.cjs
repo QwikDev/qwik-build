@@ -125,37 +125,40 @@
     });
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
-    const isModule = module => isObject(module) && "Module" === module[Symbol.toStringTag];
-    let _platform = (() => {
-        const moduleCache = new Map;
-        return {
-            isServer: false,
-            importSymbol(containerEl, url, symbolName) {
-                const urlDoc = ((doc, containerEl, url) => {
-                    const baseURI = doc.baseURI;
-                    const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-                    return new URL(url, base);
-                })(containerEl.ownerDocument, containerEl, url).toString();
-                const urlCopy = new URL(urlDoc);
-                urlCopy.hash = "", urlCopy.search = "";
-                const importURL = urlCopy.href;
-                const mod = moduleCache.get(importURL);
-                return mod ? mod[symbolName] : import(importURL).then((mod => (mod = (module => Object.values(module).find(isModule) || module)(mod), 
-                moduleCache.set(importURL, mod), mod[symbolName])));
-            },
-            raf: fn => new Promise((resolve => {
-                requestAnimationFrame((() => {
-                    resolve(fn());
-                }));
-            })),
-            nextTick: fn => new Promise((resolve => {
-                setTimeout((() => {
-                    resolve(fn());
-                }));
-            })),
-            chunkForSymbol() {}
-        };
-    })();
+    let _platform = {
+        isServer: false,
+        importSymbol(containerEl, url, symbolName) {
+            const urlDoc = ((doc, containerEl, url) => {
+                const baseURI = doc.baseURI;
+                const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+                return new URL(url, base);
+            })(containerEl.ownerDocument, containerEl, url).toString();
+            const urlCopy = new URL(urlDoc);
+            urlCopy.hash = "", urlCopy.search = "";
+            const importURL = urlCopy.href;
+            return import(importURL).then((mod => ((module, symbol) => {
+                if (symbol in module) {
+                    return module[symbol];
+                }
+                for (const v of Object.values(module)) {
+                    if (isObject(v) && symbol in v) {
+                        return v[symbol];
+                    }
+                }
+            })(mod, symbolName)));
+        },
+        raf: fn => new Promise((resolve => {
+            requestAnimationFrame((() => {
+                resolve(fn());
+            }));
+        })),
+        nextTick: fn => new Promise((resolve => {
+            setTimeout((() => {
+                resolve(fn());
+            }));
+        })),
+        chunkForSymbol() {}
+    };
     const getPlatform = () => _platform;
     const isServer = () => _platform.isServer;
     const implicit$FirstArg = fn => function(first, ...rest) {
@@ -2930,11 +2933,9 @@
     };
     const emitUsedSymbol = (symbol, element, reqTime) => {
         emitEvent("qsymbol", {
-            detail: {
-                symbol: symbol,
-                element: element,
-                reqTime: reqTime
-            }
+            symbol: symbol,
+            element: element,
+            reqTime: reqTime
         });
     };
     const emitEvent = (eventName, detail) => {

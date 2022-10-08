@@ -20804,7 +20804,6 @@ var isObject = (v) => {
 
 // packages/qwik/src/core/platform/platform.ts
 var createPlatform = () => {
-  const moduleCache = /* @__PURE__ */ new Map();
   return {
     isServer: false,
     importSymbol(containerEl, url, symbolName) {
@@ -20813,17 +20812,11 @@ var createPlatform = () => {
       urlCopy.hash = "";
       urlCopy.search = "";
       const importURL = urlCopy.href;
-      const mod = moduleCache.get(importURL);
-      if (mod) {
-        return mod[symbolName];
-      }
       return import(
         /* @vite-ignore */
         importURL
-      ).then((mod2) => {
-        mod2 = findModule(mod2);
-        moduleCache.set(importURL, mod2);
-        return mod2[symbolName];
+      ).then((mod) => {
+        return findSymbol(mod, symbolName);
       });
     },
     raf: (fn) => {
@@ -20845,11 +20838,15 @@ var createPlatform = () => {
     }
   };
 };
-var findModule = (module2) => {
-  return Object.values(module2).find(isModule) || module2;
-};
-var isModule = (module2) => {
-  return isObject(module2) && module2[Symbol.toStringTag] === "Module";
+var findSymbol = (module2, symbol) => {
+  if (symbol in module2) {
+    return module2[symbol];
+  }
+  for (const v of Object.values(module2)) {
+    if (isObject(v) && symbol in v) {
+      return v[symbol];
+    }
+  }
 };
 var toUrl = (doc, containerEl, url) => {
   const baseURI = doc.baseURI;

@@ -390,7 +390,6 @@ const getDocument = (node) => {
 };
 
 const createPlatform = () => {
-    const moduleCache = new Map();
     return {
         isServer: false,
         importSymbol(containerEl, url, symbolName) {
@@ -399,14 +398,8 @@ const createPlatform = () => {
             urlCopy.hash = '';
             urlCopy.search = '';
             const importURL = urlCopy.href;
-            const mod = moduleCache.get(importURL);
-            if (mod) {
-                return mod[symbolName];
-            }
             return import(/* @vite-ignore */ importURL).then((mod) => {
-                mod = findModule(mod);
-                moduleCache.set(importURL, mod);
-                return mod[symbolName];
+                return findSymbol(mod, symbolName);
             });
         },
         raf: (fn) => {
@@ -428,11 +421,15 @@ const createPlatform = () => {
         },
     };
 };
-const findModule = (module) => {
-    return Object.values(module).find(isModule) || module;
-};
-const isModule = (module) => {
-    return isObject(module) && module[Symbol.toStringTag] === 'Module';
+const findSymbol = (module, symbol) => {
+    if (symbol in module) {
+        return module[symbol];
+    }
+    for (const v of Object.values(module)) {
+        if (isObject(v) && symbol in v) {
+            return v[symbol];
+        }
+    }
 };
 /**
  * Convert relative base URI and relative URL into a fully qualified URL.
@@ -6089,11 +6086,9 @@ function assertQrl(qrl) {
 }
 const emitUsedSymbol = (symbol, element, reqTime) => {
     emitEvent('qsymbol', {
-        detail: {
-            symbol,
-            element,
-            reqTime,
-        },
+        symbol,
+        element,
+        reqTime,
     });
 };
 const emitEvent = (eventName, detail) => {
