@@ -3078,6 +3078,7 @@ export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => v
  *
  * ```
  *
+ * @deprecated Use `useSignal` instead.
  * @alpha
  */
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;

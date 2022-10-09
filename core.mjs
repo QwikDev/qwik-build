@@ -7231,6 +7231,7 @@ const useStore = (initialState, opts) => {
  *
  * ```
  *
+ * @deprecated Use `useSignal` instead.
  * @alpha
  */
 // </docs>

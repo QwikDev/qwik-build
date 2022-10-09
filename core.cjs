@@ -7243,6 +7243,7 @@
      *
      * ```
      *
+     * @deprecated Use `useSignal` instead.
      * @alpha
      */
     // </docs>
