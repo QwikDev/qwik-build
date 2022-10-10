@@ -1403,6 +1403,9 @@
         appendTo(newParent) {
             this.insertBeforeTo(newParent, null);
         }
+        get namespaceURI() {
+            return this.parentElement?.namespaceURI ?? '';
+        }
         removeChild(child) {
             if (this.parentElement) {
                 this.parentElement.removeChild(child);
@@ -2537,7 +2540,7 @@
         for (let i = 0; i < len; i++) {
             const attr = attributes.item(i);
             assertDefined(attr, 'attribute must be defined');
-            const name = attr.name.toLowerCase();
+            const name = attr.name;
             if (!name.includes(':')) {
                 if (name === 'class') {
                     props[name] = parseDomClass(attr.value);
@@ -2630,7 +2633,7 @@
             const pendingListeners = currentComponent.li;
             const listeners = elCtx.li;
             listeners.length = 0;
-            newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props);
+            newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg);
             if (pendingListeners.length > 0) {
                 addQRLListener(listeners, pendingListeners);
                 pendingListeners.length = 0;
@@ -2847,7 +2850,7 @@
         const isSlot = isVirtual && QSlotS in props;
         const hasRef = !isVirtual && 'ref' in props;
         const listeners = elCtx.li;
-        vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props);
+        vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props, isSvg);
         if (currentComponent && !isVirtual) {
             const scopedIds = currentComponent.$scopeIds$;
             if (scopedIds) {
@@ -2986,7 +2989,7 @@
         [dangerouslySetInnerHTML]: setInnerHTML,
         innerHTML: noop,
     };
-    const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps) => {
+    const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) => {
         const keys = getKeys(oldProps, newProps);
         const values = {};
         if (keys.length === 0) {
@@ -3015,17 +3018,17 @@
             if (prop === 'class') {
                 newProps['class'] = newValue = serializeClass(newValue);
             }
-            const normalizedKey = prop.toLowerCase();
-            const oldValue = oldProps[normalizedKey];
-            values[normalizedKey] = newValue;
+            const normalizedProp = isSvg ? prop : prop.toLowerCase();
+            const oldValue = oldProps[normalizedProp];
+            values[normalizedProp] = newValue;
             if (oldValue === newValue) {
                 continue;
             }
-            smartSetProperty(staticCtx, elm, prop, newValue, oldValue);
+            smartSetProperty(staticCtx, elm, prop, newValue, oldValue, isSvg);
         }
         return values;
     };
-    const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue) => {
+    const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
         // Check if its an exception
         const exception = PROP_HANDLER_MAP[prop];
         if (exception) {
@@ -3034,7 +3037,7 @@
             }
         }
         // Check if property in prototype
-        if (prop in elm) {
+        if (!isSvg && prop in elm) {
             setProperty(staticCtx, elm, prop, newValue);
             return;
         }
@@ -3063,7 +3066,7 @@
             }
         }
     };
-    const setProperties = (staticCtx, elCtx, hostElm, newProps) => {
+    const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         const elm = elCtx.$element$;
         const keys = Object.keys(newProps);
         const values = {};
@@ -3095,9 +3098,9 @@
             if (prop === 'class') {
                 newValue = serializeClass(newValue);
             }
-            const normalizedKey = prop.toLowerCase();
-            values[normalizedKey] = newValue;
-            smartSetProperty(staticCtx, elm, prop, newValue, undefined);
+            const normalizedProp = isSvg ? prop : prop.toLowerCase();
+            values[normalizedProp] = newValue;
+            smartSetProperty(staticCtx, elm, prop, newValue, undefined, isSvg);
         }
         return values;
     };
@@ -3229,13 +3232,14 @@
                 const prop = operation[4];
                 const elm = operation[3];
                 const ctx = tryGetContext(elm);
+                const isSVG = elm.namespaceURI === SVG_NS;
                 let oldValue = undefined;
                 if (ctx && ctx.$vdom$) {
-                    const normalizedProp = prop.toLowerCase();
+                    const normalizedProp = isSVG ? prop : prop.toLowerCase();
                     oldValue = ctx.$vdom$.$props$[normalizedProp];
                     ctx.$vdom$.$props$[normalizedProp] = value;
                 }
-                return smartSetProperty(staticCtx, elm, prop, value, oldValue);
+                return smartSetProperty(staticCtx, elm, prop, value, oldValue, isSVG);
             }
             case 2:
                 return setProperty(staticCtx, operation[3], 'data', value);

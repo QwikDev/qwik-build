@@ -3609,6 +3609,7 @@ declare interface VirtualElement {
     readonly insertBeforeTo: (newParent: QwikElement, child: Node | null) => void;
     readonly appendTo: (newParent: QwikElement) => void;
     readonly ownerDocument: Document;
+    readonly namespaceURI: string;
     readonly nodeType: 111;
     readonly childNodes: Node[];
     readonly firstChild: Node | null;

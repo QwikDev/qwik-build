@@ -528,6 +528,9 @@
         appendTo(newParent) {
             this.insertBeforeTo(newParent, null);
         }
+        get namespaceURI() {
+            return this.parentElement?.namespaceURI ?? "";
+        }
         removeChild(child) {
             this.parentElement ? this.parentElement.removeChild(child) : this.template.removeChild(child);
         }
@@ -1160,7 +1163,7 @@
         const len = attributes.length;
         for (let i = 0; i < len; i++) {
             const attr = attributes.item(i);
-            const name = attr.name.toLowerCase();
+            const name = attr.name;
             name.includes(":") || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
         }
         return props;
@@ -1202,7 +1205,7 @@
         if (staticCtx.$containerState$.$containerEl$, !isComponent) {
             const pendingListeners = currentComponent.li;
             const listeners = elCtx.li;
-            if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props), 
+            if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg), 
             pendingListeners.length > 0 && (addQRLListener(listeners, pendingListeners), pendingListeners.length = 0), 
             listeners.length > 0) {
                 const groups = groupListeners(listeners);
@@ -1358,7 +1361,7 @@
         const isSlot = isVirtual && "q:s" in props;
         const hasRef = !isVirtual && "ref" in props;
         const listeners = elCtx.li;
-        if (vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props), 
+        if (vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props, isSvg), 
         currentComponent && !isVirtual) {
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {
@@ -1451,7 +1454,7 @@
         true),
         innerHTML: () => true
     };
-    const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps) => {
+    const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) => {
         const keys = getKeys(oldProps, newProps);
         const values = {};
         if (0 === keys.length) {
@@ -1471,15 +1474,15 @@
             }
             "className" === prop && (prop = "class"), isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
             newValue = newValue.value), "class" === prop && (newProps.class = newValue = serializeClass(newValue));
-            const normalizedKey = prop.toLowerCase();
-            const oldValue = oldProps[normalizedKey];
-            values[normalizedKey] = newValue, oldValue !== newValue && smartSetProperty(staticCtx, elm, prop, newValue, oldValue);
+            const normalizedProp = isSvg ? prop : prop.toLowerCase();
+            const oldValue = oldProps[normalizedProp];
+            values[normalizedProp] = newValue, oldValue !== newValue && smartSetProperty(staticCtx, elm, prop, newValue, oldValue, isSvg);
         }
         return values;
     };
-    const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue) => {
+    const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
         const exception = PROP_HANDLER_MAP[prop];
-        exception && exception(staticCtx, elm, prop, newValue, oldValue) || (prop in elm ? setProperty(staticCtx, elm, prop, newValue) : setAttribute(staticCtx, elm, prop, newValue));
+        exception && exception(staticCtx, elm, prop, newValue, oldValue) || (isSvg || !(prop in elm) ? setAttribute(staticCtx, elm, prop, newValue) : setProperty(staticCtx, elm, prop, newValue));
     };
     const getKeys = (oldProps, newProps) => {
         const keys = Object.keys(newProps);
@@ -1492,7 +1495,7 @@
             window.qwikevents && window.qwikevents.push(getEventName(prop));
         } catch (err) {}
     };
-    const setProperties = (staticCtx, elCtx, hostElm, newProps) => {
+    const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         const elm = elCtx.$element$;
         const keys = Object.keys(newProps);
         const values = {};
@@ -1512,7 +1515,7 @@
             isOnProp(prop) ? addGlobalListener(0, 0, setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$)) : ("className" === prop && (prop = "class"), 
             hostElm && isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
             newValue = newValue.value), "class" === prop && (newValue = serializeClass(newValue)), 
-            values[prop.toLowerCase()] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, void 0));
+            values[isSvg ? prop : prop.toLowerCase()] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, void 0, isSvg));
         }
         return values;
     };
@@ -1648,12 +1651,13 @@
                         const prop = operation[4];
                         const elm = operation[3];
                         const ctx = tryGetContext(elm);
+                        const isSVG = elm.namespaceURI === SVG_NS;
                         let oldValue;
                         if (ctx && ctx.$vdom$) {
-                            const normalizedProp = prop.toLowerCase();
+                            const normalizedProp = isSVG ? prop : prop.toLowerCase();
                             oldValue = ctx.$vdom$.$props$[normalizedProp], ctx.$vdom$.$props$[normalizedProp] = value;
                         }
-                        return smartSetProperty(staticCtx, elm, prop, value, oldValue);
+                        return smartSetProperty(staticCtx, elm, prop, value, oldValue, isSVG);
                     }
 
                   case 2:
