@@ -572,7 +572,7 @@ const setKey = (el, key) => {
 
 const resolveSlotProjection = ctx => {
     const subsManager = ctx.$containerState$.$subsManager$;
-    ctx.$rmSlots$.forEach((slotEl => {
+    for (const slotEl of ctx.$rmSlots$) {
         const key = getKey(slotEl);
         const slotChildren = getChildren(slotEl, "root");
         if (slotChildren.length > 0) {
@@ -589,13 +589,14 @@ const resolveSlotProjection = ctx => {
                 cleanupTree(slotEl, ctx, subsManager, false);
             }
         }
-    })), ctx.$addSlots$.forEach((([slotEl, hostElm]) => {
+    }
+    for (const [slotEl, hostElm] of ctx.$addSlots$) {
         const key = getKey(slotEl);
         const template = Array.from(hostElm.childNodes).find((node => isSlotTemplate(node) && node.getAttribute(QSlot) === key));
         template && (getChildren(template, "root").forEach((child => {
             directAppendChild(slotEl, child);
         })), template.remove());
-    }));
+    }
 };
 
 class VirtualElementImpl {
@@ -1750,7 +1751,7 @@ const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
     cleanupElement(parent, subsManager);
     const ch = getChildren(parent, "elements");
     for (const child of ch) {
-        cleanupTree(child, staticCtx, subsManager, stopSlots);
+        cleanupTree(child, staticCtx, subsManager, true);
     }
 };
 

@@ -1213,7 +1213,7 @@ const setKey = (el, key) => {
 const resolveSlotProjection = (ctx) => {
     // Slots removed
     const subsManager = ctx.$containerState$.$subsManager$;
-    ctx.$rmSlots$.forEach((slotEl) => {
+    for (const slotEl of ctx.$rmSlots$) {
         const key = getKey(slotEl);
         assertDefined(key, 'slots must have a key');
         const slotChildren = getChildren(slotEl, 'root');
@@ -1234,9 +1234,9 @@ const resolveSlotProjection = (ctx) => {
                 cleanupTree(slotEl, ctx, subsManager, false);
             }
         }
-    });
+    }
     // Slots added
-    ctx.$addSlots$.forEach(([slotEl, hostElm]) => {
+    for (const [slotEl, hostElm] of ctx.$addSlots$) {
         const key = getKey(slotEl);
         assertDefined(key, 'slots must have a key');
         const template = Array.from(hostElm.childNodes).find((node) => {
@@ -1249,7 +1249,7 @@ const resolveSlotProjection = (ctx) => {
             });
             template.remove();
         }
-    });
+    }
 };
 const createTextNode = (doc, text) => {
     return doc.createTextNode(text);
@@ -3120,7 +3120,7 @@ const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
     cleanupElement(parent, subsManager);
     const ch = getChildren(parent, 'elements');
     for (const child of ch) {
-        cleanupTree(child, staticCtx, subsManager, stopSlots);
+        cleanupTree(child, staticCtx, subsManager, true);
     }
 };
 const cleanupElement = (el, subsManager) => {
