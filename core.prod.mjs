@@ -497,7 +497,7 @@ const setProperty = (ctx, node, key, value) => {
 
 const _setProperty = (node, key, value) => {
     try {
-        node[key] = value;
+        node[key] = null == value ? "" : value;
     } catch (err) {
         logError(codeToText(6), {
             node: node,

@@ -1100,7 +1100,7 @@ const setProperty = (ctx, node, key, value) => {
 };
 const _setProperty = (node, key, value) => {
     try {
-        node[key] = value;
+        node[key] = value == null ? '' : value;
     }
     catch (err) {
         logError(codeToText(QError_setProperty), { node, key, value }, err);
