@@ -2957,6 +2957,7 @@
             const finalKey = componentQrl.$hash$ + ":" + (key || "");
             return jsx(Virtual, {
                 "q:renderFn": componentQrl,
+                [QSlot]: props[QSlot],
                 children: props.children,
                 props: props
             }, finalKey);

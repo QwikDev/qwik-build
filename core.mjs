@@ -6273,6 +6273,7 @@ const componentQrl = (componentQrl) => {
         const finalKey = hash + ':' + (key ? key : '');
         return jsx(Virtual, {
             [OnRenderProp]: componentQrl,
+            [QSlot]: props[QSlot],
             children: props.children,
             props,
         }, finalKey);
