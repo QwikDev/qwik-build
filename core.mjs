@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.10.0
+ * @builder.io/qwik 0.11.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -733,6 +733,7 @@ const directGetAttribute = (el, prop) => {
 };
 
 const ON_PROP_REGEX = /^(on|window:|document:)/;
+const PREVENT_DEFAULT = 'preventdefault:';
 const isOnProp = (prop) => {
     return prop.endsWith('$') && ON_PROP_REGEX.test(prop);
 };
@@ -776,10 +777,12 @@ const groupListeners = (listeners) => {
 const setEvent = (existingListeners, prop, input, containerEl) => {
     assertTrue(prop.endsWith('$'), 'render: event property does not end with $', prop);
     prop = normalizeOnProp(prop.slice(0, -1));
-    const listeners = isArray(input)
-        ? input.map((q) => [prop, ensureQrl(q, containerEl)])
-        : [[prop, ensureQrl(input, containerEl)]];
-    addQRLListener(existingListeners, listeners);
+    if (input) {
+        const listeners = isArray(input)
+            ? input.map((q) => [prop, ensureQrl(q, containerEl)])
+            : [[prop, ensureQrl(input, containerEl)]];
+        addQRLListener(existingListeners, listeners);
+    }
     return prop;
 };
 const ensureQrl = (value, containerEl) => {
@@ -2181,18 +2184,19 @@ const getContainerState = (containerEl) => {
 const createContainerState = (containerEl) => {
     const containerState = {
         $containerEl$: containerEl,
+        $elementIndex$: 0,
         $proxyMap$: new WeakMap(),
-        $subsManager$: null,
         $opsNext$: new Set(),
         $watchNext$: new Set(),
         $watchStaging$: new Set(),
         $hostsNext$: new Set(),
         $hostsStaging$: new Set(),
+        $styleIds$: new Set(),
+        $events$: new Set(),
+        $envData$: {},
         $renderPromise$: undefined,
         $hostsRendering$: undefined,
-        $envData$: {},
-        $elementIndex$: 0,
-        $styleIds$: new Set(),
+        $subsManager$: null,
     };
     seal(containerState);
     containerState.$subsManager$ = createSubscriptionManager(containerState);
@@ -2331,6 +2335,22 @@ const must = (a) => {
         throw logError('must be non null', a);
     }
     return a;
+};
+const addQwikEvent = (prop, containerState) => {
+    const eventName = getEventName(prop);
+    if (!qTest && !isServer()) {
+        try {
+            if (window.qwikevents) {
+                window.qwikevents.push(eventName);
+            }
+        }
+        catch (err) {
+            logWarn(err);
+        }
+    }
+    if (qSerialize) {
+        containerState.$events$.add(eventName);
+    }
 };
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -2615,7 +2635,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
     const props = newVnode.$props$;
     const isComponent = isVirtual && OnRenderProp in props;
     const elCtx = getContext(elm);
-    staticCtx.$containerState$.$containerEl$;
+    const containerState = staticCtx.$containerState$;
     assertDefined(currentComponent, 'slots can not be rendered outside a component', elm);
     if (!isComponent) {
         const pendingListeners = currentComponent.li;
@@ -2630,6 +2650,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
             const groups = groupListeners(listeners);
             for (const listener of groups) {
                 setAttribute(staticCtx, elm, listener[0], serializeQRLs(listener[1], elCtx));
+                addQwikEvent(listener[0], containerState);
             }
         }
         if (isSvg && newVnode.$type$ === 'foreignObject') {
@@ -2872,6 +2893,7 @@ const createElm = (rCtx, vnode, flags) => {
         const groups = groupListeners(listeners);
         for (const listener of groups) {
             setAttribute(staticCtx, elm, listener[0], serializeQRLs(listener[1], elCtx));
+            addQwikEvent(listener[0], staticCtx.$containerState$);
         }
     }
     const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
@@ -2993,7 +3015,7 @@ const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) 
         }
         let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
         if (isOnProp(prop)) {
-            setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
+            browserSetEvent(staticCtx, elCtx, prop, newValue);
             continue;
         }
         if (prop === 'className') {
@@ -3029,6 +3051,9 @@ const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
         setProperty(staticCtx, elm, prop, newValue);
         return;
     }
+    if (prop.startsWith(PREVENT_DEFAULT)) {
+        addQwikEvent(prop.slice(PREVENT_DEFAULT.length), staticCtx.$containerState$);
+    }
     // Fallback to render attribute
     setAttribute(staticCtx, elm, prop, newValue);
 };
@@ -3038,21 +3063,6 @@ const getKeys = (oldProps, newProps) => {
     const oldKeys = Object.keys(oldProps);
     keys.push(...oldKeys.filter((p) => !normalizedKeys.includes(p)));
     return keys.filter((c) => c !== 'children');
-};
-const addGlobalListener = (staticCtx, elm, prop) => {
-    if (!qSerialize && prop.includes(':')) {
-        setAttribute(staticCtx, elm, prop, '');
-    }
-    if (!qTest) {
-        try {
-            if (window.qwikevents) {
-                window.qwikevents.push(getEventName(prop));
-            }
-        }
-        catch (err) {
-            logWarn(err);
-        }
-    }
 };
 const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
     const elm = elCtx.$element$;
@@ -3073,7 +3083,7 @@ const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         }
         let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
         if (isOnProp(prop)) {
-            addGlobalListener(staticCtx, elm, setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$));
+            browserSetEvent(staticCtx, elCtx, prop, newValue);
             continue;
         }
         if (prop === 'className') {
@@ -3100,15 +3110,30 @@ const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
             [QObjectFlagsSymbol]: QObjectImmutable,
         }, rCtx.$static$.$containerState$);
     }
-    const qwikProps = getPropsMutator(props);
     if (keys.length === 0) {
         return false;
     }
-    for (const key of keys) {
-        if (SKIPS_PROPS.includes(key)) {
+    const manager = getProxyManager(props);
+    assertDefined(manager, `props have to be a proxy, but it is not`, props);
+    const target = getProxyTarget(props);
+    assertDefined(target, `props have to be a proxy, but it is not`, props);
+    const immutableMeta = (target[_IMMUTABLE] =
+        expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
+    for (const prop of keys) {
+        if (SKIPS_PROPS.includes(prop)) {
             continue;
         }
-        qwikProps.set(key, expectProps[key]);
+        if (isSignal(immutableMeta[prop])) {
+            target[_IMMUTABLE_PREFIX + prop] = immutableMeta[prop];
+        }
+        else {
+            const value = expectProps[prop];
+            const oldValue = target[prop];
+            target[prop] = value;
+            if (oldValue !== value) {
+                manager.$notifySubs$(prop);
+            }
+        }
     }
     return elCtx.$dirty$;
 };
@@ -3166,6 +3191,16 @@ const createKeyToOldIdx = (children, beginIdx, endIdx) => {
         }
     }
     return map;
+};
+const browserSetEvent = (staticCtx, elCtx, prop, input) => {
+    const containerState = staticCtx.$containerState$;
+    const normalized = setEvent(elCtx.li, prop, input, containerState.$containerEl$);
+    if (!qSerialize) {
+        if (!prop.startsWith('on')) {
+            setAttribute(staticCtx, elCtx.$element$, normalized, '');
+        }
+        addQwikEvent(normalized, containerState);
+    }
 };
 const sameVnode = (vnode1, vnode2) => {
     if (vnode1.$type$ !== vnode2.$type$) {
@@ -4910,7 +4945,6 @@ const _pauseFromContexts = async (allContexts, containerState) => {
                     key,
                     qrl,
                     el,
-                    eventName: getEventName(key),
                 });
             }
         }
@@ -5493,8 +5527,12 @@ const strToInt = (nu) => {
 };
 const getEventName = (attribute) => {
     const colonPos = attribute.indexOf(':');
-    assertTrue(colonPos >= 0, 'colon not found in attribute');
-    return fromKebabToCamelCase(attribute.slice(colonPos + 1));
+    if (attribute) {
+        return fromKebabToCamelCase(attribute.slice(colonPos + 1));
+    }
+    else {
+        return attribute;
+    }
 };
 const getTextNode = (mark) => {
     const nextNode = mark.nextSibling;
@@ -5586,21 +5624,6 @@ const normalizeOnProp = (prop) => {
         prop = prop.toLowerCase();
     }
     return scope + ':' + prop;
-};
-const getPropsMutator = (props) => {
-    const manager = getProxyManager(props);
-    assertDefined(manager, `props have to be a proxy, but it is not`, props);
-    const target = getProxyTarget(props);
-    assertDefined(target, `props have to be a proxy, but it is not`, props);
-    return {
-        set(prop, value) {
-            const oldValue = target[prop];
-            target[prop] = value;
-            if (oldValue !== value) {
-                manager.$notifySubs$(prop);
-            }
-        },
-    };
 };
 const inflateQrl = (qrl, elCtx) => {
     assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()', qrl);
@@ -6395,7 +6418,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.10.0";
+const version = "0.11.0";
 
 /**
  * Render JSX.
@@ -6775,6 +6798,9 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
                 }
                 value = value.value;
             }
+            if (prop.startsWith(PREVENT_DEFAULT)) {
+                addQwikEvent(prop.slice(PREVENT_DEFAULT.length), ssrCtx.rCtx.$static$.$containerState$);
+            }
             const attrValue = processPropValue(attrName, value);
             if (attrValue != null) {
                 openingElement +=
@@ -6813,6 +6839,7 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
             const groups = groupListeners(listeners);
             for (const listener of groups) {
                 openingElement += ' ' + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"';
+                addQwikEvent(listener[0], ssrCtx.rCtx.$static$.$containerState$);
             }
         }
         if (key != null) {

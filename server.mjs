@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 0.10.0
+ * @builder.io/qwik/server 0.11.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -41,7 +41,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.10.0",
+  qwik: "0.11.0",
   qwikDom: "2.1.19"
 };
 
@@ -146,12 +146,12 @@ function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
   const { mapper, manifest } = resolvedManifest;
   const urls = /* @__PURE__ */ new Set();
   if (Array.isArray(listeners)) {
-    for (const prioritizedSymbolName in mapper) {
+    for (const prioritizedSymbolHash in mapper) {
       const hasSymbol = listeners.some((l) => {
-        return l.qrl.getHash() === prioritizedSymbolName;
+        return l.qrl.getHash() === prioritizedSymbolHash;
       });
       if (hasSymbol) {
-        addBundle(manifest, urls, prefetchResources, buildBase, mapper[prioritizedSymbolName][1]);
+        addBundle(manifest, urls, prefetchResources, buildBase, mapper[prioritizedSymbolHash][1]);
       }
     }
   }
@@ -619,11 +619,7 @@ async function renderToStream(rootNode, opts) {
           })
         );
       }
-      const uniqueListeners = /* @__PURE__ */ new Set();
-      snapshotResult.listeners.forEach((li) => {
-        uniqueListeners.add(JSON.stringify(li.eventName));
-      });
-      const extraListeners = Array.from(uniqueListeners);
+      const extraListeners = Array.from(containerState.$events$, (s) => JSON.stringify(s));
       if (extraListeners.length > 0) {
         let content = `window.qwikevents.push(${extraListeners.join(", ")})`;
         if (!includeLoader) {

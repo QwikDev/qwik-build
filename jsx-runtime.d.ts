@@ -834,7 +834,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare type PreventDefault = {
-    [K in keyof QwikEventMap as `prevent${'default' | 'Default'}:${Lowercase<K>}`]?: boolean;
+    [K in keyof QwikEventMap as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {

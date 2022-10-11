@@ -505,19 +505,20 @@ export declare const componentQrl: <PROPS extends {}>(componentQrl: QRL<OnRender
  * @alpha
  */
 declare interface ContainerState {
-    $containerEl$: Element;
-    $proxyMap$: ObjToProxyMap;
+    readonly $containerEl$: Element;
+    readonly $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
-    $watchNext$: Set<SubscriberEffect>;
-    $watchStaging$: Set<SubscriberEffect>;
-    $opsNext$: Set<SubscriberSignal>;
-    $hostsNext$: Set<QwikElement>;
-    $hostsStaging$: Set<QwikElement>;
+    readonly $watchNext$: Set<SubscriberEffect>;
+    readonly $watchStaging$: Set<SubscriberEffect>;
+    readonly $opsNext$: Set<SubscriberSignal>;
+    readonly $hostsNext$: Set<QwikElement>;
+    readonly $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderStaticContext> | undefined;
     $envData$: Record<string, any>;
     $elementIndex$: number;
-    $styleIds$: Set<string>;
+    readonly $styleIds$: Set<string>;
+    readonly $events$: Set<string>;
 }
 
 /**
@@ -1463,7 +1464,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
 
 declare type PreventDefault = {
-    [K in keyof QwikEventMap as `prevent${'default' | 'Default'}:${Lowercase<K>}`]?: boolean;
+    [K in keyof QwikEventMap as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
 declare interface ProcessedJSXNode {
@@ -2202,7 +2203,6 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare interface SnapshotListener {
     key: string;
-    eventName: string;
     qrl: QRL<any>;
     el: Element;
 }
@@ -3587,7 +3587,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.10.0
+ * 0.11.0
  * @public
  */
 export declare const version: string;
