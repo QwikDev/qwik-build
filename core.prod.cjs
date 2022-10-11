@@ -3534,9 +3534,9 @@
         _useStyles(styles, (str => str), false);
     };
     const useStyles$ = implicit$FirstArg(useStylesQrl);
-    const useStylesScopedQrl = styles => {
-        _useStyles(styles, getScopedStyles, true);
-    };
+    const useStylesScopedQrl = styles => ({
+        scopeId: _useStyles(styles, getScopedStyles, true)
+    });
     const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
         const {get: get, set: set, ctx: ctx, i: i} = useSequentialScope();

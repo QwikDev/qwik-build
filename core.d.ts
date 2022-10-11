@@ -3419,7 +3419,14 @@ export declare const useStylesQrl: (styles: QRL<string>) => void;
  *
  * @alpha
  */
-export declare const useStylesScoped$: (first: string) => void;
+export declare const useStylesScoped$: (first: string) => UseStylesScoped;
+
+/**
+ * @alpha
+ */
+export declare interface UseStylesScoped {
+    scopeId: string;
+}
 
 /**
  * A lazy-loadable reference to a component's styles, that is scoped to the component.
@@ -3441,7 +3448,7 @@ export declare const useStylesScoped$: (first: string) => void;
  *
  * @alpha
  */
-export declare const useStylesScopedQrl: (styles: QRL<string>) => void;
+export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScoped;
 
 /**
  * @alpha

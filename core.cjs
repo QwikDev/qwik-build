@@ -7715,7 +7715,9 @@
      */
     // </docs>
     const useStylesScopedQrl = (styles) => {
-        _useStyles(styles, getScopedStyles, true);
+        return {
+            scopeId: _useStyles(styles, getScopedStyles, true),
+        };
     };
     // <docs markdown="../readme.md#useStylesScoped">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!

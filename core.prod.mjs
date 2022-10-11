@@ -4078,9 +4078,9 @@ const useStylesQrl = styles => {
 
 const useStyles$ = implicit$FirstArg(useStylesQrl);
 
-const useStylesScopedQrl = styles => {
-    _useStyles(styles, getScopedStyles, true);
-};
+const useStylesScopedQrl = styles => ({
+    scopeId: _useStyles(styles, getScopedStyles, true)
+});
 
 const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
 
