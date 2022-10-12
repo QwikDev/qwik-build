@@ -1,8 +1,14 @@
 {
   "name": "@builder.io/qwik/core",
   "version": "0.11.0",
-  "main": "../core.cjs",
-  "module": "../core.mjs",
+  "main": "../core.mjs",
   "types": "../core.d.ts",
-  "private": true
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "require": "../core.cjs",
+      "import": "../core.mjs"
+    }
+  }
 }

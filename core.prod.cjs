@@ -393,7 +393,7 @@
     };
     const _setProperty = (node, key, value) => {
         try {
-            node[key] = null == value ? "" : value;
+            node[key] = null == value ? "" : value, null == value && isNode(node) && isElement(node) && node.removeAttribute(key);
         } catch (err) {
             logError(codeToText(6), {
                 node: node,
@@ -1009,9 +1009,9 @@
         }
         $addSub$(sub) {
             const subs = this.$subs$;
-            const [type, group] = sub;
+            const group = sub[1];
             const key = sub[sub.length - 1];
-            0 === type && subs.some((([_type, _group, _key]) => _type === type && _group === group && _key === key)) || (subs.push(sub), 
+            subs.some((([_type, _group, _key]) => 0 === _type && _group === group && _key === key)) || (subs.push(sub), 
             this.$addToGroup$(group, this));
         }
         $notifySubs$(key) {
@@ -3606,6 +3606,9 @@
         }, name);
     }, exports._IMMUTABLE = _IMMUTABLE, exports._hW = _hW, exports._pauseFromContexts = _pauseFromContexts, 
     exports._wrapSignal = (obj, prop) => {
+        if (!isObject(obj)) {
+            return;
+        }
         if (obj instanceof SignalImpl) {
             return obj;
         }
@@ -3617,7 +3620,8 @@
             const signal = target[_IMMUTABLE_PREFIX + prop];
             return signal ? (isSignal(signal), signal) : new SignalWrapper(obj, prop);
         }
-        return obj[prop];
+        const immutable = obj[_IMMUTABLE]?.[prop];
+        return isSignal(immutable) ? immutable : obj[prop];
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
     exports.createContext = createContext$1, exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
         const normalizedProps = {

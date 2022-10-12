@@ -1116,6 +1116,9 @@
     const _setProperty = (node, key, value) => {
         try {
             node[key] = value == null ? '' : value;
+            if (value == null && isNode(node) && isElement(node)) {
+                node.removeAttribute(key);
+            }
         }
         catch (err) {
             logError(codeToText(QError_setProperty), { node, key, value }, err);
@@ -2307,12 +2310,10 @@
         }
         $addSub$(sub) {
             const subs = this.$subs$;
-            const [type, group] = sub;
+            const group = sub[1];
             const key = sub[sub.length - 1];
-            if (type === 0) {
-                if (subs.some(([_type, _group, _key]) => _type === type && _group === group && _key === key)) {
-                    return;
-                }
+            if (subs.some(([_type, _group, _key]) => _type === 0 && _group === group && _key === key)) {
+                return;
             }
             subs.push(sub);
             this.$addToGroup$(group, this);
@@ -5991,6 +5992,9 @@
      * @internal
      */
     const _wrapSignal = (obj, prop) => {
+        if (!isObject(obj)) {
+            return undefined;
+        }
         if (obj instanceof SignalImpl) {
             assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
             return obj;
@@ -6007,6 +6011,10 @@
                 return signal;
             }
             return new SignalWrapper(obj, prop);
+        }
+        const immutable = obj[_IMMUTABLE]?.[prop];
+        if (isSignal(immutable)) {
+            return immutable;
         }
         return obj[prop];
     };

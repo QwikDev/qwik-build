@@ -3677,6 +3677,6 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @internal
  */
-export declare const _wrapSignal: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => Signal<T[P]>;
+export declare const _wrapSignal: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => any;
 
 export { }
