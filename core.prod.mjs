@@ -66,6 +66,8 @@ const then = (promise, thenFn) => isPromise(promise) ? promise.then(thenFn) : th
 
 const promiseAll = promises => promises.some(isPromise) ? Promise.all(promises) : promises;
 
+const promiseAllLazy = promises => promises.length > 0 ? Promise.all(promises) : promises;
+
 const isNotNullable = v => null != v;
 
 const delay = timeout => new Promise((resolve => {
@@ -1290,18 +1292,16 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
         } else {
             if (void 0 === oldKeyToIdx && (oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)), 
             idxInOld = oldKeyToIdx[newStartVnode.$key$], void 0 === idxInOld) {
-                const newElm = createElm(ctx, newStartVnode, flags);
-                results.push(then(newElm, (newElm => {
-                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-                })));
+                const newElm = createElm(ctx, newStartVnode, flags, results);
+                insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
             } else if (elmToMove = oldCh[idxInOld], isTagName(elmToMove, newStartVnode.$type$)) {
                 results.push(patchVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
                 elmToMove.$elm$, insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
             } else {
-                const newElm = createElm(ctx, newStartVnode, flags);
-                results.push(then(newElm, (newElm => {
+                const newElm = createElm(ctx, newStartVnode, flags, results);
+                then(newElm, (newElm => {
                     insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-                })));
+                }));
             }
             newStartVnode = newCh[++newStartIdx];
         }
@@ -1477,22 +1477,12 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
 
 const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
     const promises = [];
-    let hasPromise = false;
     for (;startIdx <= endIdx; ++startIdx) {
         const ch = vnodes[startIdx];
-        const elm = createElm(ctx, ch, flags);
-        promises.push(elm), isPromise(elm) && (hasPromise = true);
+        const elm = createElm(ctx, ch, flags, promises);
+        insertBefore(ctx.$static$, parentElm, elm, before);
     }
-    if (hasPromise) {
-        return Promise.all(promises).then((children => insertChildren(ctx.$static$, parentElm, children, before)));
-    }
-    insertChildren(ctx.$static$, parentElm, promises, before);
-};
-
-const insertChildren = (ctx, parentElm, children, before) => {
-    for (const child of children) {
-        insertBefore(ctx, parentElm, child, before);
-    }
+    return promiseAllLazy(promises);
 };
 
 const removeVnodes = (ctx, nodes, startIdx, endIdx) => {
@@ -1522,7 +1512,7 @@ const getSlotElement = (ctx, slotMaps, parentEl, slotName) => {
 
 const getSlotName = node => node.$props$[QSlot] ?? "";
 
-const createElm = (rCtx, vnode, flags) => {
+const createElm = (rCtx, vnode, flags, promises) => {
     const tag = vnode.$type$;
     const doc = rCtx.$static$.$doc$;
     const currentComponent = rCtx.$cmpCtx$;
@@ -1551,23 +1541,23 @@ const createElm = (rCtx, vnode, flags) => {
     if (isComponent) {
         setKey(elm, vnode.$key$);
         const renderQRL = props["q:renderFn"];
-        return setComponentProps$1(elCtx, rCtx, props.props), setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL, 
-        then(renderComponent(rCtx, elCtx, flags), (() => {
+        setComponentProps$1(elCtx, rCtx, props.props), setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL;
+        const wait = then(renderComponent(rCtx, elCtx, flags), (() => {
             let children = vnode.$children$;
             if (0 === children.length) {
-                return elm;
+                return;
             }
             1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
             const slotRctx = pushRenderContext(rCtx, elCtx);
             const slotMap = getSlotMap(elCtx);
-            const elements = children.map((ch => createElm(slotRctx, ch, flags)));
-            return then(promiseAll(elements), (() => {
-                for (const node of children) {
-                    node.$elm$, appendChild(staticCtx, getSlotElement(staticCtx, slotMap, elm, getSlotName(node)), node.$elm$);
-                }
-                return elm;
-            }));
+            const p = [];
+            for (const node of children) {
+                const nodeElm = createElm(slotRctx, node, flags, p);
+                node.$elm$, node.$elm$, appendChild(staticCtx, getSlotElement(staticCtx, slotMap, elm, getSlotName(node)), nodeElm);
+            }
+            return promiseAllLazy(p);
         }));
+        return isPromise(wait) && promises.push(wait), elm;
     }
     const isSlot = isVirtual && "q:s" in props;
     const hasRef = !isVirtual && "ref" in props;
@@ -1597,13 +1587,11 @@ const createElm = (rCtx, vnode, flags) => {
         return elm;
     }
     1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
-    const promises = children.map((ch => createElm(rCtx, ch, flags)));
-    return then(promiseAll(promises), (() => {
-        for (const node of children) {
-            node.$elm$, appendChild(rCtx.$static$, elm, node.$elm$);
-        }
-        return elm;
-    }));
+    const nodes = children.map((ch => createElm(rCtx, ch, flags, promises)));
+    for (const node of nodes) {
+        appendChild(rCtx.$static$, elm, node);
+    }
+    return elm;
 };
 
 const getSlotMap = elCtx => {
