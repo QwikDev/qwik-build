@@ -1545,15 +1545,12 @@
         if (stopSlots && parent.hasAttribute("q:s")) {
             return void staticCtx.$rmSlots$.push(parent);
         }
-        cleanupElement(parent, subsManager);
+        const ctx = tryGetContext(parent);
+        ctx && cleanupContext(ctx, subsManager);
         const ch = getChildren(parent, "elements");
         for (const child of ch) {
             cleanupTree(child, staticCtx, subsManager, true);
         }
-    };
-    const cleanupElement = (el, subsManager) => {
-        const ctx = tryGetContext(el);
-        ctx && cleanupContext(ctx, subsManager);
     };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);

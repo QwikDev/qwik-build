@@ -3146,16 +3146,13 @@
             staticCtx.$rmSlots$.push(parent);
             return;
         }
-        cleanupElement(parent, subsManager);
+        const ctx = tryGetContext(parent);
+        if (ctx) {
+            cleanupContext(ctx, subsManager);
+        }
         const ch = getChildren(parent, 'elements');
         for (const child of ch) {
             cleanupTree(child, staticCtx, subsManager, true);
-        }
-    };
-    const cleanupElement = (el, subsManager) => {
-        const ctx = tryGetContext(el);
-        if (ctx) {
-            cleanupContext(ctx, subsManager);
         }
     };
     const executeContextWithSlots = ({ $static$: ctx }) => {
