@@ -1928,8 +1928,10 @@ function qwikVite(qwikViteOpts = {}) {
       if ("development" === buildMode) {
         globalThis.qDev = true;
         const qDevKey = "globalThis.qDev";
+        const qSerializeKey = "globalThis.qSerialize";
         updatedViteConfig.define = {
-          [qDevKey]: viteConfig?.define?.[qDevKey] ?? true
+          [qDevKey]: viteConfig?.define?.[qDevKey] ?? true,
+          [qSerializeKey]: viteConfig?.define?.[qSerializeKey] ?? true
         };
       }
       if ("ssr" === opts.target) {

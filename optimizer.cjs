@@ -1824,7 +1824,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -1937,8 +1937,10 @@ globalThis.qwikOptimizer = function(module) {
         if ("development" === buildMode) {
           globalThis.qDev = true;
           const qDevKey = "globalThis.qDev";
+          const qSerializeKey = "globalThis.qSerialize";
           updatedViteConfig.define = {
-            [qDevKey]: (null == (_n = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _n[qDevKey]) ?? true
+            [qDevKey]: (null == (_n = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _n[qDevKey]) ?? true,
+            [qSerializeKey]: (null == (_o = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _o[qSerializeKey]) ?? true
           };
         }
         if ("ssr" === opts.target) {
@@ -1951,7 +1953,7 @@ globalThis.qwikOptimizer = function(module) {
             updatedViteConfig.build.ssr = true;
             "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
-          "boolean" === typeof (null == (_o = viteConfig.build) ? void 0 : _o.emptyOutDir) ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
+          "boolean" === typeof (null == (_p = viteConfig.build) ? void 0 : _p.emptyOutDir) ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
         } else if ("client" === opts.target) {
           "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);

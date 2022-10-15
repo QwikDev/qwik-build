@@ -793,6 +793,8 @@ export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
 }
 
+declare type GetObjID = (obj: any) => string | null;
+
 /**
  * Retrieve the `CorePlatform`.
  *
@@ -1461,7 +1463,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @internal
  */
-export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState) => Promise<SnapshotResult>;
+export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID) => Promise<SnapshotResult>;
 
 declare type PreventDefault = {
     [K in keyof QwikEventMap as `preventdefault:${Lowercase<K>}`]?: boolean;
@@ -1683,7 +1685,7 @@ export declare interface QRL<TYPE = any> {
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
  * @alpha
  */
-export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[]) => QRL<T>;
+export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[], stackOffset?: number) => QRL<T>;
 
 declare interface QRLDev {
     file: string;
