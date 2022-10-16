@@ -357,6 +357,22 @@ const ON_PROP_REGEX = /^(on|window:|document:)/;
 
 const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
 
+const addQRLListener = (listeners, add) => {
+    for (const entry of add) {
+        const prop = entry[0];
+        const hash = entry[1].$hash$;
+        let replaced = false;
+        for (let i = 0; i < listeners.length; i++) {
+            const existing = listeners[i];
+            if (existing[0] === prop && existing[1].$hash$ === hash) {
+                listeners.splice(i, 1, entry), replaced = true;
+                break;
+            }
+        }
+        replaced || listeners.push(entry);
+    }
+};
+
 const groupListeners = listeners => {
     if (0 === listeners.length) {
         return EMPTY_ARRAY;
@@ -373,9 +389,13 @@ const groupListeners = listeners => {
     return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
 };
 
-const setEvent = (existingListeners, prop, input, containerEl) => (prop.endsWith("$"), 
-prop = normalizeOnProp(prop.slice(0, -1)), input && (isArray(input) ? existingListeners.push(...input.map((q => [ prop, ensureQrl(q, containerEl) ]))) : existingListeners.push([ prop, ensureQrl(input, containerEl) ])), 
-prop);
+const setEvent = (existingListeners, prop, input, containerEl) => {
+    if (prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1)), input) {
+        const listeners = isArray(input) ? input.map((q => [ prop, ensureQrl(q, containerEl) ])) : [ [ prop, ensureQrl(input, containerEl) ] ];
+        addQRLListener(existingListeners, listeners);
+    }
+    return prop;
+};
 
 const PREFIXES = [ "on", "window:on", "document:on" ];
 
@@ -446,7 +466,7 @@ const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
 const _useOn = (eventName, eventQrl) => {
     const invokeCtx = useInvokeContext();
     const elCtx = getContext(invokeCtx.$hostElement$);
-    elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]), elCtx.$needAttachListeners$ = true;
+    addQRLListener(elCtx.li, [ [ normalizeOnProp(eventName), eventQrl ] ]), elCtx.$needAttachListeners$ = true;
 };
 
 const CONTAINER_STATE = Symbol("ContainerState");
@@ -975,7 +995,7 @@ const handleError = (err, hostElement, rctx) => {
 };
 
 const executeComponent = (rCtx, elCtx) => {
-    elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [], elCtx.li.length = 0;
+    elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
@@ -1488,7 +1508,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
         const pendingListeners = currentComponent.li;
         const listeners = elCtx.li;
         if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg), 
-        pendingListeners.length > 0 && (listeners.push(...pendingListeners), pendingListeners.length = 0), 
+        pendingListeners.length > 0 && (addQRLListener(listeners, pendingListeners), pendingListeners.length = 0), 
         isSvg && "foreignObject" === newVnode.$type$ && (flags &= -2, isSvg = false), isVirtual && "q:s" in props) {
             return currentComponent.$slots$, void currentComponent.$slots$.push(newVnode);
         }
@@ -1638,7 +1658,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         const scopedIds = currentComponent.$scopeIds$;
         scopedIds && scopedIds.forEach((styleId => {
             elm.classList.add(styleId);
-        })), currentComponent.$needAttachListeners$ && (listeners.push(...currentComponent.li), 
+        })), currentComponent.$needAttachListeners$ && (addQRLListener(listeners, currentComponent.li), 
         currentComponent.$needAttachListeners$ = false);
     }
     if (isSlot && (currentComponent.$slots$, setKey(elm, vnode.$key$), directSetAttribute(elm, "q:sref", currentComponent.$id$), 
@@ -2691,15 +2711,15 @@ const useWatch$ = implicit$FirstArg(useWatchQrl);
 
 const useClientEffectQrl = (qrl, opts) => {
     const {get: get, set: set, i: i, ctx: ctx} = useSequentialScope();
-    const eagerness = opts?.eagerness ?? "visible";
     if (get) {
-        return void (isServer() && useRunWatch(get, eagerness));
+        return;
     }
     const el = ctx.$hostElement$;
     const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, void 0);
+    const eagerness = opts?.eagerness ?? "visible";
     const elCtx = getContext(el);
     const containerState = ctx.$renderCtx$.$static$.$containerState$;
-    elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
+    set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), 
     useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
     notifyWatch(watch, containerState));
 };
@@ -3648,7 +3668,7 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
         const classValue = props.class ?? props.className;
         let classStr = stringifyClass(classValue);
         if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
-        hostCtx.$needAttachListeners$ && (listeners.push(...hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
+        hostCtx.$needAttachListeners$ && (addQRLListener(listeners, hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
         isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr = classStr.trim(), 
         classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
             const groups = groupListeners(listeners);

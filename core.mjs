@@ -784,6 +784,24 @@ const PREVENT_DEFAULT = 'preventdefault:';
 const isOnProp = (prop) => {
     return prop.endsWith('$') && ON_PROP_REGEX.test(prop);
 };
+const addQRLListener = (listeners, add) => {
+    for (const entry of add) {
+        const prop = entry[0];
+        const hash = entry[1].$hash$;
+        let replaced = false;
+        for (let i = 0; i < listeners.length; i++) {
+            const existing = listeners[i];
+            if (existing[0] === prop && existing[1].$hash$ === hash) {
+                listeners.splice(i, 1, entry);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            listeners.push(entry);
+        }
+    }
+};
 const groupListeners = (listeners) => {
     if (listeners.length === 0) {
         return EMPTY_ARRAY;
@@ -807,12 +825,10 @@ const setEvent = (existingListeners, prop, input, containerEl) => {
     assertTrue(prop.endsWith('$'), 'render: event property does not end with $', prop);
     prop = normalizeOnProp(prop.slice(0, -1));
     if (input) {
-        if (isArray(input)) {
-            existingListeners.push(...input.map((q) => [prop, ensureQrl(q, containerEl)]));
-        }
-        else {
-            existingListeners.push([prop, ensureQrl(input, containerEl)]);
-        }
+        const listeners = isArray(input)
+            ? input.map((q) => [prop, ensureQrl(q, containerEl)])
+            : [[prop, ensureQrl(input, containerEl)]];
+        addQRLListener(existingListeners, listeners);
     }
     return prop;
 };
@@ -1007,7 +1023,7 @@ const _useOn = (eventName, eventQrl) => {
     const invokeCtx = useInvokeContext();
     const elCtx = getContext(invokeCtx.$hostElement$);
     assertQrl(eventQrl);
-    elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+    addQRLListener(elCtx.li, [[normalizeOnProp(eventName), eventQrl]]);
     elCtx.$needAttachListeners$ = true;
 };
 
@@ -2023,7 +2039,6 @@ const executeComponent = (rCtx, elCtx) => {
     elCtx.$dirty$ = false;
     elCtx.$mounted$ = true;
     elCtx.$slots$ = [];
-    elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
@@ -2831,7 +2846,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
         listeners.length = 0;
         newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg);
         if (pendingListeners.length > 0) {
-            listeners.push(...pendingListeners);
+            addQRLListener(listeners, pendingListeners);
             pendingListeners.length = 0;
         }
         if (isSvg && newVnode.$type$ === 'foreignObject') {
@@ -3039,7 +3054,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
             });
         }
         if (currentComponent.$needAttachListeners$) {
-            listeners.push(...currentComponent.li);
+            addQRLListener(listeners, currentComponent.li);
             currentComponent.$needAttachListeners$ = false;
         }
     }
@@ -4755,23 +4770,20 @@ const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
 // </docs>
 const useClientEffectQrl = (qrl, opts) => {
     const { get, set, i, ctx } = useSequentialScope();
-    const eagerness = opts?.eagerness ?? 'visible';
     if (get) {
-        if (isServer()) {
-            useRunWatch(get, eagerness);
-        }
         return;
     }
     assertQrl(qrl);
     const el = ctx.$hostElement$;
     const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, undefined);
+    const eagerness = opts?.eagerness ?? 'visible';
     const elCtx = getContext(el);
     const containerState = ctx.$renderCtx$.$static$.$containerState$;
+    set(true);
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
     }
     elCtx.$watches$.push(watch);
-    set(watch);
     useRunWatch(watch, eagerness);
     if (!isServer()) {
         qrl.$resolveLazy$(containerState.$containerEl$);
@@ -6844,7 +6856,7 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
                 classStr = hostCtx.$scopeIds$.join(' ') + ' ' + classStr;
             }
             if (hostCtx.$needAttachListeners$) {
-                listeners.push(...hostCtx.li);
+                addQRLListener(listeners, hostCtx.li);
                 hostCtx.$needAttachListeners$ = false;
             }
         }
