@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.mjs",
@@ -43,7 +43,8 @@
     "./optimizer.cjs": "./optimizer.cjs",
     "./optimizer.mjs": "./optimizer.mjs",
     "./optimizer": {
-      "import": "./optimizer.mjs"
+      "import": "./optimizer.mjs",
+      "require": "./optimizer.cjs"
     },
     "./server.cjs": "./server.cjs",
     "./server.mjs": "./server.mjs",

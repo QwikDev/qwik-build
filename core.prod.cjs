@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.11.0
+ * @builder.io/qwik 0.11.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -295,21 +295,6 @@
     const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
     const ON_PROP_REGEX = /^(on|window:|document:)/;
     const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
-    const addQRLListener = (listeners, add) => {
-        for (const entry of add) {
-            const prop = entry[0];
-            const hash = entry[1].$hash$;
-            let replaced = false;
-            for (let i = 0; i < listeners.length; i++) {
-                const existing = listeners[i];
-                if (existing[0] === prop && existing[1].$hash$ === hash) {
-                    listeners.splice(i, 1, entry), replaced = true;
-                    break;
-                }
-            }
-            replaced || listeners.push(entry);
-        }
-    };
     const groupListeners = listeners => {
         if (0 === listeners.length) {
             return EMPTY_ARRAY;
@@ -325,13 +310,9 @@
         }
         return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
     };
-    const setEvent = (existingListeners, prop, input, containerEl) => {
-        if (prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1)), input) {
-            const listeners = isArray(input) ? input.map((q => [ prop, ensureQrl(q, containerEl) ])) : [ [ prop, ensureQrl(input, containerEl) ] ];
-            addQRLListener(existingListeners, listeners);
-        }
-        return prop;
-    };
+    const setEvent = (existingListeners, prop, input, containerEl) => (prop.endsWith("$"), 
+    prop = normalizeOnProp(prop.slice(0, -1)), input && (isArray(input) ? existingListeners.push(...input.map((q => [ prop, ensureQrl(q, containerEl) ]))) : existingListeners.push([ prop, ensureQrl(input, containerEl) ])), 
+    prop);
     const PREFIXES = [ "on", "window:on", "document:on" ];
     const SCOPED = [ "on", "on-window", "on-document" ];
     const normalizeOnProp = prop => {
@@ -389,7 +370,7 @@
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
         const elCtx = getContext(invokeCtx.$hostElement$);
-        addQRLListener(elCtx.li, [ [ normalizeOnProp(eventName), eventQrl ] ]), elCtx.$needAttachListeners$ = true;
+        elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]), elCtx.$needAttachListeners$ = true;
     };
     const CONTAINER_STATE = Symbol("ContainerState");
     const getContainerState = containerEl => {
@@ -432,10 +413,11 @@
         throw qError(32, value);
     };
     const addQwikEvent = (prop, containerState) => {
+        var _a;
         const eventName = getEventName(prop);
         if (!isServer()) {
             try {
-                window.qwikevents && window.qwikevents.push(eventName);
+                ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
             } catch (err) {}
         }
         containerState.$events$.add(eventName);
@@ -832,7 +814,7 @@
         }
     };
     const executeComponent = (rCtx, elCtx) => {
-        elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [];
+        elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [], elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -1282,7 +1264,7 @@
             const pendingListeners = currentComponent.li;
             const listeners = elCtx.li;
             if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg), 
-            pendingListeners.length > 0 && (addQRLListener(listeners, pendingListeners), pendingListeners.length = 0), 
+            pendingListeners.length > 0 && (listeners.push(...pendingListeners), pendingListeners.length = 0), 
             isSvg && "foreignObject" === newVnode.$type$ && (flags &= -2, isSvg = false), isVirtual && "q:s" in props) {
                 return currentComponent.$slots$, void currentComponent.$slots$.push(newVnode);
             }
@@ -1426,7 +1408,7 @@
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {
                 elm.classList.add(styleId);
-            })), currentComponent.$needAttachListeners$ && (addQRLListener(listeners, currentComponent.li), 
+            })), currentComponent.$needAttachListeners$ && (listeners.push(...currentComponent.li), 
             currentComponent.$needAttachListeners$ = false);
         }
         if (isSlot && (currentComponent.$slots$, setKey(elm, vnode.$key$), directSetAttribute(elm, "q:sref", currentComponent.$id$), 
@@ -2413,15 +2395,15 @@
     const useWatch$ = implicit$FirstArg(useWatchQrl);
     const useClientEffectQrl = (qrl, opts) => {
         const {get: get, set: set, i: i, ctx: ctx} = useSequentialScope();
+        const eagerness = opts?.eagerness ?? "visible";
         if (get) {
-            return;
+            return void (isServer() && useRunWatch(get, eagerness));
         }
         const el = ctx.$hostElement$;
         const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, void 0);
-        const eagerness = opts?.eagerness ?? "visible";
         const elCtx = getContext(el);
         const containerState = ctx.$renderCtx$.$static$.$containerState$;
-        set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), 
+        elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
         useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
         notifyWatch(watch, containerState));
     };
@@ -3176,7 +3158,7 @@
             const classValue = props.class ?? props.className;
             let classStr = stringifyClass(classValue);
             if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
-            hostCtx.$needAttachListeners$ && (addQRLListener(listeners, hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
+            hostCtx.$needAttachListeners$ && (listeners.push(...hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
             isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr = classStr.trim(), 
             classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
                 const groups = groupListeners(listeners);
@@ -3670,7 +3652,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.11.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.11.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3712,7 +3694,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.11.0",
+            "q:version": "0.11.1",
             "q:render": "ssr",
             "q:base": opts.base,
             children: "html" === root ? [ node ] : [ headNodes, node ]
@@ -3769,7 +3751,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useUserContext = useUserContext, exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, 
-    exports.version = "0.11.0", Object.defineProperty(exports, "__esModule", {
+    exports.version = "0.11.1", Object.defineProperty(exports, "__esModule", {
         value: true
     });
 }));
