@@ -2181,6 +2181,9 @@
     const hasStyle = (containerState, styleId) => {
         return containerState.$styleIds$.has(styleId);
     };
+    const jsxToString = (data) => {
+        return data == null || typeof data === 'boolean' ? '' : String(data);
+    };
 
     const QObjectRecursive = 1 << 0;
     const QObjectImmutable = 1 << 1;
@@ -2392,8 +2395,7 @@
         else if (isSignal(node)) {
             const value = node.value;
             const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, EMPTY_ARRAY, null);
-            assertTrue(isPrimitive(value), 'value must be a primitive');
-            newNode.$text$ = String(value);
+            newNode.$text$ = jsxToString(value);
             newNode.$signal$ = node;
             return newNode;
         }
@@ -4324,7 +4326,7 @@
                 return smartSetProperty(staticCtx, elm, prop, value, oldValue, isSVG);
             }
             case 2:
-                return setProperty(staticCtx, operation[3], 'data', value);
+                return setProperty(staticCtx, operation[3], 'data', jsxToString(value));
         }
     };
 
@@ -6977,14 +6979,14 @@
                     value = node.value;
                     const id = getNextIndex(ssrCtx.rCtx);
                     addSignalSub(2, hostEl, node, '#' + id, 'data');
-                    stream.write(`<!--t=${id}-->${escapeHtml(String(value))}<!---->`);
+                    stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
                     return;
                 }
                 else {
                     value = invoke(ssrCtx.invocationContext, () => node.value);
                 }
             }
-            stream.write(escapeHtml(String(value)));
+            stream.write(escapeHtml(jsxToString(value)));
             return;
         }
         else if (isPromise(node)) {

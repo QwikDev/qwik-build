@@ -919,6 +919,7 @@
         const id = getNextIndex(rCtx);
         elCtx.$id$ = id;
     };
+    const jsxToString = data => null == data || "boolean" == typeof data ? "" : String(data);
     const QOjectTargetSymbol = Symbol("proxy target");
     const QObjectFlagsSymbol = Symbol("proxy flags");
     const QObjectManagerSymbol = Symbol("proxy manager");
@@ -1032,8 +1033,7 @@
             if (isSignal(node)) {
                 const value = node.value;
                 const newNode = new ProcessedJSXNodeImpl("#text", EMPTY_OBJ, EMPTY_ARRAY, null);
-                return isPrimitive(value), newNode.$text$ = String(value), newNode.$signal$ = node, 
-                newNode;
+                return newNode.$text$ = jsxToString(value), newNode.$signal$ = node, newNode;
             }
             if (isArray(node)) {
                 const output = promiseAll(node.flatMap((n => processData$1(n, invocationContext))));
@@ -2319,7 +2319,7 @@
                     }
 
                   case 2:
-                    return setProperty(staticCtx, operation[3], "data", value);
+                    return setProperty(staticCtx, operation[3], "data", jsxToString(value));
                 }
             })(staticCtx, op))), containerState.$opsNext$.clear(), staticCtx.$operations$.push(...staticCtx.$postOperations$), 
             0 === staticCtx.$operations$.length) {
@@ -3266,11 +3266,11 @@
                         if (!insideText) {
                             value = node.value;
                             const id = getNextIndex(ssrCtx.rCtx);
-                            return addSignalSub(2, hostEl, node, "#" + id, "data"), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(String(value))}\x3c!----\x3e`);
+                            return addSignalSub(2, hostEl, node, "#" + id, "data"), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(jsxToString(value))}\x3c!----\x3e`);
                         }
                         value = invoke(ssrCtx.invocationContext, (() => node.value));
                     }
-                    return void stream.write(escapeHtml(String(value)));
+                    return void stream.write(escapeHtml(jsxToString(value)));
                 }
                 if (isPromise(node)) {
                     return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, ssrCtx, stream, flags, beforeClose)));
