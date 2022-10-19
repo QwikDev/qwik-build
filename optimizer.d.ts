@@ -87,6 +87,10 @@ export declare interface InlineEntryStrategy {
  */
 export declare type MinifyMode = 'simplify' | 'none';
 
+declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
+    input: string[];
+}
+
 /**
  * @alpha
  */
@@ -215,6 +219,25 @@ export declare interface QwikManifest {
     };
 }
 
+declare interface QwikPluginOptions {
+    buildMode?: QwikBuildMode;
+    debug?: boolean;
+    entryStrategy?: EntryStrategy;
+    forceFullBuild?: boolean;
+    rootDir?: string;
+    vendorRoots?: string[];
+    manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
+    manifestInput?: QwikManifest | null;
+    input?: string[] | string;
+    outDir?: string;
+    srcDir?: string | null;
+    scope?: string | null;
+    srcInputs?: TransformModuleInput[] | null;
+    resolveQwikBuild?: boolean;
+    target?: QwikBuildTarget;
+    transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
+}
+
 /**
  * @alpha
  */
@@ -304,6 +327,25 @@ export declare interface QwikSymbol {
  * @alpha
  */
 export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
+
+/**
+ * @alpha
+ */
+export declare interface QwikVitePlugin {
+    name: 'vite-plugin-qwik';
+    api: QwikVitePluginApi;
+}
+
+/**
+ * @alpha
+ */
+export declare interface QwikVitePluginApi {
+    getOptimizer: () => Optimizer | null;
+    getOptions: () => NormalizedQwikPluginOptions;
+    getManifest: () => QwikManifest | null;
+    getRootDir: () => string | null;
+    getClientOutDir: () => string | null;
+}
 
 /**
  * @alpha

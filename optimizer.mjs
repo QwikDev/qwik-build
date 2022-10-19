@@ -1021,8 +1021,13 @@ function createPlugin(optimizerOptions = {}) {
     Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
       i.path = normalizePath(path.resolve(opts.rootDir, i.path));
     })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
-    Array.isArray(updatedOpts.input) ? opts.input = updatedOpts.input : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root.tsx") ] : "lib" === opts.target && (opts.input = [ path.resolve(srcDir, "index.ts") ]);
-    opts.input = opts.input.map((input => normalizePath(path.resolve(opts.rootDir, input))));
+    Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root.tsx") ] : "lib" === opts.target && (opts.input = [ path.resolve(srcDir, "index.ts") ]);
+    opts.input = opts.input.reduce(((inputs, i) => {
+      let input = i;
+      i.startsWith("@") || i.startsWith("~") || (input = normalizePath(path.resolve(opts.rootDir, i)));
+      inputs.includes(input) || inputs.push(input);
+      return inputs;
+    }), []);
     "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : "ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : "lib" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, LIB_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR));
     "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
     const clientManifest = getValidManifest(updatedOpts.manifestInput);
@@ -1509,7 +1514,6 @@ function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
     ...rollupOutputOpts
   };
   if ("ssr" === opts.target) {
-    outputOpts.inlineDynamicImports = true;
     "production" === opts.buildMode && (outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]"));
   } else if ("client" === opts.target) {
     if ("production" === opts.buildMode) {
@@ -1880,15 +1884,21 @@ function qwikVite(qwikViteOpts = {}) {
   let clientDevInput;
   let tmpClientManifestPath;
   let viteCommand = "serve";
+  let manifestInput = null;
+  let clientOutDir = null;
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
+  const api = {
+    getOptimizer: () => qwikPlugin.getOptimizer(),
+    getOptions: () => qwikPlugin.getOptions(),
+    getManifest: () => manifestInput,
+    getRootDir: () => qwikPlugin.getOptions().rootDir,
+    getClientOutDir: () => clientOutDir
+  };
   const vitePlugin = {
     name: "vite-plugin-qwik",
     enforce: "pre",
-    api: {
-      getOptimizer: () => qwikPlugin.getOptimizer(),
-      getOptions: () => qwikPlugin.getOptions()
-    },
+    api: api,
     async config(viteConfig, viteEnv) {
       await qwikPlugin.init();
       const sys = qwikPlugin.getSys();
@@ -1926,7 +1936,7 @@ function qwikVite(qwikViteOpts = {}) {
         type: "hook"
       });
       if ("ssr" === target) {
-        "string" === typeof viteConfig.build?.ssr ? pluginOpts.input = viteConfig.build.ssr : pluginOpts.input = qwikViteOpts.ssr?.input;
+        "string" === typeof viteConfig.build?.ssr ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof qwikViteOpts.ssr?.input ? pluginOpts.input = qwikViteOpts.ssr.input : viteConfig.build?.ssr && Array.isArray(viteConfig.build?.rollupOptions?.input) && (pluginOpts.input = viteConfig.build.rollupOptions.input);
         pluginOpts.outDir = qwikViteOpts.ssr?.outDir;
         pluginOpts.manifestInput = qwikViteOpts.ssr?.manifestInput;
       } else if ("client" === target) {
@@ -1960,8 +1970,10 @@ function qwikVite(qwikViteOpts = {}) {
         }
       }
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
-      globalThis.QWIK_MANIFEST = pluginOpts.manifestInput;
-      globalThis.QWIK_CLIENT_OUT_DIR = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.client?.outDir || CLIENT_OUT_DIR));
+      manifestInput = pluginOpts.manifestInput || null;
+      clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.client?.outDir || CLIENT_OUT_DIR));
+      globalThis.QWIK_MANIFEST = manifestInput;
+      globalThis.QWIK_CLIENT_OUT_DIR = clientOutDir;
       clientDevInput = "string" === typeof qwikViteOpts.client?.devInput ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
       clientDevInput = qwikPlugin.normalizePath(clientDevInput);
       const vendorIds = vendorRoots.map((v => v.id));

@@ -7346,7 +7346,7 @@ var require_buffer_list = __commonJS({
         }
       }, {
         key: "join",
-        value: function join6(s) {
+        value: function join5(s) {
           if (this.length === 0)
             return "";
           var p = this.head;
@@ -10430,7 +10430,7 @@ var require_windows = __commonJS({
   "node_modules/isexe/windows.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs6 = require("fs");
+    var fs5 = require("fs");
     function checkPathExt(path3, options) {
       var pathext = options.pathExt !== void 0 ? options.pathExt : process.env.PATHEXT;
       if (!pathext) {
@@ -10455,12 +10455,12 @@ var require_windows = __commonJS({
       return checkPathExt(path3, options);
     }
     function isexe(path3, options, cb) {
-      fs6.stat(path3, function(er, stat) {
+      fs5.stat(path3, function(er, stat) {
         cb(er, er ? false : checkStat(stat, path3, options));
       });
     }
     function sync(path3, options) {
-      return checkStat(fs6.statSync(path3), path3, options);
+      return checkStat(fs5.statSync(path3), path3, options);
     }
   }
 });
@@ -10470,14 +10470,14 @@ var require_mode = __commonJS({
   "node_modules/isexe/mode.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs6 = require("fs");
+    var fs5 = require("fs");
     function isexe(path3, options, cb) {
-      fs6.stat(path3, function(er, stat) {
+      fs5.stat(path3, function(er, stat) {
         cb(er, er ? false : checkStat(stat, options));
       });
     }
     function sync(path3, options) {
-      return checkStat(fs6.statSync(path3), options);
+      return checkStat(fs5.statSync(path3), options);
     }
     function checkStat(stat, options) {
       return stat.isFile() && checkMode(stat, options);
@@ -10501,7 +10501,7 @@ var require_mode = __commonJS({
 // node_modules/isexe/index.js
 var require_isexe = __commonJS({
   "node_modules/isexe/index.js"(exports, module2) {
-    var fs6 = require("fs");
+    var fs5 = require("fs");
     var core;
     if (process.platform === "win32" || global.TESTING_WINDOWS) {
       core = require_windows();
@@ -10763,16 +10763,16 @@ var require_shebang_command = __commonJS({
 var require_readShebang = __commonJS({
   "node_modules/cross-spawn/lib/util/readShebang.js"(exports, module2) {
     "use strict";
-    var fs6 = require("fs");
+    var fs5 = require("fs");
     var shebangCommand = require_shebang_command();
     function readShebang(command) {
       const size = 150;
       const buffer = Buffer.alloc(size);
       let fd;
       try {
-        fd = fs6.openSync(command, "r");
-        fs6.readSync(fd, buffer, 0, size, 0);
-        fs6.closeSync(fd);
+        fd = fs5.openSync(command, "r");
+        fs5.readSync(fd, buffer, 0, size, 0);
+        fs5.closeSync(fd);
       } catch (e) {
       }
       return shebangCommand(buffer.toString());
@@ -11247,7 +11247,7 @@ var integrations = null;
 async function loadIntegrations() {
   if (!integrations) {
     const loadingIntegrations = [];
-    const integrationTypes = ["app", "feature", "server", "static-generator"];
+    const integrationTypes = ["app", "feature", "adaptor"];
     const integrationsDir = (0, import_path3.join)(__dirname, "starters");
     const integrationsDirNames = await import_fs3.default.promises.readdir(integrationsDir);
     await Promise.all(
@@ -11258,7 +11258,7 @@ async function loadIntegrations() {
           const dirItems = await import_fs3.default.promises.readdir(dir);
           await Promise.all(
             dirItems.map(async (dirItem) => {
-              var _a, _b;
+              var _a;
               const dirPath = (0, import_path3.join)(dir, dirItem);
               const stat = await import_fs3.default.promises.stat(dirPath);
               if (stat.isDirectory()) {
@@ -11269,8 +11269,7 @@ async function loadIntegrations() {
                   type: integrationType,
                   dir: dirPath,
                   pkgJson,
-                  priority: ((_a = pkgJson == null ? void 0 : pkgJson.__qwik__) == null ? void 0 : _a.priority) ?? 0,
-                  viteConfig: (_b = pkgJson == null ? void 0 : pkgJson.__qwik__) == null ? void 0 : _b.viteConfig
+                  priority: ((_a = pkgJson == null ? void 0 : pkgJson.__qwik__) == null ? void 0 : _a.priority) ?? 0
                 };
                 loadingIntegrations.push(integration);
               }
@@ -11295,8 +11294,8 @@ async function loadIntegrations() {
 var import_prompts = __toESM(require_prompts3(), 1);
 
 // packages/qwik/src/cli/add/update-app.ts
-var import_path6 = require("path");
-var import_fs6 = __toESM(require("fs"), 1);
+var import_path5 = require("path");
+var import_fs5 = __toESM(require("fs"), 1);
 
 // node_modules/ora/index.js
 var import_node_process5 = __toESM(require("process"), 1);
@@ -11916,406 +11915,6 @@ async function mergeGitIgnores(fileUpdates, srcPath, destPath) {
   }
 }
 
-// packages/qwik/src/cli/add/update-vite-config.ts
-var import_fs5 = __toESM(require("fs"), 1);
-var import_path5 = require("path");
-
-// packages/qwik/src/cli/code-mod/code-mod.ts
-function updateViteConfig(ts, sourceText, updates) {
-  if (!(updates == null ? void 0 : updates.imports) && !(updates == null ? void 0 : updates.qwikViteConfig) && !(updates == null ? void 0 : updates.viteConfig) && !(updates == null ? void 0 : updates.vitePlugins)) {
-    return null;
-  }
-  sourceText = transformSource(ts, sourceText, () => (tsSourceFile) => {
-    if (updates.imports) {
-      for (const importData of updates.imports) {
-        tsSourceFile = ensureImport(ts, tsSourceFile, importData);
-      }
-    }
-    const statements = [];
-    for (const s of tsSourceFile.statements) {
-      if (ts.isExportAssignment(s) && s.expression && ts.isCallExpression(s.expression)) {
-        if (ts.isIdentifier(s.expression.expression) && s.expression.expression.text === "defineConfig" && (updates.viteConfig || updates.qwikViteConfig || updates.vitePlugins)) {
-          statements.push(
-            ts.factory.updateExportAssignment(
-              s,
-              s.decorators,
-              s.modifiers,
-              updateDefineConfig(ts, s.expression, updates)
-            )
-          );
-          continue;
-        }
-      }
-      statements.push(s);
-    }
-    return ts.factory.updateSourceFile(tsSourceFile, statements);
-  });
-  return sourceText;
-}
-function ensureImport(ts, tsSourceFile, importData) {
-  if (importData && importData.importPath) {
-    if (Array.isArray(importData.namedImports)) {
-      importData.namedImports.forEach((namedImport) => {
-        tsSourceFile = ensureNamedImport(ts, tsSourceFile, namedImport, importData.importPath);
-      });
-    }
-    if (typeof importData.defaultImport === "string") {
-      tsSourceFile = ensureDefaultImport(
-        ts,
-        tsSourceFile,
-        importData.defaultImport,
-        importData.importPath
-      );
-    }
-  }
-  return tsSourceFile;
-}
-function ensureNamedImport(ts, tsSourceFile, namedImport, importPath) {
-  if (!hasNamedImport(ts, tsSourceFile, namedImport, importPath)) {
-    tsSourceFile = appendImports(ts, tsSourceFile, null, namedImport, importPath);
-  }
-  return tsSourceFile;
-}
-function ensureDefaultImport(ts, tsSourceFile, defaultImport, importPath) {
-  if (!hasDefaultImport(ts, tsSourceFile, importPath)) {
-    tsSourceFile = appendImports(ts, tsSourceFile, defaultImport, null, importPath);
-  }
-  return tsSourceFile;
-}
-function hasNamedImport(ts, tsSourceFile, namedImport, importPath) {
-  return !!findNamedImport(ts, tsSourceFile, namedImport, importPath);
-}
-function hasDefaultImport(ts, tsSourceFile, importPath) {
-  return !!findDefaultImport(ts, tsSourceFile, importPath);
-}
-function findNamedImport(ts, tsSourceFile, namedImport, importPath) {
-  return findImportDeclarations(ts, tsSourceFile).find((n) => {
-    if (n.importClause && n.moduleSpecifier && ts.isStringLiteral(n.moduleSpecifier)) {
-      if (n.moduleSpecifier.text !== importPath) {
-        return false;
-      }
-      const namedImports = n.importClause.namedBindings;
-      if (namedImports && ts.isNamedImports(namedImports) && namedImports.elements) {
-        return namedImports.elements.some((namedImportElement) => {
-          if (ts.isImportSpecifier(namedImportElement)) {
-            const importName = namedImportElement.name;
-            if (importName && ts.isIdentifier(importName)) {
-              return importName.text === namedImport;
-            }
-          }
-          return false;
-        });
-      }
-    }
-    return false;
-  });
-}
-function findDefaultImport(ts, tsSourceFile, importPath) {
-  return findImportDeclarations(ts, tsSourceFile).find((n) => {
-    if (n.importClause && n.moduleSpecifier) {
-      const modulePath = n.moduleSpecifier;
-      if (ts.isStringLiteral(modulePath) && modulePath.text === importPath) {
-        const moduleDefault = n.importClause.name;
-        if (moduleDefault && moduleDefault.text === importPath) {
-          return true;
-        }
-      }
-    }
-    return false;
-  });
-}
-function findImportDeclarations(ts, tsSourceFile) {
-  return tsSourceFile.statements.filter(ts.isImportDeclaration);
-}
-function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath) {
-  const statements = tsSourceFile.statements.slice();
-  let foundExistingImport = false;
-  for (let i = statements.length - 1; i >= 0; i--) {
-    const n = statements[i];
-    if (!ts.isImportDeclaration(n)) {
-      continue;
-    }
-    if (!n.moduleSpecifier || !ts.isStringLiteral(n.moduleSpecifier)) {
-      continue;
-    }
-    if (n.moduleSpecifier.text !== importPath) {
-      continue;
-    }
-    foundExistingImport = true;
-    const existingNamedImports = [];
-    if (n.importClause) {
-      const namedImports = n.importClause.namedBindings;
-      if (namedImports && ts.isNamedImports(namedImports) && namedImports.elements) {
-        existingNamedImports.push(...namedImports.elements);
-      }
-    }
-    if (typeof namedImport === "string") {
-      const identifier = ts.factory.createIdentifier(namedImport);
-      const importSpecifier = ts.factory.createImportSpecifier(false, void 0, identifier);
-      existingNamedImports.push(importSpecifier);
-    }
-    existingNamedImports.sort((a, b) => {
-      const aName = a.name.escapedText.toString();
-      const bName = b.name.escapedText.toString();
-      return aName < bName ? -1 : 1;
-    });
-    let defaultIdentifier = n.importClause ? n.importClause.name : void 0;
-    if (typeof defaultImport === "string") {
-      defaultIdentifier = ts.factory.createIdentifier(defaultImport);
-    }
-    let namedBindings = void 0;
-    if (existingNamedImports.length > 0) {
-      namedBindings = ts.factory.createNamedImports(existingNamedImports);
-    }
-    statements[i] = ts.factory.updateImportDeclaration(
-      n,
-      void 0,
-      void 0,
-      ts.factory.createImportClause(false, defaultIdentifier, namedBindings),
-      n.moduleSpecifier,
-      void 0
-    );
-  }
-  if (!foundExistingImport) {
-    let defaultIdentifier = void 0;
-    let namedBindings = void 0;
-    if (typeof defaultImport === "string") {
-      defaultIdentifier = ts.factory.createIdentifier(defaultImport);
-    }
-    if (typeof namedImport === "string") {
-      namedBindings = ts.factory.createNamedImports([
-        ts.factory.createImportSpecifier(
-          false,
-          void 0,
-          ts.factory.createIdentifier(namedImport)
-        )
-      ]);
-    }
-    const newNamedImport = ts.factory.createImportDeclaration(
-      void 0,
-      void 0,
-      ts.factory.createImportClause(false, defaultIdentifier, namedBindings),
-      ts.factory.createStringLiteral(importPath)
-    );
-    const lastImportIndex = findLastImportIndex(ts, tsSourceFile);
-    statements.splice(lastImportIndex + 1, 0, newNamedImport);
-  }
-  return ts.factory.updateSourceFile(tsSourceFile, statements);
-}
-function findLastImportIndex(ts, tsSourceFile) {
-  for (let i = tsSourceFile.statements.length - 1; i >= 0; i--) {
-    const s = tsSourceFile.statements[i];
-    if (ts.isImportDeclaration(s)) {
-      return i;
-    }
-    if (ts.isStringLiteral(s) && s.text === "use strict") {
-      return i;
-    }
-  }
-  return 0;
-}
-function updateDefineConfig(ts, callExp, updates) {
-  const args = [];
-  for (let i = 0; i < callExp.arguments.length; i++) {
-    const exp = callExp.arguments[i];
-    if (i === 0) {
-      if (ts.isArrowFunction(exp) && ts.isBlock(exp.body)) {
-        args.push(
-          ts.factory.updateArrowFunction(
-            exp,
-            exp.modifiers,
-            exp.typeParameters,
-            exp.parameters,
-            exp.type,
-            exp.equalsGreaterThanToken,
-            updateDefineConfigFnReturn(ts, exp.body, updates)
-          )
-        );
-        continue;
-      }
-      if (ts.isFunctionExpression(exp) && ts.isBlock(exp.body)) {
-        args.push(
-          ts.factory.updateFunctionExpression(
-            exp,
-            exp.modifiers,
-            exp.asteriskToken,
-            exp.name,
-            exp.typeParameters,
-            exp.parameters,
-            exp.type,
-            updateDefineConfigFnReturn(ts, exp.body, updates)
-          )
-        );
-        continue;
-      }
-    }
-    args.push(exp);
-  }
-  return ts.factory.updateCallExpression(callExp, callExp.expression, callExp.typeArguments, args);
-}
-function updateDefineConfigFnReturn(ts, fnBody, updates) {
-  const statements = [];
-  for (const s of fnBody.statements) {
-    if (ts.isReturnStatement(s) && s.expression && ts.isObjectLiteralExpression(s.expression)) {
-      statements.push(
-        ts.factory.updateReturnStatement(s, updateVitConfigObj(ts, s.expression, updates))
-      );
-    } else {
-      statements.push(s);
-    }
-  }
-  return ts.factory.updateBlock(fnBody, statements);
-}
-function updateVitConfigObj(ts, obj, updates) {
-  if (updates.viteConfig) {
-    obj = updateObjectLiteralExpression(ts, obj, updates.viteConfig);
-  }
-  if (updates.vitePlugins || updates.qwikViteConfig) {
-    obj = updatePlugins(ts, obj, updates);
-  }
-  return obj;
-}
-function updatePlugins(ts, obj, updates) {
-  const properties = [];
-  for (const p of obj.properties) {
-    if (ts.isPropertyAssignment(p)) {
-      if (p.name && ts.isIdentifier(p.name) && p.name.text === "plugins") {
-        if (ts.isArrayLiteralExpression(p.initializer)) {
-          properties.push(
-            ts.factory.updatePropertyAssignment(
-              p,
-              p.name,
-              updatePluginsArray(ts, p.initializer, updates)
-            )
-          );
-          continue;
-        }
-      }
-    }
-    properties.push(p);
-  }
-  return ts.factory.updateObjectLiteralExpression(obj, properties);
-}
-function updatePluginsArray(ts, arr, updates) {
-  const elms = [...arr.elements];
-  if (updates.vitePlugins) {
-    for (const vitePlugin of updates.vitePlugins) {
-      const pluginExp = createPluginCall(ts, vitePlugin);
-      if (pluginExp) {
-        elms.push(pluginExp);
-      }
-    }
-  }
-  if (updates.qwikViteConfig) {
-    for (let i = 0; i < elms.length; i++) {
-      const elm = elms[i];
-      if (ts.isCallExpression(elm) && ts.isIdentifier(elm.expression)) {
-        if (elm.expression.escapedText === "qwikVite") {
-          elms[i] = updateQwikCityPlugin(ts, elm, updates.qwikViteConfig);
-        }
-      }
-    }
-  }
-  return ts.factory.updateArrayLiteralExpression(arr, elms);
-}
-function createPluginCall(ts, vitePlugin) {
-  if (typeof vitePlugin === "string") {
-    const tmp = ts.createSourceFile(
-      "tmp.ts",
-      "export default " + vitePlugin,
-      ts.ScriptTarget.Latest
-    );
-    for (const s of tmp.statements) {
-      if (ts.isExportAssignment(s)) {
-        return s.expression;
-      }
-    }
-  }
-  return null;
-}
-function updateQwikCityPlugin(ts, callExp, qwikViteConfig) {
-  const args = callExp.arguments.slice();
-  const config = args[0] && ts.isObjectLiteralExpression(args[0]) ? args[0] : ts.factory.createObjectLiteralExpression();
-  args[0] = updateObjectLiteralExpression(ts, config, qwikViteConfig);
-  return ts.factory.updateCallExpression(callExp, callExp.expression, callExp.typeArguments, args);
-}
-function updateObjectLiteralExpression(ts, obj, updateObj) {
-  for (const [propName, value] of Object.entries(updateObj)) {
-    if (typeof value === "string") {
-      const tmp = ts.createSourceFile("tmp.ts", "export default " + value, ts.ScriptTarget.Latest);
-      for (const s of tmp.statements) {
-        if (ts.isExportAssignment(s)) {
-          const exp = s.expression;
-          let added = false;
-          const properties = [];
-          for (const p of obj.properties) {
-            if (p.name && ts.isIdentifier(p.name) && p.name.text === propName) {
-              properties.push(ts.factory.createPropertyAssignment(propName, exp));
-              added = true;
-            } else {
-              properties.push(p);
-            }
-          }
-          if (!added) {
-            properties.unshift(ts.factory.createPropertyAssignment(propName, exp));
-          }
-          obj = ts.factory.updateObjectLiteralExpression(obj, properties);
-        }
-      }
-    }
-  }
-  return obj;
-}
-function transformSource(ts, sourceText, transformer) {
-  const t = ts.transform(ts.createSourceFile("/tmp.ts", sourceText, ts.ScriptTarget.Latest), [
-    transformer
-  ]);
-  const p = ts.createPrinter({
-    removeComments: false,
-    omitTrailingSemicolon: false,
-    noEmitHelpers: true
-  });
-  return p.printFile(t.transformed[0]);
-}
-
-// packages/qwik/src/cli/add/update-vite-config.ts
-async function updateViteConfigs(fileUpdates, integration, rootDir) {
-  var _a;
-  try {
-    const viteConfig = (_a = integration.pkgJson.__qwik__) == null ? void 0 : _a.viteConfig;
-    if (viteConfig) {
-      const viteConfigPath = (0, import_path5.join)(rootDir, "vite.config.ts");
-      const destContent = await import_fs5.default.promises.readFile(viteConfigPath, "utf-8");
-      const ts = (await import("typescript")).default;
-      let updatedContent = updateViteConfig(ts, destContent, viteConfig);
-      if (updatedContent) {
-        try {
-          const prettier = (await import("prettier")).default;
-          let prettierOpts = {
-            filepath: viteConfigPath
-          };
-          const opts = await prettier.resolveConfig(viteConfigPath);
-          if (opts) {
-            prettierOpts = { ...opts, ...prettierOpts };
-          }
-          updatedContent = prettier.format(updatedContent, prettierOpts);
-          updatedContent = updatedContent.replace(`export default`, `
-export default`);
-        } catch (e) {
-          console.error(e);
-        }
-        fileUpdates.files.push({
-          path: viteConfigPath,
-          content: updatedContent,
-          type: "modify"
-        });
-      }
-    }
-  } catch (e) {
-    panic(String(e));
-  }
-}
-
 // packages/qwik/src/cli/add/update-app.ts
 async function updateApp(opts) {
   const integrations2 = await loadIntegrations();
@@ -12334,23 +11933,20 @@ async function updateApp(opts) {
     };
   }
   await mergeIntegrationDir(fileUpdates, opts, integration.dir, opts.rootDir);
-  if (true) {
-    await updateViteConfigs(fileUpdates, integration, opts.rootDir);
-  }
   const commit = async (showSpinner) => {
     const isInstallingDeps = Object.keys(fileUpdates.installedDeps).length > 0;
     const spinner = showSpinner ? startSpinner(`Updating app${isInstallingDeps ? " and installing dependencies" : ""}...`) : null;
     try {
-      const dirs = new Set(fileUpdates.files.map((f) => (0, import_path6.dirname)(f.path)));
+      const dirs = new Set(fileUpdates.files.map((f) => (0, import_path5.dirname)(f.path)));
       for (const dir of Array.from(dirs)) {
         try {
-          import_fs6.default.mkdirSync(dir, { recursive: true });
+          import_fs5.default.mkdirSync(dir, { recursive: true });
         } catch (e) {
         }
       }
       const fsWrites = Promise.all(
         fileUpdates.files.map(async (f) => {
-          await import_fs6.default.promises.writeFile(f.path, f.content);
+          await import_fs5.default.promises.writeFile(f.path, f.content);
         })
       );
       if (opts.installDeps && Object.keys(fileUpdates.installedDeps).length > 0) {
@@ -12375,7 +11971,7 @@ async function updateApp(opts) {
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
-var import_path7 = require("path");
+var import_path6 = require("path");
 
 // packages/qwik/src/cli/utils/log.ts
 function logSuccessFooter() {
@@ -12414,20 +12010,18 @@ async function runAddInteractive(app, id) {
   } else {
     console.log(`\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)}`);
     console.log(``);
-    const staticGenerator = integrations2.find((i) => i.type === "static-generator");
-    const features = integrations2.filter((i) => i.type === "feature");
-    const featureAnswer = await (0, import_prompts.default)(
+    const integrationChoices = [
+      ...integrations2.filter((i) => i.type === "adaptor"),
+      ...integrations2.filter((i) => i.type === "feature")
+    ].map((f) => {
+      return { title: f.name, value: f.id };
+    });
+    const integrationAnswer = await (0, import_prompts.default)(
       {
         type: "select",
         name: "featureType",
-        message: `What feature would you like to add?`,
-        choices: [
-          { title: "Server Adaptors (SSR)", value: "__server" },
-          { title: "Static Generator (SSG)", value: staticGenerator.id },
-          ...features.map((f) => {
-            return { title: f.name, value: f.id };
-          })
-        ],
+        message: `What integration would you like to add?`,
+        choices: integrationChoices,
         hint: "(use \u2193\u2191 arrows, hit enter)"
       },
       {
@@ -12438,30 +12032,7 @@ async function runAddInteractive(app, id) {
       }
     );
     console.log(``);
-    if (featureAnswer.featureType === "__server") {
-      const servers = integrations2.filter((i) => i.type === "server");
-      const serverAnswer = await (0, import_prompts.default)(
-        {
-          type: "select",
-          name: "id",
-          message: `Which server adaptor would you like to add?`,
-          choices: servers.map((f) => {
-            return { title: f.name, value: f.id, description: f.pkgJson.description };
-          }),
-          hint: " "
-        },
-        {
-          onCancel: () => {
-            console.log(``);
-            process.exit(0);
-          }
-        }
-      );
-      integration = integrations2.find((i) => i.id === serverAnswer.id);
-      console.log(``);
-    } else {
-      integration = integrations2.find((i) => i.id === featureAnswer.featureType);
-    }
+    integration = integrations2.find((i) => i.id === integrationAnswer.featureType);
     if (!integration) {
       throw new Error(`Invalid integration: ${id}`);
     }
@@ -12518,14 +12089,14 @@ async function logUpdateAppResult(result) {
   if (modifyFiles.length > 0) {
     console.log(`\u{1F42C} ${kleur_default.cyan(`Modify`)}`);
     for (const f of modifyFiles) {
-      console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
+      console.log(`   - ${(0, import_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (overwriteFiles.length > 0) {
     console.log(`\u{1F433} ${kleur_default.cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
-      console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
+      console.log(`   - ${(0, import_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
@@ -12584,20 +12155,14 @@ function logUpdateAppCommitResult(result) {
 // packages/qwik/src/cli/add/print-add-help.ts
 async function printAddHelp() {
   const integrations2 = await loadIntegrations();
-  const servers = integrations2.filter((i) => i.type === "server");
-  const staticGenerators = integrations2.filter((i) => i.type === "static-generator");
+  const adaptors = integrations2.filter((i) => i.type === "adaptor");
   const features = integrations2.filter((i) => i.type === "feature");
   const pmRun = pmRunCmd();
   console.log(``);
   console.log(`${pmRun} qwik ${kleur_default.magenta(`add`)} [integration]`);
   console.log(``);
-  console.log(`  ${kleur_default.cyan("Servers")}`);
-  for (const s of servers) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
-  }
-  console.log(``);
-  console.log(`  ${kleur_default.cyan("Static Generator")}`);
-  for (const s of staticGenerators) {
+  console.log(`  ${kleur_default.cyan("Adaptors")}`);
+  for (const s of adaptors) {
     console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);
