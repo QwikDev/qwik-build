@@ -13543,14 +13543,16 @@ async function runBuildCommand(app) {
   const buildServerScript = !isPreviewBuild ? pkgJsonScripts["build.server"] : void 0;
   const buildStaticScript = pkgJsonScripts["build.static"];
   const runSsgScript = pkgJsonScripts["ssg"];
-  const buildTypes = !isPreviewBuild ? pkgJsonScripts["build.types"] : void 0;
+  const buildTypes = pkgJsonScripts["build.types"];
+  const lint = pkgJsonScripts["lint"];
   const scripts = [
     buildTypes,
     buildClientScript,
     buildLibScript,
     buildPreviewScript,
     buildServerScript,
-    buildStaticScript
+    buildStaticScript,
+    lint
   ].filter((s) => typeof s === "string" && s.trim().length > 0);
   if (!isLibraryBuild && !buildClientScript) {
     console.log(pkgJsonScripts);
@@ -13613,6 +13615,25 @@ async function runBuildCommand(app) {
       process.exit(1);
     });
     step2.push(libBuild);
+  }
+  if (lint) {
+    const lintScript = parseScript(lint);
+    const lintBuild = execa(lintScript.cmd, lintScript.flags, {
+      cwd: app.rootDir,
+      env: {
+        FORCE_COLOR: "true"
+      }
+    }).catch((e) => {
+      console.log(``);
+      if (e.stderr) {
+        console.log(e.stderr);
+      } else {
+        console.log(e.stdout);
+      }
+      console.log(``);
+      process.exit(1);
+    });
+    step2.push(lintBuild);
   }
   if (buildPreviewScript) {
     const previewScript = parseScript(buildPreviewScript);

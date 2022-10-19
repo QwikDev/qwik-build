@@ -728,6 +728,10 @@ const implicit$FirstArg = (fn) => {
 };
 
 const Q_CTX = '_qc_';
+const HOST_FLAG_DIRTY = 1 << 0;
+const HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
+const HOST_FLAG_MOUNTED = 1 << 2;
+const HOST_FLAG_DYNAMIC = 1 << 3;
 const tryGetContext = (element) => {
     return element[Q_CTX];
 };
@@ -735,9 +739,7 @@ const getContext = (element) => {
     let ctx = tryGetContext(element);
     if (!ctx) {
         element[Q_CTX] = ctx = {
-            $dirty$: false,
-            $mounted$: false,
-            $needAttachListeners$: false,
+            $flags$: 0,
             $id$: '',
             $element$: element,
             $refMap$: [],
@@ -768,7 +770,7 @@ const cleanupContext = (elCtx, subsManager) => {
     elCtx.$componentQrl$ = null;
     elCtx.$seq$ = null;
     elCtx.$watches$ = null;
-    elCtx.$dirty$ = false;
+    elCtx.$flags$ = 0;
     el[Q_CTX] = undefined;
 };
 
@@ -1008,7 +1010,7 @@ const _useOn = (eventName, eventQrl) => {
     const elCtx = getContext(invokeCtx.$hostElement$);
     assertQrl(eventQrl);
     elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
-    elCtx.$needAttachListeners$ = true;
+    elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
 };
 
 const CONTAINER_STATE = Symbol('ContainerState');
@@ -1845,6 +1847,29 @@ const useContextProvider = (context, newValue) => {
     contexts.set(context.id, newValue);
     set(true);
 };
+/**
+ * @alpha
+ */
+const useContextBoundary = (...ids) => {
+    const { get, set, ctx } = useSequentialScope();
+    if (get !== undefined) {
+        return;
+    }
+    const hostElement = ctx.$hostElement$;
+    const hostCtx = getContext(hostElement);
+    let contexts = hostCtx.$contexts$;
+    if (!contexts) {
+        hostCtx.$contexts$ = contexts = new Map();
+    }
+    for (const c of ids) {
+        const value = resolveContext(c, hostElement, ctx.$renderCtx$);
+        if (value !== undefined) {
+            contexts.set(c.id, value);
+        }
+    }
+    contexts.set('_', true);
+    set(true);
+};
 // <docs markdown="../readme.md#useContext">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useContext instead)
@@ -1922,6 +1947,9 @@ const resolveContext = (context, hostElement, rctx) => {
                 const found = ctx.$contexts$.get(contextID);
                 if (found) {
                     return found;
+                }
+                if (ctx.$contexts$.get('_') === true) {
+                    break;
                 }
             }
         }
@@ -2020,8 +2048,8 @@ const isRecoverable = (err) => {
 };
 
 const executeComponent = (rCtx, elCtx) => {
-    elCtx.$dirty$ = false;
-    elCtx.$mounted$ = true;
+    elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
+    elCtx.$flags$ |= HOST_FLAG_MOUNTED;
     elCtx.$slots$ = [];
     elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
@@ -2043,7 +2071,7 @@ const executeComponent = (rCtx, elCtx) => {
     return safeCall(() => componentFn(props), (jsxNode) => {
         if (waitOn.length > 0) {
             return Promise.all(waitOn).then(() => {
-                if (elCtx.$dirty$) {
+                if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
                     return executeComponent(rCtx, elCtx);
                 }
                 return {
@@ -2052,7 +2080,7 @@ const executeComponent = (rCtx, elCtx) => {
                 };
             });
         }
-        if (elCtx.$dirty$) {
+        if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
             return executeComponent(rCtx, elCtx);
         }
         return {
@@ -2265,7 +2293,7 @@ const _wrapSignal = (obj, prop) => {
 };
 
 const renderComponent = (rCtx, elCtx, flags) => {
-    const justMounted = !elCtx.$mounted$;
+    const justMounted = !(elCtx.$flags$ & HOST_FLAG_MOUNTED);
     const hostElement = elCtx.$element$;
     const containerState = rCtx.$static$.$containerState$;
     // Component is not dirty any more
@@ -3038,9 +3066,9 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 elm.classList.add(styleId);
             });
         }
-        if (currentComponent.$needAttachListeners$) {
+        if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
             listeners.push(...currentComponent.li);
-            currentComponent.$needAttachListeners$ = false;
+            currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
         }
     }
     if (isSlot) {
@@ -3296,7 +3324,7 @@ const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
             }
         }
     }
-    return elCtx.$dirty$;
+    return !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
 };
 const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
     if (stopSlots && parent.hasAttribute(QSlotS)) {
@@ -3468,7 +3496,7 @@ const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
  */
 const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
     const collector = createCollector(containerState);
-    const listeners = [];
+    let hasListeners = false;
     // TODO: optimize
     for (const ctx of allContexts) {
         if (ctx.$watches$) {
@@ -3489,25 +3517,21 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         const el = ctx.$element$;
         const ctxListeners = ctx.li;
         for (const listener of ctxListeners) {
-            const key = listener[0];
-            const qrl = listener[1];
-            const captured = qrl.$captureRef$;
-            if (captured) {
-                for (const obj of captured) {
-                    collectValue(obj, collector, true);
-                }
-            }
             if (isElement(el)) {
-                listeners.push({
-                    key,
-                    qrl,
-                    el,
-                });
+                const qrl = listener[1];
+                const captured = qrl.$captureRef$;
+                if (captured) {
+                    for (const obj of captured) {
+                        collectValue(obj, collector, true);
+                    }
+                }
+                collector.$qrls$.push(qrl);
+                hasListeners = true;
             }
         }
     }
     // No listeners implies static page
-    if (listeners.length === 0) {
+    if (!hasListeners) {
         return {
             state: {
                 ctx: {},
@@ -3515,7 +3539,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                 subs: [],
             },
             objs: [],
-            listeners: [],
+            qrls: [],
             mode: 'static',
         };
     }
@@ -3523,23 +3547,16 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     let promises;
     while ((promises = collector.$promises$).length > 0) {
         collector.$promises$ = [];
-        await Promise.allSettled(promises);
+        await Promise.all(promises);
     }
     // If at this point any component can render, we need to capture Context and Props
     const canRender = collector.$elements$.length > 0;
     if (canRender) {
-        for (const element of collector.$elements$) {
-            collectElementData(tryGetContext(element), collector);
+        for (const elCtx of collector.$deferElements$) {
+            collectElementData(elCtx, collector, false);
         }
         for (const ctx of allContexts) {
-            if (ctx.$props$) {
-                collectProps(ctx, collector);
-            }
-            if (ctx.$contexts$) {
-                for (const item of ctx.$contexts$.values()) {
-                    collectValue(item, collector, false);
-                }
-            }
+            collectProps(ctx, collector);
         }
     }
     // Wait for remaining promises
@@ -3622,7 +3639,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         for (const sub of subs) {
             const host = sub[1];
             if (sub[0] === 0 && isNode(host) && isVirtualElement(host)) {
-                if (!collector.$elements$.includes(host)) {
+                if (!collector.$elements$.includes(tryGetContext(host))) {
                     continue;
                 }
             }
@@ -3716,7 +3733,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         const renderQrl = ctx.$componentQrl$;
         const seq = ctx.$seq$;
         const metaValue = {};
-        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
+        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
         let add = false;
         if (ref.length > 0) {
             const value = ref.map(mustGetObjId).join(' ');
@@ -3745,7 +3762,10 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             if (contexts) {
                 const serializedContexts = [];
                 contexts.forEach((value, key) => {
-                    serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+                    const id = getObjId(value);
+                    if (id) {
+                        serializedContexts.push(`${key}=${id}`);
+                    }
                 });
                 const value = serializedContexts.join(' ');
                 if (value) {
@@ -3775,7 +3795,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             subs,
         },
         objs,
-        listeners,
+        qrls: collector.$qrls$,
         mode: canRender ? 'render' : 'listeners',
     };
 };
@@ -3816,47 +3836,68 @@ const createCollector = (containerState) => {
         $containerState$: containerState,
         $seen$: new Set(),
         $objSet$: new Set(),
+        $prefetch$: 0,
         $noSerialize$: [],
         $elements$: [],
+        $qrls$: [],
+        $deferElements$: [],
         $promises$: [],
     };
 };
 const collectDeferElement = (el, collector) => {
-    if (collector.$elements$.includes(el)) {
+    const ctx = tryGetContext(el);
+    if (collector.$elements$.includes(ctx)) {
         return;
     }
-    collector.$elements$.push(el);
+    collector.$elements$.push(ctx);
+    collector.$prefetch$++;
+    if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
+        collectElementData(ctx, collector, true);
+    }
+    else {
+        collector.$deferElements$.push(ctx);
+    }
+    collector.$prefetch$--;
 };
 const collectElement = (el, collector) => {
-    if (collector.$elements$.includes(el)) {
-        return;
-    }
     const ctx = tryGetContext(el);
     if (ctx) {
-        collector.$elements$.push(el);
-        collectElementData(ctx, collector);
+        if (collector.$elements$.includes(ctx)) {
+            return;
+        }
+        collector.$elements$.push(ctx);
+        collectElementData(ctx, collector, false);
     }
 };
-const collectElementData = (elCtx, collector) => {
+const collectElementData = (elCtx, collector, dynamic) => {
     if (elCtx.$props$) {
-        collectValue(elCtx.$props$, collector, false);
+        collectValue(elCtx.$props$, collector, dynamic);
     }
     if (elCtx.$componentQrl$) {
-        collectValue(elCtx.$componentQrl$, collector, false);
+        collectValue(elCtx.$componentQrl$, collector, dynamic);
     }
     if (elCtx.$seq$) {
         for (const obj of elCtx.$seq$) {
-            collectValue(obj, collector, false);
+            collectValue(obj, collector, dynamic);
         }
     }
     if (elCtx.$watches$) {
         for (const obj of elCtx.$watches$) {
-            collectValue(obj, collector, false);
+            collectValue(obj, collector, dynamic);
         }
     }
-    if (elCtx.$contexts$) {
-        for (const obj of elCtx.$contexts$.values()) {
-            collectValue(obj, collector, false);
+    if (dynamic) {
+        let parent = elCtx;
+        while (parent) {
+            if (parent.$contexts$) {
+                for (const obj of parent.$contexts$.values()) {
+                    collectValue(obj, collector, dynamic);
+                }
+                if (parent.$contexts$.get('_') === true) {
+                    break;
+                }
+            }
+            parent = parent.$parent$;
         }
     }
 };
@@ -4131,7 +4172,7 @@ const resumeContainer = (containerEl) => {
             assertDefined(props, `resume: props missing in host metadata`, host);
             assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
             elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
-            elCtx.$mounted$ = true;
+            elCtx.$flags$ = HOST_FLAG_MOUNTED;
             elCtx.$props$ = getObject(props);
             elCtx.$componentQrl$ = getObject(renderQrl);
         }
@@ -4338,10 +4379,10 @@ const notifyRender = (hostElement, containerState) => {
     }
     const elCtx = getContext(hostElement);
     assertDefined(elCtx.$componentQrl$, `render: notified host element must have a defined $renderQrl$`, elCtx);
-    if (elCtx.$dirty$) {
+    if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
         return;
     }
-    elCtx.$dirty$ = true;
+    elCtx.$flags$ |= HOST_FLAG_DIRTY;
     const activeRendering = containerState.$hostsRendering$ !== undefined;
     if (activeRendering) {
         assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
@@ -5496,6 +5537,9 @@ const QRLSerializer = {
             for (const item of v.$captureRef$) {
                 collectValue(item, collector, leaks);
             }
+        }
+        if (collector.$prefetch$ === 0) {
+            collector.$qrls$.push(v);
         }
     },
     serialize: (obj, getObjId) => {
@@ -6727,7 +6771,7 @@ const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => 
         ssrCtx.$contexts$.push(elCtx);
         newSSrContext.hostCtx = elCtx;
         return renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream) => {
-            if (elCtx.$needAttachListeners$) {
+            if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 logWarn('Component registered some events, some component use useStyleStyle$()');
             }
             if (beforeClose) {
@@ -6785,6 +6829,10 @@ const createContext = (nodeType) => {
 };
 const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
     const tagName = node.type;
+    const hostCtx = ssrCtx.hostCtx;
+    if (hostCtx && hasDynamicChildren(node)) {
+        hostCtx.$flags$ |= HOST_FLAG_DYNAMIC;
+    }
     if (typeof tagName === 'string') {
         const key = node.key;
         const props = node.props;
@@ -6792,7 +6840,6 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
         const elCtx = createContext(1);
         const elm = elCtx.$element$;
         const isHead = tagName === 'head';
-        const hostCtx = ssrCtx.hostCtx;
         let openingElement = '<' + tagName;
         let useSignal = false;
         assertElement(elm);
@@ -6843,9 +6890,9 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
             if (hostCtx.$scopeIds$) {
                 classStr = hostCtx.$scopeIds$.join(' ') + ' ' + classStr;
             }
-            if (hostCtx.$needAttachListeners$) {
+            if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 listeners.push(...hostCtx.li);
-                hostCtx.$needAttachListeners$ = false;
+                hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
             }
         }
         // Reset HOST flags
@@ -7169,6 +7216,9 @@ const escapeAttr = (s) => {
                 return '';
         }
     });
+};
+const hasDynamicChildren = (node) => {
+    return node.props[_IMMUTABLE]?.children === false;
 };
 
 // <docs markdown="../readme.md#useStore">
@@ -7823,5 +7873,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextBoundary, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map

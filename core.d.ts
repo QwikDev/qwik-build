@@ -1518,10 +1518,8 @@ export declare type PublicProps<PROPS extends {}> = TransformProps<PROPS> & Comp
 declare interface QContext {
     $element$: QwikElement;
     $refMap$: any[];
-    $dirty$: boolean;
-    $needAttachListeners$: boolean;
+    $flags$: number;
     $id$: string;
-    $mounted$: boolean;
     $props$: Record<string, any> | null;
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
     li: Listener[];
@@ -2230,7 +2228,7 @@ export declare interface SnapshotMetaValue {
  */
 export declare interface SnapshotResult {
     state: SnapshotState;
-    listeners: SnapshotListener[];
+    qrls: QRL[];
     objs: any[];
     mode: 'render' | 'listeners' | 'static';
 }
@@ -2829,6 +2827,11 @@ declare interface UseContext {
  * @public
  */
 export declare const useContext: UseContext;
+
+/**
+ * @alpha
+ */
+export declare const useContextBoundary: (...ids: Context<any>[]) => void;
 
 /**
  * Assign a value to a Context.

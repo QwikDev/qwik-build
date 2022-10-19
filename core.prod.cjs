@@ -273,9 +273,7 @@
     const getContext = element => {
         let ctx = tryGetContext(element);
         return ctx || (element._qc_ = ctx = {
-            $dirty$: false,
-            $mounted$: false,
-            $needAttachListeners$: false,
+            $flags$: 0,
             $id$: "",
             $element$: element,
             $refMap$: [],
@@ -370,7 +368,7 @@
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
         const elCtx = getContext(invokeCtx.$hostElement$);
-        elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]), elCtx.$needAttachListeners$ = true;
+        elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]), elCtx.$flags$ |= 2;
     };
     const CONTAINER_STATE = Symbol("ContainerState");
     const getContainerState = containerEl => {
@@ -761,6 +759,9 @@
                     if (found) {
                         return found;
                     }
+                    if (true === ctx.$contexts$.get("_")) {
+                        break;
+                    }
                 }
             }
         }
@@ -814,7 +815,7 @@
         }
     };
     const executeComponent = (rCtx, elCtx) => {
-        elCtx.$dirty$ = false, elCtx.$mounted$ = true, elCtx.$slots$ = [], elCtx.li.length = 0;
+        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -824,10 +825,10 @@
         newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rCtx, 
         componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(invocatinContext);
-        return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$dirty$ ? executeComponent(rCtx, elCtx) : {
+        return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
             rCtx: newCtx
-        })) : elCtx.$dirty$ ? executeComponent(rCtx, elCtx) : {
+        })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
             rCtx: newCtx
         }), (err => (handleError(err, hostElement, rCtx), {
@@ -940,7 +941,7 @@
         }
     }
     const renderComponent = (rCtx, elCtx, flags) => {
-        const justMounted = !elCtx.$mounted$;
+        const justMounted = !(4 & elCtx.$flags$);
         const hostElement = elCtx.$element$;
         const containerState = rCtx.$static$.$containerState$;
         return containerState.$hostsStaging$.delete(hostElement), containerState.$subsManager$.$clearSub$(hostElement), 
@@ -1408,8 +1409,7 @@
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {
                 elm.classList.add(styleId);
-            })), currentComponent.$needAttachListeners$ && (listeners.push(...currentComponent.li), 
-            currentComponent.$needAttachListeners$ = false);
+            })), 2 & currentComponent.$flags$ && (listeners.push(...currentComponent.li), currentComponent.$flags$ &= -3);
         }
         if (isSlot && (currentComponent.$slots$, setKey(elm, vnode.$key$), directSetAttribute(elm, "q:sref", currentComponent.$id$), 
         currentComponent.$slots$.push(vnode), staticCtx.$addSlots$.push([ elm, currentComponent.$element$ ])), 
@@ -1571,7 +1571,7 @@
                 }
             }
         }
-        return elCtx.$dirty$;
+        return !!(1 & elCtx.$flags$);
     };
     const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
         if (stopSlots && parent.hasAttribute("q:s")) {
@@ -1583,7 +1583,7 @@
             elCtx.$watches$?.forEach((watch => {
                 subsManager.$clearSub$(watch), destroyWatch(watch);
             })), elCtx.$componentQrl$ && subsManager.$clearSub$(el), elCtx.$componentQrl$ = null, 
-            elCtx.$seq$ = null, elCtx.$watches$ = null, elCtx.$dirty$ = false, el._qc_ = void 0;
+            elCtx.$seq$ = null, elCtx.$watches$ = null, elCtx.$flags$ = 0, el._qc_ = void 0;
         })(ctx, subsManager);
         const ch = getChildren(parent, "elements");
         for (const child of ch) {
@@ -1623,7 +1623,7 @@
     };
     const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
         const collector = createCollector(containerState);
-        const listeners = [];
+        let hasListeners = false;
         for (const ctx of allContexts) {
             if (ctx.$watches$) {
                 for (const watch of ctx.$watches$) {
@@ -1635,22 +1635,19 @@
             const el = ctx.$element$;
             const ctxListeners = ctx.li;
             for (const listener of ctxListeners) {
-                const key = listener[0];
-                const qrl = listener[1];
-                const captured = qrl.$captureRef$;
-                if (captured) {
-                    for (const obj of captured) {
-                        collectValue(obj, collector, true);
+                if (isElement(el)) {
+                    const qrl = listener[1];
+                    const captured = qrl.$captureRef$;
+                    if (captured) {
+                        for (const obj of captured) {
+                            collectValue(obj, collector, true);
+                        }
                     }
+                    collector.$qrls$.push(qrl), hasListeners = true;
                 }
-                isElement(el) && listeners.push({
-                    key: key,
-                    qrl: qrl,
-                    el: el
-                });
             }
         }
-        if (0 === listeners.length) {
+        if (!hasListeners) {
             return {
                 state: {
                     ctx: {},
@@ -1658,25 +1655,21 @@
                     subs: []
                 },
                 objs: [],
-                listeners: [],
+                qrls: [],
                 mode: "static"
             };
         }
         let promises;
         for (;(promises = collector.$promises$).length > 0; ) {
-            collector.$promises$ = [], await Promise.allSettled(promises);
+            collector.$promises$ = [], await Promise.all(promises);
         }
         const canRender = collector.$elements$.length > 0;
         if (canRender) {
-            for (const element of collector.$elements$) {
-                collectElementData(tryGetContext(element), collector);
+            for (const elCtx of collector.$deferElements$) {
+                collectElementData(elCtx, collector, false);
             }
             for (const ctx of allContexts) {
-                if (ctx.$props$ && collectProps(ctx, collector), ctx.$contexts$) {
-                    for (const item of ctx.$contexts$.values()) {
-                        collectValue(item, collector, false);
-                    }
-                }
+                collectProps(ctx, collector);
             }
         }
         for (;(promises = collector.$promises$).length > 0; ) {
@@ -1726,7 +1719,7 @@
             flags > 0 && convered.push(flags);
             for (const sub of subs) {
                 const host = sub[1];
-                0 === sub[0] && isNode(host) && isVirtualElement(host) && !collector.$elements$.includes(host) || convered.push(sub);
+                0 === sub[0] && isNode(host) && isVirtualElement(host) && !collector.$elements$.includes(tryGetContext(host)) || convered.push(sub);
             }
             convered.length > 0 && subsMap.set(obj, convered);
         })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
@@ -1796,7 +1789,7 @@
             const renderQrl = ctx.$componentQrl$;
             const seq = ctx.$seq$;
             const metaValue = {};
-            const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(node);
+            const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
             let add = false;
             if (ref.length > 0) {
                 const value = ref.map(mustGetObjId).join(" ");
@@ -1815,7 +1808,8 @@
                 if (contexts) {
                     const serializedContexts = [];
                     contexts.forEach(((value, key) => {
-                        serializedContexts.push(`${key}=${mustGetObjId(value)}`);
+                        const id = getObjId(value);
+                        id && serializedContexts.push(`${key}=${id}`);
                     }));
                     const value = serializedContexts.join(" ");
                     value && (metaValue.c = value, add = true);
@@ -1832,7 +1826,7 @@
                 subs: subs
             },
             objs: objs,
-            listeners: listeners,
+            qrls: collector.$qrls$,
             mode: canRender ? "render" : "listeners"
         };
     };
@@ -1848,35 +1842,52 @@
         $containerState$: containerState,
         $seen$: new Set,
         $objSet$: new Set,
+        $prefetch$: 0,
         $noSerialize$: [],
         $elements$: [],
+        $qrls$: [],
+        $deferElements$: [],
         $promises$: []
     });
     const collectDeferElement = (el, collector) => {
-        collector.$elements$.includes(el) || collector.$elements$.push(el);
+        const ctx = tryGetContext(el);
+        collector.$elements$.includes(ctx) || (collector.$elements$.push(ctx), collector.$prefetch$++, 
+        8 & ctx.$flags$ ? collectElementData(ctx, collector, true) : collector.$deferElements$.push(ctx), 
+        collector.$prefetch$--);
     };
     const collectElement = (el, collector) => {
-        if (collector.$elements$.includes(el)) {
-            return;
-        }
         const ctx = tryGetContext(el);
-        ctx && (collector.$elements$.push(el), collectElementData(ctx, collector));
+        if (ctx) {
+            if (collector.$elements$.includes(ctx)) {
+                return;
+            }
+            collector.$elements$.push(ctx), collectElementData(ctx, collector, false);
+        }
     };
-    const collectElementData = (elCtx, collector) => {
-        if (elCtx.$props$ && collectValue(elCtx.$props$, collector, false), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, false), 
+    const collectElementData = (elCtx, collector, dynamic) => {
+        if (elCtx.$props$ && collectValue(elCtx.$props$, collector, dynamic), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamic), 
         elCtx.$seq$) {
             for (const obj of elCtx.$seq$) {
-                collectValue(obj, collector, false);
+                collectValue(obj, collector, dynamic);
             }
         }
         if (elCtx.$watches$) {
             for (const obj of elCtx.$watches$) {
-                collectValue(obj, collector, false);
+                collectValue(obj, collector, dynamic);
             }
         }
-        if (elCtx.$contexts$) {
-            for (const obj of elCtx.$contexts$.values()) {
-                collectValue(obj, collector, false);
+        if (dynamic) {
+            let parent = elCtx;
+            for (;parent; ) {
+                if (parent.$contexts$) {
+                    for (const obj of parent.$contexts$.values()) {
+                        collectValue(obj, collector, dynamic);
+                    }
+                    if (true === parent.$contexts$.get("_")) {
+                        break;
+                    }
+                }
+                parent = parent.$parent$;
             }
         }
     };
@@ -2052,8 +2063,8 @@
             if (host) {
                 const [props, renderQrl] = host.split(" ");
                 const styleIds = el.getAttribute("q:sstyle");
-                elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$mounted$ = true, 
-                elCtx.$props$ = getObject(props), elCtx.$componentQrl$ = getObject(renderQrl);
+                elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, elCtx.$props$ = getObject(props), 
+                elCtx.$componentQrl$ = getObject(renderQrl);
             }
         }
         directSetAttribute(containerEl, "q:container", "resumed"), ((el, eventName, detail, bubbles) => {
@@ -2233,8 +2244,8 @@
         const server = isServer();
         server || resumeIfNeeded(containerState.$containerEl$);
         const elCtx = getContext(hostElement);
-        if (elCtx.$componentQrl$, !elCtx.$dirty$) {
-            if (elCtx.$dirty$ = true, void 0 !== containerState.$hostsRendering$) {
+        if (elCtx.$componentQrl$, !(1 & elCtx.$flags$)) {
+            if (elCtx.$flags$ |= 1, void 0 !== containerState.$hostsRendering$) {
                 containerState.$renderPromise$, containerState.$hostsStaging$.add(hostElement);
             } else {
                 if (server) {
@@ -2573,6 +2584,7 @@
                     collectValue(item, collector, leaks);
                 }
             }
+            0 === collector.$prefetch$ && collector.$qrls$.push(v);
         },
         serialize: (obj, getObjId) => serializeQRL(obj, {
             $getObjId$: getObjId
@@ -3078,7 +3090,7 @@
                 children: res.node
             }, node.key);
             return elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx), newSSrContext.hostCtx = elCtx, 
-            renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream => (elCtx.$needAttachListeners$, 
+            renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream => (elCtx.$flags$, 
             beforeClose ? then(renderQTemplates(newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(newSSrContext, stream))));
         }));
     };
@@ -3119,14 +3131,14 @@
     });
     const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
-        if ("string" == typeof tagName) {
+        const hostCtx = ssrCtx.hostCtx;
+        if (hostCtx && hasDynamicChildren(node) && (hostCtx.$flags$ |= 8), "string" == typeof tagName) {
             const key = node.key;
             const props = node.props;
             const immutableMeta = props[_IMMUTABLE] ?? EMPTY_OBJ;
             const elCtx = createContext(1);
             const elm = elCtx.$element$;
             const isHead = "head" === tagName;
-            const hostCtx = ssrCtx.hostCtx;
             let openingElement = "<" + tagName;
             let useSignal = false;
             for (const prop of Object.keys(props)) {
@@ -3158,7 +3170,7 @@
             const classValue = props.class ?? props.className;
             let classStr = stringifyClass(classValue);
             if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
-            hostCtx.$needAttachListeners$ && (listeners.push(...hostCtx.li), hostCtx.$needAttachListeners$ = false)), 
+            2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3)), 
             isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr = classStr.trim(), 
             classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
                 const groups = groupListeners(listeners);
@@ -3401,6 +3413,7 @@
             return "";
         }
     }));
+    const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
     const useStore = (initialState, opts) => {
         const {get: get, set: set, ctx: ctx} = useSequentialScope();
         if (null != get) {
@@ -3725,6 +3738,20 @@
             return set(defaultValue);
         }
         throw qError(13, context.id);
+    }, exports.useContextBoundary = (...ids) => {
+        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        if (void 0 !== get) {
+            return;
+        }
+        const hostElement = ctx.$hostElement$;
+        const hostCtx = getContext(hostElement);
+        let contexts = hostCtx.$contexts$;
+        contexts || (hostCtx.$contexts$ = contexts = new Map);
+        for (const c of ids) {
+            const value = resolveContext(c, hostElement, ctx.$renderCtx$);
+            void 0 !== value && contexts.set(c.id, value);
+        }
+        contexts.set("_", true), set(true);
     }, exports.useContextProvider = useContextProvider, exports.useEnvData = useEnvData, 
     exports.useErrorBoundary = () => {
         const store = useStore({

@@ -918,11 +918,76 @@ globalThis.qwikOptimizer = function(module) {
       manifest.bundles[bundleFileName] = bundle;
     }
   }
+  async function createLinter(sys, rootDir) {
+    const module2 = await sys.dynamicImport("eslint");
+    const options = {
+      cache: true,
+      useEslintrc: false,
+      overrideConfig: {
+        root: true,
+        env: {
+          browser: true,
+          es2021: true,
+          node: true
+        },
+        extends: [ "plugin:qwik/recommended" ],
+        parser: "@typescript-eslint/parser",
+        parserOptions: {
+          tsconfigRootDir: rootDir,
+          project: [ "./tsconfig.json" ],
+          ecmaVersion: 2021,
+          sourceType: "module",
+          ecmaFeatures: {
+            jsx: true
+          }
+        }
+      }
+    };
+    const eslint = new module2.ESLint(options);
+    return {
+      async lint(ctx, code, id) {
+        try {
+          const filePath = parseRequest(id);
+          if (await eslint.isPathIgnored(filePath)) {
+            return null;
+          }
+          const report = await eslint.lintText(code, {
+            filePath: filePath
+          });
+          report.forEach((file => {
+            for (const message of file.messages) {
+              const err = createRollupError(file.filePath, message);
+              ctx.warn(err);
+            }
+          }));
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    };
+  }
+  function parseRequest(id) {
+    return id.split("?", 2)[0];
+  }
+  function createRollupError(id, reportMessage) {
+    const err = Object.assign(new Error(reportMessage.message), {
+      id: id,
+      plugin: "vite-plugin-eslint",
+      loc: {
+        file: id,
+        column: reportMessage.column,
+        line: reportMessage.line
+      },
+      stack: ""
+    });
+    return err;
+  }
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
     const transformedOutputs = new Map;
     let internalOptimizer = null;
+    let linter;
     let addWatchFileCallback = () => {};
     let diagnosticsCallback = () => {};
     const opts = {
@@ -1043,8 +1108,13 @@ globalThis.qwikOptimizer = function(module) {
     const buildStart = async _ctx => {
       var _a;
       log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build", opts.scope);
+      const optimizer = getOptimizer();
+      try {
+        linter = await createLinter(optimizer.sys, opts.rootDir);
+      } catch (err) {
+        console.error(err);
+      }
       if (opts.forceFullBuild) {
-        const optimizer = getOptimizer();
         const path = getPath();
         let srcDir = "/";
         if ("string" === typeof opts.srcDir) {
@@ -1173,7 +1243,7 @@ globalThis.qwikOptimizer = function(module) {
       log("load()", "Not Found", id2);
       return null;
     };
-    const transform = function(ctx, code, id2) {
+    const transform = async function(ctx, code, id2) {
       if (opts.forceFullBuild) {
         return null;
       }
@@ -1216,6 +1286,7 @@ globalThis.qwikOptimizer = function(module) {
           scope: opts.scope ? opts.scope : void 0
         });
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
+        0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
         results.set(normalizePath(pathId), newOutput);
         for (const [id3, output] of results.entries()) {
           const justChanged = newOutput === output;
@@ -1406,7 +1477,7 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
-            "error" === d.category ? this.error(createRollupError(id, d)) : this.warn(createRollupError(id, d));
+            "error" === d.category ? this.error(createRollupError2(id, d)) : this.warn(createRollupError2(id, d));
           }));
         }));
         await qwikPlugin.buildStart(this);
@@ -1488,7 +1559,7 @@ globalThis.qwikOptimizer = function(module) {
     "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
     return outputOpts;
   }
-  function createRollupError(id, diagnostic) {
+  function createRollupError2(id, diagnostic) {
     const loc = diagnostic.highlights[0] ?? {};
     const err = Object.assign(new Error(diagnostic.message), {
       id: id,
@@ -1971,7 +2042,7 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
-            "error" === d.category ? this.error(createRollupError(id, d)) : this.warn(createRollupError(id, d));
+            "error" === d.category ? this.error(createRollupError2(id, d)) : this.warn(createRollupError2(id, d));
           }));
         }));
         await qwikPlugin.buildStart(this);

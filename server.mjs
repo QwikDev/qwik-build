@@ -141,28 +141,15 @@ function getPrefetchResources(snapshotResult, opts, resolvedManifest) {
 }
 function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
   const prefetchResources = [];
-  const listeners = snapshotResult?.listeners;
-  const stateObjs = snapshotResult?.objs;
+  const qrls = snapshotResult?.qrls;
   const { mapper, manifest } = resolvedManifest;
   const urls = /* @__PURE__ */ new Set();
-  if (Array.isArray(listeners)) {
-    for (const prioritizedSymbolHash in mapper) {
-      const hasSymbol = listeners.some((l) => {
-        return l.qrl.getHash() === prioritizedSymbolHash;
-      });
-      if (hasSymbol) {
-        addBundle(manifest, urls, prefetchResources, buildBase, mapper[prioritizedSymbolHash][1]);
-      }
-    }
-  }
-  if (Array.isArray(stateObjs)) {
-    for (const obj of stateObjs) {
-      if (isQrl(obj)) {
-        const qrlSymbolName = obj.getHash();
-        const resolvedSymbol = mapper[qrlSymbolName];
-        if (resolvedSymbol) {
-          addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[0]);
-        }
+  if (Array.isArray(qrls)) {
+    for (const obj of qrls) {
+      const qrlSymbolName = obj.getHash();
+      const resolvedSymbol = mapper[qrlSymbolName];
+      if (resolvedSymbol) {
+        addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[0]);
       }
     }
   }
@@ -187,9 +174,6 @@ function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName)
     }
   }
 }
-var isQrl = (value) => {
-  return typeof value === "function" && typeof value.getSymbol === "function";
-};
 
 // packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev === true;
