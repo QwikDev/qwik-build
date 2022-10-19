@@ -2062,7 +2062,7 @@ export declare interface ResourceCtx<T> {
     previous: T | undefined;
 }
 
-declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturn<T>> {
+declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturnInternal<T>> {
 }
 
 /**
@@ -2088,12 +2088,8 @@ export declare interface ResourceOptions {
  * @public
  */
 export declare interface ResourcePending<T> {
-    __brand: 'resource';
-    state: 'pending';
     promise: Promise<T>;
-    resolved: undefined;
-    error: undefined;
-    timeout?: number;
+    loading: boolean;
 }
 
 /**
@@ -2110,30 +2106,32 @@ export declare interface ResourceProps<T> {
  * @public
  */
 export declare interface ResourceRejected<T> {
-    __brand: 'resource';
-    state: 'rejected';
     promise: Promise<T>;
-    resolved: undefined;
-    error: any;
-    timeout?: number;
+    loading: boolean;
 }
 
 /**
  * @public
  */
 export declare interface ResourceResolved<T> {
-    __brand: 'resource';
-    state: 'resolved';
     promise: Promise<T>;
-    resolved: T;
-    error: undefined;
-    timeout?: number;
+    loading: boolean;
 }
 
 /**
  * @public
  */
 export declare type ResourceReturn<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
+
+declare interface ResourceReturnInternal<T> {
+    __brand: 'resource';
+    _state: 'pending' | 'resolved' | 'rejected';
+    _resolved: T | undefined;
+    _error: any;
+    _timeout?: number;
+    promise: Promise<T>;
+    loading: boolean;
+}
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;

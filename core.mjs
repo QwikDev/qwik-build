@@ -5074,7 +5074,7 @@ const runResource = (watch, containerState, waitOn) => {
         cleanup(callback) {
             cleanups.push(callback);
         },
-        previous: resourceTarget.resolved,
+        previous: resourceTarget._resolved,
     };
     let resolve;
     let reject;
@@ -5084,16 +5084,18 @@ const runResource = (watch, containerState, waitOn) => {
             done = true;
             if (resolved) {
                 done = true;
-                resource.state = 'resolved';
-                resource.resolved = value;
-                resource.error = undefined;
+                resource.loading = false;
+                resource._state = 'resolved';
+                resource._resolved = value;
+                resource._error = undefined;
                 resolve(value);
             }
             else {
                 done = true;
-                resource.state = 'rejected';
-                resource.resolved = undefined;
-                resource.error = value;
+                resource.loading = false;
+                resource._state = 'rejected';
+                resource._resolved = undefined;
+                resource._error = value;
                 reject(value);
             }
             return true;
@@ -5102,8 +5104,9 @@ const runResource = (watch, containerState, waitOn) => {
     };
     // Execute mutation inside empty invokation
     invoke(invokationContext, () => {
-        resource.state = 'pending';
-        resource.resolved = undefined;
+        resource._state = 'pending';
+        resource.loading = !isServer();
+        resource._resolved = undefined;
         resource.promise = new Promise((r, re) => {
             resolve = r;
             reject = re;
@@ -5117,7 +5120,7 @@ const runResource = (watch, containerState, waitOn) => {
     }, (reason) => {
         setState(false, reason);
     });
-    const timeout = resourceTarget.timeout;
+    const timeout = resourceTarget._timeout;
     if (timeout) {
         return Promise.race([
             promise,
@@ -5438,27 +5441,28 @@ const useResource$ = (generatorFn, opts) => {
 // </docs>
 const Resource = (props) => {
     const isBrowser = !isServer();
+    const resource = props.value;
     if (isBrowser) {
         if (props.onRejected) {
-            props.value.promise.catch(() => { });
-            if (props.value.state === 'rejected') {
-                return props.onRejected(props.value.error);
+            resource.promise.catch(() => { });
+            if (resource._state === 'rejected') {
+                return props.onRejected(resource._error);
             }
         }
         if (props.onPending) {
-            const state = props.value.state;
+            const state = resource._state;
             if (state === 'pending') {
                 return props.onPending();
             }
             else if (state === 'resolved') {
-                return props.onResolved(props.value.resolved);
+                return props.onResolved(resource._resolved);
             }
             else if (state === 'rejected') {
-                throw props.value.error;
+                throw resource._error;
             }
         }
     }
-    const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+    const promise = resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     // Resource path
     return jsx(Fragment, {
         children: promise,
@@ -5468,10 +5472,11 @@ const _createResourceReturn = (opts) => {
     const resource = {
         __brand: 'resource',
         promise: undefined,
-        resolved: undefined,
-        error: undefined,
-        state: 'pending',
-        timeout: opts?.timeout,
+        loading: isServer() ? false : true,
+        _resolved: undefined,
+        _error: undefined,
+        _state: 'pending',
+        _timeout: opts?.timeout,
     };
     return resource;
 };
@@ -5485,15 +5490,15 @@ const isResourceReturn = (obj) => {
     return isObject(obj) && obj.__brand === 'resource';
 };
 const serializeResource = (resource, getObjId) => {
-    const state = resource.state;
+    const state = resource._state;
     if (state === 'resolved') {
-        return `0 ${getObjId(resource.resolved)}`;
+        return `0 ${getObjId(resource._resolved)}`;
     }
     else if (state === 'pending') {
         return `1`;
     }
     else {
-        return `2 ${getObjId(resource.error)}`;
+        return `2 ${getObjId(resource._error)}`;
     }
 };
 const parseResourceReturn = (data) => {
@@ -5501,16 +5506,19 @@ const parseResourceReturn = (data) => {
     const result = _createResourceReturn(undefined);
     result.promise = Promise.resolve();
     if (first === '0') {
-        result.state = 'resolved';
-        result.resolved = id;
+        result._state = 'resolved';
+        result._resolved = id;
+        result.loading = false;
     }
     else if (first === '1') {
-        result.state = 'pending';
+        result._state = 'pending';
         result.promise = new Promise(() => { });
+        result.loading = true;
     }
     else if (first === '2') {
-        result.state = 'rejected';
-        result.error = id;
+        result._state = 'rejected';
+        result._error = id;
+        result.loading = false;
     }
     return result;
 };
@@ -5581,7 +5589,7 @@ const ResourceSerializer = {
     test: (v) => isResourceReturn(v),
     collect: (obj, collector, leaks) => {
         collectValue(obj.promise, collector, leaks);
-        collectValue(obj.resolved, collector, leaks);
+        collectValue(obj._resolved, collector, leaks);
     },
     serialize: (obj, getObjId) => {
         return serializeResource(obj, getObjId);
@@ -5590,14 +5598,14 @@ const ResourceSerializer = {
         return parseResourceReturn(data);
     },
     fill: (resource, getObject) => {
-        if (resource.state === 'resolved') {
-            resource.resolved = getObject(resource.resolved);
-            resource.promise = Promise.resolve(resource.resolved);
+        if (resource._state === 'resolved') {
+            resource._resolved = getObject(resource._resolved);
+            resource.promise = Promise.resolve(resource._resolved);
         }
-        else if (resource.state === 'rejected') {
-            const p = Promise.reject(resource.error);
+        else if (resource._state === 'rejected') {
+            const p = Promise.reject(resource._error);
             p.catch(() => null);
-            resource.error = getObject(resource.error);
+            resource._error = getObject(resource._error);
             resource.promise = p;
         }
     },

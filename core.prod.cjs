@@ -2462,17 +2462,19 @@
             cleanup(callback) {
                 cleanups.push(callback);
             },
-            previous: resourceTarget.resolved
+            previous: resourceTarget._resolved
         };
         let resolve;
         let reject;
         let done = false;
         const setState = (resolved, value) => !done && (done = true, resolved ? (done = true, 
-        resource.state = "resolved", resource.resolved = value, resource.error = void 0, 
-        resolve(value)) : (done = true, resource.state = "rejected", resource.resolved = void 0, 
-        resource.error = value, reject(value)), true);
+        resource.loading = false, resource._state = "resolved", resource._resolved = value, 
+        resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
+        resource._state = "rejected", resource._resolved = void 0, resource._error = value, 
+        reject(value)), true);
         invoke(invokationContext, (() => {
-            resource.state = "pending", resource.resolved = void 0, resource.promise = new Promise(((r, re) => {
+            resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
+            resource.promise = new Promise(((r, re) => {
                 resolve = r, reject = re;
             }));
         })), watch.$destroy$ = noSerialize((() => {
@@ -2483,7 +2485,7 @@
         }), (reason => {
             setState(false, reason);
         }));
-        const timeout = resourceTarget.timeout;
+        const timeout = resourceTarget._timeout;
         return timeout ? Promise.race([ promise, delay(timeout).then((() => {
             setState(false, "timeout") && cleanupWatch(watch);
         })) ]) : promise;
@@ -2565,10 +2567,11 @@
     const _createResourceReturn = opts => ({
         __brand: "resource",
         promise: void 0,
-        resolved: void 0,
-        error: void 0,
-        state: "pending",
-        timeout: opts?.timeout
+        loading: !isServer(),
+        _resolved: void 0,
+        _error: void 0,
+        _state: "pending",
+        _timeout: opts?.timeout
     });
     const createResourceReturn = (containerState, opts, initialPromise) => {
         const result = _createResourceReturn(opts);
@@ -2623,25 +2626,26 @@
             var obj;
         },
         collect: (obj, collector, leaks) => {
-            collectValue(obj.promise, collector, leaks), collectValue(obj.resolved, collector, leaks);
+            collectValue(obj.promise, collector, leaks), collectValue(obj._resolved, collector, leaks);
         },
         serialize: (obj, getObjId) => ((resource, getObjId) => {
-            const state = resource.state;
-            return "resolved" === state ? `0 ${getObjId(resource.resolved)}` : "pending" === state ? "1" : `2 ${getObjId(resource.error)}`;
+            const state = resource._state;
+            return "resolved" === state ? `0 ${getObjId(resource._resolved)}` : "pending" === state ? "1" : `2 ${getObjId(resource._error)}`;
         })(obj, getObjId),
         prepare: data => (data => {
             const [first, id] = data.split(" ");
             const result = _createResourceReturn(void 0);
-            return result.promise = Promise.resolve(), "0" === first ? (result.state = "resolved", 
-            result.resolved = id) : "1" === first ? (result.state = "pending", result.promise = new Promise((() => {}))) : "2" === first && (result.state = "rejected", 
-            result.error = id), result;
+            return result.promise = Promise.resolve(), "0" === first ? (result._state = "resolved", 
+            result._resolved = id, result.loading = false) : "1" === first ? (result._state = "pending", 
+            result.promise = new Promise((() => {})), result.loading = true) : "2" === first && (result._state = "rejected", 
+            result._error = id, result.loading = false), result;
         })(data),
         fill: (resource, getObject) => {
-            if ("resolved" === resource.state) {
-                resource.resolved = getObject(resource.resolved), resource.promise = Promise.resolve(resource.resolved);
-            } else if ("rejected" === resource.state) {
-                const p = Promise.reject(resource.error);
-                p.catch((() => null)), resource.error = getObject(resource.error), resource.promise = p;
+            if ("resolved" === resource._state) {
+                resource._resolved = getObject(resource._resolved), resource.promise = Promise.resolve(resource._resolved);
+            } else if ("rejected" === resource._state) {
+                const p = Promise.reject(resource._error);
+                p.catch((() => null)), resource._error = getObject(resource._error), resource.promise = p;
             }
         }
     };
@@ -3582,24 +3586,26 @@
         styleId;
     };
     exports.$ = $, exports.Fragment = Fragment, exports.Resource = props => {
-        if (!isServer()) {
-            if (props.onRejected && (props.value.promise.catch((() => {})), "rejected" === props.value.state)) {
-                return props.onRejected(props.value.error);
+        const isBrowser = !isServer();
+        const resource = props.value;
+        if (isBrowser) {
+            if (props.onRejected && (resource.promise.catch((() => {})), "rejected" === resource._state)) {
+                return props.onRejected(resource._error);
             }
             if (props.onPending) {
-                const state = props.value.state;
+                const state = resource._state;
                 if ("pending" === state) {
                     return props.onPending();
                 }
                 if ("resolved" === state) {
-                    return props.onResolved(props.value.resolved);
+                    return props.onResolved(resource._resolved);
                 }
                 if ("rejected" === state) {
-                    throw props.value.error;
+                    throw resource._error;
                 }
             }
         }
-        const promise = props.value.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+        const promise = resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
         return jsx(Fragment, {
             children: promise
         });
