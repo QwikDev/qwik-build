@@ -1290,7 +1290,13 @@ class ReadWriteProxyHandler {
         let subscriber = null;
         const invokeCtx = tryGetInvokeContext();
         return invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$([ 0, subscriber, void 0 ]), 
-        Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+        isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+    }
+    getOwnPropertyDescriptor(target, prop) {
+        return isArray(target) ? Object.getOwnPropertyDescriptor(target, prop) : {
+            enumerable: true,
+            configurable: true
+        };
     }
 }
 
