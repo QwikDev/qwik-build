@@ -368,7 +368,8 @@
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
         const elCtx = getContext(invokeCtx.$hostElement$);
-        elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]), elCtx.$flags$ |= 2;
+        "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
+        elCtx.$flags$ |= 2;
     };
     const CONTAINER_STATE = Symbol("ContainerState");
     const getContainerState = containerEl => {
@@ -445,7 +446,10 @@
         ...props,
         qonce: ""
     }, key);
-    const SSRComment = () => null;
+    const SSRRaw = () => null;
+    const SSRComment = props => jsx(SSRRaw, {
+        data: `\x3c!--${props.data}--\x3e`
+    }, null);
     const Virtual = props => props.children;
     const InternalSSRStream = () => null;
     const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
@@ -484,10 +488,6 @@
     const insertBefore = (ctx, parent, newChild, refChild) => (ctx.$operations$.push({
         $operation$: directInsertBefore,
         $args$: [ parent, newChild, refChild || null ]
-    }), newChild);
-    const appendChild = (ctx, parent, newChild) => (ctx.$operations$.push({
-        $operation$: directAppendChild,
-        $args$: [ parent, newChild ]
     }), newChild);
     const _setClasslist = (elm, toRemove, toAdd) => {
         const classList = elm.classList;
@@ -1395,8 +1395,13 @@
                 const p = [];
                 for (const node of children) {
                     const nodeElm = createElm(slotRctx, node, flags, p);
-                    node.$elm$, node.$elm$, appendChild(staticCtx, getSlotElement(staticCtx, slotMap, elm, getSlotName(node)), nodeElm);
+                    node.$elm$, node.$elm$, ctx = staticCtx, parent = getSlotElement(staticCtx, slotMap, elm, getSlotName(node)), 
+                    newChild = nodeElm, ctx.$operations$.push({
+                        $operation$: directAppendChild,
+                        $args$: [ parent, newChild ]
+                    });
                 }
+                var ctx, parent, newChild;
                 return promiseAllLazy(p);
             }));
             return isPromise(wait) && promises.push(wait), elm;
@@ -1424,7 +1429,7 @@
         1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
         const nodes = children.map((ch => createElm(rCtx, ch, flags, promises)));
         for (const node of nodes) {
-            appendChild(rCtx.$static$, elm, node);
+            directAppendChild(elm, node);
         }
         return elm;
     };
@@ -3216,8 +3221,8 @@
             const elCtx = createContext(111);
             return elCtx.$parent$ = ssrCtx.hostCtx, renderNodeVirtual(node, elCtx, void 0, ssrCtx, stream, flags, beforeClose);
         }
-        if (tagName === SSRComment) {
-            return void stream.write("\x3c!--" + node.props.data + "--\x3e");
+        if (tagName === SSRRaw) {
+            return void stream.write(node.props.data);
         }
         if (tagName === InternalSSRStream) {
             return (async (node, ssrCtx, stream, flags) => {
@@ -3336,7 +3341,7 @@
         if (isArray(children)) {
             return children.flatMap((c => _flatVirtualChildren(c, ssrCtx)));
         }
-        if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRComment && children.type !== InternalSSRStream && children.type !== Virtual) {
+        if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRRaw && children.type !== InternalSSRStream && children.type !== Virtual) {
             const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
             return flatVirtualChildren(res, ssrCtx);
         }
@@ -3549,7 +3554,7 @@
     };
     const useStyles$ = implicit$FirstArg(useStylesQrl);
     const useStylesScopedQrl = styles => ({
-        scopeId: _useStyles(styles, getScopedStyles, true)
+        scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
     });
     const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
@@ -3585,7 +3590,7 @@
         return isPromise(value) ? ctx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    exports.$ = $, exports.Fragment = Fragment, exports.Resource = props => {
+    exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServer();
         const resource = props.value;
         if (isBrowser) {
@@ -3609,7 +3614,7 @@
         return jsx(Fragment, {
             children: promise
         });
-    }, exports.SSRComment = SSRComment, exports.SSRStream = (props, key) => jsx(RenderOnce, {
+    }, exports.SSRComment = SSRComment, exports.SSRRaw = SSRRaw, exports.SSRStream = (props, key) => jsx(RenderOnce, {
         children: jsx(InternalSSRStream, props)
     }, key), exports.SSRStreamBlock = props => [ jsx(SSRComment, {
         data: "qkssr-pu"
@@ -3744,20 +3749,6 @@
             return set(defaultValue);
         }
         throw qError(13, context.id);
-    }, exports.useContextBoundary = (...ids) => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
-        if (void 0 !== get) {
-            return;
-        }
-        const hostElement = ctx.$hostElement$;
-        const hostCtx = getContext(hostElement);
-        let contexts = hostCtx.$contexts$;
-        contexts || (hostCtx.$contexts$ = contexts = new Map);
-        for (const c of ids) {
-            const value = resolveContext(c, hostElement, ctx.$renderCtx$);
-            void 0 !== value && contexts.set(c.id, value);
-        }
-        contexts.set("_", true), set(true);
     }, exports.useContextProvider = useContextProvider, exports.useEnvData = useEnvData, 
     exports.useErrorBoundary = () => {
         const store = useStore({

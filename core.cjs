@@ -1021,7 +1021,12 @@
         const invokeCtx = useInvokeContext();
         const elCtx = getContext(invokeCtx.$hostElement$);
         assertQrl(eventQrl);
-        elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+        if (typeof eventName === 'string') {
+            elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+        }
+        else {
+            elCtx.li.push(...eventName.map((name) => [normalizeOnProp(name), eventQrl]));
+        }
         elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
     };
 
@@ -1188,6 +1193,9 @@
      * @alpha
      */
     const SkipRender = Symbol('skip render');
+    /**
+     * @alpha
+     */
     const RenderOnce = (props, key) => {
         return jsx(Virtual, {
             ...props,
@@ -1197,7 +1205,11 @@
     /**
      * @alpha
      */
-    const SSRComment = (() => null);
+    const SSRRaw = (() => null);
+    /**
+     * @alpha
+     */
+    const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
     /**
      * @alpha
      */
@@ -1857,29 +1869,6 @@
             verifySerializable(newValue);
         }
         contexts.set(context.id, newValue);
-        set(true);
-    };
-    /**
-     * @alpha
-     */
-    const useContextBoundary = (...ids) => {
-        const { get, set, ctx } = useSequentialScope();
-        if (get !== undefined) {
-            return;
-        }
-        const hostElement = ctx.$hostElement$;
-        const hostCtx = getContext(hostElement);
-        let contexts = hostCtx.$contexts$;
-        if (!contexts) {
-            hostCtx.$contexts$ = contexts = new Map();
-        }
-        for (const c of ids) {
-            const value = resolveContext(c, hostElement, ctx.$renderCtx$);
-            if (value !== undefined) {
-                contexts.set(c.id, value);
-            }
-        }
-        contexts.set('_', true);
         set(true);
     };
     // <docs markdown="../readme.md#useContext">
@@ -3116,7 +3105,7 @@
         }
         const nodes = children.map((ch) => createElm(rCtx, ch, flags, promises));
         for (const node of nodes) {
-            appendChild(rCtx.$static$, elm, node);
+            directAppendChild(elm, node);
         }
         return elm;
     };
@@ -6990,8 +6979,8 @@
             elCtx.$parent$ = ssrCtx.hostCtx;
             return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
         }
-        if (tagName === SSRComment) {
-            stream.write('<!--' + node.props.data + '-->');
+        if (tagName === SSRRaw) {
+            stream.write(node.props.data);
             return;
         }
         if (tagName === InternalSSRStream) {
@@ -7133,7 +7122,7 @@
         }
         else if (isJSXNode(children) &&
             isFunction(children.type) &&
-            children.type !== SSRComment &&
+            children.type !== SSRRaw &&
             children.type !== InternalSSRStream &&
             children.type !== Virtual) {
             const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
@@ -7798,7 +7787,7 @@
     // </docs>
     const useStylesScopedQrl = (styles) => {
         return {
-            scopeId: _useStyles(styles, getScopedStyles, true),
+            scopeId: ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true),
         };
     };
     // <docs markdown="../readme.md#useStylesScoped">
@@ -7895,8 +7884,10 @@
 
     exports.$ = $;
     exports.Fragment = Fragment;
+    exports.RenderOnce = RenderOnce;
     exports.Resource = Resource;
     exports.SSRComment = SSRComment;
+    exports.SSRRaw = SSRRaw;
     exports.SSRStream = SSRStream;
     exports.SSRStreamBlock = SSRStreamBlock;
     exports.SkipRender = SkipRender;
@@ -7928,7 +7919,6 @@
     exports.useClientEffect$ = useClientEffect$;
     exports.useClientEffectQrl = useClientEffectQrl;
     exports.useContext = useContext;
-    exports.useContextBoundary = useContextBoundary;
     exports.useContextProvider = useContextProvider;
     exports.useEnvData = useEnvData;
     exports.useErrorBoundary = useErrorBoundary;

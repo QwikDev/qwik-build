@@ -1955,6 +1955,13 @@ declare interface RenderContext {
 /**
  * @alpha
  */
+export declare const RenderOnce: FunctionComponent<{
+    children?: any;
+}>;
+
+/**
+ * @alpha
+ */
 declare interface RenderOperation {
     $operation$: (...args: any[]) => void;
     $args$: any[];
@@ -2254,6 +2261,13 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
  * @alpha
  */
 export declare const SSRComment: FunctionComponent<{
+    data: string;
+}>;
+
+/**
+ * @alpha
+ */
+export declare const SSRRaw: FunctionComponent<{
     data: string;
 }>;
 
@@ -2827,11 +2841,6 @@ declare interface UseContext {
 export declare const useContext: UseContext;
 
 /**
- * @alpha
- */
-export declare const useContextBoundary: (...ids: Context<any>[]) => void;
-
-/**
  * Assign a value to a Context.
  *
  * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
@@ -2992,7 +3001,7 @@ export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
  *
  * @alpha
  */
-export declare const useOn: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * Register a listener on `document`.
@@ -3020,7 +3029,7 @@ export declare const useOn: (event: string, eventQrl: QRL<(ev: Event) => void>) 
  *
  * @alpha
  */
-export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * Register a listener on `window`.
@@ -3049,7 +3058,7 @@ export declare const useOnDocument: (event: string, eventQrl: QRL<(ev: Event) =>
  *
  * @alpha
  */
-export declare const useOnWindow: (event: string, eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
 /**
  * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed

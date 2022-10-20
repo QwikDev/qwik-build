@@ -1009,7 +1009,12 @@ const _useOn = (eventName, eventQrl) => {
     const invokeCtx = useInvokeContext();
     const elCtx = getContext(invokeCtx.$hostElement$);
     assertQrl(eventQrl);
-    elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+    if (typeof eventName === 'string') {
+        elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+    }
+    else {
+        elCtx.li.push(...eventName.map((name) => [normalizeOnProp(name), eventQrl]));
+    }
     elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
 };
 
@@ -1176,6 +1181,9 @@ const QOnce = 'qonce';
  * @alpha
  */
 const SkipRender = Symbol('skip render');
+/**
+ * @alpha
+ */
 const RenderOnce = (props, key) => {
     return jsx(Virtual, {
         ...props,
@@ -1185,7 +1193,11 @@ const RenderOnce = (props, key) => {
 /**
  * @alpha
  */
-const SSRComment = (() => null);
+const SSRRaw = (() => null);
+/**
+ * @alpha
+ */
+const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
 /**
  * @alpha
  */
@@ -1845,29 +1857,6 @@ const useContextProvider = (context, newValue) => {
         verifySerializable(newValue);
     }
     contexts.set(context.id, newValue);
-    set(true);
-};
-/**
- * @alpha
- */
-const useContextBoundary = (...ids) => {
-    const { get, set, ctx } = useSequentialScope();
-    if (get !== undefined) {
-        return;
-    }
-    const hostElement = ctx.$hostElement$;
-    const hostCtx = getContext(hostElement);
-    let contexts = hostCtx.$contexts$;
-    if (!contexts) {
-        hostCtx.$contexts$ = contexts = new Map();
-    }
-    for (const c of ids) {
-        const value = resolveContext(c, hostElement, ctx.$renderCtx$);
-        if (value !== undefined) {
-            contexts.set(c.id, value);
-        }
-    }
-    contexts.set('_', true);
     set(true);
 };
 // <docs markdown="../readme.md#useContext">
@@ -3104,7 +3093,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     }
     const nodes = children.map((ch) => createElm(rCtx, ch, flags, promises));
     for (const node of nodes) {
-        appendChild(rCtx.$static$, elm, node);
+        directAppendChild(elm, node);
     }
     return elm;
 };
@@ -6978,8 +6967,8 @@ const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
         elCtx.$parent$ = ssrCtx.hostCtx;
         return renderNodeVirtual(node, elCtx, undefined, ssrCtx, stream, flags, beforeClose);
     }
-    if (tagName === SSRComment) {
-        stream.write('<!--' + node.props.data + '-->');
+    if (tagName === SSRRaw) {
+        stream.write(node.props.data);
         return;
     }
     if (tagName === InternalSSRStream) {
@@ -7121,7 +7110,7 @@ const _flatVirtualChildren = (children, ssrCtx) => {
     }
     else if (isJSXNode(children) &&
         isFunction(children.type) &&
-        children.type !== SSRComment &&
+        children.type !== SSRRaw &&
         children.type !== InternalSSRStream &&
         children.type !== Virtual) {
         const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
@@ -7786,7 +7775,7 @@ const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
 // </docs>
 const useStylesScopedQrl = (styles) => {
     return {
-        scopeId: _useStyles(styles, getScopedStyles, true),
+        scopeId: ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true),
     };
 };
 // <docs markdown="../readme.md#useStylesScoped">
@@ -7881,5 +7870,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, Resource, SSRComment, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextBoundary, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext$1 as createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
 //# sourceMappingURL=core.mjs.map
