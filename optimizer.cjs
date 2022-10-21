@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.11.1
+ * @builder.io/qwik/optimizer 0.12.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.11.1"
+    qwik: "0.12.0"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2162,7 +2162,11 @@ globalThis.qwikOptimizer = function(module) {
                   if (!hasJsScript) {
                     const bundleOutDir = sys.path.dirname(bundeName);
                     const fs = await sys.dynamicImport("node:fs");
-                    await fs.promises.writeFile(sys.path.join(opts.outDir, bundleOutDir, js), `import("./${moduleName}").catch((e) => { console.error(e); process.exit(1); });`);
+                    const folder = sys.path.join(opts.outDir, bundleOutDir);
+                    await fs.promises.mkdir(folder, {
+                      recursive: true
+                    });
+                    await fs.promises.writeFile(sys.path.join(folder, js), `import("./${moduleName}").catch((e) => { console.error(e); process.exit(1); });`);
                   }
                 }
               } catch (e) {
