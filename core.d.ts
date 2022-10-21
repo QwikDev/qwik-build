@@ -78,6 +78,11 @@ export declare const $: <T>(expression: T) => QRL<T>;
 
 declare type A = [type: 0, subscriber: SubscriberEffect | SubscriberHost, key: string | undefined];
 
+declare interface AbstractView {
+    styleMedia: StyleMedia;
+    document: Document;
+}
+
 declare interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
@@ -315,7 +320,25 @@ declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     target?: string | undefined;
 }
 
-declare type BivariantEventHandler<T extends Event> = {
+declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
+    nativeEvent: E;
+    currentTarget: C;
+    target: T;
+    bubbles: boolean;
+    cancelable: boolean;
+    defaultPrevented: boolean;
+    eventPhase: number;
+    isTrusted: boolean;
+    preventDefault(): void;
+    isDefaultPrevented(): boolean;
+    stopPropagation(): void;
+    isPropagationStopped(): boolean;
+    persist(): void;
+    timeStamp: number;
+    type: string;
+}
+
+declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event> = {
     bivarianceHack(event: T, element: Element): any;
 }['bivarianceHack'];
 
@@ -323,7 +346,7 @@ declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-declare type Booleanish = 'true' | 'false';
+declare type Booleanish = boolean | `${boolean}`;
 
 declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
@@ -351,9 +374,6 @@ key: string | undefined
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
     width?: number | string | undefined;
-}
-
-declare interface ClassAttributes<T> {
 }
 
 declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -741,7 +761,7 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare interface DOMAttributes<T> extends QwikProps, QwikEvents {
+export declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
     children?: JSXChildren;
     key?: string | number;
 }
@@ -1051,7 +1071,7 @@ declare interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
-declare interface IntrinsicElements {
+declare interface IntrinsicHTMLElements {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
     address: HTMLAttributes<HTMLElement>;
@@ -1163,69 +1183,12 @@ declare interface IntrinsicElements {
     title: HTMLAttributes<HTMLTitleElement>;
     tr: HTMLAttributes<HTMLTableRowElement>;
     track: TrackHTMLAttributes<HTMLTrackElement>;
+    tt: HTMLAttributes<HTMLElement>;
     u: HTMLAttributes<HTMLElement>;
     ul: HTMLAttributes<HTMLUListElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
     webview: WebViewHTMLAttributes<HTMLWebViewElement_2>;
-    svg: SVGProps<SVGSVGElement>;
-    animate: SVGProps<SVGElement>;
-    animateMotion: SVGProps<SVGElement>;
-    animateTransform: SVGProps<SVGElement>;
-    circle: SVGProps<SVGCircleElement>;
-    clipPath: SVGProps<SVGClipPathElement>;
-    defs: SVGProps<SVGDefsElement>;
-    desc: SVGProps<SVGDescElement>;
-    ellipse: SVGProps<SVGEllipseElement>;
-    feBlend: SVGProps<SVGFEBlendElement>;
-    feColorMatrix: SVGProps<SVGFEColorMatrixElement>;
-    feComponentTransfer: SVGProps<SVGFEComponentTransferElement>;
-    feComposite: SVGProps<SVGFECompositeElement>;
-    feConvolveMatrix: SVGProps<SVGFEConvolveMatrixElement>;
-    feDiffuseLighting: SVGProps<SVGFEDiffuseLightingElement>;
-    feDisplacementMap: SVGProps<SVGFEDisplacementMapElement>;
-    feDistantLight: SVGProps<SVGFEDistantLightElement>;
-    feDropShadow: SVGProps<SVGFEDropShadowElement>;
-    feFlood: SVGProps<SVGFEFloodElement>;
-    feFuncA: SVGProps<SVGFEFuncAElement>;
-    feFuncB: SVGProps<SVGFEFuncBElement>;
-    feFuncG: SVGProps<SVGFEFuncGElement>;
-    feFuncR: SVGProps<SVGFEFuncRElement>;
-    feGaussianBlur: SVGProps<SVGFEGaussianBlurElement>;
-    feImage: SVGProps<SVGFEImageElement>;
-    feMerge: SVGProps<SVGFEMergeElement>;
-    feMergeNode: SVGProps<SVGFEMergeNodeElement>;
-    feMorphology: SVGProps<SVGFEMorphologyElement>;
-    feOffset: SVGProps<SVGFEOffsetElement>;
-    fePointLight: SVGProps<SVGFEPointLightElement>;
-    feSpecularLighting: SVGProps<SVGFESpecularLightingElement>;
-    feSpotLight: SVGProps<SVGFESpotLightElement>;
-    feTile: SVGProps<SVGFETileElement>;
-    feTurbulence: SVGProps<SVGFETurbulenceElement>;
-    filter: SVGProps<SVGFilterElement>;
-    foreignObject: SVGProps<SVGForeignObjectElement>;
-    g: SVGProps<SVGGElement>;
-    image: SVGProps<SVGImageElement>;
-    line: SVGProps<SVGLineElement>;
-    linearGradient: SVGProps<SVGLinearGradientElement>;
-    marker: SVGProps<SVGMarkerElement>;
-    mask: SVGProps<SVGMaskElement>;
-    metadata: SVGProps<SVGMetadataElement>;
-    mpath: SVGProps<SVGElement>;
-    path: SVGProps<SVGPathElement>;
-    pattern: SVGProps<SVGPatternElement>;
-    polygon: SVGProps<SVGPolygonElement>;
-    polyline: SVGProps<SVGPolylineElement>;
-    radialGradient: SVGProps<SVGRadialGradientElement>;
-    rect: SVGProps<SVGRectElement>;
-    stop: SVGProps<SVGStopElement>;
-    switch: SVGProps<SVGSwitchElement>;
-    symbol: SVGProps<SVGSymbolElement>;
-    text: SVGProps<SVGTextElement>;
-    textPath: SVGProps<SVGTextPathElement>;
-    tspan: SVGProps<SVGTSpanElement>;
-    use: SVGProps<SVGUseElement>;
-    view: SVGProps<SVGViewElement>;
 }
 
 declare interface InvokeContext {
@@ -1379,10 +1342,34 @@ export declare type MountFn<T> = () => ValueOrPromise<T>;
  */
 export declare const mutable: <T>(v: T) => T;
 
+declare type NativeAnimationEvent = AnimationEvent;
+
+declare type NativeClipboardEvent = ClipboardEvent;
+
+declare type NativeCompositionEvent = CompositionEvent;
+
+declare type NativeDragEvent = DragEvent;
+
 /**
  * @public
  */
 declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | QRL<BivariantEventHandler<T>>[];
+
+declare type NativeFocusEvent = FocusEvent;
+
+declare type NativeKeyboardEvent = KeyboardEvent;
+
+declare type NativeMouseEvent = MouseEvent;
+
+declare type NativePointerEvent = PointerEvent;
+
+declare type NativeTouchEvent = TouchEvent;
+
+declare type NativeTransitionEvent = TransitionEvent;
+
+declare type NativeUIEvent = UIEvent;
+
+declare type NativeWheelEvent = WheelEvent;
 
 /**
  * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
@@ -1465,8 +1452,8 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID) => Promise<SnapshotResult>;
 
-declare type PreventDefault = {
-    [K in keyof QwikEventMap as `preventdefault:${Lowercase<K>}`]?: boolean;
+declare type PreventDefault<T> = {
+    [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
 declare interface ProcessedJSXNode {
@@ -1719,8 +1706,26 @@ declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
+declare interface QwikAnimationEvent<T = Element> extends SyntheticEvent<T, NativeAnimationEvent> {
+    animationName: string;
+    elapsedTime: number;
+    pseudoElement: string;
+}
+
+declare interface QwikChangeEvent<T = Element> extends SyntheticEvent<T> {
+    target: EventTarget & T;
+}
+
+declare interface QwikClipboardEvent<T = Element> extends SyntheticEvent<T, NativeClipboardEvent> {
+    clipboardData: DataTransfer;
+}
+
+declare interface QwikCompositionEvent<T = Element> extends SyntheticEvent<T, NativeCompositionEvent> {
+    data: string;
+}
+
 declare interface QwikCustomEvents {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: NativeEventHandler<Event> | undefined;
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event>> | SingleOrArray<Function> | SingleOrArray<undefined>;
 }
 
 declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1736,134 +1741,143 @@ declare interface QwikCustomHTMLElement extends HTMLElement {
 export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
 
+declare interface QwikDragEvent<T = Element> extends QwikMouseEvent<T, NativeDragEvent> {
+    dataTransfer: DataTransfer;
+}
+
 declare type QwikElement = Element | VirtualElement;
 
-declare type QwikEventMap = {
-    Copy: ClipboardEvent;
-    CopyCapture: ClipboardEvent;
-    Cut: ClipboardEvent;
-    CutCapture: ClipboardEvent;
-    Paste: ClipboardEvent;
-    PasteCapture: ClipboardEvent;
-    CompositionEnd: CompositionEvent;
-    CompositionEndCapture: CompositionEvent;
-    CompositionStart: CompositionEvent;
-    CompositionStartCapture: CompositionEvent;
-    CompositionUpdate: CompositionEvent;
-    CompositionUpdateCapture: CompositionEvent;
-    Focus: FocusEvent;
-    FocusCapture: FocusEvent;
-    Focusin: FocusEvent;
-    FocusinCapture: FocusEvent;
-    Focusout: FocusEvent;
-    FocusoutCapture: FocusEvent;
-    Blur: FocusEvent;
-    BlurCapture: FocusEvent;
-    Change: Event;
-    ChangeCapture: Event;
+declare type QwikEventMap<T> = {
+    Copy: QwikClipboardEvent<T>;
+    CopyCapture: QwikClipboardEvent<T>;
+    Cut: QwikClipboardEvent<T>;
+    CutCapture: QwikClipboardEvent<T>;
+    Paste: QwikClipboardEvent<T>;
+    PasteCapture: QwikClipboardEvent<T>;
+    CompositionEnd: QwikCompositionEvent<T>;
+    CompositionEndCapture: QwikCompositionEvent<T>;
+    CompositionStart: QwikCompositionEvent<T>;
+    CompositionStartCapture: QwikCompositionEvent<T>;
+    CompositionUpdate: QwikCompositionEvent<T>;
+    CompositionUpdateCapture: QwikCompositionEvent<T>;
+    Focus: QwikFocusEvent<T>;
+    FocusCapture: QwikFocusEvent<T>;
+    Focusin: QwikFocusEvent<T>;
+    FocusinCapture: QwikFocusEvent<T>;
+    Focusout: QwikFocusEvent<T>;
+    FocusoutCapture: QwikFocusEvent<T>;
+    Blur: QwikFocusEvent<T>;
+    BlurCapture: QwikFocusEvent<T>;
+    Change: QwikChangeEvent<T>;
+    ChangeCapture: QwikChangeEvent<T>;
     Input: Event;
     InputCapture: Event;
     Reset: Event;
     ResetCapture: Event;
     Submit: Event;
     SubmitCapture: Event;
-    Invalid: Event;
-    InvalidCapture: Event;
+    Invalid: QwikInvalidEvent<T>;
+    InvalidCapture: QwikInvalidEvent<T>;
     Load: Event;
     LoadCapture: Event;
     Error: Event;
     ErrorCapture: Event;
-    KeyDown: KeyboardEvent;
-    KeyDownCapture: KeyboardEvent;
-    KeyPress: KeyboardEvent;
-    KeyPressCapture: KeyboardEvent;
-    KeyUp: KeyboardEvent;
-    KeyUpCapture: KeyboardEvent;
-    AuxClick: MouseEvent;
-    Click: MouseEvent;
-    ClickCapture: MouseEvent;
-    ContextMenu: MouseEvent;
-    ContextMenuCapture: MouseEvent;
-    DblClick: MouseEvent;
-    DblClickCapture: MouseEvent;
-    Drag: DragEvent;
-    DragCapture: DragEvent;
-    DragEnd: DragEvent;
-    DragEndCapture: DragEvent;
-    DragEnter: DragEvent;
-    DragEnterCapture: DragEvent;
-    DragExit: DragEvent;
-    DragExitCapture: DragEvent;
-    DragLeave: DragEvent;
-    DragLeaveCapture: DragEvent;
-    DragOver: DragEvent;
-    DragOverCapture: DragEvent;
-    DragStart: DragEvent;
-    DragStartCapture: DragEvent;
-    Drop: DragEvent;
-    DropCapture: DragEvent;
-    MouseDown: MouseEvent;
-    MouseDownCapture: MouseEvent;
-    MouseEnter: MouseEvent;
-    MouseLeave: MouseEvent;
-    MouseMove: MouseEvent;
-    MouseMoveCapture: MouseEvent;
-    MouseOut: MouseEvent;
-    MouseOutCapture: MouseEvent;
-    MouseOver: MouseEvent;
-    MouseOverCapture: MouseEvent;
-    MouseUp: MouseEvent;
-    MouseUpCapture: MouseEvent;
-    TouchCancel: TouchEvent;
-    TouchCancelCapture: TouchEvent;
-    TouchEnd: TouchEvent;
-    TouchEndCapture: TouchEvent;
-    TouchMove: TouchEvent;
-    TouchMoveCapture: TouchEvent;
-    TouchStart: TouchEvent;
-    TouchStartCapture: TouchEvent;
-    PointerDown: PointerEvent;
-    PointerDownCapture: PointerEvent;
-    PointerMove: PointerEvent;
-    PointerMoveCapture: PointerEvent;
-    PointerUp: PointerEvent;
-    PointerUpCapture: PointerEvent;
-    PointerCancel: PointerEvent;
-    PointerCancelCapture: PointerEvent;
-    PointerEnter: PointerEvent;
-    PointerEnterCapture: PointerEvent;
-    PointerLeave: PointerEvent;
-    PointerLeaveCapture: PointerEvent;
-    PointerOver: PointerEvent;
-    PointerOverCapture: PointerEvent;
-    PointerOut: PointerEvent;
-    PointerOutCapture: PointerEvent;
-    GotPointerCapture: PointerEvent;
-    GotPointerCaptureCapture: PointerEvent;
-    LostPointerCapture: PointerEvent;
-    LostPointerCaptureCapture: PointerEvent;
-    Scroll: UIEvent;
-    ScrollCapture: UIEvent;
-    Wheel: WheelEvent;
-    WheelCapture: WheelEvent;
-    AnimationStart: AnimationEvent;
-    AnimationStartCapture: AnimationEvent;
-    AnimationEnd: AnimationEvent;
-    AnimationEndCapture: AnimationEvent;
-    AnimationIteration: AnimationEvent;
-    AnimationIterationCapture: AnimationEvent;
-    TransitionEnd: TransitionEvent;
-    TransitionEndCapture: TransitionEvent;
+    KeyDown: QwikKeyboardEvent<T>;
+    KeyDownCapture: QwikKeyboardEvent<T>;
+    KeyPress: QwikKeyboardEvent<T>;
+    KeyPressCapture: QwikKeyboardEvent<T>;
+    KeyUp: QwikKeyboardEvent<T>;
+    KeyUpCapture: QwikKeyboardEvent<T>;
+    AuxClick: QwikMouseEvent<T>;
+    Click: QwikMouseEvent<T>;
+    ClickCapture: QwikMouseEvent<T>;
+    ContextMenu: QwikMouseEvent<T>;
+    ContextMenuCapture: QwikMouseEvent<T>;
+    DblClick: QwikMouseEvent<T>;
+    DblClickCapture: QwikMouseEvent<T>;
+    Drag: QwikDragEvent<T>;
+    DragCapture: QwikDragEvent<T>;
+    DragEnd: QwikDragEvent<T>;
+    DragEndCapture: QwikDragEvent<T>;
+    DragEnter: QwikDragEvent<T>;
+    DragEnterCapture: QwikDragEvent<T>;
+    DragExit: QwikDragEvent<T>;
+    DragExitCapture: QwikDragEvent<T>;
+    DragLeave: QwikDragEvent<T>;
+    DragLeaveCapture: QwikDragEvent<T>;
+    DragOver: QwikDragEvent<T>;
+    DragOverCapture: QwikDragEvent<T>;
+    DragStart: QwikDragEvent<T>;
+    DragStartCapture: QwikDragEvent<T>;
+    Drop: QwikDragEvent<T>;
+    DropCapture: QwikDragEvent<T>;
+    MouseDown: QwikMouseEvent<T>;
+    MouseDownCapture: QwikMouseEvent<T>;
+    MouseEnter: QwikMouseEvent<T>;
+    MouseLeave: QwikMouseEvent<T>;
+    MouseMove: QwikMouseEvent<T>;
+    MouseMoveCapture: QwikMouseEvent<T>;
+    MouseOut: QwikMouseEvent<T>;
+    MouseOutCapture: QwikMouseEvent<T>;
+    MouseOver: QwikMouseEvent<T>;
+    MouseOverCapture: QwikMouseEvent<T>;
+    MouseUp: QwikMouseEvent<T>;
+    MouseUpCapture: QwikMouseEvent<T>;
+    TouchCancel: QwikTouchEvent<T>;
+    TouchCancelCapture: QwikTouchEvent<T>;
+    TouchEnd: QwikTouchEvent<T>;
+    TouchEndCapture: QwikTouchEvent<T>;
+    TouchMove: QwikTouchEvent<T>;
+    TouchMoveCapture: QwikTouchEvent<T>;
+    TouchStart: QwikTouchEvent<T>;
+    TouchStartCapture: QwikTouchEvent<T>;
+    PointerDown: QwikPointerEvent<T>;
+    PointerDownCapture: QwikPointerEvent<T>;
+    PointerMove: QwikPointerEvent<T>;
+    PointerMoveCapture: QwikPointerEvent<T>;
+    PointerUp: QwikPointerEvent<T>;
+    PointerUpCapture: QwikPointerEvent<T>;
+    PointerCancel: QwikPointerEvent<T>;
+    PointerCancelCapture: QwikPointerEvent<T>;
+    PointerEnter: QwikPointerEvent<T>;
+    PointerEnterCapture: QwikPointerEvent<T>;
+    PointerLeave: QwikPointerEvent<T>;
+    PointerLeaveCapture: QwikPointerEvent<T>;
+    PointerOver: QwikPointerEvent<T>;
+    PointerOverCapture: QwikPointerEvent<T>;
+    PointerOut: QwikPointerEvent<T>;
+    PointerOutCapture: QwikPointerEvent<T>;
+    GotPointerCapture: QwikPointerEvent<T>;
+    GotPointerCaptureCapture: QwikPointerEvent<T>;
+    LostPointerCapture: QwikPointerEvent<T>;
+    LostPointerCaptureCapture: QwikPointerEvent<T>;
+    Scroll: QwikUIEvent<T>;
+    ScrollCapture: QwikUIEvent<T>;
+    Wheel: QwikWheelEvent<T>;
+    WheelCapture: QwikWheelEvent<T>;
+    AnimationStart: QwikAnimationEvent<T>;
+    AnimationStartCapture: QwikAnimationEvent<T>;
+    AnimationEnd: QwikAnimationEvent<T>;
+    AnimationEndCapture: QwikAnimationEvent<T>;
+    AnimationIteration: QwikAnimationEvent<T>;
+    AnimationIterationCapture: QwikAnimationEvent<T>;
+    TransitionEnd: QwikTransitionEvent<T>;
+    TransitionEndCapture: QwikTransitionEvent<T>;
 };
 
 /**
  * @public
  */
-declare interface QwikEvents extends QwikKnownEvents, QwikCustomEvents {
+declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents {
     'document:onLoad$'?: BivariantEventHandler<Event>;
-    'document:onScroll$'?: BivariantEventHandler<Event>;
+    'document:onScroll$'?: BivariantEventHandler<QwikUIEvent<T>>;
     'document:onVisible$'?: BivariantEventHandler<Event>;
     'document:onVisibilityChange$'?: BivariantEventHandler<Event>;
+}
+
+declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, NativeFocusEvent> {
+    relatedTarget: EventTarget | null;
+    target: EventTarget & T;
 }
 
 /**
@@ -1875,9 +1889,13 @@ declare interface QwikIntrinsicAttributes {
 /**
  * @public
  */
-export declare interface QwikIntrinsicElements extends IntrinsicElements {
+export declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
     script: QwikScriptHTMLAttributes<HTMLScriptElement>;
     [key: string]: QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
+}
+
+declare interface QwikInvalidEvent<T = Element> extends SyntheticEvent<T> {
+    target: EventTarget & T;
 }
 
 /**
@@ -1895,11 +1913,67 @@ export declare namespace QwikJSX {
     }
 }
 
-declare type QwikKnownEvents = {
-    [K in keyof QwikEventMap as `${'document:' | 'window:' | ''}on${K}$`]?: NativeEventHandler<QwikEventMap[K]>;
+declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
+    altKey: boolean;
+    charCode: number;
+    ctrlKey: boolean;
+    /**
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     */
+    getModifierState(key: string): boolean;
+    /**
+     * See the [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
+     */
+    key: string;
+    keyCode: number;
+    locale: string;
+    location: number;
+    metaKey: boolean;
+    repeat: boolean;
+    shiftKey: boolean;
+    which: number;
+}
+
+declare type QwikKnownEvents<T> = {
+    [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K]>>;
 };
 
-declare interface QwikProps extends PreventDefault {
+declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> extends SyntheticEvent<T, E> {
+    altKey: boolean;
+    button: number;
+    buttons: number;
+    clientX: number;
+    clientY: number;
+    ctrlKey: boolean;
+    /**
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     */
+    getModifierState(key: string): boolean;
+    metaKey: boolean;
+    movementX: number;
+    movementY: number;
+    pageX: number;
+    pageY: number;
+    relatedTarget: EventTarget | null;
+    screenX: number;
+    screenY: number;
+    shiftKey: boolean;
+    x: number;
+    y: number;
+}
+
+declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, NativePointerEvent> {
+    pointerId: number;
+    pressure: number;
+    tiltX: number;
+    tiltY: number;
+    width: number;
+    height: number;
+    pointerType: 'mouse' | 'pen' | 'touch';
+    isPrimary: boolean;
+}
+
+declare interface QwikProps<T> extends PreventDefault<T> {
     class?: string | {
         [className: string]: boolean;
     } | string[];
@@ -1918,6 +1992,38 @@ declare interface QwikProps extends PreventDefault {
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
     events?: string[];
+}
+
+declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTouchEvent> {
+    altKey: boolean;
+    changedTouches: TouchList;
+    ctrlKey: boolean;
+    /**
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     */
+    getModifierState(key: string): boolean;
+    metaKey: boolean;
+    shiftKey: boolean;
+    targetTouches: TouchList;
+    touches: TouchList;
+}
+
+declare interface QwikTransitionEvent<T = Element> extends SyntheticEvent<T, NativeTransitionEvent> {
+    elapsedTime: number;
+    propertyName: string;
+    pseudoElement: string;
+}
+
+declare interface QwikUIEvent<T = Element> extends SyntheticEvent<T, NativeUIEvent> {
+    detail: number;
+    view: AbstractView;
+}
+
+declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, NativeWheelEvent> {
+    deltaMode: number;
+    deltaX: number;
+    deltaY: number;
+    deltaZ: number;
 }
 
 /**
@@ -2185,6 +2291,8 @@ export declare interface Signal<T = any> {
     value: T;
 }
 
+declare type SingleOrArray<T> = T | T[];
+
 /**
  * @alpha
  */
@@ -2322,271 +2430,7 @@ declare interface SubscriptionManager {
 
 declare type Subscriptions = A | SubscriberSignal;
 
-declare interface SVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    class?: string | {
-        [className: string]: boolean;
-    } | undefined;
-    className?: string;
-    color?: string | undefined;
-    height?: number | string | undefined;
-    id?: string | undefined;
-    lang?: string | undefined;
-    max?: number | string | undefined;
-    media?: string | undefined;
-    method?: string | undefined;
-    min?: number | string | undefined;
-    name?: string | undefined;
-    style?: Record<string, string | number> | string | undefined;
-    target?: string | undefined;
-    type?: string | undefined;
-    width?: number | string | undefined;
-    role?: string | undefined;
-    tabindex?: number | undefined;
-    crossOrigin?: HTMLCrossOriginAttribute;
-    'accent-height'?: number | string | undefined;
-    accumulate?: 'none' | 'sum' | undefined;
-    additive?: 'replace' | 'sum' | undefined;
-    'alignment-baseline'?: 'auto' | 'baseline' | 'before-edge' | 'text-before-edge' | 'middle' | 'central' | 'after-edge' | 'text-after-edge' | 'ideographic' | 'alphabetic' | 'hanging' | 'mathematical' | 'inherit' | undefined;
-    allowReorder?: 'no' | 'yes' | undefined;
-    alphabetic?: number | string | undefined;
-    amplitude?: number | string | undefined;
-    'arabic-form'?: 'initial' | 'medial' | 'terminal' | 'isolated' | undefined;
-    ascent?: number | string | undefined;
-    attributeName?: string | undefined;
-    attributeType?: string | undefined;
-    autoReverse?: Booleanish | undefined;
-    azimuth?: number | string | undefined;
-    baseFrequency?: number | string | undefined;
-    'baseline-shift'?: number | string | undefined;
-    baseProfile?: number | string | undefined;
-    bbox?: number | string | undefined;
-    begin?: number | string | undefined;
-    bias?: number | string | undefined;
-    by?: number | string | undefined;
-    calcMode?: number | string | undefined;
-    'cap-height'?: number | string | undefined;
-    clip?: number | string | undefined;
-    'clip-path'?: string | undefined;
-    clipPathUnits?: number | string | undefined;
-    'clip-rule'?: number | string | undefined;
-    'color-interpolation'?: number | string | undefined;
-    'color-interpolation-filters'?: 'auto' | 's-rGB' | 'linear-rGB' | 'inherit' | undefined;
-    'color-profile'?: number | string | undefined;
-    'color-rendering'?: number | string | undefined;
-    contentScriptType?: number | string | undefined;
-    contentStyleType?: number | string | undefined;
-    cursor?: number | string;
-    cx?: number | string | undefined;
-    cy?: number | string | undefined;
-    d?: string | undefined;
-    decelerate?: number | string | undefined;
-    descent?: number | string | undefined;
-    diffuseConstant?: number | string | undefined;
-    direction?: number | string | undefined;
-    display?: number | string | undefined;
-    divisor?: number | string | undefined;
-    'dominant-baseline'?: number | string | undefined;
-    dur?: number | string | undefined;
-    dx?: number | string | undefined;
-    dy?: number | string | undefined;
-    'edge-mode'?: number | string | undefined;
-    elevation?: number | string | undefined;
-    'enable-background'?: number | string | undefined;
-    end?: number | string | undefined;
-    exponent?: number | string | undefined;
-    externalResourcesRequired?: number | string | undefined;
-    fill?: string | undefined;
-    'fill-opacity'?: number | string | undefined;
-    'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit' | undefined;
-    filter?: string | undefined;
-    filterRes?: number | string | undefined;
-    filterUnits?: number | string | undefined;
-    'flood-color'?: number | string | undefined;
-    'flood-opacity'?: number | string | undefined;
-    focusable?: number | string | undefined;
-    'font-family'?: string | undefined;
-    'font-size'?: number | string | undefined;
-    'font-size-adjust'?: number | string | undefined;
-    'font-stretch'?: number | string | undefined;
-    'font-style'?: number | string | undefined;
-    'font-variant'?: number | string | undefined;
-    'font-weight'?: number | string | undefined;
-    format?: number | string | undefined;
-    fr?: number | string | undefined;
-    from?: number | string | undefined;
-    fx?: number | string | undefined;
-    fy?: number | string | undefined;
-    g1?: number | string | undefined;
-    g2?: number | string | undefined;
-    'glyph-name'?: number | string | undefined;
-    'glyph-orientation-horizontal'?: number | string | undefined;
-    'glyph-orientation-vertical'?: number | string | undefined;
-    glyphRef?: number | string | undefined;
-    gradientTransform?: string | undefined;
-    gradientUnits?: string | undefined;
-    hanging?: number | string | undefined;
-    'horiz-adv-x'?: number | string | undefined;
-    'horiz-origin-x'?: number | string | undefined;
-    href?: string | undefined;
-    ideographic?: number | string | undefined;
-    'image-rendering'?: number | string | undefined;
-    in2?: number | string | undefined;
-    in?: string | undefined;
-    intercept?: number | string | undefined;
-    k1?: number | string | undefined;
-    k2?: number | string | undefined;
-    k3?: number | string | undefined;
-    k4?: number | string | undefined;
-    k?: number | string | undefined;
-    kernelMatrix?: number | string | undefined;
-    kernelUnitLength?: number | string | undefined;
-    kerning?: number | string | undefined;
-    keyPoints?: number | string | undefined;
-    keySplines?: number | string | undefined;
-    keyTimes?: number | string | undefined;
-    lengthAdjust?: number | string | undefined;
-    'letter-spacing'?: number | string | undefined;
-    'lighting-color'?: number | string | undefined;
-    limitingConeAngle?: number | string | undefined;
-    local?: number | string | undefined;
-    'marker-end'?: string | undefined;
-    markerHeight?: number | string | undefined;
-    'marker-mid'?: string | undefined;
-    'marker-start'?: string | undefined;
-    markerUnits?: number | string | undefined;
-    markerWidth?: number | string | undefined;
-    mask?: string | undefined;
-    maskContentUnits?: number | string | undefined;
-    maskUnits?: number | string | undefined;
-    mathematical?: number | string | undefined;
-    mode?: number | string | undefined;
-    numOctaves?: number | string | undefined;
-    offset?: number | string | undefined;
-    opacity?: number | string | undefined;
-    operator?: number | string | undefined;
-    order?: number | string | undefined;
-    orient?: number | string | undefined;
-    orientation?: number | string | undefined;
-    origin?: number | string | undefined;
-    overflow?: number | string | undefined;
-    'overline-position'?: number | string | undefined;
-    'overline-thickness'?: number | string | undefined;
-    'paint-order'?: number | string | undefined;
-    panose1?: number | string | undefined;
-    path?: string | undefined;
-    pathLength?: number | string | undefined;
-    patternContentUnits?: string | undefined;
-    patternTransform?: number | string | undefined;
-    patternUnits?: string | undefined;
-    'pointer-events'?: number | string | undefined;
-    points?: string | undefined;
-    pointsAtX?: number | string | undefined;
-    pointsAtY?: number | string | undefined;
-    pointsAtZ?: number | string | undefined;
-    preserveAlpha?: number | string | undefined;
-    preserveAspectRatio?: string | undefined;
-    primitiveUnits?: number | string | undefined;
-    r?: number | string | undefined;
-    radius?: number | string | undefined;
-    refX?: number | string | undefined;
-    refY?: number | string | undefined;
-    'rendering-intent'?: number | string | undefined;
-    repeatCount?: number | string | undefined;
-    repeatDur?: number | string | undefined;
-    requiredextensions?: number | string | undefined;
-    requiredFeatures?: number | string | undefined;
-    restart?: number | string | undefined;
-    result?: string | undefined;
-    rotate?: number | string | undefined;
-    rx?: number | string | undefined;
-    ry?: number | string | undefined;
-    scale?: number | string | undefined;
-    seed?: number | string | undefined;
-    'shape-rendering'?: number | string | undefined;
-    slope?: number | string | undefined;
-    spacing?: number | string | undefined;
-    specularConstant?: number | string | undefined;
-    specularExponent?: number | string | undefined;
-    speed?: number | string | undefined;
-    spreadMethod?: string | undefined;
-    startOffset?: number | string | undefined;
-    stdDeviation?: number | string | undefined;
-    stemh?: number | string | undefined;
-    stemv?: number | string | undefined;
-    stitchTiles?: number | string | undefined;
-    'stop-color'?: string | undefined;
-    'stop-opacity'?: number | string | undefined;
-    'strikethrough-position'?: number | string | undefined;
-    'strikethrough-thickness'?: number | string | undefined;
-    string?: number | string | undefined;
-    stroke?: string | undefined;
-    'stroke-dasharray'?: string | number | undefined;
-    'stroke-dashoffset'?: string | number | undefined;
-    'stroke-linecap'?: 'butt' | 'round' | 'square' | 'inherit' | undefined;
-    'stroke-linejoin'?: 'miter' | 'round' | 'bevel' | 'inherit' | undefined;
-    'stroke-miterlimit'?: string | undefined;
-    'stroke-opacity'?: number | string | undefined;
-    'stroke-width'?: number | string | undefined;
-    surfaceScale?: number | string | undefined;
-    systemLanguage?: number | string | undefined;
-    tableValues?: number | string | undefined;
-    targetX?: number | string | undefined;
-    targetY?: number | string | undefined;
-    'text-anchor'?: string | undefined;
-    'text-decoration'?: number | string | undefined;
-    textLength?: number | string | undefined;
-    'text-rendering'?: number | string | undefined;
-    to?: number | string | undefined;
-    transform?: string | undefined;
-    u1?: number | string | undefined;
-    u2?: number | string | undefined;
-    'underline-position'?: number | string | undefined;
-    'underline-thickness'?: number | string | undefined;
-    unicode?: number | string | undefined;
-    'unicode-bidi'?: number | string | undefined;
-    'unicode-range'?: number | string | undefined;
-    'units-per-em'?: number | string | undefined;
-    'v-alphabetic'?: number | string | undefined;
-    values?: string | undefined;
-    'vector-effect'?: number | string | undefined;
-    version?: string | undefined;
-    'vert-adv-y'?: number | string | undefined;
-    'vert-origin-x'?: number | string | undefined;
-    'vert-origin-y'?: number | string | undefined;
-    'v-hanging'?: number | string | undefined;
-    'v-ideographic'?: number | string | undefined;
-    viewBox?: string | undefined;
-    viewTarget?: number | string | undefined;
-    visibility?: number | string | undefined;
-    'v-mathematical'?: number | string | undefined;
-    widths?: number | string | undefined;
-    'word-spacing'?: number | string | undefined;
-    'writing-mode'?: number | string | undefined;
-    x1?: number | string | undefined;
-    x2?: number | string | undefined;
-    x?: number | string | undefined;
-    'x-channel-selector'?: string | undefined;
-    'x-height'?: number | string | undefined;
-    xlinkActuate?: string | undefined;
-    xlinkArcrole?: string | undefined;
-    xlinkHref?: string | undefined;
-    xlinkRole?: string | undefined;
-    xlinkShow?: string | undefined;
-    xlinkTitle?: string | undefined;
-    xlinkType?: string | undefined;
-    xmlBase?: string | undefined;
-    xmlLang?: string | undefined;
-    xmlns?: string | undefined;
-    xmlSpace?: string | undefined;
-    y1?: number | string | undefined;
-    y2?: number | string | undefined;
-    y?: number | string | undefined;
-    yChannelSelector?: string | undefined;
-    z?: number | string | undefined;
-    zoomAndPan?: string | undefined;
-}
-
-declare interface SVGProps<T> extends SVGAttributes<T>, ClassAttributes<T> {
+declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
 }
 
 declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
