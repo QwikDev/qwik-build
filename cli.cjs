@@ -11757,6 +11757,14 @@ function ora(options) {
 var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function installDeps(pkgManager, dir) {
   let installChild;
+  const errorMessage = `
+${kleur_default.bgRed(
+    `  ${pkgManager} install failed  `
+  )}
+
+You might need to run "${kleur_default.green(
+    `${pkgManager} install`
+  )}" manually inside the root of your project to install the dependencies.`;
   const install = new Promise((resolve2) => {
     try {
       installChild = (0, import_cross_spawn.default)(pkgManager, ["install"], {
@@ -11764,12 +11772,18 @@ function installDeps(pkgManager, dir) {
         stdio: "ignore"
       });
       installChild.on("error", () => {
+        console.error(errorMessage);
         resolve2();
       });
-      installChild.on("close", () => {
-        resolve2();
+      installChild.on("close", (code) => {
+        if (code === 0) {
+          resolve2();
+        } else {
+          console.error(errorMessage);
+        }
       });
     } catch (e) {
+      console.error(errorMessage);
     }
   });
   const abort = async () => {
@@ -12393,8 +12407,8 @@ function logSuccessFooter(docs) {
 }
 function logNextStep(nextSteps) {
   if (nextSteps) {
-    console.log(`\u{1F534} ${kleur_default.bgGreen(` ${nextSteps.title ?? "ACTION REQUIRED!"} `)}`);
-    nextSteps.lines.forEach((step) => console.log(`${step}`));
+    console.log(`\u{1F7E3} ${kleur_default.bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
+    nextSteps.lines.forEach((step) => console.log(`   ${step}`));
     console.log(``);
   }
 }
@@ -12451,23 +12465,7 @@ async function runAddInteractive(app, id) {
   }).length > 0;
   let runInstall = false;
   if (integrationHasDeps) {
-    const pkgManager = getPackageManager();
-    const runInstallAnswer = await (0, import_prompts.default)(
-      {
-        type: "confirm",
-        name: "runInstall",
-        message: `Would you like to install ${pkgManager} dependencies?`,
-        initial: true
-      },
-      {
-        onCancel: async () => {
-          console.log("");
-          process.exit(0);
-        }
-      }
-    );
-    console.log(``);
-    runInstall = !!runInstallAnswer.runInstall;
+    runInstall = true;
   }
   const result = await updateApp({
     rootDir: app.rootDir,
