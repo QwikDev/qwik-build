@@ -20857,8 +20857,8 @@ var _platform = createPlatform();
 var setPlatform = (plt) => _platform = plt;
 
 // packages/qwik/src/testing/platform.ts
-var import_fs = require("fs");
-var import_url = require("url");
+var import_node_fs = require("fs");
+var import_node_url = require("url");
 function createPlatform2() {
   let render = null;
   const moduleCache = /* @__PURE__ */ new Map();
@@ -20928,10 +20928,10 @@ function toPath(url) {
   const normalizedUrl = new URL(String(url));
   normalizedUrl.hash = "";
   normalizedUrl.search = "";
-  const path = (0, import_url.fileURLToPath)(String(normalizedUrl));
+  const path = (0, import_node_url.fileURLToPath)(String(normalizedUrl));
   const importPaths = [path, ...testExts.map((ext) => path + ext)];
   for (const importPath of importPaths) {
-    if ((0, import_fs.existsSync)(importPath)) {
+    if ((0, import_node_fs.existsSync)(importPath)) {
       return importPath;
     }
   }
@@ -20947,10 +20947,9 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 var import_qwik_dom = __toESM(require_lib(), 1);
 
 // packages/qwik/src/testing/util.ts
-var import_path = require("path");
-var import_url2 = require("url");
+var import_node_url2 = require("url");
 function toFileUrl(filePath) {
-  return (0, import_url2.pathToFileURL)(filePath).href;
+  return (0, import_node_url2.pathToFileURL)(filePath).href;
 }
 function normalizeUrl(url) {
   if (url != null) {

@@ -497,7 +497,7 @@ async function getSystem() {
   sys.strictDynamicImport = sys.dynamicImport = path => import(path);
   false;
   if ("node" === sysEnv) {
-    sys.path = await sys.dynamicImport("path");
+    sys.path = await sys.dynamicImport("node:path");
     sys.cwd = () => process.cwd();
     sys.os = process.platform;
   }
@@ -509,7 +509,7 @@ var getPlatformInputFiles = async sys => {
     return sys.getInputFiles;
   }
   if ("node" === sys.env) {
-    const fs = await sys.dynamicImport("fs");
+    const fs = await sys.dynamicImport("node:fs");
     return async rootDir => {
       const getChildFilePaths = async dir => {
         const stats = await fs.promises.stat(dir);
@@ -561,7 +561,7 @@ async function loadPlatformBinding(sys) {
         for (const triple of triples) {
           try {
             {
-              const module = await sys.dynamicImport("module");
+              const module = await sys.dynamicImport("node:module");
               const mod2 = module.default.createRequire(import.meta.url)(`./bindings/${triple.platformArchABI}`);
               return mod2;
             }
@@ -574,11 +574,11 @@ async function loadPlatformBinding(sys) {
   }
   false;
   if ("node" === sysEnv) {
-    const url = await sys.dynamicImport("url");
+    const url = await sys.dynamicImport("node:url");
     const __dirname2 = sys.path.dirname(url.fileURLToPath(import.meta.url));
     const wasmPath = sys.path.join(__dirname2, "bindings", "qwik_wasm_bg.wasm");
     const mod = await sys.dynamicImport("./bindings/qwik.wasm.mjs");
-    const fs = await sys.dynamicImport("fs");
+    const fs = await sys.dynamicImport("node:fs");
     return new Promise(((resolve, reject) => {
       fs.readFile(wasmPath, ((err, buf) => {
         null != err ? reject(err) : resolve(buf);
@@ -1046,7 +1046,7 @@ function createPlugin(optimizerOptions = {}) {
       hasValidatedSource = true;
       const sys = getSys();
       if ("node" === sys.env) {
-        const fs = await sys.dynamicImport("fs");
+        const fs = await sys.dynamicImport("node:fs");
         if (!fs.existsSync(opts.rootDir)) {
           throw new Error(`Qwik rootDir "${opts.rootDir}" not found.`);
         }
@@ -1554,7 +1554,7 @@ async function formatError(sys, err) {
     if (loc) {
       err.loc = loc;
       if (loc.file) {
-        const fs = await sys.dynamicImport("fs");
+        const fs = await sys.dynamicImport("node:fs");
         const {normalizePath: normalizePath} = await sys.strictDynamicImport("vite");
         err.id = normalizePath(err.loc.file);
         try {
@@ -1724,7 +1724,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
               v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
               hook && (manifest.mapping[hook.name] = url2);
               const {pathId: pathId, query: query} = parseId(v.url);
-              "" === query && pathId.endsWith(".css") && manifest.injections.push({
+              "" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext))) && manifest.injections.push({
                 tag: "link",
                 location: "head",
                 attributes: {
@@ -1776,8 +1776,8 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
 }
 
 async function configurePreviewServer(middlewares, opts, sys, path) {
-  const fs = await sys.dynamicImport("fs");
-  const url = await sys.dynamicImport("url");
+  const fs = await sys.dynamicImport("node:fs");
+  const url = await sys.dynamicImport("node:url");
   const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
   const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
   if (!entryPreviewModulePath) {
@@ -1948,7 +1948,7 @@ function qwikVite(qwikViteOpts = {}) {
         pluginOpts.outDir = viteConfig.build?.outDir;
       }
       if ("node" === sys.env) {
-        const fs = await sys.dynamicImport("fs");
+        const fs = await sys.dynamicImport("node:fs");
         try {
           const rootDir = pluginOpts.rootDir ?? sys.cwd();
           const packageJsonPath = sys.path.join(rootDir, "package.json");
@@ -1960,7 +1960,7 @@ function qwikVite(qwikViteOpts = {}) {
             console.error(e);
           }
         } catch (e) {}
-        const nodeOs = await sys.dynamicImport("os");
+        const nodeOs = await sys.dynamicImport("node:os");
         tmpClientManifestPath = path.join(nodeOs.tmpdir(), "vite-plugin-qwik-q-manifest.json");
         if ("ssr" === target && !pluginOpts.manifestInput) {
           try {
@@ -2100,7 +2100,7 @@ function qwikVite(qwikViteOpts = {}) {
             imports: b.imports,
             dynamicImports: b.dynamicImports,
             size: b.code.length
-          }) : fileName.endsWith(".css") && injections.push({
+          }) : [ ".css", ".scss", ".sass" ].some((ext => fileName.endsWith(ext))) && injections.push({
             tag: "link",
             location: "head",
             attributes: {
@@ -2132,7 +2132,7 @@ function qwikVite(qwikViteOpts = {}) {
         "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
         const sys = qwikPlugin.getSys();
         if (tmpClientManifestPath && "node" === sys.env) {
-          const fs = await sys.dynamicImport("fs");
+          const fs = await sys.dynamicImport("node:fs");
           await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
         }
       }
@@ -2154,7 +2154,7 @@ function qwikVite(qwikViteOpts = {}) {
                 const hasJsScript = outputs.some((f => sys.path.basename(f) === js));
                 if (!hasJsScript) {
                   const bundleOutDir = sys.path.dirname(bundeName);
-                  const fs = await sys.dynamicImport("fs");
+                  const fs = await sys.dynamicImport("node:fs");
                   await fs.promises.writeFile(sys.path.join(opts.outDir, bundleOutDir, js), `import("./${moduleName}").catch((e) => { console.error(e); process.exit(1); });`);
                 }
               }
@@ -2180,7 +2180,7 @@ function qwikVite(qwikViteOpts = {}) {
     },
     handleHotUpdate(ctx) {
       qwikPlugin.log("handleHotUpdate()", ctx);
-      if (ctx.file.endsWith(".css")) {
+      if ([ ".css", ".scss", ".sass" ].some((ext => ctx.file.endsWith(ext)))) {
         qwikPlugin.log("handleHotUpdate()", "force css reload");
         ctx.server.ws.send({
           type: "full-reload"
@@ -2204,7 +2204,7 @@ function getViteDevModule(opts) {
 
 var findQwikRoots = async (sys, packageJsonPath) => {
   if ("node" === sys.env) {
-    const fs = await sys.dynamicImport("fs");
+    const fs = await sys.dynamicImport("node:fs");
     const {resolvePackageData: resolvePackageData} = await sys.strictDynamicImport("vite");
     try {
       const data = await fs.promises.readFile(packageJsonPath, {

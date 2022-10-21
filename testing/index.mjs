@@ -20925,7 +20925,6 @@ var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 var import_qwik_dom = __toESM(require_lib(), 1);
 
 // packages/qwik/src/testing/util.ts
-import { normalize } from "path";
 import { pathToFileURL } from "url";
 function toFileUrl(filePath) {
   return pathToFileURL(filePath).href;

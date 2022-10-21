@@ -11166,8 +11166,8 @@ function init(open, close) {
 var kleur_default = $;
 
 // packages/qwik/src/cli/utils/app-command.ts
-var import_fs = require("fs");
-var import_path = require("path");
+var import_node_fs = require("fs");
+var import_node_path = require("path");
 var AppCommand = class {
   constructor(opts) {
     this._rootDir = opts.rootDir;
@@ -11177,18 +11177,18 @@ var AppCommand = class {
   }
   get rootDir() {
     if (!this._rootDir) {
-      const fsRoot = (0, import_path.resolve)("/");
+      const fsRoot = (0, import_node_path.resolve)("/");
       let testDir = process.cwd();
       for (let i = 0; i < 20; i++) {
-        const pkgPath = (0, import_path.join)(testDir, "package.json");
-        if ((0, import_fs.existsSync)(pkgPath)) {
+        const pkgPath = (0, import_node_path.join)(testDir, "package.json");
+        if ((0, import_node_fs.existsSync)(pkgPath)) {
           this._rootDir = testDir;
           break;
         }
         if (testDir === fsRoot) {
           break;
         }
-        testDir = (0, import_path.dirname)(testDir);
+        testDir = (0, import_node_path.dirname)(testDir);
       }
       if (!this._rootDir) {
         throw new Error(`Unable to find Qwik app package.json`);
@@ -11201,24 +11201,24 @@ var AppCommand = class {
   }
   get packageJson() {
     if (!this._rootPkgJson) {
-      const pkgJsonPath = (0, import_path.join)(this.rootDir, "package.json");
-      this._rootPkgJson = JSON.parse((0, import_fs.readFileSync)(pkgJsonPath, "utf-8"));
+      const pkgJsonPath = (0, import_node_path.join)(this.rootDir, "package.json");
+      this._rootPkgJson = JSON.parse((0, import_node_fs.readFileSync)(pkgJsonPath, "utf-8"));
     }
     return this._rootPkgJson;
   }
 };
 
 // packages/qwik/src/cli/utils/integrations.ts
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path3 = require("path");
+var import_node_fs3 = __toESM(require("fs"), 1);
+var import_node_path3 = require("path");
 
 // packages/qwik/src/cli/utils/utils.ts
-var import_fs2 = __toESM(require("fs"), 1);
-var import_path2 = require("path");
+var import_node_fs2 = __toESM(require("fs"), 1);
+var import_node_path2 = require("path");
 var import_which_pm_runs = __toESM(require_which_pm_runs(), 1);
 async function readPackageJson(dir) {
-  const path3 = (0, import_path2.join)(dir, "package.json");
-  const pkgJson = JSON.parse(await import_fs2.default.promises.readFile(path3, "utf-8"));
+  const path3 = (0, import_node_path2.join)(dir, "package.json");
+  const pkgJson = JSON.parse(await import_node_fs2.default.promises.readFile(path3, "utf-8"));
   return pkgJson;
 }
 function dashToTitlelCase(str) {
@@ -11248,28 +11248,29 @@ async function loadIntegrations() {
   if (!integrations) {
     const loadingIntegrations = [];
     const integrationTypes = ["app", "feature", "adaptor"];
-    const integrationsDir = (0, import_path3.join)(__dirname, "starters");
-    const integrationsDirNames = await import_fs3.default.promises.readdir(integrationsDir);
+    const integrationsDir = (0, import_node_path3.join)(__dirname, "starters");
+    const integrationsDirNames = await import_node_fs3.default.promises.readdir(integrationsDir);
     await Promise.all(
       integrationsDirNames.map(async (integrationsDirName) => {
         const integrationType = integrationsDirName.slice(0, integrationsDirName.length - 1);
         if (integrationTypes.includes(integrationType)) {
-          const dir = (0, import_path3.join)(integrationsDir, integrationsDirName);
-          const dirItems = await import_fs3.default.promises.readdir(dir);
+          const dir = (0, import_node_path3.join)(integrationsDir, integrationsDirName);
+          const dirItems = await import_node_fs3.default.promises.readdir(dir);
           await Promise.all(
             dirItems.map(async (dirItem) => {
-              var _a;
-              const dirPath = (0, import_path3.join)(dir, dirItem);
-              const stat = await import_fs3.default.promises.stat(dirPath);
+              var _a, _b, _c;
+              const dirPath = (0, import_node_path3.join)(dir, dirItem);
+              const stat = await import_node_fs3.default.promises.stat(dirPath);
               if (stat.isDirectory()) {
                 const pkgJson = await readPackageJson(dirPath);
                 const integration = {
                   id: dirItem,
-                  name: dashToTitlelCase(dirItem),
+                  name: ((_a = pkgJson.__qwik__) == null ? void 0 : _a.displayName) ?? dashToTitlelCase(dirItem),
                   type: integrationType,
                   dir: dirPath,
                   pkgJson,
-                  priority: ((_a = pkgJson == null ? void 0 : pkgJson.__qwik__) == null ? void 0 : _a.priority) ?? 0
+                  docs: ((_b = pkgJson.__qwik__) == null ? void 0 : _b.docs) ?? [],
+                  priority: ((_c = pkgJson == null ? void 0 : pkgJson.__qwik__) == null ? void 0 : _c.priority) ?? 0
                 };
                 loadingIntegrations.push(integration);
               }
@@ -11294,8 +11295,8 @@ async function loadIntegrations() {
 var import_prompts = __toESM(require_prompts3(), 1);
 
 // packages/qwik/src/cli/add/update-app.ts
-var import_path6 = require("path");
-var import_fs6 = __toESM(require("fs"), 1);
+var import_node_path5 = require("path");
+var import_node_fs5 = __toESM(require("fs"), 1);
 
 // node_modules/ora/index.js
 var import_node_process5 = __toESM(require("process"), 1);
@@ -11784,16 +11785,16 @@ function startSpinner(msg) {
 }
 
 // packages/qwik/src/cli/add/update-files.ts
-var import_fs4 = __toESM(require("fs"), 1);
-var import_path4 = require("path");
+var import_node_fs4 = __toESM(require("fs"), 1);
+var import_node_path4 = require("path");
 async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
-  const items = await import_fs4.default.promises.readdir(srcDir);
+  const items = await import_node_fs4.default.promises.readdir(srcDir);
   await Promise.all(
     items.map(async (itemName) => {
       const destName = itemName === "gitignore" ? ".gitignore" : itemName;
-      const srcChildPath = (0, import_path4.join)(srcDir, itemName);
-      const destChildPath = (0, import_path4.join)(destDir, destName);
-      const s = await import_fs4.default.promises.stat(srcChildPath);
+      const srcChildPath = (0, import_node_path4.join)(srcDir, itemName);
+      const destChildPath = (0, import_node_path4.join)(destDir, destName);
+      const s = await import_node_fs4.default.promises.stat(srcChildPath);
       if (s.isDirectory()) {
         await mergeIntegrationDir(fileUpdates, opts, srcChildPath, destChildPath);
       } else if (s.isFile()) {
@@ -11804,16 +11805,16 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
         } else if (destName === ".gitignore") {
           await mergeGitIgnores(fileUpdates, srcChildPath, destChildPath);
         } else {
-          if (import_fs4.default.existsSync(destChildPath)) {
+          if (import_node_fs4.default.existsSync(destChildPath)) {
             fileUpdates.files.push({
               path: destChildPath,
-              content: await import_fs4.default.promises.readFile(srcChildPath, "utf-8"),
+              content: await import_node_fs4.default.promises.readFile(srcChildPath, "utf-8"),
               type: "overwrite"
             });
           } else {
             fileUpdates.files.push({
               path: destChildPath,
-              content: await import_fs4.default.promises.readFile(srcChildPath),
+              content: await import_node_fs4.default.promises.readFile(srcChildPath),
               type: "create"
             });
           }
@@ -11824,11 +11825,11 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
 }
 async function mergePackageJsons(fileUpdates, srcPath, destPath) {
   var _a;
-  const srcContent = await import_fs4.default.promises.readFile(srcPath, "utf-8");
+  const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   const srcPkgJson = JSON.parse(srcContent);
   const props = ["scripts", "dependencies", "devDependencies"];
   try {
-    const destPkgJson = JSON.parse(await import_fs4.default.promises.readFile(destPath, "utf-8"));
+    const destPkgJson = JSON.parse(await import_node_fs4.default.promises.readFile(destPath, "utf-8"));
     props.forEach((prop) => {
       mergePackageJsonSort(srcPkgJson, destPkgJson, prop);
     });
@@ -11866,11 +11867,11 @@ function mergePackageJsonSort(src, dest, prop) {
   }
 }
 async function mergeReadmes(fileUpdates, srcPath, destPath) {
-  const srcContent = await import_fs4.default.promises.readFile(srcPath, "utf-8");
+  const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   let type;
   let destContent = "";
   try {
-    destContent = await import_fs4.default.promises.readFile(destPath, "utf-8");
+    destContent = await import_node_fs4.default.promises.readFile(destPath, "utf-8");
     destContent = destContent.trim() + "\n\n" + srcContent;
     type = "modify";
   } catch (e) {
@@ -11888,9 +11889,9 @@ async function mergeReadmes(fileUpdates, srcPath, destPath) {
   });
 }
 async function mergeGitIgnores(fileUpdates, srcPath, destPath) {
-  const srcContent = await import_fs4.default.promises.readFile(srcPath, "utf-8");
+  const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   try {
-    const destContent = await import_fs4.default.promises.readFile(destPath, "utf-8");
+    const destContent = await import_node_fs4.default.promises.readFile(destPath, "utf-8");
     const srcLines = srcContent.trim().split(/\r?\n/);
     const destLines = destContent.trim().split(/\r?\n/);
     for (const srcLine of srcLines) {
@@ -11916,8 +11917,8 @@ async function mergeGitIgnores(fileUpdates, srcPath, destPath) {
 }
 
 // packages/qwik/src/cli/add/update-vite-config.ts
-var import_fs5 = __toESM(require("fs"), 1);
-var import_path5 = require("path");
+var import_fs = __toESM(require("fs"), 1);
+var import_path = require("path");
 
 // packages/qwik/src/cli/code-mod/code-mod.ts
 function updateViteConfig(ts, sourceText, updates) {
@@ -12283,8 +12284,8 @@ async function updateViteConfigs(fileUpdates, integration, rootDir) {
   try {
     const viteConfig = (_a = integration.pkgJson.__qwik__) == null ? void 0 : _a.viteConfig;
     if (viteConfig) {
-      const viteConfigPath = (0, import_path5.join)(rootDir, "vite.config.ts");
-      const destContent = await import_fs5.default.promises.readFile(viteConfigPath, "utf-8");
+      const viteConfigPath = (0, import_path.join)(rootDir, "vite.config.ts");
+      const destContent = await import_fs.default.promises.readFile(viteConfigPath, "utf-8");
       const ts = (await import("typescript")).default;
       let updatedContent = updateViteConfig(ts, destContent, viteConfig);
       if (updatedContent) {
@@ -12340,16 +12341,16 @@ async function updateApp(opts) {
     const isInstallingDeps = Object.keys(fileUpdates.installedDeps).length > 0;
     const spinner = showSpinner ? startSpinner(`Updating app${isInstallingDeps ? " and installing dependencies" : ""}...`) : null;
     try {
-      const dirs = new Set(fileUpdates.files.map((f) => (0, import_path6.dirname)(f.path)));
+      const dirs = new Set(fileUpdates.files.map((f) => (0, import_node_path5.dirname)(f.path)));
       for (const dir of Array.from(dirs)) {
         try {
-          import_fs6.default.mkdirSync(dir, { recursive: true });
+          import_node_fs5.default.mkdirSync(dir, { recursive: true });
         } catch (e) {
         }
       }
       const fsWrites = Promise.all(
         fileUpdates.files.map(async (f) => {
-          await import_fs6.default.promises.writeFile(f.path, f.content);
+          await import_node_fs5.default.promises.writeFile(f.path, f.content);
         })
       );
       if (opts.installDeps && Object.keys(fileUpdates.installedDeps).length > 0) {
@@ -12374,22 +12375,26 @@ async function updateApp(opts) {
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
-var import_path7 = require("path");
+var import_node_path6 = require("path");
 
 // packages/qwik/src/cli/utils/log.ts
-function logSuccessFooter() {
+function logSuccessFooter(docs) {
+  if (docs.length > 0) {
+    console.log(`\u{1F4DA} ${kleur_default.cyan("Relevant docs:")}`);
+    docs.forEach((link) => {
+      console.log(`   ${link}`);
+    });
+  }
+  console.log(``);
   console.log(`\u{1F4AC} ${kleur_default.cyan("Questions? Start the conversation at:")}`);
   console.log(`   https://qwik.builder.io/chat`);
   console.log(`   https://twitter.com/QwikDev`);
   console.log(``);
-  console.log(`\u{1F4FA} ${kleur_default.cyan("Presentations, Podcasts and Videos:")}`);
-  console.log(`   https://qwik.builder.io/media/`);
-  console.log(``);
 }
-function logNextStep(steps) {
-  if (steps.length) {
-    console.log(`\u{1F534} ${kleur_default.bgGreen(` ACTION REQUIRED! `)}`);
-    steps.forEach((step) => console.log(`${step}`));
+function logNextStep(nextSteps) {
+  if (nextSteps) {
+    console.log(`\u{1F534} ${kleur_default.bgGreen(` ${nextSteps.title ?? "ACTION REQUIRED!"} `)}`);
+    nextSteps.lines.forEach((step) => console.log(`${step}`));
     console.log(``);
   }
 }
@@ -12492,14 +12497,14 @@ async function logUpdateAppResult(result) {
   if (modifyFiles.length > 0) {
     console.log(`\u{1F42C} ${kleur_default.cyan(`Modify`)}`);
     for (const f of modifyFiles) {
-      console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
+      console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (overwriteFiles.length > 0) {
     console.log(`\u{1F433} ${kleur_default.cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
-      console.log(`   - ${(0, import_path7.relative)(process.cwd(), f.path)}`);
+      console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
@@ -12550,9 +12555,9 @@ function logUpdateAppCommitResult(result) {
     )} to your app`
   );
   console.log(``);
-  const isNextSteps = ((_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps) || [];
-  logNextStep(isNextSteps);
-  logSuccessFooter();
+  logSuccessFooter(result.integration.docs);
+  const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
+  logNextStep(nextSteps);
 }
 
 // packages/qwik/src/cli/add/print-add-help.ts
@@ -12596,7 +12601,7 @@ async function runAddCommand(app) {
 
 // node_modules/execa/index.js
 var import_node_buffer = require("buffer");
-var import_node_path2 = __toESM(require("path"), 1);
+var import_node_path8 = __toESM(require("path"), 1);
 var import_node_child_process = __toESM(require("child_process"), 1);
 var import_node_process7 = __toESM(require("process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
@@ -12616,7 +12621,7 @@ function stripFinalNewline(input) {
 
 // node_modules/npm-run-path/index.js
 var import_node_process6 = __toESM(require("process"), 1);
-var import_node_path = __toESM(require("path"), 1);
+var import_node_path7 = __toESM(require("path"), 1);
 var import_node_url = __toESM(require("url"), 1);
 
 // node_modules/npm-run-path/node_modules/path-key/index.js
@@ -12640,15 +12645,15 @@ function npmRunPath(options = {}) {
   } = options;
   let previous;
   const cwdString = cwd instanceof URL ? import_node_url.default.fileURLToPath(cwd) : cwd;
-  let cwdPath = import_node_path.default.resolve(cwdString);
+  let cwdPath = import_node_path7.default.resolve(cwdString);
   const result = [];
   while (previous !== cwdPath) {
-    result.push(import_node_path.default.join(cwdPath, "node_modules/.bin"));
+    result.push(import_node_path7.default.join(cwdPath, "node_modules/.bin"));
     previous = cwdPath;
-    cwdPath = import_node_path.default.resolve(cwdPath, "..");
+    cwdPath = import_node_path7.default.resolve(cwdPath, "..");
   }
-  result.push(import_node_path.default.resolve(cwdString, execPath, ".."));
-  return [...result, path_].join(import_node_path.default.delimiter);
+  result.push(import_node_path7.default.resolve(cwdString, execPath, ".."));
+  return [...result, path_].join(import_node_path7.default.delimiter);
 }
 function npmRunPathEnv({ env = import_node_process6.default.env, ...options } = {}) {
   env = { ...env };
@@ -13409,7 +13414,7 @@ var handleArguments = (file, args, options = {}) => {
   };
   options.env = getEnv(options);
   options.stdio = normalizeStdio(options);
-  if (import_node_process7.default.platform === "win32" && import_node_path2.default.basename(file, ".exe") === "cmd") {
+  if (import_node_process7.default.platform === "win32" && import_node_path8.default.basename(file, ".exe") === "cmd") {
     args.unshift("/q");
   }
   return { file, args, options, parsed };
