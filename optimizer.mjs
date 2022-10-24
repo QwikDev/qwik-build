@@ -1936,7 +1936,7 @@ function qwikVite(qwikViteOpts = {}) {
         type: "hook"
       });
       if ("ssr" === target) {
-        "string" === typeof viteConfig.build?.ssr ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof qwikViteOpts.ssr?.input ? pluginOpts.input = qwikViteOpts.ssr.input : viteConfig.build?.ssr && Array.isArray(viteConfig.build?.rollupOptions?.input) && (pluginOpts.input = viteConfig.build.rollupOptions.input);
+        "string" === typeof viteConfig.build?.ssr ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof qwikViteOpts.ssr?.input && (pluginOpts.input = qwikViteOpts.ssr.input);
         pluginOpts.outDir = qwikViteOpts.ssr?.outDir;
         pluginOpts.manifestInput = qwikViteOpts.ssr?.manifestInput;
       } else if ("client" === target) {
@@ -2030,7 +2030,6 @@ function qwikVite(qwikViteOpts = {}) {
           updatedViteConfig.build.ssr = true;
           "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
         }
-        "boolean" === typeof viteConfig.build?.emptyOutDir ? updatedViteConfig.build.emptyOutDir = viteConfig.build.emptyOutDir : updatedViteConfig.build.emptyOutDir = false;
       } else if ("client" === opts.target) {
         "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
         isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
@@ -2159,7 +2158,7 @@ function qwikVite(qwikViteOpts = {}) {
                   await fs.promises.mkdir(folder, {
                     recursive: true
                   });
-                  await fs.promises.writeFile(sys.path.join(folder, js), `import("./${moduleName}").catch((e) => { console.error(e); process.exit(1); });`);
+                  await fs.promises.writeFile(sys.path.join(folder, js), `export * from "./${moduleName}";`);
                 }
               }
             } catch (e) {

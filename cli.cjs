@@ -11758,13 +11758,15 @@ var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function installDeps(pkgManager, dir) {
   let installChild;
   const errorMessage = `
+
 ${kleur_default.bgRed(
     `  ${pkgManager} install failed  `
   )}
 
-You might need to run "${kleur_default.green(
+  You might need to run "${kleur_default.green(
     `${pkgManager} install`
-  )}" manually inside the root of your project to install the dependencies.`;
+  )}" manually inside the root of your project to install the dependencies.
+`;
   const install = new Promise((resolve2) => {
     try {
       installChild = (0, import_cross_spawn.default)(pkgManager, ["install"], {
@@ -11780,10 +11782,12 @@ You might need to run "${kleur_default.green(
           resolve2();
         } else {
           console.error(errorMessage);
+          resolve2();
         }
       });
     } catch (e) {
       console.error(errorMessage);
+      resolve2();
     }
   });
   const abort = async () => {
