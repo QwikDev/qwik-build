@@ -6793,7 +6793,7 @@
             newSSrContext.hostCtx = elCtx;
             return renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream) => {
                 if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-                    logWarn('Component registered some events, some component use useStyleStyle$()');
+                    logWarn('Component registered some events, some component use useStyles$()');
                 }
                 if (beforeClose) {
                     return then(renderQTemplates(newSSrContext, stream), () => beforeClose(stream));
