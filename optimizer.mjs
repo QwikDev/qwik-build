@@ -2014,7 +2014,9 @@ function qwikVite(qwikViteOpts = {}) {
               warn(warning);
             }
           },
-          polyfillModulePreload: false,
+          modulePreload: {
+            polyfill: false
+          },
           dynamicImportVarsOptions: {
             exclude: [ /./ ]
           }

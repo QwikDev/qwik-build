@@ -2020,7 +2020,9 @@ globalThis.qwikOptimizer = function(module) {
                 warn(warning);
               }
             },
-            polyfillModulePreload: false,
+            modulePreload: {
+              polyfill: false
+            },
             dynamicImportVarsOptions: {
               exclude: [ /./ ]
             }
