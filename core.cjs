@@ -72,12 +72,7 @@
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
         // eslint-disable-next-line no-console
-        if (typeof globalThis._handleError === 'function' && message instanceof Error) {
-            globalThis._handleError(message, optionalParams);
-        }
-        else {
-            console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
-        }
+        console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
         return err;
     };
     const logErrorAndStop = (message, ...optionalParams) => {
@@ -2358,6 +2353,11 @@
         }
         else if (isFunction(nodeType)) {
             const res = invoke(invocationContext, nodeType, props, node.key);
+            if (qDev) {
+                if (isPromise(res)) {
+                    logWarn('JSX components can not return a promise.', node);
+                }
+            }
             return processData$1(res, invocationContext);
         }
         else {
@@ -3522,6 +3522,9 @@
                             logWarn('Serializing disconneted watch. Looks like an internal error.');
                         }
                     }
+                    if (isResourceWatch(watch)) {
+                        collector.$resources$.push(watch.$resource$);
+                    }
                     destroyWatch(watch);
                 }
             }
@@ -3553,6 +3556,7 @@
                 },
                 objs: [],
                 qrls: [],
+                resources: collector.$resources$,
                 mode: 'static',
             };
         }
@@ -3808,6 +3812,7 @@
                 subs,
             },
             objs,
+            resources: collector.$resources$,
             qrls: collector.$qrls$,
             mode: canRender ? 'render' : 'listeners',
         };
@@ -3836,7 +3841,7 @@
     };
     const collectProps = (elCtx, collector) => {
         const parentCtx = elCtx.$parent$;
-        if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
+        if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx)) {
             const subs = getProxyManager(elCtx.$props$)?.$subs$;
             const el = elCtx.$element$;
             if (subs && subs.some((e) => e[0] === 0 && e[1] === el)) {
@@ -3851,6 +3856,7 @@
             $objSet$: new Set(),
             $prefetch$: 0,
             $noSerialize$: [],
+            $resources$: [],
             $elements$: [],
             $qrls$: [],
             $deferElements$: [],
@@ -5087,6 +5093,16 @@
             cleanup(callback) {
                 cleanups.push(callback);
             },
+            cache(policy) {
+                let milliseconds = 0;
+                if (policy === 'immutable') {
+                    milliseconds = Infinity;
+                }
+                else {
+                    milliseconds = policy;
+                }
+                resource._cache = milliseconds;
+            },
             previous: resourceTarget._resolved,
         };
         let resolve;
@@ -5134,11 +5150,11 @@
             setState(false, reason);
         });
         const timeout = resourceTarget._timeout;
-        if (timeout) {
+        if (timeout > 0) {
             return Promise.race([
                 promise,
                 delay(timeout).then(() => {
-                    if (setState(false, 'timeout')) {
+                    if (setState(false, new Error('timeout'))) {
                         cleanupWatch(watch);
                     }
                 }),
@@ -5489,7 +5505,8 @@
             _resolved: undefined,
             _error: undefined,
             _state: 'pending',
-            _timeout: opts?.timeout,
+            _timeout: opts?.timeout ?? -1,
+            _cache: 0,
         };
         return resource;
     };

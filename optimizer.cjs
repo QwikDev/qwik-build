@@ -1114,10 +1114,10 @@ globalThis.qwikOptimizer = function(module) {
       var _a;
       log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build", opts.scope);
       const optimizer = getOptimizer();
-      try {
-        linter = await createLinter(optimizer.sys, opts.rootDir);
-      } catch (err) {
-        console.error(err);
+      if ("node" === optimizer.sys.env && "ssr" !== opts.target) {
+        try {
+          linter = await createLinter(optimizer.sys, opts.rootDir);
+        } catch (err) {}
       }
       if (opts.forceFullBuild) {
         const path = getPath();
@@ -1162,6 +1162,9 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
     const resolveId = async (_ctx, id2, importer, _resolveIdOpts) => {
+      if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
+        return;
+      }
       const path = getPath();
       if ("lib" === opts.target && id2.startsWith(QWIK_CORE_ID)) {
         return {
@@ -1190,6 +1193,9 @@ globalThis.qwikOptimizer = function(module) {
           moduleSideEffects: false
         };
       }
+      if (!id2.startsWith(".") && !id2.startsWith("/")) {
+        return;
+      }
       const parsedId = parseId(id2);
       let importeePathId = normalizePath(parsedId.pathId);
       if (importer) {
@@ -1216,6 +1222,9 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const load = async (_ctx, id2, loadOpts = {}) => {
+      if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
+        return;
+      }
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
@@ -1909,20 +1918,23 @@ globalThis.qwikOptimizer = function(module) {
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
-        qwikPlugin.log(`vite config(), command: ${viteEnv.command}, env.mode: ${viteEnv.mode}`);
-        isClientDevOnly = "serve" === viteEnv.command && "ssr" !== viteEnv.mode;
         viteCommand = viteEnv.command;
+        isClientDevOnly = "serve" === viteCommand && "ssr" !== viteEnv.mode;
+        qwikPlugin.log(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
         let target;
         target = (null == (_a = viteConfig.build) ? void 0 : _a.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "client";
         let buildMode;
-        buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteEnv.command && "client" === target ? "production" : "development";
+        buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteCommand && "client" === target ? "production" : "development";
         let forceFullBuild = true;
-        if ("serve" === viteEnv.command) {
+        if ("serve" === viteCommand) {
           qwikViteOpts.entryStrategy = {
             type: "hook"
           };
           forceFullBuild = false;
         } else {
+          "ssr" !== target && "lib" !== target || (qwikViteOpts.entryStrategy = {
+            type: "inline"
+          });
           forceFullBuild = true;
         }
         const shouldFindVendors = "client" === target || "serve" === viteCommand;
@@ -1933,14 +1945,11 @@ globalThis.qwikOptimizer = function(module) {
           debug: qwikViteOpts.debug,
           entryStrategy: qwikViteOpts.entryStrategy,
           rootDir: viteConfig.root,
-          resolveQwikBuild: "build" === viteEnv.command,
+          resolveQwikBuild: "build" === viteCommand,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           forceFullBuild: forceFullBuild,
           vendorRoots: vendorRoots.map((v => v.path))
         };
-        "serve" === viteEnv.command && (qwikViteOpts.entryStrategy = {
-          type: "hook"
-        });
         if ("ssr" === target) {
           "string" === typeof (null == (_b = viteConfig.build) ? void 0 : _b.ssr) ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof (null == (_c = qwikViteOpts.ssr) ? void 0 : _c.input) && (pluginOpts.input = qwikViteOpts.ssr.input);
           pluginOpts.outDir = null == (_d = qwikViteOpts.ssr) ? void 0 : _d.outDir;

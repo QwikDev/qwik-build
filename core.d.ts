@@ -2169,6 +2169,7 @@ export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
 export declare interface ResourceCtx<T> {
     track: Tracker;
     cleanup(callback: () => void): void;
+    cache(policyOrMilliseconds: number | 'immutable'): void;
     previous: T | undefined;
 }
 
@@ -2238,7 +2239,8 @@ declare interface ResourceReturnInternal<T> {
     _state: 'pending' | 'resolved' | 'rejected';
     _resolved: T | undefined;
     _error: any;
-    _timeout?: number;
+    _cache: number;
+    _timeout: number;
     promise: Promise<T>;
     loading: boolean;
 }
@@ -2340,6 +2342,7 @@ export declare interface SnapshotResult {
     state: SnapshotState;
     qrls: QRL[];
     objs: any[];
+    resources: ResourceReturnInternal<any>[];
     mode: 'render' | 'listeners' | 'static';
 }
 

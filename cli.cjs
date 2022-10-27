@@ -11757,16 +11757,6 @@ function ora(options) {
 var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function installDeps(pkgManager, dir) {
   let installChild;
-  const errorMessage = `
-
-${kleur_default.bgRed(
-    `  ${pkgManager} install failed  `
-  )}
-
-  You might need to run "${kleur_default.green(
-    `${pkgManager} install`
-  )}" manually inside the root of your project to install the dependencies.
-`;
   const install = new Promise((resolve2) => {
     try {
       installChild = (0, import_cross_spawn.default)(pkgManager, ["install"], {
@@ -11774,20 +11764,17 @@ ${kleur_default.bgRed(
         stdio: "ignore"
       });
       installChild.on("error", () => {
-        console.error(errorMessage);
-        resolve2();
+        resolve2(false);
       });
       installChild.on("close", (code) => {
         if (code === 0) {
-          resolve2();
+          resolve2(true);
         } else {
-          console.error(errorMessage);
-          resolve2();
+          resolve2(false);
         }
       });
     } catch (e) {
-      console.error(errorMessage);
-      resolve2();
+      resolve2(false);
     }
   });
   const abort = async () => {
@@ -12358,6 +12345,7 @@ async function updateApp(opts) {
   const commit = async (showSpinner) => {
     const isInstallingDeps = Object.keys(fileUpdates.installedDeps).length > 0;
     const spinner = showSpinner ? startSpinner(`Updating app${isInstallingDeps ? " and installing dependencies" : ""}...`) : null;
+    let passed = true;
     try {
       const dirs = new Set(fileUpdates.files.map((f) => (0, import_node_path5.dirname)(f.path)));
       for (const dir of Array.from(dirs)) {
@@ -12371,13 +12359,27 @@ async function updateApp(opts) {
           await import_node_fs5.default.promises.writeFile(f.path, f.content);
         })
       );
+      const pkgManager = getPackageManager();
       if (opts.installDeps && Object.keys(fileUpdates.installedDeps).length > 0) {
-        const pkgManager = getPackageManager();
         const { install } = installDeps(pkgManager, opts.rootDir);
-        await install;
+        passed = await install;
       }
       await fsWrites;
       spinner && spinner.succeed();
+      if (!passed) {
+        const errorMessage = `
+
+\u274C ${kleur_default.bgRed(
+          `  ${pkgManager} install failed  `
+        )}
+
+   You might need to run "${kleur_default.green(
+          `${pkgManager} install`
+        )}" manually inside the root of the project.
+
+`;
+        console.error(errorMessage);
+      }
     } catch (e) {
       spinner && spinner.fail();
       panic(String(e));
@@ -12550,7 +12552,6 @@ async function logUpdateAppResult(result) {
 }
 function logUpdateAppCommitResult(result) {
   var _a;
-  console.clear();
   console.log(
     `\u{1F984} ${kleur_default.bgMagenta(` Success! `)} Added ${kleur_default.bold(
       kleur_default.cyan(result.integration.id)
@@ -13551,7 +13552,9 @@ async function runBuildCommand(app) {
     }
     typecheck = execa(tscScript.cmd, tscScript.flags, {
       cwd: app.rootDir
-    }).catch((e) => {
+    }).then(() => ({
+      title: "Type checked"
+    })).catch((e) => {
       let out = e.stdout;
       if (out.startsWith("tsc")) {
         out = out.slice(3);
@@ -13579,7 +13582,10 @@ async function runBuildCommand(app) {
       env: {
         FORCE_COLOR: "true"
       }
-    }).catch((e) => {
+    }).then((e) => ({
+      title: "Built library modules",
+      stdout: e.stdout
+    })).catch((e) => {
       console.log(``);
       if (e.stderr) {
         console.log(e.stderr);
@@ -13591,25 +13597,6 @@ async function runBuildCommand(app) {
     });
     step2.push(libBuild);
   }
-  if (lint) {
-    const lintScript = parseScript(lint);
-    const lintBuild = execa(lintScript.cmd, lintScript.flags, {
-      cwd: app.rootDir,
-      env: {
-        FORCE_COLOR: "true"
-      }
-    }).catch((e) => {
-      console.log(``);
-      if (e.stderr) {
-        console.log(e.stderr);
-      } else {
-        console.log(e.stdout);
-      }
-      console.log(``);
-      process.exit(1);
-    });
-    step2.push(lintBuild);
-  }
   if (buildPreviewScript) {
     const previewScript = parseScript(buildPreviewScript);
     const previewBuild = execa(previewScript.cmd, previewScript.flags, {
@@ -13617,7 +13604,10 @@ async function runBuildCommand(app) {
       env: {
         FORCE_COLOR: "true"
       }
-    }).catch((e) => {
+    }).then((e) => ({
+      title: "Built preview (ssr) modules",
+      stdout: e.stdout
+    })).catch((e) => {
       console.log(``);
       if (e.stderr) {
         console.log(e.stderr);
@@ -13636,7 +13626,10 @@ async function runBuildCommand(app) {
       env: {
         FORCE_COLOR: "true"
       }
-    }).catch((e) => {
+    }).then((e) => ({
+      title: "Built server (ssr) modules",
+      stdout: e.stdout
+    })).catch((e) => {
       console.log(``);
       if (e.stderr) {
         console.log(e.stderr);
@@ -13655,7 +13648,10 @@ async function runBuildCommand(app) {
       env: {
         FORCE_COLOR: "true"
       }
-    }).catch((e) => {
+    }).then((e) => ({
+      title: "Built static (ssg) modules",
+      stdout: e.stdout
+    })).catch((e) => {
       console.log(``);
       if (e.stderr) {
         console.log(e.stderr);
@@ -13670,23 +13666,36 @@ async function runBuildCommand(app) {
   if (typecheck) {
     step2.push(typecheck);
   }
+  if (lint) {
+    const lintScript = parseScript(lint);
+    const lintBuild = execa(lintScript.cmd, lintScript.flags, {
+      cwd: app.rootDir,
+      env: {
+        FORCE_COLOR: "true"
+      }
+    }).then(() => ({
+      title: "Lint checked"
+    })).catch((e) => {
+      console.log(``);
+      if (e.stderr) {
+        console.log(e.stderr);
+      } else {
+        console.log(e.stdout);
+      }
+      console.log(``);
+      process.exit(1);
+    });
+    step2.push(lintBuild);
+  }
   if (step2.length > 0) {
-    await Promise.all(step2).then(() => {
-      if (buildLibScript) {
-        console.log(`${kleur_default.cyan("\u2713")} Built library modules`);
-      }
-      if (buildPreviewScript) {
-        console.log(`${kleur_default.cyan("\u2713")} Built preview (ssr) modules`);
-      }
-      if (buildServerScript) {
-        console.log(`${kleur_default.cyan("\u2713")} Built server (ssr) modules`);
-      }
-      if (buildStaticScript) {
-        console.log(`${kleur_default.cyan("\u2713")} Built static (ssg) modules`);
-      }
-      if (typecheck) {
-        console.log(`${kleur_default.cyan("\u2713")} Type checked`);
-      }
+    await Promise.all(step2).then((steps) => {
+      steps.forEach((step) => {
+        if (step.stdout) {
+          console.log("");
+          console.log(step.stdout);
+        }
+        console.log(`${kleur_default.cyan("\u2713")} ${step.title}`);
+      });
       if (!isPreviewBuild && !buildServerScript && !buildStaticScript && !isLibraryBuild) {
         const pmRun = pmRunCmd();
         console.log(``);

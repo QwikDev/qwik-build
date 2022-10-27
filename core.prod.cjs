@@ -22,7 +22,7 @@
     const isComment = value => 8 === value.nodeType;
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : new Error(message);
-        return "function" == typeof globalThis._handleError && message instanceof Error ? globalThis._handleError(message, optionalParams) : console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
+        return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
         err;
     };
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
@@ -1638,7 +1638,7 @@
         for (const ctx of allContexts) {
             if (ctx.$watches$) {
                 for (const watch of ctx.$watches$) {
-                    destroyWatch(watch);
+                    isResourceWatch(watch) && collector.$resources$.push(watch.$resource$), destroyWatch(watch);
                 }
             }
         }
@@ -1667,6 +1667,7 @@
                 },
                 objs: [],
                 qrls: [],
+                resources: collector.$resources$,
                 mode: "static"
             };
         }
@@ -1837,13 +1838,14 @@
                 subs: subs
             },
             objs: objs,
+            resources: collector.$resources$,
             qrls: collector.$qrls$,
             mode: canRender ? "render" : "listeners"
         };
     };
     const collectProps = (elCtx, collector) => {
         const parentCtx = elCtx.$parent$;
-        if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx.$element$)) {
+        if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx)) {
             const subs = getProxyManager(elCtx.$props$)?.$subs$;
             const el = elCtx.$element$;
             subs && subs.some((e => 0 === e[0] && e[1] === el)) && collectElement(el, collector);
@@ -1855,6 +1857,7 @@
         $objSet$: new Set,
         $prefetch$: 0,
         $noSerialize$: [],
+        $resources$: [],
         $elements$: [],
         $qrls$: [],
         $deferElements$: [],
@@ -2473,6 +2476,10 @@
             cleanup(callback) {
                 cleanups.push(callback);
             },
+            cache(policy) {
+                let milliseconds = 0;
+                milliseconds = "immutable" === policy ? 1 / 0 : policy, resource._cache = milliseconds;
+            },
             previous: resourceTarget._resolved
         };
         let resolve;
@@ -2497,8 +2504,8 @@
             setState(false, reason);
         }));
         const timeout = resourceTarget._timeout;
-        return timeout ? Promise.race([ promise, delay(timeout).then((() => {
-            setState(false, "timeout") && cleanupWatch(watch);
+        return timeout > 0 ? Promise.race([ promise, delay(timeout).then((() => {
+            setState(false, new Error("timeout")) && cleanupWatch(watch);
         })) ]) : promise;
     };
     const runWatch = (watch, containerState, rctx) => {
@@ -2582,7 +2589,8 @@
         _resolved: void 0,
         _error: void 0,
         _state: "pending",
-        _timeout: opts?.timeout
+        _timeout: opts?.timeout ?? -1,
+        _cache: 0
     });
     const createResourceReturn = (containerState, opts, initialPromise) => {
         const result = _createResourceReturn(opts);
