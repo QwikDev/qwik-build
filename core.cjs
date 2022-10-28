@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.12.0
+ * @builder.io/qwik 0.12.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -6524,7 +6524,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.12.0";
+    const version = "0.12.1";
 
     /**
      * Render JSX.

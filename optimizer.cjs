@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.12.0
+ * @builder.io/qwik/optimizer 0.12.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.12.0"
+    qwik: "0.12.1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1914,7 +1914,7 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -1997,7 +1997,7 @@ globalThis.qwikOptimizer = function(module) {
             dedupe: [ ...DEDUPE, ...vendorIds ],
             conditions: []
           },
-          esbuild: "development" !== opts.buildMode && {
+          esbuild: "serve" !== viteCommand && {
             logLevel: "error",
             jsx: "preserve"
           },
@@ -2045,7 +2045,7 @@ globalThis.qwikOptimizer = function(module) {
           } else {
             updatedViteConfig.publicDir = false;
             updatedViteConfig.build.ssr = true;
-            "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
+            null == (null == (_p = viteConfig.build) ? void 0 : _p.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
         } else if ("client" === opts.target) {
           "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.12.0
+ * @builder.io/qwik/optimizer 0.12.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -476,7 +476,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.12.0"
+  qwik: "0.12.1"
 };
 
 async function getSystem() {
@@ -1991,7 +1991,7 @@ function qwikVite(qwikViteOpts = {}) {
           dedupe: [ ...DEDUPE, ...vendorIds ],
           conditions: []
         },
-        esbuild: "development" !== opts.buildMode && {
+        esbuild: "serve" !== viteCommand && {
           logLevel: "error",
           jsx: "preserve"
         },
@@ -2039,7 +2039,7 @@ function qwikVite(qwikViteOpts = {}) {
         } else {
           updatedViteConfig.publicDir = false;
           updatedViteConfig.build.ssr = true;
-          "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
+          null == viteConfig.build?.minify && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
         }
       } else if ("client" === opts.target) {
         "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
