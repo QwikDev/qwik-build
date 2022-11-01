@@ -20775,75 +20775,93 @@ var require_lib = __commonJS({
   }
 });
 
-// packages/qwik/src/core/util/types.ts
-var isObject = (v) => {
-  return v && typeof v === "object";
+// packages/qwik/src/core/util/case.ts
+var fromCamelToKebabCase = (text) => {
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
 };
 
-// packages/qwik/src/core/platform/platform.ts
-var createPlatform = () => {
-  return {
-    isServer: false,
-    importSymbol(containerEl, url, symbolName) {
-      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
-      const urlCopy = new URL(urlDoc);
-      urlCopy.hash = "";
-      urlCopy.search = "";
-      const importURL = urlCopy.href;
-      return import(
-        /* @vite-ignore */
-        importURL
-      ).then((mod) => {
-        return findSymbol(mod, symbolName);
-      });
-    },
-    raf: (fn) => {
-      return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          resolve(fn());
-        });
-      });
-    },
-    nextTick: (fn) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(fn());
-        });
-      });
-    },
-    chunkForSymbol() {
-      return void 0;
+// packages/qwik/src/testing/document.ts
+var import_qwik_dom = __toESM(require_lib(), 1);
+
+// packages/qwik/src/testing/util.ts
+function normalizeUrl(url) {
+  if (url != null) {
+    if (typeof url === "string") {
+      return new URL(url || "/", BASE_URI);
     }
-  };
-};
-var findSymbol = (module, symbol) => {
-  if (symbol in module) {
-    return module[symbol];
-  }
-  for (const v of Object.values(module)) {
-    if (isObject(v) && symbol in v) {
-      return v[symbol];
+    if (typeof url.href === "string") {
+      return new URL(url.href || "/", BASE_URI);
     }
   }
+  return new URL(BASE_URI);
+}
+var BASE_URI = `http://document.qwik.dev/`;
+var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
+
+// packages/qwik/src/testing/document.ts
+function createDocument(opts) {
+  const doc = import_qwik_dom.default.createDocument(opts?.html);
+  ensureGlobals(doc, opts);
+  return doc;
+}
+function createWindow(opts = {}) {
+  const win = createDocument(opts).defaultView;
+  return win;
+}
+function ensureGlobals(doc, opts) {
+  if (!doc[QWIK_DOC]) {
+    if (!doc || doc.nodeType !== 9) {
+      throw new Error(`Invalid document`);
+    }
+    doc[QWIK_DOC] = true;
+    const loc = normalizeUrl(opts?.url);
+    Object.defineProperty(doc, "baseURI", {
+      get: () => loc.href,
+      set: (url) => loc.href = normalizeUrl(url).href
+    });
+    doc.defaultView = {
+      get document() {
+        return doc;
+      },
+      get location() {
+        return loc;
+      },
+      get origin() {
+        return loc.origin;
+      },
+      addEventListener: noop,
+      removeEventListener: noop,
+      history: {
+        pushState: noop,
+        replaceState: noop,
+        go: noop,
+        back: noop,
+        forward: noop
+      },
+      CustomEvent: class CustomEvent {
+        constructor(type, details) {
+          Object.assign(this, details);
+          this.type = type;
+        }
+      }
+    };
+  }
+  return doc.defaultView;
+}
+var noop = () => {
 };
-var toUrl = (doc, containerEl, url) => {
-  const baseURI = doc.baseURI;
-  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-  return new URL(url, base);
-};
-var _platform = createPlatform();
-var setPlatform = (plt) => _platform = plt;
+var QWIK_DOC = Symbol();
 
 // packages/qwik/src/testing/platform.ts
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
-function createPlatform2() {
+function createPlatform() {
   let render = null;
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform2 = {
     isServer: false,
     importSymbol(containerEl, url, symbolName) {
-      const urlDoc = toUrl2(containerEl.ownerDocument, containerEl, url);
+      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url);
       const importPath = toPath(urlDoc);
       const mod = moduleCache.get(importPath);
       if (mod) {
@@ -20895,10 +20913,10 @@ function createPlatform2() {
   };
   return testPlatform2;
 }
-function setTestPlatform() {
-  setPlatform(testPlatform);
+function setTestPlatform(_setPlatform) {
+  _setPlatform(testPlatform);
 }
-function toUrl2(doc, containerEl, url) {
+function toUrl(doc, containerEl, url) {
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
 }
@@ -20915,88 +20933,44 @@ function toPath(url) {
   }
   throw new Error(`Unable to find path for import "${url}"`);
 }
-var testPlatform = createPlatform2();
+var testPlatform = createPlatform();
 function getTestPlatform() {
   return testPlatform;
 }
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
-// packages/qwik/src/testing/document.ts
-var import_qwik_dom = __toESM(require_lib(), 1);
-
-// packages/qwik/src/testing/util.ts
-import { pathToFileURL } from "url";
-function toFileUrl(filePath) {
-  return pathToFileURL(filePath).href;
-}
-function normalizeUrl(url) {
-  if (url != null) {
-    if (typeof url === "string") {
-      return new URL(url || "/", BASE_URI);
-    }
-    if (typeof url.href === "string") {
-      return new URL(url.href || "/", BASE_URI);
-    }
-  }
-  return new URL(BASE_URI);
-}
-var BASE_URI = `http://document.qwik.dev/`;
-var __self = typeof self !== "undefined" && typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope && self;
-
-// packages/qwik/src/testing/document.ts
-function createDocument(opts) {
-  const doc = import_qwik_dom.default.createDocument(opts?.html);
-  ensureGlobals(doc, opts);
-  setTestPlatform();
-  return doc;
-}
-function createWindow(opts = {}) {
-  const win = createDocument(opts).defaultView;
-  return win;
-}
-function ensureGlobals(doc, opts) {
-  if (!doc[QWIK_DOC]) {
-    if (!doc || doc.nodeType !== 9) {
-      throw new Error(`Invalid document`);
-    }
-    doc[QWIK_DOC] = true;
-    const loc = normalizeUrl(opts?.url);
-    Object.defineProperty(doc, "baseURI", {
-      get: () => loc.href,
-      set: (url) => loc.href = normalizeUrl(url).href
-    });
-    doc.defaultView = {
-      get document() {
-        return doc;
-      },
-      get location() {
-        return loc;
-      },
-      get origin() {
-        return loc.origin;
-      },
-      addEventListener: noop,
-      removeEventListener: noop,
-      history: {
-        pushState: noop,
-        replaceState: noop,
-        go: noop,
-        back: noop,
-        forward: noop
-      },
-      CustomEvent: class CustomEvent {
-        constructor(type, details) {
-          Object.assign(this, details);
-          this.type = type;
-        }
-      }
+// packages/qwik/src/core/state/context.ts
+var Q_CTX = "_qc_";
+var HOST_FLAG_DIRTY = 1 << 0;
+var HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
+var HOST_FLAG_MOUNTED = 1 << 2;
+var HOST_FLAG_DYNAMIC = 1 << 3;
+var tryGetContext = (element) => {
+  return element[Q_CTX];
+};
+var getContext = (element) => {
+  let ctx = tryGetContext(element);
+  if (!ctx) {
+    element[Q_CTX] = ctx = {
+      $flags$: 0,
+      $id$: "",
+      $element$: element,
+      $refMap$: [],
+      li: [],
+      $watches$: null,
+      $seq$: null,
+      $slots$: null,
+      $scopeIds$: null,
+      $appendStyles$: null,
+      $props$: null,
+      $vdom$: null,
+      $componentQrl$: null,
+      $contexts$: null,
+      $parent$: null
     };
   }
-  return doc.defaultView;
-}
-var noop = () => {
+  return ctx;
 };
-var QWIK_DOC = Symbol();
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
@@ -21013,12 +20987,59 @@ var ElementFixture = class {
     this.document.body.appendChild(this.superParent);
   }
 };
+var dispatch = async (root, attrName, ev) => {
+  while (root) {
+    const elm = root;
+    const ctx = getContext(elm);
+    const qrls = ctx?.li.filter((li) => li[0] === attrName);
+    if (qrls && qrls.length > 0) {
+      for (const q of qrls) {
+        await q[1].getFn([elm, ev], () => elm.isConnected)(ev, elm);
+      }
+    }
+    root = elm.parentElement;
+  }
+};
+
+// packages/qwik/src/testing/library.ts
+async function triggerUserEvent(root, selector, eventNameCamel) {
+  for (const element of Array.from(root.querySelectorAll(selector))) {
+    const kebabEventName = fromCamelToKebabCase(eventNameCamel);
+    const event = { type: kebabEventName };
+    const attrName = "on:" + kebabEventName;
+    await dispatch(element, attrName, event);
+  }
+  await getTestPlatform().flush();
+}
+var createDOM = async function() {
+  const qwik = await getQwik();
+  setTestPlatform(qwik.setPlatform);
+  const host = new ElementFixture().host;
+  return {
+    render: function(jsxElement) {
+      return qwik.render(host, jsxElement);
+    },
+    screen: host,
+    userEvent: async function(queryOrElement, eventNameCamel) {
+      if (typeof queryOrElement === "string")
+        return triggerUserEvent(host, queryOrElement, eventNameCamel);
+      const kebabEventName = fromCamelToKebabCase(eventNameCamel);
+      const event = { type: kebabEventName };
+      const attrName = "on:" + kebabEventName;
+      await dispatch(queryOrElement, attrName, event);
+      await getTestPlatform().flush();
+    }
+  };
+};
+var getQwik = async () => {
+  if (false) {
+    return await null;
+  } else {
+    return await import("../core.mjs");
+  }
+};
 export {
-  ElementFixture,
-  createDocument,
-  createWindow,
-  getTestPlatform,
-  toFileUrl
+  createDOM
 };
 /*!
 Parser-Lib

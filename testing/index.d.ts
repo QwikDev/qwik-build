@@ -1,99 +1,13 @@
-import type { CorePlatform } from '../core';
+import type { JSXNode } from '../core/jsx-runtime';
 
 /**
- * Create emulated `Document` for server environment. Does not implement the full browser
- * `document` and `window` API. This api may be removed in the future.
- *
- * @alpha
- *
- */
-export declare function createDocument(opts?: MockDocumentOptions): Document;
-
-/**
- * Create emulated `window` useful for testing.
- *
- * @alpha
- *
- */
-export declare function createWindow(opts?: MockDocumentOptions): MockWindow;
-
-/**
- * Creates a simple DOM structure for testing components.
- *
- * By default `EntityFixture` creates:
- *
- * ```
- * <host q:view="./component_fixture.noop">
- *   <child></child>
- * </host>
- * ```
- *
- * @alpha
- *
- */
-export declare class ElementFixture {
-    window: MockWindow;
-    document: MockDocument;
-    superParent: HTMLElement;
-    parent: HTMLElement;
-    host: HTMLElement;
-    child: HTMLElement;
-    constructor(options?: ElementFixtureOptions);
-}
-
-/**
+ * CreatePlatfrom and CreateDocument
  * @alpha
  */
-export declare interface ElementFixtureOptions {
-    tagName?: string;
-}
-
-/**
- * @alpha
- */
-export declare function getTestPlatform(): TestPlatform;
-
-/**
- * @alpha
- */
-export declare interface MockDocument extends Document {
-}
-
-/**
- * Options when creating a mock Qwik Document object.
- * @alpha
- */
-export declare interface MockDocumentOptions {
-    url?: URL | string;
-    html?: string;
-}
-
-/**
- * @alpha
- */
-export declare interface MockWindow extends Window {
-    document: MockDocument;
-}
-
-/**
- * Options when creating a mock Qwik Window object.
- *
- * @alpha
- *
- */
-export declare interface MockWindowOptions extends MockDocumentOptions {
-}
-
-/**
- * @alpha
- */
-export declare interface TestPlatform extends CorePlatform {
-    flush: () => Promise<void>;
-}
-
-/**
- * @alpha
- */
-export declare function toFileUrl(filePath: string): string;
+export declare const createDOM: () => Promise<{
+    render: (jsxElement: JSXNode) => Promise<void>;
+    screen: HTMLElement;
+    userEvent: (queryOrElement: string | Element | null, eventNameCamel: string) => Promise<void>;
+}>;
 
 export { }
