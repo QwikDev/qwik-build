@@ -2044,11 +2044,8 @@ globalThis.qwikOptimizer = function(module) {
             updatedViteConfig.build.ssr = true;
             null == (null == (_p = viteConfig.build) ? void 0 : _p.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
-        } else if ("client" === opts.target) {
-          "production" === buildMode && (updatedViteConfig.resolve.conditions = [ "min" ]);
-          isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
         } else {
-          "lib" === opts.target && (updatedViteConfig.build.minify = false);
+          "client" === opts.target ? isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput) : "lib" === opts.target && (updatedViteConfig.build.minify = false);
         }
         return updatedViteConfig;
       },

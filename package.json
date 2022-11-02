@@ -4,7 +4,6 @@
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.mjs",
-  "module": "./core.mjs",
   "types": "./core.d.ts",
   "bin": {
     "qwik": "./qwik.cjs"
@@ -13,8 +12,11 @@
   "exports": {
     ".": {
       "types": "./core.d.ts",
+      "browser": {
+        "production": "./core.min.mjs",
+        "default": "./core.mjs"
+      },
       "import": {
-        "min": "./core.min.mjs",
         "production": "./core.prod.mjs",
         "default": "./core.mjs"
       },
