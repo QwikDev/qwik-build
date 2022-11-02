@@ -12505,6 +12505,13 @@ async function logUpdateAppResult(result) {
     }
     console.log(``);
   }
+  if (createFiles.length > 0) {
+    console.log(`\u{1F31F} ${kleur_default.cyan(`Create`)}`);
+    for (const f of createFiles) {
+      console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
+    }
+    console.log(``);
+  }
   if (overwriteFiles.length > 0) {
     console.log(`\u{1F433} ${kleur_default.cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
@@ -13385,6 +13392,19 @@ var escapeArg = (arg) => {
 };
 var joinCommand = (file, args) => normalizeArgs(file, args).join(" ");
 var getEscapedCommand = (file, args) => normalizeArgs(file, args).map((arg) => escapeArg(arg)).join(" ");
+var SPACES_REGEXP = / +/g;
+var parseCommand = (command) => {
+  const tokens = [];
+  for (const token of command.trim().split(SPACES_REGEXP)) {
+    const previousToken = tokens[tokens.length - 1];
+    if (previousToken && previousToken.endsWith("\\")) {
+      tokens[tokens.length - 1] = `${previousToken.slice(0, -1)} ${token}`;
+    } else {
+      tokens.push(token);
+    }
+  }
+  return tokens;
+};
 
 // node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
@@ -13504,6 +13524,10 @@ function execa(file, args, options) {
   spawned.all = makeAllStream(spawned, parsed.options);
   return mergePromise(spawned, handlePromiseOnce);
 }
+function execaCommand(command, options) {
+  const [file, ...args] = parseCommand(command);
+  return execa(file, args, options);
+}
 
 // packages/qwik/src/cli/build/run-build-command.ts
 async function runBuildCommand(app) {
@@ -13546,11 +13570,11 @@ async function runBuildCommand(app) {
   console.log(``);
   let typecheck = null;
   if (buildTypes && buildTypes.startsWith("tsc")) {
-    const tscScript = parseScript(buildTypes);
-    if (!tscScript.flags.includes("--pretty")) {
-      tscScript.flags.push("--pretty");
+    let copyScript = buildTypes;
+    if (!copyScript.includes("--pretty")) {
+      copyScript += " --pretty";
     }
-    typecheck = execa(tscScript.cmd, tscScript.flags, {
+    typecheck = execaCommand(copyScript, {
       cwd: app.rootDir
     }).then(() => ({
       title: "Type checked"
@@ -13564,8 +13588,7 @@ async function runBuildCommand(app) {
     });
   }
   if (buildClientScript) {
-    const clientScript = parseScript(buildClientScript);
-    await execa(clientScript.cmd, clientScript.flags, {
+    await execaCommand(buildClientScript, {
       stdio: "inherit",
       cwd: app.rootDir
     }).catch(() => {
@@ -13576,8 +13599,7 @@ async function runBuildCommand(app) {
   }
   const step2 = [];
   if (buildLibScript) {
-    const libScript = parseScript(buildLibScript);
-    const libBuild = execa(libScript.cmd, libScript.flags, {
+    const libBuild = execaCommand(buildLibScript, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -13598,8 +13620,7 @@ async function runBuildCommand(app) {
     step2.push(libBuild);
   }
   if (buildPreviewScript) {
-    const previewScript = parseScript(buildPreviewScript);
-    const previewBuild = execa(previewScript.cmd, previewScript.flags, {
+    const previewBuild = execaCommand(buildPreviewScript, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -13620,8 +13641,7 @@ async function runBuildCommand(app) {
     step2.push(previewBuild);
   }
   if (buildServerScript) {
-    const serverScript = parseScript(buildServerScript);
-    const serverBuild = execa(serverScript.cmd, serverScript.flags, {
+    const serverBuild = execaCommand(buildServerScript, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -13642,8 +13662,7 @@ async function runBuildCommand(app) {
     step2.push(serverBuild);
   }
   if (buildStaticScript) {
-    const staticScript = parseScript(buildStaticScript);
-    const staticBuild = execa(staticScript.cmd, staticScript.flags, {
+    const staticBuild = execaCommand(buildStaticScript, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -13667,8 +13686,7 @@ async function runBuildCommand(app) {
     step2.push(typecheck);
   }
   if (lint) {
-    const lintScript = parseScript(lint);
-    const lintBuild = execa(lintScript.cmd, lintScript.flags, {
+    const lintBuild = execaCommand(lint, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -13705,8 +13723,7 @@ async function runBuildCommand(app) {
         console.log(`${kleur_default.magenta("\u30FB")} Use ${kleur_default.magenta(pmRun + " preview")} to preview the build`);
       }
       if (isPreviewBuild && buildStaticScript && runSsgScript) {
-        const ssgScript = parseScript(buildStaticScript);
-        return execa(ssgScript.cmd, ssgScript.flags, {
+        return execaCommand(buildStaticScript, {
           cwd: app.rootDir,
           env: {
             FORCE_COLOR: "true"
@@ -13725,11 +13742,6 @@ async function runBuildCommand(app) {
     });
   }
   console.log(``);
-}
-function parseScript(s) {
-  const flags = s.split(" ");
-  const cmd = flags.shift();
-  return { cmd, flags };
 }
 
 // packages/qwik/src/cli/run.ts
