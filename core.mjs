@@ -487,7 +487,7 @@ const serializeQRL = (qrl, opts = {}) => {
         symbol = '_';
     }
     if (!chunk) {
-        throw qError(QError_qrlMissingChunk, qrl);
+        throw qError(QError_qrlMissingChunk, qrl.$symbol$);
     }
     if (chunk.startsWith('./')) {
         chunk = chunk.slice(2);
@@ -6823,7 +6823,7 @@ const renderQTemplates = (ssrContext, stream) => {
                 });
             }
         });
-        return processData(nodes, ssrContext, stream, 0, undefined);
+        return processData(nodes, ssrContext.projectedContext, stream, 0, undefined);
     }
 };
 const splitProjectedChildren = (children, ssrCtx) => {

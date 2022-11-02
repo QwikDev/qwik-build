@@ -180,7 +180,7 @@ const serializeQRL = (qrl, opts = {}) => {
         result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
     }
     if (!chunk) {
-        throw qError(31, qrl);
+        throw qError(31, qrl.$symbol$);
     }
     chunk.startsWith("./") && (chunk = chunk.slice(2));
     const parts = [ chunk, "#", symbol ];
@@ -3621,7 +3621,7 @@ const renderQTemplates = (ssrContext, stream) => {
                 });
             }
         }));
-        return processData(nodes, ssrContext, stream, 0, void 0);
+        return processData(nodes, ssrContext.projectedContext, stream, 0, void 0);
     }
 };
 
