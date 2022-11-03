@@ -48,7 +48,6 @@ export declare interface GlobalInjections {
         [key: string]: string;
     };
     location: 'head' | 'body';
-    children?: string;
 }
 
 /**

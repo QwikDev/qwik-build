@@ -1511,37 +1511,40 @@ globalThis.qwikOptimizer = function(module) {
         }
         return qwikPlugin.transform(this, code, id);
       },
-      async generateBundle(_, rollupBundle) {
-        var _a;
-        const opts = qwikPlugin.getOptions();
-        if ("client" === opts.target) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-          for (const fileName in rollupBundle) {
-            const b = rollupBundle[fileName];
-            "chunk" === b.type && outputAnalyzer.addBundle({
-              fileName: fileName,
-              modules: b.modules,
-              imports: b.imports,
-              dynamicImports: b.dynamicImports,
-              size: b.code.length
+      generateBundle: {
+        order: "post",
+        async handler(_, rollupBundle) {
+          var _a;
+          const opts = qwikPlugin.getOptions();
+          if ("client" === opts.target) {
+            const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+            for (const fileName in rollupBundle) {
+              const b = rollupBundle[fileName];
+              "chunk" === b.type && outputAnalyzer.addBundle({
+                fileName: fileName,
+                modules: b.modules,
+                imports: b.imports,
+                dynamicImports: b.dynamicImports,
+                size: b.code.length
+              });
+            }
+            const optimizer = qwikPlugin.getOptimizer();
+            const manifest = await outputAnalyzer.generateManifest();
+            manifest.platform = {
+              ...versions,
+              rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
+              env: optimizer.sys.env,
+              os: optimizer.sys.os
+            };
+            "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
+            "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+            "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
+            this.emitFile({
+              type: "asset",
+              fileName: Q_MANIFEST_FILENAME,
+              source: JSON.stringify(manifest, null, 2)
             });
           }
-          const optimizer = qwikPlugin.getOptimizer();
-          const manifest = await outputAnalyzer.generateManifest();
-          manifest.platform = {
-            ...versions,
-            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
-            env: optimizer.sys.env,
-            os: optimizer.sys.os
-          };
-          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-          "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-          this.emitFile({
-            type: "asset",
-            fileName: Q_MANIFEST_FILENAME,
-            source: JSON.stringify(manifest, null, 2)
-          });
         }
       }
     };
@@ -2003,6 +2006,7 @@ globalThis.qwikOptimizer = function(module) {
           },
           build: {
             outDir: opts.outDir,
+            cssCodeSplit: false,
             rollupOptions: {
               input: opts.input,
               preserveEntrySignatures: "exports-only",
@@ -2098,53 +2102,63 @@ globalThis.qwikOptimizer = function(module) {
         }
         return qwikPlugin.transform(this, code, id);
       },
-      async generateBundle(_, rollupBundle) {
-        var _a;
-        const opts = qwikPlugin.getOptions();
-        if ("client" === opts.target) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-          for (const fileName in rollupBundle) {
-            const b = rollupBundle[fileName];
-            "chunk" === b.type ? outputAnalyzer.addBundle({
-              fileName: fileName,
-              modules: b.modules,
-              imports: b.imports,
-              dynamicImports: b.dynamicImports,
-              size: b.code.length
-            }) : [ ".css", ".scss", ".sass" ].some((ext => fileName.endsWith(ext))) && injections.push({
-              tag: "link",
-              location: "head",
-              attributes: {
-                rel: "stylesheet",
-                href: `/${fileName}`
-              }
+      generateBundle: {
+        order: "post",
+        async handler(_, rollupBundle) {
+          var _a;
+          const opts = qwikPlugin.getOptions();
+          if ("client" === opts.target) {
+            const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+            for (const fileName in rollupBundle) {
+              const b = rollupBundle[fileName];
+              "chunk" === b.type ? outputAnalyzer.addBundle({
+                fileName: fileName,
+                modules: b.modules,
+                imports: b.imports,
+                dynamicImports: b.dynamicImports,
+                size: b.code.length
+              }) : [ ".css", ".scss", ".sass", ".less" ].some((ext => fileName.endsWith(ext))) && ("string" === typeof b.source && b.source.length < 2e4 ? injections.push({
+                tag: "style",
+                location: "head",
+                attributes: {
+                  "data-src": `/${fileName}`,
+                  dangerouslySetInnerHTML: b.source
+                }
+              }) : injections.push({
+                tag: "link",
+                location: "head",
+                attributes: {
+                  rel: "stylesheet",
+                  href: `/${fileName}`
+                }
+              }));
+            }
+            for (const i of injections) {
+              outputAnalyzer.addInjection(i);
+            }
+            const optimizer = qwikPlugin.getOptimizer();
+            const manifest = await outputAnalyzer.generateManifest();
+            manifest.platform = {
+              ...versions,
+              vite: "",
+              rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
+              env: optimizer.sys.env,
+              os: optimizer.sys.os
+            };
+            "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
+            const clientManifestStr = JSON.stringify(manifest, null, 2);
+            this.emitFile({
+              type: "asset",
+              fileName: Q_MANIFEST_FILENAME,
+              source: clientManifestStr
             });
-          }
-          for (const i of injections) {
-            outputAnalyzer.addInjection(i);
-          }
-          const optimizer = qwikPlugin.getOptimizer();
-          const manifest = await outputAnalyzer.generateManifest();
-          manifest.platform = {
-            ...versions,
-            vite: "",
-            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
-            env: optimizer.sys.env,
-            os: optimizer.sys.os
-          };
-          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-          const clientManifestStr = JSON.stringify(manifest, null, 2);
-          this.emitFile({
-            type: "asset",
-            fileName: Q_MANIFEST_FILENAME,
-            source: clientManifestStr
-          });
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-          "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-          const sys = qwikPlugin.getSys();
-          if (tmpClientManifestPath && "node" === sys.env) {
-            const fs = await sys.dynamicImport("node:fs");
-            await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
+            "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+            "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
+            const sys = qwikPlugin.getSys();
+            if (tmpClientManifestPath && "node" === sys.env) {
+              const fs = await sys.dynamicImport("node:fs");
+              await fs.promises.writeFile(tmpClientManifestPath, clientManifestStr);
+            }
           }
         }
       },
