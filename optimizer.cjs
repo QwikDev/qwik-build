@@ -989,7 +989,6 @@ globalThis.qwikOptimizer = function(module) {
     const transformedOutputs = new Map;
     let internalOptimizer = null;
     let linter;
-    let addWatchFileCallback = () => {};
     let diagnosticsCallback = () => {};
     const opts = {
       target: "client",
@@ -1252,7 +1251,10 @@ globalThis.qwikOptimizer = function(module) {
         return {
           code: code,
           map: transformedModule[0].map,
-          moduleSideEffects: false
+          moduleSideEffects: false,
+          meta: {
+            hook: transformedModule[0].hook
+          }
         };
       }
       return null;
@@ -1265,19 +1267,8 @@ globalThis.qwikOptimizer = function(module) {
       const path = getPath();
       const {pathId: pathId} = parseId(id2);
       const {ext: ext, dir: dir, base: base} = path.parse(pathId);
-      const normalizedID = normalizePath(pathId);
-      const pregenerated = transformedOutputs.get(normalizedID);
-      if (pregenerated) {
-        log("transform() pregenerated, addWatchFile", normalizedID, pregenerated[1]);
-        addWatchFileCallback(ctx, pregenerated[1]);
-        return {
-          moduleSideEffects: false,
-          meta: {
-            hook: pregenerated[0].hook
-          }
-        };
-      }
       if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId)) {
+        const normalizedID = normalizePath(pathId);
         log("transform()", "Transforming", pathId);
         let filePath = base;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
@@ -1302,16 +1293,13 @@ globalThis.qwikOptimizer = function(module) {
         });
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
         0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
-        results.set(normalizePath(pathId), newOutput);
-        for (const [id3, output] of results.entries()) {
-          const justChanged = newOutput === output;
-          const dir2 = normalizePath(opts.srcDir || path.dirname(id3));
-          for (const mod of output.modules) {
-            if (mod.isEntry) {
-              const key = normalizePath(path.join(dir2, mod.path));
-              transformedOutputs.set(key, [ mod, id3 ]);
-              log("transform()", "emitting", justChanged, key);
-            }
+        results.set(normalizedID, newOutput);
+        const deps = [];
+        for (const mod of newOutput.modules) {
+          if (mod.isEntry) {
+            const key = normalizePath(path.join(srcDir, mod.path));
+            transformedOutputs.set(key, [ mod, id2 ]);
+            deps.push(key);
           }
         }
         const module2 = newOutput.modules.find((m => !m.isEntry));
@@ -1320,7 +1308,8 @@ globalThis.qwikOptimizer = function(module) {
           map: module2.map,
           moduleSideEffects: false,
           meta: {
-            hook: module2.hook
+            hook: module2.hook,
+            qwikdeps: deps
           }
         };
       }
@@ -1358,9 +1347,6 @@ globalThis.qwikOptimizer = function(module) {
     const getTransformedOutputs = () => Array.from(transformedOutputs.values()).map((t => t[0]));
     const log = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
-    };
-    const onAddWatchFile = cb => {
-      addWatchFileCallback = cb;
     };
     const onDiagnostics = cb => {
       diagnosticsCallback = cb;
@@ -1403,7 +1389,6 @@ globalThis.qwikOptimizer = function(module) {
       log: log,
       normalizeOptions: normalizeOptions,
       normalizePath: normalizePath,
-      onAddWatchFile: onAddWatchFile,
       onDiagnostics: onDiagnostics,
       resolveId: resolveId,
       transform: transform,
@@ -1482,9 +1467,6 @@ globalThis.qwikOptimizer = function(module) {
       },
       outputOptions: rollupOutputOpts => normalizeRollupOutputOptions(qwikPlugin.getPath(), qwikPlugin.getOptions(), rollupOutputOpts),
       async buildStart() {
-        qwikPlugin.onAddWatchFile(((ctx, path) => {
-          ctx.addWatchFile(path);
-        }));
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
@@ -2056,9 +2038,6 @@ globalThis.qwikOptimizer = function(module) {
       async buildStart() {
         const resolver = this.resolve.bind(this);
         await qwikPlugin.validateSource(resolver);
-        qwikPlugin.onAddWatchFile(((ctx, path) => {
-          ctx.addWatchFile(path);
-        }));
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
             const id = qwikPlugin.normalizePath(optimizer.sys.path.join(srcDir, d.file));
@@ -2208,7 +2187,17 @@ globalThis.qwikOptimizer = function(module) {
         await configurePreviewServer(server.middlewares, opts, sys, path);
       },
       handleHotUpdate(ctx) {
+        var _a, _b;
         qwikPlugin.log("handleHotUpdate()", ctx);
+        for (const mod of ctx.modules) {
+          const deps = null == (_b = null == (_a = mod.info) ? void 0 : _a.meta) ? void 0 : _b.qwikdeps;
+          if (deps) {
+            for (const dep of deps) {
+              const mod2 = ctx.server.moduleGraph.getModuleById(dep);
+              mod2 && ctx.server.moduleGraph.invalidateModule(mod2);
+            }
+          }
+        }
         if ([ ".css", ".scss", ".sass" ].some((ext => ctx.file.endsWith(ext)))) {
           qwikPlugin.log("handleHotUpdate()", "force css reload");
           ctx.server.ws.send({
