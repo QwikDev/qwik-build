@@ -2181,6 +2181,9 @@
     const jsxToString = (data) => {
         return data == null || typeof data === 'boolean' ? '' : String(data);
     };
+    function isAriaAttribute(prop) {
+        return prop.startsWith('aria-');
+    }
 
     const QObjectRecursive = 1 << 0;
     const QObjectImmutable = 1 << 1;
@@ -3241,6 +3244,11 @@
         return values;
     };
     const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
+        // aria attribute value should be rendered as string
+        if (isAriaAttribute(prop)) {
+            setAttribute(staticCtx, elm, prop, newValue != null ? String(newValue) : newValue);
+            return;
+        }
         // Check if its an exception
         const exception = PROP_HANDLER_MAP[prop];
         if (exception) {
@@ -7191,6 +7199,9 @@
     function processPropValue(prop, value) {
         if (prop === 'style') {
             return stringifyStyle(value);
+        }
+        if (isAriaAttribute(prop)) {
+            return value != null ? String(value) : value;
         }
         if (value === false || value == null) {
             return null;

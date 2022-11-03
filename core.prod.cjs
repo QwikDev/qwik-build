@@ -903,6 +903,9 @@
         elCtx.$id$ = id;
     };
     const jsxToString = data => null == data || "boolean" == typeof data ? "" : String(data);
+    function isAriaAttribute(prop) {
+        return prop.startsWith("aria-");
+    }
     const QOjectTargetSymbol = Symbol("proxy target");
     const QObjectFlagsSymbol = Symbol("proxy flags");
     const QObjectManagerSymbol = Symbol("proxy manager");
@@ -1526,6 +1529,9 @@
         return values;
     };
     const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
+        if (isAriaAttribute(prop)) {
+            return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
+        }
         const exception = PROP_HANDLER_MAP[prop];
         exception && exception(staticCtx, elm, prop, newValue, oldValue) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), staticCtx.$containerState$), 
         setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
@@ -3378,7 +3384,7 @@
         return "htmlFor" === prop ? "for" : prop;
     }
     function processPropValue(prop, value) {
-        return "style" === prop ? stringifyStyle(value) : false === value || null == value ? null : true === value ? "" : String(value);
+        return "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
     }
     const textOnlyElements = {
         title: true,
