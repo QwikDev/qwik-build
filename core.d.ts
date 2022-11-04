@@ -1515,6 +1515,7 @@ declare interface QContext {
     $vdom$: ProcessedJSXNode | null;
     $slots$: ProcessedJSXNode[] | null;
     $parent$: QContext | null;
+    $slotParent$: QContext | null;
 }
 
 /**
@@ -2051,8 +2052,8 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode | Fun
  */
 declare interface RenderContext {
     readonly $static$: RenderStaticContext;
-    readonly $localStack$: QContext[];
-    $cmpCtx$: QContext | undefined;
+    $cmpCtx$: QContext | null;
+    $slotCtx$: QContext | null;
 }
 
 /**

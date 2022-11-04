@@ -20966,29 +20966,6 @@ var HOST_FLAG_DYNAMIC = 1 << 3;
 var tryGetContext = (element) => {
   return element[Q_CTX];
 };
-var getContext = (element) => {
-  let ctx = tryGetContext(element);
-  if (!ctx) {
-    element[Q_CTX] = ctx = {
-      $flags$: 0,
-      $id$: "",
-      $element$: element,
-      $refMap$: [],
-      li: [],
-      $watches$: null,
-      $seq$: null,
-      $slots$: null,
-      $scopeIds$: null,
-      $appendStyles$: null,
-      $props$: null,
-      $vdom$: null,
-      $componentQrl$: null,
-      $contexts$: null,
-      $parent$: null
-    };
-  }
-  return ctx;
-};
 
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
@@ -21008,7 +20985,7 @@ var ElementFixture = class {
 var dispatch = async (root, attrName, ev) => {
   while (root) {
     const elm = root;
-    const ctx = getContext(elm);
+    const ctx = tryGetContext(elm);
     const qrls = ctx == null ? void 0 : ctx.li.filter((li) => li[0] === attrName);
     if (qrls && qrls.length > 0) {
       for (const q of qrls) {

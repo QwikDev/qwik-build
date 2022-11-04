@@ -270,9 +270,9 @@
         return fn.call(null, $(first), ...rest);
     };
     const tryGetContext = element => element._qc_;
-    const getContext = element => {
-        let ctx = tryGetContext(element);
-        return ctx || (element._qc_ = ctx = {
+    const getContext = (element, _containerState) => tryGetContext(element) || createContext$1(element);
+    const createContext$1 = element => {
+        const ctx = {
             $flags$: 0,
             $id$: "",
             $element$: element,
@@ -287,8 +287,10 @@
             $vdom$: null,
             $componentQrl$: null,
             $contexts$: null,
-            $parent$: null
-        }), ctx;
+            $parent$: null,
+            $slotParent$: null
+        };
+        return element._qc_ = ctx, ctx;
     };
     const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
     const ON_PROP_REGEX = /^(on|window:|document:)/;
@@ -344,21 +346,20 @@
         const ctx = useInvokeContext();
         const i = ctx.$seq$;
         const hostElement = ctx.$hostElement$;
-        const elCtx = getContext(hostElement);
+        const elCtx = getContext(hostElement, ctx.$renderCtx$.$static$.$containerState$);
         const seq = elCtx.$seq$ ? elCtx.$seq$ : elCtx.$seq$ = [];
         return ctx.$seq$++, {
             get: seq[i],
             set: value => seq[i] = value,
             i: i,
-            ctx: ctx
+            rCtx: ctx,
+            elCtx: elCtx
         };
     };
     const useCleanupQrl = unmountFn => {
-        const {get: get, set: set, i: i, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, i: i, elCtx: elCtx} = useSequentialScope();
         if (!get) {
-            const el = ctx.$hostElement$;
-            const watch = new Watch(WatchFlagsIsCleanup, i, el, unmountFn, void 0);
-            const elCtx = getContext(el);
+            const watch = new Watch(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, void 0);
             set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch);
         }
     };
@@ -367,7 +368,7 @@
     const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
     const _useOn = (eventName, eventQrl) => {
         const invokeCtx = useInvokeContext();
-        const elCtx = getContext(invokeCtx.$hostElement$);
+        const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
         "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
         elCtx.$flags$ |= 2;
     };
@@ -734,26 +735,24 @@
         throw new Error("close not found");
     };
     const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
-    const createContext$1 = name => (/^[\w/.-]+$/.test(name), Object.freeze({
+    const createContext = name => (/^[\w/.-]+$/.test(name), Object.freeze({
         id: fromCamelToKebabCase(name)
     }));
     const useContextProvider = (context, newValue) => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, elCtx: elCtx} = useSequentialScope();
         if (void 0 !== get) {
             return;
         }
-        const hostElement = ctx.$hostElement$;
-        const hostCtx = getContext(hostElement);
-        let contexts = hostCtx.$contexts$;
-        contexts || (hostCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
+        let contexts = elCtx.$contexts$;
+        contexts || (elCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
         set(true);
     };
-    const resolveContext = (context, hostElement, rctx) => {
+    const resolveContext = (context, hostElement) => {
         const contextID = context.id;
-        if (rctx) {
-            const contexts = rctx.$localStack$;
-            for (let i = contexts.length - 1; i >= 0; i--) {
-                const ctx = contexts[i];
+        const hostCtx = tryGetContext(hostElement);
+        if (hostCtx) {
+            let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
+            for (;ctx; ) {
                 if (hostElement = ctx.$element$, ctx.$contexts$) {
                     const found = ctx.$contexts$.get(contextID);
                     if (found) {
@@ -763,12 +762,13 @@
                         break;
                     }
                 }
+                ctx = ctx.$slotParent$ ?? ctx.$parent$;
             }
-        }
-        if (hostElement.closest) {
-            const value = queryContextFromDom(hostElement, contextID);
-            if (void 0 !== value) {
-                return value;
+            if (hostElement.closest) {
+                const value = queryContextFromDom(hostElement, contextID);
+                if (void 0 !== value) {
+                    return value;
+                }
             }
         }
     };
@@ -801,13 +801,13 @@
         }
         return null;
     };
-    const ERROR_CONTEXT = createContext$1("qk-error");
+    const ERROR_CONTEXT = createContext("qk-error");
     const handleError = (err, hostElement, rctx) => {
         if (isServer()) {
             throw err;
         }
         {
-            const errorStore = resolveContext(ERROR_CONTEXT, hostElement, rctx);
+            const errorStore = resolveContext(ERROR_CONTEXT, hostElement);
             if (void 0 === errorStore) {
                 throw err;
             }
@@ -819,11 +819,11 @@
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
-        const newCtx = pushRenderContext(rCtx, elCtx);
+        const newCtx = pushRenderContext(rCtx);
         const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
         const waitOn = invocatinContext.$waitOn$ = [];
-        newCtx.$cmpCtx$ = elCtx, invocatinContext.$subscriber$ = hostElement, invocatinContext.$renderCtx$ = rCtx, 
-        componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocatinContext.$subscriber$ = hostElement, 
+        invocatinContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(invocatinContext);
         return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
@@ -831,7 +831,7 @@
         })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
             rCtx: newCtx
-        }), (err => (handleError(err, hostElement, rCtx), {
+        }), (err => (handleError(err, hostElement), {
             node: SkipRender,
             rCtx: newCtx
         })));
@@ -847,13 +847,13 @@
             $addSlots$: [],
             $rmSlots$: []
         },
-        $cmpCtx$: void 0,
-        $localStack$: []
+        $cmpCtx$: null,
+        $slotCtx$: null
     });
-    const pushRenderContext = (ctx, elCtx) => ({
+    const pushRenderContext = ctx => ({
         $static$: ctx.$static$,
         $cmpCtx$: ctx.$cmpCtx$,
-        $localStack$: ctx.$localStack$.concat(elCtx)
+        $slotCtx$: ctx.$slotCtx$
     });
     const serializeClass = obj => {
         if (isString(obj)) {
@@ -1269,7 +1269,7 @@
         isSvg || "svg" !== tag || (flags |= 1, isSvg = true);
         const props = newVnode.$props$;
         const isComponent = isVirtual && "q:renderFn" in props;
-        const elCtx = getContext(elm);
+        const elCtx = getContext(elm, rCtx.$static$.$containerState$);
         if (!isComponent) {
             const pendingListeners = currentComponent.li;
             const listeners = elCtx.li;
@@ -1305,7 +1305,6 @@
             }
             return output;
         })(newChildren);
-        const slotRctx = pushRenderContext(rCtx, hostCtx);
         const slotMaps = getSlotMap(hostCtx);
         for (const key of Object.keys(slotMaps.slots)) {
             if (!splittedNewChidren[key]) {
@@ -1325,9 +1324,11 @@
         return promiseAll(Object.keys(splittedNewChidren).map((key => {
             const newVdom = splittedNewChidren[key];
             const slotElm = getSlotElement(staticCtx, slotMaps, hostCtx.$element$, key);
-            const slotCtx = getContext(slotElm);
+            const slotCtx = getContext(slotElm, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
-            return slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotElm, smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
+            const slotRctx = pushRenderContext(rCtx);
+            return slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotElm, 
+            smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
         })));
     };
     const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
@@ -1388,8 +1389,8 @@
         })(doc) : "head" === tag ? (elm = doc.head, flags |= 2, isHead = true) : (elm = createElement(doc, tag, isSvg), 
         flags &= -3), vnode.$elm$ = elm, isSvg && "foreignObject" === tag && (isSvg = false, 
         flags &= -2);
-        const elCtx = getContext(elm);
-        if (isComponent) {
+        const elCtx = getContext(elm, staticCtx.$containerState$);
+        if (elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, isComponent) {
             setKey(elm, vnode.$key$);
             const renderQRL = props["q:renderFn"];
             setComponentProps$1(elCtx, rCtx, props.props), setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL;
@@ -1399,18 +1400,19 @@
                     return;
                 }
                 1 === children.length && ":skipRender" === children[0].$type$ && (children = children[0].$children$);
-                const slotRctx = pushRenderContext(rCtx, elCtx);
                 const slotMap = getSlotMap(elCtx);
                 const p = [];
                 for (const node of children) {
+                    const slotEl = getSlotElement(staticCtx, slotMap, elm, getSlotName(node));
+                    const slotRctx = pushRenderContext(rCtx);
+                    slotRctx.$slotCtx$ = getContext(slotEl, staticCtx.$containerState$);
                     const nodeElm = createElm(slotRctx, node, flags, p);
-                    node.$elm$, node.$elm$, ctx = staticCtx, parent = getSlotElement(staticCtx, slotMap, elm, getSlotName(node)), 
-                    newChild = nodeElm, ctx.$operations$.push({
+                    node.$elm$, node.$elm$, parent = slotEl, newChild = nodeElm, staticCtx.$operations$.push({
                         $operation$: directAppendChild,
                         $args$: [ parent, newChild ]
                     });
                 }
-                var ctx, parent, newChild;
+                var parent, newChild;
                 return promiseAllLazy(p);
             }));
             return isPromise(wait) && promises.push(wait), elm;
@@ -1907,7 +1909,7 @@
                         break;
                     }
                 }
-                parent = parent.$parent$;
+                parent = parent.$slotParent$ ?? parent.$parent$;
             }
         }
     };
@@ -2246,8 +2248,8 @@
         } else {
             const el = context.$element$;
             const container = getWrappingContainer(el);
-            const elCtx = getContext(el);
-            qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), resumeIfNeeded(container), 
+            qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), resumeIfNeeded(container);
+            const elCtx = getContext(el, getContainerState(container));
             inflateQrl(qrl, elCtx);
         }
         return qrl.$captureRef$;
@@ -2411,28 +2413,24 @@
     const WatchFlagsIsCleanup = 8;
     const WatchFlagsIsResource = 16;
     const useWatchQrl = (qrl, opts) => {
-        const {get: get, set: set, ctx: ctx, i: i} = useSequentialScope();
+        const {get: get, set: set, rCtx: rCtx, i: i, elCtx: elCtx} = useSequentialScope();
         if (get) {
             return;
         }
-        const el = ctx.$hostElement$;
-        const containerState = ctx.$renderCtx$.$static$.$containerState$;
-        const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, el, qrl, void 0);
-        const elCtx = getContext(el);
+        const containerState = rCtx.$renderCtx$.$static$.$containerState$;
+        const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, void 0);
         set(true), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
-        elCtx.$watches$.push(watch), waitAndRun(ctx, (() => runSubscriber(watch, containerState, ctx.$renderCtx$))), 
+        elCtx.$watches$.push(watch), waitAndRun(rCtx, (() => runSubscriber(watch, containerState, rCtx.$renderCtx$))), 
         isServer() && useRunWatch(watch, opts?.eagerness);
     };
     const useWatch$ = implicit$FirstArg(useWatchQrl);
     const useClientEffectQrl = (qrl, opts) => {
-        const {get: get, set: set, i: i, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, i: i, rCtx: ctx, elCtx: elCtx} = useSequentialScope();
         const eagerness = opts?.eagerness ?? "visible";
         if (get) {
             return void (isServer() && useRunWatch(get, eagerness));
         }
-        const el = ctx.$hostElement$;
-        const watch = new Watch(WatchFlagsIsEffect, i, el, qrl, void 0);
-        const elCtx = getContext(el);
+        const watch = new Watch(WatchFlagsIsEffect, i, elCtx.$element$, qrl, void 0);
         const containerState = ctx.$renderCtx$.$static$.$containerState$;
         elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
         useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
@@ -2440,7 +2438,7 @@
     };
     const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
     const useServerMountQrl = mountQrl => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
         if (!get) {
             if (!isServer()) {
                 throw qError(22, ctx.$hostElement$);
@@ -2450,13 +2448,13 @@
     };
     const useServerMount$ = implicit$FirstArg(useServerMountQrl);
     const useMountQrl = mountQrl => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
         get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
         waitAndRun(ctx, mountQrl), set(true));
     };
     const useMount$ = implicit$FirstArg(useMountQrl);
     const isResourceWatch = watch => !!watch.$resource$;
-    const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState, rctx));
+    const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState));
     const runResource = (watch, containerState, waitOn) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const el = watch.$el$;
@@ -2543,7 +2541,7 @@
         return safeCall((() => watchFn(opts)), (returnValue => {
             isFunction(returnValue) && cleanups.push(returnValue);
         }), (reason => {
-            handleError(reason, hostElement, rctx);
+            handleError(reason, hostElement);
         }));
     };
     const cleanupWatch = watch => {
@@ -2575,16 +2573,15 @@
         }
     }
     const useResourceQrl = (qrl, opts) => {
-        const {get: get, set: set, i: i, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, i: i, rCtx: rCtx, elCtx: elCtx} = useSequentialScope();
         if (null != get) {
             return get;
         }
-        const containerState = ctx.$renderCtx$.$static$.$containerState$;
+        const containerState = rCtx.$renderCtx$.$static$.$containerState$;
         const resource = createResourceReturn(containerState, opts);
-        const el = ctx.$hostElement$;
+        const el = elCtx.$element$;
         const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
-        const previousWait = Promise.all(ctx.$waitOn$.slice());
-        const elCtx = getContext(el);
+        const previousWait = Promise.all(rCtx.$waitOn$.slice());
         return runResource(watch, containerState, previousWait), elCtx.$watches$ || (elCtx.$watches$ = []), 
         elCtx.$watches$.push(watch), set(resource), resource;
     };
@@ -3023,23 +3020,23 @@
         }
         return dst;
     };
-    const renderNodeVirtual = (node, elCtx, extraNodes, ssrCtx, stream, flags, beforeClose) => {
+    const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const props = node.props;
         const renderQrl = props["q:renderFn"];
         if (renderQrl) {
-            return elCtx.$componentQrl$ = renderQrl, renderSSRComponent(ssrCtx, stream, elCtx, node, flags, beforeClose);
+            return elCtx.$componentQrl$ = renderQrl, renderSSRComponent(rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose);
         }
         let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
         const isSlot = "q:s" in props;
         const key = null != node.key ? String(node.key) : null;
-        if (isSlot && (ssrCtx.hostCtx?.$id$, virtualComment += " q:sref=" + ssrCtx.hostCtx.$id$), 
+        if (isSlot && (rCtx.$cmpCtx$?.$id$, virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), 
         null != key && (virtualComment += " q:key=" + key), virtualComment += "--\x3e", 
         stream.write(virtualComment), extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
             }
         }
-        const promise = walkChildren(props.children, ssrCtx, stream, flags);
+        const promise = walkChildren(props.children, rCtx, ssrCtx, stream, flags);
         return then(promise, (() => {
             if (!isSlot && !beforeClose) {
                 return void stream.write(CLOSE_VIRTUAL);
@@ -3047,7 +3044,11 @@
             let promise;
             if (isSlot) {
                 const content = ssrCtx.projectedChildren?.[key];
-                content && (ssrCtx.projectedChildren[key] = void 0, promise = processData(content, ssrCtx.projectedContext, stream, flags));
+                if (content) {
+                    const [rCtx, sCtx] = ssrCtx.projectedCtxs;
+                    const newSlotRctx = pushRenderContext(rCtx);
+                    newSlotRctx.$slotCtx$ = elCtx, ssrCtx.projectedChildren[key] = void 0, promise = processData(content, newSlotRctx, sCtx, stream, flags);
+                }
             }
             return beforeClose && (promise = then(promise, (() => beforeClose(stream)))), then(promise, (() => {
                 stream.write(CLOSE_VIRTUAL);
@@ -3083,22 +3084,17 @@
         const innerHTML = attributes.dangerouslySetInnerHTML;
         null != innerHTML && stream.write(innerHTML), stream.write(`</${tagName}>`);
     };
-    const renderSSRComponent = (ssrCtx, stream, elCtx, node, flags, beforeClose) => {
+    const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => {
         const props = node.props;
-        return setComponentProps(ssrCtx.rCtx, elCtx, props.props), then(executeComponent(ssrCtx.rCtx, elCtx), (res => {
+        return setComponentProps(rCtx, elCtx, props.props), then(executeComponent(rCtx, elCtx), (res => {
             const hostElement = elCtx.$element$;
-            const newCtx = res.rCtx;
+            const newRCtx = res.rCtx;
             const invocationContext = newInvokeContext(hostElement, void 0);
-            invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newCtx;
-            const projectedContext = {
-                ...ssrCtx,
-                rCtx: newCtx
-            };
+            invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newRCtx;
             const newSSrContext = {
                 ...ssrCtx,
                 projectedChildren: splitProjectedChildren(props.children, ssrCtx),
-                projectedContext: projectedContext,
-                rCtx: newCtx,
+                projectedCtxs: [ rCtx, ssrCtx ],
                 invocationContext: invocationContext
             };
             const extraNodes = [];
@@ -3111,19 +3107,18 @@
                     }));
                 }
             }
-            const newID = getNextIndex(ssrCtx.rCtx);
+            const newID = getNextIndex(rCtx);
             const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : void 0;
             const processedNode = jsx(node.type, {
                 "q:sstyle": scopeId,
                 "q:id": newID,
                 children: res.node
             }, node.key);
-            return elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx), newSSrContext.hostCtx = elCtx, 
-            renderNodeVirtual(processedNode, elCtx, extraNodes, newSSrContext, stream, flags, (stream => (elCtx.$flags$, 
-            beforeClose ? then(renderQTemplates(newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(newSSrContext, stream))));
+            return elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => (elCtx.$flags$, 
+            beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream))));
         }));
     };
-    const renderQTemplates = (ssrContext, stream) => {
+    const renderQTemplates = (rCtx, ssrContext, stream) => {
         const projectedChildren = ssrContext.projectedChildren;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map((slotName => {
@@ -3137,7 +3132,7 @@
                     });
                 }
             }));
-            return processData(nodes, ssrContext.projectedContext, stream, 0, void 0);
+            return processData(nodes, rCtx, ssrContext, stream, 0, void 0);
         }
     };
     const splitProjectedChildren = (children, ssrCtx) => {
@@ -3154,18 +3149,18 @@
         }
         return slotMap;
     };
-    const createContext = nodeType => getContext({
+    const createSSRContext = nodeType => createContext$1({
         nodeType: nodeType,
         _qc_: null
     });
-    const renderNode = (node, ssrCtx, stream, flags, beforeClose) => {
+    const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
-        const hostCtx = ssrCtx.hostCtx;
+        const hostCtx = rCtx.$cmpCtx$;
         if (hostCtx && hasDynamicChildren(node) && (hostCtx.$flags$ |= 8), "string" == typeof tagName) {
             const key = node.key;
             const props = node.props;
             const immutableMeta = props[_IMMUTABLE] ?? EMPTY_OBJ;
-            const elCtx = createContext(1);
+            const elCtx = createSSRContext(1);
             const elm = elCtx.$element$;
             const isHead = "head" === tagName;
             let openingElement = "<" + tagName;
@@ -3191,7 +3186,7 @@
                     }
                     value = value.value;
                 }
-                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), ssrCtx.rCtx.$static$.$containerState$);
+                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
@@ -3205,11 +3200,11 @@
                 const groups = groupListeners(listeners);
                 for (const listener of groups) {
                     openingElement += " " + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"', 
-                    addQwikEvent(listener[0], ssrCtx.rCtx.$static$.$containerState$);
+                    addQwikEvent(listener[0], rCtx.$static$.$containerState$);
                 }
             }
-            if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || listeners.length > 0 || useSignal) {
-                const newID = getNextIndex(ssrCtx.rCtx);
+            if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || useSignal || listenersNeedId(listeners)) {
+                const newID = getNextIndex(rCtx);
                 openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx);
             }
             if (1 & flags && (openingElement += " q:head"), openingElement += ">", stream.write(openingElement), 
@@ -3221,7 +3216,7 @@
                 return stream.write(String(innerHTML)), void stream.write(`</${tagName}>`);
             }
             isHead || (flags &= -2), "html" === tagName ? flags |= 4 : flags &= -5;
-            const promise = processData(props.children, ssrCtx, stream, flags);
+            const promise = processData(props.children, rCtx, ssrCtx, stream, flags);
             return then(promise, (() => {
                 if (isHead) {
                     for (const node of ssrCtx.headNodes) {
@@ -3238,14 +3233,14 @@
             }));
         }
         if (tagName === Virtual) {
-            const elCtx = createContext(111);
-            return elCtx.$parent$ = ssrCtx.hostCtx, renderNodeVirtual(node, elCtx, void 0, ssrCtx, stream, flags, beforeClose);
+            const elCtx = createSSRContext(111);
+            return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRRaw) {
             return void stream.write(node.props.data);
         }
         if (tagName === InternalSSRStream) {
-            return (async (node, ssrCtx, stream, flags) => {
+            return (async (node, rCtx, ssrCtx, stream, flags) => {
                 stream.write("\x3c!--qkssr-f--\x3e");
                 const generator = node.props.children;
                 let value;
@@ -3263,32 +3258,32 @@
                     value = generator;
                 }
                 for await (const chunk of value) {
-                    await processData(chunk, ssrCtx, stream, flags, void 0), stream.write("\x3c!--qkssr-f--\x3e");
+                    await processData(chunk, rCtx, ssrCtx, stream, flags, void 0), stream.write("\x3c!--qkssr-f--\x3e");
                 }
-            })(node, ssrCtx, stream, flags);
+            })(node, rCtx, ssrCtx, stream, flags);
         }
         const res = invoke(ssrCtx.invocationContext, tagName, node.props, node.key);
-        return processData(res, ssrCtx, stream, flags, beforeClose);
+        return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
     };
-    const processData = (node, ssrCtx, stream, flags, beforeClose) => {
+    const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (null != node && "boolean" != typeof node) {
             if (isString(node) || "number" == typeof node) {
                 stream.write(escapeHtml(String(node)));
             } else {
                 if (isJSXNode(node)) {
-                    return renderNode(node, ssrCtx, stream, flags, beforeClose);
+                    return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
                 }
                 if (isArray(node)) {
-                    return walkChildren(node, ssrCtx, stream, flags);
+                    return walkChildren(node, rCtx, ssrCtx, stream, flags);
                 }
                 if (isSignal(node)) {
                     const insideText = 8 & flags;
-                    const hostEl = ssrCtx.hostCtx?.$element$;
+                    const hostEl = rCtx.$cmpCtx$?.$element$;
                     let value;
                     if (hostEl) {
                         if (!insideText) {
                             value = node.value;
-                            const id = getNextIndex(ssrCtx.rCtx);
+                            const id = getNextIndex(rCtx);
                             return addSignalSub(2, hostEl, node, "#" + id, "data"), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(jsxToString(value))}\x3c!----\x3e`);
                         }
                         value = invoke(ssrCtx.invocationContext, (() => node.value));
@@ -3296,20 +3291,20 @@
                     return void stream.write(escapeHtml(jsxToString(value)));
                 }
                 if (isPromise(node)) {
-                    return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, ssrCtx, stream, flags, beforeClose)));
+                    return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)));
                 }
             }
         }
     };
-    function walkChildren(children, ssrContext, stream, flags) {
+    function walkChildren(children, rCtx, ssrContext, stream, flags) {
         if (null == children) {
             return;
         }
         if (!isArray(children)) {
-            return processData(children, ssrContext, stream, flags);
+            return processData(children, rCtx, ssrContext, stream, flags);
         }
         if (1 === children.length) {
-            return processData(children[0], ssrContext, stream, flags);
+            return processData(children[0], rCtx, ssrContext, stream, flags);
         }
         if (0 === children.length) {
             return;
@@ -3319,7 +3314,7 @@
         return children.reduce(((prevPromise, child, index) => {
             const buffer = [];
             buffers.push(buffer);
-            const rendered = processData(child, ssrContext, prevPromise ? {
+            const rendered = processData(child, rCtx, ssrContext, prevPromise ? {
                 write(chunk) {
                     currentIndex === index ? stream.write(chunk) : buffer.push(chunk);
                 }
@@ -3442,9 +3437,10 @@
             return "";
         }
     }));
+    const listenersNeedId = listeners => 0 !== listeners.length && listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
     const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
     const useStore = (initialState, opts) => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
         if (null != get) {
             return get;
         }
@@ -3578,11 +3574,10 @@
     });
     const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
-        const {get: get, set: set, ctx: ctx, i: i} = useSequentialScope();
+        const {get: get, set: set, rCtx: rCtx, i: i, elCtx: elCtx} = useSequentialScope();
         if (get) {
             return get;
         }
-        const renderCtx = ctx.$renderCtx$;
         const styleId = (index = i, `${((text, hash = 0) => {
             if (0 === text.length) {
                 return hash;
@@ -3593,8 +3588,7 @@
             return Number(Math.abs(hash)).toString(36);
         })(styleQrl.$hash$)}-${index}`);
         var index;
-        const containerState = renderCtx.$static$.$containerState$;
-        const elCtx = getContext(ctx.$hostElement$);
+        const containerState = rCtx.$renderCtx$.$static$.$containerState$;
         if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
         scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
             return styleId;
@@ -3607,7 +3601,7 @@
                 content: transform(styleText, styleId)
             });
         };
-        return isPromise(value) ? ctx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
+        return isPromise(value) ? rCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
     exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
@@ -3664,7 +3658,7 @@
         const immutable = obj[_IMMUTABLE]?.[prop];
         return isSignal(immutable) ? immutable : obj[prop];
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
-    exports.createContext = createContext$1, exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
+    exports.createContext = createContext, exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
         const normalizedProps = {
             children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY
         };
@@ -3719,18 +3713,16 @@
         await postRendering(containerState, renderCtx);
     }, exports.renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
-        const containerEl = createContext(1).$element$;
+        const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl);
         const rCtx = createRenderContext({
             nodeType: 9
         }, containerState);
         const headNodes = opts.beforeContent ?? [];
         const ssrCtx = {
-            rCtx: rCtx,
             $contexts$: [],
             projectedChildren: void 0,
-            projectedContext: void 0,
-            hostCtx: null,
+            projectedCtxs: void 0,
             invocationContext: void 0,
             headNodes: "html" === root ? headNodes : [],
             $pendingListeners$: []
@@ -3747,21 +3739,21 @@
             url: opts.url,
             ...opts.envData
         }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
-        containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, ssrCtx, stream, containerState, opts) => {
+        containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
             const beforeClose = opts.beforeClose;
-            return await renderNode(node, ssrCtx, stream, 0, beforeClose ? stream => {
+            return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
                 const result = beforeClose(ssrCtx.$contexts$, containerState);
-                return processData(result, ssrCtx, stream, 0, void 0);
-            } : void 0), ssrCtx.rCtx.$static$;
-        })(node, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
+                return processData(result, rCtx, ssrCtx, stream, 0, void 0);
+            } : void 0), rCtx.$static$;
+        })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
     }, exports.setPlatform = plt => _platform = plt, exports.useCleanup$ = useCleanup$, 
     exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
     exports.useClientEffectQrl = useClientEffectQrl, exports.useContext = (context, defaultValue) => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
         if (void 0 !== get) {
             return get;
         }
-        const value = resolveContext(context, ctx.$hostElement$, ctx.$renderCtx$);
+        const value = resolveContext(context, ctx.$hostElement$);
         if (void 0 !== value) {
             return set(value);
         }
@@ -3783,7 +3775,7 @@
     }), exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerMount$ = useServerMount$, 
     exports.useServerMountQrl = useServerMountQrl, exports.useSignal = initialState => {
-        const {get: get, set: set, ctx: ctx} = useSequentialScope();
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
         if (null != get) {
             return get;
         }

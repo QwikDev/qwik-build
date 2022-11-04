@@ -462,7 +462,7 @@ function deprecatedWarning(oldApi, newApi) {
 }
 
 // packages/qwik/src/server/render.ts
-var DOCTYPE = "<!DOCTYPE html>";
+var DOCTYPE = "<!DOCTYPE html><!--cq-->";
 async function renderToStream(rootNode, opts) {
   let stream = opts.stream;
   let bufferSize = 0;
@@ -620,6 +620,7 @@ async function renderToStream(rootNode, opts) {
       return jsx2(Fragment2, { children });
     }
   });
+  stream.write("<!--/cq-->");
   flush();
   const result = {
     prefetchResources: void 0,

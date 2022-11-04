@@ -505,7 +505,7 @@ function deprecatedWarning(oldApi, newApi) {
 }
 
 // packages/qwik/src/server/render.ts
-var DOCTYPE = "<!DOCTYPE html>";
+var DOCTYPE = "<!DOCTYPE html><!--cq-->";
 async function renderToStream(rootNode, opts) {
   var _a;
   let stream = opts.stream;
@@ -665,6 +665,7 @@ async function renderToStream(rootNode, opts) {
       return (0, import_qwik3.jsx)(import_qwik3.Fragment, { children });
     }
   });
+  stream.write("<!--/cq-->");
   flush();
   const result = {
     prefetchResources: void 0,
