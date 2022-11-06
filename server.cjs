@@ -508,6 +508,7 @@ function deprecatedWarning(oldApi, newApi) {
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
   var _a;
+  opts = normalizeOptions(opts);
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
@@ -732,6 +733,15 @@ function collectRenderSymbols(renderSymbols, elements) {
       renderSymbols.push(symbol);
     }
   }
+}
+function normalizeOptions(opts) {
+  const normalizedOpts = { ...opts };
+  if (opts) {
+    if (typeof opts.base === "function") {
+      normalizedOpts.base = opts.base(normalizedOpts);
+    }
+  }
+  return normalizedOpts;
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

@@ -244,6 +244,31 @@ const inflateQrl = (qrl, elCtx) => (qrl.$capture$, qrl.$captureRef$ = qrl.$captu
 
 const QSlot = "q:slot";
 
+let _locale;
+
+function getLocale(defaultLocale) {
+    if (void 0 === _locale) {
+        const ctx = tryGetInvokeContext();
+        if (ctx && ctx.$locale$) {
+            return ctx.$locale$;
+        }
+        if (void 0 !== defaultLocale) {
+            return defaultLocale;
+        }
+        throw new Error("Reading `locale` outside of context.");
+    }
+    return _locale;
+}
+
+function withLocale(locale, fn) {
+    const previousLang = _locale;
+    try {
+        return _locale = locale, fn();
+    } finally {
+        _locale = previousLang;
+    }
+}
+
 let _context;
 
 const tryGetInvokeContext = () => {
@@ -304,10 +329,13 @@ const waitAndRun = (ctx, callback) => {
 
 const newInvokeContextFromTuple = context => {
     const element = context[0];
-    return newInvokeContext(void 0, element, context[1], context[2]);
+    const locale = element.closest("[q\\:container]")?.getAttribute("q:locale") || void 0;
+    return locale && function(locale) {
+        _locale = locale;
+    }(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
 };
 
-const newInvokeContext = (hostElement, element, event, url) => ({
+const newInvokeContext = (locale, hostElement, element, event, url) => ({
     $seq$: 0,
     $hostElement$: hostElement,
     $element$: element,
@@ -317,7 +345,8 @@ const newInvokeContext = (hostElement, element, event, url) => ({
     $props$: void 0,
     $renderCtx$: void 0,
     $subscriber$: void 0,
-    $waitOn$: void 0
+    $waitOn$: void 0,
+    $locale$: locale
 });
 
 const getWrappingContainer = el => el.closest("[q\\:container]");
@@ -981,11 +1010,11 @@ const executeComponent = (rCtx, elCtx) => {
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
     const newCtx = pushRenderContext(rCtx);
-    const invocatinContext = newInvokeContext(hostElement, void 0, "qRender");
-    const waitOn = invocatinContext.$waitOn$ = [];
-    newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocatinContext.$subscriber$ = hostElement, 
-    invocatinContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-    const componentFn = componentQRL.getFn(invocatinContext);
+    const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
+    const waitOn = invocationContext.$waitOn$ = [];
+    newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocationContext.$subscriber$ = hostElement, 
+    invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+    const componentFn = componentQRL.getFn(invocationContext);
     return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
         node: jsxNode,
         rCtx: newCtx
@@ -1001,6 +1030,7 @@ const executeComponent = (rCtx, elCtx) => {
 const createRenderContext = (doc, containerState) => ({
     $static$: {
         $doc$: doc,
+        $locale$: containerState.$envData$.locale,
         $containerState$: containerState,
         $hostElements$: new Set,
         $operations$: [],
@@ -1150,9 +1180,9 @@ const renderComponent = (rCtx, elCtx, flags) => {
     then(executeComponent(rCtx, elCtx), (res => {
         const staticCtx = rCtx.$static$;
         const newCtx = res.rCtx;
-        const invocatinContext = newInvokeContext(hostElement);
-        if (staticCtx.$hostElements$.add(hostElement), invocatinContext.$subscriber$ = hostElement, 
-        invocatinContext.$renderCtx$ = newCtx, justMounted && elCtx.$appendStyles$) {
+        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
+        if (staticCtx.$hostElements$.add(hostElement), invocationContext.$subscriber$ = hostElement, 
+        invocationContext.$renderCtx$ = newCtx, justMounted && elCtx.$appendStyles$) {
             for (const style of elCtx.$appendStyles$) {
                 styleTask = style, (ctx = staticCtx).$containerState$.$styleIds$.add(styleTask.styleId), 
                 ctx.$postOperations$.push({
@@ -1162,7 +1192,7 @@ const renderComponent = (rCtx, elCtx, flags) => {
             }
         }
         var ctx, styleTask;
-        const processedJSXNode = processData$1(res.node, invocatinContext);
+        const processedJSXNode = processData$1(res.node, invocationContext);
         return then(processedJSXNode, (processedJSXNode => {
             const newVdom = wrapJSX(hostElement, processedJSXNode);
             const oldVdom = getVdom(elCtx);
@@ -2776,15 +2806,15 @@ const useMount$ = implicit$FirstArg(useMountQrl);
 
 const isResourceWatch = watch => !!watch.$resource$;
 
-const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState) : runWatch(watch, containerState));
+const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState, rctx) : runWatch(watch, containerState, rctx));
 
-const runResource = (watch, containerState, waitOn) => {
+const runResource = (watch, containerState, rctx, waitOn) => {
     watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
     const el = watch.$el$;
-    const invokationContext = newInvokeContext(el, void 0, "WatchEvent");
+    const invocationContext = newInvokeContext(rctx?.$static$.$locale$, el, void 0, "WatchEvent");
     const {$subsManager$: subsManager} = containerState;
     watch.$qrl$.$captureRef$;
-    const watchFn = watch.$qrl$.getFn(invokationContext, (() => {
+    const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
         subsManager.$clearSub$(watch);
     }));
     const cleanups = [];
@@ -2817,7 +2847,7 @@ const runResource = (watch, containerState, waitOn) => {
     resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
     resource._state = "rejected", resource._resolved = void 0, resource._error = value, 
     reject(value)), true);
-    invoke(invokationContext, (() => {
+    invoke(invocationContext, (() => {
         resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
         resource.promise = new Promise(((r, re) => {
             resolve = r, reject = re;
@@ -2839,9 +2869,9 @@ const runResource = (watch, containerState, waitOn) => {
 const runWatch = (watch, containerState, rctx) => {
     watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
     const hostElement = watch.$el$;
-    const invokationContext = newInvokeContext(hostElement, void 0, "WatchEvent");
+    const invocationContext = newInvokeContext(rctx?.$static$.$locale$, hostElement, void 0, "WatchEvent");
     const {$subsManager$: subsManager} = containerState;
-    const watchFn = watch.$qrl$.getFn(invokationContext, (() => {
+    const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
         subsManager.$clearSub$(watch);
     }));
     const cleanups = [];
@@ -2912,7 +2942,7 @@ const useResourceQrl = (qrl, opts) => {
     const el = elCtx.$element$;
     const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
     const previousWait = Promise.all(rCtx.$waitOn$.slice());
-    return runResource(watch, containerState, previousWait), elCtx.$watches$ || (elCtx.$watches$ = []), 
+    return runResource(watch, containerState, rCtx.$renderCtx$, previousWait), elCtx.$watches$ || (elCtx.$watches$ = []), 
     elCtx.$watches$.push(watch), set(resource), resource;
 };
 
@@ -3485,6 +3515,7 @@ const renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl);
+    containerState.$envData$.locale = opts.envData?.locale;
     const rCtx = createRenderContext({
         nodeType: 9
     }, containerState);
@@ -3495,7 +3526,8 @@ const renderSSR = async (node, opts) => {
         projectedCtxs: void 0,
         invocationContext: void 0,
         headNodes: "html" === root ? headNodes : [],
-        $pendingListeners$: []
+        $pendingListeners$: [],
+        locale: opts.envData?.locale
     };
     const containerAttributes = {
         ...opts.containerAttributes,
@@ -3503,6 +3535,7 @@ const renderSSR = async (node, opts) => {
         "q:version": "0.12.1",
         "q:render": "ssr",
         "q:base": opts.base,
+        "q:locale": opts.envData?.locale,
         children: "html" === root ? [ node ] : [ headNodes, node ]
     };
     "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
@@ -3595,7 +3628,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
     return setComponentProps(rCtx, elCtx, props.props), then(executeComponent(rCtx, elCtx), (res => {
         const hostElement = elCtx.$element$;
         const newRCtx = res.rCtx;
-        const invocationContext = newInvokeContext(hostElement, void 0);
+        const invocationContext = newInvokeContext(ssrCtx.locale, hostElement, void 0);
         invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newRCtx;
         const newSSrContext = {
             ...ssrCtx,
@@ -4207,4 +4240,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

@@ -1750,6 +1750,7 @@ globalThis.qwikOptimizer = function(module) {
             }));
             const renderOpts = {
               debug: true,
+              locale: envData.locale,
               stream: res,
               snapshot: !isClientDevOnly,
               manifest: isClientDevOnly ? void 0 : manifest,

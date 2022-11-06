@@ -1726,6 +1726,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
           }));
           const renderOpts = {
             debug: true,
+            locale: envData.locale,
             stream: res,
             snapshot: !isClientDevOnly,
             manifest: isClientDevOnly ? void 0 : manifest,

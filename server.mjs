@@ -464,6 +464,7 @@ function deprecatedWarning(oldApi, newApi) {
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
+  opts = normalizeOptions(opts);
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
@@ -686,6 +687,15 @@ function collectRenderSymbols(renderSymbols, elements) {
       renderSymbols.push(symbol);
     }
   }
+}
+function normalizeOptions(opts) {
+  const normalizedOpts = { ...opts };
+  if (opts) {
+    if (typeof opts.base === "function") {
+      normalizedOpts.base = opts.base(normalizedOpts);
+    }
+  }
+  return normalizedOpts;
 }
 export {
   getQwikLoaderScript,

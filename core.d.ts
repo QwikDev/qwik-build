@@ -810,6 +810,16 @@ export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
 }
 
+/**
+ * Retrieve the current lang.
+ *
+ * If no current lang and there is no `defaultLang` the function throws an error.
+ *
+ * @returns  the lang.
+ * @internal
+ */
+export declare function getLocale(defaultLocale?: string): string;
+
 declare type GetObjID = (obj: any) => string | null;
 
 /**
@@ -1198,6 +1208,7 @@ declare interface InvokeContext {
     $waitOn$: Promise<any>[] | undefined;
     $subscriber$: SubscriberEffect | SubscriberHost | null | undefined;
     $renderCtx$: RenderContext | undefined;
+    $locale$: string | undefined;
 }
 
 declare type InvokeTuple = [Element, Event, URL?];
@@ -2098,6 +2109,7 @@ export declare interface RenderSSROptions {
 }
 
 declare interface RenderStaticContext {
+    readonly $locale$: string;
     readonly $doc$: Document;
     readonly $roots$: QContext[];
     readonly $hostElements$: Set<QwikElement>;
@@ -3530,6 +3542,13 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     useragent?: string | undefined;
     webpreferences?: string | undefined;
 }
+
+/**
+ * Override the `getLocale` with `lang` within the `fn` execution.
+ *
+ * @internal
+ */
+export declare function withLocale<T>(locale: string, fn: () => T): T;
 
 /**
  * @internal
