@@ -1079,7 +1079,6 @@ const addQwikEvent = (prop, containerState) => {
 };
 const SHOW_ELEMENT = 1;
 const SHOW_COMMENT$1 = 128;
-const FILTER_ACCEPT$1 = 1;
 const FILTER_REJECT$1 = 2;
 const FILTER_SKIP = 3;
 const isContainer$1 = (el) => {
@@ -3601,9 +3600,6 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             if (!id) {
                 console.warn('Missing ID', el);
             }
-            else {
-                id = ELEMENT_ID_PREFIX + id;
-            }
             elementToIndex.set(el, id);
         }
         return id;
@@ -3629,7 +3625,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             else if (isQwikElement(obj)) {
                 const elID = getElementID(obj);
                 if (elID) {
-                    return elID + suffix;
+                    return ELEMENT_ID_PREFIX + elID + suffix;
                 }
                 return null;
             }
@@ -3769,8 +3765,9 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             }
         }
         if (canRender) {
-            if (elementCaptured && props) {
-                metaValue.h = mustGetObjId(props) + ' ' + mustGetObjId(renderQrl);
+            if (elementCaptured && renderQrl) {
+                const propsId = getObjId(props);
+                metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
                 add = true;
             }
             if (watches && watches.length > 0) {
@@ -3898,7 +3895,7 @@ const collectElement = (el, collector) => {
     }
 };
 const collectElementData = (elCtx, collector, dynamic) => {
-    if (elCtx.$props$) {
+    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
         collectValue(elCtx.$props$, collector, dynamic);
     }
     if (elCtx.$componentQrl$) {
@@ -4082,6 +4079,9 @@ const getTextID = (node, containerState) => {
     parent.insertBefore(close, node.nextSibling);
     return ELEMENT_ID_PREFIX + id;
 };
+const isEmptyObj = (obj) => {
+    return Object.keys(obj).length === 0;
+};
 
 const resumeIfNeeded = (containerEl) => {
     const isResumed = directGetAttribute(containerEl, QContainerAttr);
@@ -4109,64 +4109,74 @@ const resumeContainer = (containerEl) => {
     script.remove();
     const containerState = getContainerState(containerEl);
     moveStyles(containerEl, containerState);
-    const meta = JSON.parse(unescapeText(script.textContent || '{}'));
+    const pauseState = JSON.parse(unescapeText(script.textContent || '{}'));
     // Collect all elements
     const elements = new Map();
-    const getObject = (id) => {
-        return getObjectImpl(id, elements, meta.objs, containerState);
-    };
-    const elementWalker = doc.createTreeWalker(containerEl, SHOW_COMMENT$1 | SHOW_ELEMENT, {
-        acceptNode(node) {
-            if (isComment(node)) {
-                const data = node.data;
-                if (data.startsWith('qv ')) {
-                    const close = findClose(node);
-                    const virtual = new VirtualElementImpl(node, close);
-                    const id = directGetAttribute(virtual, ELEMENT_ID);
-                    if (id) {
-                        const elCtx = getContext(virtual);
-                        elCtx.$id$ = id;
-                        elements.set(ELEMENT_ID_PREFIX + id, virtual);
-                        maxId = Math.max(maxId, strToInt(id));
-                    }
+    let node = null;
+    let container = 0;
+    // Collect all virtual elements
+    const elementWalker = doc.createNodeIterator(containerEl, SHOW_COMMENT$1);
+    while ((node = elementWalker.nextNode())) {
+        const data = node.data;
+        if (container === 0) {
+            if (data.startsWith('qv ')) {
+                const close = findClose(node);
+                const virtual = new VirtualElementImpl(node, close);
+                const id = directGetAttribute(virtual, ELEMENT_ID);
+                if (id) {
+                    const elCtx = getContext(virtual);
+                    const index = strToInt(id);
+                    elCtx.$id$ = id;
+                    elements.set(index, virtual);
                 }
-                else if (data.startsWith('t=')) {
-                    const id = data.slice(2);
-                    elements.set(ELEMENT_ID_PREFIX + data.slice(2), getTextNode(node));
-                    maxId = Math.max(maxId, strToInt(id));
-                }
-                return FILTER_SKIP;
             }
-            if (isContainer$1(node)) {
-                return FILTER_REJECT$1;
+            else if (data.startsWith('t=')) {
+                const id = data.slice(2);
+                const index = strToInt(id);
+                elements.set(index, getTextNode(node));
             }
-            return node.hasAttribute(ELEMENT_ID) ? FILTER_ACCEPT$1 : FILTER_SKIP;
-        },
-    });
-    let el = null;
-    while ((el = elementWalker.nextNode())) {
+        }
+        if (data === 'cq') {
+            container++;
+        }
+        else if (data === '/cq') {
+            container--;
+        }
+    }
+    // Collect all elements
+    // If there are nested container, we are forced to take a slower path.
+    // In order to check if there are nested containers, we use the `'qc📦'` class.
+    // This is because checking for class is the fastest way for the browser to find it.
+    const slotPath = containerEl.getElementsByClassName('qc📦').length !== 0;
+    containerEl.querySelectorAll('[q\\:id]').forEach((el) => {
+        if (slotPath && el.closest('[q\\:container]') !== containerEl) {
+            return;
+        }
         assertElement(el);
         const id = directGetAttribute(el, ELEMENT_ID);
         assertDefined(id, `resume: element missed q:id`, el);
         const elCtx = getContext(el);
         elCtx.$id$ = id;
         elCtx.$vdom$ = domToVnode(el);
-        elements.set(ELEMENT_ID_PREFIX + id, el);
+        elements.set(strToInt(id), el);
         maxId = Math.max(maxId, strToInt(id));
-    }
-    containerState.$elementIndex$ = ++maxId;
-    const parser = createParser(getObject, containerState, doc);
+    });
+    containerState.$elementIndex$ = maxId;
+    const parser = createParser(containerState, doc);
+    const getObject = (id) => {
+        return getObjectImpl(id, elements, pauseState.objs, containerState);
+    };
     // Revive proxies with subscriptions into the proxymap
-    reviveValues(meta.objs, parser);
-    reviveSubscriptions(meta.objs, meta.subs, getObject, containerState, parser);
+    reviveValues(pauseState.objs, parser);
+    reviveSubscriptions(pauseState.objs, pauseState.subs, getObject, containerState, parser);
     // Rebuild target objects
-    for (const obj of meta.objs) {
+    for (const obj of pauseState.objs) {
         reviveNestedObjects(obj, getObject, parser);
     }
-    for (const elementID of Object.keys(meta.ctx)) {
-        assertTrue(elementID.startsWith('#'), 'elementId must start with #');
-        const ctxMeta = meta.ctx[elementID];
-        const el = elements.get(elementID);
+    for (const elementID of Object.keys(pauseState.ctx)) {
+        const ctxMeta = pauseState.ctx[elementID];
+        const index = strToInt(elementID);
+        const el = elements.get(index);
         assertDefined(el, `resume: cant find dom node for id`, elementID);
         assertQwikElement(el);
         const elCtx = getContext(el);
@@ -4195,14 +4205,20 @@ const resumeContainer = (containerEl) => {
         }
         // Restore sequence scoping
         if (host) {
-            const [props, renderQrl] = host.split(' ');
+            const [renderQrl, props] = host.split(' ');
             const styleIds = el.getAttribute(QScopedStyle);
-            assertDefined(props, `resume: props missing in host metadata`, host);
             assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
             elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
             elCtx.$flags$ = HOST_FLAG_MOUNTED;
-            elCtx.$props$ = getObject(props);
             elCtx.$componentQrl$ = getObject(renderQrl);
+            if (props) {
+                elCtx.$props$ = getObject(props);
+            }
+            else {
+                elCtx.$props$ = createProxy({
+                    [QObjectFlagsSymbol]: QObjectImmutable,
+                }, containerState);
+            }
         }
     }
     directSetAttribute(containerEl, QContainerAttr, 'resumed');
@@ -4242,7 +4258,7 @@ const reviveSubscriptions = (objs, objsSubs, getObject, containerState, parser) 
     }
 };
 const reviveNestedObjects = (obj, getObject, parser) => {
-    if (parser.fill(obj)) {
+    if (parser.fill(obj, getObject)) {
         return;
     }
     if (obj && typeof obj == 'object') {
@@ -4261,8 +4277,9 @@ const reviveNestedObjects = (obj, getObject, parser) => {
 const getObjectImpl = (id, elements, objs, containerState) => {
     assertTrue(typeof id === 'string' && id.length > 0, 'resume: id must be an non-empty string, got:', id);
     if (id.startsWith(ELEMENT_ID_PREFIX)) {
-        assertTrue(elements.has(id), `missing element for id:`, id);
-        return elements.get(id);
+        const index = strToInt(id.slice(ELEMENT_ID_PREFIX.length));
+        assertTrue(elements.has(index), `missing element for id:`, index);
+        return elements.get(index);
     }
     const index = strToInt(id);
     assertTrue(objs.length > index, 'resume: index is out of bounds', id);
@@ -5826,7 +5843,7 @@ const serializeValue = (obj, getObjID, containerState) => {
     }
     return undefined;
 };
-const createParser = (getObject, containerState, doc) => {
+const createParser = (containerState, doc) => {
     const fillMap = new Map();
     const subsMap = new Map();
     return {
@@ -5854,7 +5871,7 @@ const createParser = (getObject, containerState, doc) => {
             }
             return false;
         },
-        fill(obj) {
+        fill(obj, getObject) {
             const serializer = fillMap.get(obj);
             if (serializer) {
                 serializer.fill(obj, getObject, containerState);
@@ -6632,6 +6649,10 @@ const renderSSR = async (node, opts) => {
         'q:base': opts.base,
         children: root === 'html' ? [node] : [headNodes, node],
     };
+    if (root !== 'html') {
+        containerAttributes.class =
+            'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
+    }
     containerState.$envData$ = {
         url: opts.url,
         ...opts.envData,
@@ -6953,10 +6974,12 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (key != null) {
             openingElement += ' q:key="' + key + '"';
         }
-        if ('ref' in props || useSignal || listenersNeedId(listeners)) {
-            const newID = getNextIndex(rCtx);
-            openingElement += ' q:id="' + newID + '"';
-            elCtx.$id$ = newID;
+        if ('ref' in props || useSignal || listeners.length > 0) {
+            if ('ref' in props || useSignal || listenersNeedId(listeners)) {
+                const newID = getNextIndex(rCtx);
+                openingElement += ' q:id="' + newID + '"';
+                elCtx.$id$ = newID;
+            }
             ssrCtx.$contexts$.push(elCtx);
         }
         if (flags & IS_HEAD) {
@@ -7259,9 +7282,6 @@ const escapeAttr = (s) => {
     });
 };
 const listenersNeedId = (listeners) => {
-    if (listeners.length === 0) {
-        return false;
-    }
     return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
 };
 const hasDynamicChildren = (node) => {

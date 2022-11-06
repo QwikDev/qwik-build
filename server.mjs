@@ -462,7 +462,7 @@ function deprecatedWarning(oldApi, newApi) {
 }
 
 // packages/qwik/src/server/render.ts
-var DOCTYPE = "<!DOCTYPE html><!--cq-->";
+var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
   let stream = opts.stream;
   let bufferSize = 0;
@@ -532,6 +532,7 @@ async function renderToStream(rootNode, opts) {
   if (containerTagName === "html") {
     stream.write(DOCTYPE);
   } else {
+    stream.write("<!--cq-->");
     if (opts.qwikLoader) {
       if (opts.qwikLoader.include === void 0) {
         opts.qwikLoader.include = "never";
@@ -620,7 +621,9 @@ async function renderToStream(rootNode, opts) {
       return jsx2(Fragment2, { children });
     }
   });
-  stream.write("<!--/cq-->");
+  if (containerTagName !== "html") {
+    stream.write("<!--/cq-->");
+  }
   flush();
   const result = {
     prefetchResources: void 0,

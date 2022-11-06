@@ -505,8 +505,6 @@ const addQwikEvent = (prop, containerState) => {
     containerState.$events$.add(eventName);
 };
 
-const isContainer$1 = el => isElement(el) && el.hasAttribute("q:container");
-
 const intToStr = nu => nu.toString(36);
 
 const strToInt = nu => parseInt(nu, 36);
@@ -1954,7 +1952,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     const objToId = new Map;
     const getElementID = el => {
         let id = elementToIndex.get(el);
-        return void 0 === id && (id = getQId(el), id ? id = "#" + id : console.warn("Missing ID", el), 
+        return void 0 === id && (id = getQId(el), id || console.warn("Missing ID", el), 
         elementToIndex.set(el, id)), id;
     };
     const getObjId = obj => {
@@ -1969,7 +1967,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                 suffix += "!", obj = target;
             } else if (isQwikElement(obj)) {
                 const elID = getElementID(obj);
-                return elID ? elID + suffix : null;
+                return elID ? "#" + elID + suffix : null;
             }
         }
         const id = objToId.get(obj);
@@ -2070,8 +2068,11 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             value && (metaValue.r = value, add = true);
         }
         if (canRender) {
-            if (elementCaptured && props && (metaValue.h = mustGetObjId(props) + " " + mustGetObjId(renderQrl), 
-            add = true), watches && watches.length > 0) {
+            if (elementCaptured && renderQrl) {
+                const propsId = getObjId(props);
+                metaValue.h = mustGetObjId(renderQrl) + (propsId ? " " + propsId : ""), add = true;
+            }
+            if (watches && watches.length > 0) {
                 const value = watches.map(getObjId).filter(isNotNullable).join(" ");
                 value && (metaValue.w = value, add = true);
             }
@@ -2146,7 +2147,8 @@ const collectElement = (el, collector) => {
 };
 
 const collectElementData = (elCtx, collector, dynamic) => {
-    if (elCtx.$props$ && collectValue(elCtx.$props$, collector, dynamic), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamic), 
+    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && collectValue(elCtx.$props$, collector, dynamic), 
+    elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamic), 
     elCtx.$seq$) {
         for (const obj of elCtx.$seq$) {
             collectValue(obj, collector, dynamic);
@@ -2279,15 +2281,18 @@ const getQId = el => {
     return ctx ? ctx.$id$ : null;
 };
 
+const isEmptyObj = obj => 0 === Object.keys(obj).length;
+
 const resumeIfNeeded = containerEl => {
     "paused" === directGetAttribute(containerEl, "q:container") && (resumeContainer(containerEl), 
     appendQwikDevTools(containerEl));
 };
 
 const resumeContainer = containerEl => {
-    if (!isContainer$1(containerEl)) {
+    if (!(isElement(el = containerEl) && el.hasAttribute("q:container"))) {
         return;
     }
+    var el;
     let maxId = 0;
     const doc = getDocument(containerEl);
     const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
@@ -2298,43 +2303,51 @@ const resumeContainer = containerEl => {
     script.remove();
     const containerState = getContainerState(containerEl);
     moveStyles(containerEl, containerState);
-    const meta = JSON.parse(unescapeText(script.textContent || "{}"));
+    const pauseState = JSON.parse(unescapeText(script.textContent || "{}"));
     const elements = new Map;
-    const getObject = id => getObjectImpl(id, elements, meta.objs, containerState);
-    const elementWalker = doc.createTreeWalker(containerEl, 129, {
-        acceptNode(node) {
-            if (isComment(node)) {
-                const data = node.data;
-                if (data.startsWith("qv ")) {
-                    const close = findClose(node);
-                    const virtual = new VirtualElementImpl(node, close);
-                    const id = directGetAttribute(virtual, "q:id");
-                    id && (getContext(virtual).$id$ = id, elements.set("#" + id, virtual), maxId = Math.max(maxId, strToInt(id)));
-                } else if (data.startsWith("t=")) {
-                    const id = data.slice(2);
-                    elements.set("#" + data.slice(2), getTextNode(node)), maxId = Math.max(maxId, strToInt(id));
+    let node = null;
+    let container = 0;
+    const elementWalker = doc.createNodeIterator(containerEl, 128);
+    for (;node = elementWalker.nextNode(); ) {
+        const data = node.data;
+        if (0 === container) {
+            if (data.startsWith("qv ")) {
+                const close = findClose(node);
+                const virtual = new VirtualElementImpl(node, close);
+                const id = directGetAttribute(virtual, "q:id");
+                if (id) {
+                    const elCtx = getContext(virtual);
+                    const index = strToInt(id);
+                    elCtx.$id$ = id, elements.set(index, virtual);
                 }
-                return 3;
+            } else if (data.startsWith("t=")) {
+                const id = data.slice(2);
+                const index = strToInt(id);
+                elements.set(index, getTextNode(node));
             }
-            return isContainer$1(node) ? 2 : node.hasAttribute("q:id") ? 1 : 3;
         }
-    });
-    let el = null;
-    for (;el = elementWalker.nextNode(); ) {
+        "cq" === data ? container++ : "/cq" === data && container--;
+    }
+    const slotPath = 0 !== containerEl.getElementsByClassName("qc📦").length;
+    containerEl.querySelectorAll("[q\\:id]").forEach((el => {
+        if (slotPath && el.closest("[q\\:container]") !== containerEl) {
+            return;
+        }
         const id = directGetAttribute(el, "q:id");
         const elCtx = getContext(el);
-        elCtx.$id$ = id, elCtx.$vdom$ = domToVnode(el), elements.set("#" + id, el), maxId = Math.max(maxId, strToInt(id));
-    }
-    containerState.$elementIndex$ = ++maxId;
-    const parser = createParser(getObject, containerState, doc);
-    reviveValues(meta.objs, parser), reviveSubscriptions(meta.objs, meta.subs, getObject, containerState, parser);
-    for (const obj of meta.objs) {
+        elCtx.$id$ = id, elCtx.$vdom$ = domToVnode(el), elements.set(strToInt(id), el), 
+        maxId = Math.max(maxId, strToInt(id));
+    })), containerState.$elementIndex$ = maxId;
+    const parser = createParser(containerState, doc);
+    const getObject = id => getObjectImpl(id, elements, pauseState.objs, containerState);
+    reviveValues(pauseState.objs, parser), reviveSubscriptions(pauseState.objs, pauseState.subs, getObject, containerState, parser);
+    for (const obj of pauseState.objs) {
         reviveNestedObjects(obj, getObject, parser);
     }
-    for (const elementID of Object.keys(meta.ctx)) {
-        elementID.startsWith("#");
-        const ctxMeta = meta.ctx[elementID];
-        const el = elements.get(elementID);
+    for (const elementID of Object.keys(pauseState.ctx)) {
+        const ctxMeta = pauseState.ctx[elementID];
+        const index = strToInt(elementID);
+        const el = elements.get(index);
         const elCtx = getContext(el);
         const refMap = ctxMeta.r;
         const seq = ctxMeta.s;
@@ -2351,10 +2364,12 @@ const resumeContainer = containerEl => {
             }
         }
         if (host) {
-            const [props, renderQrl] = host.split(" ");
+            const [renderQrl, props] = host.split(" ");
             const styleIds = el.getAttribute("q:sstyle");
-            elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, elCtx.$props$ = getObject(props), 
-            elCtx.$componentQrl$ = getObject(renderQrl);
+            elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, elCtx.$componentQrl$ = getObject(renderQrl), 
+            elCtx.$props$ = props ? getObject(props) : createProxy({
+                [QObjectFlagsSymbol]: 2
+            }, containerState);
         }
     }
     directSetAttribute(containerEl, "q:container", "resumed"), ((el, eventName, detail, bubbles) => {
@@ -2389,7 +2404,7 @@ const reviveSubscriptions = (objs, objsSubs, getObject, containerState, parser) 
 };
 
 const reviveNestedObjects = (obj, getObject, parser) => {
-    if (!parser.fill(obj) && obj && "object" == typeof obj) {
+    if (!parser.fill(obj, getObject) && obj && "object" == typeof obj) {
         if (isArray(obj)) {
             for (let i = 0; i < obj.length; i++) {
                 obj[i] = getObject(obj[i]);
@@ -2404,7 +2419,8 @@ const reviveNestedObjects = (obj, getObject, parser) => {
 
 const getObjectImpl = (id, elements, objs, containerState) => {
     if ("string" == typeof id && id.length, id.startsWith("#")) {
-        return elements.has(id), elements.get(id);
+        const index = strToInt(id.slice("#".length));
+        return elements.has(index), elements.get(index);
     }
     const index = strToInt(id);
     objs.length;
@@ -3154,7 +3170,7 @@ const serializeValue = (obj, getObjID, containerState) => {
     }
 };
 
-const createParser = (getObject, containerState, doc) => {
+const createParser = (containerState, doc) => {
     const fillMap = new Map;
     const subsMap = new Map;
     return {
@@ -3172,7 +3188,7 @@ const createParser = (getObject, containerState, doc) => {
             const serializer = subsMap.get(obj);
             return !!serializer && (serializer.subs(obj, subs, containerState), true);
         },
-        fill(obj) {
+        fill(obj, getObject) {
             const serializer = fillMap.get(obj);
             return !!serializer && (serializer.fill(obj, getObject, containerState), true);
         }
@@ -3489,6 +3505,7 @@ const renderSSR = async (node, opts) => {
         "q:base": opts.base,
         children: "html" === root ? [ node ] : [ headNodes, node ]
     };
+    "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
     containerState.$envData$ = {
         url: opts.url,
         ...opts.envData
@@ -3696,9 +3713,12 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 addQwikEvent(listener[0], rCtx.$static$.$containerState$);
             }
         }
-        if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || useSignal || listenersNeedId(listeners)) {
-            const newID = getNextIndex(rCtx);
-            openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID, ssrCtx.$contexts$.push(elCtx);
+        if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || useSignal || listeners.length > 0) {
+            if ("ref" in props || useSignal || listenersNeedId(listeners)) {
+                const newID = getNextIndex(rCtx);
+                openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID;
+            }
+            ssrCtx.$contexts$.push(elCtx);
         }
         if (1 & flags && (openingElement += " q:head"), openingElement += ">", stream.write(openingElement), 
         emptyElements[tagName]) {
@@ -3945,7 +3965,7 @@ const escapeAttr = s => s.replace(ESCAPE_ATTRIBUTES, (c => {
     }
 }));
 
-const listenersNeedId = listeners => 0 !== listeners.length && listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
+const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
