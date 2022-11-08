@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.12.1
+ * @builder.io/qwik 0.13.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -28,17 +28,17 @@
         }
     };
 
-    const isNode = (value) => {
+    const isNode$1 = (value) => {
         return value && typeof value.nodeType === 'number';
     };
     const isDocument = (value) => {
         return value && value.nodeType === 9;
     };
-    const isElement = (value) => {
+    const isElement$1 = (value) => {
         return value.nodeType === 1;
     };
     const isQwikElement = (value) => {
-        return isNode(value) && (value.nodeType === 1 || value.nodeType === 111);
+        return isNode$1(value) && (value.nodeType === 1 || value.nodeType === 111);
     };
     const isVirtualElement = (value) => {
         return value.nodeType === 111;
@@ -59,7 +59,7 @@
     }
     function assertElement(el) {
         if (qDev) {
-            if (!isElement(el)) {
+            if (!isElement$1(el)) {
                 console.error('Not a Element, got', el);
                 throw new Error('Not an Element');
             }
@@ -99,7 +99,7 @@
     const printParams = (optionalParams) => {
         if (qDev) {
             return optionalParams.map((p) => {
-                if (isNode(p) && isElement(p)) {
+                if (isNode$1(p) && isElement$1(p)) {
                     return printElement(p);
                 }
                 return p;
@@ -789,59 +789,6 @@
         };
     };
 
-    const Q_CTX = '_qc_';
-    const HOST_FLAG_DIRTY = 1 << 0;
-    const HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
-    const HOST_FLAG_MOUNTED = 1 << 2;
-    const HOST_FLAG_DYNAMIC = 1 << 3;
-    const tryGetContext = (element) => {
-        return element[Q_CTX];
-    };
-    const getContext = (element, _containerState) => {
-        const ctx = tryGetContext(element);
-        if (ctx) {
-            return ctx;
-        }
-        return createContext$1(element);
-    };
-    const createContext$1 = (element) => {
-        const ctx = {
-            $flags$: 0,
-            $id$: '',
-            $element$: element,
-            $refMap$: [],
-            li: [],
-            $watches$: null,
-            $seq$: null,
-            $slots$: null,
-            $scopeIds$: null,
-            $appendStyles$: null,
-            $props$: null,
-            $vdom$: null,
-            $componentQrl$: null,
-            $contexts$: null,
-            $parent$: null,
-            $slotParent$: null,
-        };
-        element[Q_CTX] = ctx;
-        return ctx;
-    };
-    const cleanupContext = (elCtx, subsManager) => {
-        const el = elCtx.$element$;
-        elCtx.$watches$?.forEach((watch) => {
-            subsManager.$clearSub$(watch);
-            destroyWatch(watch);
-        });
-        if (elCtx.$componentQrl$) {
-            subsManager.$clearSub$(el);
-        }
-        elCtx.$componentQrl$ = null;
-        elCtx.$seq$ = null;
-        elCtx.$watches$ = null;
-        elCtx.$flags$ = 0;
-        el[Q_CTX] = undefined;
-    };
-
     const fromCamelToKebabCase = (text) => {
         return text.replace(/([A-Z])/g, '-$1').toLowerCase();
     };
@@ -935,6 +882,412 @@
             }
         }
         return listeners;
+    };
+
+    const directSetAttribute = (el, prop, value) => {
+        return el.setAttribute(prop, value);
+    };
+    const directGetAttribute = (el, prop) => {
+        return el.getAttribute(prop);
+    };
+
+    function isElement(value) {
+        return isNode(value) && value.nodeType === 1;
+    }
+    function isNode(value) {
+        return value && typeof value.nodeType === 'number';
+    }
+
+    const QObjectRecursive = 1 << 0;
+    const QObjectImmutable = 1 << 1;
+    const QOjectTargetSymbol = Symbol('proxy target');
+    const QObjectFlagsSymbol = Symbol('proxy flags');
+    const QObjectManagerSymbol = Symbol('proxy manager');
+    /**
+     * @internal
+     */
+    const _IMMUTABLE = Symbol('IMMUTABLE');
+    const _IMMUTABLE_PREFIX = '$$';
+
+    const createSignal = (value, containerState, subcriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(subcriptions);
+        const signal = new SignalImpl(value, manager);
+        return signal;
+    };
+    class SignalImpl {
+        constructor(v, manager) {
+            this.untrackedValue = v;
+            this[QObjectManagerSymbol] = manager;
+        }
+        // prevent accidental use as value
+        valueOf() {
+            throw new TypeError('Cannot coerce a Signal, use `.value` instead');
+        }
+        toString() {
+            return `[Signal ${String(this.value)}]`;
+        }
+        toJSON() {
+            return { value: this.value };
+        }
+        get value() {
+            const sub = tryGetInvokeContext()?.$subscriber$;
+            if (sub) {
+                this[QObjectManagerSymbol].$addSub$([0, sub, undefined]);
+            }
+            return this.untrackedValue;
+        }
+        set value(v) {
+            if (qDev) {
+                verifySerializable(v);
+                const invokeCtx = tryGetInvokeContext();
+                if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
+                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$);
+                }
+            }
+            const manager = this[QObjectManagerSymbol];
+            const oldValue = this.untrackedValue;
+            if (manager && oldValue !== v) {
+                this.untrackedValue = v;
+                manager.$notifySubs$();
+            }
+        }
+    }
+    const isSignal = (obj) => {
+        return obj instanceof SignalImpl || obj instanceof SignalWrapper;
+    };
+    const addSignalSub = (type, hostEl, signal, elm, property) => {
+        const subscription = signal instanceof SignalWrapper
+            ? [
+                type,
+                hostEl,
+                getProxyTarget(signal.ref),
+                elm,
+                property,
+                signal.prop === 'value' ? undefined : signal.prop,
+            ]
+            : [type, hostEl, signal, elm, property, undefined];
+        getProxyManager(signal).$addSub$(subscription);
+    };
+    class SignalWrapper {
+        constructor(ref, prop) {
+            this.ref = ref;
+            this.prop = prop;
+        }
+        get [QObjectManagerSymbol]() {
+            return getProxyManager(this.ref);
+        }
+        get value() {
+            return this.ref[this.prop];
+        }
+        set value(value) {
+            this.ref[this.prop] = value;
+        }
+    }
+    /**
+     * @internal
+     */
+    const _wrapSignal = (obj, prop) => {
+        if (!isObject(obj)) {
+            return undefined;
+        }
+        if (obj instanceof SignalImpl) {
+            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
+            return obj;
+        }
+        if (obj instanceof SignalWrapper) {
+            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
+            return obj;
+        }
+        const target = getProxyTarget(obj);
+        if (target) {
+            const signal = target[_IMMUTABLE_PREFIX + prop];
+            if (signal) {
+                assertTrue(isSignal(signal), `${_IMMUTABLE_PREFIX} has to be a signal kind`);
+                return signal;
+            }
+            return new SignalWrapper(obj, prop);
+        }
+        const immutable = obj[_IMMUTABLE]?.[prop];
+        if (isSignal(immutable)) {
+            return immutable;
+        }
+        return obj[prop];
+    };
+
+    /**
+     * Creates a proxy that notifies of any writes.
+     */
+    const getOrCreateProxy = (target, containerState, flags = 0) => {
+        const proxy = containerState.$proxyMap$.get(target);
+        if (proxy) {
+            return proxy;
+        }
+        if (flags !== 0) {
+            target[QObjectFlagsSymbol] = flags;
+        }
+        return createProxy(target, containerState, undefined);
+    };
+    const createProxy = (target, containerState, subs) => {
+        assertEqual(unwrapProxy(target), target, 'Unexpected proxy at this location', target);
+        assertTrue(!containerState.$proxyMap$.has(target), 'Proxy was already created', target);
+        assertTrue(isObject(target), 'Target must be an object');
+        assertTrue(isSerializableObject(target) || isArray(target), 'Target must be a serializable object');
+        const manager = containerState.$subsManager$.$createManager$(subs);
+        const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
+        containerState.$proxyMap$.set(target, proxy);
+        return proxy;
+    };
+    class ReadWriteProxyHandler {
+        constructor($containerState$, $manager$) {
+            this.$containerState$ = $containerState$;
+            this.$manager$ = $manager$;
+        }
+        get(target, prop) {
+            if (typeof prop === 'symbol') {
+                if (prop === QOjectTargetSymbol)
+                    return target;
+                if (prop === QObjectManagerSymbol)
+                    return this.$manager$;
+                return target[prop];
+            }
+            let subscriber;
+            const flags = target[QObjectFlagsSymbol] ?? 0;
+            assertNumber(flags, 'flags must be an number');
+            const invokeCtx = tryGetInvokeContext();
+            const recursive = (flags & QObjectRecursive) !== 0;
+            const immutable = (flags & QObjectImmutable) !== 0;
+            let value = target[prop];
+            if (invokeCtx) {
+                subscriber = invokeCtx.$subscriber$;
+            }
+            if (immutable) {
+                const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
+                if (!(prop in target) || !!hiddenSignal || !!target[_IMMUTABLE]?.[prop]) {
+                    subscriber = null;
+                }
+                if (hiddenSignal) {
+                    assertTrue(isSignal(hiddenSignal), '$$ prop must be a signal');
+                    value = hiddenSignal.value;
+                }
+            }
+            if (subscriber) {
+                const isA = isArray(target);
+                this.$manager$.$addSub$([0, subscriber, isA ? undefined : prop]);
+            }
+            return recursive ? wrap(value, this.$containerState$) : value;
+        }
+        set(target, prop, newValue) {
+            if (typeof prop === 'symbol') {
+                target[prop] = newValue;
+                return true;
+            }
+            const flags = target[QObjectFlagsSymbol] ?? 0;
+            assertNumber(flags, 'flags must be an number');
+            const immutable = (flags & QObjectImmutable) !== 0;
+            if (immutable) {
+                throw qError(QError_immutableProps);
+            }
+            const recursive = (flags & QObjectRecursive) !== 0;
+            const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
+            if (qDev) {
+                verifySerializable(unwrappedNewValue);
+                const invokeCtx = tryGetInvokeContext();
+                if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
+                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$, prop);
+                }
+            }
+            const isA = isArray(target);
+            if (isA) {
+                target[prop] = unwrappedNewValue;
+                this.$manager$.$notifySubs$();
+                return true;
+            }
+            const oldValue = target[prop];
+            if (oldValue !== unwrappedNewValue) {
+                target[prop] = unwrappedNewValue;
+                this.$manager$.$notifySubs$(prop);
+            }
+            return true;
+        }
+        has(target, property) {
+            if (property === QOjectTargetSymbol)
+                return true;
+            const hasOwnProperty = Object.prototype.hasOwnProperty;
+            if (hasOwnProperty.call(target, property)) {
+                return true;
+            }
+            if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+                return true;
+            }
+            return false;
+        }
+        ownKeys(target) {
+            let subscriber = null;
+            const invokeCtx = tryGetInvokeContext();
+            if (invokeCtx) {
+                subscriber = invokeCtx.$subscriber$;
+            }
+            if (subscriber) {
+                this.$manager$.$addSub$([0, subscriber, undefined]);
+            }
+            if (isArray(target)) {
+                return Reflect.ownKeys(target);
+            }
+            return Reflect.ownKeys(target).map((a) => {
+                return typeof a === 'string' && a.startsWith(_IMMUTABLE_PREFIX)
+                    ? a.slice(_IMMUTABLE_PREFIX.length)
+                    : a;
+            });
+        }
+        getOwnPropertyDescriptor(target, prop) {
+            if (isArray(target)) {
+                return Object.getOwnPropertyDescriptor(target, prop);
+            }
+            return {
+                enumerable: true,
+                configurable: true,
+            };
+        }
+    }
+    const wrap = (value, containerState) => {
+        if (isQrl(value)) {
+            return value;
+        }
+        if (isObject(value)) {
+            if (Object.isFrozen(value)) {
+                return value;
+            }
+            const nakedValue = unwrapProxy(value);
+            if (nakedValue !== value) {
+                // already a proxy return;
+                return value;
+            }
+            if (isNode$1(nakedValue)) {
+                return value;
+            }
+            if (!shouldSerialize(nakedValue)) {
+                return value;
+            }
+            if (qDev) {
+                verifySerializable(value);
+            }
+            const proxy = containerState.$proxyMap$.get(value);
+            return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
+        }
+        else {
+            return value;
+        }
+    };
+
+    const Q_CTX = '_qc_';
+    const HOST_FLAG_DIRTY = 1 << 0;
+    const HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
+    const HOST_FLAG_MOUNTED = 1 << 2;
+    const HOST_FLAG_DYNAMIC = 1 << 3;
+    const tryGetContext = (element) => {
+        return element[Q_CTX];
+    };
+    const getContext = (el, containerState) => {
+        assertQwikElement(el);
+        const ctx = tryGetContext(el);
+        if (ctx) {
+            return ctx;
+        }
+        const elCtx = createContext$1(el);
+        const elementID = directGetAttribute(el, 'q:id');
+        if (elementID) {
+            const pauseCtx = containerState.$pauseCtx$;
+            elCtx.$id$ = elementID;
+            if (pauseCtx) {
+                const { getObject, meta, refs } = pauseCtx;
+                if (isElement(el)) {
+                    const refMap = refs[elementID];
+                    if (refMap) {
+                        assertTrue(isElement(el), 'el must be an actual DOM element');
+                        elCtx.$refMap$ = refMap.split(' ').map(getObject);
+                        elCtx.li = getDomListeners(elCtx, containerState.$containerEl$);
+                    }
+                }
+                else {
+                    const ctxMeta = meta[elementID];
+                    if (ctxMeta) {
+                        const seq = ctxMeta.s;
+                        const host = ctxMeta.h;
+                        const contexts = ctxMeta.c;
+                        const watches = ctxMeta.w;
+                        if (seq) {
+                            elCtx.$seq$ = seq.split(' ').map(getObject);
+                        }
+                        if (watches) {
+                            elCtx.$watches$ = watches.split(' ').map(getObject);
+                        }
+                        if (contexts) {
+                            elCtx.$contexts$ = new Map();
+                            for (const part of contexts.split(' ')) {
+                                const [key, value] = part.split('=');
+                                elCtx.$contexts$.set(key, getObject(value));
+                            }
+                        }
+                        // Restore sequence scoping
+                        if (host) {
+                            const [renderQrl, props] = host.split(' ');
+                            const styleIds = el.getAttribute(QScopedStyle);
+                            assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
+                            elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
+                            elCtx.$flags$ = HOST_FLAG_MOUNTED;
+                            elCtx.$componentQrl$ = getObject(renderQrl);
+                            if (props) {
+                                elCtx.$props$ = getObject(props);
+                            }
+                            else {
+                                elCtx.$props$ = createProxy({
+                                    [QObjectFlagsSymbol]: QObjectImmutable,
+                                }, containerState);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return elCtx;
+    };
+    const createContext$1 = (element) => {
+        const ctx = {
+            $flags$: 0,
+            $id$: '',
+            $element$: element,
+            $refMap$: [],
+            li: [],
+            $watches$: null,
+            $seq$: null,
+            $slots$: null,
+            $scopeIds$: null,
+            $appendStyles$: null,
+            $props$: null,
+            $vdom$: null,
+            $componentQrl$: null,
+            $contexts$: null,
+            $parent$: null,
+            $slotParent$: null,
+        };
+        seal(ctx);
+        element[Q_CTX] = ctx;
+        return ctx;
+    };
+    const cleanupContext = (elCtx, subsManager) => {
+        const el = elCtx.$element$;
+        elCtx.$watches$?.forEach((watch) => {
+            subsManager.$clearSub$(watch);
+            destroyWatch(watch);
+        });
+        if (elCtx.$componentQrl$) {
+            subsManager.$clearSub$(el);
+        }
+        elCtx.$componentQrl$ = null;
+        elCtx.$seq$ = null;
+        elCtx.$watches$ = null;
+        elCtx.$flags$ = 0;
+        el[Q_CTX] = undefined;
     };
 
     const useSequentialScope = () => {
@@ -1099,6 +1452,7 @@
             $elementIndex$: 0,
             $proxyMap$: new WeakMap(),
             $opsNext$: new Set(),
+            $opsStaging$: new Set(),
             $watchNext$: new Set(),
             $watchStaging$: new Set(),
             $hostsNext$: new Set(),
@@ -1108,6 +1462,7 @@
             $envData$: {},
             $renderPromise$: undefined,
             $hostsRendering$: undefined,
+            $pauseCtx$: undefined,
             $subsManager$: null,
         };
         seal(containerState);
@@ -1149,7 +1504,7 @@
     const FILTER_REJECT$1 = 2;
     const FILTER_SKIP = 3;
     const isContainer$1 = (el) => {
-        return isElement(el) && el.hasAttribute(QContainerAttr);
+        return isElement$1(el) && el.hasAttribute(QContainerAttr);
     };
     const intToStr = (nu) => {
         return nu.toString(36);
@@ -1165,13 +1520,6 @@
         else {
             return attribute;
         }
-    };
-
-    const directSetAttribute = (el, prop, value) => {
-        return el.setAttribute(prop, value);
-    };
-    const directGetAttribute = (el, prop) => {
-        return el.getAttribute(prop);
     };
 
     /**
@@ -1333,7 +1681,7 @@
     const _setProperty = (node, key, value) => {
         try {
             node[key] = value == null ? '' : value;
-            if (value == null && isNode(node) && isElement(node)) {
+            if (value == null && isNode$1(node) && isElement$1(node)) {
                 node.removeAttribute(key);
             }
         }
@@ -1683,7 +2031,7 @@
         }
         querySelector(query) {
             for (const el of this.childNodes) {
-                if (isElement(el)) {
+                if (isElement$1(el)) {
                     if (el.matches(query)) {
                         return el;
                     }
@@ -1973,14 +2321,14 @@
      */
     // </docs>
     const useContext = (context, defaultValue) => {
-        const { get, set, rCtx: ctx } = useSequentialScope();
+        const { get, set, rCtx, elCtx } = useSequentialScope();
         if (get !== undefined) {
             return get;
         }
         if (qDev) {
             validateContext(context);
         }
-        const value = resolveContext(context, ctx.$hostElement$);
+        const value = resolveContext(context, elCtx, rCtx.$renderCtx$.$static$.$containerState$);
         if (value !== undefined) {
             return set(value);
         }
@@ -1989,10 +2337,10 @@
         }
         throw qError(QError_notFoundContext, context.id);
     };
-    const resolveContext = (context, hostElement) => {
+    const resolveContext = (context, hostCtx, containerState) => {
         const contextID = context.id;
-        const hostCtx = tryGetContext(hostElement);
         if (hostCtx) {
+            let hostElement = hostCtx.$element$;
             let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
             while (ctx) {
                 hostElement = ctx.$element$;
@@ -2008,7 +2356,7 @@
                 ctx = ctx.$slotParent$ ?? ctx.$parent$;
             }
             if (hostElement.closest) {
-                const value = queryContextFromDom(hostElement, contextID);
+                const value = queryContextFromDom(hostElement, containerState, contextID);
                 if (value !== undefined) {
                     return value;
                 }
@@ -2016,13 +2364,13 @@
         }
         return undefined;
     };
-    const queryContextFromDom = (hostElement, contextId) => {
+    const queryContextFromDom = (hostElement, containerState, contextId) => {
         let element = hostElement;
         while (element) {
             let node = element;
             let virtual;
             while (node && (virtual = findVirtual(node))) {
-                const contexts = tryGetContext(virtual)?.$contexts$;
+                const contexts = getContext(virtual, containerState)?.$contexts$;
                 if (contexts) {
                     if (contexts.has(contextId)) {
                         return contexts.get(contextId);
@@ -2060,13 +2408,11 @@
 
     const ERROR_CONTEXT = /*#__PURE__*/ createContext('qk-error');
     const handleError = (err, hostElement, rctx) => {
+        const elCtx = tryGetContext(hostElement);
         if (qDev) {
             // Clean vdom
             if (!isServer() && isVirtualElement(hostElement)) {
-                const elCtx = tryGetContext(hostElement);
-                if (elCtx) {
-                    elCtx.$vdom$ = null;
-                }
+                elCtx.$vdom$ = null;
                 const errorDiv = document.createElement('errored-host');
                 if (err && err instanceof Error) {
                     errorDiv.props = { error: err };
@@ -2088,7 +2434,7 @@
             throw err;
         }
         else {
-            const errorStore = resolveContext(ERROR_CONTEXT, hostElement);
+            const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rctx.$static$.$containerState$);
             if (errorStore === undefined) {
                 throw err;
             }
@@ -2146,7 +2492,7 @@
                 rCtx: newCtx,
             };
         }, (err) => {
-            handleError(err, hostElement);
+            handleError(err, hostElement, rCtx);
             return {
                 node: SkipRender,
                 rCtx: newCtx,
@@ -2248,112 +2594,6 @@
         return prop.startsWith('aria-');
     }
 
-    const QObjectRecursive = 1 << 0;
-    const QObjectImmutable = 1 << 1;
-    const QOjectTargetSymbol = Symbol('proxy target');
-    const QObjectFlagsSymbol = Symbol('proxy flags');
-    const QObjectManagerSymbol = Symbol('proxy manager');
-    /**
-     * @internal
-     */
-    const _IMMUTABLE = Symbol('IMMUTABLE');
-    const _IMMUTABLE_PREFIX = '$$';
-
-    const createSignal = (value, containerState, subcriptions) => {
-        const manager = containerState.$subsManager$.$createManager$(subcriptions);
-        const signal = new SignalImpl(value, manager);
-        return signal;
-    };
-    class SignalImpl {
-        constructor(v, manager) {
-            this.untrackedValue = v;
-            this[QObjectManagerSymbol] = manager;
-        }
-        get value() {
-            const sub = tryGetInvokeContext()?.$subscriber$;
-            if (sub) {
-                this[QObjectManagerSymbol].$addSub$([0, sub, undefined]);
-            }
-            return this.untrackedValue;
-        }
-        set value(v) {
-            if (qDev) {
-                verifySerializable(v);
-                const invokeCtx = tryGetInvokeContext();
-                if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$);
-                }
-            }
-            const manager = this[QObjectManagerSymbol];
-            const oldValue = this.untrackedValue;
-            if (manager && oldValue !== v) {
-                this.untrackedValue = v;
-                manager.$notifySubs$();
-            }
-        }
-    }
-    const isSignal = (obj) => {
-        return obj instanceof SignalImpl || obj instanceof SignalWrapper;
-    };
-    const addSignalSub = (type, hostEl, signal, elm, property) => {
-        const subscription = signal instanceof SignalWrapper
-            ? [
-                type,
-                hostEl,
-                getProxyTarget(signal.ref),
-                elm,
-                property,
-                signal.prop === 'value' ? undefined : signal.prop,
-            ]
-            : [type, hostEl, signal, elm, property, undefined];
-        getProxyManager(signal).$addSub$(subscription);
-    };
-    class SignalWrapper {
-        constructor(ref, prop) {
-            this.ref = ref;
-            this.prop = prop;
-        }
-        get [QObjectManagerSymbol]() {
-            return getProxyManager(this.ref);
-        }
-        get value() {
-            return this.ref[this.prop];
-        }
-        set value(value) {
-            this.ref[this.prop] = value;
-        }
-    }
-    /**
-     * @internal
-     */
-    const _wrapSignal = (obj, prop) => {
-        if (!isObject(obj)) {
-            return undefined;
-        }
-        if (obj instanceof SignalImpl) {
-            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
-            return obj;
-        }
-        if (obj instanceof SignalWrapper) {
-            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
-            return obj;
-        }
-        const target = getProxyTarget(obj);
-        if (target) {
-            const signal = target[_IMMUTABLE_PREFIX + prop];
-            if (signal) {
-                assertTrue(isSignal(signal), `${_IMMUTABLE_PREFIX} has to be a signal kind`);
-                return signal;
-            }
-            return new SignalWrapper(obj, prop);
-        }
-        const immutable = obj[_IMMUTABLE]?.[prop];
-        if (isSignal(immutable)) {
-            return immutable;
-        }
-        return obj[prop];
-    };
-
     const renderComponent = (rCtx, elCtx, flags) => {
         const justMounted = !(elCtx.$flags$ & HOST_FLAG_MOUNTED);
         const hostElement = elCtx.$element$;
@@ -2419,11 +2659,6 @@
         }
         else if (isFunction(nodeType)) {
             const res = invoke(invocationContext, nodeType, props, node.key);
-            if (qDev) {
-                if (isPromise(res)) {
-                    logWarn('JSX components can not return a promise.', node);
-                }
-            }
             return processData$1(res, invocationContext);
         }
         else {
@@ -2484,171 +2719,6 @@
     };
     const isPrimitive = (obj) => {
         return isString(obj) || typeof obj === 'number';
-    };
-
-    /**
-     * Creates a proxy that notifies of any writes.
-     */
-    const getOrCreateProxy = (target, containerState, flags = 0) => {
-        const proxy = containerState.$proxyMap$.get(target);
-        if (proxy) {
-            return proxy;
-        }
-        if (flags !== 0) {
-            target[QObjectFlagsSymbol] = flags;
-        }
-        return createProxy(target, containerState, undefined);
-    };
-    const createProxy = (target, containerState, subs) => {
-        assertEqual(unwrapProxy(target), target, 'Unexpected proxy at this location', target);
-        assertTrue(!containerState.$proxyMap$.has(target), 'Proxy was already created', target);
-        assertTrue(isObject(target), 'Target must be an object');
-        assertTrue(isSerializableObject(target) || isArray(target), 'Target must be a serializable object');
-        const manager = containerState.$subsManager$.$createManager$(subs);
-        const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
-        containerState.$proxyMap$.set(target, proxy);
-        return proxy;
-    };
-    class ReadWriteProxyHandler {
-        constructor($containerState$, $manager$) {
-            this.$containerState$ = $containerState$;
-            this.$manager$ = $manager$;
-        }
-        get(target, prop) {
-            if (typeof prop === 'symbol') {
-                if (prop === QOjectTargetSymbol)
-                    return target;
-                if (prop === QObjectManagerSymbol)
-                    return this.$manager$;
-                return target[prop];
-            }
-            let subscriber;
-            const flags = target[QObjectFlagsSymbol] ?? 0;
-            assertNumber(flags, 'flags must be an number');
-            const invokeCtx = tryGetInvokeContext();
-            const recursive = (flags & QObjectRecursive) !== 0;
-            const immutable = (flags & QObjectImmutable) !== 0;
-            let value = target[prop];
-            if (invokeCtx) {
-                subscriber = invokeCtx.$subscriber$;
-            }
-            if (immutable) {
-                const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
-                if (!(prop in target) || !!hiddenSignal || !!target[_IMMUTABLE]?.[prop]) {
-                    subscriber = null;
-                }
-                if (hiddenSignal) {
-                    assertTrue(isSignal(hiddenSignal), '$$ prop must be a signal');
-                    value = hiddenSignal.value;
-                }
-            }
-            if (subscriber) {
-                const isA = isArray(target);
-                this.$manager$.$addSub$([0, subscriber, isA ? undefined : prop]);
-            }
-            return recursive ? wrap(value, this.$containerState$) : value;
-        }
-        set(target, prop, newValue) {
-            if (typeof prop === 'symbol') {
-                target[prop] = newValue;
-                return true;
-            }
-            const flags = target[QObjectFlagsSymbol] ?? 0;
-            assertNumber(flags, 'flags must be an number');
-            const immutable = (flags & QObjectImmutable) !== 0;
-            if (immutable) {
-                throw qError(QError_immutableProps);
-            }
-            const recursive = (flags & QObjectRecursive) !== 0;
-            const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
-            if (qDev) {
-                verifySerializable(unwrappedNewValue);
-                const invokeCtx = tryGetInvokeContext();
-                if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$, prop);
-                }
-            }
-            const isA = isArray(target);
-            if (isA) {
-                target[prop] = unwrappedNewValue;
-                this.$manager$.$notifySubs$();
-                return true;
-            }
-            const oldValue = target[prop];
-            if (oldValue !== unwrappedNewValue) {
-                target[prop] = unwrappedNewValue;
-                this.$manager$.$notifySubs$(prop);
-            }
-            return true;
-        }
-        has(target, property) {
-            if (property === QOjectTargetSymbol)
-                return true;
-            const hasOwnProperty = Object.prototype.hasOwnProperty;
-            if (hasOwnProperty.call(target, property)) {
-                return true;
-            }
-            if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
-                return true;
-            }
-            return false;
-        }
-        ownKeys(target) {
-            let subscriber = null;
-            const invokeCtx = tryGetInvokeContext();
-            if (invokeCtx) {
-                subscriber = invokeCtx.$subscriber$;
-            }
-            if (subscriber) {
-                this.$manager$.$addSub$([0, subscriber, undefined]);
-            }
-            if (isArray(target)) {
-                return Reflect.ownKeys(target);
-            }
-            return Reflect.ownKeys(target).map((a) => {
-                return typeof a === 'string' && a.startsWith(_IMMUTABLE_PREFIX)
-                    ? a.slice(_IMMUTABLE_PREFIX.length)
-                    : a;
-            });
-        }
-        getOwnPropertyDescriptor(target, prop) {
-            if (isArray(target)) {
-                return Object.getOwnPropertyDescriptor(target, prop);
-            }
-            return {
-                enumerable: true,
-                configurable: true,
-            };
-        }
-    }
-    const wrap = (value, containerState) => {
-        if (isQrl(value)) {
-            return value;
-        }
-        if (isObject(value)) {
-            if (Object.isFrozen(value)) {
-                return value;
-            }
-            const nakedValue = unwrapProxy(value);
-            if (nakedValue !== value) {
-                // already a proxy return;
-                return value;
-            }
-            if (isNode(nakedValue)) {
-                return value;
-            }
-            if (!shouldSerialize(nakedValue)) {
-                return value;
-            }
-            if (qDev) {
-                verifySerializable(value);
-            }
-            const proxy = containerState.$proxyMap$.get(value);
-            return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
-        }
-        else {
-            return value;
-        }
     };
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -2817,7 +2887,7 @@
         return getChildren(elm, mode).map(getVnodeFromEl);
     };
     const getVnodeFromEl = (el) => {
-        if (isElement(el)) {
+        if (isElement$1(el)) {
             return tryGetContext(el)?.$vdom$ ?? domToVnode(el);
         }
         return domToVnode(el);
@@ -3101,7 +3171,7 @@
             isSvg = false;
             flags &= ~IS_SVG;
         }
-        const elCtx = getContext(elm, staticCtx.$containerState$);
+        const elCtx = createContext$1(elm);
         elCtx.$parent$ = rCtx.$cmpCtx$;
         elCtx.$slotParent$ = rCtx.$slotCtx$;
         if (isComponent) {
@@ -3554,7 +3624,7 @@
             if (elCtx.$id$) {
                 elm.setAttribute(ELEMENT_ID, elCtx.$id$);
             }
-            if (isElement(elm) && listeners.length > 0) {
+            if (isElement$1(elm) && listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 for (const listener of groups) {
                     elm.setAttribute(listener[0], serializeQRLs(listener[1], elCtx));
@@ -3563,7 +3633,7 @@
         }
         // Serialize data
         const data = await _pauseFromContexts(contexts, containerState, (el) => {
-            if (isNode(el) && isText(el)) {
+            if (isNode$1(el) && isText(el)) {
                 return getTextID(el, containerState);
             }
             return null;
@@ -3609,7 +3679,7 @@
             const el = ctx.$element$;
             const ctxListeners = ctx.li;
             for (const listener of ctxListeners) {
-                if (isElement(el)) {
+                if (isElement$1(el)) {
                     const qrl = listener[1];
                     const captured = qrl.$captureRef$;
                     if (captured) {
@@ -3626,6 +3696,7 @@
         if (!hasListeners) {
             return {
                 state: {
+                    refs: {},
                     ctx: {},
                     objs: [],
                     subs: [],
@@ -3728,7 +3799,7 @@
             }
             for (const sub of subs) {
                 const host = sub[1];
-                if (sub[0] === 0 && isNode(host) && isVirtualElement(host)) {
+                if (sub[0] === 0 && isNode$1(host) && isVirtualElement(host)) {
                     if (!collector.$elements$.includes(tryGetContext(host))) {
                         continue;
                     }
@@ -3812,10 +3883,11 @@
             throw qError(QError_verifySerializable, obj);
         });
         const meta = {};
+        const refs = {};
         // Write back to the dom
         allContexts.forEach((ctx) => {
-            assertDefined(ctx, `pause: missing context for dom node`);
             const node = ctx.$element$;
+            const elementID = ctx.$id$;
             const ref = ctx.$refMap$;
             const props = ctx.$props$;
             const contexts = ctx.$contexts$;
@@ -3824,51 +3896,51 @@
             const seq = ctx.$seq$;
             const metaValue = {};
             const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
-            let add = false;
+            assertDefined(elementID, `pause: can not generate ID for dom node`, node);
             if (ref.length > 0) {
                 const value = ref.map(mustGetObjId).join(' ');
                 if (value) {
-                    metaValue.r = value;
-                    add = true;
+                    refs[elementID] = value;
                 }
             }
-            if (canRender) {
-                if (elementCaptured && renderQrl) {
-                    const propsId = getObjId(props);
-                    metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
-                    add = true;
-                }
-                if (watches && watches.length > 0) {
-                    const value = watches.map(getObjId).filter(isNotNullable).join(' ');
-                    if (value) {
-                        metaValue.w = value;
+            else {
+                let add = false;
+                if (canRender) {
+                    if (elementCaptured && renderQrl) {
+                        const propsId = getObjId(props);
+                        metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
                         add = true;
                     }
-                }
-                if (elementCaptured && seq && seq.length > 0) {
-                    const value = seq.map(mustGetObjId).join(' ');
-                    metaValue.s = value;
-                    add = true;
-                }
-                if (contexts) {
-                    const serializedContexts = [];
-                    contexts.forEach((value, key) => {
-                        const id = getObjId(value);
-                        if (id) {
-                            serializedContexts.push(`${key}=${id}`);
+                    if (watches && watches.length > 0) {
+                        const value = watches.map(getObjId).filter(isNotNullable).join(' ');
+                        if (value) {
+                            metaValue.w = value;
+                            add = true;
                         }
-                    });
-                    const value = serializedContexts.join(' ');
-                    if (value) {
-                        metaValue.c = value;
+                    }
+                    if (elementCaptured && seq && seq.length > 0) {
+                        const value = seq.map(mustGetObjId).join(' ');
+                        metaValue.s = value;
                         add = true;
                     }
+                    if (contexts) {
+                        const serializedContexts = [];
+                        contexts.forEach((value, key) => {
+                            const id = getObjId(value);
+                            if (id) {
+                                serializedContexts.push(`${key}=${id}`);
+                            }
+                        });
+                        const value = serializedContexts.join(' ');
+                        if (value) {
+                            metaValue.c = value;
+                            add = true;
+                        }
+                    }
                 }
-            }
-            if (add) {
-                const elementID = getElementID(node);
-                assertDefined(elementID, `pause: can not generate ID for dom node`, node);
-                meta[elementID] = metaValue;
+                if (add) {
+                    meta[elementID] = metaValue;
+                }
             }
         });
         // Sanity check of serialized element
@@ -3881,6 +3953,7 @@
         }
         return {
             state: {
+                refs,
                 ctx: meta,
                 objs: convertedObjs,
                 subs,
@@ -4006,7 +4079,7 @@
         assertDefined(subs, 'subs must be defined');
         for (const key of subs) {
             const host = key[1];
-            if (isNode(host) && isVirtualElement(host)) {
+            if (isNode$1(host) && isVirtualElement(host)) {
                 if (key[0] === 0) {
                     collectDeferElement(host, collector);
                 }
@@ -4078,7 +4151,7 @@
                         return;
                     }
                     if (objType === 'object') {
-                        if (isNode(obj)) {
+                        if (isNode$1(obj)) {
                             return;
                         }
                         if (isArray(obj)) {
@@ -4099,7 +4172,7 @@
         collector.$objSet$.add(obj);
     };
     const isContainer = (el) => {
-        return isElement(el) && el.hasAttribute(QContainerAttr);
+        return isElement$1(el) && el.hasAttribute(QContainerAttr);
     };
     const hasContext = (el) => {
         const node = processVirtualNodes(el);
@@ -4160,12 +4233,26 @@
             }
         }
     };
+    const getPauseState = (containerEl) => {
+        const doc = getDocument(containerEl);
+        const isDocElement = containerEl === doc.documentElement;
+        const parentJSON = isDocElement ? doc.body : containerEl;
+        const script = getQwikJSON(parentJSON);
+        if (script) {
+            const data = script.firstChild.data;
+            return JSON.parse(unescapeText(data) || '{}');
+        }
+    };
     const resumeContainer = (containerEl) => {
         if (!isContainer$1(containerEl)) {
             logWarn('Skipping hydration because parent element is not q:container');
             return;
         }
-        let maxId = 0;
+        const pauseState = containerEl['_qwikjson_'] ?? getPauseState(containerEl);
+        if (!pauseState) {
+            logWarn('Skipping hydration qwik/json metadata was not found.');
+            return;
+        }
         const doc = getDocument(containerEl);
         const isDocElement = containerEl === doc.documentElement;
         const parentJSON = isDocElement ? doc.body : containerEl;
@@ -4174,28 +4261,21 @@
             logWarn('Skipping hydration qwik/json metadata was not found.');
             return;
         }
-        script.remove();
         const containerState = getContainerState(containerEl);
         moveStyles(containerEl, containerState);
-        const pauseState = JSON.parse(unescapeText(script.textContent || '{}'));
         // Collect all elements
         const elements = new Map();
         let node = null;
         let container = 0;
         // Collect all virtual elements
-        const elementWalker = doc.createNodeIterator(containerEl, SHOW_COMMENT$1);
+        const elementWalker = doc.createTreeWalker(containerEl, SHOW_COMMENT$1);
         while ((node = elementWalker.nextNode())) {
             const data = node.data;
             if (container === 0) {
                 if (data.startsWith('qv ')) {
-                    const close = findClose(node);
-                    const virtual = new VirtualElementImpl(node, close);
-                    const id = directGetAttribute(virtual, ELEMENT_ID);
-                    if (id) {
-                        const elCtx = getContext(virtual);
-                        const index = strToInt(id);
-                        elCtx.$id$ = id;
-                        elements.set(index, virtual);
+                    const id = getID(data); // TODO: remove
+                    if (id >= 0) {
+                        elements.set(id, node);
                     }
                 }
                 else if (data.startsWith('t=')) {
@@ -4220,75 +4300,76 @@
             if (slotPath && el.closest('[q\\:container]') !== containerEl) {
                 return;
             }
-            assertElement(el);
             const id = directGetAttribute(el, ELEMENT_ID);
             assertDefined(id, `resume: element missed q:id`, el);
-            const elCtx = getContext(el);
-            elCtx.$id$ = id;
-            elCtx.$vdom$ = domToVnode(el);
-            elements.set(strToInt(id), el);
-            maxId = Math.max(maxId, strToInt(id));
+            const index = strToInt(id);
+            elements.set(index, el);
         });
-        containerState.$elementIndex$ = maxId;
         const parser = createParser(containerState, doc);
+        const finalized = new Map();
+        const revived = new Set();
         const getObject = (id) => {
-            return getObjectImpl(id, elements, pauseState.objs, containerState);
+            assertTrue(typeof id === 'string' && id.length > 0, 'resume: id must be an non-empty string, got:', id);
+            if (finalized.has(id)) {
+                return finalized.get(id);
+            }
+            return computeObject(id);
         };
-        // Revive proxies with subscriptions into the proxymap
+        const computeObject = (id) => {
+            // Handle elements
+            if (id.startsWith(ELEMENT_ID_PREFIX)) {
+                const elementId = id.slice(ELEMENT_ID_PREFIX.length);
+                const index = strToInt(elementId);
+                assertTrue(elements.has(index), `missing element for id:`, elementId);
+                const rawElement = elements.get(index);
+                assertDefined(rawElement, `missing element for id:`, elementId);
+                if (isComment(rawElement)) {
+                    if (!rawElement.isConnected) {
+                        finalized.set(id, undefined);
+                        return undefined;
+                    }
+                    const close = findClose(rawElement);
+                    const virtual = new VirtualElementImpl(rawElement, close);
+                    finalized.set(id, virtual);
+                    getContext(virtual, containerState);
+                    return virtual;
+                }
+                else if (isElement$1(rawElement)) {
+                    finalized.set(id, rawElement);
+                    getContext(rawElement, containerState).$vdom$ = domToVnode(rawElement);
+                    return rawElement;
+                }
+                finalized.set(id, rawElement);
+                return rawElement;
+            }
+            const index = strToInt(id);
+            const objs = pauseState.objs;
+            assertTrue(objs.length > index, 'resume: index is out of bounds', id);
+            const value = objs[index];
+            let obj = value;
+            for (let i = id.length - 1; i >= 0; i--) {
+                const code = id[i];
+                const transform = OBJECT_TRANSFORMS[code];
+                if (!transform) {
+                    break;
+                }
+                obj = transform(obj, containerState);
+            }
+            finalized.set(id, obj);
+            if (!isPrimitive(value) && !revived.has(index)) {
+                revived.add(index);
+                reviveSubscriptions(value, index, pauseState.subs, getObject, containerState, parser);
+                reviveNestedObjects(value, getObject, parser);
+            }
+            return obj;
+        };
+        containerState.$elementIndex$ = 100000;
+        containerState.$pauseCtx$ = {
+            getObject,
+            meta: pauseState.ctx,
+            refs: pauseState.refs,
+        };
         reviveValues(pauseState.objs, parser);
-        reviveSubscriptions(pauseState.objs, pauseState.subs, getObject, containerState, parser);
-        // Rebuild target objects
-        for (const obj of pauseState.objs) {
-            reviveNestedObjects(obj, getObject, parser);
-        }
-        for (const elementID of Object.keys(pauseState.ctx)) {
-            const ctxMeta = pauseState.ctx[elementID];
-            const index = strToInt(elementID);
-            const el = elements.get(index);
-            assertDefined(el, `resume: cant find dom node for id`, elementID);
-            assertQwikElement(el);
-            const elCtx = getContext(el);
-            const refMap = ctxMeta.r;
-            const seq = ctxMeta.s;
-            const host = ctxMeta.h;
-            const contexts = ctxMeta.c;
-            const watches = ctxMeta.w;
-            if (refMap) {
-                assertTrue(isElement(el), 'el must be an actual DOM element');
-                elCtx.$refMap$ = refMap.split(' ').map(getObject);
-                elCtx.li = getDomListeners(elCtx, containerEl);
-            }
-            if (seq) {
-                elCtx.$seq$ = seq.split(' ').map(getObject);
-            }
-            if (watches) {
-                elCtx.$watches$ = watches.split(' ').map(getObject);
-            }
-            if (contexts) {
-                elCtx.$contexts$ = new Map();
-                for (const part of contexts.split(' ')) {
-                    const [key, value] = part.split('=');
-                    elCtx.$contexts$.set(key, getObject(value));
-                }
-            }
-            // Restore sequence scoping
-            if (host) {
-                const [renderQrl, props] = host.split(' ');
-                const styleIds = el.getAttribute(QScopedStyle);
-                assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
-                elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
-                elCtx.$flags$ = HOST_FLAG_MOUNTED;
-                elCtx.$componentQrl$ = getObject(renderQrl);
-                if (props) {
-                    elCtx.$props$ = getObject(props);
-                }
-                else {
-                    elCtx.$props$ = createProxy({
-                        [QObjectFlagsSymbol]: QObjectImmutable,
-                    }, containerState);
-                }
-            }
-        }
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
         logDebug('Container resumed');
         emitEvent$1(containerEl, 'qresume', undefined, true);
@@ -4301,25 +4382,31 @@
             }
         }
     };
-    const reviveSubscriptions = (objs, objsSubs, getObject, containerState, parser) => {
-        for (let i = 0; i < objsSubs.length; i++) {
-            const value = objs[i];
-            const subs = objsSubs[i];
-            if (subs) {
-                const converted = [];
-                let flag = 0;
-                for (const sub of subs) {
-                    if (sub.startsWith('_')) {
-                        flag = parseInt(sub.slice(1), 10);
-                    }
-                    else {
-                        converted.push(parseSubscription(sub, getObject));
+    const reviveSubscriptions = (value, i, objsSubs, getObject, containerState, parser) => {
+        const subs = objsSubs[i];
+        if (subs) {
+            const converted = [];
+            let flag = 0;
+            for (const sub of subs) {
+                if (sub.startsWith('_')) {
+                    flag = parseInt(sub.slice(1), 10);
+                }
+                else {
+                    const parsed = parseSubscription(sub, getObject);
+                    if (parsed) {
+                        converted.push(parsed);
                     }
                 }
-                if (flag > 0) {
-                    value[QObjectFlagsSymbol] = flag;
+            }
+            if (flag > 0) {
+                value[QObjectFlagsSymbol] = flag;
+            }
+            if (!parser.subs(value, converted)) {
+                const proxy = containerState.$proxyMap$.get(value);
+                if (proxy) {
+                    getProxyManager(proxy).$addSubs$(converted);
                 }
-                if (!parser.subs(value, converted)) {
+                else {
                     createProxy(value, containerState, converted);
                 }
             }
@@ -4341,26 +4428,6 @@
                 }
             }
         }
-    };
-    const getObjectImpl = (id, elements, objs, containerState) => {
-        assertTrue(typeof id === 'string' && id.length > 0, 'resume: id must be an non-empty string, got:', id);
-        if (id.startsWith(ELEMENT_ID_PREFIX)) {
-            const index = strToInt(id.slice(ELEMENT_ID_PREFIX.length));
-            assertTrue(elements.has(index), `missing element for id:`, index);
-            return elements.get(index);
-        }
-        const index = strToInt(id);
-        assertTrue(objs.length > index, 'resume: index is out of bounds', id);
-        let obj = objs[index];
-        for (let i = id.length - 1; i >= 0; i--) {
-            const code = id[i];
-            const transform = OBJECT_TRANSFORMS[code];
-            if (!transform) {
-                break;
-            }
-            obj = transform(obj, containerState);
-        }
-        return obj;
     };
     const moveStyles = (containerEl, containerState) => {
         const head = containerEl.ownerDocument.head;
@@ -4398,6 +4465,13 @@
             pause: () => pauseContainer(containerEl),
             state: getContainerState(containerEl),
         };
+    };
+    const getID = (stuff) => {
+        const index = stuff.indexOf('q:id=');
+        if (index > 0) {
+            return strToInt(stuff.slice(index + 5));
+        }
+        return -1;
     };
 
     // <docs markdown="../readme.md#useLexicalScope">
@@ -4490,7 +4564,7 @@
         if (!server) {
             resumeIfNeeded(containerState.$containerEl$);
         }
-        const elCtx = getContext(hostElement);
+        const elCtx = getContext(hostElement, containerState);
         assertDefined(elCtx.$componentQrl$, `render: notified host element must have a defined $renderQrl$`, elCtx);
         if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
             return;
@@ -4514,7 +4588,7 @@
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
             assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
-            containerState.$opsNext$.add(op);
+            containerState.$opsStaging$.add(op);
         }
         else {
             containerState.$opsNext$.add(op);
@@ -4584,7 +4658,11 @@
                     }
                 }
             }
-            containerState.$opsNext$.forEach((op) => executeSignalOperation(staticCtx, op));
+            containerState.$opsNext$.forEach((op) => {
+                if (!staticCtx.$hostElements$.has(op[1])) {
+                    executeSignalOperation(staticCtx, op);
+                }
+            });
             containerState.$opsNext$.clear();
             // Add post operations
             staticCtx.$operations$.push(...staticCtx.$postOperations$);
@@ -4631,6 +4709,10 @@
             containerState.$hostsNext$.add(el);
         });
         containerState.$hostsStaging$.clear();
+        containerState.$opsStaging$.forEach((el) => {
+            containerState.$opsNext$.add(el);
+        });
+        containerState.$opsStaging$.clear();
         containerState.$hostsRendering$ = undefined;
         containerState.$renderPromise$ = undefined;
         const pending = containerState.$hostsNext$.size +
@@ -4710,9 +4792,9 @@
             if (watchPromises.length > 0) {
                 const watches = await Promise.all(watchPromises);
                 sortWatches(watches);
-                await Promise.all(watches.map((watch) => {
-                    return runSubscriber(watch, containerState);
-                }));
+                for (const watch of watches) {
+                    await runSubscriber(watch, containerState);
+                }
                 watchPromises.length = 0;
             }
         } while (containerState.$watchStaging$.size > 0);
@@ -5296,7 +5378,7 @@
                 cleanups.push(returnValue);
             }
         }, (reason) => {
-            handleError(reason, hostElement);
+            handleError(reason, hostElement, rctx);
         });
     };
     const cleanupWatch = (watch) => {
@@ -6100,7 +6182,14 @@
         const parts = sub.split(' ');
         const type = parseInt(parts[0], 10);
         assertTrue(parts.length >= 2, 'At least 2 parts');
-        const subscription = [type, getObject(parts[1])];
+        const host = getObject(parts[1]);
+        if (!host) {
+            return undefined;
+        }
+        if (isSubscriberDescriptor(host) && !host.$el$) {
+            return undefined;
+        }
+        const subscription = [type, host];
         if (type === 0) {
             assertTrue(parts.length <= 3, 'Max 3 parts');
             subscription.push(parts[2]);
@@ -6613,7 +6702,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.12.1";
+    const version = "0.13.0";
 
     /**
      * Render JSX.
@@ -7302,7 +7391,7 @@
         style: true,
         script: true,
         noframes: true,
-        noscript: true,
+        textarea: true,
     };
     const emptyElements = {
         area: true,

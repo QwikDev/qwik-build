@@ -6,13 +6,20 @@
         const broadcast = (infix, ev, type = ev.type) => {
             querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));
         };
+        const getAttribute = (el, name) => el.getAttribute(name);
+        const resolveContainer = containerEl => {
+            let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;
+            while (script) {
+                if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {
+                    containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/g, "<$1"));
+                    break;
+                }
+                script = script.previousElementSibling;
+            }
+        };
         const createEvent = (eventName, detail) => new CustomEvent(eventName, {
             detail: detail
         });
-        const qrlResolver = (element, qrl) => {
-            element = element.closest("[q\\:container]");
-            return new URL(qrl, new URL(element.getAttribute("q:base"), doc.baseURI));
-        };
         const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {
             const attrName = "on" + onPrefix + ":" + eventName;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
@@ -24,13 +31,17 @@
                 }
                 return;
             }
-            const attrValue = element.getAttribute(attrName);
+            const attrValue = getAttribute(element, attrName);
             if (attrValue) {
+                const container = element.closest("[q\\:container]");
+                const base = new URL(getAttribute(container, "q:base"), doc.baseURI);
                 for (const qrl of attrValue.split("\n")) {
-                    const url = qrlResolver(element, qrl);
-                    const symbolName = getSymbolName(url);
+                    const url = new URL(qrl, base);
+                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1");
                     const reqTime = performance.now();
-                    const handler = findSymbol(await import(url.href.split("#")[0]), symbolName);
+                    const module = import(url.href.split("#")[0]);
+                    resolveContainer(container);
+                    const handler = findSymbol(await module, symbolName);
                     const previousCtx = doc.__q_context__;
                     if (element.isConnected) {
                         try {
@@ -61,7 +72,6 @@
                 }
             }
         };
-        const getSymbolName = url => url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
         const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
         const processDocumentEvent = async ev => {
             let type = camelToKebab(ev.type);

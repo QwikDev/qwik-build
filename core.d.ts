@@ -528,12 +528,14 @@ declare interface ContainerState {
     readonly $watchNext$: Set<SubscriberEffect>;
     readonly $watchStaging$: Set<SubscriberEffect>;
     readonly $opsNext$: Set<SubscriberSignal>;
+    readonly $opsStaging$: Set<SubscriberSignal>;
     readonly $hostsNext$: Set<QwikElement>;
     readonly $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderStaticContext> | undefined;
     $envData$: Record<string, any>;
     $elementIndex$: number;
+    $pauseCtx$: PauseContext | undefined;
     readonly $styleIds$: Set<string>;
     readonly $events$: Set<string>;
 }
@@ -819,6 +821,8 @@ export declare interface FunctionComponent<P = Record<string, any>> {
  * @internal
  */
 export declare function getLocale(defaultLocale?: string): string;
+
+declare type GetObject = (id: string) => any;
 
 declare type GetObjID = (obj: any) => string | null;
 
@@ -1456,6 +1460,15 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @alpha
+ */
+declare interface PauseContext {
+    getObject: GetObject;
+    meta: SnapshotMeta;
+    refs: Record<string, string>;
+}
+
+/**
  * @internal
  */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID) => Promise<SnapshotResult>;
@@ -1872,6 +1885,27 @@ declare type QwikEventMap<T> = {
     AnimationIterationCapture: QwikAnimationEvent<T>;
     TransitionEnd: QwikTransitionEvent<T>;
     TransitionEndCapture: QwikTransitionEvent<T>;
+    AudioProcess: Event;
+    CanPlay: Event;
+    CanPlayThrough: Event;
+    Complete: Event;
+    DurationChange: Event;
+    Emptied: Event;
+    Ended: Event;
+    LoadedData: Event;
+    LoadedMetadata: Event;
+    Pause: Event;
+    Play: Event;
+    Playing: Event;
+    Progress: Event;
+    RateChange: Event;
+    Seeked: Event;
+    Seeking: Event;
+    Stalled: Event;
+    Suspend: Event;
+    TimeUpdate: Event;
+    VolumeChange: Event;
+    Waiting: Event;
 };
 
 /**
@@ -2341,7 +2375,6 @@ export declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
  * @alpha
  */
 export declare interface SnapshotMetaValue {
-    r?: string;
     w?: string;
     s?: string;
     h?: string;
@@ -2364,6 +2397,7 @@ export declare interface SnapshotResult {
  */
 export declare interface SnapshotState {
     ctx: SnapshotMeta;
+    refs: Record<string, string>;
     objs: any[];
     subs: any[];
 }
@@ -3463,7 +3497,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.12.1
+ * 0.13.0
  * @public
  */
 export declare const version: string;

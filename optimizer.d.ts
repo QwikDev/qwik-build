@@ -177,7 +177,7 @@ export declare type QwikBuildMode = 'production' | 'development';
 /**
  * @alpha
  */
-export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib';
+export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 
 /**
  * @alpha
