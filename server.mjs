@@ -461,6 +461,60 @@ function deprecatedWarning(oldApi, newApi) {
   );
 }
 
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType === "number";
+};
+var isElement = (value) => {
+  return value.nodeType === 1;
+};
+
+// packages/qwik/src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  const err = message instanceof Error ? message : new Error(message);
+  console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
+  return err;
+};
+var logErrorAndStop = (message, ...optionalParams) => {
+  const err = logError(message, ...optionalParams);
+  debugger;
+  return err;
+};
+var tryGetContext = (element) => {
+  return element["_qc_"];
+};
+var printParams = (optionalParams) => {
+  if (qDev) {
+    return optionalParams.map((p) => {
+      if (isNode(p) && isElement(p)) {
+        return printElement(p);
+      }
+      return p;
+    });
+  }
+  return optionalParams;
+};
+var printElement = (el) => {
+  const ctx = tryGetContext(el);
+  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
+  return {
+    tagName: el.tagName,
+    renderQRL: ctx?.$componentQrl$?.getSymbol(),
+    element: isServer ? void 0 : el,
+    ctx: isServer ? void 0 : ctx
+  };
+};
+
+// packages/qwik/src/core/error/assert.ts
+function assertDefined(value, text, ...parts) {
+  if (qDev) {
+    if (value != null)
+      return;
+    throw logErrorAndStop(text, ...parts);
+  }
+}
+
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
@@ -553,13 +607,14 @@ async function renderToStream(rootNode, opts) {
   const buildBase = getBuildBase(opts);
   const resolvedManifest = resolveManifest(opts.manifest);
   await setServerPlatform(opts, resolvedManifest);
-  let snapshotResult = null;
+  let snapshotResult;
   const injections = resolvedManifest?.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? EMPTY_OBJ)) : void 0;
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
   let snapshotTime = 0;
+  let containsDynamic = false;
   await renderSSR(rootNode, {
     stream,
     containerTagName,
@@ -567,9 +622,10 @@ async function renderToStream(rootNode, opts) {
     envData: opts.envData,
     base: buildBase,
     beforeContent,
-    beforeClose: async (contexts, containerState) => {
+    beforeClose: async (contexts, containerState, dynamic) => {
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
+      containsDynamic = dynamic;
       snapshotResult = await _pauseFromContexts(contexts, containerState);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, qDev ? "  " : void 0);
       const children = [
@@ -626,12 +682,15 @@ async function renderToStream(rootNode, opts) {
     stream.write("<!--/cq-->");
   }
   flush();
+  assertDefined(snapshotResult, "snapshotResult must be defined");
+  const isStatic = !containsDynamic && !snapshotResult.resources.some((r) => r._cache !== Infinity);
   const result = {
     prefetchResources: void 0,
     snapshotResult,
     flushes: networkFlushes,
     manifest: resolvedManifest?.manifest,
     size: totalSize,
+    isStatic,
     timing: {
       render: renderTime,
       snapshot: snapshotTime,

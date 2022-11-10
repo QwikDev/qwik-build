@@ -1630,6 +1630,10 @@
      * @alpha
      */
     const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+    /**
+     * @alpha
+     */
+    const SSRHint = ((props) => props.children);
     const InternalSSRStream = () => null;
 
     const getDocument = (node) => {
@@ -6792,13 +6796,15 @@
         const rCtx = createRenderContext(doc, containerState);
         const headNodes = opts.beforeContent ?? [];
         const ssrCtx = {
-            $contexts$: [],
+            $static$: {
+                $contexts$: [],
+                $dynamic$: false,
+                headNodes: root === 'html' ? headNodes : [],
+                locale: opts.envData?.locale,
+            },
             projectedChildren: undefined,
             projectedCtxs: undefined,
             invocationContext: undefined,
-            headNodes: root === 'html' ? headNodes : [],
-            $pendingListeners$: [],
-            locale: opts.envData?.locale,
         };
         const containerAttributes = {
             ...opts.containerAttributes,
@@ -6826,12 +6832,12 @@
         const beforeClose = opts.beforeClose;
         await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
             ? (stream) => {
-                const result = beforeClose(ssrCtx.$contexts$, containerState);
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
                 return processData(result, rCtx, ssrCtx, stream, 0, undefined);
             }
             : undefined);
         if (qDev) {
-            if (ssrCtx.headNodes.length > 0) {
+            if (ssrCtx.$static$.headNodes.length > 0) {
                 logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
             }
         }
@@ -6959,7 +6965,7 @@
         return then(executeComponent(rCtx, elCtx), (res) => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.locale, hostElement, undefined);
+            const invocationContext = newInvokeContext(ssrCtx.$static$.locale, hostElement, undefined);
             invocationContext.$subscriber$ = hostElement;
             invocationContext.$renderCtx$ = newRCtx;
             const newSSrContext = {
@@ -6971,7 +6977,7 @@
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
                 const isHTML = !!(flags & IS_HTML);
-                const array = isHTML ? ssrCtx.headNodes : extraNodes;
+                const array = isHTML ? ssrCtx.$static$.headNodes : extraNodes;
                 for (const style of elCtx.$appendStyles$) {
                     array.push(jsx('style', {
                         [QStyle]: style.styleId,
@@ -6987,7 +6993,7 @@
                 children: res.node,
             }, node.key);
             elCtx.$id$ = newID;
-            ssrCtx.$contexts$.push(elCtx);
+            ssrCtx.$static$.$contexts$.push(elCtx);
             return renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream) => {
                 if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                     logWarn('Component registered some events, some component use useStyles$()');
@@ -7140,7 +7146,7 @@
                     openingElement += ' q:id="' + newID + '"';
                     elCtx.$id$ = newID;
                 }
-                ssrCtx.$contexts$.push(elCtx);
+                ssrCtx.$static$.$contexts$.push(elCtx);
             }
             if (flags & IS_HEAD) {
                 openingElement += ' q:head';
@@ -7169,10 +7175,10 @@
             return then(promise, () => {
                 // If head inject base styles
                 if (isHead) {
-                    for (const node of ssrCtx.headNodes) {
+                    for (const node of ssrCtx.$static$.headNodes) {
                         renderNodeElementSync(node.type, node.props, stream);
                     }
-                    ssrCtx.headNodes.length = 0;
+                    ssrCtx.$static$.headNodes.length = 0;
                 }
                 // Fast path
                 if (!beforeClose) {
@@ -7197,6 +7203,9 @@
         }
         if (tagName === InternalSSRStream) {
             return renderGenerator(node, rCtx, ssrCtx, stream, flags);
+        }
+        if (tagName === SSRHint && node.props.dynamic === true) {
+            ssrCtx.$static$.$dynamic$ = true;
         }
         const res = invoke(ssrCtx.invocationContext, tagName, node.props, node.key);
         return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
@@ -8103,6 +8112,7 @@
     exports.RenderOnce = RenderOnce;
     exports.Resource = Resource;
     exports.SSRComment = SSRComment;
+    exports.SSRHint = SSRHint;
     exports.SSRRaw = SSRRaw;
     exports.SSRStream = SSRStream;
     exports.SSRStreamBlock = SSRStreamBlock;

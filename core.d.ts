@@ -2139,7 +2139,7 @@ export declare interface RenderSSROptions {
     envData?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode<string>[];
-    beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
+    beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean) => Promise<JSXNode>;
 }
 
 declare interface RenderStaticContext {
@@ -2422,6 +2422,18 @@ export declare const SSRComment: FunctionComponent<{
 /**
  * @alpha
  */
+export declare const SSRHint: FunctionComponent<SSRHintProps>;
+
+/**
+ * @alpha
+ */
+export declare interface SSRHintProps {
+    dynamic?: boolean;
+}
+
+/**
+ * @alpha
+ */
 export declare const SSRRaw: FunctionComponent<{
     data: string;
 }>;
@@ -2429,7 +2441,7 @@ export declare const SSRRaw: FunctionComponent<{
 /**
  * @alpha
  */
-export declare const SSRStream: FunctionComponent<StreamProps>;
+export declare const SSRStream: FunctionComponent<SSRStreamProps>;
 
 /**
  * @alpha
@@ -2441,7 +2453,7 @@ export declare const SSRStreamBlock: FunctionComponent<{
 /**
  * @alpha
  */
-export declare interface StreamProps {
+export declare interface SSRStreamProps {
     children: AsyncGenerator<JSXChildren, void, any> | ((stream: StreamWriter) => Promise<void>) | (() => AsyncGenerator<JSXChildren, void, any>);
 }
 
