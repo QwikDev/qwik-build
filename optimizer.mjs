@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.13.0
+ * @builder.io/qwik/optimizer 0.13.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -476,7 +476,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.13.0"
+  qwik: "0.13.1"
 };
 
 async function getSystem() {
@@ -1460,39 +1460,36 @@ function qwikRollup(qwikRollupOpts = {}) {
       }
       return qwikPlugin.transform(this, code, id);
     },
-    generateBundle: {
-      order: "post",
-      async handler(_, rollupBundle) {
-        const opts = qwikPlugin.getOptions();
-        if ("client" === opts.target) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-          for (const fileName in rollupBundle) {
-            const b = rollupBundle[fileName];
-            "chunk" === b.type && outputAnalyzer.addBundle({
-              fileName: fileName,
-              modules: b.modules,
-              imports: b.imports,
-              dynamicImports: b.dynamicImports,
-              size: b.code.length
-            });
-          }
-          const optimizer = qwikPlugin.getOptimizer();
-          const manifest = await outputAnalyzer.generateManifest();
-          manifest.platform = {
-            ...versions,
-            rollup: this.meta?.rollupVersion || "",
-            env: optimizer.sys.env,
-            os: optimizer.sys.os
-          };
-          "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
-          "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
-          "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
-          this.emitFile({
-            type: "asset",
-            fileName: Q_MANIFEST_FILENAME,
-            source: JSON.stringify(manifest, null, 2)
+    async generateBundle(_, rollupBundle) {
+      const opts = qwikPlugin.getOptions();
+      if ("client" === opts.target) {
+        const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+        for (const fileName in rollupBundle) {
+          const b = rollupBundle[fileName];
+          "chunk" === b.type && outputAnalyzer.addBundle({
+            fileName: fileName,
+            modules: b.modules,
+            imports: b.imports,
+            dynamicImports: b.dynamicImports,
+            size: b.code.length
           });
         }
+        const optimizer = qwikPlugin.getOptimizer();
+        const manifest = await outputAnalyzer.generateManifest();
+        manifest.platform = {
+          ...versions,
+          rollup: this.meta?.rollupVersion || "",
+          env: optimizer.sys.env,
+          os: optimizer.sys.os
+        };
+        "node" === optimizer.sys.env && (manifest.platform.node = process.versions.node);
+        "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
+        "function" === typeof opts.transformedModuleOutput && await opts.transformedModuleOutput(qwikPlugin.getTransformedOutputs());
+        this.emitFile({
+          type: "asset",
+          fileName: Q_MANIFEST_FILENAME,
+          source: JSON.stringify(manifest, null, 2)
+        });
       }
     }
   };
