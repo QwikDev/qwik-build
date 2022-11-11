@@ -1538,6 +1538,7 @@ declare interface QContext {
     $scopeIds$: string[] | null;
     $vdom$: ProcessedJSXNode | null;
     $slots$: ProcessedJSXNode[] | null;
+    $dynamicSlots$: QContext[] | null;
     $parent$: QContext | null;
     $slotParent$: QContext | null;
 }

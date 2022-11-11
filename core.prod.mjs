@@ -643,6 +643,7 @@ const createContext$1 = element => {
         $vdom$: null,
         $componentQrl$: null,
         $contexts$: null,
+        $dynamicSlots$: null,
         $parent$: null,
         $slotParent$: null
     };
@@ -2252,19 +2253,24 @@ const collectElementData = (elCtx, collector, dynamic) => {
             collectValue(obj, collector, dynamic);
         }
     }
-    if (dynamic) {
-        let parent = elCtx;
-        for (;parent; ) {
-            if (parent.$contexts$) {
-                for (const obj of parent.$contexts$.values()) {
-                    collectValue(obj, collector, dynamic);
-                }
-                if (true === parent.$contexts$.get("_")) {
-                    break;
-                }
-            }
-            parent = parent.$slotParent$ ?? parent.$parent$;
+    if (dynamic && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {
+        for (const slotCtx of elCtx.$dynamicSlots$) {
+            collectContext(slotCtx, collector);
         }
+    }
+};
+
+const collectContext = (elCtx, collector) => {
+    for (;elCtx; ) {
+        if (elCtx.$contexts$) {
+            for (const obj of elCtx.$contexts$.values()) {
+                collectValue(obj, collector, true);
+            }
+            if (true === elCtx.$contexts$.get("_")) {
+                break;
+            }
+        }
+        elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
     }
 };
 
@@ -3514,6 +3520,7 @@ const componentQrl = componentQrl => {
         return jsx(Virtual, {
             "q:renderFn": componentQrl,
             [QSlot]: props[QSlot],
+            [_IMMUTABLE]: props[_IMMUTABLE],
             children: props.children,
             props: props
         }, finalKey);
@@ -3778,7 +3785,13 @@ const createSSRContext = nodeType => createContext$1({
 const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     const tagName = node.type;
     const hostCtx = rCtx.$cmpCtx$;
-    if (hostCtx && hasDynamicChildren(node) && (hostCtx.$flags$ |= 8), "string" == typeof tagName) {
+    const dynamicChildren = hasDynamicChildren(node);
+    if (dynamicChildren && hostCtx) {
+        hostCtx.$flags$ |= 8;
+        const slotCtx = rCtx.$slotCtx$;
+        slotCtx && addDynamicSlot(hostCtx, slotCtx);
+    }
+    if ("string" == typeof tagName) {
         const key = node.key;
         const props = node.props;
         const immutableMeta = props[_IMMUTABLE] ?? EMPTY_OBJ;
@@ -3859,7 +3872,8 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     }
     if (tagName === Virtual) {
         const elCtx = createSSRContext(111);
-        return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
+        return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, dynamicChildren && hostCtx && addDynamicSlot(hostCtx, elCtx), 
+        renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
     }
     if (tagName === SSRRaw) {
         return void stream.write(node.props.data);
@@ -3924,7 +3938,7 @@ const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     }
 };
 
-function walkChildren(children, rCtx, ssrContext, stream, flags) {
+const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
     if (null == children) {
         return;
     }
@@ -3952,7 +3966,7 @@ function walkChildren(children, rCtx, ssrContext, stream, flags) {
         };
         return isPromise(rendered) && prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : isPromise(rendered) ? rendered.then(next) : prevPromise ? prevPromise.then(next) : void currentIndex++;
     }), void 0);
-}
+};
 
 const flatVirtualChildren = (children, ssrCtx) => {
     if (null == children) {
@@ -4008,13 +4022,9 @@ const setComponentProps = (rCtx, elCtx, expectProps) => {
     }
 };
 
-function processPropKey(prop) {
-    return "htmlFor" === prop ? "for" : prop;
-}
+const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
 
-function processPropValue(prop, value) {
-    return "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
-}
+const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
 
 const textOnlyElements = {
     title: true,
@@ -4079,6 +4089,11 @@ const escapeAttr = s => s.replace(ESCAPE_ATTRIBUTES, (c => {
 }));
 
 const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
+
+const addDynamicSlot = (hostCtx, elCtx) => {
+    let dynamicSlots = hostCtx.$dynamicSlots$;
+    dynamicSlots || (hostCtx.$dynamicSlots$ = dynamicSlots = []), dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
+};
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 

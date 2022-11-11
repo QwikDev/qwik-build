@@ -1267,6 +1267,7 @@
             $vdom$: null,
             $componentQrl$: null,
             $contexts$: null,
+            $dynamicSlots$: null,
             $parent$: null,
             $slotParent$: null,
         };
@@ -4057,18 +4058,25 @@
             }
         }
         if (dynamic) {
-            let parent = elCtx;
-            while (parent) {
-                if (parent.$contexts$) {
-                    for (const obj of parent.$contexts$.values()) {
-                        collectValue(obj, collector, dynamic);
-                    }
-                    if (parent.$contexts$.get('_') === true) {
-                        break;
-                    }
+            collectContext(elCtx, collector);
+            if (elCtx.$dynamicSlots$) {
+                for (const slotCtx of elCtx.$dynamicSlots$) {
+                    collectContext(slotCtx, collector);
                 }
-                parent = parent.$slotParent$ ?? parent.$parent$;
             }
+        }
+    };
+    const collectContext = (elCtx, collector) => {
+        while (elCtx) {
+            if (elCtx.$contexts$) {
+                for (const obj of elCtx.$contexts$.values()) {
+                    collectValue(obj, collector, true);
+                }
+                if (elCtx.$contexts$.get('_') === true) {
+                    break;
+                }
+            }
+            elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
         }
     };
     const escapeText = (str) => {
@@ -6585,6 +6593,7 @@
             return jsx(Virtual, {
                 [OnRenderProp]: componentQrl,
                 [QSlot]: props[QSlot],
+                [_IMMUTABLE]: props[_IMMUTABLE],
                 children: props.children,
                 props,
             }, finalKey);
@@ -7054,8 +7063,13 @@
     const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
         const hostCtx = rCtx.$cmpCtx$;
-        if (hostCtx && hasDynamicChildren(node)) {
+        const dynamicChildren = hasDynamicChildren(node);
+        if (dynamicChildren && hostCtx) {
             hostCtx.$flags$ |= HOST_FLAG_DYNAMIC;
+            const slotCtx = rCtx.$slotCtx$;
+            if (slotCtx) {
+                addDynamicSlot(hostCtx, slotCtx);
+            }
         }
         if (typeof tagName === 'string') {
             const key = node.key;
@@ -7194,7 +7208,12 @@
         if (tagName === Virtual) {
             const elCtx = createSSRContext(111);
             elCtx.$parent$ = rCtx.$cmpCtx$;
-            elCtx.$slotParent$ = rCtx.$slotCtx$; // TODO
+            elCtx.$slotParent$ = rCtx.$slotCtx$;
+            if (dynamicChildren) {
+                if (hostCtx) {
+                    addDynamicSlot(hostCtx, elCtx);
+                }
+            }
             return renderNodeVirtual(node, elCtx, undefined, rCtx, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRRaw) {
@@ -7250,7 +7269,7 @@
             logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
         }
     };
-    function walkChildren(children, rCtx, ssrContext, stream, flags) {
+    const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
         if (children == null) {
             return;
         }
@@ -7301,7 +7320,7 @@
                 return undefined;
             }
         }, undefined);
-    }
+    };
     const flatVirtualChildren = (children, ssrCtx) => {
         if (children == null) {
             return null;
@@ -7374,13 +7393,13 @@
             }
         }
     };
-    function processPropKey(prop) {
+    const processPropKey = (prop) => {
         if (prop === 'htmlFor') {
             return 'for';
         }
         return prop;
-    }
-    function processPropValue(prop, value) {
+    };
+    const processPropValue = (prop, value) => {
         if (prop === 'style') {
             return stringifyStyle(value);
         }
@@ -7394,7 +7413,7 @@
             return '';
         }
         return String(value);
-    }
+    };
     const textOnlyElements = {
         title: true,
         style: true,
@@ -7452,6 +7471,15 @@
     };
     const listenersNeedId = (listeners) => {
         return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
+    };
+    const addDynamicSlot = (hostCtx, elCtx) => {
+        let dynamicSlots = hostCtx.$dynamicSlots$;
+        if (!dynamicSlots) {
+            hostCtx.$dynamicSlots$ = dynamicSlots = [];
+        }
+        if (!dynamicSlots.includes(elCtx)) {
+            dynamicSlots.push(elCtx);
+        }
     };
     const hasDynamicChildren = (node) => {
         return node.props[_IMMUTABLE]?.children === false;
