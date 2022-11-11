@@ -3194,7 +3194,7 @@ export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
  */
 export declare interface UseSignal {
     <T>(): Signal<T | undefined>;
-    <T>(value: T): Signal<T>;
+    <T>(value: T | (() => T)): Signal<T>;
 }
 
 /**

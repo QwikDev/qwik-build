@@ -4320,10 +4320,11 @@ const useSignal = initialState => {
     if (null != get) {
         return get;
     }
+    const containerState = ctx.$renderCtx$.$static$.$containerState$;
     const signal = ((value, containerState, subcriptions) => {
         const manager = containerState.$subsManager$.$createManager$(void 0);
         return new SignalImpl(value, manager);
-    })(initialState, ctx.$renderCtx$.$static$.$containerState$);
+    })(isFunction(initialState) ? initialState() : initialState, containerState);
     return set(signal), signal;
 };
 

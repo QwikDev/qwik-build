@@ -8106,7 +8106,8 @@ const useSignal = (initialState) => {
         return get;
     }
     const containerState = ctx.$renderCtx$.$static$.$containerState$;
-    const signal = createSignal(initialState, containerState, undefined);
+    const value = isFunction(initialState) ? initialState() : initialState;
+    const signal = createSignal(value, containerState, undefined);
     set(signal);
     return signal;
 };
