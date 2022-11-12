@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.13.1
+ * @builder.io/qwik 0.13.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -529,7 +529,6 @@ const parseQRL = (qrl, containerEl) => {
     const chunk = qrl.substring(0, chunkEndIdx);
     const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
     const symbolEndIdx = captureIdx;
-    // TODO
     const symbol = symbolStartIdx == symbolEndIdx ? 'default' : qrl.substring(symbolStartIdx, symbolEndIdx);
     const captureStartIdx = captureIdx;
     const captureEndIdx = endIdx;
@@ -4249,6 +4248,7 @@ const resumeContainer = (containerEl) => {
         return;
     }
     const pauseState = containerEl['_qwikjson_'] ?? getPauseState(containerEl);
+    containerEl['_qwikjson_'] = null;
     if (!pauseState) {
         logWarn('Skipping hydration qwik/json metadata was not found.');
         return;
@@ -6703,7 +6703,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.13.1";
+const version = "0.13.2";
 
 /**
  * Render JSX.

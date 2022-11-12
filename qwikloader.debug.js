@@ -8,13 +8,15 @@
         };
         const getAttribute = (el, name) => el.getAttribute(name);
         const resolveContainer = containerEl => {
-            let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;
-            while (script) {
-                if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {
-                    containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/g, "<$1"));
-                    break;
+            if (void 0 === containerEl._qwikjson_) {
+                let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;
+                while (script) {
+                    if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {
+                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/g, "<$1"));
+                        break;
+                    }
+                    script = script.previousElementSibling;
                 }
-                script = script.previousElementSibling;
             }
         };
         const createEvent = (eventName, detail) => new CustomEvent(eventName, {
@@ -37,7 +39,7 @@
                 const base = new URL(getAttribute(container, "q:base"), doc.baseURI);
                 for (const qrl of attrValue.split("\n")) {
                     const url = new URL(qrl, base);
-                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1");
+                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
                     const reqTime = performance.now();
                     const module = import(url.href.split("#")[0]);
                     resolveContainer(container);
