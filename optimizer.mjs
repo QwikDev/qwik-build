@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.13.2
+ * @builder.io/qwik/optimizer 0.13.3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -476,7 +476,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.13.2"
+  qwik: "0.13.3"
 };
 
 async function getSystem() {
