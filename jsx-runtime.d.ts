@@ -423,7 +423,7 @@ declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shippi
 
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
-declare interface HTMLWebViewElement_2 extends HTMLElement {
+declare interface HTMLWebViewElement extends HTMLElement {
 }
 
 declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -621,7 +621,22 @@ declare interface IntrinsicHTMLElements {
     ul: HTMLAttributes<HTMLUListElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
-    webview: WebViewHTMLAttributes<HTMLWebViewElement_2>;
+    webview: WebViewHTMLAttributes<HTMLWebViewElement>;
+}
+
+/**
+ * @public
+ */
+export declare namespace JSX {
+    export interface Element extends JSXNode {
+    }
+    export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
+    }
+    export interface ElementChildrenAttribute {
+        children: any;
+    }
+    export interface IntrinsicElements extends QwikIntrinsicElements {
+    }
 }
 
 /**
@@ -630,22 +645,6 @@ declare interface IntrinsicHTMLElements {
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxs }
-
-/**
- * @public
- */
-declare namespace JSX_2 {
-    interface Element extends JSXNode {
-    }
-    interface IntrinsicAttributes extends QwikIntrinsicAttributes {
-    }
-    interface ElementChildrenAttribute {
-        children: any;
-    }
-    interface IntrinsicElements extends QwikIntrinsicElements {
-    }
-}
-export { JSX_2 as JSX }
 
 /**
  * @public

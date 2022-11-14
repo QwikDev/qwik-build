@@ -939,7 +939,7 @@ declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shippi
 
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
-declare interface HTMLWebViewElement_2 extends HTMLElement {
+declare interface HTMLWebViewElement extends HTMLElement {
 }
 
 /**
@@ -1199,7 +1199,7 @@ declare interface IntrinsicHTMLElements {
     ul: HTMLAttributes<HTMLUListElement>;
     video: VideoHTMLAttributes<HTMLVideoElement>;
     wbr: HTMLAttributes<HTMLElement>;
-    webview: WebViewHTMLAttributes<HTMLWebViewElement_2>;
+    webview: WebViewHTMLAttributes<HTMLWebViewElement>;
 }
 
 declare interface InvokeContext {

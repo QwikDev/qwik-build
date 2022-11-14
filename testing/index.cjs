@@ -38,9 +38,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// node_modules/@builder.io/qwik-dom/lib/Event.js
+// packages/qwik-dom/lib/Event.js
 var require_Event = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Event.js"(exports, module2) {
+  "packages/qwik-dom/lib/Event.js"(exports, module2) {
     "use strict";
     module2.exports = Event;
     Event.CAPTURING_PHASE = 1;
@@ -106,9 +106,9 @@ var require_Event = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/UIEvent.js
+// packages/qwik-dom/lib/UIEvent.js
 var require_UIEvent = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/UIEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/UIEvent.js"(exports, module2) {
     "use strict";
     var Event = require_Event();
     module2.exports = UIEvent;
@@ -130,9 +130,9 @@ var require_UIEvent = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/MouseEvent.js
+// packages/qwik-dom/lib/MouseEvent.js
 var require_MouseEvent = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/MouseEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/MouseEvent.js"(exports, module2) {
     "use strict";
     var UIEvent = require_UIEvent();
     module2.exports = MouseEvent;
@@ -195,9 +195,9 @@ var require_MouseEvent = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/DOMException.js
+// packages/qwik-dom/lib/DOMException.js
 var require_DOMException = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/DOMException.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMException.js"(exports, module2) {
     "use strict";
     module2.exports = DOMException;
     var INDEX_SIZE_ERR = 1;
@@ -322,16 +322,17 @@ var require_DOMException = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/config.js
+// packages/qwik-dom/lib/config.js
 var require_config = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/config.js"(exports) {
+  "packages/qwik-dom/lib/config.js"(exports) {
+    "use strict";
     exports.isApiWritable = !global.__domino_frozen__;
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/utils.js
+// packages/qwik-dom/lib/utils.js
 var require_utils = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/utils.js"(exports) {
+  "packages/qwik-dom/lib/utils.js"(exports) {
     "use strict";
     var DOMException = require_DOMException();
     var ERR = DOMException;
@@ -447,9 +448,9 @@ var require_utils = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/EventTarget.js
+// packages/qwik-dom/lib/EventTarget.js
 var require_EventTarget = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/EventTarget.js"(exports, module2) {
+  "packages/qwik-dom/lib/EventTarget.js"(exports, module2) {
     "use strict";
     var Event = require_Event();
     var MouseEvent = require_MouseEvent();
@@ -657,9 +658,9 @@ var require_EventTarget = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/LinkedList.js
+// packages/qwik-dom/lib/LinkedList.js
 var require_LinkedList = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/LinkedList.js"(exports, module2) {
+  "packages/qwik-dom/lib/LinkedList.js"(exports, module2) {
     "use strict";
     var utils = require_utils();
     var LinkedList = module2.exports = {
@@ -703,9 +704,9 @@ var require_LinkedList = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeUtils.js
+// packages/qwik-dom/lib/NodeUtils.js
 var require_NodeUtils = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeUtils.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeUtils.js"(exports, module2) {
     "use strict";
     module2.exports = {
       serializeOne
@@ -851,9 +852,9 @@ var require_NodeUtils = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Node.js
+// packages/qwik-dom/lib/Node.js
 var require_Node = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Node.js"(exports, module2) {
+  "packages/qwik-dom/lib/Node.js"(exports, module2) {
     "use strict";
     module2.exports = Node;
     var EventTarget = require_EventTarget();
@@ -1466,9 +1467,9 @@ var require_Node = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeList.es6.js
+// packages/qwik-dom/lib/NodeList.es6.js
 var require_NodeList_es6 = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeList.es6.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.es6.js"(exports, module2) {
     "use strict";
     module2.exports = class NodeList extends Array {
       constructor(a) {
@@ -1486,9 +1487,9 @@ var require_NodeList_es6 = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeList.es5.js
+// packages/qwik-dom/lib/NodeList.es5.js
 var require_NodeList_es5 = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeList.es5.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.es5.js"(exports, module2) {
     "use strict";
     function item(i) {
       return this[i] || null;
@@ -1503,9 +1504,9 @@ var require_NodeList_es5 = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeList.js
+// packages/qwik-dom/lib/NodeList.js
 var require_NodeList = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeList.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.js"(exports, module2) {
     "use strict";
     var NodeList;
     try {
@@ -1517,9 +1518,9 @@ var require_NodeList = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/ContainerNode.js
+// packages/qwik-dom/lib/ContainerNode.js
 var require_ContainerNode = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/ContainerNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/ContainerNode.js"(exports, module2) {
     "use strict";
     module2.exports = ContainerNode;
     var Node = require_Node();
@@ -1600,9 +1601,9 @@ var require_ContainerNode = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/xmlnames.js
+// packages/qwik-dom/lib/xmlnames.js
 var require_xmlnames = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/xmlnames.js"(exports) {
+  "packages/qwik-dom/lib/xmlnames.js"(exports) {
     "use strict";
     exports.isValidName = isValidName;
     exports.isValidQName = isValidQName;
@@ -1652,9 +1653,9 @@ var require_xmlnames = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/attributes.js
+// packages/qwik-dom/lib/attributes.js
 var require_attributes = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/attributes.js"(exports) {
+  "packages/qwik-dom/lib/attributes.js"(exports) {
     "use strict";
     var utils = require_utils();
     exports.property = function(attr) {
@@ -1791,9 +1792,9 @@ var require_attributes = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/FilteredElementList.js
+// packages/qwik-dom/lib/FilteredElementList.js
 var require_FilteredElementList = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/FilteredElementList.js"(exports, module2) {
+  "packages/qwik-dom/lib/FilteredElementList.js"(exports, module2) {
     "use strict";
     module2.exports = FilteredElementList;
     var Node = require_Node();
@@ -1870,9 +1871,9 @@ var require_FilteredElementList = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/DOMTokenList.js
+// packages/qwik-dom/lib/DOMTokenList.js
 var require_DOMTokenList = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/DOMTokenList.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMTokenList.js"(exports, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = DOMTokenList;
@@ -2053,9 +2054,9 @@ var require_DOMTokenList = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/select.js
+// packages/qwik-dom/lib/select.js
 var require_select = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/select.js"(exports, module2) {
+  "packages/qwik-dom/lib/select.js"(exports, module2) {
     "use strict";
     var window2 = Object.create(null, {
       location: {
@@ -2814,9 +2815,9 @@ var require_select = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/ChildNode.js
+// packages/qwik-dom/lib/ChildNode.js
 var require_ChildNode = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/ChildNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/ChildNode.js"(exports, module2) {
     "use strict";
     var Node = require_Node();
     var LinkedList = require_LinkedList();
@@ -2917,9 +2918,9 @@ var require_ChildNode = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NonDocumentTypeChildNode.js
+// packages/qwik-dom/lib/NonDocumentTypeChildNode.js
 var require_NonDocumentTypeChildNode = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NonDocumentTypeChildNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/NonDocumentTypeChildNode.js"(exports, module2) {
     "use strict";
     var Node = require_Node();
     var NonDocumentTypeChildNode = {
@@ -2950,9 +2951,9 @@ var require_NonDocumentTypeChildNode = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NamedNodeMap.js
+// packages/qwik-dom/lib/NamedNodeMap.js
 var require_NamedNodeMap = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NamedNodeMap.js"(exports, module2) {
+  "packages/qwik-dom/lib/NamedNodeMap.js"(exports, module2) {
     "use strict";
     module2.exports = NamedNodeMap;
     var utils = require_utils();
@@ -2998,9 +2999,9 @@ var require_NamedNodeMap = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Element.js
+// packages/qwik-dom/lib/Element.js
 var require_Element = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Element.js"(exports, module2) {
+  "packages/qwik-dom/lib/Element.js"(exports, module2) {
     "use strict";
     module2.exports = Element;
     var xml = require_xmlnames();
@@ -4025,9 +4026,9 @@ var require_Element = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Leaf.js
+// packages/qwik-dom/lib/Leaf.js
 var require_Leaf = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Leaf.js"(exports, module2) {
+  "packages/qwik-dom/lib/Leaf.js"(exports, module2) {
     "use strict";
     module2.exports = Leaf;
     var Node = require_Node();
@@ -4082,9 +4083,9 @@ var require_Leaf = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/CharacterData.js
+// packages/qwik-dom/lib/CharacterData.js
 var require_CharacterData = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/CharacterData.js"(exports, module2) {
+  "packages/qwik-dom/lib/CharacterData.js"(exports, module2) {
     "use strict";
     module2.exports = CharacterData;
     var Leaf = require_Leaf();
@@ -4156,9 +4157,9 @@ var require_CharacterData = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Text.js
+// packages/qwik-dom/lib/Text.js
 var require_Text = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Text.js"(exports, module2) {
+  "packages/qwik-dom/lib/Text.js"(exports, module2) {
     "use strict";
     module2.exports = Text;
     var utils = require_utils();
@@ -4234,9 +4235,9 @@ var require_Text = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Comment.js
+// packages/qwik-dom/lib/Comment.js
 var require_Comment = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Comment.js"(exports, module2) {
+  "packages/qwik-dom/lib/Comment.js"(exports, module2) {
     "use strict";
     module2.exports = Comment;
     var Node = require_Node();
@@ -4282,9 +4283,9 @@ var require_Comment = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/DocumentFragment.js
+// packages/qwik-dom/lib/DocumentFragment.js
 var require_DocumentFragment = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/DocumentFragment.js"(exports, module2) {
+  "packages/qwik-dom/lib/DocumentFragment.js"(exports, module2) {
     "use strict";
     module2.exports = DocumentFragment;
     var Node = require_Node();
@@ -4353,9 +4354,9 @@ var require_DocumentFragment = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/ProcessingInstruction.js
+// packages/qwik-dom/lib/ProcessingInstruction.js
 var require_ProcessingInstruction = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/ProcessingInstruction.js"(exports, module2) {
+  "packages/qwik-dom/lib/ProcessingInstruction.js"(exports, module2) {
     "use strict";
     module2.exports = ProcessingInstruction;
     var Node = require_Node();
@@ -4411,9 +4412,9 @@ var require_ProcessingInstruction = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeFilter.js
+// packages/qwik-dom/lib/NodeFilter.js
 var require_NodeFilter = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeFilter.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeFilter.js"(exports, module2) {
     "use strict";
     var NodeFilter = {
       FILTER_ACCEPT: 1,
@@ -4437,9 +4438,9 @@ var require_NodeFilter = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeTraversal.js
+// packages/qwik-dom/lib/NodeTraversal.js
 var require_NodeTraversal = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeTraversal.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeTraversal.js"(exports, module2) {
     "use strict";
     var NodeTraversal = module2.exports = {
       nextSkippingChildren,
@@ -4504,9 +4505,9 @@ var require_NodeTraversal = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/TreeWalker.js
+// packages/qwik-dom/lib/TreeWalker.js
 var require_TreeWalker = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/TreeWalker.js"(exports, module2) {
+  "packages/qwik-dom/lib/TreeWalker.js"(exports, module2) {
     "use strict";
     module2.exports = TreeWalker;
     var Node = require_Node();
@@ -4761,9 +4762,9 @@ var require_TreeWalker = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NodeIterator.js
+// packages/qwik-dom/lib/NodeIterator.js
 var require_NodeIterator = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NodeIterator.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeIterator.js"(exports, module2) {
     "use strict";
     module2.exports = NodeIterator;
     var NodeFilter = require_NodeFilter();
@@ -4928,9 +4929,9 @@ var require_NodeIterator = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/URL.js
+// packages/qwik-dom/lib/URL.js
 var require_URL = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/URL.js"(exports, module2) {
+  "packages/qwik-dom/lib/URL.js"(exports, module2) {
     "use strict";
     module2.exports = URL2;
     function URL2(url) {
@@ -5104,9 +5105,9 @@ var require_URL = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/CustomEvent.js
+// packages/qwik-dom/lib/CustomEvent.js
 var require_CustomEvent = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/CustomEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/CustomEvent.js"(exports, module2) {
     "use strict";
     module2.exports = CustomEvent;
     var Event = require_Event();
@@ -5119,9 +5120,9 @@ var require_CustomEvent = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/events.js
+// packages/qwik-dom/lib/events.js
 var require_events = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/events.js"(exports, module2) {
+  "packages/qwik-dom/lib/events.js"(exports, module2) {
     "use strict";
     module2.exports = {
       Event: require_Event(),
@@ -5132,9 +5133,9 @@ var require_events = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/cssparser.js
+// packages/qwik-dom/lib/cssparser.js
 var require_cssparser = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/cssparser.js"(exports) {
+  "packages/qwik-dom/lib/cssparser.js"(exports) {
     "use strict";
     var parserlib = /* @__PURE__ */ Object.create(null);
     (function() {
@@ -8911,9 +8912,9 @@ var require_cssparser = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/CSSStyleDeclaration.js
+// packages/qwik-dom/lib/CSSStyleDeclaration.js
 var require_CSSStyleDeclaration = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/CSSStyleDeclaration.js"(exports, module2) {
+  "packages/qwik-dom/lib/CSSStyleDeclaration.js"(exports, module2) {
     "use strict";
     var parserlib = require_cssparser();
     module2.exports = CSSStyleDeclaration;
@@ -9467,9 +9468,9 @@ var require_CSSStyleDeclaration = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/URLUtils.js
+// packages/qwik-dom/lib/URLUtils.js
 var require_URLUtils = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/URLUtils.js"(exports, module2) {
+  "packages/qwik-dom/lib/URLUtils.js"(exports, module2) {
     "use strict";
     var URL2 = require_URL();
     module2.exports = URLUtils;
@@ -9709,9 +9710,9 @@ var require_URLUtils = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/defineElement.js
+// packages/qwik-dom/lib/defineElement.js
 var require_defineElement = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/defineElement.js"(exports, module2) {
+  "packages/qwik-dom/lib/defineElement.js"(exports, module2) {
     "use strict";
     var attributes = require_attributes();
     var isApiWritable = require_config().isApiWritable;
@@ -9775,9 +9776,9 @@ var require_defineElement = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/htmlelts.js
+// packages/qwik-dom/lib/htmlelts.js
 var require_htmlelts = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/htmlelts.js"(exports) {
+  "packages/qwik-dom/lib/htmlelts.js"(exports) {
     "use strict";
     var Node = require_Node();
     var Element = require_Element();
@@ -11363,9 +11364,9 @@ var require_htmlelts = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/svg.js
+// packages/qwik-dom/lib/svg.js
 var require_svg = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/svg.js"(exports) {
+  "packages/qwik-dom/lib/svg.js"(exports) {
     "use strict";
     var Element = require_Element();
     var defineElement = require_defineElement();
@@ -11496,9 +11497,9 @@ var require_svg = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/MutationConstants.js
+// packages/qwik-dom/lib/MutationConstants.js
 var require_MutationConstants = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/MutationConstants.js"(exports, module2) {
+  "packages/qwik-dom/lib/MutationConstants.js"(exports, module2) {
     "use strict";
     module2.exports = {
       VALUE: 1,
@@ -11511,9 +11512,9 @@ var require_MutationConstants = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Document.js
+// packages/qwik-dom/lib/Document.js
 var require_Document = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Document.js"(exports, module2) {
+  "packages/qwik-dom/lib/Document.js"(exports, module2) {
     "use strict";
     module2.exports = Document;
     var Node = require_Node();
@@ -12367,9 +12368,9 @@ var require_Document = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/DocumentType.js
+// packages/qwik-dom/lib/DocumentType.js
 var require_DocumentType = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/DocumentType.js"(exports, module2) {
+  "packages/qwik-dom/lib/DocumentType.js"(exports, module2) {
     "use strict";
     module2.exports = DocumentType;
     var Node = require_Node();
@@ -12411,9 +12412,9 @@ var require_DocumentType = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/HTMLParser.js
+// packages/qwik-dom/lib/HTMLParser.js
 var require_HTMLParser = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/HTMLParser.js"(exports, module2) {
+  "packages/qwik-dom/lib/HTMLParser.js"(exports, module2) {
     "use strict";
     module2.exports = HTMLParser;
     var Document = require_Document();
@@ -20476,9 +20477,9 @@ var require_HTMLParser = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/DOMImplementation.js
+// packages/qwik-dom/lib/DOMImplementation.js
 var require_DOMImplementation = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/DOMImplementation.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMImplementation.js"(exports, module2) {
     "use strict";
     module2.exports = DOMImplementation;
     var Document = require_Document();
@@ -20553,9 +20554,9 @@ var require_DOMImplementation = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Location.js
+// packages/qwik-dom/lib/Location.js
 var require_Location = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Location.js"(exports, module2) {
+  "packages/qwik-dom/lib/Location.js"(exports, module2) {
     "use strict";
     var URL2 = require_URL();
     var URLUtils = require_URLUtils();
@@ -20600,9 +20601,9 @@ var require_Location = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/NavigatorID.js
+// packages/qwik-dom/lib/NavigatorID.js
 var require_NavigatorID = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/NavigatorID.js"(exports, module2) {
+  "packages/qwik-dom/lib/NavigatorID.js"(exports, module2) {
     "use strict";
     var NavigatorID = Object.create(null, {
       appCodeName: { value: "Mozilla" },
@@ -20624,9 +20625,9 @@ var require_NavigatorID = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/WindowTimers.js
+// packages/qwik-dom/lib/WindowTimers.js
 var require_WindowTimers = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/WindowTimers.js"(exports, module2) {
+  "packages/qwik-dom/lib/WindowTimers.js"(exports, module2) {
     "use strict";
     var WindowTimers = {
       setTimeout,
@@ -20638,9 +20639,9 @@ var require_WindowTimers = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/impl.js
+// packages/qwik-dom/lib/impl.js
 var require_impl = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/impl.js"(exports, module2) {
+  "packages/qwik-dom/lib/impl.js"(exports, module2) {
     "use strict";
     var utils = require_utils();
     exports = module2.exports = {
@@ -20669,9 +20670,9 @@ var require_impl = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/Window.js
+// packages/qwik-dom/lib/Window.js
 var require_Window = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/Window.js"(exports, module2) {
+  "packages/qwik-dom/lib/Window.js"(exports, module2) {
     "use strict";
     var DOMImplementation = require_DOMImplementation();
     var EventTarget = require_EventTarget();
@@ -20741,9 +20742,9 @@ var require_Window = __commonJS({
   }
 });
 
-// node_modules/@builder.io/qwik-dom/lib/index.js
+// packages/qwik-dom/lib/index.js
 var require_lib = __commonJS({
-  "node_modules/@builder.io/qwik-dom/lib/index.js"(exports) {
+  "packages/qwik-dom/lib/index.js"(exports) {
     "use strict";
     var DOMImplementation = require_DOMImplementation();
     var HTMLParser = require_HTMLParser();

@@ -64,9 +64,9 @@ var __privateWrapper = (obj, member, setter, getter) => ({
   }
 });
 
-// node_modules/which-pm-runs/index.js
+// node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js
 var require_which_pm_runs = __commonJS({
-  "node_modules/which-pm-runs/index.js"(exports, module2) {
+  "node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js"(exports, module2) {
     "use strict";
     module2.exports = function() {
       if (!process.env.npm_config_user_agent) {
@@ -86,9 +86,9 @@ var require_which_pm_runs = __commonJS({
   }
 });
 
-// node_modules/prompts/node_modules/kleur/index.js
+// node_modules/.pnpm/kleur@3.0.3/node_modules/kleur/index.js
 var require_kleur = __commonJS({
-  "node_modules/prompts/node_modules/kleur/index.js"(exports, module2) {
+  "node_modules/.pnpm/kleur@3.0.3/node_modules/kleur/index.js"(exports, module2) {
     "use strict";
     var { FORCE_COLOR: FORCE_COLOR2, NODE_DISABLE_COLORS: NODE_DISABLE_COLORS2, TERM: TERM2 } = process.env;
     var $2 = {
@@ -180,9 +180,9 @@ var require_kleur = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/action.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/action.js
 var require_action = __commonJS({
-  "node_modules/prompts/dist/util/action.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/action.js"(exports, module2) {
     "use strict";
     module2.exports = (key, isSelect) => {
       if (key.meta && key.name !== "escape")
@@ -240,9 +240,9 @@ var require_action = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/strip.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/strip.js
 var require_strip = __commonJS({
-  "node_modules/prompts/dist/util/strip.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/strip.js"(exports, module2) {
     "use strict";
     module2.exports = (str) => {
       const pattern = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"].join("|");
@@ -252,9 +252,9 @@ var require_strip = __commonJS({
   }
 });
 
-// node_modules/sisteransi/src/index.js
+// node_modules/.pnpm/sisteransi@1.0.5/node_modules/sisteransi/src/index.js
 var require_src = __commonJS({
-  "node_modules/sisteransi/src/index.js"(exports, module2) {
+  "node_modules/.pnpm/sisteransi@1.0.5/node_modules/sisteransi/src/index.js"(exports, module2) {
     "use strict";
     var ESC = "\x1B";
     var CSI = `${ESC}[`;
@@ -313,9 +313,9 @@ var require_src = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/clear.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/clear.js
 var require_clear = __commonJS({
-  "node_modules/prompts/dist/util/clear.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/clear.js"(exports, module2) {
     "use strict";
     function _createForOfIteratorHelper(o, allowArrayLike) {
       var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
@@ -402,9 +402,9 @@ var require_clear = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/figures.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/figures.js
 var require_figures = __commonJS({
-  "node_modules/prompts/dist/util/figures.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/figures.js"(exports, module2) {
     "use strict";
     var main2 = {
       arrowUp: "\u2191",
@@ -439,9 +439,9 @@ var require_figures = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/style.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/style.js
 var require_style = __commonJS({
-  "node_modules/prompts/dist/util/style.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/style.js"(exports, module2) {
     "use strict";
     var c = require_kleur();
     var figures = require_figures();
@@ -484,9 +484,9 @@ var require_style = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/lines.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/lines.js
 var require_lines = __commonJS({
-  "node_modules/prompts/dist/util/lines.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/lines.js"(exports, module2) {
     "use strict";
     var strip = require_strip();
     module2.exports = function(msg, perLine) {
@@ -498,9 +498,9 @@ var require_lines = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/wrap.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/wrap.js
 var require_wrap = __commonJS({
-  "node_modules/prompts/dist/util/wrap.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/wrap.js"(exports, module2) {
     "use strict";
     module2.exports = (msg, opts = {}) => {
       const tab = Number.isSafeInteger(parseInt(opts.margin)) ? new Array(parseInt(opts.margin)).fill(" ").join("") : opts.margin || "";
@@ -516,9 +516,9 @@ var require_wrap = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/entriesToDisplay.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/entriesToDisplay.js
 var require_entriesToDisplay = __commonJS({
-  "node_modules/prompts/dist/util/entriesToDisplay.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/entriesToDisplay.js"(exports, module2) {
     "use strict";
     module2.exports = (cursor, total, maxVisible) => {
       maxVisible = maxVisible || total;
@@ -534,9 +534,9 @@ var require_entriesToDisplay = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/util/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/index.js
 var require_util = __commonJS({
-  "node_modules/prompts/dist/util/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/util/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       action: require_action(),
@@ -551,9 +551,9 @@ var require_util = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/prompt.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/prompt.js
 var require_prompt = __commonJS({
-  "node_modules/prompts/dist/elements/prompt.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/prompt.js"(exports, module2) {
     "use strict";
     var readline2 = require("readline");
     var _require = require_util();
@@ -619,9 +619,9 @@ var require_prompt = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/text.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/text.js
 var require_text = __commonJS({
-  "node_modules/prompts/dist/elements/text.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/text.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve2, reject, _next, _throw, key, arg) {
       try {
@@ -843,9 +843,9 @@ ${i ? " " : figures.pointerSmall} ${color.red().italic(l)}`, ``);
   }
 });
 
-// node_modules/prompts/dist/elements/select.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/select.js
 var require_select = __commonJS({
-  "node_modules/prompts/dist/elements/select.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/select.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt();
@@ -997,9 +997,9 @@ var require_select = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/toggle.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/toggle.js
 var require_toggle = __commonJS({
-  "node_modules/prompts/dist/elements/toggle.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/toggle.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt();
@@ -1101,9 +1101,9 @@ var require_toggle = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/datepart.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/datepart.js
 var require_datepart = __commonJS({
-  "node_modules/prompts/dist/dateparts/datepart.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/datepart.js"(exports, module2) {
     "use strict";
     var DatePart = class {
       constructor({
@@ -1140,9 +1140,9 @@ var require_datepart = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/meridiem.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/meridiem.js
 var require_meridiem = __commonJS({
-  "node_modules/prompts/dist/dateparts/meridiem.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/meridiem.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Meridiem = class extends DatePart {
@@ -1164,9 +1164,9 @@ var require_meridiem = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/day.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/day.js
 var require_day = __commonJS({
-  "node_modules/prompts/dist/dateparts/day.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/day.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var pos = (n) => {
@@ -1196,9 +1196,9 @@ var require_day = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/hours.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/hours.js
 var require_hours = __commonJS({
-  "node_modules/prompts/dist/dateparts/hours.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/hours.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Hours = class extends DatePart {
@@ -1225,9 +1225,9 @@ var require_hours = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/milliseconds.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/milliseconds.js
 var require_milliseconds = __commonJS({
-  "node_modules/prompts/dist/dateparts/milliseconds.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/milliseconds.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Milliseconds = class extends DatePart {
@@ -1251,9 +1251,9 @@ var require_milliseconds = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/minutes.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/minutes.js
 var require_minutes = __commonJS({
-  "node_modules/prompts/dist/dateparts/minutes.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/minutes.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Minutes = class extends DatePart {
@@ -1278,9 +1278,9 @@ var require_minutes = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/month.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/month.js
 var require_month = __commonJS({
-  "node_modules/prompts/dist/dateparts/month.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/month.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Month = class extends DatePart {
@@ -1307,9 +1307,9 @@ var require_month = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/seconds.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/seconds.js
 var require_seconds = __commonJS({
-  "node_modules/prompts/dist/dateparts/seconds.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/seconds.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Seconds = class extends DatePart {
@@ -1334,9 +1334,9 @@ var require_seconds = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/year.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/year.js
 var require_year = __commonJS({
-  "node_modules/prompts/dist/dateparts/year.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/year.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart();
     var Year = class extends DatePart {
@@ -1361,9 +1361,9 @@ var require_year = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/dateparts/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/index.js
 var require_dateparts = __commonJS({
-  "node_modules/prompts/dist/dateparts/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/dateparts/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       DatePart: require_datepart(),
@@ -1379,9 +1379,9 @@ var require_dateparts = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/date.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/date.js
 var require_date = __commonJS({
-  "node_modules/prompts/dist/elements/date.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/date.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve2, reject, _next, _throw, key, arg) {
       try {
@@ -1605,9 +1605,9 @@ ${i ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
   }
 });
 
-// node_modules/prompts/dist/elements/number.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/number.js
 var require_number = __commonJS({
-  "node_modules/prompts/dist/elements/number.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/number.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve2, reject, _next, _throw, key, arg) {
       try {
@@ -1830,9 +1830,9 @@ ${i ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
   }
 });
 
-// node_modules/prompts/dist/elements/multiselect.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/multiselect.js
 var require_multiselect = __commonJS({
-  "node_modules/prompts/dist/elements/multiselect.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/multiselect.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var _require = require_src();
@@ -2063,9 +2063,9 @@ Instructions:
   }
 });
 
-// node_modules/prompts/dist/elements/autocomplete.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/autocomplete.js
 var require_autocomplete = __commonJS({
-  "node_modules/prompts/dist/elements/autocomplete.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/autocomplete.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve2, reject, _next, _throw, key, arg) {
       try {
@@ -2331,9 +2331,9 @@ var require_autocomplete = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/autocompleteMultiselect.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/autocompleteMultiselect.js
 var require_autocompleteMultiselect = __commonJS({
-  "node_modules/prompts/dist/elements/autocompleteMultiselect.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/autocompleteMultiselect.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var _require = require_src();
@@ -2495,9 +2495,9 @@ Filtered results for: ${this.inputValue ? this.inputValue : color.gray("Enter so
   }
 });
 
-// node_modules/prompts/dist/elements/confirm.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/confirm.js
 var require_confirm = __commonJS({
-  "node_modules/prompts/dist/elements/confirm.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/confirm.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt();
@@ -2570,9 +2570,9 @@ var require_confirm = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/elements/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/index.js
 var require_elements = __commonJS({
-  "node_modules/prompts/dist/elements/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/elements/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       TextPrompt: require_text(),
@@ -2588,9 +2588,9 @@ var require_elements = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/prompts.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/prompts.js
 var require_prompts = __commonJS({
-  "node_modules/prompts/dist/prompts.js"(exports) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/prompts.js"(exports) {
     "use strict";
     var $2 = exports;
     var el = require_elements();
@@ -2652,9 +2652,9 @@ var require_prompts = __commonJS({
   }
 });
 
-// node_modules/prompts/dist/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/prompts/dist/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/index.js"(exports, module2) {
     "use strict";
     function ownKeys(object, enumerableOnly) {
       var keys = Object.keys(object);
@@ -2886,9 +2886,9 @@ var require_dist = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/action.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/action.js
 var require_action2 = __commonJS({
-  "node_modules/prompts/lib/util/action.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/action.js"(exports, module2) {
     "use strict";
     module2.exports = (key, isSelect) => {
       if (key.meta && key.name !== "escape")
@@ -2946,9 +2946,9 @@ var require_action2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/strip.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/strip.js
 var require_strip2 = __commonJS({
-  "node_modules/prompts/lib/util/strip.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/strip.js"(exports, module2) {
     "use strict";
     module2.exports = (str) => {
       const pattern = [
@@ -2961,9 +2961,9 @@ var require_strip2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/clear.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/clear.js
 var require_clear2 = __commonJS({
-  "node_modules/prompts/lib/util/clear.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/clear.js"(exports, module2) {
     "use strict";
     var strip = require_strip2();
     var { erase, cursor } = require_src();
@@ -2981,9 +2981,9 @@ var require_clear2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/figures.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/figures.js
 var require_figures2 = __commonJS({
-  "node_modules/prompts/lib/util/figures.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/figures.js"(exports, module2) {
     "use strict";
     var main2 = {
       arrowUp: "\u2191",
@@ -3018,9 +3018,9 @@ var require_figures2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/style.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/style.js
 var require_style2 = __commonJS({
-  "node_modules/prompts/lib/util/style.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/style.js"(exports, module2) {
     "use strict";
     var c = require_kleur();
     var figures = require_figures2();
@@ -3051,9 +3051,9 @@ var require_style2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/lines.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/lines.js
 var require_lines2 = __commonJS({
-  "node_modules/prompts/lib/util/lines.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/lines.js"(exports, module2) {
     "use strict";
     var strip = require_strip2();
     module2.exports = function(msg, perLine) {
@@ -3065,9 +3065,9 @@ var require_lines2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/wrap.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/wrap.js
 var require_wrap2 = __commonJS({
-  "node_modules/prompts/lib/util/wrap.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/wrap.js"(exports, module2) {
     "use strict";
     module2.exports = (msg, opts = {}) => {
       const tab = Number.isSafeInteger(parseInt(opts.margin)) ? new Array(parseInt(opts.margin)).fill(" ").join("") : opts.margin || "";
@@ -3083,9 +3083,9 @@ var require_wrap2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/entriesToDisplay.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/entriesToDisplay.js
 var require_entriesToDisplay2 = __commonJS({
-  "node_modules/prompts/lib/util/entriesToDisplay.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/entriesToDisplay.js"(exports, module2) {
     "use strict";
     module2.exports = (cursor, total, maxVisible) => {
       maxVisible = maxVisible || total;
@@ -3098,9 +3098,9 @@ var require_entriesToDisplay2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/util/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/index.js
 var require_util2 = __commonJS({
-  "node_modules/prompts/lib/util/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/util/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       action: require_action2(),
@@ -3115,9 +3115,9 @@ var require_util2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/prompt.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/prompt.js
 var require_prompt2 = __commonJS({
-  "node_modules/prompts/lib/elements/prompt.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/prompt.js"(exports, module2) {
     "use strict";
     var readline2 = require("readline");
     var { action } = require_util2();
@@ -3177,9 +3177,9 @@ var require_prompt2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/text.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/text.js
 var require_text2 = __commonJS({
-  "node_modules/prompts/lib/elements/text.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/text.js"(exports, module2) {
     var color = require_kleur();
     var Prompt = require_prompt2();
     var { erase, cursor } = require_src();
@@ -3364,9 +3364,9 @@ ${i ? " " : figures.pointerSmall} ${color.red().italic(l)}`, ``);
   }
 });
 
-// node_modules/prompts/lib/elements/select.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/select.js
 var require_select2 = __commonJS({
-  "node_modules/prompts/lib/elements/select.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/select.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt2();
@@ -3511,9 +3511,9 @@ var require_select2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/toggle.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/toggle.js
 var require_toggle2 = __commonJS({
-  "node_modules/prompts/lib/elements/toggle.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/toggle.js"(exports, module2) {
     var color = require_kleur();
     var Prompt = require_prompt2();
     var { style, clear } = require_util2();
@@ -3617,9 +3617,9 @@ var require_toggle2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/datepart.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/datepart.js
 var require_datepart2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/datepart.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/datepart.js"(exports, module2) {
     "use strict";
     var DatePart = class {
       constructor({ token, date, parts, locales }) {
@@ -3651,9 +3651,9 @@ var require_datepart2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/meridiem.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/meridiem.js
 var require_meridiem2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/meridiem.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/meridiem.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Meridiem = class extends DatePart {
@@ -3675,9 +3675,9 @@ var require_meridiem2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/day.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/day.js
 var require_day2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/day.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/day.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var pos = (n) => {
@@ -3707,9 +3707,9 @@ var require_day2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/hours.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/hours.js
 var require_hours2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/hours.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/hours.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Hours = class extends DatePart {
@@ -3736,9 +3736,9 @@ var require_hours2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/milliseconds.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/milliseconds.js
 var require_milliseconds2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/milliseconds.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/milliseconds.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Milliseconds = class extends DatePart {
@@ -3762,9 +3762,9 @@ var require_milliseconds2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/minutes.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/minutes.js
 var require_minutes2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/minutes.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/minutes.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Minutes = class extends DatePart {
@@ -3789,9 +3789,9 @@ var require_minutes2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/month.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/month.js
 var require_month2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/month.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/month.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Month = class extends DatePart {
@@ -3818,9 +3818,9 @@ var require_month2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/seconds.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/seconds.js
 var require_seconds2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/seconds.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/seconds.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Seconds = class extends DatePart {
@@ -3845,9 +3845,9 @@ var require_seconds2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/year.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/year.js
 var require_year2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/year.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/year.js"(exports, module2) {
     "use strict";
     var DatePart = require_datepart2();
     var Year = class extends DatePart {
@@ -3872,9 +3872,9 @@ var require_year2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/dateparts/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/index.js
 var require_dateparts2 = __commonJS({
-  "node_modules/prompts/lib/dateparts/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/dateparts/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       DatePart: require_datepart2(),
@@ -3890,9 +3890,9 @@ var require_dateparts2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/date.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/date.js
 var require_date2 = __commonJS({
-  "node_modules/prompts/lib/elements/date.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/date.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt2();
@@ -4068,9 +4068,9 @@ ${i ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`,
   }
 });
 
-// node_modules/prompts/lib/elements/number.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/number.js
 var require_number2 = __commonJS({
-  "node_modules/prompts/lib/elements/number.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/number.js"(exports, module2) {
     var color = require_kleur();
     var Prompt = require_prompt2();
     var { cursor, erase } = require_src();
@@ -4256,9 +4256,9 @@ ${i ? ` ` : figures.pointerSmall} ${color.red().italic(l)}`, ``);
   }
 });
 
-// node_modules/prompts/lib/elements/multiselect.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/multiselect.js
 var require_multiselect2 = __commonJS({
-  "node_modules/prompts/lib/elements/multiselect.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/multiselect.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var { cursor } = require_src();
@@ -4482,9 +4482,9 @@ Instructions:
   }
 });
 
-// node_modules/prompts/lib/elements/autocomplete.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/autocomplete.js
 var require_autocomplete2 = __commonJS({
-  "node_modules/prompts/lib/elements/autocomplete.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/autocomplete.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var Prompt = require_prompt2();
@@ -4708,9 +4708,9 @@ var require_autocomplete2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/autocompleteMultiselect.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/autocompleteMultiselect.js
 var require_autocompleteMultiselect2 = __commonJS({
-  "node_modules/prompts/lib/elements/autocompleteMultiselect.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/autocompleteMultiselect.js"(exports, module2) {
     "use strict";
     var color = require_kleur();
     var { cursor } = require_src();
@@ -4873,9 +4873,9 @@ Filtered results for: ${this.inputValue ? this.inputValue : color.gray("Enter so
   }
 });
 
-// node_modules/prompts/lib/elements/confirm.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/confirm.js
 var require_confirm2 = __commonJS({
-  "node_modules/prompts/lib/elements/confirm.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/confirm.js"(exports, module2) {
     var color = require_kleur();
     var Prompt = require_prompt2();
     var { style, clear } = require_util2();
@@ -4948,9 +4948,9 @@ var require_confirm2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/elements/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/index.js
 var require_elements2 = __commonJS({
-  "node_modules/prompts/lib/elements/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/elements/index.js"(exports, module2) {
     "use strict";
     module2.exports = {
       TextPrompt: require_text2(),
@@ -4966,9 +4966,9 @@ var require_elements2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/prompts.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/prompts.js
 var require_prompts2 = __commonJS({
-  "node_modules/prompts/lib/prompts.js"(exports) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/prompts.js"(exports) {
     "use strict";
     var $2 = exports;
     var el = require_elements2();
@@ -5032,9 +5032,9 @@ var require_prompts2 = __commonJS({
   }
 });
 
-// node_modules/prompts/lib/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/index.js
 var require_lib = __commonJS({
-  "node_modules/prompts/lib/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/index.js"(exports, module2) {
     "use strict";
     var prompts2 = require_prompts2();
     var passOn = ["suggest", "format", "onState", "validate", "onRender", "type"];
@@ -5109,9 +5109,9 @@ var require_lib = __commonJS({
   }
 });
 
-// node_modules/prompts/index.js
+// node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/index.js
 var require_prompts3 = __commonJS({
-  "node_modules/prompts/index.js"(exports, module2) {
+  "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/index.js"(exports, module2) {
     function isNodeLT(tar) {
       tar = (Array.isArray(tar) ? tar : tar.split(".")).map(Number);
       let i = 0, src = process.versions.node.split(".").map(Number);
@@ -5127,9 +5127,9 @@ var require_prompts3 = __commonJS({
   }
 });
 
-// node_modules/mimic-fn/index.js
+// node_modules/.pnpm/mimic-fn@2.1.0/node_modules/mimic-fn/index.js
 var require_mimic_fn = __commonJS({
-  "node_modules/mimic-fn/index.js"(exports, module2) {
+  "node_modules/.pnpm/mimic-fn@2.1.0/node_modules/mimic-fn/index.js"(exports, module2) {
     "use strict";
     var mimicFn = (to, from) => {
       for (const prop of Reflect.ownKeys(from)) {
@@ -5142,9 +5142,9 @@ var require_mimic_fn = __commonJS({
   }
 });
 
-// node_modules/onetime/index.js
+// node_modules/.pnpm/onetime@5.1.2/node_modules/onetime/index.js
 var require_onetime = __commonJS({
-  "node_modules/onetime/index.js"(exports, module2) {
+  "node_modules/.pnpm/onetime@5.1.2/node_modules/onetime/index.js"(exports, module2) {
     "use strict";
     var mimicFn = require_mimic_fn();
     var calledFunctions2 = /* @__PURE__ */ new WeakMap();
@@ -5180,9 +5180,9 @@ var require_onetime = __commonJS({
   }
 });
 
-// node_modules/signal-exit/signals.js
+// node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/signals.js
 var require_signals = __commonJS({
-  "node_modules/signal-exit/signals.js"(exports, module2) {
+  "node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/signals.js"(exports, module2) {
     module2.exports = [
       "SIGABRT",
       "SIGALRM",
@@ -5214,9 +5214,9 @@ var require_signals = __commonJS({
   }
 });
 
-// node_modules/signal-exit/index.js
+// node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js
 var require_signal_exit = __commonJS({
-  "node_modules/signal-exit/index.js"(exports, module2) {
+  "node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js"(exports, module2) {
     var process9 = global.process;
     var processOk = function(process10) {
       return process10 && typeof process10 === "object" && typeof process10.removeListener === "function" && typeof process10.emit === "function" && typeof process10.reallyExit === "function" && typeof process10.listeners === "function" && typeof process10.kill === "function" && typeof process10.pid === "number" && typeof process10.on === "function";
@@ -5372,9 +5372,9 @@ var require_signal_exit = __commonJS({
   }
 });
 
-// node_modules/cli-spinners/spinners.json
+// node_modules/.pnpm/cli-spinners@2.7.0/node_modules/cli-spinners/spinners.json
 var require_spinners = __commonJS({
-  "node_modules/cli-spinners/spinners.json"(exports, module2) {
+  "node_modules/.pnpm/cli-spinners@2.7.0/node_modules/cli-spinners/spinners.json"(exports, module2) {
     module2.exports = {
       dots: {
         interval: 80,
@@ -6846,9 +6846,9 @@ var require_spinners = __commonJS({
   }
 });
 
-// node_modules/cli-spinners/index.js
+// node_modules/.pnpm/cli-spinners@2.7.0/node_modules/cli-spinners/index.js
 var require_cli_spinners = __commonJS({
-  "node_modules/cli-spinners/index.js"(exports, module2) {
+  "node_modules/.pnpm/cli-spinners@2.7.0/node_modules/cli-spinners/index.js"(exports, module2) {
     "use strict";
     var spinners = Object.assign({}, require_spinners());
     var spinnersList = Object.keys(spinners);
@@ -6863,9 +6863,9 @@ var require_cli_spinners = __commonJS({
   }
 });
 
-// node_modules/clone/clone.js
+// node_modules/.pnpm/clone@1.0.4/node_modules/clone/clone.js
 var require_clone = __commonJS({
-  "node_modules/clone/clone.js"(exports, module2) {
+  "node_modules/.pnpm/clone@1.0.4/node_modules/clone/clone.js"(exports, module2) {
     var clone = function() {
       "use strict";
       function clone2(parent, circular, depth, prototype) {
@@ -6988,9 +6988,9 @@ var require_clone = __commonJS({
   }
 });
 
-// node_modules/defaults/index.js
+// node_modules/.pnpm/defaults@1.0.4/node_modules/defaults/index.js
 var require_defaults = __commonJS({
-  "node_modules/defaults/index.js"(exports, module2) {
+  "node_modules/.pnpm/defaults@1.0.4/node_modules/defaults/index.js"(exports, module2) {
     var clone = require_clone();
     module2.exports = function(options, defaults) {
       options = options || {};
@@ -7004,9 +7004,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// node_modules/wcwidth/combining.js
+// node_modules/.pnpm/wcwidth@1.0.1/node_modules/wcwidth/combining.js
 var require_combining = __commonJS({
-  "node_modules/wcwidth/combining.js"(exports, module2) {
+  "node_modules/.pnpm/wcwidth@1.0.1/node_modules/wcwidth/combining.js"(exports, module2) {
     module2.exports = [
       [768, 879],
       [1155, 1158],
@@ -7154,9 +7154,9 @@ var require_combining = __commonJS({
   }
 });
 
-// node_modules/wcwidth/index.js
+// node_modules/.pnpm/wcwidth@1.0.1/node_modules/wcwidth/index.js
 var require_wcwidth = __commonJS({
-  "node_modules/wcwidth/index.js"(exports, module2) {
+  "node_modules/.pnpm/wcwidth@1.0.1/node_modules/wcwidth/index.js"(exports, module2) {
     "use strict";
     var defaults = require_defaults();
     var combining = require_combining();
@@ -7214,16 +7214,16 @@ var require_wcwidth = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/stream.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/stream.js
 var require_stream = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/stream.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/stream.js"(exports, module2) {
     module2.exports = require("stream");
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/buffer_list.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/buffer_list.js
 var require_buffer_list = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/buffer_list.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/buffer_list.js"(exports, module2) {
     "use strict";
     function ownKeys(object, enumerableOnly) {
       var keys = Object.keys(object);
@@ -7468,9 +7468,9 @@ var require_buffer_list = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/destroy.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/destroy.js
 var require_destroy = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/destroy.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/destroy.js"(exports, module2) {
     "use strict";
     function destroy(err, cb) {
       var _this = this;
@@ -7561,9 +7561,9 @@ var require_destroy = __commonJS({
   }
 });
 
-// node_modules/readable-stream/errors.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/errors.js
 var require_errors = __commonJS({
-  "node_modules/readable-stream/errors.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/errors.js"(exports, module2) {
     "use strict";
     var codes = {};
     function createErrorType(code, message, Base) {
@@ -7661,9 +7661,9 @@ var require_errors = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/state.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/state.js
 var require_state = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/state.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/state.js"(exports, module2) {
     "use strict";
     var ERR_INVALID_OPT_VALUE = require_errors().codes.ERR_INVALID_OPT_VALUE;
     function highWaterMarkFrom(options, isDuplex, duplexKey) {
@@ -7686,9 +7686,9 @@ var require_state = __commonJS({
   }
 });
 
-// node_modules/inherits/inherits_browser.js
+// node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js
 var require_inherits_browser = __commonJS({
-  "node_modules/inherits/inherits_browser.js"(exports, module2) {
+  "node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits_browser.js"(exports, module2) {
     if (typeof Object.create === "function") {
       module2.exports = function inherits(ctor, superCtor) {
         if (superCtor) {
@@ -7718,9 +7718,9 @@ var require_inherits_browser = __commonJS({
   }
 });
 
-// node_modules/inherits/inherits.js
+// node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js
 var require_inherits = __commonJS({
-  "node_modules/inherits/inherits.js"(exports, module2) {
+  "node_modules/.pnpm/inherits@2.0.4/node_modules/inherits/inherits.js"(exports, module2) {
     try {
       util = require("util");
       if (typeof util.inherits !== "function")
@@ -7733,16 +7733,16 @@ var require_inherits = __commonJS({
   }
 });
 
-// node_modules/util-deprecate/node.js
+// node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate/node.js
 var require_node = __commonJS({
-  "node_modules/util-deprecate/node.js"(exports, module2) {
+  "node_modules/.pnpm/util-deprecate@1.0.2/node_modules/util-deprecate/node.js"(exports, module2) {
     module2.exports = require("util").deprecate;
   }
 });
 
-// node_modules/readable-stream/lib/_stream_writable.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_writable.js
 var require_stream_writable = __commonJS({
-  "node_modules/readable-stream/lib/_stream_writable.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_writable.js"(exports, module2) {
     "use strict";
     module2.exports = Writable;
     function CorkedRequest(state) {
@@ -8228,9 +8228,9 @@ var require_stream_writable = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/_stream_duplex.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_duplex.js
 var require_stream_duplex = __commonJS({
-  "node_modules/readable-stream/lib/_stream_duplex.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_duplex.js"(exports, module2) {
     "use strict";
     var objectKeys = Object.keys || function(obj) {
       var keys2 = [];
@@ -8316,9 +8316,9 @@ var require_stream_duplex = __commonJS({
   }
 });
 
-// node_modules/safe-buffer/index.js
+// node_modules/.pnpm/safe-buffer@5.2.1/node_modules/safe-buffer/index.js
 var require_safe_buffer = __commonJS({
-  "node_modules/safe-buffer/index.js"(exports, module2) {
+  "node_modules/.pnpm/safe-buffer@5.2.1/node_modules/safe-buffer/index.js"(exports, module2) {
     var buffer = require("buffer");
     var Buffer3 = buffer.Buffer;
     function copyProps(src, dst) {
@@ -8374,9 +8374,9 @@ var require_safe_buffer = __commonJS({
   }
 });
 
-// node_modules/readable-stream/node_modules/string_decoder/lib/string_decoder.js
+// node_modules/.pnpm/string_decoder@1.3.0/node_modules/string_decoder/lib/string_decoder.js
 var require_string_decoder = __commonJS({
-  "node_modules/readable-stream/node_modules/string_decoder/lib/string_decoder.js"(exports) {
+  "node_modules/.pnpm/string_decoder@1.3.0/node_modules/string_decoder/lib/string_decoder.js"(exports) {
     "use strict";
     var Buffer3 = require_safe_buffer().Buffer;
     var isEncoding = Buffer3.isEncoding || function(encoding) {
@@ -8634,9 +8634,9 @@ var require_string_decoder = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/end-of-stream.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/end-of-stream.js
 var require_end_of_stream = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/end-of-stream.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/end-of-stream.js"(exports, module2) {
     "use strict";
     var ERR_STREAM_PREMATURE_CLOSE = require_errors().codes.ERR_STREAM_PREMATURE_CLOSE;
     function once(callback) {
@@ -8735,9 +8735,9 @@ var require_end_of_stream = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/async_iterator.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/async_iterator.js
 var require_async_iterator = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/async_iterator.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/async_iterator.js"(exports, module2) {
     "use strict";
     var _Object$setPrototypeO;
     function _defineProperty(obj, key, value) {
@@ -8903,9 +8903,9 @@ var require_async_iterator = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/from.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/from.js
 var require_from = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/from.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/from.js"(exports, module2) {
     "use strict";
     function asyncGeneratorStep(gen, resolve2, reject, _next, _throw, key, arg) {
       try {
@@ -9020,9 +9020,9 @@ var require_from = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/_stream_readable.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_readable.js
 var require_stream_readable = __commonJS({
-  "node_modules/readable-stream/lib/_stream_readable.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_readable.js"(exports, module2) {
     "use strict";
     module2.exports = Readable;
     var Duplex;
@@ -9803,9 +9803,9 @@ var require_stream_readable = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/_stream_transform.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_transform.js
 var require_stream_transform = __commonJS({
-  "node_modules/readable-stream/lib/_stream_transform.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_transform.js"(exports, module2) {
     "use strict";
     module2.exports = Transform;
     var _require$codes = require_errors().codes;
@@ -9911,9 +9911,9 @@ var require_stream_transform = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/_stream_passthrough.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_passthrough.js
 var require_stream_passthrough = __commonJS({
-  "node_modules/readable-stream/lib/_stream_passthrough.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/_stream_passthrough.js"(exports, module2) {
     "use strict";
     module2.exports = PassThrough;
     var Transform = require_stream_transform();
@@ -9929,9 +9929,9 @@ var require_stream_passthrough = __commonJS({
   }
 });
 
-// node_modules/readable-stream/lib/internal/streams/pipeline.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/pipeline.js
 var require_pipeline = __commonJS({
-  "node_modules/readable-stream/lib/internal/streams/pipeline.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/lib/internal/streams/pipeline.js"(exports, module2) {
     "use strict";
     var eos;
     function once(callback) {
@@ -10028,9 +10028,9 @@ var require_pipeline = __commonJS({
   }
 });
 
-// node_modules/readable-stream/readable.js
+// node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/readable.js
 var require_readable = __commonJS({
-  "node_modules/readable-stream/readable.js"(exports, module2) {
+  "node_modules/.pnpm/readable-stream@3.6.0/node_modules/readable-stream/readable.js"(exports, module2) {
     var Stream = require("stream");
     if (process.env.READABLE_STREAM === "disable" && Stream) {
       module2.exports = Stream.Readable;
@@ -10050,9 +10050,9 @@ var require_readable = __commonJS({
   }
 });
 
-// node_modules/ora/node_modules/bl/BufferList.js
+// node_modules/.pnpm/bl@5.1.0/node_modules/bl/BufferList.js
 var require_BufferList = __commonJS({
-  "node_modules/ora/node_modules/bl/BufferList.js"(exports, module2) {
+  "node_modules/.pnpm/bl@5.1.0/node_modules/bl/BufferList.js"(exports, module2) {
     "use strict";
     var { Buffer: Buffer3 } = require("buffer");
     var symbol = Symbol.for("BufferList");
@@ -10354,9 +10354,9 @@ var require_BufferList = __commonJS({
   }
 });
 
-// node_modules/ora/node_modules/bl/bl.js
+// node_modules/.pnpm/bl@5.1.0/node_modules/bl/bl.js
 var require_bl = __commonJS({
-  "node_modules/ora/node_modules/bl/bl.js"(exports, module2) {
+  "node_modules/.pnpm/bl@5.1.0/node_modules/bl/bl.js"(exports, module2) {
     "use strict";
     var DuplexStream = require_readable().Duplex;
     var inherits = require_inherits();
@@ -10425,9 +10425,9 @@ var require_bl = __commonJS({
   }
 });
 
-// node_modules/isexe/windows.js
+// node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js
 var require_windows = __commonJS({
-  "node_modules/isexe/windows.js"(exports, module2) {
+  "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
     var fs6 = require("fs");
@@ -10465,9 +10465,9 @@ var require_windows = __commonJS({
   }
 });
 
-// node_modules/isexe/mode.js
+// node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/mode.js
 var require_mode = __commonJS({
-  "node_modules/isexe/mode.js"(exports, module2) {
+  "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/mode.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
     var fs6 = require("fs");
@@ -10498,9 +10498,9 @@ var require_mode = __commonJS({
   }
 });
 
-// node_modules/isexe/index.js
+// node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js
 var require_isexe = __commonJS({
-  "node_modules/isexe/index.js"(exports, module2) {
+  "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js"(exports, module2) {
     var fs6 = require("fs");
     var core;
     if (process.platform === "win32" || global.TESTING_WINDOWS) {
@@ -10553,9 +10553,9 @@ var require_isexe = __commonJS({
   }
 });
 
-// node_modules/which/which.js
+// node_modules/.pnpm/which@2.0.2/node_modules/which/which.js
 var require_which = __commonJS({
-  "node_modules/which/which.js"(exports, module2) {
+  "node_modules/.pnpm/which@2.0.2/node_modules/which/which.js"(exports, module2) {
     var isWindows = process.platform === "win32" || process.env.OSTYPE === "cygwin" || process.env.OSTYPE === "msys";
     var path3 = require("path");
     var COLON = isWindows ? ";" : ":";
@@ -10647,9 +10647,9 @@ var require_which = __commonJS({
   }
 });
 
-// node_modules/path-key/index.js
+// node_modules/.pnpm/path-key@3.1.1/node_modules/path-key/index.js
 var require_path_key = __commonJS({
-  "node_modules/path-key/index.js"(exports, module2) {
+  "node_modules/.pnpm/path-key@3.1.1/node_modules/path-key/index.js"(exports, module2) {
     "use strict";
     var pathKey2 = (options = {}) => {
       const environment = options.env || process.env;
@@ -10664,9 +10664,9 @@ var require_path_key = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/lib/util/resolveCommand.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/resolveCommand.js
 var require_resolveCommand = __commonJS({
-  "node_modules/cross-spawn/lib/util/resolveCommand.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/resolveCommand.js"(exports, module2) {
     "use strict";
     var path3 = require("path");
     var which = require_which();
@@ -10706,9 +10706,9 @@ var require_resolveCommand = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/lib/util/escape.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/escape.js
 var require_escape = __commonJS({
-  "node_modules/cross-spawn/lib/util/escape.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/escape.js"(exports, module2) {
     "use strict";
     var metaCharsRegExp = /([()\][%!^"`<>&|;, *?])/g;
     function escapeCommand(arg) {
@@ -10731,17 +10731,17 @@ var require_escape = __commonJS({
   }
 });
 
-// node_modules/shebang-regex/index.js
+// node_modules/.pnpm/shebang-regex@3.0.0/node_modules/shebang-regex/index.js
 var require_shebang_regex = __commonJS({
-  "node_modules/shebang-regex/index.js"(exports, module2) {
+  "node_modules/.pnpm/shebang-regex@3.0.0/node_modules/shebang-regex/index.js"(exports, module2) {
     "use strict";
     module2.exports = /^#!(.*)/;
   }
 });
 
-// node_modules/shebang-command/index.js
+// node_modules/.pnpm/shebang-command@2.0.0/node_modules/shebang-command/index.js
 var require_shebang_command = __commonJS({
-  "node_modules/shebang-command/index.js"(exports, module2) {
+  "node_modules/.pnpm/shebang-command@2.0.0/node_modules/shebang-command/index.js"(exports, module2) {
     "use strict";
     var shebangRegex = require_shebang_regex();
     module2.exports = (string = "") => {
@@ -10759,9 +10759,9 @@ var require_shebang_command = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/lib/util/readShebang.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/readShebang.js
 var require_readShebang = __commonJS({
-  "node_modules/cross-spawn/lib/util/readShebang.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/readShebang.js"(exports, module2) {
     "use strict";
     var fs6 = require("fs");
     var shebangCommand = require_shebang_command();
@@ -10781,9 +10781,9 @@ var require_readShebang = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/lib/parse.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/parse.js
 var require_parse = __commonJS({
-  "node_modules/cross-spawn/lib/parse.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/parse.js"(exports, module2) {
     "use strict";
     var path3 = require("path");
     var resolveCommand = require_resolveCommand();
@@ -10843,9 +10843,9 @@ var require_parse = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/lib/enoent.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/enoent.js
 var require_enoent = __commonJS({
-  "node_modules/cross-spawn/lib/enoent.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/enoent.js"(exports, module2) {
     "use strict";
     var isWin = process.platform === "win32";
     function notFoundError(original, syscall) {
@@ -10893,9 +10893,9 @@ var require_enoent = __commonJS({
   }
 });
 
-// node_modules/cross-spawn/index.js
+// node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/index.js
 var require_cross_spawn = __commonJS({
-  "node_modules/cross-spawn/index.js"(exports, module2) {
+  "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/index.js"(exports, module2) {
     "use strict";
     var cp = require("child_process");
     var parse = require_parse();
@@ -10920,9 +10920,9 @@ var require_cross_spawn = __commonJS({
   }
 });
 
-// node_modules/get-stream/buffer-stream.js
+// node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream/buffer-stream.js
 var require_buffer_stream = __commonJS({
-  "node_modules/get-stream/buffer-stream.js"(exports, module2) {
+  "node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream/buffer-stream.js"(exports, module2) {
     "use strict";
     var { PassThrough: PassThroughStream } = require("stream");
     module2.exports = (options) => {
@@ -10965,9 +10965,9 @@ var require_buffer_stream = __commonJS({
   }
 });
 
-// node_modules/get-stream/index.js
+// node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream/index.js
 var require_get_stream = __commonJS({
-  "node_modules/get-stream/index.js"(exports, module2) {
+  "node_modules/.pnpm/get-stream@6.0.1/node_modules/get-stream/index.js"(exports, module2) {
     "use strict";
     var { constants: BufferConstants } = require("buffer");
     var stream = require("stream");
@@ -11020,9 +11020,9 @@ var require_get_stream = __commonJS({
   }
 });
 
-// node_modules/merge-stream/index.js
+// node_modules/.pnpm/merge-stream@2.0.0/node_modules/merge-stream/index.js
 var require_merge_stream = __commonJS({
-  "node_modules/merge-stream/index.js"(exports, module2) {
+  "node_modules/.pnpm/merge-stream@2.0.0/node_modules/merge-stream/index.js"(exports, module2) {
     "use strict";
     var { PassThrough } = require("stream");
     module2.exports = function() {
@@ -11068,7 +11068,7 @@ __export(cli_exports, {
 });
 module.exports = __toCommonJS(cli_exports);
 
-// node_modules/kleur/index.mjs
+// node_modules/.pnpm/kleur@4.1.5/node_modules/kleur/index.mjs
 var FORCE_COLOR;
 var NODE_DISABLE_COLORS;
 var NO_COLOR;
@@ -11230,7 +11230,7 @@ function getPackageManager() {
 }
 function pmRunCmd() {
   const pm = getPackageManager();
-  if (pm === "yarn") {
+  if (pm !== "npm") {
     return pm;
   }
   return `${pm} run`;
@@ -11298,13 +11298,13 @@ var import_prompts = __toESM(require_prompts3(), 1);
 var import_node_path5 = require("path");
 var import_node_fs5 = __toESM(require("fs"), 1);
 
-// node_modules/ora/index.js
+// node_modules/.pnpm/ora@6.1.2/node_modules/ora/index.js
 var import_node_process5 = __toESM(require("process"), 1);
 
-// node_modules/ora/node_modules/cli-cursor/index.js
+// node_modules/.pnpm/cli-cursor@4.0.0/node_modules/cli-cursor/index.js
 var import_node_process2 = __toESM(require("process"), 1);
 
-// node_modules/ora/node_modules/restore-cursor/index.js
+// node_modules/.pnpm/restore-cursor@4.0.0/node_modules/restore-cursor/index.js
 var import_node_process = __toESM(require("process"), 1);
 var import_onetime = __toESM(require_onetime(), 1);
 var import_signal_exit = __toESM(require_signal_exit(), 1);
@@ -11315,7 +11315,7 @@ var restoreCursor = (0, import_onetime.default)(() => {
 });
 var restore_cursor_default = restoreCursor;
 
-// node_modules/ora/node_modules/cli-cursor/index.js
+// node_modules/.pnpm/cli-cursor@4.0.0/node_modules/cli-cursor/index.js
 var isHidden = false;
 var cliCursor = {};
 cliCursor.show = (writableStream = import_node_process2.default.stderr) => {
@@ -11345,10 +11345,10 @@ cliCursor.toggle = (force, writableStream) => {
 };
 var cli_cursor_default = cliCursor;
 
-// node_modules/ora/index.js
+// node_modules/.pnpm/ora@6.1.2/node_modules/ora/index.js
 var import_cli_spinners = __toESM(require_cli_spinners(), 1);
 
-// node_modules/ora/node_modules/is-unicode-supported/index.js
+// node_modules/.pnpm/is-unicode-supported@1.3.0/node_modules/is-unicode-supported/index.js
 var import_node_process3 = __toESM(require("process"), 1);
 function isUnicodeSupported() {
   if (import_node_process3.default.platform !== "win32") {
@@ -11357,7 +11357,7 @@ function isUnicodeSupported() {
   return Boolean(import_node_process3.default.env.CI) || Boolean(import_node_process3.default.env.WT_SESSION) || Boolean(import_node_process3.default.env.TERMINUS_SUBLIME) || import_node_process3.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process3.default.env.TERM_PROGRAM === "Terminus-Sublime" || import_node_process3.default.env.TERM_PROGRAM === "vscode" || import_node_process3.default.env.TERM === "xterm-256color" || import_node_process3.default.env.TERM === "alacritty" || import_node_process3.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
 }
 
-// node_modules/ora/node_modules/log-symbols/index.js
+// node_modules/.pnpm/log-symbols@5.1.0/node_modules/log-symbols/index.js
 var main = {
   info: kleur_default.blue("\u2139"),
   success: kleur_default.green("\u2714"),
@@ -11373,7 +11373,7 @@ var fallback = {
 var logSymbols = isUnicodeSupported() ? main : fallback;
 var log_symbols_default = logSymbols;
 
-// node_modules/ora/node_modules/ansi-regex/index.js
+// node_modules/.pnpm/ansi-regex@6.0.1/node_modules/ansi-regex/index.js
 function ansiRegex({ onlyFirst = false } = {}) {
   const pattern = [
     "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
@@ -11382,7 +11382,7 @@ function ansiRegex({ onlyFirst = false } = {}) {
   return new RegExp(pattern, onlyFirst ? void 0 : "g");
 }
 
-// node_modules/ora/node_modules/strip-ansi/index.js
+// node_modules/.pnpm/strip-ansi@7.0.1/node_modules/strip-ansi/index.js
 function stripAnsi(string) {
   if (typeof string !== "string") {
     throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
@@ -11390,17 +11390,17 @@ function stripAnsi(string) {
   return string.replace(ansiRegex(), "");
 }
 
-// node_modules/ora/index.js
+// node_modules/.pnpm/ora@6.1.2/node_modules/ora/index.js
 var import_wcwidth = __toESM(require_wcwidth(), 1);
 
-// node_modules/ora/node_modules/is-interactive/index.js
+// node_modules/.pnpm/is-interactive@2.0.0/node_modules/is-interactive/index.js
 function isInteractive({ stream = process.stdout } = {}) {
   return Boolean(
     stream && stream.isTTY && process.env.TERM !== "dumb" && !("CI" in process.env)
   );
 }
 
-// node_modules/ora/utilities.js
+// node_modules/.pnpm/ora@6.1.2/node_modules/ora/utilities.js
 var import_node_process4 = __toESM(require("process"), 1);
 var import_node_readline = __toESM(require("readline"), 1);
 var import_bl = __toESM(require_bl(), 1);
@@ -11474,7 +11474,7 @@ _mutedStream = new WeakMap();
 _ourEmit = new WeakMap();
 _rl = new WeakMap();
 
-// node_modules/ora/index.js
+// node_modules/.pnpm/ora@6.1.2/node_modules/ora/index.js
 var stdinDiscarder;
 var _linesToClear, _isDiscardingStdin, _lineCount, _frameIndex, _options, _spinner, _stream, _id, _initialInterval, _isEnabled, _isSilent, _indent, _text, _prefixText;
 var Ora = class {
@@ -11884,8 +11884,8 @@ async function mergeReadmes(fileUpdates, srcPath, destPath) {
     type = "create";
   }
   const pkgManager = getPackageManager();
-  if (pkgManager === "yarn") {
-    destContent = destContent.replace(/npm run/g, "yarn");
+  if (pkgManager !== "npm") {
+    destContent = destContent.replace(/npm run/g, pkgManager);
   }
   fileUpdates.files.push({
     path: destPath,
@@ -12609,14 +12609,14 @@ async function runAddCommand(app) {
   }
 }
 
-// node_modules/execa/index.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/index.js
 var import_node_buffer = require("buffer");
 var import_node_path8 = __toESM(require("path"), 1);
 var import_node_child_process = __toESM(require("child_process"), 1);
 var import_node_process7 = __toESM(require("process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
 
-// node_modules/strip-final-newline/index.js
+// node_modules/.pnpm/strip-final-newline@3.0.0/node_modules/strip-final-newline/index.js
 function stripFinalNewline(input) {
   const LF = typeof input === "string" ? "\n" : "\n".charCodeAt();
   const CR = typeof input === "string" ? "\r" : "\r".charCodeAt();
@@ -12629,12 +12629,12 @@ function stripFinalNewline(input) {
   return input;
 }
 
-// node_modules/npm-run-path/index.js
+// node_modules/.pnpm/npm-run-path@5.1.0/node_modules/npm-run-path/index.js
 var import_node_process6 = __toESM(require("process"), 1);
 var import_node_path7 = __toESM(require("path"), 1);
 var import_node_url = __toESM(require("url"), 1);
 
-// node_modules/npm-run-path/node_modules/path-key/index.js
+// node_modules/.pnpm/path-key@4.0.0/node_modules/path-key/index.js
 function pathKey(options = {}) {
   const {
     env = process.env,
@@ -12646,7 +12646,7 @@ function pathKey(options = {}) {
   return Object.keys(env).reverse().find((key) => key.toUpperCase() === "PATH") || "Path";
 }
 
-// node_modules/npm-run-path/index.js
+// node_modules/.pnpm/npm-run-path@5.1.0/node_modules/npm-run-path/index.js
 function npmRunPath(options = {}) {
   const {
     cwd = import_node_process6.default.cwd(),
@@ -12673,7 +12673,7 @@ function npmRunPathEnv({ env = import_node_process6.default.env, ...options } = 
   return env;
 }
 
-// node_modules/execa/node_modules/mimic-fn/index.js
+// node_modules/.pnpm/mimic-fn@4.0.0/node_modules/mimic-fn/index.js
 var copyProperty = (to, from, property, ignoreNonConfigurable) => {
   if (property === "length" || property === "prototype") {
     return;
@@ -12718,7 +12718,7 @@ function mimicFunction(to, from, { ignoreNonConfigurable = false } = {}) {
   return to;
 }
 
-// node_modules/execa/node_modules/onetime/index.js
+// node_modules/.pnpm/onetime@6.0.0/node_modules/onetime/index.js
 var calledFunctions = /* @__PURE__ */ new WeakMap();
 var onetime2 = (function_, options = {}) => {
   if (typeof function_ !== "function") {
@@ -12749,10 +12749,10 @@ onetime2.callCount = (function_) => {
 };
 var onetime_default = onetime2;
 
-// node_modules/human-signals/build/src/main.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/main.js
 var import_os2 = require("os");
 
-// node_modules/human-signals/build/src/realtime.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/realtime.js
 var getRealtimeSignals = function() {
   const length = SIGRTMAX - SIGRTMIN + 1;
   return Array.from({ length }, getRealtimeSignal);
@@ -12769,10 +12769,10 @@ var getRealtimeSignal = function(value, index) {
 var SIGRTMIN = 34;
 var SIGRTMAX = 64;
 
-// node_modules/human-signals/build/src/signals.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/signals.js
 var import_os = require("os");
 
-// node_modules/human-signals/build/src/core.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/core.js
 var SIGNALS = [
   {
     name: "SIGHUP",
@@ -13045,7 +13045,7 @@ var SIGNALS = [
   }
 ];
 
-// node_modules/human-signals/build/src/signals.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/signals.js
 var getSignals = function() {
   const realtimeSignals = getRealtimeSignals();
   const signals = [...SIGNALS, ...realtimeSignals].map(normalizeSignal);
@@ -13067,7 +13067,7 @@ var normalizeSignal = function({
   return { name, number, description, supported, action, forced, standard };
 };
 
-// node_modules/human-signals/build/src/main.js
+// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/main.js
 var getSignalsByName = function() {
   const signals = getSignals();
   return signals.reduce(getSignalByName, {});
@@ -13112,7 +13112,7 @@ var findSignalByNumber = function(number, signals) {
 };
 var signalsByNumber = getSignalsByNumber();
 
-// node_modules/execa/lib/error.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/error.js
 var getErrorPrefix = ({ timedOut, timeout, errorCode, signal, signalDescription, exitCode, isCanceled }) => {
   if (timedOut) {
     return `timed out after ${timeout} milliseconds`;
@@ -13182,7 +13182,7 @@ ${error.message}` : execaMessage;
   return error;
 };
 
-// node_modules/execa/lib/stdio.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/stdio.js
 var aliases = ["stdin", "stdout", "stderr"];
 var hasAlias = (options) => aliases.some((alias) => options[alias] !== void 0);
 var normalizeStdio = (options) => {
@@ -13206,7 +13206,7 @@ var normalizeStdio = (options) => {
   return Array.from({ length }, (value, index) => stdio[index]);
 };
 
-// node_modules/execa/lib/kill.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/kill.js
 var import_node_os = __toESM(require("os"), 1);
 var import_signal_exit2 = __toESM(require_signal_exit(), 1);
 var DEFAULT_FORCE_KILL_TIMEOUT = 1e3 * 5;
@@ -13280,12 +13280,12 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
   });
 };
 
-// node_modules/is-stream/index.js
+// node_modules/.pnpm/is-stream@3.0.0/node_modules/is-stream/index.js
 function isStream(stream) {
   return stream !== null && typeof stream === "object" && typeof stream.pipe === "function";
 }
 
-// node_modules/execa/lib/stream.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/stream.js
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
 var handleInput = (spawned, input) => {
@@ -13347,7 +13347,7 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
   }
 };
 
-// node_modules/execa/lib/promise.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/promise.js
 var nativePromisePrototype = (async () => {
 })().constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
@@ -13375,7 +13375,7 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   }
 });
 
-// node_modules/execa/lib/command.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/command.js
 var normalizeArgs = (file, args = []) => {
   if (!Array.isArray(args)) {
     return [file];
@@ -13406,7 +13406,7 @@ var parseCommand = (command) => {
   return tokens;
 };
 
-// node_modules/execa/index.js
+// node_modules/.pnpm/execa@6.1.0/node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
 var getEnv = ({ env: envOption, extendEnv, preferLocal, localDir, execPath }) => {
   const env = extendEnv ? { ...import_node_process7.default.env, ...envOption } : envOption;
