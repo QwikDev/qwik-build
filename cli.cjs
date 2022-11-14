@@ -11756,11 +11756,18 @@ function ora(options) {
 // packages/qwik/src/cli/utils/install-deps.ts
 var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function installDeps(pkgManager, dir) {
+  return runCommand(pkgManager, ["install"], dir);
+}
+function runInPkg(pkgManager, args, cwd) {
+  const cmd = pkgManager === "npm" ? "npx" : pkgManager;
+  return runCommand(cmd, args, cwd);
+}
+function runCommand(cmd, args, cwd) {
   let installChild;
   const install = new Promise((resolve2) => {
     try {
-      installChild = (0, import_cross_spawn.default)(pkgManager, ["install"], {
-        cwd: dir,
+      installChild = (0, import_cross_spawn.default)(cmd, args, {
+        cwd,
         stdio: "ignore"
       });
       installChild.on("error", () => {
@@ -12322,7 +12329,7 @@ export default`);
 }
 
 // packages/qwik/src/cli/add/update-app.ts
-async function updateApp(opts) {
+async function updateApp(pkgManager, opts) {
   const integrations2 = await loadIntegrations();
   const integration = integrations2.find((s) => s.id === opts.integration);
   if (!integration) {
@@ -12359,7 +12366,6 @@ async function updateApp(opts) {
           await import_node_fs5.default.promises.writeFile(f.path, f.content);
         })
       );
-      const pkgManager = getPackageManager();
       if (opts.installDeps && Object.keys(fileUpdates.installedDeps).length > 0) {
         const { install } = installDeps(pkgManager, opts.rootDir);
         passed = await install;
@@ -12421,9 +12427,11 @@ function logNextStep(nextSteps) {
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
 async function runAddInteractive(app, id) {
+  var _a;
   console.log(``);
   console.clear();
   console.log(``);
+  const pkgManager = getPackageManager();
   const integrations2 = await loadIntegrations();
   let integration;
   if (typeof id === "string") {
@@ -12473,14 +12481,24 @@ async function runAddInteractive(app, id) {
   if (integrationHasDeps) {
     runInstall = true;
   }
-  const result = await updateApp({
+  const result = await updateApp(pkgManager, {
     rootDir: app.rootDir,
     integration: integration.id,
     installDeps: runInstall
   });
-  await logUpdateAppResult(result);
+  const commit = await logUpdateAppResult(pkgManager, result);
+  if (commit) {
+    await result.commit(true);
+    const postInstall = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.postInstall;
+    if (postInstall) {
+      const spinner = startSpinner(`Running post install script: ${postInstall}`);
+      await runInPkg(pkgManager, postInstall.split(" "), app.rootDir);
+      spinner.succeed();
+    }
+    logUpdateAppCommitResult(result);
+  }
 }
-async function logUpdateAppResult(result) {
+async function logUpdateAppResult(pkgManager, result) {
   const modifyFiles = result.updates.files.filter((f) => f.type === "modify");
   const overwriteFiles = result.updates.files.filter((f) => f.type === "overwrite");
   const createFiles = result.updates.files.filter((f) => f.type === "create");
@@ -12520,7 +12538,6 @@ async function logUpdateAppResult(result) {
     console.log(``);
   }
   if (installDeps2) {
-    const pkgManager = getPackageManager();
     console.log(
       `\u{1F4BE} ${kleur_default.cyan(
         `Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`
@@ -12552,10 +12569,7 @@ async function logUpdateAppResult(result) {
     }
   );
   console.log(``);
-  if (commitAnswer.commit) {
-    await result.commit(true);
-    logUpdateAppCommitResult(result);
-  }
+  return commitAnswer.commit;
 }
 function logUpdateAppCommitResult(result) {
   var _a;
@@ -13752,12 +13766,12 @@ async function runCli() {
       cwd: process.cwd(),
       args: process.argv.slice(2)
     });
-    await runCommand(app);
+    await runCommand2(app);
   } catch (e) {
     panic(String(e));
   }
 }
-async function runCommand(app) {
+async function runCommand2(app) {
   switch (app.task) {
     case "add": {
       await runAddCommand(app);
