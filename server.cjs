@@ -647,7 +647,9 @@ async function renderToStream(rootNode, opts) {
     }
   }
   if (!opts.manifest) {
-    console.warn("Missing client manifest, loading symbols in the client might 404");
+    console.warn(
+      `Missing client manifest, loading symbols in the client might 404. Please ensure the client build has run and generated the manifest for the server build.`
+    );
   }
   const buildBase = getBuildBase(opts);
   const resolvedManifest = resolveManifest(opts.manifest);
