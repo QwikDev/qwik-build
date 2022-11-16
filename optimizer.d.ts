@@ -370,6 +370,7 @@ export declare interface QwikVitePluginOptions {
      * Default `src`
      */
     srcDir?: string;
+    vendorRoots?: string[];
     client?: {
         /**
          * The entry point for the client builds. Typically this would be

@@ -1921,7 +1921,7 @@ function qwikVite(qwikViteOpts = {}) {
         resolveQwikBuild: "build" === viteCommand,
         transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
         forceFullBuild: forceFullBuild,
-        vendorRoots: vendorRoots.map((v => v.path)),
+        vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
         outDir: viteConfig.build?.outDir
       };
       if ("ssr" === target) {

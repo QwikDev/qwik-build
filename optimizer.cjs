@@ -1928,7 +1928,7 @@ globalThis.qwikOptimizer = function(module) {
           resolveQwikBuild: "build" === viteCommand,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           forceFullBuild: forceFullBuild,
-          vendorRoots: vendorRoots.map((v => v.path)),
+          vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
           outDir: null == (_b = viteConfig.build) ? void 0 : _b.outDir
         };
         if ("ssr" === target) {
