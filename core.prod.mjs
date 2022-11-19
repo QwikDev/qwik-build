@@ -862,8 +862,8 @@ const _appendHeadStyle = (containerEl, styleTask) => {
     const isDoc = doc.documentElement === containerEl;
     const headEl = doc.head;
     const style = doc.createElement("style");
-    directSetAttribute(style, "q:style", styleTask.styleId), style.textContent = styleTask.content, 
-    isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
+    directSetAttribute(style, "q:style", styleTask.styleId), directSetAttribute(style, "hidden", ""), 
+    style.textContent = styleTask.content, isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
 };
 
 const removeNode = (ctx, el) => {
@@ -3742,6 +3742,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             for (const style of elCtx.$appendStyles$) {
                 array.push(jsx("style", {
                     "q:style": style.styleId,
+                    hidden: "",
                     dangerouslySetInnerHTML: style.content
                 }));
             }

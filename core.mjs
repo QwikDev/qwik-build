@@ -1732,6 +1732,7 @@ const _appendHeadStyle = (containerEl, styleTask) => {
         logWarn('document.head is undefined');
     }
     directSetAttribute(style, QStyle, styleTask.styleId);
+    directSetAttribute(style, 'hidden', '');
     style.textContent = styleTask.content;
     if (isDoc && headEl) {
         directAppendChild(headEl, style);
@@ -6998,6 +6999,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             for (const style of elCtx.$appendStyles$) {
                 array.push(jsx('style', {
                     [QStyle]: style.styleId,
+                    hidden: '',
                     dangerouslySetInnerHTML: style.content,
                 }));
             }
