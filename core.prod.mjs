@@ -1296,7 +1296,10 @@ const stringifyStyle = obj => {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
-                    value && chunks.push(fromCamelToKebabCase(key) + ":" + value);
+                    if (value) {
+                        const normalizedKey = key.startsWith("--") ? key : fromCamelToKebabCase(key);
+                        chunks.push(normalizedKey + ":" + value);
+                    }
                 }
             }
             return chunks.join(";");
