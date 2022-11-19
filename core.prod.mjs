@@ -510,7 +510,7 @@ class ReadWriteProxyHandler {
         let value = target[prop];
         if (invokeCtx && (subscriber = invokeCtx.$subscriber$), immutable) {
             const hiddenSignal = target["$$" + prop];
-            prop in target && !hiddenSignal && !target[_IMMUTABLE]?.[prop] || (subscriber = null), 
+            prop in target && !hiddenSignal && !isSignal(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
             hiddenSignal && (isSignal(hiddenSignal), value = hiddenSignal.value);
         }
         if (subscriber) {
@@ -615,7 +615,7 @@ const getContext = (el, containerState) => {
                     if (host) {
                         const [renderQrl, props] = host.split(" ");
                         const styleIds = el.getAttribute("q:sstyle");
-                        elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, elCtx.$componentQrl$ = getObject(renderQrl), 
+                        elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
                         elCtx.$props$ = props ? getObject(props) : createProxy({
                             [QObjectFlagsSymbol]: 2
                         }, containerState);
@@ -2163,30 +2163,31 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         if (ref.length > 0) {
             const value = ref.map(mustGetObjId).join(" ");
             value && (refs[elementID] = value);
-        } else {
+        } else if (canRender) {
             let add = false;
-            if (canRender) {
-                if (elementCaptured && renderQrl) {
-                    const propsId = getObjId(props);
-                    metaValue.h = mustGetObjId(renderQrl) + (propsId ? " " + propsId : ""), add = true;
-                }
-                if (watches && watches.length > 0) {
-                    const value = watches.map(getObjId).filter(isNotNullable).join(" ");
-                    value && (metaValue.w = value, add = true);
-                }
-                if (elementCaptured && seq && seq.length > 0) {
-                    const value = seq.map(mustGetObjId).join(" ");
-                    metaValue.s = value, add = true;
-                }
-                if (contexts) {
-                    const serializedContexts = [];
-                    contexts.forEach(((value, key) => {
-                        const id = getObjId(value);
-                        id && serializedContexts.push(`${key}=${id}`);
-                    }));
-                    const value = serializedContexts.join(" ");
-                    value && (metaValue.c = value, add = true);
-                }
+            if (elementCaptured) {
+                const propsId = getObjId(props);
+                metaValue.h = mustGetObjId(renderQrl) + (propsId ? " " + propsId : ""), add = true;
+            } else {
+                const propsId = getObjId(props);
+                propsId && (metaValue.h = " " + propsId, add = true);
+            }
+            if (watches && watches.length > 0) {
+                const value = watches.map(getObjId).filter(isNotNullable).join(" ");
+                value && (metaValue.w = value, add = true);
+            }
+            if (elementCaptured && seq && seq.length > 0) {
+                const value = seq.map(mustGetObjId).join(" ");
+                metaValue.s = value, add = true;
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach(((value, key) => {
+                    const id = getObjId(value);
+                    id && serializedContexts.push(`${key}=${id}`);
+                }));
+                const value = serializedContexts.join(" ");
+                value && (metaValue.c = value, add = true);
             }
             add && (meta[elementID] = metaValue);
         }
@@ -2206,10 +2207,20 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
 
 const collectProps = (elCtx, collector) => {
     const parentCtx = elCtx.$parent$;
-    if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx)) {
-        const subs = getProxyManager(elCtx.$props$)?.$subs$;
+    const props = elCtx.$props$;
+    if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
+        const subs = getProxyManager(props)?.$subs$;
         const el = elCtx.$element$;
-        subs && subs.some((e => 0 === e[0] && e[1] === el)) && collectElement(el, collector);
+        if (subs) {
+            for (const sub of subs) {
+                if (sub[1] === el) {
+                    if (0 === sub[0]) {
+                        return void collectElement(el, collector);
+                    }
+                    collectValue(props, collector, false);
+                }
+            }
+        }
     }
 };
 

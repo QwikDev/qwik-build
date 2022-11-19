@@ -1049,7 +1049,7 @@ class ReadWriteProxyHandler {
         }
         if (immutable) {
             const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
-            if (!(prop in target) || !!hiddenSignal || !!target[_IMMUTABLE]?.[prop]) {
+            if (!(prop in target) || !!hiddenSignal || isSignal(target[_IMMUTABLE]?.[prop])) {
                 subscriber = null;
             }
             if (hiddenSignal) {
@@ -1219,10 +1219,11 @@ const getContext = (el, containerState) => {
                     if (host) {
                         const [renderQrl, props] = host.split(' ');
                         const styleIds = el.getAttribute(QScopedStyle);
-                        assertDefined(renderQrl, `resume: renderQRL missing in host metadata`, host);
                         elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
                         elCtx.$flags$ = HOST_FLAG_MOUNTED;
-                        elCtx.$componentQrl$ = getObject(renderQrl);
+                        if (renderQrl) {
+                            elCtx.$componentQrl$ = getObject(renderQrl);
+                        }
                         if (props) {
                             elCtx.$props$ = getObject(props);
                         }
@@ -3891,44 +3892,51 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
         assertDefined(elementID, `pause: can not generate ID for dom node`, node);
         if (ref.length > 0) {
+            assertElement(node);
             const value = ref.map(mustGetObjId).join(' ');
             if (value) {
                 refs[elementID] = value;
             }
         }
-        else {
+        else if (canRender) {
             let add = false;
-            if (canRender) {
-                if (elementCaptured && renderQrl) {
-                    const propsId = getObjId(props);
-                    metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
+            if (elementCaptured) {
+                assertDefined(renderQrl, 'renderQrl must be defined');
+                const propsId = getObjId(props);
+                metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
+                add = true;
+            }
+            else {
+                const propsId = getObjId(props);
+                if (propsId) {
+                    metaValue.h = ' ' + propsId;
                     add = true;
                 }
-                if (watches && watches.length > 0) {
-                    const value = watches.map(getObjId).filter(isNotNullable).join(' ');
-                    if (value) {
-                        metaValue.w = value;
-                        add = true;
-                    }
-                }
-                if (elementCaptured && seq && seq.length > 0) {
-                    const value = seq.map(mustGetObjId).join(' ');
-                    metaValue.s = value;
+            }
+            if (watches && watches.length > 0) {
+                const value = watches.map(getObjId).filter(isNotNullable).join(' ');
+                if (value) {
+                    metaValue.w = value;
                     add = true;
                 }
-                if (contexts) {
-                    const serializedContexts = [];
-                    contexts.forEach((value, key) => {
-                        const id = getObjId(value);
-                        if (id) {
-                            serializedContexts.push(`${key}=${id}`);
-                        }
-                    });
-                    const value = serializedContexts.join(' ');
-                    if (value) {
-                        metaValue.c = value;
-                        add = true;
+            }
+            if (elementCaptured && seq && seq.length > 0) {
+                const value = seq.map(mustGetObjId).join(' ');
+                metaValue.s = value;
+                add = true;
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach((value, key) => {
+                    const id = getObjId(value);
+                    if (id) {
+                        serializedContexts.push(`${key}=${id}`);
                     }
+                });
+                const value = serializedContexts.join(' ');
+                if (value) {
+                    metaValue.c = value;
+                    add = true;
                 }
             }
             if (add) {
@@ -3981,11 +3989,22 @@ const getNodesInScope = (parent, predicate) => {
 };
 const collectProps = (elCtx, collector) => {
     const parentCtx = elCtx.$parent$;
-    if (parentCtx && elCtx.$props$ && collector.$elements$.includes(parentCtx)) {
-        const subs = getProxyManager(elCtx.$props$)?.$subs$;
+    const props = elCtx.$props$;
+    if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
+        const subs = getProxyManager(props)?.$subs$;
         const el = elCtx.$element$;
-        if (subs && subs.some((e) => e[0] === 0 && e[1] === el)) {
-            collectElement(el, collector);
+        if (subs) {
+            for (const sub of subs) {
+                if (sub[1] === el) {
+                    if (sub[0] === 0) {
+                        collectElement(el, collector);
+                        return;
+                    }
+                    else {
+                        collectValue(props, collector, false);
+                    }
+                }
+            }
         }
     }
 };
