@@ -13549,16 +13549,23 @@ async function runBuildCommand(app) {
   if (!pkgJsonScripts) {
     throw new Error(`No "scripts" property found in package.json`);
   }
+  const pkgManager = getPackageManager();
+  const getScript = (name) => {
+    if (pkgJsonScripts[name]) {
+      return `${pkgManager} run ${name}`;
+    }
+    return void 0;
+  };
   const isPreviewBuild = app.args.includes("preview");
-  const buildLibScript = pkgJsonScripts["build.lib"];
+  const buildLibScript = getScript("build.lib");
   const isLibraryBuild = !!buildLibScript;
-  const buildClientScript = pkgJsonScripts["build.client"];
-  const buildPreviewScript = isPreviewBuild ? pkgJsonScripts["build.preview"] : void 0;
-  const buildServerScript = !isPreviewBuild ? pkgJsonScripts["build.server"] : void 0;
-  const buildStaticScript = pkgJsonScripts["build.static"];
-  const runSsgScript = pkgJsonScripts["ssg"];
-  const buildTypes = pkgJsonScripts["build.types"];
-  const lint = pkgJsonScripts["lint"];
+  const buildClientScript = getScript("build.client");
+  const buildPreviewScript = isPreviewBuild ? getScript("build.preview") : void 0;
+  const buildServerScript = !isPreviewBuild ? getScript("build.server") : void 0;
+  const buildStaticScript = getScript("build.static");
+  const runSsgScript = getScript("ssg");
+  const buildTypes = getScript("build.types");
+  const lint = getScript("lint");
   const scripts = [
     buildTypes,
     buildClientScript,
