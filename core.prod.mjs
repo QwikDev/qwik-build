@@ -2875,26 +2875,6 @@ const useClientEffectQrl = (qrl, opts) => {
 
 const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
 
-const useServerMountQrl = mountQrl => {
-    const {get: get, set: set, rCtx: ctx} = useSequentialScope();
-    if (!get) {
-        if (!isServer()) {
-            throw qError(22, ctx.$hostElement$);
-        }
-        waitAndRun(ctx, mountQrl), set(true);
-    }
-};
-
-const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-
-const useMountQrl = mountQrl => {
-    const {get: get, set: set, rCtx: ctx} = useSequentialScope();
-    get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-    waitAndRun(ctx, mountQrl), set(true));
-};
-
-const useMount$ = implicit$FirstArg(useMountQrl);
-
 const isResourceWatch = watch => !!watch.$resource$;
 
 const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState, rctx) : runWatch(watch, containerState, rctx));
@@ -4343,6 +4323,30 @@ const useSignal = initialState => {
     return set(signal), signal;
 };
 
+const useServerMountQrl = mountQrl => {
+    const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+    get || (isServer() && (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    waitAndRun(ctx, mountQrl)), set(true));
+};
+
+const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+
+const useClientMountQrl = mountQrl => {
+    const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+    get || (isServer() || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    waitAndRun(ctx, mountQrl)), set(true));
+};
+
+const useClientMount$ = implicit$FirstArg(useClientMountQrl);
+
+const useMountQrl = mountQrl => {
+    const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+    get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    waitAndRun(ctx, mountQrl), set(true));
+};
+
+const useMount$ = implicit$FirstArg(useMountQrl);
+
 const useErrorBoundary = () => {
     const store = useStore({
         error: void 0
@@ -4351,4 +4355,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

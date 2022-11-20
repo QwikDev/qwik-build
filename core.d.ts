@@ -42,7 +42,7 @@
  *    - Must be runtime serializable.
  *
  * ```tsx
- * import { importedFn } from './import/example';
+ *
  * import { createContext, useContext, useContextProvider } from './use/use-context';
  * import { useRef } from './use/use-ref';
  * import { Resource, useResource$ } from './use/use-resource';
@@ -55,9 +55,7 @@
  *   function localFn() {}
  *   // Valid Examples
  *   $(greet); // greet is importable
- *   $(importedFn); // importedFn is importable
  *   $(() => greet()); // greet is importable;
- *   $(() => importedFn()); // importedFn is importable
  *   $(() => console.log(store)); // store is serializable.
  *
  *   // Compile time errors
@@ -2752,6 +2750,48 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  */
 export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
 
+/**
+ * Registers a client mount hook that runs only in the browser when the component is first
+ * mounted.
+ *
+ * ### Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *   });
+ *
+ *   return <div>Cmp</div>;
+ * });
+ * ```
+ *
+ * @see `useMount`, `useServerMount`
+ * @public
+ */
+export declare const useClientMount$: <T>(first: MountFn<T>) => void;
+
+/**
+ * Registers a client mount hook that runs only in the browser when the component is first
+ * mounted.
+ *
+ * ### Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   useClientMount$(async () => {
+ *     // This code will ONLY run once in the client, when the component is mounted
+ *   });
+ *
+ *   return <div>Cmp</div>;
+ * });
+ * ```
+ *
+ * @see `useMount`, `useServerMount`
+ * @public
+ */
+export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
+
 declare interface UseContext {
     <STATE extends object, T>(context: Context<STATE>, defaultValue: T): STATE | T;
     <STATE extends object>(context: Context<STATE>): STATE;
@@ -2894,7 +2934,8 @@ export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
 /**
- * Register a server mount hook that runs only in the server when the component is first mounted.
+ * Registers a hook to execute code when the component is mounted into the rendering tree (on
+ * component creation).
  *
  * ### Example
  *
@@ -2925,7 +2966,8 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 export declare const useMount$: <T>(first: MountFn<T>) => void;
 
 /**
- * Register a server mount hook that runs only in the server when the component is first mounted.
+ * Registers a hook to execute code when the component is mounted into the rendering tree (on
+ * component creation).
  *
  * ### Example
  *
@@ -3172,7 +3214,7 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
- * Register's a server mount hook that runs only in the server when the component is first
+ * Registers a server mount hook that runs only in the server when the component is first
  * mounted.
  *
  * ### Example
@@ -3205,13 +3247,13 @@ export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: Resourc
  * }
  * ```
  *
- * @see `useMount`
+ * @see `useMount`, `useClientMount`
  * @public
  */
 export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 
 /**
- * Register's a server mount hook that runs only in the server when the component is first
+ * Registers a server mount hook that runs only in the server when the component is first
  * mounted.
  *
  * ### Example
@@ -3244,7 +3286,7 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  * }
  * ```
  *
- * @see `useMount`
+ * @see `useMount`, `useClientMount`
  * @public
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;

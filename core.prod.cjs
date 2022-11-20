@@ -2548,22 +2548,6 @@
         notifyWatch(watch, containerState));
     };
     const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
-    const useServerMountQrl = mountQrl => {
-        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
-        if (!get) {
-            if (!isServer()) {
-                throw qError(22, ctx.$hostElement$);
-            }
-            waitAndRun(ctx, mountQrl), set(true);
-        }
-    };
-    const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-    const useMountQrl = mountQrl => {
-        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
-        get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-        waitAndRun(ctx, mountQrl), set(true));
-    };
-    const useMount$ = implicit$FirstArg(useMountQrl);
     const isResourceWatch = watch => !!watch.$resource$;
     const runSubscriber = async (watch, containerState, rctx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState, rctx) : runWatch(watch, containerState, rctx));
     const runResource = (watch, containerState, rctx, waitOn) => {
@@ -3733,6 +3717,24 @@
         return isPromise(value) ? rCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
+    const useServerMountQrl = mountQrl => {
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+        get || (isServer() && (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(ctx, mountQrl)), set(true));
+    };
+    const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+    const useClientMountQrl = mountQrl => {
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+        get || (isServer() || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(ctx, mountQrl)), set(true));
+    };
+    const useClientMount$ = implicit$FirstArg(useClientMountQrl);
+    const useMountQrl = mountQrl => {
+        const {get: get, set: set, rCtx: ctx} = useSequentialScope();
+        get || (mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(ctx, mountQrl), set(true));
+    };
+    const useMount$ = implicit$FirstArg(useMountQrl);
     exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServer();
         const resource = props.value;
@@ -3896,7 +3898,8 @@
         })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
     }, exports.setPlatform = plt => _platform = plt, exports.useCleanup$ = useCleanup$, 
     exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
-    exports.useClientEffectQrl = useClientEffectQrl, exports.useContext = (context, defaultValue) => {
+    exports.useClientEffectQrl = useClientEffectQrl, exports.useClientMount$ = useClientMount$, 
+    exports.useClientMountQrl = useClientMountQrl, exports.useContext = (context, defaultValue) => {
         const {get: get, set: set, rCtx: rCtx, elCtx: elCtx} = useSequentialScope();
         if (void 0 !== get) {
             return get;
