@@ -746,12 +746,16 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+/** @beta */
 declare type NativeAnimationEvent = AnimationEvent;
 
+/** @beta */
 declare type NativeClipboardEvent = ClipboardEvent;
 
+/** @beta */
 declare type NativeCompositionEvent = CompositionEvent;
 
+/** @beta */
 declare type NativeDragEvent = DragEvent;
 
 /**
@@ -759,20 +763,28 @@ declare type NativeDragEvent = DragEvent;
  */
 declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | QRL<BivariantEventHandler<T>>[];
 
+/** @beta */
 declare type NativeFocusEvent = FocusEvent;
 
+/** @beta */
 declare type NativeKeyboardEvent = KeyboardEvent;
 
+/** @beta */
 declare type NativeMouseEvent = MouseEvent;
 
+/** @beta */
 declare type NativePointerEvent = PointerEvent;
 
+/** @beta */
 declare type NativeTouchEvent = TouchEvent;
 
+/** @beta */
 declare type NativeTransitionEvent = TransitionEvent;
 
+/** @beta */
 declare type NativeUIEvent = UIEvent;
 
+/** @beta */
 declare type NativeWheelEvent = WheelEvent;
 
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -966,20 +978,32 @@ declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikAnimationEvent<T = Element> extends SyntheticEvent<T, NativeAnimationEvent> {
     animationName: string;
     elapsedTime: number;
     pseudoElement: string;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikChangeEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikClipboardEvent<T = Element> extends SyntheticEvent<T, NativeClipboardEvent> {
     clipboardData: DataTransfer;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikCompositionEvent<T = Element> extends SyntheticEvent<T, NativeCompositionEvent> {
     data: string;
 }
@@ -995,6 +1019,9 @@ declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface QwikCustomHTMLElement extends HTMLElement {
 }
 
+/**
+ * @beta
+ */
 declare interface QwikDragEvent<T = Element> extends QwikMouseEvent<T, NativeDragEvent> {
     dataTransfer: DataTransfer;
 }
@@ -1148,6 +1175,9 @@ declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents {
     'document:onVisibilityChange$'?: BivariantEventHandler<Event>;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, NativeFocusEvent> {
     relatedTarget: EventTarget | null;
     target: EventTarget & T;
@@ -1167,10 +1197,16 @@ declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
     [key: string]: QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikInvalidEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
     altKey: boolean;
     charCode: number;
@@ -1196,6 +1232,9 @@ declare type QwikKnownEvents<T> = {
     [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K]>>;
 };
 
+/**
+ * @beta
+ */
 declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> extends SyntheticEvent<T, E> {
     altKey: boolean;
     button: number;
@@ -1220,6 +1259,9 @@ declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> extends Synt
     y: number;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, NativePointerEvent> {
     pointerId: number;
     pressure: number;
@@ -1252,6 +1294,9 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
     events?: string[];
 }
 
+/**
+ * @beta
+ */
 declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTouchEvent> {
     altKey: boolean;
     changedTouches: TouchList;
@@ -1266,17 +1311,26 @@ declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTo
     touches: TouchList;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikTransitionEvent<T = Element> extends SyntheticEvent<T, NativeTransitionEvent> {
     elapsedTime: number;
     propertyName: string;
     pseudoElement: string;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikUIEvent<T = Element> extends SyntheticEvent<T, NativeUIEvent> {
     detail: number;
     view: AbstractView;
 }
 
+/**
+ * @beta
+ */
 declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, NativeWheelEvent> {
     deltaMode: number;
     deltaX: number;
