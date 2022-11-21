@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.13.3
+ * @builder.io/qwik 0.14.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -364,13 +364,23 @@
             this.ref[this.prop] = value;
         }
     }
-    const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || (0 !== flags && (target[QObjectFlagsSymbol] = flags), 
+    const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || (0 !== flags && setObjectFlags(target, flags), 
     createProxy(target, containerState, void 0));
     const createProxy = (target, containerState, subs) => {
         unwrapProxy(target), containerState.$proxyMap$.has(target), isObject(target), isSerializableObject(target) || isArray(target);
         const manager = containerState.$subsManager$.$createManager$(subs);
         const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
         return containerState.$proxyMap$.set(target, proxy), proxy;
+    };
+    const createPropsState = () => {
+        const props = {};
+        return setObjectFlags(props, 2), props;
+    };
+    const setObjectFlags = (obj, flags) => {
+        Object.defineProperty(obj, QObjectFlagsSymbol, {
+            value: flags,
+            enumerable: false
+        });
     };
     class ReadWriteProxyHandler {
         constructor($containerState$, $manager$) {
@@ -424,7 +434,7 @@
             isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
-            return isArray(target) ? Object.getOwnPropertyDescriptor(target, prop) : {
+            return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
                 enumerable: true,
                 configurable: true
             };
@@ -491,9 +501,7 @@
                             const [renderQrl, props] = host.split(" ");
                             const styleIds = el.getAttribute("q:sstyle");
                             elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
-                            elCtx.$props$ = props ? getObject(props) : createProxy({
-                                [QObjectFlagsSymbol]: 2
-                            }, containerState);
+                            elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
                         }
                     }
                 }
@@ -1641,9 +1649,8 @@
     const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
         const keys = Object.keys(expectProps);
         let props = elCtx.$props$;
-        if (props || (elCtx.$props$ = props = createProxy({
-            [QObjectFlagsSymbol]: 2
-        }, rCtx.$static$.$containerState$)), 0 === keys.length) {
+        if (props || (elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$)), 
+        0 === keys.length) {
             return false;
         }
         const manager = getProxyManager(props);
@@ -2228,7 +2235,7 @@
                     parsed && converted.push(parsed);
                 }
             }
-            if (flag > 0 && (value[QObjectFlagsSymbol] = flag), !parser.subs(value, converted)) {
+            if (flag > 0 && setObjectFlags(value, flag), !parser.subs(value, converted)) {
                 const proxy = containerState.$proxyMap$.get(value);
                 proxy ? getProxyManager(proxy).$addSubs$(converted) : createProxy(value, containerState, converted);
             }
@@ -3477,9 +3484,7 @@
     };
     const setComponentProps = (rCtx, elCtx, expectProps) => {
         const keys = Object.keys(expectProps);
-        const target = {
-            [QObjectFlagsSymbol]: 2
-        };
+        const target = createPropsState();
         if (elCtx.$props$ = createProxy(target, rCtx.$static$.$containerState$), 0 === keys.length) {
             return;
         }
@@ -3834,7 +3839,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.13.3"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.14.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3878,7 +3883,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.13.3",
+            "q:version": "0.14.0",
             "q:render": "ssr",
             "q:base": opts.base,
             "q:locale": opts.envData?.locale,
@@ -3939,7 +3944,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useUserContext = useUserContext, exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, 
-    exports.version = "0.13.3", exports.withLocale = function(locale, fn) {
+    exports.version = "0.14.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

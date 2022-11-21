@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.13.3
+ * @builder.io/qwik 0.14.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@ const getOrCreateProxy = (target, containerState, flags = 0) => {
         return proxy;
     }
     if (flags !== 0) {
-        target[QObjectFlagsSymbol] = flags;
+        setObjectFlags(target, flags);
     }
     return createProxy(target, containerState, undefined);
 };
@@ -1022,6 +1022,14 @@ const createProxy = (target, containerState, subs) => {
     const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
     containerState.$proxyMap$.set(target, proxy);
     return proxy;
+};
+const createPropsState = () => {
+    const props = {};
+    setObjectFlags(props, QObjectImmutable);
+    return props;
+};
+const setObjectFlags = (obj, flags) => {
+    Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
 };
 class ReadWriteProxyHandler {
     constructor($containerState$, $manager$) {
@@ -1126,7 +1134,7 @@ class ReadWriteProxyHandler {
         });
     }
     getOwnPropertyDescriptor(target, prop) {
-        if (isArray(target)) {
+        if (isArray(target) || typeof prop === 'symbol') {
             return Object.getOwnPropertyDescriptor(target, prop);
         }
         return {
@@ -1227,9 +1235,7 @@ const getContext = (el, containerState) => {
                             elCtx.$props$ = getObject(props);
                         }
                         else {
-                            elCtx.$props$ = createProxy({
-                                [QObjectFlagsSymbol]: QObjectImmutable,
-                            }, containerState);
+                            elCtx.$props$ = createProxy(createPropsState(), containerState);
                         }
                     }
                 }
@@ -3448,9 +3454,7 @@ const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
     const keys = Object.keys(expectProps);
     let props = elCtx.$props$;
     if (!props) {
-        elCtx.$props$ = props = createProxy({
-            [QObjectFlagsSymbol]: QObjectImmutable,
-        }, rCtx.$static$.$containerState$);
+        elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$);
     }
     if (keys.length === 0) {
         return false;
@@ -4417,7 +4421,7 @@ const reviveSubscriptions = (value, i, objsSubs, getObject, containerState, pars
             }
         }
         if (flag > 0) {
-            value[QObjectFlagsSymbol] = flag;
+            setObjectFlags(value, flag);
         }
         if (!parser.subs(value, converted)) {
             const proxy = containerState.$proxyMap$.get(value);
@@ -6546,7 +6550,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.13.3";
+const version = "0.14.0";
 
 /**
  * Render JSX.
@@ -7204,9 +7208,7 @@ const _flatVirtualChildren = (children, ssrCtx) => {
 };
 const setComponentProps = (rCtx, elCtx, expectProps) => {
     const keys = Object.keys(expectProps);
-    const target = {
-        [QObjectFlagsSymbol]: QObjectImmutable,
-    };
+    const target = createPropsState();
     elCtx.$props$ = createProxy(target, rCtx.$static$.$containerState$);
     if (keys.length === 0) {
         return;
