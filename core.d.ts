@@ -2064,9 +2064,11 @@ export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T,
 }
 
 declare interface QwikProps<T> extends PreventDefault<T> {
-    class?: string | {
+    class?: Signal<string> | string | {
         [className: string]: boolean;
-    } | string[];
+    } | (string | {
+        [className: string]: boolean;
+    })[];
     dangerouslySetInnerHTML?: string;
     ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void);
     /**

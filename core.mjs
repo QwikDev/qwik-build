@@ -2527,30 +2527,16 @@ const pushRenderContext = (ctx) => {
     return newCtx;
 };
 const serializeClass = (obj) => {
-    if (isString(obj)) {
-        return obj;
-    }
-    else if (isObject(obj)) {
-        if (isArray(obj)) {
-            return obj.join(' ');
-        }
-        else {
-            let buffer = '';
-            let previous = false;
-            for (const key of Object.keys(obj)) {
-                const value = obj[key];
-                if (value) {
-                    if (previous) {
-                        buffer += ' ';
-                    }
-                    buffer += key;
-                    previous = true;
-                }
-            }
-            return buffer;
-        }
-    }
-    return '';
+    if (!obj)
+        return '';
+    if (isString(obj))
+        return obj.trim();
+    if (isArray(obj))
+        return obj.reduce((result, o) => {
+            const classList = serializeClass(o);
+            return classList ? (result ? `${result} ${classList}` : classList) : result;
+        }, '');
+    return Object.entries(obj).reduce((result, [key, value]) => (value ? (result ? `${result} ${key.trim()}` : key.trim()) : result), '');
 };
 const parseClassListRegex = /\s/;
 const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
@@ -3437,14 +3423,20 @@ const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         if (prop === 'className') {
             prop = 'class';
         }
-        if (hostElm && isSignal(newValue)) {
-            addSignalSub(1, hostElm, newValue, elm, prop);
+        const sig = isSignal(newValue);
+        if (sig) {
+            if (hostElm)
+                addSignalSub(1, hostElm, newValue, elm, prop);
             newValue = newValue.value;
         }
-        if (prop === 'class') {
-            newValue = serializeClass(newValue);
-        }
         const normalizedProp = isSvg ? prop : prop.toLowerCase();
+        if (normalizedProp === 'class') {
+            if (qDev && values.class)
+                throw new TypeError('Can only provide one of class or className');
+            // Signals shouldn't be changed
+            if (!sig)
+                newValue = serializeClass(newValue);
+        }
         values[normalizedProp] = newValue;
         smartSetProperty(staticCtx, elm, prop, newValue, undefined, isSvg);
     }
@@ -6953,16 +6945,26 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
         }
         const listeners = elCtx.li;
-        const classValue = props.class ?? props.className;
-        let classStr = stringifyClass(classValue);
+        if (qDev && props.class && props.className)
+            throw new TypeError('Can only have one of class or className');
+        const classVal = props.class || props.className;
+        const classIsSignal = isSignal(classVal);
+        let classStr = classVal
+            ? classIsSignal
+                ? classVal.value
+                : serializeClass(classVal)
+            : undefined;
         if (hostCtx) {
             if (qDev) {
                 if (tagName === 'html') {
                     throw qError(QError_canNotRenderHTML);
                 }
             }
-            if (hostCtx.$scopeIds$) {
-                classStr = hostCtx.$scopeIds$.join(' ') + ' ' + classStr;
+            if (hostCtx.$scopeIds$?.length) {
+                const extra = hostCtx.$scopeIds$.join(' ');
+                if (qDev && classIsSignal)
+                    throw new TypeError('Cannot use signal class when using scoped styles');
+                classStr = classStr ? `${extra} ${classStr}` : extra;
             }
             if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
                 listeners.push(...hostCtx.li);
@@ -6976,7 +6978,6 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (textOnlyElements[tagName]) {
             flags |= IS_TEXT;
         }
-        classStr = classStr.trim();
         if (classStr) {
             openingElement += ' class="' + classStr + '"';
         }
@@ -7167,27 +7168,6 @@ const flatVirtualChildren = (children, ssrCtx) => {
         return null;
     }
     return nodes;
-};
-const stringifyClass = (str) => {
-    if (!str) {
-        return '';
-    }
-    if (typeof str === 'string') {
-        return str;
-    }
-    if (Array.isArray(str)) {
-        return str.join(' ');
-    }
-    const output = [];
-    for (const key in str) {
-        if (Object.prototype.hasOwnProperty.call(str, key)) {
-            const value = str[key];
-            if (value) {
-                output.push(key);
-            }
-        }
-    }
-    return output.join(' ');
 };
 const _flatVirtualChildren = (children, ssrCtx) => {
     if (children == null) {

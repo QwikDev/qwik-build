@@ -1046,25 +1046,10 @@
         $cmpCtx$: ctx.$cmpCtx$,
         $slotCtx$: ctx.$slotCtx$
     });
-    const serializeClass = obj => {
-        if (isString(obj)) {
-            return obj;
-        }
-        if (isObject(obj)) {
-            if (isArray(obj)) {
-                return obj.join(" ");
-            }
-            {
-                let buffer = "";
-                let previous = false;
-                for (const key of Object.keys(obj)) {
-                    obj[key] && (previous && (buffer += " "), buffer += key, previous = true);
-                }
-                return buffer;
-            }
-        }
-        return "";
-    };
+    const serializeClass = obj => obj ? isString(obj) ? obj.trim() : isArray(obj) ? obj.reduce(((result, o) => {
+        const classList = serializeClass(o);
+        return classList ? result ? `${result} ${classList}` : classList : result;
+    }), "") : Object.entries(obj).reduce(((result, [key, value]) => value ? result ? `${result} ${key.trim()}` : key.trim() : result), "") : "";
     const parseClassListRegex = /\s/;
     const parseClassList = value => value ? value.split(parseClassListRegex) : EMPTY_ARRAY;
     const stringifyStyle = obj => {
@@ -1639,10 +1624,16 @@
                 continue;
             }
             let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
-            isOnProp(prop) ? browserSetEvent(staticCtx, elCtx, prop, newValue) : ("className" === prop && (prop = "class"), 
-            hostElm && isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
-            newValue = newValue.value), "class" === prop && (newValue = serializeClass(newValue)), 
-            values[isSvg ? prop : prop.toLowerCase()] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, void 0, isSvg));
+            if (isOnProp(prop)) {
+                browserSetEvent(staticCtx, elCtx, prop, newValue);
+                continue;
+            }
+            "className" === prop && (prop = "class");
+            const sig = isSignal(newValue);
+            sig && (hostElm && addSignalSub(1, hostElm, newValue, elm, prop), newValue = newValue.value);
+            const normalizedProp = isSvg ? prop : prop.toLowerCase();
+            "class" === normalizedProp && (sig || (newValue = serializeClass(newValue))), values[normalizedProp] = newValue, 
+            smartSetProperty(staticCtx, elm, prop, newValue, void 0, isSvg);
         }
         return values;
     };
@@ -3306,12 +3297,18 @@
                 null != attrValue && (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
             const listeners = elCtx.li;
-            const classValue = props.class ?? props.className;
-            let classStr = stringifyClass(classValue);
-            if (hostCtx && (hostCtx.$scopeIds$ && (classStr = hostCtx.$scopeIds$.join(" ") + " " + classStr), 
-            2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3)), 
-            isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr = classStr.trim(), 
-            classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
+            const classVal = props.class || props.className;
+            const classIsSignal = isSignal(classVal);
+            let classStr = classVal ? classIsSignal ? classVal.value : serializeClass(classVal) : void 0;
+            if (hostCtx) {
+                if (hostCtx.$scopeIds$?.length) {
+                    const extra = hostCtx.$scopeIds$.join(" ");
+                    classStr = classStr ? `${extra} ${classStr}` : extra;
+                }
+                2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3);
+            }
+            if (isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr && (openingElement += ' class="' + classStr + '"'), 
+            listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 for (const listener of groups) {
                     openingElement += " " + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"', 
@@ -3452,22 +3449,6 @@
         const result = _flatVirtualChildren(children, ssrCtx);
         const nodes = isArray(result) ? result : [ result ];
         return 0 === nodes.length ? null : nodes;
-    };
-    const stringifyClass = str => {
-        if (!str) {
-            return "";
-        }
-        if ("string" == typeof str) {
-            return str;
-        }
-        if (Array.isArray(str)) {
-            return str.join(" ");
-        }
-        const output = [];
-        for (const key in str) {
-            Object.prototype.hasOwnProperty.call(str, key) && str[key] && output.push(key);
-        }
-        return output.join(" ");
     };
     const _flatVirtualChildren = (children, ssrCtx) => {
         if (null == children) {
