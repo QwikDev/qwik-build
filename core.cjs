@@ -464,6 +464,12 @@
     /**
      * @internal
      */
+    const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
+        return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
+    };
+    /**
+     * @internal
+     */
     const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         newQrl.$dev$ = opts;
@@ -8209,6 +8215,7 @@
     exports.Slot = Slot;
     exports._IMMUTABLE = _IMMUTABLE;
     exports._hW = _hW;
+    exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;

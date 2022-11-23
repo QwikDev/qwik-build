@@ -287,16 +287,16 @@ function getImports() {
         const ret = getObject(arg0)[takeObject(arg1)];
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_values_e42671acbf11ec04 = function(arg0) {
-        const ret = getObject(arg0).values();
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbg_length_6e3bbe7c8bd4dbd8 = function(arg0) {
         const ret = getObject(arg0).length;
         return ret;
     };
     imports.wbg.__wbg_get_57245cc7d7c7619d = function(arg0, arg1) {
         const ret = getObject(arg0)[arg1 >>> 0];
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_values_e42671acbf11ec04 = function(arg0) {
+        const ret = getObject(arg0).values();
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_string_new = function(arg0, arg1) {

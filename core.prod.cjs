@@ -3757,8 +3757,8 @@
         return jsx(Virtual, {
             "q:s": ""
         }, name);
-    }, exports._IMMUTABLE = _IMMUTABLE, exports._hW = _hW, exports._pauseFromContexts = _pauseFromContexts, 
-    exports._wrapSignal = (obj, prop) => {
+    }, exports._IMMUTABLE = _IMMUTABLE, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
+    exports._pauseFromContexts = _pauseFromContexts, exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return;
         }

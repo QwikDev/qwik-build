@@ -1394,6 +1394,11 @@ export declare type NativeUIEvent = UIEvent;
 export declare type NativeWheelEvent = WheelEvent;
 
 /**
+ * @internal
+ */
+export declare const _noopQrl: <T>(symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
+
+/**
  * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
  *
  * @see noSerialize

@@ -681,7 +681,9 @@ var convertOptions = opts => {
     mode: "lib",
     manualChunks: void 0,
     scope: void 0,
-    stripExports: void 0
+    stripExports: void 0,
+    stripCtxName: void 0,
+    stripCtxKind: void 0
   };
   Object.entries(opts).forEach((([key, value]) => {
     null != value && (output[key] = value);
@@ -1104,6 +1106,12 @@ function createPlugin(optimizerOptions = {}) {
         mode: mode,
         scope: opts.scope ? opts.scope : void 0
       };
+      if ("client" === opts.target) {
+        transformOpts.stripCtxName = [ "useServerMount$" ];
+      } else if ("ssr" === opts.target) {
+        transformOpts.stripCtxName = [ "useClientMount$", "useClientEffect$" ];
+        transformOpts.stripCtxKind = "event";
+      }
       const result = await optimizer.transformFs(transformOpts);
       for (const output of result.modules) {
         const key = normalizePath(path.join(srcDir, output.path));
