@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.14.0
+ * @builder.io/qwik 0.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1534,22 +1534,11 @@
         }
     };
 
+    let warnClassname = false;
     /**
      * @public
      */
     const jsx = (type, props, key) => {
-        if (qDev) {
-            if (!isString(type) && !isFunction(type)) {
-                throw qError(QError_invalidJsxNodeType, type);
-            }
-            if (!qRuntimeQrl && props) {
-                for (const prop of Object.keys(props)) {
-                    if (prop.endsWith('$') && !isQrl(props[prop])) {
-                        throw qError(QError_invalidJsxNodeType, type);
-                    }
-                }
-            }
-        }
         const processed = key == null ? null : String(key);
         const node = new JSXNodeImpl(type, props, processed);
         seal(node);
@@ -1561,6 +1550,31 @@
             this.type = type;
             this.props = props;
             this.key = key;
+            if (qDev) {
+                invoke(undefined, () => {
+                    if (!isString(type) && !isFunction(type)) {
+                        throw qError(QError_invalidJsxNodeType, type);
+                    }
+                    if (!qRuntimeQrl && props) {
+                        for (const prop of Object.keys(props)) {
+                            const value = props[prop];
+                            if (prop.endsWith('$') && value) {
+                                if (!isQrl(value) && !Array.isArray(value)) {
+                                    throw qError(QError_invalidJsxNodeType, type);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            if (typeof type === 'string' && 'className' in props) {
+                props['class'] = props['className'];
+                delete props['className'];
+                if (qDev && !warnClassname) {
+                    warnClassname = true;
+                    logWarn('jsx: `className` is deprecated. Use `class` instead.');
+                }
+            }
         }
     }
     const isJSXNode = (n) => {
@@ -1586,11 +1600,6 @@
      * @public
      */
     const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
-        if (qDev) {
-            if (!isString(type) && !isFunction(type)) {
-                throw qError(QError_invalidJsxNodeType, type);
-            }
-        }
         const processed = key == null ? null : String(key);
         const node = new JSXNodeImpl(type, props, processed);
         node.dev = {
@@ -3354,7 +3363,7 @@
         }
         const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
         const elm = elCtx.$element$;
-        for (let prop of keys) {
+        for (const prop of keys) {
             if (prop === 'ref') {
                 assertElement(elm);
                 setRef(newProps[prop], elm);
@@ -3365,15 +3374,12 @@
                 browserSetEvent(staticCtx, elCtx, prop, newValue);
                 continue;
             }
-            if (prop === 'className') {
-                prop = 'class';
-            }
             if (isSignal(newValue)) {
                 addSignalSub(1, hostElm, newValue, elm, prop);
                 newValue = newValue.value;
             }
             if (prop === 'class') {
-                newProps['class'] = newValue = serializeClass(newValue);
+                newValue = serializeClass(newValue);
             }
             const normalizedProp = isSvg ? prop : prop.toLowerCase();
             const oldValue = oldProps[normalizedProp];
@@ -3424,7 +3430,7 @@
             return values;
         }
         const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
-        for (let prop of keys) {
+        for (const prop of keys) {
             if (prop === 'children') {
                 continue;
             }
@@ -3437,9 +3443,6 @@
             if (isOnProp(prop)) {
                 browserSetEvent(staticCtx, elCtx, prop, newValue);
                 continue;
-            }
-            if (prop === 'className') {
-                prop = 'class';
             }
             const sig = isSignal(newValue);
             if (sig) {
@@ -4543,7 +4546,7 @@
 
     const executeSignalOperation = (staticCtx, operation) => {
         const prop = operation[5] ?? 'value';
-        const value = operation[2][prop];
+        let value = operation[2][prop];
         switch (operation[0]) {
             case 1: {
                 const prop = operation[4];
@@ -4551,6 +4554,9 @@
                 const ctx = tryGetContext(elm);
                 const isSVG = elm.namespaceURI === SVG_NS;
                 let oldValue = undefined;
+                if (prop === 'class') {
+                    value = serializeClass(value);
+                }
                 if (ctx && ctx.$vdom$) {
                     const normalizedProp = isSVG ? prop : prop.toLowerCase();
                     oldValue = ctx.$vdom$.$props$[normalizedProp];
@@ -6425,7 +6431,7 @@
         function QwikComponent(props, key) {
             assertQrl(componentQrl);
             if (qDev) {
-                invoke(newInvokeContext(), () => {
+                invoke(undefined, () => {
                     for (const key of Object.keys(props)) {
                         if (key !== 'children') {
                             verifySerializable(props[key]);
@@ -6560,7 +6566,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.14.0";
+    const version = "0.14.1";
 
     /**
      * Render JSX.
@@ -6926,13 +6932,13 @@
             const isHead = tagName === 'head';
             let openingElement = '<' + tagName;
             let useSignal = false;
+            let classStr = '';
             assertElement(elm);
+            if (qDev && props.class && props.className) {
+                throw new TypeError('Can only have one of class or className');
+            }
             for (const prop of Object.keys(props)) {
-                if (prop === 'children' ||
-                    prop === 'key' ||
-                    prop === 'class' ||
-                    prop === 'className' ||
-                    prop === 'dangerouslySetInnerHTML') {
+                if (prop === 'children' || prop === 'dangerouslySetInnerHTML') {
                     continue;
                 }
                 if (prop === 'ref') {
@@ -6958,20 +6964,16 @@
                 }
                 const attrValue = processPropValue(attrName, value);
                 if (attrValue != null) {
-                    openingElement +=
-                        ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
+                    if (attrName === 'class') {
+                        classStr = attrValue;
+                    }
+                    else {
+                        openingElement +=
+                            ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
+                    }
                 }
             }
             const listeners = elCtx.li;
-            if (qDev && props.class && props.className)
-                throw new TypeError('Can only have one of class or className');
-            const classVal = props.class || props.className;
-            const classIsSignal = isSignal(classVal);
-            let classStr = classVal
-                ? classIsSignal
-                    ? classVal.value
-                    : serializeClass(classVal)
-                : undefined;
             if (hostCtx) {
                 if (qDev) {
                     if (tagName === 'html') {
@@ -6980,8 +6982,6 @@
                 }
                 if (hostCtx.$scopeIds$?.length) {
                     const extra = hostCtx.$scopeIds$.join(' ');
-                    if (qDev && classIsSignal)
-                        throw new TypeError('Cannot use signal class when using scoped styles');
                     classStr = classStr ? `${extra} ${classStr}` : extra;
                 }
                 if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
@@ -7234,6 +7234,9 @@
     const processPropValue = (prop, value) => {
         if (prop === 'style') {
             return stringifyStyle(value);
+        }
+        if (prop === 'class') {
+            return serializeClass(value);
         }
         if (isAriaAttribute(prop)) {
             return value != null ? String(value) : value;

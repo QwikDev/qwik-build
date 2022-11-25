@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.14.0
+ * @builder.io/qwik/optimizer 0.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.14.0"
+    qwik: "0.14.1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1156,6 +1156,7 @@ globalThis.qwikOptimizer = function(module) {
         };
         if ("client" === opts.target) {
           transformOpts.stripCtxName = [ "useServerMount$" ];
+          transformOpts.stripExports = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch" ];
         } else if ("ssr" === opts.target) {
           transformOpts.stripCtxName = [ "useClientMount$", "useClientEffect$" ];
           transformOpts.stripCtxKind = "event";
@@ -1222,8 +1223,7 @@ globalThis.qwikOptimizer = function(module) {
           if (transformedOutput) {
             log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
-              id: importeePathId + parsedId.query,
-              moduleSideEffects: false
+              id: importeePathId + parsedId.query
             };
           }
         }
@@ -1314,7 +1314,6 @@ globalThis.qwikOptimizer = function(module) {
         return {
           code: module2.code,
           map: module2.map,
-          moduleSideEffects: false,
           meta: {
             hook: module2.hook,
             qwikdeps: deps

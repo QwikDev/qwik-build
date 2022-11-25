@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.14.0
+ * @builder.io/qwik 0.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -625,7 +625,8 @@
     };
     class JSXNodeImpl {
         constructor(type, props, key = null) {
-            this.type = type, this.props = props, this.key = key;
+            this.type = type, this.props = props, this.key = key, "string" == typeof type && "className" in props && (props.class = props.className, 
+            delete props.className);
         }
     }
     const isJSXNode = n => n instanceof JSXNodeImpl;
@@ -1575,7 +1576,7 @@
         }
         const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
         const elm = elCtx.$element$;
-        for (let prop of keys) {
+        for (const prop of keys) {
             if ("ref" === prop) {
                 setRef(newProps[prop], elm);
                 continue;
@@ -1585,8 +1586,8 @@
                 browserSetEvent(staticCtx, elCtx, prop, newValue);
                 continue;
             }
-            "className" === prop && (prop = "class"), isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
-            newValue = newValue.value), "class" === prop && (newProps.class = newValue = serializeClass(newValue));
+            isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), newValue = newValue.value), 
+            "class" === prop && (newValue = serializeClass(newValue));
             const normalizedProp = isSvg ? prop : prop.toLowerCase();
             const oldValue = oldProps[normalizedProp];
             values[normalizedProp] = newValue, oldValue !== newValue && smartSetProperty(staticCtx, elm, prop, newValue, oldValue, isSvg);
@@ -1615,7 +1616,7 @@
             return values;
         }
         const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
-        for (let prop of keys) {
+        for (const prop of keys) {
             if ("children" === prop) {
                 continue;
             }
@@ -1628,7 +1629,6 @@
                 browserSetEvent(staticCtx, elCtx, prop, newValue);
                 continue;
             }
-            "className" === prop && (prop = "class");
             const sig = isSignal(newValue);
             sig && (hostElm && addSignalSub(1, hostElm, newValue, elm, prop), newValue = newValue.value);
             const normalizedProp = isSvg ? prop : prop.toLowerCase();
@@ -2420,7 +2420,7 @@
             if (containerState.$opsNext$.forEach((op => {
                 staticCtx.$hostElements$.has(op[1]) || ((staticCtx, operation) => {
                     const prop = operation[5] ?? "value";
-                    const value = operation[2][prop];
+                    let value = operation[2][prop];
                     switch (operation[0]) {
                       case 1:
                         {
@@ -2429,7 +2429,7 @@
                             const ctx = tryGetContext(elm);
                             const isSVG = elm.namespaceURI === SVG_NS;
                             let oldValue;
-                            if (ctx && ctx.$vdom$) {
+                            if ("class" === prop && (value = serializeClass(value)), ctx && ctx.$vdom$) {
                                 const normalizedProp = isSVG ? prop : prop.toLowerCase();
                                 oldValue = ctx.$vdom$.$props$[normalizedProp], ctx.$vdom$.$props$[normalizedProp] = value;
                             }
@@ -3271,8 +3271,9 @@
             const isHead = "head" === tagName;
             let openingElement = "<" + tagName;
             let useSignal = false;
+            let classStr = "";
             for (const prop of Object.keys(props)) {
-                if ("children" === prop || "key" === prop || "class" === prop || "className" === prop || "dangerouslySetInnerHTML" === prop) {
+                if ("children" === prop || "dangerouslySetInnerHTML" === prop) {
                     continue;
                 }
                 if ("ref" === prop) {
@@ -3294,12 +3295,9 @@
                 }
                 prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
-                null != attrValue && (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+                null != attrValue && ("class" === attrName ? classStr = attrValue : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
             const listeners = elCtx.li;
-            const classVal = props.class || props.className;
-            const classIsSignal = isSignal(classVal);
-            let classStr = classVal ? classIsSignal ? classVal.value : serializeClass(classVal) : void 0;
             if (hostCtx) {
                 if (hostCtx.$scopeIds$?.length) {
                     const extra = hostCtx.$scopeIds$.join(" ");
@@ -3475,7 +3473,7 @@
         }
     };
     const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
-    const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
+    const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : "class" === prop ? serializeClass(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
     const textOnlyElements = {
         title: true,
         style: true,
@@ -3820,7 +3818,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.14.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.14.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
@@ -3864,7 +3862,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.14.0",
+            "q:version": "0.14.1",
             "q:render": "ssr",
             "q:base": opts.base,
             "q:locale": opts.envData?.locale,
@@ -3925,7 +3923,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useUserContext = useUserContext, exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, 
-    exports.version = "0.14.0", exports.withLocale = function(locale, fn) {
+    exports.version = "0.14.1", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

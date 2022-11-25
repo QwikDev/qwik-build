@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.14.0
+ * @builder.io/qwik 0.14.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -773,7 +773,8 @@ const jsx = (type, props, key) => {
 
 class JSXNodeImpl {
     constructor(type, props, key = null) {
-        this.type = type, this.props = props, this.key = key;
+        this.type = type, this.props = props, this.key = key, "string" == typeof type && "className" in props && (props.class = props.className, 
+        delete props.className);
     }
 }
 
@@ -1843,7 +1844,7 @@ const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) 
     }
     const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
     const elm = elCtx.$element$;
-    for (let prop of keys) {
+    for (const prop of keys) {
         if ("ref" === prop) {
             setRef(newProps[prop], elm);
             continue;
@@ -1853,8 +1854,8 @@ const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) 
             browserSetEvent(staticCtx, elCtx, prop, newValue);
             continue;
         }
-        "className" === prop && (prop = "class"), isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), 
-        newValue = newValue.value), "class" === prop && (newProps.class = newValue = serializeClass(newValue));
+        isSignal(newValue) && (addSignalSub(1, hostElm, newValue, elm, prop), newValue = newValue.value), 
+        "class" === prop && (newValue = serializeClass(newValue));
         const normalizedProp = isSvg ? prop : prop.toLowerCase();
         const oldValue = oldProps[normalizedProp];
         values[normalizedProp] = newValue, oldValue !== newValue && smartSetProperty(staticCtx, elm, prop, newValue, oldValue, isSvg);
@@ -1886,7 +1887,7 @@ const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         return values;
     }
     const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
-    for (let prop of keys) {
+    for (const prop of keys) {
         if ("children" === prop) {
             continue;
         }
@@ -1899,7 +1900,6 @@ const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
             browserSetEvent(staticCtx, elCtx, prop, newValue);
             continue;
         }
-        "className" === prop && (prop = "class");
         const sig = isSignal(newValue);
         sig && (hostElm && addSignalSub(1, hostElm, newValue, elm, prop), newValue = newValue.value);
         const normalizedProp = isSvg ? prop : prop.toLowerCase();
@@ -2735,7 +2735,7 @@ const renderMarked = async containerState => {
         if (containerState.$opsNext$.forEach((op => {
             staticCtx.$hostElements$.has(op[1]) || ((staticCtx, operation) => {
                 const prop = operation[5] ?? "value";
-                const value = operation[2][prop];
+                let value = operation[2][prop];
                 switch (operation[0]) {
                   case 1:
                     {
@@ -2744,7 +2744,7 @@ const renderMarked = async containerState => {
                         const ctx = tryGetContext(elm);
                         const isSVG = elm.namespaceURI === SVG_NS;
                         let oldValue;
-                        if (ctx && ctx.$vdom$) {
+                        if ("class" === prop && (value = serializeClass(value)), ctx && ctx.$vdom$) {
                             const normalizedProp = isSVG ? prop : prop.toLowerCase();
                             oldValue = ctx.$vdom$.$props$[normalizedProp], ctx.$vdom$.$props$[normalizedProp] = value;
                         }
@@ -3555,7 +3555,7 @@ const Slot = props => {
     }, name);
 };
 
-const version = "0.14.0";
+const version = "0.14.1";
 
 const render = async (parent, jsxNode, opts) => {
     isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
@@ -3587,7 +3587,7 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "0.14.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "0.14.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -3614,7 +3614,7 @@ const renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "0.14.0",
+        "q:version": "0.14.1",
         "q:render": "ssr",
         "q:base": opts.base,
         "q:locale": opts.envData?.locale,
@@ -3797,8 +3797,9 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const isHead = "head" === tagName;
         let openingElement = "<" + tagName;
         let useSignal = false;
+        let classStr = "";
         for (const prop of Object.keys(props)) {
-            if ("children" === prop || "key" === prop || "class" === prop || "className" === prop || "dangerouslySetInnerHTML" === prop) {
+            if ("children" === prop || "dangerouslySetInnerHTML" === prop) {
                 continue;
             }
             if ("ref" === prop) {
@@ -3820,12 +3821,9 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
             prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
-            null != attrValue && (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+            null != attrValue && ("class" === attrName ? classStr = attrValue : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
         }
         const listeners = elCtx.li;
-        const classVal = props.class || props.className;
-        const classIsSignal = isSignal(classVal);
-        let classStr = classVal ? classIsSignal ? classVal.value : serializeClass(classVal) : void 0;
         if (hostCtx) {
             if (hostCtx.$scopeIds$?.length) {
                 const extra = hostCtx.$scopeIds$.join(" ");
@@ -4008,7 +4006,7 @@ const setComponentProps = (rCtx, elCtx, expectProps) => {
 
 const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
 
-const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
+const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : "class" === prop ? serializeClass(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
 
 const textOnlyElements = {
     title: true,

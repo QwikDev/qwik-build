@@ -521,6 +521,7 @@ export declare interface TransformOptions {
     explicitExtensions?: boolean;
     mode?: EmitMode;
     scope?: string;
+    stripExports?: string[];
     stripCtxName?: string[];
     stripCtxKind?: 'function' | 'event';
 }

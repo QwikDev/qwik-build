@@ -313,6 +313,10 @@ prop: string,
 key: string | undefined
 ];
 
+declare type BaseClassList = string | string[] | {
+    [cl: string]: boolean;
+};
+
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
@@ -370,6 +374,8 @@ declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
     width?: number | string | undefined;
 }
+
+declare type ClassList = BaseClassList | BaseClassList[];
 
 declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
@@ -878,6 +884,7 @@ declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-whe
  */
 export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
+    /** @deprecated - Use `class` instead */
     className?: string | undefined;
     contentEditable?: Booleanish | 'inherit' | undefined;
     contextMenu?: string | undefined;
@@ -2069,13 +2076,9 @@ export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T,
 }
 
 declare interface QwikProps<T> extends PreventDefault<T> {
-    class?: Signal<string> | string | {
-        [className: string]: boolean;
-    } | (string | {
-        [className: string]: boolean;
-    })[];
-    dangerouslySetInnerHTML?: string;
-    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void);
+    class?: ClassList | undefined;
+    dangerouslySetInnerHTML?: string | undefined;
+    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void) | undefined;
     /**
      *
      */
@@ -3619,7 +3622,7 @@ export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) =>
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.14.0
+ * 0.14.1
  * @public
  */
 export declare const version: string;
