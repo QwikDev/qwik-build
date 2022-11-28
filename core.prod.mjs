@@ -4008,7 +4008,7 @@ const setComponentProps = (rCtx, elCtx, expectProps) => {
 
 const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
 
-const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : "class" === prop ? serializeClass(value) : isAriaAttribute(prop) ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
+const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : "class" === prop ? serializeClass(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
 
 const textOnlyElements = {
     title: true,

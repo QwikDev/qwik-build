@@ -7240,7 +7240,7 @@
         if (prop === 'class') {
             return serializeClass(value);
         }
-        if (isAriaAttribute(prop)) {
+        if (isAriaAttribute(prop) || prop === 'draggable' || prop === 'spellcheck') {
             return value != null ? String(value) : value;
         }
         if (value === false || value == null) {
