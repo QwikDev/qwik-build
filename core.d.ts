@@ -536,7 +536,7 @@ declare interface ContainerState {
     readonly $hostsNext$: Set<QwikElement>;
     readonly $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;
-    $renderPromise$: Promise<RenderStaticContext> | undefined;
+    $renderPromise$: Promise<RenderContext> | undefined;
     $envData$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;

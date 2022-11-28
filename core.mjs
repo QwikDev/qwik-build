@@ -1291,12 +1291,12 @@ const cleanupContext = (elCtx, subsManager) => {
 };
 
 const useSequentialScope = () => {
-    const ctx = useInvokeContext();
-    const i = ctx.$seq$;
-    const hostElement = ctx.$hostElement$;
-    const elCtx = getContext(hostElement, ctx.$renderCtx$.$static$.$containerState$);
+    const iCtx = useInvokeContext();
+    const i = iCtx.$seq$;
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
     const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
-    ctx.$seq$++;
+    iCtx.$seq$++;
     const set = (value) => {
         if (qDev) {
             verifySerializable(value);
@@ -1307,7 +1307,7 @@ const useSequentialScope = () => {
         get: seq[i],
         set,
         i,
-        rCtx: ctx,
+        iCtx,
         elCtx,
     };
 };
@@ -2335,14 +2335,14 @@ const useContextProvider = (context, newValue) => {
  */
 // </docs>
 const useContext = (context, defaultValue) => {
-    const { get, set, rCtx, elCtx } = useSequentialScope();
+    const { get, set, iCtx, elCtx } = useSequentialScope();
     if (get !== undefined) {
         return get;
     }
     if (qDev) {
         validateContext(context);
     }
-    const value = resolveContext(context, elCtx, rCtx.$renderCtx$.$static$.$containerState$);
+    const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
     if (value !== undefined) {
         return set(value);
     }
@@ -2421,7 +2421,7 @@ const validateContext = (context) => {
 };
 
 const ERROR_CONTEXT = /*#__PURE__*/ createContext('qk-error');
-const handleError = (err, hostElement, rctx) => {
+const handleError = (err, hostElement, rCtx) => {
     const elCtx = tryGetContext(hostElement);
     if (qDev) {
         // Clean vdom
@@ -2448,7 +2448,7 @@ const handleError = (err, hostElement, rctx) => {
         throw err;
     }
     else {
-        const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rctx.$static$.$containerState$);
+        const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
         if (errorStore === undefined) {
             throw err;
         }
@@ -4656,11 +4656,11 @@ const _hW = () => {
 const renderMarked = async (containerState) => {
     const doc = getDocument(containerState.$containerEl$);
     try {
-        const ctx = createRenderContext(doc, containerState);
-        const staticCtx = ctx.$static$;
+        const rCtx = createRenderContext(doc, containerState);
+        const staticCtx = rCtx.$static$;
         const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
         containerState.$hostsNext$.clear();
-        await executeWatchesBefore(containerState);
+        await executeWatchesBefore(containerState, rCtx);
         containerState.$hostsStaging$.forEach((host) => {
             hostsRendering.add(host);
         });
@@ -4674,11 +4674,14 @@ const renderMarked = async (containerState) => {
                     assertTrue(el.isConnected, 'element must be connected to the dom');
                     staticCtx.$roots$.push(elCtx);
                     try {
-                        await renderComponent(ctx, elCtx, getFlags(el.parentElement));
+                        await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
                     }
                     catch (err) {
                         if (qDev) {
                             throw err;
+                        }
+                        else {
+                            logError(err);
                         }
                     }
                 }
@@ -4695,13 +4698,13 @@ const renderMarked = async (containerState) => {
         // Early exist, no dom operations
         if (staticCtx.$operations$.length === 0) {
             printRenderStats(staticCtx);
-            await postRendering(containerState, staticCtx);
+            await postRendering(containerState, rCtx);
             return;
         }
         await getPlatform().raf(() => {
-            executeContextWithSlots(ctx);
+            executeContextWithSlots(rCtx);
             printRenderStats(staticCtx);
-            return postRendering(containerState, staticCtx);
+            return postRendering(containerState, rCtx);
         });
     }
     catch (err) {
@@ -4720,13 +4723,13 @@ const getFlags = (el) => {
     }
     return flags;
 };
-const postRendering = async (containerState, ctx) => {
-    await executeWatchesAfter(containerState, (watch, stage) => {
+const postRendering = async (containerState, rCtx) => {
+    await executeWatchesAfter(containerState, rCtx, (watch, stage) => {
         if ((watch.$flags$ & WatchFlagsIsEffect) === 0) {
             return false;
         }
         if (stage) {
-            return ctx.$hostElements$.has(watch.$el$);
+            return rCtx.$static$.$hostElements$.has(watch.$el$);
         }
         return true;
     });
@@ -4748,7 +4751,7 @@ const postRendering = async (containerState, ctx) => {
         scheduleFrame(containerState);
     }
 };
-const executeWatchesBefore = async (containerState) => {
+const executeWatchesBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
     const resourcesPromises = [];
     const watchPromises = [];
@@ -4783,7 +4786,7 @@ const executeWatchesBefore = async (containerState) => {
             const watches = await Promise.all(watchPromises);
             sortWatches(watches);
             await Promise.all(watches.map((watch) => {
-                return runSubscriber(watch, containerState);
+                return runSubscriber(watch, containerState, rCtx);
             }));
             watchPromises.length = 0;
         }
@@ -4791,10 +4794,10 @@ const executeWatchesBefore = async (containerState) => {
     if (resourcesPromises.length > 0) {
         const resources = await Promise.all(resourcesPromises);
         sortWatches(resources);
-        resources.forEach((watch) => runSubscriber(watch, containerState));
+        resources.forEach((watch) => runSubscriber(watch, containerState, rCtx));
     }
 };
-const executeWatchesAfter = async (containerState, watchPred) => {
+const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
     const watchPromises = [];
     const containerEl = containerState.$containerEl$;
     containerState.$watchNext$.forEach((watch) => {
@@ -4819,7 +4822,7 @@ const executeWatchesAfter = async (containerState, watchPred) => {
             const watches = await Promise.all(watchPromises);
             sortWatches(watches);
             for (const watch of watches) {
-                await runSubscriber(watch, containerState);
+                await runSubscriber(watch, containerState, rCtx);
             }
             watchPromises.length = 0;
         }
@@ -4905,12 +4908,12 @@ const WatchFlagsIsResource = 1 << 4;
  */
 // </docs>
 const useWatchQrl = (qrl, opts) => {
-    const { get, set, rCtx, i, elCtx } = useSequentialScope();
+    const { get, set, iCtx, i, elCtx } = useSequentialScope();
     if (get) {
         return;
     }
     assertQrl(qrl);
-    const containerState = rCtx.$renderCtx$.$static$.$containerState$;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, undefined);
     set(true);
     qrl.$resolveLazy$(containerState.$containerEl$);
@@ -4918,7 +4921,7 @@ const useWatchQrl = (qrl, opts) => {
         elCtx.$watches$ = [];
     }
     elCtx.$watches$.push(watch);
-    waitAndRun(rCtx, () => runSubscriber(watch, containerState, rCtx.$renderCtx$));
+    waitAndRun(iCtx, () => runSubscriber(watch, containerState, iCtx.$renderCtx$));
     if (isServer()) {
         useRunWatch(watch, opts?.eagerness);
     }
@@ -5014,7 +5017,7 @@ const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
  */
 // </docs>
 const useClientEffectQrl = (qrl, opts) => {
-    const { get, set, i, rCtx: ctx, elCtx } = useSequentialScope();
+    const { get, set, i, iCtx, elCtx } = useSequentialScope();
     const eagerness = opts?.eagerness ?? 'visible';
     if (get) {
         if (isServer()) {
@@ -5024,7 +5027,7 @@ const useClientEffectQrl = (qrl, opts) => {
     }
     assertQrl(qrl);
     const watch = new Watch(WatchFlagsIsEffect, i, elCtx.$element$, qrl, undefined);
-    const containerState = ctx.$renderCtx$.$static$.$containerState$;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
     }
@@ -5067,20 +5070,20 @@ const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
 const isResourceWatch = (watch) => {
     return !!watch.$resource$;
 };
-const runSubscriber = async (watch, containerState, rctx) => {
+const runSubscriber = async (watch, containerState, rCtx) => {
     assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
     if (isResourceWatch(watch)) {
-        return runResource(watch, containerState, rctx);
+        return runResource(watch, containerState, rCtx);
     }
     else {
-        return runWatch(watch, containerState, rctx);
+        return runWatch(watch, containerState, rCtx);
     }
 };
-const runResource = (watch, containerState, rctx, waitOn) => {
+const runResource = (watch, containerState, rCtx, waitOn) => {
     watch.$flags$ &= ~WatchFlagsIsDirty;
     cleanupWatch(watch);
     const el = watch.$el$;
-    const invocationContext = newInvokeContext(rctx?.$static$.$locale$, el, undefined, 'WatchEvent');
+    const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'WatchEvent');
     const { $subsManager$: subsManager } = containerState;
     watch.$qrl$.$captureRef$;
     const watchFn = watch.$qrl$.getFn(invocationContext, () => {
@@ -5187,11 +5190,11 @@ const runResource = (watch, containerState, rctx, waitOn) => {
     }
     return promise;
 };
-const runWatch = (watch, containerState, rctx) => {
+const runWatch = (watch, containerState, rCtx) => {
     watch.$flags$ &= ~WatchFlagsIsDirty;
     cleanupWatch(watch);
     const hostElement = watch.$el$;
-    const invocationContext = newInvokeContext(rctx?.$static$.$locale$, hostElement, undefined, 'WatchEvent');
+    const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'WatchEvent');
     const { $subsManager$: subsManager } = containerState;
     const watchFn = watch.$qrl$.getFn(invocationContext, () => {
         subsManager.$clearSub$(watch);
@@ -5231,7 +5234,7 @@ const runWatch = (watch, containerState, rctx) => {
             cleanups.push(returnValue);
         }
     }, (reason) => {
-        handleError(reason, hostElement, rctx);
+        handleError(reason, hostElement, rCtx);
     });
 };
 const cleanupWatch = (watch) => {
@@ -5355,17 +5358,17 @@ class Watch {
  */
 // </docs>
 const useResourceQrl = (qrl, opts) => {
-    const { get, set, i, rCtx, elCtx } = useSequentialScope();
+    const { get, set, i, iCtx, elCtx } = useSequentialScope();
     if (get != null) {
         return get;
     }
     assertQrl(qrl);
-    const containerState = rCtx.$renderCtx$.$static$.$containerState$;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const resource = createResourceReturn(containerState, opts);
     const el = elCtx.$element$;
     const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
-    const previousWait = Promise.all(rCtx.$waitOn$.slice());
-    runResource(watch, containerState, rCtx.$renderCtx$, previousWait);
+    const previousWait = Promise.all(iCtx.$waitOn$.slice());
+    runResource(watch, containerState, iCtx.$renderCtx$, previousWait);
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
     }
@@ -6595,13 +6598,12 @@ const render = async (parent, jsxNode, opts) => {
     await postRendering(containerState, renderCtx);
 };
 const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) => {
-    const ctx = createRenderContext(doc, containerState);
-    const staticCtx = ctx.$static$;
-    // staticCtx.$roots$.push(parent as Element);
+    const rCtx = createRenderContext(doc, containerState);
+    const staticCtx = rCtx.$static$;
     try {
         const processedNodes = await processData$1(jsxNode);
         const rootJsx = domToVnode(parent);
-        await visitJsxNode(ctx, rootJsx, wrapJSX(parent, processedNodes), 0);
+        await visitJsxNode(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);
     }
     catch (err) {
         logError(err);
@@ -6612,7 +6614,7 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
         appendQwikDevTools(containerEl);
         printRenderStats(staticCtx);
     }
-    return staticCtx;
+    return rCtx;
 };
 const getElement = (docOrElm) => {
     return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
@@ -6689,7 +6691,7 @@ const renderRoot = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
             logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
         }
     }
-    return rCtx.$static$;
+    return rCtx;
 };
 const renderGenerator = async (node, rCtx, ssrCtx, stream, flags) => {
     stream.write(FLUSH_COMMENT);
@@ -7372,7 +7374,7 @@ const hasDynamicChildren = (node) => {
  */
 // </docs>
 const useStore = (initialState, opts) => {
-    const { get, set, rCtx: ctx } = useSequentialScope();
+    const { get, set, iCtx } = useSequentialScope();
     if (get != null) {
         return get;
     }
@@ -7382,7 +7384,7 @@ const useStore = (initialState, opts) => {
         return value;
     }
     else {
-        const containerState = ctx.$renderCtx$.$static$.$containerState$;
+        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const recursive = opts?.recursive ?? false;
         const flags = recursive ? QObjectRecursive : 0;
         const newStore = getOrCreateProxy(value, containerState, flags);
@@ -7895,12 +7897,12 @@ const useStylesScopedQrl = (styles) => {
 const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
 const _useStyles = (styleQrl, transform, scoped) => {
     assertQrl(styleQrl);
-    const { get, set, rCtx, i, elCtx } = useSequentialScope();
+    const { get, set, iCtx, i, elCtx } = useSequentialScope();
     if (get) {
         return get;
     }
     const styleId = styleKey(styleQrl, i);
-    const containerState = rCtx.$renderCtx$.$static$.$containerState$;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     set(styleId);
     if (!elCtx.$appendStyles$) {
         elCtx.$appendStyles$ = [];
@@ -7924,7 +7926,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
         });
     };
     if (isPromise(value)) {
-        rCtx.$waitOn$.push(value.then(appendStyle));
+        iCtx.$waitOn$.push(value.then(appendStyle));
     }
     else {
         appendStyle(value);
@@ -7936,11 +7938,11 @@ const _useStyles = (styleQrl, transform, scoped) => {
  * @alpha
  */
 const useSignal = (initialState) => {
-    const { get, set, rCtx: ctx } = useSequentialScope();
+    const { get, set, iCtx } = useSequentialScope();
     if (get != null) {
         return get;
     }
-    const containerState = ctx.$renderCtx$.$static$.$containerState$;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const value = isFunction(initialState) ? initialState() : initialState;
     const signal = createSignal(value, containerState, undefined);
     set(signal);
@@ -7989,14 +7991,14 @@ const useSignal = (initialState) => {
  */
 // </docs>
 const useServerMountQrl = (mountQrl) => {
-    const { get, set, rCtx: ctx } = useSequentialScope();
+    const { get, set, iCtx } = useSequentialScope();
     if (get) {
         return;
     }
     if (isServer()) {
         assertQrl(mountQrl);
-        mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$);
-        waitAndRun(ctx, mountQrl);
+        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
+        waitAndRun(iCtx, mountQrl);
     }
     set(true);
 };
@@ -8066,14 +8068,14 @@ const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
  */
 // </docs>
 const useClientMountQrl = (mountQrl) => {
-    const { get, set, rCtx: ctx } = useSequentialScope();
+    const { get, set, iCtx } = useSequentialScope();
     if (get) {
         return;
     }
     if (!isServer()) {
         assertQrl(mountQrl);
-        mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$);
-        waitAndRun(ctx, mountQrl);
+        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
+        waitAndRun(iCtx, mountQrl);
     }
     set(true);
 };
@@ -8136,13 +8138,13 @@ const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
  */
 // </docs>
 const useMountQrl = (mountQrl) => {
-    const { get, set, rCtx: ctx } = useSequentialScope();
+    const { get, set, iCtx } = useSequentialScope();
     if (get) {
         return;
     }
     assertQrl(mountQrl);
-    mountQrl.$resolveLazy$(ctx.$renderCtx$.$static$.$containerState$.$containerEl$);
-    waitAndRun(ctx, mountQrl);
+    mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
+    waitAndRun(iCtx, mountQrl);
     set(true);
 };
 // <docs markdown="../readme.md#useMount">
