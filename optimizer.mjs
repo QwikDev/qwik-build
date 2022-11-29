@@ -5,51 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-var qDev = true === globalThis.qDev;
-
-var qSerialize = false !== globalThis.qSerialize;
-
-var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
-
-var qTest = true === globalThis.qTest;
-
-var qRuntimeQrl = true === globalThis.qRuntimeQrl;
-
-var isNode = value => value && "number" === typeof value.nodeType;
-
-var isElement = value => 1 === value.nodeType;
-
-var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
-
-var logWarn = (message, ...optionalParams) => {
-  qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
-};
-
-var tryGetContext = element => element._qc_;
-
-var printParams = optionalParams => {
-  if (qDev) {
-    return optionalParams.map((p => {
-      if (isNode(p) && isElement(p)) {
-        return printElement(p);
-      }
-      return p;
-    }));
-  }
-  return optionalParams;
-};
-
-var printElement = el => {
-  const ctx = tryGetContext(el);
-  const isServer = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
-  return {
-    tagName: el.tagName,
-    renderQRL: ctx?.$componentQrl$?.getSymbol(),
-    element: isServer ? void 0 : el,
-    ctx: isServer ? void 0 : ctx
-  };
-};
-
 function createPath(opts = {}) {
   function assertPath(path) {
     if ("string" !== typeof path) {
@@ -566,7 +521,7 @@ async function loadPlatformBinding(sys) {
               return mod2;
             }
           } catch (e) {
-            logWarn(e);
+            console.warn(e);
           }
         }
       }

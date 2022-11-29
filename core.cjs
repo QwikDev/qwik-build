@@ -70,9 +70,19 @@
         ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
         : '';
     const logError = (message, ...optionalParams) => {
-        const err = message instanceof Error ? message : new Error(message);
+        const err = message instanceof Error ? message : createError(message);
         // eslint-disable-next-line no-console
         console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
+        return err;
+    };
+    const createError = (message) => {
+        const err = new Error(message);
+        if (err.stack) {
+            err.stack = err.stack
+                .split('\n')
+                .filter((l) => !l.includes('/node_modules/@builder.io/qwik'))
+                .join('\n');
+        }
         return err;
     };
     const logErrorAndStop = (message, ...optionalParams) => {

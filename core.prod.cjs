@@ -21,8 +21,13 @@
     const isText = value => 3 === value.nodeType;
     const isComment = value => 8 === value.nodeType;
     const logError = (message, ...optionalParams) => {
-        const err = message instanceof Error ? message : new Error(message);
+        const err = message instanceof Error ? message : createError(message);
         return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
+        err;
+    };
+    const createError = message => {
+        const err = new Error(message);
+        return err.stack && (err.stack = err.stack.split("\n").filter((l => !l.includes("/node_modules/@builder.io/qwik"))).join("\n")), 
         err;
     };
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
