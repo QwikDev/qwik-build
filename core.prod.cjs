@@ -3274,6 +3274,7 @@
             let openingElement = "<" + tagName;
             let useSignal = false;
             let classStr = "";
+            let htmlStr = null;
             for (const prop of Object.keys(props)) {
                 if ("children" === prop || "dangerouslySetInnerHTML" === prop) {
                     continue;
@@ -3297,7 +3298,7 @@
                 }
                 prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
             const listeners = elCtx.li;
             if (hostCtx) {
@@ -3326,7 +3327,7 @@
             emptyElements[tagName]) {
                 return;
             }
-            const innerHTML = props.dangerouslySetInnerHTML;
+            const innerHTML = props.dangerouslySetInnerHTML ?? htmlStr;
             if (null != innerHTML) {
                 return stream.write(String(innerHTML)), void stream.write(`</${tagName}>`);
             }

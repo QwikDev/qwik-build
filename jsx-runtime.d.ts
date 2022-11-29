@@ -26,6 +26,7 @@ declare interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
     rel?: string | undefined;
     shape?: string | undefined;
     target?: string | undefined;
+    children?: undefined;
 }
 
 /**
@@ -233,6 +234,7 @@ declare type BaseClassList = string | string[] | {
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
+    children?: undefined;
 }
 
 declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
@@ -288,6 +290,7 @@ declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -328,6 +331,7 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -359,6 +363,10 @@ export declare const Fragment: FunctionComponent<{
  */
 export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
+}
+
+declare interface HrHTMLAttributes<T> extends HTMLAttributes<T> {
+    children?: undefined;
 }
 
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
@@ -454,6 +462,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     srcDoc?: string | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -468,6 +477,7 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     srcSet?: string | undefined;
     useMap?: string | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -504,6 +514,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: HTMLInputTypeAttribute | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -560,7 +571,7 @@ declare interface IntrinsicHTMLElements {
     head: HTMLAttributes<HTMLHeadElement>;
     header: HTMLAttributes<HTMLElement>;
     hgroup: HTMLAttributes<HTMLElement>;
-    hr: HTMLAttributes<HTMLHRElement>;
+    hr: HrHTMLAttributes<HTMLHRElement>;
     html: HtmlHTMLAttributes<HTMLHtmlElement>;
     i: HTMLAttributes<HTMLElement>;
     iframe: IframeHTMLAttributes<HTMLIFrameElement>;
@@ -620,7 +631,7 @@ declare interface IntrinsicHTMLElements {
     th: ThHTMLAttributes<HTMLTableHeaderCellElement>;
     thead: HTMLAttributes<HTMLTableSectionElement>;
     time: TimeHTMLAttributes<HTMLElement>;
-    title: HTMLAttributes<HTMLTitleElement>;
+    title: TitleHTMLAttributes<HTMLTitleElement>;
     tr: HTMLAttributes<HTMLTableRowElement>;
     track: TrackHTMLAttributes<HTMLTrackElement>;
     tt: HTMLAttributes<HTMLElement>;
@@ -687,6 +698,7 @@ declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     keyType?: string | undefined;
     keyParams?: string | undefined;
     name?: string | undefined;
+    children?: undefined;
 }
 
 declare interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -712,6 +724,7 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
     sizes?: string | undefined;
     type?: string | undefined;
     charSet?: string | undefined;
+    children?: undefined;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -741,6 +754,7 @@ declare interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     httpEquiv?: string | undefined;
     name?: string | undefined;
     media?: string | undefined;
+    children?: undefined;
 }
 
 declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -822,6 +836,7 @@ declare interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
     label?: string | undefined;
     selected?: boolean | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+    children?: string;
 }
 
 declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -833,6 +848,7 @@ declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
 declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+    children?: undefined;
 }
 
 declare type PreventDefault<T> = {
@@ -1399,6 +1415,7 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
     srcSet?: string | undefined;
     type?: string | undefined;
     width?: number | string | undefined;
+    children?: undefined;
 }
 
 declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1406,6 +1423,7 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     nonce?: string | undefined;
     scoped?: boolean | undefined;
     type?: string | undefined;
+    children?: string;
 }
 
 declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
@@ -1446,6 +1464,8 @@ declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     rows?: number | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
     wrap?: string | undefined;
+    /** @deprecated - Use the `value` property instead */
+    children?: undefined;
 }
 
 declare interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1461,12 +1481,17 @@ declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
+declare interface TitleHTMLAttributes<T> extends HTMLAttributes<T> {
+    children?: string;
+}
+
 declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
     label?: string | undefined;
     src?: string | undefined;
     srcLang?: string | undefined;
+    children?: undefined;
 }
 
 declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {

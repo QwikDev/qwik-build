@@ -6935,6 +6935,7 @@
             let openingElement = '<' + tagName;
             let useSignal = false;
             let classStr = '';
+            let htmlStr = null;
             assertElement(elm);
             if (qDev && props.class && props.className) {
                 throw new TypeError('Can only have one of class or className');
@@ -6968,6 +6969,9 @@
                 if (attrValue != null) {
                     if (attrName === 'class') {
                         classStr = attrValue;
+                    }
+                    else if (attrName === 'value' && tagName === 'textarea') {
+                        htmlStr = escapeHtml(attrValue);
                     }
                     else {
                         openingElement +=
@@ -7027,7 +7031,7 @@
             if (emptyElements[tagName]) {
                 return;
             }
-            const innerHTML = props.dangerouslySetInnerHTML;
+            const innerHTML = props.dangerouslySetInnerHTML ?? htmlStr;
             if (innerHTML != null) {
                 stream.write(String(innerHTML));
                 stream.write(`</${tagName}>`);
