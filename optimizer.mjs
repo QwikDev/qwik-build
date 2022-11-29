@@ -663,7 +663,10 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       preserveFilenames: fsOpts.preserveFilenames,
       mode: fsOpts.mode,
       scope: fsOpts.scope,
-      input: input
+      input: input,
+      stripCtxKind: fsOpts.stripCtxKind,
+      stripCtxName: fsOpts.stripCtxName,
+      stripExports: fsOpts.stripExports
     };
     return binding.transform_modules(convertOptions(modulesOpts));
   }
