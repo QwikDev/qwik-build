@@ -535,7 +535,6 @@ declare interface ContainerState {
     readonly $watchNext$: Set<SubscriberEffect>;
     readonly $watchStaging$: Set<SubscriberEffect>;
     readonly $opsNext$: Set<SubscriberSignal>;
-    readonly $opsStaging$: Set<SubscriberSignal>;
     readonly $hostsNext$: Set<QwikElement>;
     readonly $hostsStaging$: Set<QwikElement>;
     $hostsRendering$: Set<QwikElement> | undefined;

@@ -720,7 +720,6 @@ const createContainerState = containerEl => {
         $elementIndex$: 0,
         $proxyMap$: new WeakMap,
         $opsNext$: new Set,
-        $opsStaging$: new Set,
         $watchNext$: new Set,
         $watchStaging$: new Set,
         $hostsNext$: new Set,
@@ -2697,7 +2696,7 @@ const notifyRender = (hostElement, containerState) => {
 };
 
 const notifySignalOperation = (op, containerState) => {
-    void 0 !== containerState.$hostsRendering$ ? (containerState.$renderPromise$, containerState.$opsStaging$.add(op)) : (containerState.$opsNext$.add(op), 
+    void 0 !== containerState.$hostsRendering$ ? (containerState.$renderPromise$, containerState.$opsNext$.add(op)) : (containerState.$opsNext$.add(op), 
     scheduleFrame(containerState));
 };
 
@@ -2726,22 +2725,8 @@ const renderMarked = async containerState => {
             hostsRendering.add(host);
         })), containerState.$hostsStaging$.clear();
         const renderingQueue = Array.from(hostsRendering);
-        sortNodes(renderingQueue);
-        for (const el of renderingQueue) {
-            if (!staticCtx.$hostElements$.has(el)) {
-                const elCtx = getContext(el, containerState);
-                if (elCtx.$componentQrl$) {
-                    el.isConnected, staticCtx.$roots$.push(elCtx);
-                    try {
-                        await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
-                    } catch (err) {
-                        logError(err);
-                    }
-                }
-            }
-        }
-        if (containerState.$opsNext$.forEach((op => {
-            staticCtx.$hostElements$.has(op[1]) || ((staticCtx, operation) => {
+        sortNodes(renderingQueue), containerState.$opsNext$.forEach((op => {
+            ((staticCtx, operation) => {
                 const prop = operation[5] ?? "value";
                 let value = operation[2][prop];
                 switch (operation[0]) {
@@ -2763,8 +2748,21 @@ const renderMarked = async containerState => {
                     setProperty(staticCtx, operation[3], "data", jsxToString(value));
                 }
             })(staticCtx, op);
-        })), containerState.$opsNext$.clear(), staticCtx.$operations$.push(...staticCtx.$postOperations$), 
-        0 === staticCtx.$operations$.length) {
+        })), containerState.$opsNext$.clear();
+        for (const el of renderingQueue) {
+            if (!staticCtx.$hostElements$.has(el)) {
+                const elCtx = getContext(el, containerState);
+                if (elCtx.$componentQrl$) {
+                    el.isConnected, staticCtx.$roots$.push(elCtx);
+                    try {
+                        await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
+                    } catch (err) {
+                        logError(err);
+                    }
+                }
+            }
+        }
+        if (staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length) {
             return void await postRendering(containerState, rCtx);
         }
         await getPlatform().raf((() => ((({$static$: ctx}) => {
@@ -2782,12 +2780,11 @@ const getFlags = el => {
 };
 
 const postRendering = async (containerState, rCtx) => {
-    await executeWatchesAfter(containerState, rCtx, ((watch, stage) => 0 != (watch.$flags$ & WatchFlagsIsEffect) && (!stage || rCtx.$static$.$hostElements$.has(watch.$el$)))), 
+    const hostElements = rCtx.$static$.$hostElements$;
+    await executeWatchesAfter(containerState, rCtx, ((watch, stage) => 0 != (watch.$flags$ & WatchFlagsIsEffect) && (!stage || hostElements.has(watch.$el$)))), 
     containerState.$hostsStaging$.forEach((el => {
         containerState.$hostsNext$.add(el);
-    })), containerState.$hostsStaging$.clear(), containerState.$opsStaging$.forEach((el => {
-        containerState.$opsNext$.add(el);
-    })), containerState.$opsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
+    })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
     containerState.$renderPromise$ = void 0, containerState.$hostsNext$.size + containerState.$watchNext$.size + containerState.$opsNext$.size > 0 && scheduleFrame(containerState);
 };
 

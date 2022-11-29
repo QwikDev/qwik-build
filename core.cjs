@@ -1474,7 +1474,6 @@
             $elementIndex$: 0,
             $proxyMap$: new WeakMap(),
             $opsNext$: new Set(),
-            $opsStaging$: new Set(),
             $watchNext$: new Set(),
             $watchStaging$: new Set(),
             $hostsNext$: new Set(),
@@ -4636,7 +4635,7 @@
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
             assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
-            containerState.$opsStaging$.add(op);
+            containerState.$opsNext$.add(op);
         }
         else {
             containerState.$opsNext$.add(op);
@@ -4689,6 +4688,10 @@
             containerState.$hostsStaging$.clear();
             const renderingQueue = Array.from(hostsRendering);
             sortNodes(renderingQueue);
+            containerState.$opsNext$.forEach((op) => {
+                executeSignalOperation(staticCtx, op);
+            });
+            containerState.$opsNext$.clear();
             for (const el of renderingQueue) {
                 if (!staticCtx.$hostElements$.has(el)) {
                     const elCtx = getContext(el, containerState);
@@ -4709,12 +4712,6 @@
                     }
                 }
             }
-            containerState.$opsNext$.forEach((op) => {
-                if (!staticCtx.$hostElements$.has(op[1])) {
-                    executeSignalOperation(staticCtx, op);
-                }
-            });
-            containerState.$opsNext$.clear();
             // Add post operations
             staticCtx.$operations$.push(...staticCtx.$postOperations$);
             // Early exist, no dom operations
@@ -4746,12 +4743,13 @@
         return flags;
     };
     const postRendering = async (containerState, rCtx) => {
+        const hostElements = rCtx.$static$.$hostElements$;
         await executeWatchesAfter(containerState, rCtx, (watch, stage) => {
             if ((watch.$flags$ & WatchFlagsIsEffect) === 0) {
                 return false;
             }
             if (stage) {
-                return rCtx.$static$.$hostElements$.has(watch.$el$);
+                return hostElements.has(watch.$el$);
             }
             return true;
         });
@@ -4760,10 +4758,6 @@
             containerState.$hostsNext$.add(el);
         });
         containerState.$hostsStaging$.clear();
-        containerState.$opsStaging$.forEach((el) => {
-            containerState.$opsNext$.add(el);
-        });
-        containerState.$opsStaging$.clear();
         containerState.$hostsRendering$ = undefined;
         containerState.$renderPromise$ = undefined;
         const pending = containerState.$hostsNext$.size +
