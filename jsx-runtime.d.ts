@@ -312,6 +312,7 @@ declare interface DevJSX {
     fileName: string;
     lineNumber: number;
     columnNumber: number;
+    stack?: string;
 }
 
 declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {

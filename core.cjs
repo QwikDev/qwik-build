@@ -72,18 +72,23 @@
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : createError(message);
         // eslint-disable-next-line no-console
-        console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
+        const messageStr = err.stack || err.message;
+        console.error('%cQWIK ERROR', STYLE, messageStr, ...printParams(optionalParams));
         return err;
     };
     const createError = (message) => {
         const err = new Error(message);
         if (err.stack) {
-            err.stack = err.stack
-                .split('\n')
-                .filter((l) => !l.includes('/node_modules/@builder.io/qwik'))
-                .join('\n');
+            err.stack = filterStack(err.stack);
         }
         return err;
+    };
+    const filterStack = (stack, offset = 0) => {
+        return stack
+            .split('\n')
+            .slice(offset)
+            .filter((l) => !l.includes('/node_modules/@builder.io/qwik'))
+            .join('\n');
     };
     const logErrorAndStop = (message, ...optionalParams) => {
         const err = logError(message, ...optionalParams);
@@ -1019,7 +1024,9 @@
                 assertTrue(isSignal(signal), `${_IMMUTABLE_PREFIX} has to be a signal kind`);
                 return signal;
             }
-            return new SignalWrapper(obj, prop);
+            if (target[_IMMUTABLE]?.[prop] !== true) {
+                return new SignalWrapper(obj, prop);
+            }
         }
         const immutable = obj[_IMMUTABLE]?.[prop];
         if (isSignal(immutable)) {
@@ -1084,7 +1091,11 @@
             }
             if (immutable) {
                 const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
-                if (!(prop in target) || !!hiddenSignal || isSignal(target[_IMMUTABLE]?.[prop])) {
+                const immutableMeta = target[_IMMUTABLE]?.[prop];
+                if (!(prop in target) ||
+                    !!hiddenSignal ||
+                    isSignal(immutableMeta) ||
+                    immutableMeta === _IMMUTABLE) {
                     subscriber = null;
                 }
                 if (hiddenSignal) {
@@ -1564,6 +1575,22 @@
                     if (!isString(type) && !isFunction(type)) {
                         throw qError(QError_invalidJsxNodeType, type);
                     }
+                    if (isArray(props.children)) {
+                        const keys = {};
+                        props.children.flat().forEach((child) => {
+                            if (isJSXNode(child) && child.key != null) {
+                                if (keys[child.key]) {
+                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                    if (err) {
+                                        logError(err);
+                                    }
+                                }
+                                else {
+                                    keys[child.key] = true;
+                                }
+                            }
+                        });
+                    }
                     if (!qRuntimeQrl && props) {
                         for (const prop of Object.keys(props)) {
                             const value = props[prop];
@@ -1614,10 +1641,26 @@
         node.dev = {
             isStatic,
             ctx,
+            stack: new Error().stack,
             ...opts,
         };
         seal(node);
         return node;
+    };
+    const ONCE_JSX = new Set();
+    const createJSXError = (message, node) => {
+        if (!node.dev) {
+            return undefined;
+        }
+        const key = `${message}${node.dev.fileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
+        if (ONCE_JSX.has(key)) {
+            return undefined;
+        }
+        const error = new Error(message);
+        const name = isFunction(node.type) ? node.type.name : String(node.type);
+        error.stack = `JSXError: ${message}\n    at <${name}> (${node.dev.fileName}:${node.dev.lineNumber}:${node.dev.columnNumber})\n${filterStack(node.dev.stack, 1)}`;
+        ONCE_JSX.add(key);
+        return error;
     };
 
     const QOnce = 'qonce';
@@ -6446,7 +6489,7 @@
                     }
                 });
             }
-            const hash = qTest ? 'sX' : componentQrl.$hash$;
+            const hash = qTest ? 'sX' : componentQrl.$hash$.slice(0, 4);
             const finalKey = hash + ':' + (key ? key : '');
             return jsx(Virtual, {
                 [OnRenderProp]: componentQrl,

@@ -757,6 +757,7 @@ declare interface DevJSX {
     fileName: string;
     lineNumber: number;
     columnNumber: number;
+    stack?: string;
 }
 
 declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1522,6 +1523,7 @@ declare interface ProcessedJSXNode {
     $elm$: Node | VirtualElement | null;
     $text$: string;
     $signal$: Signal<any> | null;
+    $dev$?: DevJSX;
 }
 
 declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {

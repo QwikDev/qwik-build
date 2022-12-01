@@ -22,14 +22,15 @@
     const isComment = value => 8 === value.nodeType;
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : createError(message);
-        return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
+        const messageStr = err.stack || err.message;
+        return console.error("%cQWIK ERROR", "", messageStr, ...printParams(optionalParams)), 
         err;
     };
     const createError = message => {
         const err = new Error(message);
-        return err.stack && (err.stack = err.stack.split("\n").filter((l => !l.includes("/node_modules/@builder.io/qwik"))).join("\n")), 
-        err;
+        return err.stack && (err.stack = filterStack(err.stack)), err;
     };
+    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik"))).join("\n");
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
     const printParams = optionalParams => optionalParams;
     const qError = (code, ...parts) => {
@@ -403,7 +404,8 @@
             let value = target[prop];
             if (invokeCtx && (subscriber = invokeCtx.$subscriber$), immutable) {
                 const hiddenSignal = target["$$" + prop];
-                prop in target && !hiddenSignal && !isSignal(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
+                const immutableMeta = target[_IMMUTABLE]?.[prop];
+                prop in target && !hiddenSignal && !isSignal(immutableMeta) && immutableMeta !== _IMMUTABLE || (subscriber = null), 
                 hiddenSignal && (isSignal(hiddenSignal), value = hiddenSignal.value);
             }
             if (subscriber) {
@@ -635,6 +637,7 @@
     }
     const isJSXNode = n => n instanceof JSXNodeImpl;
     const Fragment = props => props.children;
+    new Set;
     const SkipRender = Symbol("skip render");
     const RenderOnce = (props, key) => jsx(Virtual, {
         ...props,
@@ -3104,7 +3107,7 @@
     };
     const componentQrl = componentQrl => {
         function QwikComponent(props, key) {
-            const finalKey = componentQrl.$hash$ + ":" + (key || "");
+            const finalKey = componentQrl.$hash$.slice(0, 4) + ":" + (key || "");
             return jsx(Virtual, {
                 "q:renderFn": componentQrl,
                 [QSlot]: props[QSlot],
@@ -3774,7 +3777,12 @@
         const target = getProxyTarget(obj);
         if (target) {
             const signal = target["$$" + prop];
-            return signal ? (isSignal(signal), signal) : new SignalWrapper(obj, prop);
+            if (signal) {
+                return isSignal(signal), signal;
+            }
+            if (true !== target[_IMMUTABLE]?.[prop]) {
+                return new SignalWrapper(obj, prop);
+            }
         }
         const immutable = obj[_IMMUTABLE]?.[prop];
         return isSignal(immutable) ? immutable : obj[prop];
@@ -3811,6 +3819,7 @@
         return node.dev = {
             isStatic: isStatic,
             ctx: ctx,
+            stack: (new Error).stack,
             ...opts
         }, node;
     }, exports.jsxs = jsx, exports.mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
