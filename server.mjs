@@ -177,6 +177,7 @@ function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName)
 
 // packages/qwik/src/core/util/qdev.ts
 var qDev = globalThis.qDev === true;
+var qInspector = globalThis.qInspector === true;
 var qSerialize = globalThis.qSerialize !== false;
 var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
 var qTest = globalThis.qTest === true;

@@ -1808,9 +1808,11 @@ var shouldSsrRender = (req, url) => {
 
 var DEV_ERROR_HANDLING = "\n<script>\n\ndocument.addEventListener('qerror', ev => {\n  const ErrorOverlay = customElements.get('vite-error-overlay');\n  if (!ErrorOverlay) {\n    return;\n  }\n  const err = ev.detail.error;\n  const overlay = new ErrorOverlay(err);\n  document.body.appendChild(overlay);\n});\n<\/script>";
 
+var DEV_QWIK_INSPECTOR = "\n<style>\n#qwik-inspector-overlay {\n  position: fixed;\n  background: rgba(24, 182, 246, 0.27);\n  pointer-events: none;\n  box-sizing: border-box;\n  border: 2px solid rgba(172, 126, 244, 0.46);\n  border-radius: 4px;\n}\n#qwik-inspector-info-popup {\n  position: fixed;\n  bottom: 10px;\n  right: 10px;\n  font-family: monospace;\n  background: #000000c2;\n  color: white;\n  padding: 10px 20px;\n  border-radius: 8px;\n  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 34%), 0 8px 10px -6px rgb(0 0 0 / 24%);\n  backdrop-filter: blur(4px);\n  -webkit-animation: fadeOut 0.3s 3s ease-in-out forwards;\n  animation: fadeOut 0.3s 3s ease-in-out forwards;\n}\n#qwik-inspector-info-popup p { \n  margin: 0px; \n}\n@-webkit-keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0;}\n}\n\n@keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0; visibility: hidden;}\n}\n</style>\n<script>\nconsole.debug(\n  'Hold-press the Alt key and click on a component in order to jump directly to the source code in your IDE'\n);\nwindow.__qwik_inspector_state = {\n  pressedKeys: [],\n};\n\nconst overlay = document.createElement('div');\noverlay.id = 'qwik-inspector-overlay';\ndocument.body.appendChild(overlay);\n\ndocument.addEventListener(\n  'keydown',\n  (event) => {\n    if (event.code && !window.__qwik_inspector_state.pressedKeys.includes(event.code)) {\n      window.__qwik_inspector_state.pressedKeys.push(event.code);\n    }\n  },\n  { capture: true }\n);\n\ndocument.addEventListener(\n  'keyup',\n  (event) => {\n    if (window.__qwik_inspector_state.pressedKeys.includes(event.code)) {\n      window.__qwik_inspector_state.pressedKeys = window.__qwik_inspector_state.pressedKeys.filter(\n        (key) => key !== event.code\n      );\n      hideOverlay();\n    }\n  },\n  { capture: true }\n);\n\ndocument.addEventListener(\n  'mouseover',\n  (event) => {\n    if (event.target && event.target instanceof HTMLElement && event.target.dataset.qwikInspector) {\n      window.__qwik_inspector_state.hoveredElement = event.target;\n\n      const rect = event.target.getBoundingClientRect();\n\n      if (overlay && checkKeysArePressed(['Shift', 'Control'])) {\n        overlay.style.setProperty('height', rect.height + 'px');\n        overlay.style.setProperty('width', rect.width + 'px');\n        overlay.style.setProperty('top', rect.top + 'px');\n        overlay.style.setProperty('left', rect.left + 'px');\n        overlay.style.setProperty('visibility', 'visible');\n      }\n    }\n  },\n  { capture: true }\n);\n\ndocument.addEventListener(\n  'click',\n  (event) => {\n    if (checkKeysArePressed(['Shift', 'Control'])) {\n      if (event.target && event.target instanceof HTMLElement) {\n        if (event.target.dataset.qwikInspector) {\n          event.preventDefault();\n          fetch('/__open-in-editor?file=' + event.target.dataset.qwikInspector);\n        }\n      }\n    }\n  },\n  { capture: true }\n);\n\nfunction hideOverlay() {\n  const overlay = document.getElementById('qwik-inspector-overlay');\n  if (overlay) {\n    overlay.style.setProperty('height', '0px');\n    overlay.style.setProperty('width', '0px');\n    overlay.style.setProperty('visibility', 'hidden');\n  }\n}\n\nfunction checkKeysArePressed(keys) {\n  return keys.every((key) =>\n    window.__qwik_inspector_state.pressedKeys\n      .map((key) => key.replace(/(Left|Right)$/g, ''))\n      .includes(key)\n  );\n}\n\nwindow.addEventListener('resize', hideOverlay);\n\ndocument.addEventListener('scroll', hideOverlay);\n<\/script>\n<div id=\"qwik-inspector-info-popup\"><p>Ctrl + Shift + Click ✨</p></div>\n";
+
 var PERF_WARNING = '\n<script>\nif (!window.__qwikViteLog) {\n  window.__qwikViteLog = true;\n  console.debug("%c⭐️ Qwik Dev SSR Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","App is running in SSR development mode!\\n - Additional JS is loaded by Vite for debugging and live reloading\\n - Rendering performance might not be optimal\\n - Delayed interactivity because prefetching is disabled\\n - Vite dev bundles do not represent production output\\n\\nProduction build can be tested running \'npm run preview\'");\n}\n<\/script>';
 
-var END_SSR_SCRIPT = `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n${PERF_WARNING}\n`;
+var END_SSR_SCRIPT = `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n${PERF_WARNING}\n${DEV_QWIK_INSPECTOR}\n`;
 
 function getViteDevIndexHtml(entryUrl, envData) {
   return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n    ${DEV_ERROR_HANDLING}\n  </body>\n</html>`;
@@ -1970,9 +1972,11 @@ function qwikVite(qwikViteOpts = {}) {
       if ("development" === buildMode) {
         globalThis.qDev = true;
         const qDevKey = "globalThis.qDev";
+        const qInspectorKey = "globalThis.qInspectorKey";
         const qSerializeKey = "globalThis.qSerialize";
         updatedViteConfig.define = {
           [qDevKey]: viteConfig?.define?.[qDevKey] ?? true,
+          [qInspectorKey]: viteConfig?.define?.[qInspectorKey] ?? true,
           [qSerializeKey]: viteConfig?.define?.[qSerializeKey] ?? true
         };
       }
@@ -1993,9 +1997,11 @@ function qwikVite(qwikViteOpts = {}) {
       } else {
         const qDevKey = "globalThis.qDev";
         const qTestKey = "globalThis.qTest";
+        const qInspectorKey = "globalThis.qInspectorKey";
         updatedViteConfig.define = {
           [qDevKey]: true,
-          [qTestKey]: true
+          [qTestKey]: true,
+          [qInspectorKey]: false
         };
       }
       return updatedViteConfig;

@@ -18,6 +18,7 @@
 
 
     const qDev = globalThis.qDev === true;
+    const qInspector = globalThis.qInspector === true;
     const qSerialize = globalThis.qSerialize !== false;
     const qDynamicPlatform = globalThis.qDynamicPlatform !== false;
     const qTest = globalThis.qTest === true;
@@ -3231,6 +3232,12 @@
             elm = createElement(doc, tag, isSvg);
             flags &= ~IS_HEAD$1;
         }
+        if (qDev && qInspector) {
+            const dev = vnode.$dev$;
+            if (dev) {
+                directSetAttribute(elm, 'data-qwik-inspector', `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
+            }
+        }
         vnode.$elm$ = elm;
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
@@ -3246,6 +3253,12 @@
             assertQrl(renderQRL);
             setComponentProps$1(elCtx, rCtx, props.props);
             setQId(rCtx, elCtx);
+            if (qDev && !qTest) {
+                const symbol = renderQRL.$symbol$;
+                if (symbol) {
+                    directSetAttribute(elm, 'data-qrl', symbol);
+                }
+            }
             // Run mount hook
             elCtx.$componentQrl$ = renderQRL;
             const wait = then(renderComponent(rCtx, elCtx, flags), () => {
@@ -7072,6 +7085,12 @@
             }
             if (flags & IS_HEAD) {
                 openingElement += ' q:head';
+            }
+            if (qDev && qInspector && node.dev) {
+                const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
+                if (sanitizedFileName) {
+                    openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`;
+                }
             }
             openingElement += '>';
             stream.write(openingElement);
