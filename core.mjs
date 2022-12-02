@@ -5864,6 +5864,13 @@ const NoFiniteNumberSerializer = {
     },
     fill: undefined,
 };
+const URLSearchParamsSerializer = {
+    prefix: '\u0015',
+    test: (v) => v instanceof URLSearchParams,
+    serialize: (obj) => obj.toString(),
+    prepare: (data) => new URLSearchParams(data),
+    fill: undefined,
+};
 const serializers = [
     QRLSerializer,
     SignalSerializer,
@@ -5878,6 +5885,7 @@ const serializers = [
     ComponentSerializer,
     PureFunctionSerializer,
     NoFiniteNumberSerializer,
+    URLSearchParamsSerializer,
 ];
 const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
 const canSerialize = (obj) => {

@@ -3266,6 +3266,12 @@ const serializers = [ QRLSerializer, {
     serialize: v => String(v),
     prepare: data => Number(data),
     fill: void 0
+}, {
+    prefix: "",
+    test: v => v instanceof URLSearchParams,
+    serialize: obj => obj.toString(),
+    prepare: data => new URLSearchParams(data),
+    fill: void 0
 } ];
 
 const collectorSerializers = serializers.filter((a => a.collect));
