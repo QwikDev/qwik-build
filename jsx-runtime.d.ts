@@ -227,9 +227,7 @@ declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'b
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
-declare type BaseClassList = string | string[] | {
-    [cl: string]: boolean;
-};
+declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
@@ -1298,7 +1296,7 @@ declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, Native
 }
 
 declare interface QwikProps<T> extends PreventDefault<T> {
-    class?: ClassList | undefined;
+    class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
     ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void) | undefined;
     /**

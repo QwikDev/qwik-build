@@ -314,9 +314,7 @@ prop: string,
 key: string | undefined
 ];
 
-declare type BaseClassList = string | string[] | {
-    [cl: string]: boolean;
-};
+declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
@@ -2093,7 +2091,7 @@ export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T,
 }
 
 declare interface QwikProps<T> extends PreventDefault<T> {
-    class?: ClassList | undefined;
+    class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
     ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void) | undefined;
     /**
