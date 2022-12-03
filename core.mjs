@@ -5993,9 +5993,14 @@ const _verifySerializable = (value, seen) => {
                 if (isDocument(unwrapped))
                     return value;
                 if (isArray(unwrapped)) {
-                    for (const item of unwrapped) {
-                        _verifySerializable(item, seen);
-                    }
+                    let lastIndex = 0;
+                    unwrapped.forEach((v, i) => {
+                        if (i - lastIndex !== 0) {
+                            throw qError(QError_verifySerializable, unwrapped);
+                        }
+                        _verifySerializable(v, seen);
+                        lastIndex = i + 1;
+                    });
                     return value;
                 }
                 if (isSerializableObject(unwrapped)) {
