@@ -546,7 +546,6 @@
     const serializeQRLs = (existingQRLs, elCtx) => {
         assertElement(elCtx.$element$);
         const opts = {
-            $element$: elCtx.$element$,
             $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
         };
         return existingQRLs.map((qrl) => serializeQRL(qrl, opts)).join('\n');
@@ -6717,6 +6716,7 @@
     const IS_HEAD = 1 << 0;
     const IS_HTML = 1 << 2;
     const IS_TEXT = 1 << 3;
+    const IS_INVISIBLE = 1 << 4;
     const createDocument = () => {
         const doc = { nodeType: 9 };
         seal(doc);
@@ -6935,7 +6935,26 @@
             ssrCtx.$static$.$contexts$.push(elCtx);
             return renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream) => {
                 if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-                    logWarn('Component registered some events, some component use useStyles$()');
+                    const placeholderCtx = createSSRContext(1);
+                    const listeners = placeholderCtx.li;
+                    listeners.push(...elCtx.li);
+                    elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                    placeholderCtx.$id$ = getNextIndex(rCtx);
+                    const attributes = {
+                        type: 'placeholder',
+                        hidden: '',
+                        'q:id': placeholderCtx.$id$,
+                    };
+                    ssrCtx.$static$.$contexts$.push(placeholderCtx);
+                    const groups = groupListeners(listeners);
+                    for (const listener of groups) {
+                        const eventName = normalizeInvisibleEvents(listener[0]);
+                        attributes[eventName] = serializeQRLs(listener[1], placeholderCtx);
+                        addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                    }
+                    renderNodeElementSync('script', attributes, stream);
+                    logWarn(`Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.
+          This is likely to the usage of useClientEffect$() in a component that renders no elements.`);
                 }
                 if (beforeClose) {
                     return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));
@@ -7075,6 +7094,9 @@
             if (isHead) {
                 flags |= IS_HEAD;
             }
+            if (invisibleElements[tagName]) {
+                flags |= IS_INVISIBLE;
+            }
             if (textOnlyElements[tagName]) {
                 flags |= IS_TEXT;
             }
@@ -7083,9 +7105,11 @@
             }
             if (listeners.length > 0) {
                 const groups = groupListeners(listeners);
+                const isInvisible = (flags & IS_INVISIBLE) !== 0;
                 for (const listener of groups) {
-                    openingElement += ' ' + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"';
-                    addQwikEvent(listener[0], rCtx.$static$.$containerState$);
+                    const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
+                    openingElement += ' ' + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"';
+                    addQwikEvent(eventName, rCtx.$static$.$containerState$);
                 }
             }
             if (key != null) {
@@ -7337,6 +7361,13 @@
         }
         return String(value);
     };
+    const invisibleElements = {
+        head: true,
+        style: true,
+        script: true,
+        link: true,
+        meta: true,
+    };
     const textOnlyElements = {
         title: true,
         style: true,
@@ -7403,6 +7434,9 @@
         if (!dynamicSlots.includes(elCtx)) {
             dynamicSlots.push(elCtx);
         }
+    };
+    const normalizeInvisibleEvents = (eventName) => {
+        return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
     };
     const hasDynamicChildren = (node) => {
         return node.props[_IMMUTABLE]?.children === false;

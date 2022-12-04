@@ -213,7 +213,6 @@ const serializeQRL = (qrl, opts = {}) => {
 const serializeQRLs = (existingQRLs, elCtx) => {
     elCtx.$element$;
     const opts = {
-        $element$: elCtx.$element$,
         $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
     };
     return existingQRLs.map((qrl => serializeQRL(qrl, opts))).join("\n");
@@ -3761,8 +3760,26 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             "q:id": newID,
             children: res.node
         }, node.key);
-        return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => (elCtx.$flags$, 
-        beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream))));
+        return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => {
+            if (2 & elCtx.$flags$) {
+                const placeholderCtx = createSSRContext(1);
+                const listeners = placeholderCtx.li;
+                listeners.push(...elCtx.li), elCtx.$flags$ &= -3, placeholderCtx.$id$ = getNextIndex(rCtx);
+                const attributes = {
+                    type: "placeholder",
+                    hidden: "",
+                    "q:id": placeholderCtx.$id$
+                };
+                ssrCtx.$static$.$contexts$.push(placeholderCtx);
+                const groups = groupListeners(listeners);
+                for (const listener of groups) {
+                    const eventName = normalizeInvisibleEvents(listener[0]);
+                    attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                }
+                renderNodeElementSync("script", attributes, stream);
+            }
+            return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream);
+        }));
     }));
 };
 
@@ -3857,12 +3874,14 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
             2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3);
         }
-        if (isHead && (flags |= 1), textOnlyElements[tagName] && (flags |= 8), classStr && (openingElement += ' class="' + classStr + '"'), 
-        listeners.length > 0) {
+        if (isHead && (flags |= 1), invisibleElements[tagName] && (flags |= 16), textOnlyElements[tagName] && (flags |= 8), 
+        classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
             const groups = groupListeners(listeners);
+            const isInvisible = 0 != (16 & flags);
             for (const listener of groups) {
-                openingElement += " " + listener[0] + '="' + serializeQRLs(listener[1], elCtx) + '"', 
-                addQwikEvent(listener[0], rCtx.$static$.$containerState$);
+                const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
+                openingElement += " " + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"', 
+                addQwikEvent(eventName, rCtx.$static$.$containerState$);
             }
         }
         if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || useSignal || listeners.length > 0) {
@@ -4034,6 +4053,14 @@ const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
 
 const processPropValue = (prop, value) => "style" === prop ? stringifyStyle(value) : "class" === prop ? serializeClass(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : false === value || null == value ? null : true === value ? "" : String(value);
 
+const invisibleElements = {
+    head: true,
+    style: true,
+    script: true,
+    link: true,
+    meta: true
+};
+
 const textOnlyElements = {
     title: true,
     style: true,
@@ -4102,6 +4129,8 @@ const addDynamicSlot = (hostCtx, elCtx) => {
     let dynamicSlots = hostCtx.$dynamicSlots$;
     dynamicSlots || (hostCtx.$dynamicSlots$ = dynamicSlots = []), dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
 };
+
+const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
