@@ -1610,13 +1610,16 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
         const listeners = elCtx.li;
         if (listeners.length = 0, newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg), 
         pendingListeners.length > 0 && (listeners.push(...pendingListeners), pendingListeners.length = 0), 
-        isSvg && "foreignObject" === newVnode.$type$ && (flags &= -2, isSvg = false), isVirtual && "q:s" in props) {
+        isSvg && "foreignObject" === tag && (flags &= -2, isSvg = false), isVirtual && "q:s" in props) {
             return currentComponent.$slots$, void currentComponent.$slots$.push(newVnode);
         }
         if (void 0 !== props[dangerouslySetInnerHTML]) {
             return;
         }
         if (isVirtual && "qonce" in props) {
+            return;
+        }
+        if ("textarea" === tag) {
             return;
         }
         return smartUpdateChildren(rCtx, oldVnode, newVnode, "root", flags);
