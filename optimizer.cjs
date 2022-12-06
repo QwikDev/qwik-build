@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.15.1
+ * @builder.io/qwik/optimizer 0.15.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -470,7 +470,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.15.1"
+    qwik: "0.15.2"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -977,7 +977,10 @@ globalThis.qwikOptimizer = function(module) {
       manifestOutput: null,
       transformedModuleOutput: null,
       vendorRoots: [],
-      scope: null
+      scope: null,
+      devTools: {
+        clickToSource: [ "Alt" ]
+      }
     };
     const init = async () => {
       internalOptimizer || (internalOptimizer = await createOptimizer(optimizerOptions));
@@ -1054,6 +1057,7 @@ globalThis.qwikOptimizer = function(module) {
       opts.vendorRoots = updatedOpts.vendorRoots ? updatedOpts.vendorRoots : [];
       opts.scope = updatedOpts.scope ?? null;
       "boolean" === typeof updatedOpts.resolveQwikBuild && (opts.resolveQwikBuild = updatedOpts.resolveQwikBuild);
+      "object" === typeof updatedOpts.devTools && "clickToSource" in updatedOpts.devTools && (opts.devTools.clickToSource = updatedOpts.devTools.clickToSource);
       return {
         ...opts
       };
@@ -1743,10 +1747,10 @@ globalThis.qwikOptimizer = function(module) {
             res.writeHead(status);
             const result = await render(renderOpts);
             if ("html" in result) {
-              res.write(END_SSR_SCRIPT);
+              res.write(END_SSR_SCRIPT(opts));
               res.end(result.html);
             } else {
-              res.write(END_SSR_SCRIPT);
+              res.write(END_SSR_SCRIPT(opts));
               res.end();
             }
           } else {
@@ -1833,9 +1837,15 @@ globalThis.qwikOptimizer = function(module) {
     return true;
   };
   var DEV_ERROR_HANDLING = "\n<script>\n\ndocument.addEventListener('qerror', ev => {\n  const ErrorOverlay = customElements.get('vite-error-overlay');\n  if (!ErrorOverlay) {\n    return;\n  }\n  const err = ev.detail.error;\n  const overlay = new ErrorOverlay(err);\n  document.body.appendChild(overlay);\n});\n<\/script>";
-  var DEV_QWIK_INSPECTOR = "\n<style>\n#qwik-inspector-overlay {\n  position: fixed;\n  background: rgba(24, 182, 246, 0.27);\n  pointer-events: none;\n  box-sizing: border-box;\n  border: 2px solid rgba(172, 126, 244, 0.46);\n  border-radius: 4px;\n  contain: strict;\n  cursor: pointer;\n  z-index: 999999;\n}\n#qwik-inspector-info-popup {\n  position: fixed;\n  bottom: 10px;\n  right: 10px;\n  font-family: monospace;\n  background: #000000c2;\n  color: white;\n  padding: 10px 20px;\n  border-radius: 8px;\n  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 34%), 0 8px 10px -6px rgb(0 0 0 / 24%);\n  backdrop-filter: blur(4px);\n  -webkit-animation: fadeOut 0.3s 3s ease-in-out forwards;\n  animation: fadeOut 0.3s 3s ease-in-out forwards;\n  z-index: 999999;\n}\n#qwik-inspector-info-popup p {\n  margin: 0px;\n}\n@-webkit-keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0;}\n}\n\n@keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0; visibility: hidden;}\n}\n</style>\n<script>\n(function() {\n  console.debug(\n    'Click-to-Source: Hold-press the ⌥ Option/Alt key and click a component to jump directly to the source code in your IDE!'\n  );\n  window.__qwik_inspector_state = {\n    pressedKeys: new Set(),\n  };\n\n  const body = document.body;\n  const overlay = document.createElement('div');\n  overlay.id = 'qwik-inspector-overlay';\n  overlay.setAttribute('aria-hidden', 'true');\n  body.appendChild(overlay);\n\n  document.addEventListener(\n    'keydown',\n    (event) => {\n      window.__qwik_inspector_state.pressedKeys.add(event.code);\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'keyup',\n    (event) => {\n      window.__qwik_inspector_state.pressedKeys.delete(event.code);\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'mouseover',\n    (event) => {\n      if (event.target && event.target instanceof HTMLElement && event.target.dataset.qwikInspector) {\n        window.__qwik_inspector_state.hoveredElement = event.target;\n      } else {\n        window.__qwik_inspector_state.hoveredElement = undefined;\n      }\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'click',\n    (event) => {\n      if (isActive()) {\n        window.__qwik_inspector_state.pressedKeys.clear();\n        if (event.target && event.target instanceof HTMLElement) {\n          if (event.target.dataset.qwikInspector) {\n            event.preventDefault();\n            body.style.setProperty('cursor', 'progress');\n\n            fetch('/__open-in-editor?file=' + event.target.dataset.qwikInspector);\n          }\n        }\n      }\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'contextmenu',\n    (event) => {\n      if (isActive()) {\n        window.__qwik_inspector_state.pressedKeys.clear();\n        if (event.target && event.target instanceof HTMLElement) {\n          if (event.target.dataset.qwikInspector) {\n            event.preventDefault();\n          }\n        }\n      }\n    },\n    { capture: true }\n  );\n\n  function updateOverlay() {\n    const hoverElement = window.__qwik_inspector_state.hoveredElement;\n    if (hoverElement && isActive()) {\n      const rect = hoverElement.getBoundingClientRect();\n      overlay.style.setProperty('height', rect.height + 'px');\n      overlay.style.setProperty('width', rect.width + 'px');\n      overlay.style.setProperty('top', rect.top + 'px');\n      overlay.style.setProperty('left', rect.left + 'px');\n      overlay.style.setProperty('visibility', 'visible');\n      body.style.setProperty('cursor', 'pointer');\n    } else {\n      overlay.style.setProperty('height', '0px');\n      overlay.style.setProperty('width', '0px');\n      overlay.style.setProperty('visibility', 'hidden');\n      body.style.removeProperty('cursor');\n    }\n  }\n\n  function checkKeysArePressed(keys) {\n    const activeKeys = Array.from(window.__qwik_inspector_state.pressedKeys)\n      .map((key) => key.replace(/(Left|Right)$/g, ''));\n\n    return keys.every((key) => activeKeys.includes(key));\n  }\n\n  function isActive() {\n    return checkKeysArePressed(['Alt']);\n  }\n\n  window.addEventListener('resize', updateOverlay);\n  document.addEventListener('scroll', updateOverlay);\n\n})();\n<\/script>\n<div id=\"qwik-inspector-info-popup\" aria-hidden=\"true\">Click-to-Source: ⌥ Option</p></div>\n";
+  var DEV_QWIK_INSPECTOR = opts => {
+    if (!opts.clickToSource) {
+      return "";
+    }
+    const hotKeys = opts.clickToSource;
+    return `\n<style>\n#qwik-inspector-overlay {\n  position: fixed;\n  background: rgba(24, 182, 246, 0.27);\n  pointer-events: none;\n  box-sizing: border-box;\n  border: 2px solid rgba(172, 126, 244, 0.46);\n  border-radius: 4px;\n  contain: strict;\n  cursor: pointer;\n  z-index: 999999;\n}\n#qwik-inspector-info-popup {\n  position: fixed;\n  bottom: 10px;\n  right: 10px;\n  font-family: monospace;\n  background: #000000c2;\n  color: white;\n  padding: 10px 20px;\n  border-radius: 8px;\n  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 34%), 0 8px 10px -6px rgb(0 0 0 / 24%);\n  backdrop-filter: blur(4px);\n  -webkit-animation: fadeOut 0.3s 3s ease-in-out forwards;\n  animation: fadeOut 0.3s 3s ease-in-out forwards;\n  z-index: 999999;\n}\n#qwik-inspector-info-popup p {\n  margin: 0px;\n}\n@-webkit-keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0;}\n}\n\n@keyframes fadeOut {\n  0% {opacity: 1;}\n  100% {opacity: 0; visibility: hidden;}\n}\n</style>\n<script>\n(function() {\n  console.debug("%c🔍 Qwik Click-To-Source","background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Hold-press the '${hotKeys.join(" + ")}' key${hotKeys.length > 1 ? "s" : ""} and click a component to jump directly to the source code in your IDE!");\n  window.__qwik_inspector_state = {\n    pressedKeys: new Set(),\n  };\n\n  const body = document.body;\n  const overlay = document.createElement('div');\n  overlay.id = 'qwik-inspector-overlay';\n  overlay.setAttribute('aria-hidden', 'true');\n  body.appendChild(overlay);\n\n  document.addEventListener(\n    'keydown',\n    (event) => {\n      window.__qwik_inspector_state.pressedKeys.add(event.code);\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'keyup',\n    (event) => {\n      window.__qwik_inspector_state.pressedKeys.delete(event.code);\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'mouseover',\n    (event) => {\n      if (event.target && event.target instanceof HTMLElement && event.target.dataset.qwikInspector) {\n        window.__qwik_inspector_state.hoveredElement = event.target;\n      } else {\n        window.__qwik_inspector_state.hoveredElement = undefined;\n      }\n      updateOverlay();\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'click',\n    (event) => {\n      if (isActive()) {\n        window.__qwik_inspector_state.pressedKeys.clear();\n        if (event.target && event.target instanceof HTMLElement) {\n          if (event.target.dataset.qwikInspector) {\n            event.preventDefault();\n            body.style.setProperty('cursor', 'progress');\n\n            fetch('/__open-in-editor?file=' + event.target.dataset.qwikInspector);\n          }\n        }\n      }\n    },\n    { capture: true }\n  );\n\n  document.addEventListener(\n    'contextmenu',\n    (event) => {\n      if (isActive()) {\n        window.__qwik_inspector_state.pressedKeys.clear();\n        if (event.target && event.target instanceof HTMLElement) {\n          if (event.target.dataset.qwikInspector) {\n            event.preventDefault();\n          }\n        }\n      }\n    },\n    { capture: true }\n  );\n\n  function updateOverlay() {\n    const hoverElement = window.__qwik_inspector_state.hoveredElement;\n    if (hoverElement && isActive()) {\n      const rect = hoverElement.getBoundingClientRect();\n      overlay.style.setProperty('height', rect.height + 'px');\n      overlay.style.setProperty('width', rect.width + 'px');\n      overlay.style.setProperty('top', rect.top + 'px');\n      overlay.style.setProperty('left', rect.left + 'px');\n      overlay.style.setProperty('visibility', 'visible');\n      body.style.setProperty('cursor', 'pointer');\n    } else {\n      overlay.style.setProperty('height', '0px');\n      overlay.style.setProperty('width', '0px');\n      overlay.style.setProperty('visibility', 'hidden');\n      body.style.removeProperty('cursor');\n    }\n  }\n\n  function checkKeysArePressed() {\n    const activeKeys = Array.from(window.__qwik_inspector_state.pressedKeys)\n      .map((key) => key.replace(/(Left|Right)$/g, ''));\n    const clickToSourceKeys = ${JSON.stringify(hotKeys)};\n    return clickToSourceKeys.every((key) => activeKeys.includes(key));\n  }\n\n  function isActive() {\n    return checkKeysArePressed();\n  }\n\n  window.addEventListener('resize', updateOverlay);\n  document.addEventListener('scroll', updateOverlay);\n\n})();\n<\/script>\n<div id="qwik-inspector-info-popup" aria-hidden="true">Click-to-Source: ${hotKeys.join(" + ")}</p></div>\n`;
+  };
   var PERF_WARNING = '\n<script>\nif (!window.__qwikViteLog) {\n  window.__qwikViteLog = true;\n  console.debug("%c⭐️ Qwik Dev SSR Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","App is running in SSR development mode!\\n - Additional JS is loaded by Vite for debugging and live reloading\\n - Rendering performance might not be optimal\\n - Delayed interactivity because prefetching is disabled\\n - Vite dev bundles do not represent production output\\n\\nProduction build can be tested running \'npm run preview\'");\n}\n<\/script>';
-  var END_SSR_SCRIPT = `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n${PERF_WARNING}\n${DEV_QWIK_INSPECTOR}\n`;
+  var END_SSR_SCRIPT = opts => `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n${PERF_WARNING}\n${DEV_QWIK_INSPECTOR(opts.devTools)}\n`;
   function getViteDevIndexHtml(entryUrl, envData) {
     return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const envData = JSON.parse(${JSON.stringify(JSON.stringify(envData))})\n        mod.default({\n          envData,\n        });\n      }\n    }\n    main();\n    <\/script>\n    ${DEV_ERROR_HANDLING}\n  </body>\n</html>`;
   }
@@ -1906,7 +1916,8 @@ globalThis.qwikOptimizer = function(module) {
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           forceFullBuild: forceFullBuild,
           vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
-          outDir: null == (_b = viteConfig.build) ? void 0 : _b.outDir
+          outDir: null == (_b = viteConfig.build) ? void 0 : _b.outDir,
+          devTools: qwikViteOpts.devTools
         };
         if ("ssr" === target) {
           "string" === typeof (null == (_c = viteConfig.build) ? void 0 : _c.ssr) ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof (null == (_d = qwikViteOpts.ssr) ? void 0 : _d.input) && (pluginOpts.input = qwikViteOpts.ssr.input);

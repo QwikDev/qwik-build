@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.15.1
+ * @builder.io/qwik 0.15.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -5995,13 +5995,14 @@ const _verifySerializable = (value, seen) => {
                 if (isDocument(unwrapped))
                     return value;
                 if (isArray(unwrapped)) {
-                    let lastIndex = 0;
+                    let expectIndex = 0;
+                    // Make sure the array has no holes
                     unwrapped.forEach((v, i) => {
-                        if (i - lastIndex !== 0) {
+                        if (i !== expectIndex) {
                             throw qError(QError_verifySerializable, unwrapped);
                         }
                         _verifySerializable(v, seen);
-                        lastIndex = i + 1;
+                        expectIndex = i + 1;
                     });
                     return value;
                 }
@@ -6632,7 +6633,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.15.1";
+const version = "0.15.2";
 
 /**
  * Render JSX.
