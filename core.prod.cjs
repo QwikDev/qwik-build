@@ -3157,11 +3157,11 @@
             }
             let promise;
             if (isSlot) {
-                const content = ssrCtx.projectedChildren?.[key];
+                const content = ssrCtx.$projectedChildren$?.[key];
                 if (content) {
-                    const [rCtx, sCtx] = ssrCtx.projectedCtxs;
+                    const [rCtx, sCtx] = ssrCtx.$projectedCtxs$;
                     const newSlotRctx = pushRenderContext(rCtx);
-                    newSlotRctx.$slotCtx$ = elCtx, ssrCtx.projectedChildren[key] = void 0, promise = processData(content, newSlotRctx, sCtx, stream, flags);
+                    newSlotRctx.$slotCtx$ = elCtx, ssrCtx.$projectedChildren$[key] = void 0, promise = processData(content, newSlotRctx, sCtx, stream, flags);
                 }
             }
             return beforeClose && (promise = then(promise, (() => beforeClose(stream)))), then(promise, (() => {
@@ -3203,17 +3203,17 @@
         return setComponentProps(rCtx, elCtx, props.props), then(executeComponent(rCtx, elCtx), (res => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.$static$.locale, hostElement, void 0);
+            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, void 0);
             invocationContext.$subscriber$ = hostElement, invocationContext.$renderCtx$ = newRCtx;
             const newSSrContext = {
                 ...ssrCtx,
-                projectedChildren: splitProjectedChildren(props.children, ssrCtx),
-                projectedCtxs: [ rCtx, ssrCtx ],
-                invocationContext: invocationContext
+                $projectedChildren$: splitProjectedChildren(props.children, ssrCtx),
+                $projectedCtxs$: [ rCtx, ssrCtx ],
+                $invocationContext$: invocationContext
             };
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
-                const array = 4 & flags ? ssrCtx.$static$.headNodes : extraNodes;
+                const array = 4 & flags ? ssrCtx.$static$.$headNodes$ : extraNodes;
                 for (const style of elCtx.$appendStyles$) {
                     array.push(jsx("style", {
                         "q:style": style.styleId,
@@ -3252,7 +3252,7 @@
         }));
     };
     const renderQTemplates = (rCtx, ssrContext, stream) => {
-        const projectedChildren = ssrContext.projectedChildren;
+        const projectedChildren = ssrContext.$projectedChildren$;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map((slotName => {
                 const value = projectedChildren[slotName];
@@ -3364,14 +3364,14 @@
             if (null != innerHTML) {
                 return stream.write(String(innerHTML)), void stream.write(`</${tagName}>`);
             }
-            isHead || (flags &= -2), "html" === tagName ? flags |= 4 : flags &= -5;
+            "html" === tagName ? flags |= 4 : flags &= -5;
             const promise = processData(props.children, rCtx, ssrCtx, stream, flags);
             return then(promise, (() => {
                 if (isHead) {
-                    for (const node of ssrCtx.$static$.headNodes) {
+                    for (const node of ssrCtx.$static$.$headNodes$) {
                         renderNodeElementSync(node.type, node.props, stream);
                     }
-                    ssrCtx.$static$.headNodes.length = 0;
+                    ssrCtx.$static$.$headNodes$.length = 0;
                 }
                 if (beforeClose) {
                     return then(beforeClose(stream), (() => {
@@ -3413,7 +3413,7 @@
             })(node, rCtx, ssrCtx, stream, flags);
         }
         tagName === SSRHint && true === node.props.dynamic && (ssrCtx.$static$.$dynamic$ = true);
-        const res = invoke(ssrCtx.invocationContext, tagName, node.props, node.key);
+        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
         return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
     };
     const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
@@ -3437,7 +3437,7 @@
                             const id = getNextIndex(rCtx);
                             return addSignalSub(2, hostEl, node, "#" + id, "data"), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(jsxToString(value))}\x3c!----\x3e`);
                         }
-                        value = invoke(ssrCtx.invocationContext, (() => node.value));
+                        value = invoke(ssrCtx.$invocationContext$, (() => node.value));
                     }
                     return void stream.write(escapeHtml(jsxToString(value)));
                 }
@@ -3492,7 +3492,7 @@
             return children.flatMap((c => _flatVirtualChildren(c, ssrCtx)));
         }
         if (isJSXNode(children) && isFunction(children.type) && children.type !== SSRRaw && children.type !== InternalSSRStream && children.type !== Virtual) {
-            const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
+            const res = invoke(ssrCtx.$invocationContext$, children.type, children.props, children.key);
             return flatVirtualChildren(res, ssrCtx);
         }
         return children;
@@ -3902,12 +3902,12 @@
             $static$: {
                 $contexts$: [],
                 $dynamic$: false,
-                headNodes: "html" === root ? headNodes : [],
-                locale: opts.envData?.locale
+                $headNodes$: "html" === root ? headNodes : [],
+                $locale$: opts.envData?.locale
             },
-            projectedChildren: void 0,
-            projectedCtxs: void 0,
-            invocationContext: void 0
+            $projectedChildren$: void 0,
+            $projectedCtxs$: void 0,
+            $invocationContext$: void 0
         };
         const containerAttributes = {
             ...opts.containerAttributes,

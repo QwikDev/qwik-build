@@ -1649,16 +1649,24 @@
     };
     const ONCE_JSX = new Set();
     const createJSXError = (message, node) => {
+        const error = new Error(message);
         if (!node.dev) {
-            return undefined;
+            return error;
         }
-        const key = `${message}${node.dev.fileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
+        const id = node.dev.fileName;
+        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
         if (ONCE_JSX.has(key)) {
             return undefined;
         }
-        const error = new Error(message);
-        const name = isFunction(node.type) ? node.type.name : String(node.type);
-        error.stack = `JSXError: ${message}\n    at <${name}> (${node.dev.fileName}:${node.dev.lineNumber}:${node.dev.columnNumber})\n${filterStack(node.dev.stack, 1)}`;
+        Object.assign(error, {
+            id,
+            loc: {
+                file: id,
+                column: node.dev.columnNumber,
+                line: node.dev.lineNumber,
+            },
+        });
+        error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
         ONCE_JSX.add(key);
         return error;
     };
@@ -6718,6 +6726,9 @@
     const IS_HTML = 1 << 2;
     const IS_TEXT = 1 << 3;
     const IS_INVISIBLE = 1 << 4;
+    const IS_PHASING = 1 << 5;
+    const IS_ANCHOR = 1 << 6;
+    const IS_BUTTON = 1 << 7;
     const createDocument = () => {
         const doc = { nodeType: 9 };
         seal(doc);
@@ -6738,13 +6749,14 @@
             $static$: {
                 $contexts$: [],
                 $dynamic$: false,
-                headNodes: root === 'html' ? headNodes : [],
-                locale: opts.envData?.locale,
+                $headNodes$: root === 'html' ? headNodes : [],
+                $locale$: opts.envData?.locale,
             },
-            projectedChildren: undefined,
-            projectedCtxs: undefined,
-            invocationContext: undefined,
+            $projectedChildren$: undefined,
+            $projectedCtxs$: undefined,
+            $invocationContext$: undefined,
         };
+        seal(ssrCtx);
         const containerAttributes = {
             ...opts.containerAttributes,
             'q:container': 'paused',
@@ -6776,7 +6788,7 @@
             }
             : undefined);
         if (qDev) {
-            if (ssrCtx.$static$.headNodes.length > 0) {
+            if (ssrCtx.$static$.$headNodes$.length > 0) {
                 logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
             }
         }
@@ -6840,12 +6852,12 @@
             let promise;
             if (isSlot) {
                 assertDefined(key, 'key must be defined for a slot');
-                const content = ssrCtx.projectedChildren?.[key];
+                const content = ssrCtx.$projectedChildren$?.[key];
                 if (content) {
-                    const [rCtx, sCtx] = ssrCtx.projectedCtxs;
+                    const [rCtx, sCtx] = ssrCtx.$projectedCtxs$;
                     const newSlotRctx = pushRenderContext(rCtx);
                     newSlotRctx.$slotCtx$ = elCtx;
-                    ssrCtx.projectedChildren[key] = undefined;
+                    ssrCtx.$projectedChildren$[key] = undefined;
                     promise = processData(content, newSlotRctx, sCtx, stream, flags);
                 }
             }
@@ -6904,19 +6916,19 @@
         return then(executeComponent(rCtx, elCtx), (res) => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.$static$.locale, hostElement, undefined);
+            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
             invocationContext.$subscriber$ = hostElement;
             invocationContext.$renderCtx$ = newRCtx;
             const newSSrContext = {
                 ...ssrCtx,
-                projectedChildren: splitProjectedChildren(props.children, ssrCtx),
-                projectedCtxs: [rCtx, ssrCtx],
-                invocationContext,
+                $projectedChildren$: splitProjectedChildren(props.children, ssrCtx),
+                $projectedCtxs$: [rCtx, ssrCtx],
+                $invocationContext$: invocationContext,
             };
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
                 const isHTML = !!(flags & IS_HTML);
-                const array = isHTML ? ssrCtx.$static$.headNodes : extraNodes;
+                const array = isHTML ? ssrCtx.$static$.$headNodes$ : extraNodes;
                 for (const style of elCtx.$appendStyles$) {
                     array.push(jsx('style', {
                         [QStyle]: style.styleId,
@@ -6967,7 +6979,7 @@
         });
     };
     const renderQTemplates = (rCtx, ssrContext, stream) => {
-        const projectedChildren = ssrContext.projectedChildren;
+        const projectedChildren = ssrContext.$projectedChildren$;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map((slotName) => {
                 const value = projectedChildren[slotName];
@@ -7092,6 +7104,45 @@
                 }
             }
             // Reset HOST flags
+            if (qDev) {
+                if (flags & IS_PHASING) {
+                    if (!phasingContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
+                    }
+                }
+                if (tagName === 'button') {
+                    if (flags & IS_BUTTON) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <button>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
+                    }
+                    else {
+                        flags |= IS_BUTTON;
+                    }
+                }
+                if (tagName === 'a') {
+                    if (flags & IS_ANCHOR) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <a>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
+                    }
+                    else {
+                        flags |= IS_ANCHOR;
+                    }
+                }
+                if (flags & IS_HEAD) {
+                    if (!headContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
+                    }
+                }
+                if (flags & IS_HTML) {
+                    if (!htmlContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid direct children of the <html> element, only <head> and <body> are allowed.`, node);
+                    }
+                }
+                if (startPhasingContent[tagName]) {
+                    flags |= IS_PHASING;
+                }
+            }
             if (isHead) {
                 flags |= IS_HEAD;
             }
@@ -7144,9 +7195,6 @@
                 stream.write(`</${tagName}>`);
                 return;
             }
-            if (!isHead) {
-                flags &= ~IS_HEAD;
-            }
             if (tagName === 'html') {
                 flags |= IS_HTML;
             }
@@ -7157,10 +7205,10 @@
             return then(promise, () => {
                 // If head inject base styles
                 if (isHead) {
-                    for (const node of ssrCtx.$static$.headNodes) {
+                    for (const node of ssrCtx.$static$.$headNodes$) {
                         renderNodeElementSync(node.type, node.props, stream);
                     }
-                    ssrCtx.$static$.headNodes.length = 0;
+                    ssrCtx.$static$.$headNodes$.length = 0;
                 }
                 // Fast path
                 if (!beforeClose) {
@@ -7194,7 +7242,7 @@
         if (tagName === SSRHint && node.props.dynamic === true) {
             ssrCtx.$static$.$dynamic$ = true;
         }
-        const res = invoke(ssrCtx.invocationContext, tagName, node.props, node.key);
+        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
         return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
     };
     const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
@@ -7223,7 +7271,7 @@
                     return;
                 }
                 else {
-                    value = invoke(ssrCtx.invocationContext, () => node.value);
+                    value = invoke(ssrCtx.$invocationContext$, () => node.value);
                 }
             }
             stream.write(escapeHtml(jsxToString(value)));
@@ -7312,7 +7360,7 @@
             children.type !== SSRRaw &&
             children.type !== InternalSSRStream &&
             children.type !== Virtual) {
-            const res = invoke(ssrCtx.invocationContext, children.type, children.props, children.key);
+            const res = invoke(ssrCtx.$invocationContext$, children.type, children.props, children.key);
             return flatVirtualChildren(res, ssrCtx);
         }
         return children;
@@ -7394,6 +7442,75 @@
         param: true,
         source: true,
         track: true,
+        wbr: true,
+    };
+    const startPhasingContent = {
+        p: true,
+        pre: true,
+    };
+    const htmlContent = {
+        head: true,
+        body: true,
+    };
+    const headContent = {
+        meta: true,
+        title: true,
+        link: true,
+        style: true,
+        script: true,
+        noscript: true,
+        template: true,
+        base: true,
+    };
+    const phasingContent = {
+        a: true,
+        abbr: true,
+        audio: true,
+        b: true,
+        bdo: true,
+        br: true,
+        button: true,
+        canvas: true,
+        cite: true,
+        code: true,
+        command: true,
+        data: true,
+        datalist: true,
+        dfn: true,
+        em: true,
+        embed: true,
+        i: true,
+        iframe: true,
+        img: true,
+        input: true,
+        kbd: true,
+        keygen: true,
+        label: true,
+        mark: true,
+        math: true,
+        meter: true,
+        noscript: true,
+        object: true,
+        output: true,
+        picture: true,
+        progress: true,
+        q: true,
+        ruby: true,
+        s: true,
+        samp: true,
+        script: true,
+        select: true,
+        small: true,
+        span: true,
+        strong: true,
+        sub: true,
+        sup: true,
+        svg: true,
+        textarea: true,
+        time: true,
+        u: true,
+        var: true,
+        video: true,
         wbr: true,
     };
     const ESCAPE_HTML = /[&<>]/g;
