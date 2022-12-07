@@ -1232,7 +1232,6 @@ globalThis.qwikOptimizer = function(module) {
         return {
           code: code,
           map: transformedModule[0].map,
-          moduleSideEffects: false,
           meta: {
             hook: transformedModule[0].hook
           }
@@ -1979,9 +1978,6 @@ globalThis.qwikOptimizer = function(module) {
               input: opts.input,
               preserveEntrySignatures: "exports-only",
               output: normalizeRollupOutputOptions(path, opts, {}),
-              treeshake: {
-                moduleSideEffects: false
-              },
               onwarn: (warning, warn) => {
                 if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                   return;
