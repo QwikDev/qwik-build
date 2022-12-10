@@ -954,7 +954,7 @@ declare interface HTMLWebViewElement extends HTMLElement {
 }
 
 /**
- * Low-level API used by the Optimizer to process `useWatch$()` API. This method
+ * Low-level API used by the Optimizer to process `useTask$()` API. This method
  * is not intended to be used by developers.
  *
  * @internal
@@ -2585,6 +2585,19 @@ declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @public
+ */
+export declare interface TaskCtx {
+    track: Tracker;
+    cleanup(callback: () => void): void;
+}
+
+/**
+ * @public
+ */
+export declare type TaskFn = (ctx: TaskCtx) => ValueOrPromise<void | (() => void)>;
+
 declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
@@ -2637,19 +2650,19 @@ declare interface TitleHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Tracker` is passed into the `watchFn` of `useWatch`. It is intended to be used to wrap
+ * The `Tracker` is passed into the `taskFn` of `useTask`. It is intended to be used to wrap
  * state objects in a read proxy which signals to Qwik which properties should be watched for
- * changes. A change to any of the properties causes the `watchFn` to rerun.
+ * changes. A change to any of the properties causes the `taskFn` to rerun.
  *
  * ### Example
  *
- * The `obs` passed into the `watchFn` is used to mark `state.count` as a property of interest.
- * Any changes to the `state.count` property will cause the `watchFn` to rerun.
+ * The `obs` passed into the `taskFn` is used to mark `state.count` as a property of interest.
+ * Any changes to the `state.count` property will cause the `taskFn` to rerun.
  *
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
@@ -2664,7 +2677,7 @@ declare interface TitleHTMLAttributes<T> extends HTMLAttributes<T> {
  * });
  * ```
  *
- * @see `useWatch`
+ * @see `useTask`
  *
  * @public
  */
@@ -2720,7 +2733,7 @@ declare type TransformProps<PROPS extends {}> = {
  * It can be used to release resources, abort network requests, stop timers...
  *
  * @alpha
- * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useClientEffect$()` instead.
  */
 export declare const useCleanup$: (first: () => void) => void;
@@ -2729,7 +2742,7 @@ export declare const useCleanup$: (first: () => void) => void;
  * It can be used to release resources, abort network requests, stop timers...
  *
  * @alpha
- * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useClientEffect$()` instead.
  */
 export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
@@ -2757,7 +2770,7 @@ export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
  *
  * @public
  */
-export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions | undefined) => void;
+export declare const useClientEffect$: (first: TaskFn, opts?: UseEffectOptions | undefined) => void;
 
 /**
  * ```tsx
@@ -2782,47 +2795,45 @@ export declare const useClientEffect$: (first: WatchFn, opts?: UseEffectOptions 
  *
  * @public
  */
-export declare const useClientEffectQrl: (qrl: QRL<WatchFn>, opts?: UseEffectOptions) => void;
+export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: UseEffectOptions) => void;
 
 /**
- * Registers a client mount hook that runs only in the browser when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *   });
- *
- *   return <div>Cmp</div>;
+ * import { useTask$ } from './core';
+ * import { isBrowser } from './core/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
  * });
  * ```
  *
- * @see `useMount`, `useServerMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useClientMount$: <T>(first: MountFn<T>) => void;
 
 /**
- * Registers a client mount hook that runs only in the browser when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *   });
- *
- *   return <div>Cmp</div>;
+ * import { useTask$ } from './core';
+ * import { isBrowser } from './core/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
  * });
  * ```
  *
- * @see `useMount`, `useServerMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
@@ -2968,68 +2979,16 @@ export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
 /**
- * Registers a hook to execute code when the component is mounted into the rendering tree (on
- * component creation).
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <div>
- *       <p>The temperature is: ${store.temp}</p>
- *     </div>
- *   );
- * });
- * ```
- *
- * @see `useServerMount`
- * @public
+ * @beta
+ * @deprecated - use `useTask$()` instead
  */
-export declare const useMount$: <T>(first: MountFn<T>) => void;
+export declare const useMount$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
 /**
- * Registers a hook to execute code when the component is mounted into the rendering tree (on
- * component creation).
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <div>
- *       <p>The temperature is: ${store.temp}</p>
- *     </div>
- *   );
- * });
- * ```
- *
- * @see `useServerMount`
- * @public
+ * @beta
+ * @deprecated - use `useTask$()` instead
  */
-export declare const useMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
+export declare const useMountQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions | undefined) => void;
 
 /**
  * Register a listener on the current component's host element.
@@ -3248,80 +3207,42 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
- * Registers a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <div>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </div>
- *   );
+ * import { useTask$ } from './core';
+ * import { isServer } from './core/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
  * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
  * ```
  *
- * @see `useMount`, `useClientMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 
 /**
- * Registers a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <div>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </div>
- *   );
+ * import { useTask$ } from './core';
+ * import { isServer } from './core/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
  * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
  * ```
  *
- * @see `useMount`, `useClientMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
@@ -3503,20 +3424,14 @@ export declare interface UseStylesScoped {
 export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScoped;
 
 /**
- * @alpha
- * @deprecated Please use `useEnvData` instead.
- */
-export declare const useUserContext: typeof useEnvData;
-
-/**
- * Reruns the `watchFn` when the observed inputs change.
+ * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
  * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
+ * `taskFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -3524,8 +3439,8 @@ export declare const useUserContext: typeof useEnvData;
  *
  * ### Example
  *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * The `useTask` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
  * the double of `state.count`.
  *
  * ```tsx
@@ -3537,13 +3452,13 @@ export declare const useUserContext: typeof useEnvData;
  *   });
  *
  *   // Double count watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -3566,12 +3481,12 @@ export declare const useUserContext: typeof useEnvData;
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare const useWatch$: (first: WatchFn, opts?: UseWatchOptions | undefined) => void;
+export declare const useTask$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
 /**
  * @public
  */
-export declare interface UseWatchOptions {
+export declare interface UseTaskOptions {
     /**
      * - `visible`: run the effect when the element is visible.
      * - `load`: eagerly run the effect when the application resumes.
@@ -3580,14 +3495,14 @@ export declare interface UseWatchOptions {
 }
 
 /**
- * Reruns the `watchFn` when the observed inputs change.
+ * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
  * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
+ * `taskFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -3595,8 +3510,8 @@ export declare interface UseWatchOptions {
  *
  * ### Example
  *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * The `useTask` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
  * the double of `state.count`.
  *
  * ```tsx
@@ -3608,13 +3523,13 @@ export declare interface UseWatchOptions {
  *   });
  *
  *   // Double count watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -3637,7 +3552,25 @@ export declare interface UseWatchOptions {
  * @param watch - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
-export declare const useWatchQrl: (qrl: QRL<WatchFn>, opts?: UseWatchOptions) => void;
+export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
+
+/**
+ * @alpha
+ * @deprecated Please use `useEnvData` instead.
+ */
+export declare const useUserContext: typeof useEnvData;
+
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+export declare const useWatch$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
+
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
 /**
  * Type representing a value which is either resolve or a promise.
@@ -3691,20 +3624,7 @@ declare interface VirtualElement {
     readonly parentElement: Element | null;
 }
 
-/**
- * @public
- */
-export declare interface WatchCtx {
-    track: Tracker;
-    cleanup(callback: () => void): void;
-}
-
-declare type WatchDescriptor = DescriptorBase<WatchFn>;
-
-/**
- * @public
- */
-export declare type WatchFn = (ctx: WatchCtx) => ValueOrPromise<void | (() => void)>;
+declare type WatchDescriptor = DescriptorBase<TaskFn>;
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;

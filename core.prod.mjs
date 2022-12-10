@@ -693,7 +693,7 @@ const useSequentialScope = () => {
 const useCleanupQrl = unmountFn => {
     const {get: get, set: set, i: i, elCtx: elCtx} = useSequentialScope();
     if (!get) {
-        const watch = new Watch(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, void 0);
+        const watch = new Task(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, void 0);
         set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch);
     }
 };
@@ -2014,7 +2014,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     for (const ctx of allContexts) {
         if (ctx.$watches$) {
             for (const watch of ctx.$watches$) {
-                isResourceWatch(watch) && collector.$resources$.push(watch.$resource$), destroyWatch(watch);
+                isResourceTask(watch) && collector.$resources$.push(watch.$resource$), destroyWatch(watch);
             }
         }
     }
@@ -2866,19 +2866,23 @@ const WatchFlagsIsCleanup = 8;
 
 const WatchFlagsIsResource = 16;
 
-const useWatchQrl = (qrl, opts) => {
+const useTaskQrl = (qrl, opts) => {
     const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
     if (get) {
         return;
     }
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, void 0);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, void 0);
     set(true), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
     elCtx.$watches$.push(watch), waitAndRun(iCtx, (() => runSubscriber(watch, containerState, iCtx.$renderCtx$))), 
     isServer() && useRunWatch(watch, opts?.eagerness);
 };
 
-const useWatch$ = implicit$FirstArg(useWatchQrl);
+const useTask$ = implicit$FirstArg(useTaskQrl);
+
+const useWatch$ = useTask$;
+
+const useWatchQrl = useTaskQrl;
 
 const useClientEffectQrl = (qrl, opts) => {
     const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
@@ -2886,7 +2890,7 @@ const useClientEffectQrl = (qrl, opts) => {
     if (get) {
         return void (isServer() && useRunWatch(get, eagerness));
     }
-    const watch = new Watch(WatchFlagsIsEffect, i, elCtx.$element$, qrl, void 0);
+    const watch = new Task(WatchFlagsIsEffect, i, elCtx.$element$, qrl, void 0);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
     useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
@@ -2895,9 +2899,9 @@ const useClientEffectQrl = (qrl, opts) => {
 
 const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
 
-const isResourceWatch = watch => !!watch.$resource$;
+const isResourceTask = watch => !!watch.$resource$;
 
-const runSubscriber = async (watch, containerState, rCtx) => (watch.$flags$, isResourceWatch(watch) ? runResource(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
+const runSubscriber = async (watch, containerState, rCtx) => (watch.$flags$, isResourceTask(watch) ? runResource(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
 
 const runResource = (watch, containerState, rCtx, waitOn) => {
     watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
@@ -3016,9 +3020,9 @@ const getWatchHandlerQrl = watch => {
     return createQRL(watchQrl.$chunk$, "_hW", _hW, null, null, [ watch ], watchQrl.$symbol$);
 };
 
-const isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Watch;
+const isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Task;
 
-class Watch {
+class Task {
     constructor($flags$, $index$, $el$, $qrl$, $resource$) {
         this.$flags$ = $flags$, this.$index$ = $index$, this.$el$ = $el$, this.$qrl$ = $qrl$, 
         this.$resource$ = $resource$;
@@ -3033,7 +3037,7 @@ const useResourceQrl = (qrl, opts) => {
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const resource = createResourceReturn(containerState, opts);
     const el = elCtx.$element$;
-    const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
     const previousWait = Promise.all(iCtx.$waitOn$.slice());
     return runResource(watch, containerState, iCtx.$renderCtx$, previousWait), elCtx.$watches$ || (elCtx.$watches$ = []), 
     elCtx.$watches$.push(watch), set(resource), resource;
@@ -3114,11 +3118,11 @@ const WatchSerializer = {
     },
     serialize: (obj, getObjId) => ((watch, getObjId) => {
         let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
-        return isResourceWatch(watch) && (value += ` ${getObjId(watch.$resource$)}`), value;
+        return isResourceTask(watch) && (value += ` ${getObjId(watch.$resource$)}`), value;
     })(obj, getObjId),
     prepare: data => (data => {
         const [flags, index, qrl, el, resource] = data.split(" ");
-        return new Watch(strToInt(flags), strToInt(index), el, qrl, resource);
+        return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
     })(data),
     fill: (watch, getObject) => {
         watch.$el$ = getObject(watch.$el$), watch.$qrl$ = getObject(watch.$qrl$), watch.$resource$ && (watch.$resource$ = getObject(watch.$resource$));
@@ -4381,13 +4385,9 @@ const useClientMountQrl = mountQrl => {
 
 const useClientMount$ = implicit$FirstArg(useClientMountQrl);
 
-const useMountQrl = mountQrl => {
-    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    get || (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-    waitAndRun(iCtx, mountQrl), set(true));
-};
+const useMountQrl = useTaskQrl;
 
-const useMount$ = implicit$FirstArg(useMountQrl);
+const useMount$ = useTask$;
 
 const useErrorBoundary = () => {
     const store = useStore({
@@ -4397,4 +4397,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

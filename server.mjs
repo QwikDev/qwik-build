@@ -241,7 +241,7 @@ var EVENT_PRIORITY = [
   "scroll"
 ].map((n) => `on${n.toLowerCase()}$`);
 var FUNCTION_PRIORITY = [
-  "useWatch$",
+  "useTask$",
   "useClientEffect$",
   "useEffect$",
   "component$",

@@ -785,7 +785,7 @@ globalThis.qwikOptimizer = function(module) {
     }));
   }
   var EVENT_PRIORITY = [ "click", "dblclick", "contextmenu", "auxclick", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerenter", "pointerleave", "pointerout", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchend", "touchmove", "touchcancel", "mousedown", "mouseup", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "wheel", "gesturestart", "gesturechange", "gestureend", "keydown", "keyup", "keypress", "input", "change", "search", "invalid", "beforeinput", "select", "focusin", "focusout", "focus", "blur", "submit", "reset", "scroll" ].map((n => `on${n.toLowerCase()}$`));
-  var FUNCTION_PRIORITY = [ "useWatch$", "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase()));
+  var FUNCTION_PRIORITY = [ "useTask$", "useClientEffect$", "useEffect$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase()));
   function sortBundleNames(manifest) {
     return Object.keys(manifest.bundles).sort(sortAlphabetical);
   }

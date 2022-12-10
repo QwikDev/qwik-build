@@ -1340,7 +1340,7 @@ const useSequentialScope = () => {
  * It can be used to release resources, abort network requests, stop timers...
  *
  * @alpha
- * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useClientEffect$()` instead.
  */
 // </docs>
@@ -1348,7 +1348,7 @@ const useCleanupQrl = (unmountFn) => {
     const { get, set, i, elCtx } = useSequentialScope();
     if (!get) {
         assertQrl(unmountFn);
-        const watch = new Watch(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, undefined);
+        const watch = new Task(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, undefined);
         set(true);
         if (!elCtx.$watches$) {
             elCtx.$watches$ = [];
@@ -1363,7 +1363,7 @@ const useCleanupQrl = (unmountFn) => {
  * It can be used to release resources, abort network requests, stop timers...
  *
  * @alpha
- * @deprecated Use the cleanup() function of `useWatch$()`, `useResource$()` or
+ * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useClientEffect$()` instead.
  */
 // </docs>
@@ -3740,7 +3740,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                         logWarn('Serializing disconneted watch. Looks like an internal error.');
                     }
                 }
-                if (isResourceWatch(watch)) {
+                if (isResourceTask(watch)) {
                     collector.$resources$.push(watch.$resource$);
                 }
                 destroyWatch(watch);
@@ -4718,7 +4718,7 @@ const scheduleFrame = (containerState) => {
     return containerState.$renderPromise$;
 };
 /**
- * Low-level API used by the Optimizer to process `useWatch$()` API. This method
+ * Low-level API used by the Optimizer to process `useTask$()` API. This method
  * is not intended to be used by developers.
  *
  * @internal
@@ -4915,18 +4915,18 @@ const WatchFlagsIsWatch = 1 << 1;
 const WatchFlagsIsDirty = 1 << 2;
 const WatchFlagsIsCleanup = 1 << 3;
 const WatchFlagsIsResource = 1 << 4;
-// <docs markdown="../readme.md#useWatch">
+// <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useWatch instead)
+// (edit ../readme.md#useTask instead)
 /**
- * Reruns the `watchFn` when the observed inputs change.
+ * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
  * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
+ * `taskFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -4934,8 +4934,8 @@ const WatchFlagsIsResource = 1 << 4;
  *
  * ### Example
  *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * The `useTask` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
  * the double of `state.count`.
  *
  * ```tsx
@@ -4947,13 +4947,13 @@ const WatchFlagsIsResource = 1 << 4;
  *   });
  *
  *   // Double count watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -4977,14 +4977,14 @@ const WatchFlagsIsResource = 1 << 4;
  * @public
  */
 // </docs>
-const useWatchQrl = (qrl, opts) => {
+const useTaskQrl = (qrl, opts) => {
     const { get, set, iCtx, i, elCtx } = useSequentialScope();
     if (get) {
         return;
     }
     assertQrl(qrl);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, undefined);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, undefined);
     set(true);
     qrl.$resolveLazy$(containerState.$containerEl$);
     if (!elCtx.$watches$) {
@@ -4996,18 +4996,18 @@ const useWatchQrl = (qrl, opts) => {
         useRunWatch(watch, opts?.eagerness);
     }
 };
-// <docs markdown="../readme.md#useWatch">
+// <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useWatch instead)
+// (edit ../readme.md#useTask instead)
 /**
- * Reruns the `watchFn` when the observed inputs change.
+ * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useWatch` to observe changes on a set of inputs, and then re-execute the `watchFn` when
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `watchFn` only executes if the observed inputs change. To observe the inputs, use the
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
  * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `watchFn` to rerun.
+ * `taskFn` to rerun.
  *
  * @see `Tracker`
  *
@@ -5015,8 +5015,8 @@ const useWatchQrl = (qrl, opts) => {
  *
  * ### Example
  *
- * The `useWatch` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `watchFn` to execute which in turn updates the `state.doubleCount` to
+ * The `useTask` function is used to observe the `state.count` property. Any changes to the
+ * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
  * the double of `state.count`.
  *
  * ```tsx
@@ -5028,13 +5028,13 @@ const useWatchQrl = (qrl, opts) => {
  *   });
  *
  *   // Double count watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
  *   // Debouncer watch
- *   useWatch$(({ track }) => {
+ *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
  *       store.debounced = doubleCount;
@@ -5058,7 +5058,17 @@ const useWatchQrl = (qrl, opts) => {
  * @public
  */
 // </docs>
-const useWatch$ = /*#__PURE__*/ implicit$FirstArg(useWatchQrl);
+const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+const useWatch$ =  useTask$;
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+const useWatchQrl =  useTaskQrl;
 // <docs markdown="../readme.md#useClientEffect">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useClientEffect instead)
@@ -5096,7 +5106,7 @@ const useClientEffectQrl = (qrl, opts) => {
         return;
     }
     assertQrl(qrl);
-    const watch = new Watch(WatchFlagsIsEffect, i, elCtx.$element$, qrl, undefined);
+    const watch = new Task(WatchFlagsIsEffect, i, elCtx.$element$, qrl, undefined);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
@@ -5137,12 +5147,12 @@ const useClientEffectQrl = (qrl, opts) => {
  */
 // </docs>
 const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
-const isResourceWatch = (watch) => {
+const isResourceTask = (watch) => {
     return !!watch.$resource$;
 };
 const runSubscriber = async (watch, containerState, rCtx) => {
     assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
-    if (isResourceWatch(watch)) {
+    if (isResourceTask(watch)) {
         return runResource(watch, containerState, rCtx);
     }
     else {
@@ -5346,20 +5356,20 @@ const getWatchHandlerQrl = (watch) => {
     return watchHandler;
 };
 const isSubscriberDescriptor = (obj) => {
-    return isObject(obj) && obj instanceof Watch;
+    return isObject(obj) && obj instanceof Task;
 };
 const serializeWatch = (watch, getObjId) => {
     let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
-    if (isResourceWatch(watch)) {
+    if (isResourceTask(watch)) {
         value += ` ${getObjId(watch.$resource$)}`;
     }
     return value;
 };
-const parseWatch = (data) => {
+const parseTask = (data) => {
     const [flags, index, qrl, el, resource] = data.split(' ');
-    return new Watch(strToInt(flags), strToInt(index), el, qrl, resource);
+    return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
 };
-class Watch {
+class Task {
     constructor($flags$, $index$, $el$, $qrl$, $resource$) {
         this.$flags$ = $flags$;
         this.$index$ = $index$;
@@ -5436,7 +5446,7 @@ const useResourceQrl = (qrl, opts) => {
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const resource = createResourceReturn(containerState, opts);
     const el = elCtx.$element$;
-    const watch = new Watch(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
     const previousWait = Promise.all(iCtx.$waitOn$.slice());
     runResource(watch, containerState, iCtx.$renderCtx$, previousWait);
     if (!elCtx.$watches$) {
@@ -5702,7 +5712,7 @@ const WatchSerializer = {
         }
     },
     serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
-    prepare: (data) => parseWatch(data),
+    prepare: (data) => parseTask(data),
     fill: (watch, getObject) => {
         watch.$el$ = getObject(watch.$el$);
         watch.$qrl$ = getObject(watch.$qrl$);
@@ -8191,41 +8201,22 @@ const useSignal = (initialState) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useServerMount instead)
 /**
- * Registers a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <div>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </div>
- *   );
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isServer } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
  * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
  * ```
  *
- * @see `useMount`, `useClientMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 // </docs>
 const useServerMountQrl = (mountQrl) => {
@@ -8244,41 +8235,22 @@ const useServerMountQrl = (mountQrl) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useServerMount instead)
 /**
- * Registers a server mount hook that runs only in the server when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     users: [],
- *   });
- *
- *   useServerMount$(async () => {
- *     // This code will ONLY run once in the server, when the component is mounted
- *     store.users = await db.requestUsers();
- *   });
- *
- *   return (
- *     <div>
- *       {store.users.map((user) => (
- *         <User user={user} />
- *       ))}
- *     </div>
- *   );
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isServer } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
  * });
- *
- * interface User {
- *   name: string;
- * }
- * function User(props: { user: User }) {
- *   return <div>Name: {props.user.name}</div>;
- * }
  * ```
  *
- * @see `useMount`, `useClientMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 // </docs>
 const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
@@ -8286,23 +8258,22 @@ const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useClientMount instead)
 /**
- * Registers a client mount hook that runs only in the browser when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *   });
- *
- *   return <div>Cmp</div>;
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isBrowser } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
  * });
  * ```
  *
- * @see `useMount`, `useServerMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 // </docs>
 const useClientMountQrl = (mountQrl) => {
@@ -8321,105 +8292,35 @@ const useClientMountQrl = (mountQrl) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useClientMount instead)
 /**
- * Registers a client mount hook that runs only in the browser when the component is first
- * mounted.
- *
- * ### Example
+ * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * const Cmp = component$(() => {
- *   useClientMount$(async () => {
- *     // This code will ONLY run once in the client, when the component is mounted
- *   });
- *
- *   return <div>Cmp</div>;
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isBrowser } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
  * });
  * ```
  *
- * @see `useMount`, `useServerMount`
+ * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 // </docs>
 const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
-// <docs markdown="../readme.md#useMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useMount instead)
 /**
- * Registers a hook to execute code when the component is mounted into the rendering tree (on
- * component creation).
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <div>
- *       <p>The temperature is: ${store.temp}</p>
- *     </div>
- *   );
- * });
- * ```
- *
- * @see `useServerMount`
- * @public
+ * @beta
+ * @deprecated - use `useTask$()` instead
  */
-// </docs>
-const useMountQrl = (mountQrl) => {
-    const { get, set, iCtx } = useSequentialScope();
-    if (get) {
-        return;
-    }
-    assertQrl(mountQrl);
-    mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
-    waitAndRun(iCtx, mountQrl);
-    set(true);
-};
-// <docs markdown="../readme.md#useMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useMount instead)
+const useMountQrl = useTaskQrl;
 /**
- * Registers a hook to execute code when the component is mounted into the rendering tree (on
- * component creation).
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const store = useStore({
- *     temp: 0,
- *   });
- *
- *   useMount$(async () => {
- *     // This code will run once whenever a component is mounted in the server, or in the client
- *     const res = await fetch('weather-api.example');
- *     const json = (await res.json()) as any;
- *     store.temp = json.temp;
- *   });
- *
- *   return (
- *     <div>
- *       <p>The temperature is: ${store.temp}</p>
- *     </div>
- *   );
- * });
- * ```
- *
- * @see `useServerMount`
- * @public
+ * @beta
+ * @deprecated - use `useTask$()` instead
  */
-// </docs>
-const useMount$ = /*#__PURE__*/ implicit$FirstArg(useMountQrl);
+const useMount$ =  useTask$;
 
 /**
  * @alpha
@@ -8433,5 +8334,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
