@@ -163,7 +163,7 @@
             const MAP = [
                 'Error while serializing class attribute',
                 'Can not serialize a HTML Node that is not an Element',
-                'Rruntime but no instance found on element.',
+                'Runtime but no instance found on element.',
                 'Only primitive and object literals can be serialized',
                 'Crash while rendering',
                 'You can render over a existing q:container. Skipping render().',
@@ -178,7 +178,7 @@
                 "Invoking 'use*()' method outside of invocation context.",
                 'Cant access renderCtx for existing context',
                 'Cant access document for existing context',
-                'props are inmutable',
+                'props are immutable',
                 '<div> component can only be used at the root of a Qwik component$()',
                 'Props are immutable by default.',
                 'use- method must be called only at the root level of a component$()',
