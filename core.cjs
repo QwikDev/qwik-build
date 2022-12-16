@@ -761,6 +761,12 @@
     const getWrappingContainer = (el) => {
         return el.closest(QContainerSelector);
     };
+    /**
+     * @alpha
+     */
+    const untrack = (fn) => {
+        return invoke(undefined, fn);
+    };
 
     // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -1126,7 +1132,7 @@
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$, prop);
+                    logError('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', prop);
                 }
             }
             const isA = isArray(target);
@@ -2497,7 +2503,7 @@
         const elCtx = tryGetContext(hostElement);
         if (qDev) {
             // Clean vdom
-            if (!isServer() && isVirtualElement(hostElement)) {
+            if (!isServer() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
                 elCtx.$vdom$ = null;
                 const errorDiv = document.createElement('errored-host');
                 if (err && err instanceof Error) {
@@ -5256,7 +5262,7 @@
             resource._state = 'pending';
             resource.loading = !isServer();
             resource._resolved = undefined;
-            resource.promise = new Promise((r, re) => {
+            resource.value = new Promise((r, re) => {
                 resolve = r;
                 reject = re;
             });
@@ -5590,36 +5596,45 @@
     const Resource = (props) => {
         const isBrowser = !isServer();
         const resource = props.value;
-        if (isBrowser) {
-            if (props.onRejected) {
-                resource.promise.catch(() => { });
-                if (resource._state === 'rejected') {
-                    return props.onRejected(resource._error);
+        let promise;
+        if (isResourceReturn(resource)) {
+            if (isBrowser) {
+                if (props.onRejected) {
+                    resource.value.catch(() => { });
+                    if (resource._state === 'rejected') {
+                        return props.onRejected(resource._error);
+                    }
+                }
+                if (props.onPending) {
+                    const state = resource._state;
+                    if (state === 'resolved') {
+                        return props.onResolved(resource._resolved);
+                    }
+                    else if (state === 'pending') {
+                        return props.onPending();
+                    }
+                    else if (state === 'rejected') {
+                        throw resource._error;
+                    }
                 }
             }
-            if (props.onPending) {
-                const state = resource._state;
-                if (state === 'pending') {
-                    return props.onPending();
-                }
-                else if (state === 'resolved') {
-                    return props.onResolved(resource._resolved);
-                }
-                else if (state === 'rejected') {
-                    throw resource._error;
-                }
-            }
+            promise = resource.value;
         }
-        const promise = resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+        else if (resource instanceof Promise) {
+            promise = resource;
+        }
+        else {
+            return props.onResolved(resource);
+        }
         // Resource path
         return jsx(Fragment, {
-            children: promise,
+            children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)),
         });
     };
     const _createResourceReturn = (opts) => {
         const resource = {
             __brand: 'resource',
-            promise: undefined,
+            value: undefined,
             loading: isServer() ? false : true,
             _resolved: undefined,
             _error: undefined,
@@ -5631,7 +5646,7 @@
     };
     const createResourceReturn = (containerState, opts, initialPromise) => {
         const result = _createResourceReturn(opts);
-        result.promise = initialPromise;
+        result.value = initialPromise;
         const resource = createProxy(result, containerState, undefined);
         return resource;
     };
@@ -5653,7 +5668,7 @@
     const parseResourceReturn = (data) => {
         const [first, id] = data.split(' ');
         const result = _createResourceReturn(undefined);
-        result.promise = Promise.resolve();
+        result.value = Promise.resolve();
         if (first === '0') {
             result._state = 'resolved';
             result._resolved = id;
@@ -5661,7 +5676,7 @@
         }
         else if (first === '1') {
             result._state = 'pending';
-            result.promise = new Promise(() => { });
+            result.value = new Promise(() => { });
             result.loading = true;
         }
         else if (first === '2') {
@@ -5737,7 +5752,7 @@
         prefix: '\u0004',
         test: (v) => isResourceReturn(v),
         collect: (obj, collector, leaks) => {
-            collectValue(obj.promise, collector, leaks);
+            collectValue(obj.value, collector, leaks);
             collectValue(obj._resolved, collector, leaks);
         },
         serialize: (obj, getObjId) => {
@@ -5749,13 +5764,13 @@
         fill: (resource, getObject) => {
             if (resource._state === 'resolved') {
                 resource._resolved = getObject(resource._resolved);
-                resource.promise = Promise.resolve(resource._resolved);
+                resource.value = Promise.resolve(resource._resolved);
             }
             else if (resource._state === 'rejected') {
                 const p = Promise.reject(resource._error);
                 p.catch(() => null);
                 resource._error = getObject(resource._error);
-                resource.promise = p;
+                resource.value = p;
             }
         },
     };
@@ -5903,6 +5918,31 @@
         prepare: (data) => new URLSearchParams(data),
         fill: undefined,
     };
+    const FormDataSerializer = {
+        prefix: '\u0016',
+        test: (v) => v instanceof FormData,
+        serialize: (formData) => {
+            const array = [];
+            formData.forEach((value, key) => {
+                if (typeof value === 'string') {
+                    array.push([key, value]);
+                }
+                else {
+                    array.push([key, value.name]);
+                }
+            });
+            return JSON.stringify(array);
+        },
+        prepare: (data) => {
+            const array = JSON.parse(data);
+            const formData = new FormData();
+            for (const [key, value] of array) {
+                formData.append(key, value);
+            }
+            return formData;
+        },
+        fill: undefined,
+    };
     const serializers = [
         QRLSerializer,
         SignalSerializer,
@@ -5918,6 +5958,7 @@
         PureFunctionSerializer,
         NoFiniteNumberSerializer,
         URLSearchParamsSerializer,
+        FormDataSerializer,
     ];
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
     const canSerialize = (obj) => {
@@ -8381,6 +8422,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.render = render;
     exports.renderSSR = renderSSR;
     exports.setPlatform = setPlatform;
+    exports.untrack = untrack;
     exports.useCleanup$ = useCleanup$;
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;
@@ -8415,8 +8457,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;
     exports.withLocale = withLocale;
-
-    Object.defineProperty(exports, '__esModule', { value: true });
 
 }));
 //# sourceMappingURL=core.cjs.map

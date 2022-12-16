@@ -2330,15 +2330,15 @@ export declare interface ResourceOptions {
  * @public
  */
 export declare interface ResourcePending<T> {
-    promise: Promise<T>;
-    loading: boolean;
+    readonly value: Promise<T>;
+    readonly loading: boolean;
 }
 
 /**
  * @public
  */
 export declare interface ResourceProps<T> {
-    value: ResourceReturn<T>;
+    readonly value: ResourceReturn<T> | Signal<T> | Promise<T> | T;
     onResolved: (value: T) => JSXNode;
     onPending?: () => JSXNode;
     onRejected?: (reason: any) => JSXNode;
@@ -2348,16 +2348,16 @@ export declare interface ResourceProps<T> {
  * @public
  */
 export declare interface ResourceRejected<T> {
-    promise: Promise<T>;
-    loading: boolean;
+    readonly value: Promise<T>;
+    readonly loading: boolean;
 }
 
 /**
  * @public
  */
 export declare interface ResourceResolved<T> {
-    promise: Promise<T>;
-    loading: boolean;
+    readonly value: Promise<T>;
+    readonly loading: boolean;
 }
 
 /**
@@ -2372,7 +2372,7 @@ declare interface ResourceReturnInternal<T> {
     _error: any;
     _cache: number;
     _timeout: number;
-    promise: Promise<T>;
+    value: Promise<T>;
     loading: boolean;
 }
 
@@ -2728,6 +2728,11 @@ declare type TransformProp<T> = T extends PropFnInterface<infer ARGS, infer RET>
 declare type TransformProps<PROPS extends {}> = {
     [K in keyof PROPS]: TransformProp<PROPS[K]>;
 };
+
+/**
+ * @alpha
+ */
+export declare const untrack: <T>(fn: () => T) => T;
 
 /**
  * It can be used to release resources, abort network requests, stop timers...

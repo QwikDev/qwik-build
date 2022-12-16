@@ -470,6 +470,6 @@ async function init(input) {
     return finalizeInit(instance, module);
 }
 
-exports["default"] = init;
+exports.default = init;
 exports.initSync = initSync;
 exports.transform_modules = transform_modules;

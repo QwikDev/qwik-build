@@ -360,6 +360,8 @@ const newInvokeContext = (locale, hostElement, element, event, url) => ({
 
 const getWrappingContainer = el => el.closest("[q\\:container]");
 
+const untrack = fn => invoke(void 0, fn);
+
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
 };
@@ -1809,9 +1811,9 @@ const readDOMSlots = elCtx => ((el, prop, value) => {
     const walker = ((el, prop, value) => el.ownerDocument.createTreeWalker(el, 128, {
         acceptNode(c) {
             const virtual = getVirtualElement(c);
-            return virtual && directGetAttribute(virtual, "q:sref") === value ? 1 : 2;
+            return virtual && directGetAttribute(virtual, prop) === value ? 1 : 2;
         }
-    }))(el, 0, value);
+    }))(el, "q:sref", value);
     const pars = [];
     let currentNode = null;
     for (;currentNode = walker.nextNode(); ) {
@@ -2944,7 +2946,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     reject(value)), true);
     invoke(invocationContext, (() => {
         resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
-        resource.promise = new Promise(((r, re) => {
+        resource.value = new Promise(((r, re) => {
             resolve = r, reject = re;
         }));
     })), watch.$destroy$ = noSerialize((() => {
@@ -3048,32 +3050,40 @@ const useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts)
 const Resource = props => {
     const isBrowser = !isServer();
     const resource = props.value;
-    if (isBrowser) {
-        if (props.onRejected && (resource.promise.catch((() => {})), "rejected" === resource._state)) {
-            return props.onRejected(resource._error);
+    let promise;
+    if (isResourceReturn(resource)) {
+        if (isBrowser) {
+            if (props.onRejected && (resource.value.catch((() => {})), "rejected" === resource._state)) {
+                return props.onRejected(resource._error);
+            }
+            if (props.onPending) {
+                const state = resource._state;
+                if ("resolved" === state) {
+                    return props.onResolved(resource._resolved);
+                }
+                if ("pending" === state) {
+                    return props.onPending();
+                }
+                if ("rejected" === state) {
+                    throw resource._error;
+                }
+            }
         }
-        if (props.onPending) {
-            const state = resource._state;
-            if ("pending" === state) {
-                return props.onPending();
-            }
-            if ("resolved" === state) {
-                return props.onResolved(resource._resolved);
-            }
-            if ("rejected" === state) {
-                throw resource._error;
-            }
+        promise = resource.value;
+    } else {
+        if (!(resource instanceof Promise)) {
+            return props.onResolved(resource);
         }
+        promise = resource;
     }
-    const promise = resource.promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     return jsx(Fragment, {
-        children: promise
+        children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))
     });
 };
 
 const _createResourceReturn = opts => ({
     __brand: "resource",
-    promise: void 0,
+    value: void 0,
     loading: !isServer(),
     _resolved: void 0,
     _error: void 0,
@@ -3084,8 +3094,10 @@ const _createResourceReturn = opts => ({
 
 const createResourceReturn = (containerState, opts, initialPromise) => {
     const result = _createResourceReturn(opts);
-    return result.promise = initialPromise, createProxy(result, containerState, void 0);
+    return result.value = initialPromise, createProxy(result, containerState, void 0);
 };
+
+const isResourceReturn = obj => isObject(obj) && "resource" === obj.__brand;
 
 const UNDEFINED_PREFIX = "";
 
@@ -3131,12 +3143,9 @@ const WatchSerializer = {
 
 const ResourceSerializer = {
     prefix: "",
-    test: v => {
-        return isObject(obj = v) && "resource" === obj.__brand;
-        var obj;
-    },
+    test: v => isResourceReturn(v),
     collect: (obj, collector, leaks) => {
-        collectValue(obj.promise, collector, leaks), collectValue(obj._resolved, collector, leaks);
+        collectValue(obj.value, collector, leaks), collectValue(obj._resolved, collector, leaks);
     },
     serialize: (obj, getObjId) => ((resource, getObjId) => {
         const state = resource._state;
@@ -3145,17 +3154,17 @@ const ResourceSerializer = {
     prepare: data => (data => {
         const [first, id] = data.split(" ");
         const result = _createResourceReturn(void 0);
-        return result.promise = Promise.resolve(), "0" === first ? (result._state = "resolved", 
+        return result.value = Promise.resolve(), "0" === first ? (result._state = "resolved", 
         result._resolved = id, result.loading = false) : "1" === first ? (result._state = "pending", 
-        result.promise = new Promise((() => {})), result.loading = true) : "2" === first && (result._state = "rejected", 
+        result.value = new Promise((() => {})), result.loading = true) : "2" === first && (result._state = "rejected", 
         result._error = id, result.loading = false), result;
     })(data),
     fill: (resource, getObject) => {
         if ("resolved" === resource._state) {
-            resource._resolved = getObject(resource._resolved), resource.promise = Promise.resolve(resource._resolved);
+            resource._resolved = getObject(resource._resolved), resource.value = Promise.resolve(resource._resolved);
         } else if ("rejected" === resource._state) {
             const p = Promise.reject(resource._error);
-            p.catch((() => null)), resource._error = getObject(resource._error), resource.promise = p;
+            p.catch((() => null)), resource._error = getObject(resource._error), resource.value = p;
         }
     }
 };
@@ -3277,6 +3286,24 @@ const serializers = [ QRLSerializer, {
     test: v => v instanceof URLSearchParams,
     serialize: obj => obj.toString(),
     prepare: data => new URLSearchParams(data),
+    fill: void 0
+}, {
+    prefix: "",
+    test: v => v instanceof FormData,
+    serialize: formData => {
+        const array = [];
+        return formData.forEach(((value, key) => {
+            "string" == typeof value ? array.push([ key, value ]) : array.push([ key, value.name ]);
+        })), JSON.stringify(array);
+    },
+    prepare: data => {
+        const array = JSON.parse(data);
+        const formData = new FormData;
+        for (const [key, value] of array) {
+            formData.append(key, value);
+        }
+        return formData;
+    },
     fill: void 0
 } ];
 
@@ -4397,4 +4424,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
