@@ -1766,13 +1766,13 @@ globalThis.qwikOptimizer = function(module) {
       }
     }));
   }
-  async function configurePreviewServer(middlewares, opts, sys, path) {
+  async function configurePreviewServer(middlewares, ssrOutDir, sys, path) {
     const fs = await sys.dynamicImport("node:fs");
     const url = await sys.dynamicImport("node:url");
-    const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
+    const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(ssrOutDir, `entry.preview.${ext}`)));
     const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
     if (!entryPreviewModulePath) {
-      return invalidPreviewMessage(middlewares, 'Unable to find output "server/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.');
+      return invalidPreviewMessage(middlewares, `Unable to find output "${ssrOutDir}/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.`);
     }
     try {
       const entryPreviewImportPath = url.pathToFileURL(entryPreviewModulePath).href;
@@ -1867,6 +1867,7 @@ globalThis.qwikOptimizer = function(module) {
     let viteCommand = "serve";
     let manifestInput = null;
     let clientOutDir = null;
+    let ssrOutDir = null;
     const injections = [];
     const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
     const api = {
@@ -1881,7 +1882,7 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -1956,9 +1957,10 @@ globalThis.qwikOptimizer = function(module) {
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
         manifestInput = pluginOpts.manifestInput || null;
         clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_l = qwikViteOpts.client) ? void 0 : _l.outDir) || CLIENT_OUT_DIR));
+        ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_m = qwikViteOpts.ssr) ? void 0 : _m.outDir) || SSR_OUT_DIR));
         globalThis.QWIK_MANIFEST = manifestInput;
         globalThis.QWIK_CLIENT_OUT_DIR = clientOutDir;
-        clientDevInput = "string" === typeof (null == (_m = qwikViteOpts.client) ? void 0 : _m.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
+        clientDevInput = "string" === typeof (null == (_n = qwikViteOpts.client) ? void 0 : _n.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
         clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         const vendorIds = vendorRoots.map((v => v.id));
         const updatedViteConfig = {
@@ -1999,9 +2001,9 @@ globalThis.qwikOptimizer = function(module) {
           const qDevKey = "globalThis.qDev";
           const qInspectorKey = "globalThis.qInspector";
           const qSerializeKey = "globalThis.qSerialize";
-          const qDev = (null == (_n = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _n[qDevKey]) ?? true;
-          const qInspector = (null == (_o = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _o[qInspectorKey]) ?? true;
-          const qSerialize = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qSerializeKey]) ?? true;
+          const qDev = (null == (_o = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _o[qDevKey]) ?? true;
+          const qInspector = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qInspectorKey]) ?? true;
+          const qSerialize = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qSerializeKey]) ?? true;
           updatedViteConfig.define = {
             [qDevKey]: qDev,
             [qInspectorKey]: qInspector,
@@ -2018,7 +2020,7 @@ globalThis.qwikOptimizer = function(module) {
           } else {
             updatedViteConfig.publicDir = false;
             updatedViteConfig.build.ssr = true;
-            null == (null == (_q = viteConfig.build) ? void 0 : _q.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
+            null == (null == (_r = viteConfig.build) ? void 0 : _r.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
         } else if ("client" === opts.target) {
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
@@ -2182,10 +2184,9 @@ globalThis.qwikOptimizer = function(module) {
         await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
       },
       configurePreviewServer: server => async () => {
-        const opts = qwikPlugin.getOptions();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
-        await configurePreviewServer(server.middlewares, opts, sys, path);
+        await configurePreviewServer(server.middlewares, ssrOutDir, sys, path);
       },
       handleHotUpdate(ctx) {
         var _a, _b;

@@ -1732,13 +1732,13 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
   }));
 }
 
-async function configurePreviewServer(middlewares, opts, sys, path) {
+async function configurePreviewServer(middlewares, ssrOutDir, sys, path) {
   const fs = await sys.dynamicImport("node:fs");
   const url = await sys.dynamicImport("node:url");
-  const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(opts.rootDir, "server", `entry.preview.${ext}`)));
+  const entryPreviewPaths = [ "mjs", "cjs", "js" ].map((ext => path.join(ssrOutDir, `entry.preview.${ext}`)));
   const entryPreviewModulePath = entryPreviewPaths.find((p => fs.existsSync(p)));
   if (!entryPreviewModulePath) {
-    return invalidPreviewMessage(middlewares, 'Unable to find output "server/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.');
+    return invalidPreviewMessage(middlewares, `Unable to find output "${ssrOutDir}/entry.preview" module.\n\nPlease ensure "src/entry.preview.tsx" has been built before the "preview" command.`);
   }
   try {
     const entryPreviewImportPath = url.pathToFileURL(entryPreviewModulePath).href;
@@ -1851,6 +1851,7 @@ function qwikVite(qwikViteOpts = {}) {
   let viteCommand = "serve";
   let manifestInput = null;
   let clientOutDir = null;
+  let ssrOutDir = null;
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
   const api = {
@@ -1939,6 +1940,7 @@ function qwikVite(qwikViteOpts = {}) {
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       manifestInput = pluginOpts.manifestInput || null;
       clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.client?.outDir || CLIENT_OUT_DIR));
+      ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.ssr?.outDir || SSR_OUT_DIR));
       globalThis.QWIK_MANIFEST = manifestInput;
       globalThis.QWIK_CLIENT_OUT_DIR = clientOutDir;
       clientDevInput = "string" === typeof qwikViteOpts.client?.devInput ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
@@ -2164,10 +2166,9 @@ function qwikVite(qwikViteOpts = {}) {
       await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
     },
     configurePreviewServer: server => async () => {
-      const opts = qwikPlugin.getOptions();
       const sys = qwikPlugin.getSys();
       const path = qwikPlugin.getPath();
-      await configurePreviewServer(server.middlewares, opts, sys, path);
+      await configurePreviewServer(server.middlewares, ssrOutDir, sys, path);
     },
     handleHotUpdate(ctx) {
       qwikPlugin.log("handleHotUpdate()", ctx);
