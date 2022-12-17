@@ -5623,6 +5623,9 @@
         else if (resource instanceof Promise) {
             promise = resource;
         }
+        else if (isSignal(resource)) {
+            promise = Promise.resolve(resource.value);
+        }
         else {
             return props.onResolved(resource);
         }

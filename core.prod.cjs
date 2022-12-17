@@ -3800,11 +3800,13 @@
                 }
             }
             promise = resource.value;
+        } else if (resource instanceof Promise) {
+            promise = resource;
         } else {
-            if (!(resource instanceof Promise)) {
+            if (!isSignal(resource)) {
                 return props.onResolved(resource);
             }
-            promise = resource;
+            promise = Promise.resolve(resource.value);
         }
         return jsx(Fragment, {
             children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))

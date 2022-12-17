@@ -2338,7 +2338,7 @@ export declare interface ResourcePending<T> {
  * @public
  */
 export declare interface ResourceProps<T> {
-    readonly value: ResourceReturn<T> | Signal<T> | Promise<T> | T;
+    readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
     onResolved: (value: T) => JSXNode;
     onPending?: () => JSXNode;
     onRejected?: (reason: any) => JSXNode;
