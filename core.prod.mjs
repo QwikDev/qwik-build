@@ -1311,7 +1311,7 @@ const stringifyStyle = obj => {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
-                    if (value) {
+                    if (null != value) {
                         const normalizedKey = key.startsWith("--") ? key : fromCamelToKebabCase(key);
                         chunks.push(normalizedKey + ":" + value);
                     }
