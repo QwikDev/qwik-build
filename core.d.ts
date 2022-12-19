@@ -3226,8 +3226,6 @@ export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: Resourc
  *
  * @see `useTask`
  * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 
@@ -3246,8 +3244,6 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  *
  * @see `useTask`
  * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
@@ -3434,9 +3430,9 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
- * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `taskFn` to rerun.
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
+ * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
+ * rerun.
  *
  * @see `Tracker`
  *
@@ -3505,9 +3501,9 @@ export declare interface UseTaskOptions {
  * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
  * those inputs change.
  *
- * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
- * `obs` function to wrap property reads. This creates subscriptions that will trigger the
- * `taskFn` to rerun.
+ * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
+ * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
+ * rerun.
  *
  * @see `Tracker`
  *
@@ -3584,7 +3580,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.0
+ * 0.16.1
  * @public
  */
 export declare const version: string;

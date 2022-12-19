@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.16.0
+ * @builder.io/qwik 0.16.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -4942,9 +4942,9 @@
      * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
      * those inputs change.
      *
-     * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
-     * `obs` function to wrap property reads. This creates subscriptions that will trigger the
-     * `taskFn` to rerun.
+     * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
+     * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
+     * rerun.
      *
      * @see `Tracker`
      *
@@ -5023,9 +5023,9 @@
      * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
      * those inputs change.
      *
-     * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the
-     * `obs` function to wrap property reads. This creates subscriptions that will trigger the
-     * `taskFn` to rerun.
+     * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
+     * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
+     * rerun.
      *
      * @see `Tracker`
      *
@@ -5923,7 +5923,7 @@
     };
     const FormDataSerializer = {
         prefix: '\u0016',
-        test: (v) => v instanceof FormData,
+        test: (v) => typeof FormData !== 'undefined' && v instanceof globalThis.FormData,
         serialize: (formData) => {
             const array = [];
             formData.forEach((value, key) => {
@@ -6707,7 +6707,7 @@
      * QWIK_VERSION
      * @public
      */
-    const version = "0.16.0";
+    const version = "0.16.1";
 
     /**
      * Render JSX.
@@ -8271,8 +8271,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      *
      * @see `useTask`
      * @public
-     * @deprecated - use `useTask$()` with `isServer` instead. See
-     * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
      */
     // </docs>
     const useServerMountQrl = (mountQrl) => {
@@ -8305,8 +8303,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      *
      * @see `useTask`
      * @public
-     * @deprecated - use `useTask$()` with `isServer` instead. See
-     * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
      */
     // </docs>
     const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);

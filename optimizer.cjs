@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.16.0
+ * @builder.io/qwik/optimizer 0.16.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -470,7 +470,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.16.0"
+    qwik: "0.16.1"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1977,7 +1977,7 @@ globalThis.qwikOptimizer = function(module) {
             jsx: "preserve"
           },
           optimizeDeps: {
-            exclude: [ "@vite/client", "@vite/env", "undici", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
+            exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
           },
           build: {
             outDir: opts.outDir,
