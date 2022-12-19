@@ -1469,11 +1469,12 @@ const CONTAINER_STATE = Symbol('ContainerState');
 const getContainerState = (containerEl) => {
     let set = containerEl[CONTAINER_STATE];
     if (!set) {
-        containerEl[CONTAINER_STATE] = set = createContainerState(containerEl);
+        assertTrue(!isServer(), 'Container state can only be created lazily on the browser');
+        containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
     }
     return set;
 };
-const createContainerState = (containerEl) => {
+const createContainerState = (containerEl, base) => {
     const containerState = {
         $containerEl$: containerEl,
         $elementIndex$: 0,
@@ -1486,6 +1487,7 @@ const createContainerState = (containerEl) => {
         $styleIds$: new Set(),
         $events$: new Set(),
         $envData$: {},
+        $base$: base,
         $renderPromise$: undefined,
         $hostsRendering$: undefined,
         $pauseCtx$: undefined,
@@ -6782,7 +6784,7 @@ const createDocument = () => {
 const renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
-    const containerState = createContainerState(containerEl);
+    const containerState = createContainerState(containerEl, opts.base ?? '/');
     containerState.$envData$.locale = opts.envData?.locale;
     const doc = createDocument();
     const rCtx = createRenderContext(doc, containerState);
@@ -7729,6 +7731,22 @@ const useRef = (current) => {
 /**
  * @alpha
  */
+const useId = () => {
+    const { get, set, elCtx, iCtx } = useSequentialScope();
+    if (get != null) {
+        return get;
+    }
+    const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || '';
+    const base = containerBase ? hashCode(containerBase) : '';
+    const hash = elCtx.$componentQrl$?.getHash() || '';
+    const counter = getNextIndex(iCtx.$renderCtx$) || '';
+    const id = `${base}-${hash}-${counter}`; // If no base and no hash, then "--#"
+    return set(id);
+};
+
+/**
+ * @alpha
+ */
 function useEnvData(key, defaultValue) {
     const ctx = useInvokeContext();
     return ctx.$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
@@ -8376,5 +8394,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

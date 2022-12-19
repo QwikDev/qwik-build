@@ -570,10 +570,10 @@
     const CONTAINER_STATE = Symbol("ContainerState");
     const getContainerState = containerEl => {
         let set = containerEl[CONTAINER_STATE];
-        return set || (containerEl[CONTAINER_STATE] = set = createContainerState(containerEl)), 
+        return set || (isServer(), containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
         set;
     };
-    const createContainerState = containerEl => {
+    const createContainerState = (containerEl, base) => {
         const containerState = {
             $containerEl$: containerEl,
             $elementIndex$: 0,
@@ -586,6 +586,7 @@
             $styleIds$: new Set,
             $events$: new Set,
             $envData$: {},
+            $base$: base,
             $renderPromise$: void 0,
             $hostsRendering$: void 0,
             $pauseCtx$: void 0,
@@ -1711,6 +1712,15 @@
     };
     const sameVnode = (vnode1, vnode2) => vnode1.$type$ === vnode2.$type$ && vnode1.$key$ === vnode2.$key$;
     const isTagName = (elm, tagName) => elm.$type$ === tagName;
+    const hashCode = (text, hash = 0) => {
+        if (0 === text.length) {
+            return hash;
+        }
+        for (let i = 0; i < text.length; i++) {
+            hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
+        }
+        return Number(Math.abs(hash)).toString(36);
+    };
     const serializeSStyle = scopeIds => {
         const value = scopeIds.join(" ");
         if (value.length > 0) {
@@ -3737,15 +3747,7 @@
         if (get) {
             return get;
         }
-        const styleId = (index = i, `${((text, hash = 0) => {
-            if (0 === text.length) {
-                return hash;
-            }
-            for (let i = 0; i < text.length; i++) {
-                hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
-            }
-            return Number(Math.abs(hash)).toString(36);
-        })(styleQrl.$hash$)}-${index}`);
+        const styleId = (index = i, `${hashCode(styleQrl.$hash$)}-${index}`);
         var index;
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
@@ -3916,7 +3918,7 @@
     }, exports.renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
-        const containerState = createContainerState(containerEl);
+        const containerState = createContainerState(containerEl, opts.base ?? "/");
         containerState.$envData$.locale = opts.envData?.locale;
         const rCtx = createRenderContext({
             nodeType: 9
@@ -3977,6 +3979,13 @@
         });
         return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
         store;
+    }, exports.useId = () => {
+        const {get: get, set: set, elCtx: elCtx, iCtx: iCtx} = useSequentialScope();
+        if (null != get) {
+            return get;
+        }
+        const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
+        return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
     }, exports.useLexicalScope = useLexicalScope, exports.useMount$ = useMount$, exports.useMountQrl = useMountQrl, 
     exports.useOn = useOn, exports.useOnDocument = useOnDocument, exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useRef = current => useStore({

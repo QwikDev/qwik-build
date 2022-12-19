@@ -535,6 +535,7 @@ declare interface ContainerState {
     readonly $opsNext$: Set<SubscriberSignal>;
     readonly $hostsNext$: Set<QwikElement>;
     readonly $hostsStaging$: Set<QwikElement>;
+    readonly $base$: string;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
     $envData$: Record<string, any>;
@@ -2970,6 +2971,11 @@ export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | 
  * @alpha
  */
 export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
+
+/**
+ * @alpha
+ */
+export declare const useId: () => string;
 
 /**
  * Used by the Qwik Optimizer to restore the lexically scoped variables.

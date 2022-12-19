@@ -1481,11 +1481,12 @@
     const getContainerState = (containerEl) => {
         let set = containerEl[CONTAINER_STATE];
         if (!set) {
-            containerEl[CONTAINER_STATE] = set = createContainerState(containerEl);
+            assertTrue(!isServer(), 'Container state can only be created lazily on the browser');
+            containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
         }
         return set;
     };
-    const createContainerState = (containerEl) => {
+    const createContainerState = (containerEl, base) => {
         const containerState = {
             $containerEl$: containerEl,
             $elementIndex$: 0,
@@ -1498,6 +1499,7 @@
             $styleIds$: new Set(),
             $events$: new Set(),
             $envData$: {},
+            $base$: base,
             $renderPromise$: undefined,
             $hostsRendering$: undefined,
             $pauseCtx$: undefined,
@@ -6794,7 +6796,7 @@
     const renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
-        const containerState = createContainerState(containerEl);
+        const containerState = createContainerState(containerEl, opts.base ?? '/');
         containerState.$envData$.locale = opts.envData?.locale;
         const doc = createDocument();
         const rCtx = createRenderContext(doc, containerState);
@@ -7741,6 +7743,22 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     /**
      * @alpha
      */
+    const useId = () => {
+        const { get, set, elCtx, iCtx } = useSequentialScope();
+        if (get != null) {
+            return get;
+        }
+        const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || '';
+        const base = containerBase ? hashCode(containerBase) : '';
+        const hash = elCtx.$componentQrl$?.getHash() || '';
+        const counter = getNextIndex(iCtx.$renderCtx$) || '';
+        const id = `${base}-${hash}-${counter}`; // If no base and no hash, then "--#"
+        return set(id);
+    };
+
+    /**
+     * @alpha
+     */
     function useEnvData(key, defaultValue) {
         const ctx = useInvokeContext();
         return ctx.$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
@@ -8434,6 +8452,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useContextProvider = useContextProvider;
     exports.useEnvData = useEnvData;
     exports.useErrorBoundary = useErrorBoundary;
+    exports.useId = useId;
     exports.useLexicalScope = useLexicalScope;
     exports.useMount$ = useMount$;
     exports.useMountQrl = useMountQrl;
