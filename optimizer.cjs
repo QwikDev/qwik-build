@@ -954,6 +954,8 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
+  var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
+  var SERVER_STRIP_CTX_NAME = [ "useServerMount$", "action$", "loader$" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
@@ -1128,8 +1130,8 @@ globalThis.qwikOptimizer = function(module) {
           scope: opts.scope ? opts.scope : void 0
         };
         if ("client" === opts.target) {
-          transformOpts.stripCtxName = [ "useServerMount$", "action$", "loader$" ];
-          transformOpts.stripExports = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch" ];
+          transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
+          transformOpts.stripExports = SERVER_STRIP_EXPORTS;
         } else if ("ssr" === opts.target) {
           transformOpts.stripCtxName = [ "useClientMount$", "useClientEffect$" ];
           transformOpts.stripCtxKind = "event";
@@ -1255,7 +1257,7 @@ globalThis.qwikOptimizer = function(module) {
         filePath = normalizePath(filePath);
         const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
         const mode = "development" === opts.buildMode ? "dev" : "prod";
-        const newOutput = optimizer.transformModulesSync({
+        const transformOpts = {
           input: [ {
             code: code,
             path: filePath
@@ -1270,7 +1272,13 @@ globalThis.qwikOptimizer = function(module) {
           srcDir: srcDir,
           mode: mode,
           scope: opts.scope ? opts.scope : void 0
-        });
+        };
+        const isSSR = ctx.ssr;
+        if (!isSSR) {
+          transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
+          transformOpts.stripExports = SERVER_STRIP_EXPORTS;
+        }
+        const newOutput = optimizer.transformModulesSync(transformOpts);
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
         0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
         results.set(normalizedID, newOutput);
