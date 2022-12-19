@@ -7125,6 +7125,11 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 else if (attrName === 'value' && tagName === 'textarea') {
                     htmlStr = escapeHtml(attrValue);
                 }
+                else if (isSSRUnsafeAttr(attrName)) {
+                    if (qDev) {
+                        logError('Attribute value is unsafe for SSR');
+                    }
+                }
                 else {
                     openingElement +=
                         ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
@@ -7197,7 +7202,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             flags |= IS_TEXT;
         }
         if (classStr) {
-            openingElement += ' class="' + classStr + '"';
+            openingElement += ' class="' + escapeAttr(classStr) + '"';
         }
         if (listeners.length > 0) {
             const groups = groupListeners(listeners);
@@ -7584,6 +7589,11 @@ const escapeAttr = (s) => {
                 return '';
         }
     });
+};
+// https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/; // eslint-disable-line no-control-regex
+const isSSRUnsafeAttr = (name) => {
+    return unsafeAttrCharRE.test(name);
 };
 const listenersNeedId = (listeners) => {
     return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);

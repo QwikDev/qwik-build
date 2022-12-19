@@ -3357,7 +3357,7 @@
                 }
                 prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
             }
             const listeners = elCtx.li;
             if (hostCtx) {
@@ -3368,7 +3368,7 @@
                 2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3);
             }
             if (isHead && (flags |= 1), invisibleElements[tagName] && (flags |= 16), textOnlyElements[tagName] && (flags |= 8), 
-            classStr && (openingElement += ' class="' + classStr + '"'), listeners.length > 0) {
+            classStr && (openingElement += ' class="' + escapeAttr(classStr) + '"'), listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 const isInvisible = 0 != (16 & flags);
                 for (const listener of groups) {
@@ -3601,6 +3601,8 @@
             return "";
         }
     }));
+    const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/;
+    const isSSRUnsafeAttr = name => unsafeAttrCharRE.test(name);
     const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
     const addDynamicSlot = (hostCtx, elCtx) => {
         let dynamicSlots = hostCtx.$dynamicSlots$;
