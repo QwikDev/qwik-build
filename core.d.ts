@@ -3226,6 +3226,7 @@ export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: Resourc
  *
  * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 
@@ -3244,6 +3245,7 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  *
  * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 

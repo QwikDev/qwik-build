@@ -8271,6 +8271,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      *
      * @see `useTask`
      * @public
+     * @deprecated - use `useTask$()` with `isServer` instead. See
      */
     // </docs>
     const useServerMountQrl = (mountQrl) => {
@@ -8303,6 +8304,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      *
      * @see `useTask`
      * @public
+     * @deprecated - use `useTask$()` with `isServer` instead. See
      */
     // </docs>
     const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);

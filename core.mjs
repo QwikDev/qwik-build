@@ -8259,6 +8259,7 @@ const useSignal = (initialState) => {
  *
  * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 // </docs>
 const useServerMountQrl = (mountQrl) => {
@@ -8291,6 +8292,7 @@ const useServerMountQrl = (mountQrl) => {
  *
  * @see `useTask`
  * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 // </docs>
 const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
