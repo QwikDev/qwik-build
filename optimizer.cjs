@@ -692,7 +692,8 @@ globalThis.qwikOptimizer = function(module) {
         input: input,
         stripCtxKind: fsOpts.stripCtxKind,
         stripCtxName: fsOpts.stripCtxName,
-        stripExports: fsOpts.stripExports
+        stripExports: fsOpts.stripExports,
+        isServer: fsOpts.isServer
       };
       return binding.transform_modules(convertOptions(modulesOpts));
     }
@@ -712,7 +713,8 @@ globalThis.qwikOptimizer = function(module) {
       scope: void 0,
       stripExports: void 0,
       stripCtxName: void 0,
-      stripCtxKind: void 0
+      stripCtxKind: void 0,
+      isServer: void 0
     };
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
@@ -1132,9 +1134,11 @@ globalThis.qwikOptimizer = function(module) {
         if ("client" === opts.target) {
           transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
           transformOpts.stripExports = SERVER_STRIP_EXPORTS;
+          transformOpts.isServer = false;
         } else if ("ssr" === opts.target) {
           transformOpts.stripCtxName = [ "useClientMount$", "useClientEffect$" ];
           transformOpts.stripCtxKind = "event";
+          transformOpts.isServer = true;
         }
         const result = await optimizer.transformFs(transformOpts);
         for (const output of result.modules) {
@@ -1449,7 +1453,6 @@ globalThis.qwikOptimizer = function(module) {
         };
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
         inputOpts.input || (inputOpts.input = opts.input);
-        "ssr" === opts.target && (inputOpts.treeshake = false);
         return inputOpts;
       },
       outputOptions: rollupOutputOpts => normalizeRollupOutputOptions(qwikPlugin.getPath(), qwikPlugin.getOptions(), rollupOutputOpts),
