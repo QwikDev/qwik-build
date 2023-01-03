@@ -1060,6 +1060,18 @@ const createPropsState = () => {
 const setObjectFlags = (obj, flags) => {
     Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
 };
+/**
+ * @internal
+ */
+const _restProps = (props, omit) => {
+    const rest = {};
+    for (const key in props) {
+        if (!omit.includes(key)) {
+            rest[key] = props[key];
+        }
+    }
+    return rest;
+};
 class ReadWriteProxyHandler {
     constructor($containerState$, $manager$) {
         this.$containerState$ = $containerState$;
@@ -1149,14 +1161,6 @@ class ReadWriteProxyHandler {
         return false;
     }
     ownKeys(target) {
-        let subscriber = null;
-        const invokeCtx = tryGetInvokeContext();
-        if (invokeCtx) {
-            subscriber = invokeCtx.$subscriber$;
-        }
-        if (subscriber) {
-            this.$manager$.$addSub$([0, subscriber, undefined]);
-        }
         if (isArray(target)) {
             return Reflect.ownKeys(target);
         }
@@ -8404,5 +8408,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

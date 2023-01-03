@@ -434,10 +434,7 @@
             return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
         }
         ownKeys(target) {
-            let subscriber = null;
-            const invokeCtx = tryGetInvokeContext();
-            return invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$([ 0, subscriber, void 0 ]), 
-            isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
             return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
@@ -3828,7 +3825,13 @@
             "q:s": ""
         }, name);
     }, exports._IMMUTABLE = _IMMUTABLE, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
-    exports._pauseFromContexts = _pauseFromContexts, exports._wrapSignal = (obj, prop) => {
+    exports._pauseFromContexts = _pauseFromContexts, exports._restProps = (props, omit) => {
+        const rest = {};
+        for (const key in props) {
+            omit.includes(key) || (rest[key] = props[key]);
+        }
+        return rest;
+    }, exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return;
         }

@@ -1072,6 +1072,18 @@
     const setObjectFlags = (obj, flags) => {
         Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
     };
+    /**
+     * @internal
+     */
+    const _restProps = (props, omit) => {
+        const rest = {};
+        for (const key in props) {
+            if (!omit.includes(key)) {
+                rest[key] = props[key];
+            }
+        }
+        return rest;
+    };
     class ReadWriteProxyHandler {
         constructor($containerState$, $manager$) {
             this.$containerState$ = $containerState$;
@@ -1161,14 +1173,6 @@
             return false;
         }
         ownKeys(target) {
-            let subscriber = null;
-            const invokeCtx = tryGetInvokeContext();
-            if (invokeCtx) {
-                subscriber = invokeCtx.$subscriber$;
-            }
-            if (subscriber) {
-                this.$manager$.$addSub$([0, subscriber, undefined]);
-            }
             if (isArray(target)) {
                 return Reflect.ownKeys(target);
             }
@@ -8431,6 +8435,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports._hW = _hW;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
+    exports._restProps = _restProps;
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;

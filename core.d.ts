@@ -2377,6 +2377,11 @@ declare interface ResourceReturnInternal<T> {
     loading: boolean;
 }
 
+/**
+ * @internal
+ */
+export declare const _restProps: (props: Record<string, any>, omit: string[]) => Record<string, any>;
+
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
