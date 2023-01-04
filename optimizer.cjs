@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.16.1
+ * @builder.io/qwik/optimizer 0.16.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -470,7 +470,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.16.1"
+    qwik: "0.16.2"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1960,8 +1960,8 @@ globalThis.qwikOptimizer = function(module) {
             }
           } catch (e) {}
           const nodeOs = await sys.dynamicImport("node:os");
-          const scopePrefix = pluginOpts.scope ? `${pluginOpts.scope}-` : "";
-          tmpClientManifestPath = path.join(nodeOs.tmpdir(), `${scopePrefix}vite-plugin-qwik-q-manifest.json`);
+          const scopeSuffix = pluginOpts.scope ? `-${pluginOpts.scope.replace(/\//g, "--")}` : "";
+          tmpClientManifestPath = path.join(nodeOs.tmpdir(), `vite-plugin-qwik-q-manifest${scopeSuffix}.json`);
           if ("ssr" === target && !pluginOpts.manifestInput) {
             try {
               const clientManifestStr = await fs.promises.readFile(tmpClientManifestPath, "utf-8");

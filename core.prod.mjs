@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.16.1
+ * @builder.io/qwik 0.16.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3632,7 +3632,7 @@ const Slot = props => {
     }, name);
 };
 
-const version = "0.16.1";
+const version = "0.16.2";
 
 const render = async (parent, jsxNode, opts) => {
     isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
@@ -3664,7 +3664,7 @@ const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) =
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "0.16.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "0.16.2"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -3691,7 +3691,7 @@ const renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "0.16.1",
+        "q:version": "0.16.2",
         "q:render": "ssr",
         "q:base": opts.base,
         "q:locale": opts.envData?.locale,
