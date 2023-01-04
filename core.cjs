@@ -1312,6 +1312,7 @@
             $dynamicSlots$: null,
             $parent$: null,
             $slotParent$: null,
+            $extraRender$: null,
         };
         seal(ctx);
         element[Q_CTX] = ctx;
@@ -2552,6 +2553,7 @@
         elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
         elCtx.$flags$ |= HOST_FLAG_MOUNTED;
         elCtx.$slots$ = [];
+        elCtx.$extraRender$ = null;
         elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
@@ -2577,7 +2579,7 @@
                         return executeComponent(rCtx, elCtx);
                     }
                     return {
-                        node: jsxNode,
+                        node: addExtraItems(jsxNode, elCtx),
                         rCtx: newCtx,
                     };
                 });
@@ -2586,7 +2588,7 @@
                 return executeComponent(rCtx, elCtx);
             }
             return {
-                node: jsxNode,
+                node: addExtraItems(jsxNode, elCtx),
                 rCtx: newCtx,
             };
         }, (err) => {
@@ -2596,6 +2598,12 @@
                 rCtx: newCtx,
             };
         });
+    };
+    const addExtraItems = (node, elCtx) => {
+        if (elCtx.$extraRender$) {
+            return [node, elCtx.$extraRender$];
+        }
+        return node;
     };
     const createRenderContext = (doc, containerState) => {
         const ctx = {
@@ -8420,6 +8428,20 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         return store;
     };
 
+    /**
+     * @alpha
+     */
+    const useRender = (jsx) => {
+        const iCtx = useInvokeContext();
+        const hostElement = iCtx.$hostElement$;
+        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+        let extraRender = elCtx.$extraRender$;
+        if (!extraRender) {
+            extraRender = elCtx.$extraRender$ = [];
+        }
+        extraRender.push(jsx);
+    };
+
     exports.$ = $;
     exports.Fragment = Fragment;
     exports.RenderOnce = RenderOnce;
@@ -8475,6 +8497,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;
     exports.useRef = useRef;
+    exports.useRender = useRender;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
     exports.useServerMount$ = useServerMount$;

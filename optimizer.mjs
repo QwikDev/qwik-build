@@ -1945,8 +1945,8 @@ function qwikVite(qwikViteOpts = {}) {
           }
         } catch (e) {}
         const nodeOs = await sys.dynamicImport("node:os");
-        const scopePrefix = pluginOpts.scope ? `${pluginOpts.scope}-` : "";
-        tmpClientManifestPath = path.join(nodeOs.tmpdir(), `${scopePrefix}vite-plugin-qwik-q-manifest.json`);
+        const scopeSuffix = pluginOpts.scope ? `-${pluginOpts.scope.replace(/\//g, "--")}` : "";
+        tmpClientManifestPath = path.join(nodeOs.tmpdir(), `vite-plugin-qwik-q-manifest${scopeSuffix}.json`);
         if ("ssr" === target && !pluginOpts.manifestInput) {
           try {
             const clientManifestStr = await fs.promises.readFile(tmpClientManifestPath, "utf-8");

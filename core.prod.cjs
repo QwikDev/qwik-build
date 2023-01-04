@@ -530,7 +530,8 @@
             $contexts$: null,
             $dynamicSlots$: null,
             $parent$: null,
-            $slotParent$: null
+            $slotParent$: null,
+            $extraRender$: null
         };
         return element._qc_ = ctx, ctx;
     };
@@ -1010,7 +1011,8 @@
         }
     };
     const executeComponent = (rCtx, elCtx) => {
-        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
+        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.$extraRender$ = null, 
+        elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -1021,16 +1023,17 @@
         invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(invocationContext);
         return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: jsxNode,
+            node: addExtraItems(jsxNode, elCtx),
             rCtx: newCtx
         })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: jsxNode,
+            node: addExtraItems(jsxNode, elCtx),
             rCtx: newCtx
         }), (err => (handleError(err, hostElement, rCtx), {
             node: SkipRender,
             rCtx: newCtx
         })));
     };
+    const addExtraItems = (node, elCtx) => elCtx.$extraRender$ ? [ node, elCtx.$extraRender$ ] : node;
     const createRenderContext = (doc, containerState) => ({
         $static$: {
             $doc$: doc,
@@ -3995,7 +3998,13 @@
     exports.useOn = useOn, exports.useOnDocument = useOnDocument, exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useRef = current => useStore({
         current: current
-    }), exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
+    }), exports.useRender = jsx => {
+        const iCtx = useInvokeContext();
+        const hostElement = iCtx.$hostElement$;
+        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+        let extraRender = elCtx.$extraRender$;
+        extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
+    }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerMount$ = useServerMount$, 
     exports.useServerMountQrl = useServerMountQrl, exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();

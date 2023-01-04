@@ -677,7 +677,8 @@ const createContext$1 = element => {
         $contexts$: null,
         $dynamicSlots$: null,
         $parent$: null,
-        $slotParent$: null
+        $slotParent$: null,
+        $extraRender$: null
     };
     return element._qc_ = ctx, ctx;
 };
@@ -1251,7 +1252,8 @@ const handleError = (err, hostElement, rCtx) => {
 };
 
 const executeComponent = (rCtx, elCtx) => {
-    elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
+    elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.$extraRender$ = null, 
+    elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
@@ -1262,16 +1264,18 @@ const executeComponent = (rCtx, elCtx) => {
     invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(invocationContext);
     return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-        node: jsxNode,
+        node: addExtraItems(jsxNode, elCtx),
         rCtx: newCtx
     })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-        node: jsxNode,
+        node: addExtraItems(jsxNode, elCtx),
         rCtx: newCtx
     }), (err => (handleError(err, hostElement, rCtx), {
         node: SkipRender,
         rCtx: newCtx
     })));
 };
+
+const addExtraItems = (node, elCtx) => elCtx.$extraRender$ ? [ node, elCtx.$extraRender$ ] : node;
 
 const createRenderContext = (doc, containerState) => ({
     $static$: {
@@ -4447,4 +4451,12 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+const useRender = jsx => {
+    const iCtx = useInvokeContext();
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+    let extraRender = elCtx.$extraRender$;
+    extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
+};
+
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

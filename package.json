@@ -9,7 +9,7 @@
     "qwik": "./qwik.cjs"
   },
   "type": "module",
-  "dependencies": {
+  "peerDependencies": {
     "undici": "^5.14.0"
   },
   "exports": {
@@ -166,6 +166,6 @@
     "Builder.io"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=16.8.0"
   }
 }

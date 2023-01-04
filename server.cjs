@@ -743,14 +743,14 @@ async function renderToStream(rootNode, opts) {
   }
   flush();
   assertDefined(snapshotResult, "snapshotResult must be defined");
-  const isStatic = !containsDynamic && !snapshotResult.resources.some((r) => r._cache !== Infinity);
+  const isDynamic = containsDynamic || snapshotResult.resources.some((r) => r._cache !== Infinity);
   const result = {
     prefetchResources: void 0,
     snapshotResult,
     flushes: networkFlushes,
     manifest: resolvedManifest == null ? void 0 : resolvedManifest.manifest,
     size: totalSize,
-    isStatic,
+    isStatic: !isDynamic,
     timing: {
       render: renderTime,
       snapshot: snapshotTime,
