@@ -1600,6 +1600,9 @@ class JSXNodeImpl {
                                 throw qError(QError_invalidJsxNodeType, type);
                             }
                         }
+                        if (prop !== 'children' && isQwikComponent(type) && value) {
+                            verifySerializable(value, `The value of the JSX property "${prop}" can not be serialized`);
+                        }
                     }
                 }
             });
@@ -6045,11 +6048,11 @@ const OBJECT_TRANSFORMS = {
     },
 };
 
-const verifySerializable = (value) => {
+const verifySerializable = (value, preMessage) => {
     const seen = new Set();
-    return _verifySerializable(value, seen);
+    return _verifySerializable(value, seen, '_', preMessage);
 };
-const _verifySerializable = (value, seen) => {
+const _verifySerializable = (value, seen, ctx, preMessage) => {
     const unwrapped = unwrapProxy(value);
     if (unwrapped == null) {
         return value;
@@ -6062,7 +6065,8 @@ const _verifySerializable = (value, seen) => {
         if (canSerialize(unwrapped)) {
             return value;
         }
-        switch (typeof unwrapped) {
+        const typeObj = typeof unwrapped;
+        switch (typeObj) {
             case 'object':
                 if (isPromise(unwrapped))
                     return value;
@@ -6077,14 +6081,14 @@ const _verifySerializable = (value, seen) => {
                         if (i !== expectIndex) {
                             throw qError(QError_verifySerializable, unwrapped);
                         }
-                        _verifySerializable(v, seen);
+                        _verifySerializable(v, seen, ctx + '[' + i + ']');
                         expectIndex = i + 1;
                     });
                     return value;
                 }
                 if (isSerializableObject(unwrapped)) {
-                    for (const item of Object.values(unwrapped)) {
-                        _verifySerializable(item, seen);
+                    for (const [key, item] of Object.entries(unwrapped)) {
+                        _verifySerializable(item, seen, ctx + '.' + key);
                     }
                     return value;
                 }
@@ -6094,7 +6098,25 @@ const _verifySerializable = (value, seen) => {
             case 'number':
                 return value;
         }
-        throw qError(QError_verifySerializable, unwrapped);
+        let message = '';
+        if (preMessage) {
+            message = preMessage;
+        }
+        else {
+            message = 'Value cannot be serialized';
+        }
+        if (ctx !== '_') {
+            message += ` in ${ctx},`;
+        }
+        if (typeObj === 'object') {
+            message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.builder.io/docs/advanced/dollar/`;
+        }
+        else if (typeObj === 'function') {
+            const fnName = value.name;
+            message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
+        }
+        console.error('Trying to serialize', value);
+        throw createError(message);
     }
     return value;
 };
@@ -6296,7 +6318,11 @@ const isQrl = (value) => {
 };
 const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
     if (qDev) {
-        verifySerializable(captureRef);
+        if (captureRef) {
+            for (const item of captureRef) {
+                verifySerializable(item, 'Captured variable in the closure can not be serialized');
+            }
+        }
     }
     let _containerEl;
     const setContainer = (el) => {
@@ -6573,15 +6599,6 @@ const componentQrl = (componentQrl) => {
     // Return a QComponent Factory function.
     function QwikComponent(props, key) {
         assertQrl(componentQrl);
-        if (qDev) {
-            invoke(undefined, () => {
-                for (const key of Object.keys(props)) {
-                    if (key !== 'children') {
-                        verifySerializable(props[key]);
-                    }
-                }
-            });
-        }
         const hash = qTest ? 'sX' : componentQrl.$hash$.slice(0, 4);
         const finalKey = hash + ':' + (key ? key : '');
         return jsx(Virtual, {
