@@ -3688,13 +3688,11 @@ const renderSSR = async (node, opts) => {
         $projectedCtxs$: void 0,
         $invocationContext$: void 0
     };
-    let qRender = "ssr";
-    opts.containerAttributes["q:render"] && (qRender = `${opts.containerAttributes["q:render"]}-${qRender}`);
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
         "q:version": "0.16.2",
-        "q:render": qRender,
+        "q:render": "ssr",
         "q:base": opts.base,
         "q:locale": opts.envData?.locale,
         children: "html" === root ? [ node ] : [ headNodes, node ]
