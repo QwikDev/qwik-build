@@ -6830,11 +6830,15 @@ const renderSSR = async (node, opts) => {
         $invocationContext$: undefined,
     };
     seal(ssrCtx);
+    let qRender = qDev ? 'ssr-dev' : 'ssr';
+    if (opts.containerAttributes['q:render']) {
+        qRender = `${opts.containerAttributes['q:render']}-${qRender}`;
+    }
     const containerAttributes = {
         ...opts.containerAttributes,
         'q:container': 'paused',
         'q:version': version ?? 'dev',
-        'q:render': qDev ? 'ssr-dev' : 'ssr',
+        'q:render': qRender,
         'q:base': opts.base,
         'q:locale': opts.envData?.locale,
         children: root === 'html' ? [node] : [headNodes, node],
