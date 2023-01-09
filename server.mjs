@@ -194,10 +194,12 @@ if (qDev) {
 
 // packages/qwik/src/optimizer/src/manifest.ts
 var EVENT_PRIORITY = [
+  // Click Events
   "click",
   "dblclick",
   "contextmenu",
   "auxclick",
+  // Pointer Events
   "pointerdown",
   "pointerup",
   "pointermove",
@@ -208,10 +210,12 @@ var EVENT_PRIORITY = [
   "pointercancel",
   "gotpointercapture",
   "lostpointercapture",
+  // Touch Events
   "touchstart",
   "touchend",
   "touchmove",
   "touchcancel",
+  // Mouse Events
   "mousedown",
   "mouseup",
   "mousemove",
@@ -220,24 +224,30 @@ var EVENT_PRIORITY = [
   "mouseover",
   "mouseout",
   "wheel",
+  // Gesture Events
   "gesturestart",
   "gesturechange",
   "gestureend",
+  // Keyboard Events
   "keydown",
   "keyup",
   "keypress",
+  // Input/Change Events
   "input",
   "change",
   "search",
   "invalid",
   "beforeinput",
   "select",
+  // Focus/Blur Events
   "focusin",
   "focusout",
   "focus",
   "blur",
+  // Form Events
   "submit",
   "reset",
+  // Scroll Events
   "scroll"
 ].map((n) => `on${n.toLowerCase()}$`);
 var FUNCTION_PRIORITY = [

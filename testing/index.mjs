@@ -23,6 +23,10 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
@@ -212,22 +216,27 @@ var require_DOMException = __commonJS({
     var DATA_CLONE_ERR = 25;
     var names = [
       null,
+      // No error with code 0
       "INDEX_SIZE_ERR",
       null,
+      // historical
       "HIERARCHY_REQUEST_ERR",
       "WRONG_DOCUMENT_ERR",
       "INVALID_CHARACTER_ERR",
       null,
+      // historical
       "NO_MODIFICATION_ALLOWED_ERR",
       "NOT_FOUND_ERR",
       "NOT_SUPPORTED_ERR",
       "INUSE_ATTRIBUTE_ERR",
+      // historical
       "INVALID_STATE_ERR",
       "SYNTAX_ERR",
       "INVALID_MODIFICATION_ERR",
       "NAMESPACE_ERR",
       "INVALID_ACCESS_ERR",
       null,
+      // historical
       "TYPE_MISMATCH_ERR",
       "SECURITY_ERR",
       "NETWORK_ERR",
@@ -240,6 +249,7 @@ var require_DOMException = __commonJS({
     ];
     var messages = [
       null,
+      // No error with code 0
       "INDEX_SIZE_ERR (1): the index is not in the allowed range",
       null,
       "HIERARCHY_REQUEST_ERR (3): the operation would yield an incorrect nodes model",
@@ -269,20 +279,24 @@ var require_DOMException = __commonJS({
     var constants = {
       INDEX_SIZE_ERR,
       DOMSTRING_SIZE_ERR: 2,
+      // historical
       HIERARCHY_REQUEST_ERR,
       WRONG_DOCUMENT_ERR,
       INVALID_CHARACTER_ERR,
       NO_DATA_ALLOWED_ERR: 6,
+      // historical
       NO_MODIFICATION_ALLOWED_ERR,
       NOT_FOUND_ERR,
       NOT_SUPPORTED_ERR,
       INUSE_ATTRIBUTE_ERR: 10,
+      // historical
       INVALID_STATE_ERR,
       SYNTAX_ERR,
       INVALID_MODIFICATION_ERR,
       NAMESPACE_ERR,
       INVALID_ACCESS_ERR,
       VALIDATION_ERR: 16,
+      // historical
       TYPE_MISMATCH_ERR,
       SECURITY_ERR,
       NETWORK_ERR,
@@ -448,6 +462,19 @@ var require_EventTarget = __commonJS({
     function EventTarget() {
     }
     EventTarget.prototype = {
+      // XXX
+      // See WebIDL §4.8 for details on object event handlers
+      // and how they should behave.  We actually have to accept
+      // any object to addEventListener... Can't type check it.
+      // on registration.
+      // XXX:
+      // Capturing event listeners are sort of rare.  I think I can optimize
+      // them so that dispatchEvent can skip the capturing phase (or much of
+      // it).  Each time a capturing listener is added, increment a flag on
+      // the target node and each of its ancestors.  Decrement when removed.
+      // And update the counter when nodes are added and removed from the
+      // tree as well.  Then, in dispatch event, the capturing phase can
+      // abort if it sees any node with a zero count.
       addEventListener: function addEventListener(type, listener, capture) {
         if (!listener)
           return;
@@ -488,9 +515,27 @@ var require_EventTarget = __commonJS({
           }
         }
       },
+      // This is the public API for dispatching untrusted public events.
+      // See _dispatchEvent for the implementation
       dispatchEvent: function dispatchEvent(event) {
         return this._dispatchEvent(event, false);
       },
+      //
+      // See DOMCore §4.4
+      // XXX: I'll probably need another version of this method for
+      // internal use, one that does not set isTrusted to false.
+      // XXX: see Document._dispatchEvent: perhaps that and this could
+      // call a common internal function with different settings of
+      // a trusted boolean argument
+      //
+      // XXX:
+      // The spec has changed in how to deal with handlers registered
+      // on idl or content attributes rather than with addEventListener.
+      // Used to say that they always ran first.  That's how webkit does it
+      // Spec now says that they run in a position determined by
+      // when they were first set.  FF does it that way.  See:
+      // http://www.whatwg.org/specs/web-apps/current-work/multipage/webappapis.html#event-handlers
+      //
       _dispatchEvent: function _dispatchEvent(event, trusted) {
         if (typeof trusted !== "boolean")
           trusted = false;
@@ -593,9 +638,16 @@ var require_EventTarget = __commonJS({
         }
         return !event.defaultPrevented;
       },
+      // Determine whether a click occurred
+      // XXX We don't support double clicks for now
       _isClick: function(event) {
         return this._armed !== null && event.type === "mouseup" && event.isTrusted && event.button === 0 && event.timeStamp - this._armed.t < 1e3 && Math.abs(event.clientX - this._armed.x) < 10 && Math.abs(event.clientY - this._armed.Y) < 10;
       },
+      // Clicks are handled like this:
+      // http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html#interactive-content-0
+      //
+      // Note that this method is similar to the HTMLElement.click() method
+      // The event argument must be the trusted mouseup event
       _doClick: function(event) {
         if (this._click_in_progress)
           return;
@@ -635,6 +687,19 @@ var require_EventTarget = __commonJS({
           }
         }
       },
+      //
+      // An event handler is like an event listener, but it registered
+      // by setting an IDL or content attribute like onload or onclick.
+      // There can only be one of these at a time for any event type.
+      // This is an internal method for the attribute accessors and
+      // content attribute handlers that need to register events handlers.
+      // The type argument is the same as in addEventListener().
+      // The handler argument is the same as listeners in addEventListener:
+      // it can be a function or an object. Pass null to remove any existing
+      // handler.  Handlers are always invoked before any listeners of
+      // the same type.  They are not invoked during the capturing phase
+      // of event dispatch.
+      //
       _setEventHandler: function _setEventHandler(type, handler) {
         if (!this._handlers)
           this._handlers = /* @__PURE__ */ Object.create(null);
@@ -653,12 +718,14 @@ var require_LinkedList = __commonJS({
     "use strict";
     var utils = require_utils();
     var LinkedList = module.exports = {
+      // basic validity tests on a circular linked list a
       valid: function(a) {
         utils.assert(a, "list falsy");
         utils.assert(a._previousSibling, "previous falsy");
         utils.assert(a._nextSibling, "next falsy");
         return true;
       },
+      // insert a before b
       insertBefore: function(a, b) {
         utils.assert(LinkedList.valid(a) && LinkedList.valid(b));
         var a_first = a, a_last = a._previousSibling;
@@ -669,6 +736,7 @@ var require_LinkedList = __commonJS({
         b_first._previousSibling = a_last;
         utils.assert(LinkedList.valid(a) && LinkedList.valid(b));
       },
+      // replace a single node a with a list b (which could be null)
       replace: function(a, b) {
         utils.assert(LinkedList.valid(a) && (b === null || LinkedList.valid(b)));
         if (b !== null) {
@@ -677,6 +745,7 @@ var require_LinkedList = __commonJS({
         LinkedList.remove(a);
         utils.assert(LinkedList.valid(a) && (b === null || LinkedList.valid(b)));
       },
+      // remove single node a from its list
       remove: function(a) {
         utils.assert(LinkedList.valid(a));
         var prev = a._previousSibling;
@@ -698,6 +767,16 @@ var require_NodeUtils = __commonJS({
   "packages/qwik-dom/lib/NodeUtils.js"(exports, module) {
     "use strict";
     module.exports = {
+      // NOTE: The `serializeOne()` function used to live on the `Node.prototype`
+      // as a private method `Node#_serializeOne(child)`, however that requires
+      // a megamorphic property access `this._serializeOne` just to get to the
+      // method, and this is being done on lots of different `Node` subclasses,
+      // which puts a lot of pressure on V8's megamorphic stub cache. So by
+      // moving the helper off of the `Node.prototype` and into a separate
+      // function in this helper module, we get a monomorphic property access
+      // `NodeUtils.serializeOne` to get to the function and reduce pressure
+      // on the megamorphic stub cache.
+      // See https://github.com/fgnass/domino/pull/142 for more information.
       serializeOne
     };
     var utils = require_utils();
@@ -731,7 +810,13 @@ var require_NodeUtils = __commonJS({
       track: true,
       wbr: true
     };
-    var extraNewLine = {};
+    var extraNewLine = {
+      /* Removed in https://github.com/whatwg/html/issues/944
+      pre: true,
+      textarea: true,
+      listing: true
+      */
+    };
     function escape(s) {
       return s.replace(/[&<>\u00A0]/g, function(c) {
         switch (c) {
@@ -875,6 +960,10 @@ var require_Node = __commonJS({
     var DOCUMENT_POSITION_CONTAINED_BY = Node.DOCUMENT_POSITION_CONTAINED_BY = 16;
     var DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC = 32;
     Node.prototype = Object.create(EventTarget.prototype, {
+      // Node that are not inserted into the tree inherit a null parent
+      // XXX: the baseURI attribute is defined by dom core, but
+      // a correct implementation of it requires HTML features, so
+      // we'll come back to this later.
       baseURI: { get: utils.nyi },
       parentElement: {
         get: function() {
@@ -920,6 +1009,7 @@ var require_Node = __commonJS({
         }
       },
       textContent: {
+        // Should override for DocumentFragment/Element/Attr/Text/PI/Comment
         get: function() {
           return null;
         },
@@ -1079,6 +1169,7 @@ var require_Node = __commonJS({
           return child;
         }
       },
+      // To replace a `child` with `node` within a `parent` (this)
       replaceChild: {
         value: function replaceChild(node, child) {
           var parent = this;
@@ -1090,6 +1181,7 @@ var require_Node = __commonJS({
           return child;
         }
       },
+      // See: http://ejohn.org/blog/comparing-document-position/
       contains: {
         value: function contains(node) {
           if (node === null) {
@@ -1136,6 +1228,9 @@ var require_Node = __commonJS({
           return this === node;
         }
       },
+      // This method implements the generic parts of node equality testing
+      // and defers to the (non-recursive) type-specific isEqual() method
+      // defined by subclasses
       isEqualNode: {
         value: function isEqualNode(node) {
           if (!node)
@@ -1151,6 +1246,8 @@ var require_Node = __commonJS({
           return c1 === null && c2 === null;
         }
       },
+      // This method delegates shallow cloning to a clone() method
+      // that each concrete subclass must implement
       cloneNode: {
         value: function(deep) {
           var clone = this.clone();
@@ -1222,6 +1319,9 @@ var require_Node = __commonJS({
           return defaultNamespace === ns;
         }
       },
+      // Utility methods for nodes.  Not part of the DOM
+      // Return the index of this node in its parent.
+      // Throw if no parent, or if this node is not a child of its parent
       index: {
         get: function() {
           var parent = this.parentNode;
@@ -1237,6 +1337,8 @@ var require_Node = __commonJS({
           return this._index;
         }
       },
+      // Return true if this node is equal to or is an ancestor of that node
+      // Note that nodes are considered to be ancestors of themselves
       isAncestor: {
         value: function(that) {
           if (this.doc !== that.doc)
@@ -1250,6 +1352,8 @@ var require_Node = __commonJS({
           return false;
         }
       },
+      // DOMINO Changed the behavior to conform with the specs. See:
+      // https://groups.google.com/d/topic/mozilla.dev.platform/77sIYcpdDmc/discussion
       ensureSameDoc: {
         value: function(that) {
           if (that.ownerDocument === null) {
@@ -1260,6 +1364,10 @@ var require_Node = __commonJS({
         }
       },
       removeChildren: { value: utils.shouldOverride },
+      // Insert this node as a child of parent before the specified child,
+      // or insert as the last child of parent if specified child is null,
+      // or replace the specified child with this node, firing mutation events as
+      // necessary
       _insertOrReplace: {
         value: function _insertOrReplace(parent, before, isReplace) {
           var child = this, before_index, i;
@@ -1361,6 +1469,12 @@ var require_Node = __commonJS({
           }
         }
       },
+      // Return the lastModTime value for this node. (For use as a
+      // cache invalidation mechanism. If the node does not already
+      // have one, initialize it from the owner document's modclock
+      // property. (Note that modclock does not return the actual
+      // time; it is simply a counter incremented on each document
+      // modification)
       lastModTime: {
         get: function() {
           if (!this._lastModTime) {
@@ -1369,6 +1483,14 @@ var require_Node = __commonJS({
           return this._lastModTime;
         }
       },
+      // Increment the owner document's modclock and use the new
+      // value to update the lastModTime value for this node and
+      // all of its ancestors. Nodes that have never had their
+      // lastModTime value queried do not need to have a
+      // lastModTime property set on them since there is no
+      // previously queried value to ever compare the new value
+      // against, so only update nodes that already have a
+      // _lastModTime property.
       modify: {
         value: function() {
           if (this.doc.modclock) {
@@ -1381,11 +1503,17 @@ var require_Node = __commonJS({
           }
         }
       },
+      // This attribute is not part of the DOM but is quite helpful.
+      // It returns the document with which a node is associated.  Usually
+      // this is the ownerDocument. But ownerDocument is null for the
+      // document object itself, so this is a handy way to get the document
+      // regardless of the node type
       doc: {
         get: function() {
           return this.ownerDocument || this;
         }
       },
+      // If the node has a nid (node id), then it is rooted in a document
       rooted: {
         get: function() {
           return !!this._nid;
@@ -1416,6 +1544,18 @@ var require_Node = __commonJS({
           }
         }
       },
+      // Convert the children of a node to an HTML string.
+      // This is used by the innerHTML getter
+      // The serialization spec is at:
+      // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-end.html#serializing-html-fragments
+      //
+      // The serialization logic is intentionally implemented in a separate
+      // `NodeUtils` helper instead of the more obvious choice of a private
+      // `_serializeOne()` method on the `Node.prototype` in order to avoid
+      // the megamorphic `this._serializeOne` property access, which reduces
+      // performance unnecessarily. If you need specialized behavior for a
+      // certain subclass, you'll need to implement that in `NodeUtils`.
+      // See https://github.com/fgnass/domino/pull/142 for more information.
       serialize: {
         value: function() {
           if (this._innerHTML) {
@@ -1428,12 +1568,15 @@ var require_Node = __commonJS({
           return s;
         }
       },
+      // Non-standard, but often useful for debugging.
       outerHTML: {
         get: function() {
           return NodeUtils.serializeOne(this, { nodeType: 0 });
         },
         set: utils.nyi
       },
+      // mirror node type properties in the prototype, so they are present
+      // in instances of Node (and subclasses)
       ELEMENT_NODE: { value: ELEMENT_NODE },
       ATTRIBUTE_NODE: { value: ATTRIBUTE_NODE },
       TEXT_NODE: { value: TEXT_NODE },
@@ -1568,6 +1711,8 @@ var require_ContainerNode = __commonJS({
           this._firstChild = null;
         }
       },
+      // Remove all of this node's children.  This is a minor
+      // optimization that only calls modify() once.
       removeChildren: {
         value: function removeChildren() {
           var root = this.rooted ? this.ownerDocument : null, next = this.firstChild, kid;
@@ -1808,7 +1953,9 @@ var require_FilteredElementList = __commonJS({
         value: function(n) {
           this.checkcache();
           if (!this.done && n >= this.cache.length) {
-            this.traverse();
+            this.traverse(
+              /*n*/
+            );
           }
           return this.cache[n];
         }
@@ -1825,6 +1972,9 @@ var require_FilteredElementList = __commonJS({
           }
         }
       },
+      // If n is specified, then traverse the tree until we've found the nth
+      // item (or until we've found all items).  If n is not specified,
+      // traverse until we've found all items.
       traverse: {
         value: function(n) {
           if (n !== void 0)
@@ -1839,6 +1989,7 @@ var require_FilteredElementList = __commonJS({
           this.done = true;
         }
       },
+      // Return the next element under root that matches filter
       next: {
         value: function() {
           var start = this.cache.length === 0 ? this.root : this.cache[this.cache.length - 1];
@@ -1979,6 +2130,7 @@ var require_DOMTokenList = __commonJS({
           this._update();
         }
       },
+      // Called when the setter is called from outside this interface.
       _update: {
         value: function(list) {
           if (list) {
@@ -2110,7 +2262,10 @@ var require_select = __commonJS({
             return "";
           }
           var cp = parseInt(m[1], 16);
-          return String.fromCodePoint ? String.fromCodePoint(cp) : String.fromCharCode(cp);
+          return String.fromCodePoint ? String.fromCodePoint(cp) : (
+            // Not all JavaScript implementations have String.fromCodePoint yet.
+            String.fromCharCode(cp)
+          );
         });
       } else if (rules.ident.test(str)) {
         return decodeid(str);
@@ -2125,7 +2280,10 @@ var require_select = __commonJS({
           return s[1];
         }
         var cp = parseInt(m[1], 16);
-        return String.fromCodePoint ? String.fromCodePoint(cp) : String.fromCharCode(cp);
+        return String.fromCodePoint ? String.fromCodePoint(cp) : (
+          // Not all JavaScript implementations have String.fromCodePoint yet.
+          String.fromCharCode(cp)
+        );
       });
     };
     var indexOf = function() {
@@ -2341,6 +2499,8 @@ var require_select = __commonJS({
       ":is": function(sel) {
         return compileGroup(sel);
       },
+      // :matches is an older name for :is; see
+      // https://github.com/w3c/csswg-drafts/issues/3258
       ":matches": function(sel) {
         return selectors[":is"](sel);
       },
@@ -2455,6 +2615,7 @@ var require_select = __commonJS({
       ":future": function() {
         throw new Error(":future is not supported.");
       },
+      // Non-standard, for compatibility purposes.
       ":contains": function(param) {
         return function(el) {
           var text = el.innerText || el.textContent || el.value || "";
@@ -2466,6 +2627,9 @@ var require_select = __commonJS({
           return find(param, el).length > 0;
         };
       }
+      // Potentially add more pseudo selectors for
+      // compatibility with sizzle and most other
+      // selector engines (?).
     };
     var operators = {
       "-": function() {
@@ -2503,6 +2667,7 @@ var require_select = __commonJS({
         var i = attr.lastIndexOf(val);
         return i !== -1 && i + val.length === attr.length;
       },
+      // non-standard
       "!=": function(attr, val) {
         return attr !== val;
       }
@@ -2668,7 +2833,10 @@ var require_select = __commonJS({
         return cap === "*" ? selectors["*"] : selectors.type(cap);
       }
       if (cap[1]) {
-        return cap[1][0] === "." ? selectors.attr("class", "~=", decodeid(cap[1].substring(1)), false) : selectors.attr("id", "=", decodeid(cap[1].substring(1)), false);
+        return cap[1][0] === "." ? (
+          // XXX unescape here?  or in attr?
+          selectors.attr("class", "~=", decodeid(cap[1].substring(1)), false)
+        ) : selectors.attr("id", "=", decodeid(cap[1].substring(1)), false);
       }
       if (cap[2]) {
         return cap[3] ? selectors[decodeid(cap[2])](unquote(cap[3])) : selectors[decodeid(cap[2])];
@@ -2820,6 +2988,9 @@ var require_ChildNode = __commonJS({
       return docFrag;
     };
     var ChildNode = {
+      // Inserts a set of Node or String objects in the children list of this
+      // ChildNode's parent, just after this ChildNode.  String objects are
+      // inserted as the equivalent Text nodes.
       after: {
         value: function after() {
           var argArr = Array.prototype.slice.call(arguments);
@@ -2835,6 +3006,9 @@ var require_ChildNode = __commonJS({
           parentNode.insertBefore(docFrag, nextSibling);
         }
       },
+      // Inserts a set of Node or String objects in the children list of this
+      // ChildNode's parent, just before this ChildNode.  String objects are
+      // inserted as the equivalent Text nodes.
       before: {
         value: function before() {
           var argArr = Array.prototype.slice.call(arguments);
@@ -2851,6 +3025,7 @@ var require_ChildNode = __commonJS({
           parentNode.insertBefore(docFrag, nextSibling);
         }
       },
+      // Remove this node from its parent
       remove: {
         value: function remove() {
           if (this.parentNode === null)
@@ -2865,6 +3040,8 @@ var require_ChildNode = __commonJS({
           this.parentNode = null;
         }
       },
+      // Remove this node w/o uprooting or sending mutation events
+      // (But do update the structure id for all ancestors)
       _remove: {
         value: function _remove() {
           var parent = this.parentNode;
@@ -2883,6 +3060,7 @@ var require_ChildNode = __commonJS({
           parent.modify();
         }
       },
+      // Replace this node with the nodes or strings provided as arguments.
       replaceWith: {
         value: function replaceWith() {
           var argArr = Array.prototype.slice.call(arguments);
@@ -3215,6 +3393,12 @@ var require_Element = __commonJS({
           return this.children.length;
         }
       },
+      // Return the next element, in source order, after this one or
+      // null if there are no more.  If root element is specified,
+      // then don't traverse beyond its subtree.
+      //
+      // This is not a DOM method, but is convenient for
+      // lazy traversals of the tree.
       nextElement: {
         value: function(root) {
           if (!root)
@@ -3235,6 +3419,10 @@ var require_Element = __commonJS({
           return null;
         }
       },
+      // XXX:
+      // Tests are currently failing for this function.
+      // Awaiting resolution of:
+      // http://lists.w3.org/Archives/Public/www-dom/2011JulSep/0016.html
       getElementsByTagName: {
         value: function getElementsByTagName(lname) {
           var filter;
@@ -3283,6 +3471,7 @@ var require_Element = __commonJS({
           return new FilteredElementList(this, elementNameFilter(String(name)));
         }
       },
+      // Utility methods used by the public API methods above
       clone: {
         value: function clone() {
           var e;
@@ -3320,6 +3509,9 @@ var require_Element = __commonJS({
           return true;
         }
       },
+      // This is the 'locate a namespace prefix' algorithm from the
+      // DOM specification.  It is used by Node.lookupPrefix()
+      // (Be sure to compare DOM3 and DOM4 versions of spec.)
       _lookupNamespacePrefix: {
         value: function _lookupNamespacePrefix(ns, originalElement) {
           if (this.namespaceURI && this.namespaceURI === ns && this.prefix !== null && originalElement.lookupNamespaceURI(this.prefix) === ns) {
@@ -3335,6 +3527,8 @@ var require_Element = __commonJS({
           return parent ? parent._lookupNamespacePrefix(ns, originalElement) : null;
         }
       },
+      // This is the 'locate a namespace' algorithm for Element nodes
+      // from the DOM Core spec.  It is used by Node#lookupNamespaceURI()
       lookupNamespaceURI: {
         value: function lookupNamespaceURI(prefix) {
           if (prefix === "" || prefix === void 0) {
@@ -3354,6 +3548,86 @@ var require_Element = __commonJS({
           return parent ? parent.lookupNamespaceURI(prefix) : null;
         }
       },
+      //
+      // Attribute handling methods and utilities
+      //
+      /*
+       * Attributes in the DOM are tricky:
+       *
+       * - there are the 8 basic get/set/has/removeAttribute{NS} methods
+       *
+       * - but many HTML attributes are also 'reflected' through IDL
+       *   attributes which means that they can be queried and set through
+       *   regular properties of the element.  There is just one attribute
+       *   value, but two ways to get and set it.
+       *
+       * - Different HTML element types have different sets of reflected
+         attributes.
+       *
+       * - attributes can also be queried and set through the .attributes
+       *   property of an element.  This property behaves like an array of
+       *   Attr objects.  The value property of each Attr is writeable, so
+       *   this is a third way to read and write attributes.
+       *
+       * - for efficiency, we really want to store attributes in some kind
+       *   of name->attr map.  But the attributes[] array is an array, not a
+       *   map, which is kind of unnatural.
+       *
+       * - When using namespaces and prefixes, and mixing the NS methods
+       *   with the non-NS methods, it is apparently actually possible for
+       *   an attributes[] array to have more than one attribute with the
+       *   same qualified name.  And certain methods must operate on only
+       *   the first attribute with such a name.  So for these methods, an
+       *   inefficient array-like data structure would be easier to
+       *   implement.
+       *
+       * - The attributes[] array is live, not a snapshot, so changes to the
+       *   attributes must be immediately visible through existing arrays.
+       *
+       * - When attributes are queried and set through IDL properties
+       *   (instead of the get/setAttributes() method or the attributes[]
+       *   array) they may be subject to type conversions, URL
+       *   normalization, etc., so some extra processing is required in that
+       *   case.
+       *
+       * - But access through IDL properties is probably the most common
+       *   case, so we'd like that to be as fast as possible.
+       *
+       * - We can't just store attribute values in their parsed idl form,
+       *   because setAttribute() has to return whatever string is passed to
+       *   getAttribute even if it is not a legal, parseable value. So
+       *   attribute values must be stored in unparsed string form.
+       *
+       * - We need to be able to send change notifications or mutation
+       *   events of some sort to the renderer whenever an attribute value
+       *   changes, regardless of the way in which it changes.
+       *
+       * - Some attributes, such as id and class affect other parts of the
+       *   DOM API, like getElementById and getElementsByClassName and so
+       *   for efficiency, we need to specially track changes to these
+       *   special attributes.
+       *
+       * - Some attributes like class have different names (className) when
+       *   reflected.
+       *
+       * - Attributes whose names begin with the string 'data-' are treated
+         specially.
+       *
+       * - Reflected attributes that have a boolean type in IDL have special
+       *   behavior: setting them to false (in IDL) is the same as removing
+       *   them with removeAttribute()
+       *
+       * - numeric attributes (like HTMLElement.tabIndex) can have default
+       *   values that must be returned by the idl getter even if the
+       *   content attribute does not exist. (The default tabIndex value
+       *   actually varies based on the type of the element, so that is a
+       *   tricky one).
+       *
+       * See
+       * http://www.whatwg.org/specs/web-apps/current-work/multipage/urls.html#reflect
+       * for rules on how attributes are reflected.
+       *
+       */
       getAttribute: {
         value: function getAttribute(qname) {
           var attr = this.getAttributeNode(qname);
@@ -3431,6 +3705,7 @@ var require_Element = __commonJS({
           }
         }
       },
+      // Set the attribute without error checking. The parser uses this.
       _setAttribute: {
         value: function _setAttribute(qname, value) {
           var attr = this._attrsByQName[qname];
@@ -3449,6 +3724,7 @@ var require_Element = __commonJS({
             this._newattrhook(qname, value);
         }
       },
+      // Check for errors, and then set the attribute
       setAttribute: {
         value: function setAttribute(qname, value) {
           qname = String(qname);
@@ -3459,6 +3735,7 @@ var require_Element = __commonJS({
           this._setAttribute(qname, String(value));
         }
       },
+      // The version with no error checking used by the parser
       _setAttributeNS: {
         value: function _setAttributeNS(ns, qname, value) {
           var pos = qname.indexOf(":"), prefix, lname;
@@ -3495,6 +3772,7 @@ var require_Element = __commonJS({
             this._newattrhook(qname, value);
         }
       },
+      // Do error checking then call _setAttributeNS
       setAttributeNS: {
         value: function setAttributeNS(ns, qname, value) {
           ns = ns === null || ns === void 0 || ns === "" ? null : String(ns);
@@ -3637,12 +3915,16 @@ var require_Element = __commonJS({
           });
         }
       },
+      // This 'raw' version of getAttribute is used by the getter functions
+      // of reflected attributes. It skips some error checking and
+      // namespace steps
       _getattr: {
         value: function _getattr(qname) {
           var attr = this._attrsByQName[qname];
           return attr ? attr.value : null;
         }
       },
+      // The raw version of setAttribute for reflected idl attributes.
       _setattr: {
         value: function _setattr(qname, value) {
           var attr = this._attrsByQName[qname];
@@ -3658,6 +3940,8 @@ var require_Element = __commonJS({
             this._newattrhook(qname, value);
         }
       },
+      // Create a new Attr object, insert it, and return it.
+      // Used by setAttribute() and by set()
       _newattr: {
         value: function _newattr(qname) {
           var attr = new Attr(this, qname, null, null);
@@ -3671,6 +3955,9 @@ var require_Element = __commonJS({
           return attr;
         }
       },
+      // Add a qname->Attr mapping to the _attrsByQName object, taking into
+      // account that there may be more than one attr object with the
+      // same qname
       _addQName: {
         value: function(attr) {
           var qname = attr.name;
@@ -3686,6 +3973,9 @@ var require_Element = __commonJS({
             this._attributes[qname] = attr;
         }
       },
+      // Remove a qname->Attr mapping to the _attrsByQName object, taking into
+      // account that there may be more than one attr object with the
+      // same qname
       _removeQName: {
         value: function(attr) {
           var qname = attr.name;
@@ -3713,17 +4003,23 @@ var require_Element = __commonJS({
           }
         }
       },
+      // Return the number of attributes
       _numattrs: {
         get: function() {
           return this._attrKeys.length;
         }
       },
+      // Return the nth Attr object
       _attr: {
         value: function(n) {
           return this._attrsByLName[this._attrKeys[n]];
         }
       },
+      // Define getters and setters for an 'id' property that reflects
+      // the content attribute 'id'.
       id: attributes.property({ name: "id" }),
+      // Define getters and setters for a 'className' property that reflects
+      // the content attribute 'class'.
       className: attributes.property({ name: "class" }),
       classList: {
         get: function() {
@@ -3848,6 +4144,7 @@ var require_Element = __commonJS({
           return new Attr(null, this.localName, this.prefix, this.namespaceURI, this.data);
         }
       },
+      // Legacy aliases (see gh#70 and https://dom.spec.whatwg.org/#interface-attr)
       nodeType: {
         get: function() {
           return Node.ATTRIBUTE_NODE;
@@ -3941,6 +4238,9 @@ var require_Element = __commonJS({
           return this.childrenByName[name] || null;
         }
       },
+      // This attribute returns the entire name->element map.
+      // It is not part of the HTMLCollection API, but we need it in
+      // src/HTMLCollectionProxy
       namedItems: {
         get: function() {
           this.updateCache();
@@ -4085,6 +4385,22 @@ var require_CharacterData = __commonJS({
       Leaf.call(this);
     }
     CharacterData.prototype = Object.create(Leaf.prototype, {
+      // DOMString substringData(unsigned long offset,
+      //               unsigned long count);
+      // The substringData(offset, count) method must run these steps:
+      //
+      //     If offset is greater than the context object's
+      //     length, throw an INDEX_SIZE_ERR exception and
+      //     terminate these steps.
+      //
+      //     If offset+count is greater than the context
+      //     object's length, return a DOMString whose value is
+      //     the UTF-16 code units from the offsetth UTF-16 code
+      //     unit to the end of data.
+      //
+      //     Return a DOMString whose value is the UTF-16 code
+      //     units from the offsetth UTF-16 code unit to the
+      //     offset+countth UTF-16 code unit in data.
       substringData: {
         value: function substringData(offset, count) {
           if (arguments.length < 2) {
@@ -4098,6 +4414,9 @@ var require_CharacterData = __commonJS({
           return this.data.substring(offset, offset + count);
         }
       },
+      // void appendData(DOMString data);
+      // The appendData(data) method must append data to the context
+      // object's data.
       appendData: {
         value: function appendData(data) {
           if (arguments.length < 1) {
@@ -4106,16 +4425,46 @@ var require_CharacterData = __commonJS({
           this.data += String(data);
         }
       },
+      // void insertData(unsigned long offset, DOMString data);
+      // The insertData(offset, data) method must run these steps:
+      //
+      //     If offset is greater than the context object's
+      //     length, throw an INDEX_SIZE_ERR exception and
+      //     terminate these steps.
+      //
+      //     Insert data into the context object's data after
+      //     offset UTF-16 code units.
+      //
       insertData: {
         value: function insertData(offset, data) {
           return this.replaceData(offset, 0, data);
         }
       },
+      // void deleteData(unsigned long offset, unsigned long count);
+      // The deleteData(offset, count) method must run these steps:
+      //
+      //     If offset is greater than the context object's
+      //     length, throw an INDEX_SIZE_ERR exception and
+      //     terminate these steps.
+      //
+      //     If offset+count is greater than the context
+      //     object's length var count be length-offset.
+      //
+      //     Starting from offset UTF-16 code units remove count
+      //     UTF-16 code units from the context object's data.
       deleteData: {
         value: function deleteData(offset, count) {
           return this.replaceData(offset, count, "");
         }
       },
+      // void replaceData(unsigned long offset, unsigned long count,
+      //          DOMString data);
+      //
+      // The replaceData(offset, count, data) method must act as
+      // if the deleteData() method is invoked with offset and
+      // count as arguments followed by the insertData() method
+      // with offset and data as arguments and re-throw any
+      // exceptions these methods might have thrown.
       replaceData: {
         value: function replaceData(offset, count, data) {
           var curtext = this.data, len = curtext.length;
@@ -4130,6 +4479,9 @@ var require_CharacterData = __commonJS({
           this.data = prefix + data + suffix;
         }
       },
+      // Utility method that Node.isEqualNode() calls to test Text and
+      // Comment nodes for equality.  It is okay to put it here, since
+      // Node will have already verified that nodeType is equal
       isEqual: {
         value: function isEqual(n) {
           return this._data === n._data;
@@ -4182,6 +4534,9 @@ var require_Text = __commonJS({
     };
     Text.prototype = Object.create(CharacterData.prototype, {
       nodeName: { value: "#text" },
+      // These three attributes are all the same.
+      // The data attribute has a [TreatNullAs=EmptyString] but we'll
+      // implement that at the interface level
       nodeValue,
       textContent: nodeValue,
       data: {
@@ -4214,7 +4569,9 @@ var require_Text = __commonJS({
           return result;
         }
       },
+      // Obsolete, removed from spec.
       replaceWholeText: { value: utils.nyi },
+      // Utility methods
       clone: {
         value: function clone() {
           return new Text(this.ownerDocument, this._data);
@@ -4263,6 +4620,7 @@ var require_Comment = __commonJS({
           nodeValue.set.call(this, v === null ? "" : String(v));
         }
       },
+      // Utility methods
       clone: {
         value: function clone() {
           return new Comment(this.ownerDocument, this._data);
@@ -4297,6 +4655,7 @@ var require_DocumentFragment = __commonJS({
         set: function() {
         }
       },
+      // Copy the text content getter/setter from Element
       textContent: Object.getOwnPropertyDescriptor(Element.prototype, "textContent"),
       querySelector: {
         value: function(selector) {
@@ -4317,6 +4676,7 @@ var require_DocumentFragment = __commonJS({
           return nodes.item ? nodes : new NodeList(nodes);
         }
       },
+      // Utility methods
       clone: {
         value: function clone() {
           return new DocumentFragment(this.ownerDocument);
@@ -4327,6 +4687,7 @@ var require_DocumentFragment = __commonJS({
           return true;
         }
       },
+      // Non-standard, but useful (github issue #73)
       innerHTML: {
         get: function() {
           return this.serialize();
@@ -4387,6 +4748,7 @@ var require_ProcessingInstruction = __commonJS({
           nodeValue.set.call(this, v === null ? "" : String(v));
         }
       },
+      // Utility methods
       clone: {
         value: function clone() {
           return new ProcessingInstruction(this.ownerDocument, this.target, this._data);
@@ -4406,22 +4768,29 @@ var require_NodeFilter = __commonJS({
   "packages/qwik-dom/lib/NodeFilter.js"(exports, module) {
     "use strict";
     var NodeFilter = {
+      // Constants for acceptNode()
       FILTER_ACCEPT: 1,
       FILTER_REJECT: 2,
       FILTER_SKIP: 3,
+      // Constants for whatToShow
       SHOW_ALL: 4294967295,
       SHOW_ELEMENT: 1,
       SHOW_ATTRIBUTE: 2,
+      // historical
       SHOW_TEXT: 4,
       SHOW_CDATA_SECTION: 8,
+      // historical
       SHOW_ENTITY_REFERENCE: 16,
+      // historical
       SHOW_ENTITY: 32,
+      // historical
       SHOW_PROCESSING_INSTRUCTION: 64,
       SHOW_COMMENT: 128,
       SHOW_DOCUMENT: 256,
       SHOW_DOCUMENT_TYPE: 512,
       SHOW_DOCUMENT_FRAGMENT: 1024,
       SHOW_NOTATION: 2048
+      // historical
     };
     module.exports = NodeFilter.constructor = NodeFilter.prototype = NodeFilter;
   }
@@ -4613,6 +4982,12 @@ var require_TreeWalker = __commonJS({
           this._currentNode = v;
         }
       },
+      /**
+       * @method
+       * @param {Node} node
+       * @return {Number} Constant NodeFilter.FILTER_ACCEPT,
+       *  NodeFilter.FILTER_REJECT or NodeFilter.FILTER_SKIP.
+       */
       _internalFilter: {
         value: function _internalFilter(node) {
           var result, filter;
@@ -4640,6 +5015,13 @@ var require_TreeWalker = __commonJS({
           return +result;
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#dom-treewalker-parentnode
+       * @based on WebKit's TreeWalker::parentNode
+       * https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/dom/TreeWalker.cpp?rev=220453#L50
+       * @method
+       * @return {Node|null}
+       */
       parentNode: {
         value: function parentNode() {
           var node = this._currentNode;
@@ -4656,26 +5038,53 @@ var require_TreeWalker = __commonJS({
           return null;
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#dom-treewalker-firstchild
+       * @method
+       * @return {Node|null}
+       */
       firstChild: {
         value: function firstChild() {
           return traverseChildren(this, "first");
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#dom-treewalker-lastchild
+       * @method
+       * @return {Node|null}
+       */
       lastChild: {
         value: function lastChild() {
           return traverseChildren(this, "last");
         }
       },
+      /**
+       * @spec http://www.w3.org/TR/dom/#dom-treewalker-previoussibling
+       * @method
+       * @return {Node|null}
+       */
       previousSibling: {
         value: function previousSibling() {
           return traverseSiblings(this, "previous");
         }
       },
+      /**
+       * @spec http://www.w3.org/TR/dom/#dom-treewalker-nextsibling
+       * @method
+       * @return {Node|null}
+       */
       nextSibling: {
         value: function nextSibling() {
           return traverseSiblings(this, "next");
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#dom-treewalker-previousnode
+       * @based on WebKit's TreeWalker::previousNode
+       * https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/dom/TreeWalker.cpp?rev=220453#L181
+       * @method
+       * @return {Node|null}
+       */
       previousNode: {
         value: function previousNode() {
           var node, result, previousSibling, lastChild;
@@ -4711,6 +5120,13 @@ var require_TreeWalker = __commonJS({
           return null;
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#dom-treewalker-nextnode
+       * @based on WebKit's TreeWalker::nextNode
+       * https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/dom/TreeWalker.cpp?rev=220453#L228
+       * @method
+       * @return {Node|null}
+       */
       nextNode: {
         value: function nextNode() {
           var node, result, firstChild, nextSibling;
@@ -4742,6 +5158,7 @@ var require_TreeWalker = __commonJS({
             }
         }
       },
+      /** For compatibility with web-platform-tests. */
       toString: {
         value: function toString() {
           return "[object TreeWalker]";
@@ -4837,6 +5254,12 @@ var require_NodeIterator = __commonJS({
           return this._filter;
         }
       },
+      /**
+       * @method
+       * @param {Node} node
+       * @return {Number} Constant NodeFilter.FILTER_ACCEPT,
+       *  NodeFilter.FILTER_REJECT or NodeFilter.FILTER_SKIP.
+       */
       _internalFilter: {
         value: function _internalFilter(node) {
           var result, filter;
@@ -4864,6 +5287,11 @@ var require_NodeIterator = __commonJS({
           return +result;
         }
       },
+      /**
+       * @spec https://dom.spec.whatwg.org/#nodeiterator-pre-removing-steps
+       * @method
+       * @return void
+       */
       _preremove: {
         value: function _preremove(toBeRemovedNode) {
           if (isInclusiveAncestor(toBeRemovedNode, this._root)) {
@@ -4895,20 +5323,36 @@ var require_NodeIterator = __commonJS({
           }
         }
       },
+      /**
+       * @spec http://www.w3.org/TR/dom/#dom-nodeiterator-nextnode
+       * @method
+       * @return {Node|null}
+       */
       nextNode: {
         value: function nextNode() {
           return traverse(this, true);
         }
       },
+      /**
+       * @spec http://www.w3.org/TR/dom/#dom-nodeiterator-previousnode
+       * @method
+       * @return {Node|null}
+       */
       previousNode: {
         value: function previousNode() {
           return traverse(this, false);
         }
       },
+      /**
+       * @spec http://www.w3.org/TR/dom/#dom-nodeiterator-detach
+       * @method
+       * @return void
+       */
       detach: {
         value: function detach() {
         }
       },
+      /** For compatibility with web-platform-tests. */
       toString: {
         value: function toString() {
           return "[object NodeIterator]";
@@ -4968,6 +5412,7 @@ var require_URL = __commonJS({
     };
     URL2.prototype = {
       constructor: URL2,
+      // XXX: not sure if this is the precise definition of absolute
       isAbsolute: function() {
         return !!this.scheme;
       },
@@ -5004,6 +5449,8 @@ var require_URL = __commonJS({
           s += "#" + this.fragment;
         return s;
       },
+      // See: http://tools.ietf.org/html/rfc3986#section-5.2
+      // and https://url.spec.whatwg.org/#constructors
       resolve: function(relative) {
         var base = this;
         var r = new URL2(relative);
@@ -5132,13 +5579,28 @@ var require_cssparser = __commonJS({
         this._listeners = /* @__PURE__ */ Object.create(null);
       }
       EventTarget.prototype = {
+        //restore constructor
         constructor: EventTarget,
+        /**
+         * Adds a listener for a given event type.
+         * @param {String} type The type of event to add a listener for.
+         * @param {Function} listener The function to call when the event occurs.
+         * @return {void}
+         * @method addListener
+         */
         addListener: function(type, listener) {
           if (!this._listeners[type]) {
             this._listeners[type] = [];
           }
           this._listeners[type].push(listener);
         },
+        /**
+         * Fires an event based on the passed-in object.
+         * @param {Object|String} event An object with at least a 'type' attribute
+         *      or a string indicating the event name.
+         * @return {void}
+         * @method fire
+         */
         fire: function(event) {
           if (typeof event === "string") {
             event = { type: event };
@@ -5156,6 +5618,13 @@ var require_cssparser = __commonJS({
             }
           }
         },
+        /**
+         * Removes a listener for a given event type.
+         * @param {String} type The type of event to remove a listener from.
+         * @param {Function} listener The function to remove from the event.
+         * @return {void}
+         * @method removeListener
+         */
         removeListener: function(type, listener) {
           if (this._listeners[type]) {
             var listeners = this._listeners[type];
@@ -5175,16 +5644,44 @@ var require_cssparser = __commonJS({
         this._cursor = 0;
       }
       StringReader.prototype = {
+        //restore constructor
         constructor: StringReader,
+        //-------------------------------------------------------------------------
+        // Position info
+        //-------------------------------------------------------------------------
+        /**
+         * Returns the column of the character to be read next.
+         * @return {int} The column of the character to be read next.
+         * @method getCol
+         */
         getCol: function() {
           return this._col;
         },
+        /**
+         * Returns the row of the character to be read next.
+         * @return {int} The row of the character to be read next.
+         * @method getLine
+         */
         getLine: function() {
           return this._line;
         },
+        /**
+         * Determines if you're at the end of the input.
+         * @return {Boolean} True if there's no more input, false otherwise.
+         * @method eof
+         */
         eof: function() {
           return this._cursor === this._input.length;
         },
+        //-------------------------------------------------------------------------
+        // Basic reading
+        //-------------------------------------------------------------------------
+        /**
+         * Reads the next character without advancing the cursor.
+         * @param {int} count How many characters to look ahead (default is 1).
+         * @return {String} The next character or null if there is no next character.
+         * @method peek
+         */
         peek: function(count) {
           var c = null;
           count = typeof count === "undefined" ? 1 : count;
@@ -5193,6 +5690,12 @@ var require_cssparser = __commonJS({
           }
           return c;
         },
+        /**
+         * Reads the next character from the input and adjusts the row and column
+         * accordingly.
+         * @return {String} The next character or null if there is no next character.
+         * @method read
+         */
         read: function() {
           var c = null;
           if (this._cursor < this._input.length) {
@@ -5206,6 +5709,14 @@ var require_cssparser = __commonJS({
           }
           return c;
         },
+        //-------------------------------------------------------------------------
+        // Misc
+        //-------------------------------------------------------------------------
+        /**
+         * Saves the current location so it can be returned to later.
+         * @method mark
+         * @return {void}
+         */
         mark: function() {
           this._bookmark = {
             cursor: this._cursor,
@@ -5221,6 +5732,17 @@ var require_cssparser = __commonJS({
             delete this._bookmark;
           }
         },
+        //-------------------------------------------------------------------------
+        // Advanced reading
+        //-------------------------------------------------------------------------
+        /**
+         * Reads up to and including the given string. Throws an error if that
+         * string is not found.
+         * @param {String} pattern The string to read.
+         * @return {String} The string when it is found.
+         * @throws Error when the string pattern is not found.
+         * @method readTo
+         */
         readTo: function(pattern) {
           var buffer = "", c;
           while (buffer.length < pattern.length || buffer.lastIndexOf(pattern) !== buffer.length - pattern.length) {
@@ -5235,6 +5757,16 @@ var require_cssparser = __commonJS({
           }
           return buffer;
         },
+        /**
+         * Reads characters while each character causes the given
+         * filter function to return true. The function is passed
+         * in each character and either returns true to continue
+         * reading or false to stop.
+         * @param {Function} filter The function to read on each character.
+         * @return {String} The string made up of all characters that passed the
+         *      filter check.
+         * @method readWhile
+         */
         readWhile: function(filter) {
           var buffer = "", c = this.read();
           while (c !== null && filter(c)) {
@@ -5243,6 +5775,18 @@ var require_cssparser = __commonJS({
           }
           return buffer;
         },
+        /**
+         * Reads characters that match either text or a regular expression and
+         * returns those characters. If a match is found, the row and column
+         * are adjusted; if no match is found, the reader's state is unchanged.
+         * reading or false to stop.
+         * @param {String|RegExp} matchter If a string, then the literal string
+         *      value is searched for. If a regular expression, then any string
+         *      matching the pattern is search for.
+         * @return {String} The string made up of all characters that matched or
+         *      null if there was no match.
+         * @method readMatch
+         */
         readMatch: function(matcher) {
           var source = this._input.substring(this._cursor), value = null;
           if (typeof matcher === "string") {
@@ -5256,6 +5800,13 @@ var require_cssparser = __commonJS({
           }
           return value;
         },
+        /**
+         * Reads a given number of characters. If the end of the input is reached,
+         * it reads only the remaining characters and does not throw an error.
+         * @param {int} count The number of characters to read.
+         * @return {String} The string made up the read characters.
+         * @method readCount
+         */
         readCount: function(count) {
           var buffer = "";
           while (count--) {
@@ -5283,10 +5834,21 @@ var require_cssparser = __commonJS({
         return new SyntaxUnit(token.value, token.startLine, token.startCol);
       };
       SyntaxUnit.prototype = {
+        //restore constructor
         constructor: SyntaxUnit,
+        /**
+         * Returns the text representation of the unit.
+         * @return {String} The text representation of the unit.
+         * @method valueOf
+         */
         valueOf: function() {
           return this.toString();
         },
+        /**
+         * Returns the text representation of the unit.
+         * @return {String} The text representation of the unit.
+         * @method toString
+         */
         toString: function() {
           return this.text;
         }
@@ -5319,7 +5881,25 @@ var require_cssparser = __commonJS({
         return tokenData;
       };
       TokenStreamBase.prototype = {
+        //restore constructor
         constructor: TokenStreamBase,
+        //-------------------------------------------------------------------------
+        // Matching methods
+        //-------------------------------------------------------------------------
+        /**
+         * Determines if the next token matches the given token type.
+         * If so, that token is consumed; if not, the token is placed
+         * back onto the token stream. You can pass in any number of
+         * token types and this will return true if any of the token
+         * types is found.
+         * @param {int|int[]} tokenTypes Either a single token type or an array of
+         *      token types that the next token might be. If an array is passed,
+         *      it's assumed that the token can be any of these.
+         * @param {variant} channel (Optional) The channel to read from. If not
+         *      provided, reads from the default (unnamed) channel.
+         * @return {Boolean} True if the token type matches, false if not.
+         * @method match
+         */
         match: function(tokenTypes, channel) {
           if (!(tokenTypes instanceof Array)) {
             tokenTypes = [tokenTypes];
@@ -5333,6 +5913,17 @@ var require_cssparser = __commonJS({
           this.unget();
           return false;
         },
+        /**
+         * Determines if the next token matches the given token type.
+         * If so, that token is consumed; if not, an error is thrown.
+         * @param {int|int[]} tokenTypes Either a single token type or an array of
+         *      token types that the next token should be. If an array is passed,
+         *      it's assumed that the token must be one of these.
+         * @param {variant} channel (Optional) The channel to read from. If not
+         *      provided, reads from the default (unnamed) channel.
+         * @return {void}
+         * @method mustMatch
+         */
         mustMatch: function(tokenTypes, channel) {
           var token;
           if (!(tokenTypes instanceof Array)) {
@@ -5347,12 +5938,31 @@ var require_cssparser = __commonJS({
             );
           }
         },
+        //-------------------------------------------------------------------------
+        // Consuming methods
+        //-------------------------------------------------------------------------
+        /**
+         * Keeps reading from the token stream until either one of the specified
+         * token types is found or until the end of the input is reached.
+         * @param {int|int[]} tokenTypes Either a single token type or an array of
+         *      token types that the next token should be. If an array is passed,
+         *      it's assumed that the token must be one of these.
+         * @param {variant} channel (Optional) The channel to read from. If not
+         *      provided, reads from the default (unnamed) channel.
+         * @return {void}
+         * @method advance
+         */
         advance: function(tokenTypes, channel) {
           while (this.LA(0) !== 0 && !this.match(tokenTypes, channel)) {
             this.get();
           }
           return this.LA(0);
         },
+        /**
+         * Consumes the next token from the token stream.
+         * @return {int} The token type of the token that was just consumed.
+         * @method get
+         */
         get: function(channel) {
           var tokenInfo = this._tokenData, i = 0, token, info;
           if (this._lt.length && this._ltIndex >= 0 && this._ltIndex < this._lt.length) {
@@ -5390,6 +6000,16 @@ var require_cssparser = __commonJS({
             return token.type;
           }
         },
+        /**
+         * Looks ahead a certain number of tokens and returns the token type at
+         * that position. This will throw an error if you lookahead past the
+         * end of input, past the size of the lookahead buffer, or back past
+         * the first token in the lookahead buffer.
+         * @param {int} The index of the token type to retrieve. 0 for the
+         *      current token, 1 for the next, -1 for the previous, etc.
+         * @return {int} The token type of the token in the given position.
+         * @method LA
+         */
         LA: function(index) {
           var total = index, tt;
           if (index > 0) {
@@ -5415,16 +6035,44 @@ var require_cssparser = __commonJS({
           }
           return tt;
         },
+        /**
+         * Looks ahead a certain number of tokens and returns the token at
+         * that position. This will throw an error if you lookahead past the
+         * end of input, past the size of the lookahead buffer, or back past
+         * the first token in the lookahead buffer.
+         * @param {int} The index of the token type to retrieve. 0 for the
+         *      current token, 1 for the next, -1 for the previous, etc.
+         * @return {Object} The token of the token in the given position.
+         * @method LA
+         */
         LT: function(index) {
           this.LA(index);
           return this._lt[this._ltIndex + index - 1];
         },
+        /**
+         * Returns the token type for the next token in the stream without
+         * consuming it.
+         * @return {int} The token type of the next token in the stream.
+         * @method peek
+         */
         peek: function() {
           return this.LA(1);
         },
+        /**
+         * Returns the actual token object for the last consumed token.
+         * @return {Token} The token object for the last consumed token.
+         * @method token
+         */
         token: function() {
           return this._token;
         },
+        /**
+         * Returns the name of the token for the given token type.
+         * @param {int} tokenType The type of token to get the name of.
+         * @return {String} The name of the token or "UNKNOWN_TOKEN" for any
+         *      invalid token type.
+         * @method tokenName
+         */
         tokenName: function(tokenType) {
           if (tokenType < 0 || tokenType > this._tokenData.length) {
             return "UNKNOWN_TOKEN";
@@ -5432,9 +6080,20 @@ var require_cssparser = __commonJS({
             return this._tokenData[tokenType].name;
           }
         },
+        /**
+         * Returns the token type value for the given token name.
+         * @param {String} tokenName The name of the token whose value should be returned.
+         * @return {int} The token type value for the given token name or -1
+         *      for an unknown token.
+         * @method tokenName
+         */
         tokenType: function(tokenName) {
           return this._tokenData[tokenName] || -1;
         },
+        /**
+         * Returns the last consumed token to the token stream.
+         * @method unget
+         */
         unget: function() {
           if (this._ltIndexCache.length) {
             this._ltIndex -= this._ltIndexCache.pop();
@@ -5604,7 +6263,9 @@ var require_cssparser = __commonJS({
         whitesmoke: "#f5f5f5",
         yellow: "#ffff00",
         yellowgreen: "#9acd32",
+        //'currentColor' color keyword http://www.w3.org/TR/css3-color/#currentcolor
         currentColor: "The value of the 'color' property.",
+        //CSS2 system colors http://www.w3.org/TR/css3-color/#css2-system
         activeBorder: "Active window border.",
         activecaption: "Active window caption.",
         appworkspace: "Background color of multiple document interface.",
@@ -5695,7 +6356,9 @@ var require_cssparser = __commonJS({
       Parser.prototype = function() {
         var proto = new EventTarget(), prop, additions = {
           __proto__: null,
+          //restore constructor
           constructor: Parser,
+          //instance constants - yuck
           DEFAULT_TYPE: 0,
           COMBINATOR_TYPE: 1,
           MEDIA_FEATURE_TYPE: 2,
@@ -5706,6 +6369,9 @@ var require_cssparser = __commonJS({
           SELECTOR_TYPE: 7,
           SELECTOR_PART_TYPE: 8,
           SELECTOR_SUB_PART_TYPE: 9,
+          //-----------------------------------------------------------------
+          // Grammar
+          //-----------------------------------------------------------------
           _stylesheet: function() {
             var tokenStream = this._tokenStream, count, token, tt;
             this.fire("startstylesheet");
@@ -5933,6 +6599,7 @@ var require_cssparser = __commonJS({
               col
             });
           },
+          //CSS3 Media Queries
           _media_query_list: function() {
             var tokenStream = this._tokenStream, mediaList = [];
             this._readWhitespace();
@@ -5945,6 +6612,11 @@ var require_cssparser = __commonJS({
             }
             return mediaList;
           },
+          /*
+                       * Note: "expression" in the grammar maps to the _media_expression
+                       * method.
+          
+                       */
           _media_query: function() {
             var tokenStream = this._tokenStream, type = null, ident = null, token = null, expressions = [];
             if (tokenStream.match(Tokens.IDENT)) {
@@ -5982,9 +6654,18 @@ var require_cssparser = __commonJS({
             }
             return new MediaQuery(ident, type, expressions, token.startLine, token.startCol);
           },
+          //CSS3 Media Queries
           _media_type: function() {
             return this._media_feature();
           },
+          /**
+           * Note: in CSS3 Media Queries, this is called "expression".
+           * Renamed here to avoid conflict with CSS3 Selectors
+           * definition of "expression". Also note that "expr" in the
+           * grammar now maps to "expression" from CSS3 selectors.
+           * @method _media_expression
+           * @private
+           */
           _media_expression: function() {
             var tokenStream = this._tokenStream, feature = null, token, expression = null;
             tokenStream.mustMatch(Tokens.LPAREN);
@@ -6002,12 +6683,14 @@ var require_cssparser = __commonJS({
               expression ? new SyntaxUnit(expression, token.startLine, token.startCol) : null
             );
           },
+          //CSS3 Media Queries
           _media_feature: function() {
             var tokenStream = this._tokenStream;
             this._readWhitespace();
             tokenStream.mustMatch(Tokens.IDENT);
             return SyntaxUnit.fromToken(tokenStream.token());
           },
+          //CSS3 Paged Media
           _page: function() {
             var tokenStream = this._tokenStream, line, col, identifier = null, pseudoPage = null;
             tokenStream.mustMatch(Tokens.PAGE_SYM);
@@ -6040,6 +6723,7 @@ var require_cssparser = __commonJS({
               col
             });
           },
+          //CSS3 Paged Media
           _margin: function() {
             var tokenStream = this._tokenStream, line, col, marginSym = this._margin_sym();
             if (marginSym) {
@@ -6063,6 +6747,7 @@ var require_cssparser = __commonJS({
               return false;
             }
           },
+          //CSS3 Paged Media
           _margin_sym: function() {
             var tokenStream = this._tokenStream;
             if (tokenStream.match([
@@ -6236,6 +6921,7 @@ var require_cssparser = __commonJS({
             }
             return value;
           },
+          //Augmented with CSS3 Selectors
           _ruleset: function() {
             var tokenStream = this._tokenStream, tt, selectors;
             try {
@@ -6276,6 +6962,7 @@ var require_cssparser = __commonJS({
             }
             return selectors;
           },
+          //CSS3 Selectors
           _selectors_group: function() {
             var tokenStream = this._tokenStream, selectors = [], selector;
             selector = this._selector();
@@ -6293,6 +6980,7 @@ var require_cssparser = __commonJS({
             }
             return selectors.length ? selectors : null;
           },
+          //CSS3 Selectors
           _selector: function() {
             var tokenStream = this._tokenStream, selector = [], nextSelector = null, combinator = null, ws = null;
             nextSelector = this._simple_selector_sequence();
@@ -6338,8 +7026,10 @@ var require_cssparser = __commonJS({
             } while (true);
             return new Selector(selector, selector[0].line, selector[0].col);
           },
+          //CSS3 Selectors
           _simple_selector_sequence: function() {
             var tokenStream = this._tokenStream, elementName = null, modifiers = [], selectorText = "", components = [
+              //HASH
               function() {
                 return tokenStream.match(Tokens.HASH) ? new SelectorSubPart(
                   tokenStream.token().value,
@@ -6384,6 +7074,7 @@ var require_cssparser = __commonJS({
             }
             return selectorText !== "" ? new SelectorPart(elementName, modifiers, selectorText, line, col) : null;
           },
+          //CSS3 Selectors
           _type_selector: function() {
             var tokenStream = this._tokenStream, ns = this._namespace_prefix(), elementName = this._element_name();
             if (!elementName) {
@@ -6402,6 +7093,7 @@ var require_cssparser = __commonJS({
               return elementName;
             }
           },
+          //CSS3 Selectors
           _class: function() {
             var tokenStream = this._tokenStream, token;
             if (tokenStream.match(Tokens.DOT)) {
@@ -6417,6 +7109,7 @@ var require_cssparser = __commonJS({
               return null;
             }
           },
+          //CSS3 Selectors
           _element_name: function() {
             var tokenStream = this._tokenStream, token;
             if (tokenStream.match(Tokens.IDENT)) {
@@ -6426,6 +7119,7 @@ var require_cssparser = __commonJS({
               return null;
             }
           },
+          //CSS3 Selectors
           _namespace_prefix: function() {
             var tokenStream = this._tokenStream, value = "";
             if (tokenStream.LA(1) === Tokens.PIPE || tokenStream.LA(2) === Tokens.PIPE) {
@@ -6437,6 +7131,7 @@ var require_cssparser = __commonJS({
             }
             return value.length ? value : null;
           },
+          //CSS3 Selectors
           _universal: function() {
             var tokenStream = this._tokenStream, value = "", ns;
             ns = this._namespace_prefix();
@@ -6448,6 +7143,7 @@ var require_cssparser = __commonJS({
             }
             return value.length ? value : null;
           },
+          //CSS3 Selectors
           _attrib: function() {
             var tokenStream = this._tokenStream, value = null, ns, token;
             if (tokenStream.match(Tokens.LBRACKET)) {
@@ -6481,6 +7177,7 @@ var require_cssparser = __commonJS({
               return null;
             }
           },
+          //CSS3 Selectors
           _pseudo: function() {
             var tokenStream = this._tokenStream, pseudo = null, colons = ":", line, col;
             if (tokenStream.match(Tokens.COLON)) {
@@ -6502,6 +7199,7 @@ var require_cssparser = __commonJS({
             }
             return pseudo;
           },
+          //CSS3 Selectors
           _functional_pseudo: function() {
             var tokenStream = this._tokenStream, value = null;
             if (tokenStream.match(Tokens.FUNCTION)) {
@@ -6513,6 +7211,7 @@ var require_cssparser = __commonJS({
             }
             return value;
           },
+          //CSS3 Selectors
           _expression: function() {
             var tokenStream = this._tokenStream, value = "";
             while (tokenStream.match([
@@ -6534,6 +7233,7 @@ var require_cssparser = __commonJS({
             }
             return value.length ? value : null;
           },
+          //CSS3 Selectors
           _negation: function() {
             var tokenStream = this._tokenStream, line, col, value = "", arg, subpart = null;
             if (tokenStream.match(Tokens.NOT)) {
@@ -6551,6 +7251,7 @@ var require_cssparser = __commonJS({
             }
             return subpart;
           },
+          //CSS3 Selectors
           _negation_arg: function() {
             var tokenStream = this._tokenStream, args = [
               this._type_selector,
@@ -6785,6 +7486,9 @@ var require_cssparser = __commonJS({
             }
             return token;
           },
+          //-----------------------------------------------------------------
+          // Animations methods
+          //-----------------------------------------------------------------
           _keyframes: function() {
             var tokenStream = this._tokenStream, token, tt, name, prefix = "";
             tokenStream.mustMatch(Tokens.KEYFRAMES_SYM);
@@ -6865,10 +7569,32 @@ var require_cssparser = __commonJS({
             }
             this._unexpectedToken(tokenStream.LT(1));
           },
+          //-----------------------------------------------------------------
+          // Helper methods
+          //-----------------------------------------------------------------
+          /**
+           * Not part of CSS grammar, but useful for skipping over
+           * combination of white space and HTML-style comments.
+           * @return {void}
+           * @method _skipCruft
+           * @private
+           */
           _skipCruft: function() {
             while (this._tokenStream.match([Tokens.S, Tokens.CDO, Tokens.CDC])) {
             }
           },
+          /**
+           * Not part of CSS grammar, but this pattern occurs frequently
+           * in the official CSS grammar. Split out here to eliminate
+           * duplicate code.
+           * @param {Boolean} checkStart Indicates if the rule should check
+           *      for the left brace at the beginning.
+           * @param {Boolean} readMargins Indicates if the rule should check
+           *      for margin patterns.
+           * @return {void}
+           * @method _readDeclarations
+           * @private
+           */
           _readDeclarations: function(checkStart, readMargins) {
             var tokenStream = this._tokenStream, tt;
             this._readWhitespace();
@@ -6910,6 +7636,15 @@ var require_cssparser = __commonJS({
               }
             }
           },
+          /**
+           * In some cases, you can end up with two white space tokens in a
+           * row. Instead of making a change in every function that looks for
+           * white space, this function is used to match as much white space
+           * as necessary.
+           * @method _readWhitespace
+           * @return {String} The white space if found, empty string if not.
+           * @private
+           */
           _readWhitespace: function() {
             var tokenStream = this._tokenStream, ws = "";
             while (tokenStream.match(Tokens.S)) {
@@ -6917,6 +7652,13 @@ var require_cssparser = __commonJS({
             }
             return ws;
           },
+          /**
+           * Throws an error when an unexpected token is found.
+           * @param {Object} token The token that was found.
+           * @method _unexpectedToken
+           * @return {void}
+           * @private
+           */
           _unexpectedToken: function(token) {
             throw new SyntaxError2(
               "Unexpected token '" + token.value + "' at line " + token.startLine + ", col " + token.startCol + ".",
@@ -6924,14 +7666,26 @@ var require_cssparser = __commonJS({
               token.startCol
             );
           },
+          /**
+           * Helper method used for parsing subparts of a style sheet.
+           * @return {void}
+           * @method _verifyEnd
+           * @private
+           */
           _verifyEnd: function() {
             if (this._tokenStream.LA(1) !== Tokens.EOF) {
               this._unexpectedToken(this._tokenStream.LT(1));
             }
           },
+          //-----------------------------------------------------------------
+          // Validation methods
+          //-----------------------------------------------------------------
           _validateProperty: function(property, value) {
             Validation.validate(property, value);
           },
+          //-----------------------------------------------------------------
+          // Parsing methods
+          //-----------------------------------------------------------------
           parse: function(input) {
             this._tokenStream = new TokenStream(input, Tokens);
             this._stylesheet();
@@ -6945,6 +7699,12 @@ var require_cssparser = __commonJS({
             this._verifyEnd();
             return result;
           },
+          /**
+           * Parses a property value (everything after the semicolon).
+           * @return {parserlib.css.PropertyValue} The property value.
+           * @throws parserlib.util.SyntaxError If an unexpected token is found.
+           * @method parserPropertyValue
+           */
           parsePropertyValue: function(input) {
             this._tokenStream = new TokenStream(input, Tokens);
             this._readWhitespace();
@@ -6953,6 +7713,13 @@ var require_cssparser = __commonJS({
             this._verifyEnd();
             return result;
           },
+          /**
+           * Parses a complete CSS rule, including selectors and
+           * properties.
+           * @param {String} input The text to parser.
+           * @return {Boolean} True if the parse completed successfully, false if not.
+           * @method parseRule
+           */
           parseRule: function(input) {
             this._tokenStream = new TokenStream(input, Tokens);
             this._readWhitespace();
@@ -6961,6 +7728,13 @@ var require_cssparser = __commonJS({
             this._verifyEnd();
             return result;
           },
+          /**
+           * Parses a single CSS selector (no comma)
+           * @param {String} input The text to parse as a CSS selector.
+           * @return {Selector} An object representing the selector.
+           * @throws parserlib.util.SyntaxError If an unexpected token is found.
+           * @method parseSelector
+           */
           parseSelector: function(input) {
             this._tokenStream = new TokenStream(input, Tokens);
             this._readWhitespace();
@@ -6969,6 +7743,13 @@ var require_cssparser = __commonJS({
             this._verifyEnd();
             return result;
           },
+          /**
+           * Parses an HTML style attribute: a set of CSS declarations
+           * separated by semicolons.
+           * @param {String} input The text to parse as a style attribute
+           * @return {void}
+           * @method parseStyleAttribute
+           */
           parseStyleAttribute: function(input) {
             input += "}";
             this._tokenStream = new TokenStream(input, Tokens);
@@ -6984,6 +7765,7 @@ var require_cssparser = __commonJS({
       }();
       var Properties = {
         __proto__: null,
+        //A
         "align-items": "flex-start | flex-end | center | baseline | stretch",
         "align-content": "flex-start | flex-end | center | space-between | space-around | stretch",
         "align-self": "auto | flex-start | flex-end | center | baseline | stretch",
@@ -7001,6 +7783,7 @@ var require_cssparser = __commonJS({
         "animation-name": { multi: "none | <ident>", comma: true },
         "animation-play-state": { multi: "running | paused", comma: true },
         "animation-timing-function": 1,
+        //vendor prefixed
         "-moz-animation-delay": { multi: "<time>", comma: true },
         "-moz-animation-direction": { multi: "normal | alternate", comma: true },
         "-moz-animation-duration": { multi: "<time>", comma: true },
@@ -7058,6 +7841,7 @@ var require_cssparser = __commonJS({
             }
           }
         },
+        //B
         "backface-visibility": "visible | hidden",
         background: 1,
         "background-attachment": { multi: "<attachment>", comma: true },
@@ -7214,12 +7998,14 @@ var require_cssparser = __commonJS({
         "break-after": "auto | always | avoid | left | right | page | column | avoid-page | avoid-column",
         "break-before": "auto | always | avoid | left | right | page | column | avoid-page | avoid-column",
         "break-inside": "auto | avoid | avoid-page | avoid-column",
+        //C
         "caption-side": "top | bottom | inherit",
         clear: "none | right | left | both | inherit",
         clip: 1,
         color: "<color> | inherit",
         "color-profile": 1,
         "column-count": "<integer> | auto",
+        //http://www.w3.org/TR/css3-multicol/
         "column-fill": "auto | balance",
         "column-gap": "<length> | normal",
         "column-rule": "<border-width> || <border-style> || <color>",
@@ -7237,6 +8023,7 @@ var require_cssparser = __commonJS({
         "cue-after": 1,
         "cue-before": 1,
         cursor: 1,
+        //D
         direction: "ltr | rtl | inherit",
         display: "inline | block | list-item | inline-block | table | inline-table | table-row-group | table-header-group | table-footer-group | table-row | table-column-group | table-column | table-cell | table-caption | grid | inline-grid | run-in | ruby | ruby-base | ruby-text | ruby-base-container | ruby-text-container | contents | none | inherit | -moz-box | -moz-inline-block | -moz-inline-box | -moz-inline-grid | -moz-inline-stack | -moz-inline-table | -moz-grid | -moz-grid-group | -moz-grid-line | -moz-groupbox | -moz-deck | -moz-popup | -moz-stack | -moz-marker | -webkit-box | -webkit-inline-box | -ms-flexbox | -ms-inline-flexbox | flex | -webkit-flex | inline-flex | -webkit-inline-flex",
         "dominant-baseline": 1,
@@ -7246,8 +8033,10 @@ var require_cssparser = __commonJS({
         "drop-initial-before-align": "caps-height | baseline | use-script | before-edge | text-before-edge | after-edge | text-after-edge | central | middle | ideographic | alphabetic | hanging | mathematical",
         "drop-initial-size": "auto | line | <length> | <percentage>",
         "drop-initial-value": "initial | <integer>",
+        //E
         elevation: "<angle> | below | level | above | higher | lower | inherit",
         "empty-cells": "show | hide | inherit",
+        //F
         filter: 1,
         fit: "fill | hidden | meet | slice",
         "fit-position": 1,
@@ -7285,6 +8074,7 @@ var require_cssparser = __commonJS({
         "font-variant-caps": "normal | small-caps | all-small-caps | petite-caps | all-petite-caps | unicase | titling-caps",
         "font-variant-position": "normal | sub | super | inherit | initial | unset",
         "font-weight": "normal | bold | bolder | lighter | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | inherit",
+        //G
         grid: 1,
         "grid-area": 1,
         "grid-auto-columns": 1,
@@ -7312,6 +8102,7 @@ var require_cssparser = __commonJS({
         "grid-template-areas": 1,
         "grid-template-columns": 1,
         "grid-template-rows": 1,
+        //H
         "hanging-punctuation": 1,
         height: "<margin-width> | <content-sizing> | inherit",
         "hyphenate-after": "<integer> | auto",
@@ -7320,14 +8111,17 @@ var require_cssparser = __commonJS({
         "hyphenate-lines": "no-limit | <integer>",
         "hyphenate-resource": 1,
         hyphens: "none | manual | auto",
+        //I
         icon: 1,
         "image-orientation": "angle | auto",
         "image-rendering": 1,
         "image-resolution": 1,
         "ime-mode": "auto | normal | active | inactive | disabled | inherit",
         "inline-box-align": "initial | last | <integer>",
+        //J
         "justify-content": "flex-start | flex-end | center | space-between | space-around",
         "-webkit-justify-content": "flex-start | flex-end | center | space-between | space-around",
+        //L
         left: "<margin-width> | inherit",
         "letter-spacing": "<length> | normal | inherit",
         "line-height": "<number> | <length> | <percentage> | normal | inherit",
@@ -7340,6 +8134,7 @@ var require_cssparser = __commonJS({
         "list-style-image": "<uri> | none | inherit",
         "list-style-position": "inside | outside | inherit",
         "list-style-type": "disc | circle | square | decimal | decimal-leading-zero | lower-roman | upper-roman | lower-greek | lower-latin | upper-latin | armenian | georgian | lower-alpha | upper-alpha | none | inherit",
+        //M
         margin: { multi: "<margin-width> | inherit", max: 4 },
         "margin-bottom": "<margin-width> | inherit",
         "margin-left": "<margin-width> | inherit",
@@ -7358,11 +8153,13 @@ var require_cssparser = __commonJS({
         "min-height": "<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats | inherit",
         "min-width": "<length> | <percentage> | <content-sizing> | contain-floats | -moz-contain-floats | -webkit-contain-floats | inherit",
         "move-to": 1,
+        //N
         "nav-down": 1,
         "nav-index": 1,
         "nav-left": 1,
         "nav-right": 1,
         "nav-up": 1,
+        //O
         "object-fit": "fill | contain | cover | none | scale-down",
         "object-position": "<bg-position>",
         opacity: "<number> | inherit",
@@ -7379,6 +8176,7 @@ var require_cssparser = __commonJS({
         "overflow-wrap": "normal | break-word",
         "overflow-x": 1,
         "overflow-y": 1,
+        //P
         padding: { multi: "<padding-width> | inherit", max: 4 },
         "padding-bottom": "<padding-width> | inherit",
         "padding-left": "<padding-width> | inherit",
@@ -7402,7 +8200,9 @@ var require_cssparser = __commonJS({
         position: "static | relative | absolute | fixed | inherit",
         "presentation-level": 1,
         "punctuation-trim": 1,
+        //Q
         quotes: 1,
+        //R
         "rendering-intent": 1,
         resize: 1,
         rest: 1,
@@ -7416,6 +8216,7 @@ var require_cssparser = __commonJS({
         "ruby-overhang": 1,
         "ruby-position": 1,
         "ruby-span": 1,
+        //S
         size: 1,
         speak: "normal | none | spell-out | inherit",
         "speak-header": "once | always | inherit",
@@ -7455,9 +8256,11 @@ var require_cssparser = __commonJS({
         "transition-duration": 1,
         "transition-property": 1,
         "transition-timing-function": 1,
+        //U
         "unicode-bidi": "normal | embed | isolate | bidi-override | isolate-override | plaintext | inherit",
         "user-modify": "read-only | read-write | write-only | inherit",
         "user-select": "none | text | toggle | element | elements | all | inherit",
+        //V
         "vertical-align": "auto | use-script | baseline | sub | super | top | text-top | central | middle | bottom | text-bottom | <percentage> | <length> | inherit",
         visibility: "visible | hidden | collapse | inherit",
         "voice-balance": 1,
@@ -7469,7 +8272,9 @@ var require_cssparser = __commonJS({
         "voice-stress": 1,
         "voice-volume": 1,
         volume: 1,
+        //W
         "white-space": "normal | pre | nowrap | pre-wrap | pre-line | inherit | -pre-wrap | -o-pre-wrap | -moz-pre-wrap | -hp-pre-wrap",
+        //http://perishablepress.com/wrapping-content/
         "white-space-collapse": 1,
         widows: "<integer> | inherit",
         width: "<length> | <percentage> | <content-sizing> | auto | inherit",
@@ -7478,6 +8283,7 @@ var require_cssparser = __commonJS({
         "word-spacing": "<length> | normal | inherit",
         "word-wrap": "normal | break-word",
         "writing-mode": "horizontal-tb | vertical-rl | vertical-lr | lr-tb | rl-tb | tb-rl | bt-rl | tb-lr | bt-lr | lr-bt | rl-bt | lr | rl | tb | inherit",
+        //Z
         "z-index": "<integer> | auto | inherit",
         zoom: "<number> | <percentage> | normal"
       };
@@ -7681,7 +8487,11 @@ var require_cssparser = __commonJS({
           if (c === '"') {
             return "\\" + c;
           }
-          var cp = String.codePointAt ? String.codePointAt(0) : String.charCodeAt(0);
+          var cp = String.codePointAt ? String.codePointAt(0) : (
+            // We only escape non-surrogate chars, so using charCodeAt
+            // is harmless here.
+            String.charCodeAt(0)
+          );
           return "\\" + cp.toString(16) + " ";
         };
         return '"' + value.replace(/["\r\n\f]/g, replacer) + '"';
@@ -7730,6 +8540,12 @@ var require_cssparser = __commonJS({
       }
       Specificity.prototype = {
         constructor: Specificity,
+        /**
+         * Compare this specificity to another.
+         * @param {Specificity} other The other specificity to compare to.
+         * @return {int} -1 if the other specificity is larger, 1 if smaller, 0 if equal.
+         * @method compare
+         */
         compare: function(other) {
           var comps = ["a", "b", "c", "d"], i, len;
           for (i = 0, len = comps.length; i < len; i++) {
@@ -7741,9 +8557,19 @@ var require_cssparser = __commonJS({
           }
           return 0;
         },
+        /**
+         * Creates a numeric value for the specificity.
+         * @return {int} The numeric value for the specificity.
+         * @method valueOf
+         */
         valueOf: function() {
           return this.a * 1e3 + this.b * 100 + this.c * 10 + this.d;
         },
+        /**
+         * Returns a string representation for specificity.
+         * @return {String} The string representation of specificity.
+         * @method toString
+         */
         toString: function() {
           return this.a + "," + this.b + "," + this.c + "," + this.d;
         }
@@ -7821,6 +8647,15 @@ var require_cssparser = __commonJS({
         TokenStreamBase.call(this, input, Tokens);
       }
       TokenStream.prototype = mix(new TokenStreamBase(), {
+        /**
+         * Overrides the TokenStreamBase method of the same name
+         * to produce CSS tokens.
+         * @param {variant} channel The name of the channel to use
+         *      for the next token.
+         * @return {Object} A token object representing the next token.
+         * @method _getToken
+         * @private
+         */
         _getToken: function(channel) {
           var c, reader = this._reader, token = null, startLine = reader.getLine(), startCol = reader.getCol();
           c = reader.read();
@@ -7907,6 +8742,24 @@ var require_cssparser = __commonJS({
           }
           return token;
         },
+        //-------------------------------------------------------------------------
+        // Methods to create tokens
+        //-------------------------------------------------------------------------
+        /**
+         * Produces a token based on available data and the current
+         * reader position information. This method is called by other
+         * private methods to create tokens and is never called directly.
+         * @param {int} tt The token type.
+         * @param {String} value The text value of the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @param {Object} options (Optional) Specifies a channel property
+         *      to indicate that a different channel should be scanned
+         *      and/or a hide property indicating that the token should
+         *      be hidden.
+         * @return {Object} A token object.
+         * @method createToken
+         */
         createToken: function(tt, value, startLine, startCol, options) {
           var reader = this._reader;
           options = options || {};
@@ -7922,6 +8775,18 @@ var require_cssparser = __commonJS({
             endCol: reader.getCol()
           };
         },
+        //-------------------------------------------------------------------------
+        // Methods to create specific tokens
+        //-------------------------------------------------------------------------
+        /**
+         * Produces a token for any at-rule. If the at-rule is unknown, then
+         * the token is for a single "@" character.
+         * @param {String} first The first character for the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method atRuleToken
+         */
         atRuleToken: function(first, startLine, startCol) {
           var rule = first, reader = this._reader, tt = Tokens.CHAR, ident;
           reader.mark();
@@ -7939,6 +8804,16 @@ var require_cssparser = __commonJS({
           }
           return this.createToken(tt, rule, startLine, startCol);
         },
+        /**
+         * Produces a character token based on the given character
+         * and location in the stream. If there's a special (non-standard)
+         * token name, this is used; otherwise CHAR is used.
+         * @param {String} c The character for the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method charToken
+         */
         charToken: function(c, startLine, startCol) {
           var tt = Tokens.type(c);
           var opts = {};
@@ -7949,18 +8824,58 @@ var require_cssparser = __commonJS({
           }
           return this.createToken(tt, c, startLine, startCol, opts);
         },
+        /**
+         * Produces a character token based on the given character
+         * and location in the stream. If there's a special (non-standard)
+         * token name, this is used; otherwise CHAR is used.
+         * @param {String} first The first character for the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method commentToken
+         */
         commentToken: function(first, startLine, startCol) {
           var comment = this.readComment(first);
           return this.createToken(Tokens.COMMENT, comment, startLine, startCol);
         },
+        /**
+         * Produces a comparison token based on the given character
+         * and location in the stream. The next character must be
+         * read and is already known to be an equals sign.
+         * @param {String} c The character for the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method comparisonToken
+         */
         comparisonToken: function(c, startLine, startCol) {
           var reader = this._reader, comparison = c + reader.read(), tt = Tokens.type(comparison) || Tokens.CHAR;
           return this.createToken(tt, comparison, startLine, startCol);
         },
+        /**
+         * Produces a hash token based on the specified information. The
+         * first character provided is the pound sign (#) and then this
+         * method reads a name afterward.
+         * @param {String} first The first character (#) in the hash name.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method hashToken
+         */
         hashToken: function(first, startLine, startCol) {
           var name = this.readName(first);
           return this.createToken(Tokens.HASH, name, startLine, startCol);
         },
+        /**
+         * Produces a CDO or CHAR token based on the specified information. The
+         * first character is provided and the rest is read by the function to determine
+         * the correct token to create.
+         * @param {String} first The first character in the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method htmlCommentStartToken
+         */
         htmlCommentStartToken: function(first, startLine, startCol) {
           var reader = this._reader, text = first;
           reader.mark();
@@ -7972,6 +8887,16 @@ var require_cssparser = __commonJS({
             return this.charToken(first, startLine, startCol);
           }
         },
+        /**
+         * Produces a CDC or CHAR token based on the specified information. The
+         * first character is provided and the rest is read by the function to determine
+         * the correct token to create.
+         * @param {String} first The first character in the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method htmlCommentEndToken
+         */
         htmlCommentEndToken: function(first, startLine, startCol) {
           var reader = this._reader, text = first;
           reader.mark();
@@ -7983,6 +8908,16 @@ var require_cssparser = __commonJS({
             return this.charToken(first, startLine, startCol);
           }
         },
+        /**
+         * Produces an IDENT or FUNCTION token based on the specified information. The
+         * first character is provided and the rest is read by the function to determine
+         * the correct token to create.
+         * @param {String} first The first character in the identifier.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method identOrFunctionToken
+         */
         identOrFunctionToken: function(first, startLine, startCol) {
           var reader = this._reader, ident = this.readName(first), tt = Tokens.IDENT, uriFns = ["url(", "url-prefix(", "domain("];
           if (reader.peek() === "(") {
@@ -8004,6 +8939,16 @@ var require_cssparser = __commonJS({
           }
           return this.createToken(tt, ident, startLine, startCol);
         },
+        /**
+         * Produces an IMPORTANT_SYM or CHAR token based on the specified information. The
+         * first character is provided and the rest is read by the function to determine
+         * the correct token to create.
+         * @param {String} first The first character in the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method importantToken
+         */
         importantToken: function(first, startLine, startCol) {
           var reader = this._reader, important = first, tt = Tokens.CHAR, temp, c;
           reader.mark();
@@ -8039,6 +8984,16 @@ var require_cssparser = __commonJS({
             return this.createToken(tt, important, startLine, startCol);
           }
         },
+        /**
+         * Produces a NOT or CHAR token based on the specified information. The
+         * first character is provided and the rest is read by the function to determine
+         * the correct token to create.
+         * @param {String} first The first character in the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method notToken
+         */
         notToken: function(first, startLine, startCol) {
           var reader = this._reader, text = first;
           reader.mark();
@@ -8050,6 +9005,17 @@ var require_cssparser = __commonJS({
             return this.charToken(first, startLine, startCol);
           }
         },
+        /**
+         * Produces a number token based on the given character
+         * and location in the stream. This may return a token of
+         * NUMBER, EMS, EXS, LENGTH, ANGLE, TIME, FREQ, DIMENSION,
+         * or PERCENTAGE.
+         * @param {String} first The first character for the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method numberToken
+         */
         numberToken: function(first, startLine, startCol) {
           var reader = this._reader, value = this.readNumber(first), ident, tt = Tokens.NUMBER, c = reader.peek();
           if (isIdentStart(c)) {
@@ -8076,6 +9042,19 @@ var require_cssparser = __commonJS({
           }
           return this.createToken(tt, value, startLine, startCol);
         },
+        /**
+         * Produces a string token based on the given character
+         * and location in the stream. Since strings may be indicated
+         * by single or double quotes, a failure to match starting
+         * and ending quotes results in an INVALID token being generated.
+         * The first character in the string is passed in and then
+         * the rest are read up to and including the final quotation mark.
+         * @param {String} first The first character in the string.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method stringToken
+         */
         stringToken: function(first, startLine, startCol) {
           var delim = first, string = first, reader = this._reader, prev = first, tt = Tokens.STRING, c = reader.read();
           while (c) {
@@ -8121,10 +9100,23 @@ var require_cssparser = __commonJS({
           }
           return this.createToken(tt, value, startLine, startCol);
         },
+        /**
+         * Produces a S token based on the specified information. Since whitespace
+         * may have multiple characters, this consumes all whitespace characters
+         * into a single token.
+         * @param {String} first The first character in the token.
+         * @param {int} startLine The beginning line for the character.
+         * @param {int} startCol The beginning column for the character.
+         * @return {Object} A token object.
+         * @method whitespaceToken
+         */
         whitespaceToken: function(first, startLine, startCol) {
           var value = first + this.readWhitespace();
           return this.createToken(Tokens.S, value, startLine, startCol);
         },
+        //-------------------------------------------------------------------------
+        // Methods to read values from the string stream
+        //-------------------------------------------------------------------------
         readUnicodeRangePart: function(allowQuestionMark) {
           var reader = this._reader, part = "", c = reader.peek();
           while (isHexDigit(c) && part.length < 6) {
@@ -8270,18 +9262,30 @@ var require_cssparser = __commonJS({
         }
       });
       var Tokens = [
+        /*
+         * The following token names are defined in CSS3 Grammar: http://www.w3.org/TR/css3-syntax/#lexical
+         */
+        //HTML-style comments
         { name: "CDO" },
         { name: "CDC" },
-        { name: "S", whitespace: true },
+        //ignorables
+        {
+          name: "S",
+          whitespace: true
+          /*, channel: "ws"*/
+        },
         { name: "COMMENT", comment: true, hide: true, channel: "comment" },
+        //attribute equality
         { name: "INCLUDES", text: "~=" },
         { name: "DASHMATCH", text: "|=" },
         { name: "PREFIXMATCH", text: "^=" },
         { name: "SUFFIXMATCH", text: "$=" },
         { name: "SUBSTRINGMATCH", text: "*=" },
+        //identifier types
         { name: "STRING" },
         { name: "IDENT" },
         { name: "HASH" },
+        //at-keywords
         { name: "IMPORT_SYM", text: "@import" },
         { name: "PAGE_SYM", text: "@page" },
         { name: "MEDIA_SYM", text: "@media" },
@@ -8291,11 +9295,15 @@ var require_cssparser = __commonJS({
         { name: "VIEWPORT_SYM", text: ["@viewport", "@-ms-viewport", "@-o-viewport"] },
         { name: "DOCUMENT_SYM", text: ["@document", "@-moz-document"] },
         { name: "UNKNOWN_SYM" },
+        //{ name: "ATKEYWORD"},
+        //CSS3 animations
         {
           name: "KEYFRAMES_SYM",
           text: ["@keyframes", "@-webkit-keyframes", "@-moz-keyframes", "@-o-keyframes"]
         },
+        //important symbol
         { name: "IMPORTANT_SYM" },
+        //measurements
         { name: "LENGTH" },
         { name: "ANGLE" },
         { name: "TIME" },
@@ -8303,15 +9311,26 @@ var require_cssparser = __commonJS({
         { name: "DIMENSION" },
         { name: "PERCENTAGE" },
         { name: "NUMBER" },
+        //functions
         { name: "URI" },
         { name: "FUNCTION" },
+        //Unicode ranges
         { name: "UNICODE_RANGE" },
+        /*
+         * The following token names are defined in CSS3 Selectors: http://www.w3.org/TR/css3-selectors/#selector-syntax
+         */
+        //invalid string
         { name: "INVALID" },
+        //combinators
         { name: "PLUS", text: "+" },
         { name: "GREATER", text: ">" },
         { name: "COMMA", text: "," },
         { name: "TILDE", text: "~" },
+        //modifier
         { name: "NOT" },
+        /*
+         * Defined in CSS3 Paged Media
+         */
         { name: "TOPLEFTCORNER_SYM", text: "@top-left-corner" },
         { name: "TOPLEFT_SYM", text: "@top-left" },
         { name: "TOPCENTER_SYM", text: "@top-center" },
@@ -8328,9 +9347,22 @@ var require_cssparser = __commonJS({
         { name: "RIGHTTOP_SYM", text: "@right-top" },
         { name: "RIGHTMIDDLE_SYM", text: "@right-middle" },
         { name: "RIGHTBOTTOM_SYM", text: "@right-bottom" },
+        /*
+         * The following token names are defined in CSS3 Media Queries: http://www.w3.org/TR/css3-mediaqueries/#syntax
+         */
+        /*{ name: "MEDIA_ONLY", state: "media"},
+        { name: "MEDIA_NOT", state: "media"},
+        { name: "MEDIA_AND", state: "media"},*/
         { name: "RESOLUTION", state: "media" },
+        /*
+         * The following token names are not defined in any CSS specification but are used by the lexer.
+         */
+        //not a real token, but useful for stupid IE filters
         { name: "IE_FUNCTION" },
+        //part of CSS3 grammar but not the Flex code
         { name: "CHAR" },
+        //TODO: Needed?
+        //Not defined as tokens, but might as well be
         {
           name: "PIPE",
           text: "|"
@@ -8590,6 +9622,10 @@ var require_cssparser = __commonJS({
         isComplex: function(type) {
           return !!this.complex[type];
         },
+        /**
+         * Determines if the next part(s) of the given expression
+         * are any of the given types.
+         */
         isAny: function(expression, types) {
           var args = types.split(" | "), i, len, found = false;
           for (i = 0, len = args.length; i < len && !found && expression.hasNext(); i++) {
@@ -8597,6 +9633,10 @@ var require_cssparser = __commonJS({
           }
           return found;
         },
+        /**
+         * Determines if the next part(s) of the given expression
+         * are one of a group.
+         */
         isAnyOfGroup: function(expression, types) {
           var args = types.split(" || "), i, len, found = false;
           for (i = 0, len = args.length; i < len && !found; i++) {
@@ -8604,6 +9644,10 @@ var require_cssparser = __commonJS({
           }
           return found ? args[i - 1] : false;
         },
+        /**
+         * Determines if the next part(s) of the given expression
+         * are of a given type.
+         */
         isType: function(expression, type) {
           var part = expression.peek(), result = false;
           if (type.charAt(0) !== "<") {
@@ -8650,6 +9694,7 @@ var require_cssparser = __commonJS({
           "<relative-size>": function(part) {
             return ValidationTypes.isLiteral(part, "smaller | larger");
           },
+          //any identifier
           "<ident>": function(part) {
             return part.type === "identifier";
           },
@@ -8926,6 +9971,10 @@ var require_CSSStyleDeclaration = __commonJS({
     }
     var NO_CHANGE = {};
     CSSStyleDeclaration.prototype = Object.create(Object.prototype, {
+      // Return the parsed form of the element's style attribute.
+      // If the element's style attribute has never been parsed
+      // or if it has changed since the last parse, then reparse it
+      // Note that the styles don't get parsed until they're actually needed
       _parsed: {
         get: function() {
           if (!this._parsedStyles || this.cssText !== this._lastParsedText) {
@@ -8937,6 +9986,9 @@ var require_CSSStyleDeclaration = __commonJS({
           return this._parsedStyles;
         }
       },
+      // Call this method any time the parsed representation of the
+      // style changes.  It converts the style properties to a string and
+      // sets cssText and the element's style attribute
       _serialize: {
         value: function() {
           var styles = this._parsed;
@@ -9686,6 +10738,20 @@ var require_URLUtils = __commonJS({
           }
         }
       }
+      /*
+      searchParams: {
+        get: function() {
+          var url = this._url;
+          // XXX
+        },
+        set: function(v) {
+          var output = this.href;
+          var url = new URL(output);
+          // XXX
+          this.href = output;
+        },
+      },
+      */
     });
     URLUtils._inherit = function(proto) {
       Object.getOwnPropertyNames(URLUtils.prototype).forEach(function(p) {
@@ -9888,6 +10954,7 @@ var require_htmlelts = __commonJS({
             this._setattr("style", String(v));
           }
         },
+        // These can't really be implemented server-side in a reasonable way.
         blur: { value: function() {
         } },
         focus: { value: function() {
@@ -9913,6 +10980,9 @@ var require_htmlelts = __commonJS({
                 0,
                 0,
                 0,
+                // These 4 should be initialized with
+                // the actually current keyboard state
+                // somehow...
                 false,
                 false,
                 false,
@@ -10001,6 +11071,7 @@ var require_htmlelts = __commonJS({
         "timeupdate",
         "volumechange",
         "waiting",
+        // These last 5 event types will be overriden by HTMLBodyElement
         "blur",
         "error",
         "focus",
@@ -10015,6 +11086,7 @@ var require_htmlelts = __commonJS({
       }
     });
     var formAssociatedProps = {
+      // See http://www.w3.org/TR/html5/association-of-controls-and-forms.html#form-owner
       form: {
         get: function() {
           return this._form;
@@ -10046,6 +11118,7 @@ var require_htmlelts = __commonJS({
         hreflang: String,
         type: String,
         referrerPolicy: REFERRER,
+        // Obsolete
         coords: String,
         charset: String,
         name: String,
@@ -10072,7 +11145,9 @@ var require_htmlelts = __commonJS({
         shape: String,
         coords: String,
         ping: String,
+        // XXX: also reflect relList
         referrerPolicy: REFERRER,
+        // Obsolete
         noHref: Boolean
       }
     });
@@ -10084,6 +11159,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         clear: String
       }
     });
@@ -10103,6 +11179,14 @@ var require_htmlelts = __commonJS({
       ctor: function HTMLBodyElement(doc, localName, prefix) {
         HTMLElement.call(this, doc, localName, prefix);
       },
+      // Certain event handler attributes on a <body> tag actually set
+      // handlers for the window rather than just that element.  Define
+      // getters and setters for those here.  Note that some of these override
+      // properties on HTMLElement.prototype.
+      // XXX: If I add support for <frameset>, these have to go there, too
+      // XXX
+      // When the Window object is implemented, these attribute will have
+      // to work with the same-named attributes on the Window.
       events: [
         "afterprint",
         "beforeprint",
@@ -10124,6 +11208,7 @@ var require_htmlelts = __commonJS({
         "unload"
       ],
       attributes: {
+        // Obsolete
         text: { type: String, treatNullAsEmptyString: true },
         link: { type: String, treatNullAsEmptyString: true },
         vLink: { type: String, treatNullAsEmptyString: true },
@@ -10162,6 +11247,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         compact: Boolean
       }
     });
@@ -10199,6 +11285,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String
       }
     });
@@ -10213,6 +11300,7 @@ var require_htmlelts = __commonJS({
         type: String,
         width: String,
         height: String,
+        // Obsolete
         align: String,
         name: String
       }
@@ -10243,6 +11331,7 @@ var require_htmlelts = __commonJS({
         target: String,
         noValidate: Boolean,
         method: { type: ["get", "post", "dialog"], invalid: "get", missing: "get" },
+        // Both enctype and encoding reflect the enctype content attribute
         enctype: {
           type: ["application/x-www-form-urlencoded", "multipart/form-data", "text/plain"],
           invalid: "application/x-www-form-urlencoded",
@@ -10263,6 +11352,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String,
         color: String,
         noShade: Boolean,
@@ -10284,6 +11374,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String
       }
     });
@@ -10294,6 +11385,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         version: String
       }
     });
@@ -10309,11 +11401,13 @@ var require_htmlelts = __commonJS({
         name: String,
         width: String,
         height: String,
+        // XXX: sandbox is a reflected settable token list
         seamless: Boolean,
         allowFullscreen: Boolean,
         allowUserMedia: Boolean,
         allowPaymentRequest: Boolean,
         referrerPolicy: REFERRER,
+        // Obsolete
         align: String,
         scrolling: String,
         frameBorder: String,
@@ -10338,6 +11432,7 @@ var require_htmlelts = __commonJS({
         height: { type: "unsigned long", default: 0 },
         width: { type: "unsigned long", default: 0 },
         referrerPolicy: REFERRER,
+        // Obsolete:
         name: String,
         lowsrc: URL2,
         align: String,
@@ -10395,6 +11490,7 @@ var require_htmlelts = __commonJS({
         minLength: { type: "unsigned long", min: 0, setmin: 0, default: -1 },
         maxLength: { type: "unsigned long", min: 0, setmin: 0, default: -1 },
         autocomplete: String,
+        // It's complicated
         type: {
           type: [
             "text",
@@ -10448,6 +11544,7 @@ var require_htmlelts = __commonJS({
           ],
           missing: ""
         },
+        // Obsolete
         align: String,
         useMap: String
       }
@@ -10475,6 +11572,7 @@ var require_htmlelts = __commonJS({
       },
       attributes: {
         value: { type: "long", default: 0 },
+        // Obsolete
         type: String
       }
     });
@@ -10496,6 +11594,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String
       }
     });
@@ -10506,6 +11605,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // XXX Reflect DOMSettableTokenList sizes also DOMTokenList relList
         href: URL2,
         rel: String,
         media: String,
@@ -10515,6 +11615,7 @@ var require_htmlelts = __commonJS({
         nonce: String,
         integrity: String,
         referrerPolicy: REFERRER,
+        // Obsolete
         charset: String,
         rev: String,
         target: String
@@ -10537,8 +11638,11 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // XXX: not quite right, default should be popup if parent element is
+        // popup.
         type: { type: ["context", "popup", "toolbar"], missing: "toolbar" },
         label: String,
+        // Obsolete
         compact: Boolean
       }
     });
@@ -10552,6 +11656,7 @@ var require_htmlelts = __commonJS({
         name: String,
         content: String,
         httpEquiv: { name: "http-equiv", type: String },
+        // Obsolete
         scheme: String
       }
     });
@@ -10581,6 +11686,8 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       props: {
+        // Utility function (see the start attribute default value). Returns
+        // the number of <li> children of this element
         _numitems: {
           get: function() {
             var items = 0;
@@ -10604,6 +11711,7 @@ var require_htmlelts = __commonJS({
               return 1;
           }
         },
+        // Obsolete
         compact: Boolean
       }
     });
@@ -10622,6 +11730,7 @@ var require_htmlelts = __commonJS({
         typeMustMatch: Boolean,
         width: String,
         height: String,
+        // Obsolete
         align: String,
         archive: String,
         code: String,
@@ -10678,6 +11787,7 @@ var require_htmlelts = __commonJS({
             this.textContent = v;
           }
         }
+        // missing: index
       },
       attributes: {
         disabled: Boolean,
@@ -10693,6 +11803,7 @@ var require_htmlelts = __commonJS({
       },
       props: formAssociatedProps,
       attributes: {
+        // XXX Reflect for/htmlFor as a settable token list
         name: String
       }
     });
@@ -10703,6 +11814,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String
       }
     });
@@ -10715,17 +11827,24 @@ var require_htmlelts = __commonJS({
       attributes: {
         name: String,
         value: String,
+        // Obsolete
         type: String,
         valueType: String
       }
     });
     define({
-      tags: ["pre", "listing", "xmp"],
+      tags: [
+        "pre",
+        /*legacy elements:*/
+        "listing",
+        "xmp"
+      ],
       name: "HTMLPreElement",
       ctor: function HTMLPreElement(doc, localName, prefix) {
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         width: { type: "long", default: 0 }
       }
     });
@@ -10802,6 +11921,7 @@ var require_htmlelts = __commonJS({
       },
       attributes: {
         autocomplete: String,
+        // It's complicated
         name: String,
         disabled: Boolean,
         autofocus: Boolean,
@@ -10848,6 +11968,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       attributes: {
+        // Obsolete
         align: String
       }
     });
@@ -10859,8 +11980,10 @@ var require_htmlelts = __commonJS({
       attributes: {
         colSpan: { type: "unsigned long", default: 1 },
         rowSpan: { type: "unsigned long", default: 1 },
+        //XXX Also reflect settable token list headers
         scope: { type: ["row", "col", "rowgroup", "colgroup"], missing: "" },
         abbr: String,
+        // Obsolete
         align: String,
         axis: String,
         height: String,
@@ -10880,6 +12003,7 @@ var require_htmlelts = __commonJS({
       },
       attributes: {
         span: { type: "limited unsigned long with fallback", default: 1, min: 1 },
+        // Obsolete
         align: String,
         ch: { name: "char", type: String },
         chOff: { name: "charoff", type: String },
@@ -10901,6 +12025,7 @@ var require_htmlelts = __commonJS({
         }
       },
       attributes: {
+        // Obsolete
         align: String,
         border: String,
         frame: String,
@@ -10946,6 +12071,7 @@ var require_htmlelts = __commonJS({
         }
       },
       attributes: {
+        // Obsolete
         align: String,
         ch: { name: "char", type: String },
         chOff: { name: "charoff", type: String },
@@ -10967,6 +12093,7 @@ var require_htmlelts = __commonJS({
         }
       },
       attributes: {
+        // Obsolete
         align: String,
         ch: { name: "char", type: String },
         chOff: { name: "charoff", type: String },
@@ -11010,6 +12137,7 @@ var require_htmlelts = __commonJS({
       },
       attributes: {
         autocomplete: String,
+        // It's complicated
         name: String,
         disabled: Boolean,
         autofocus: Boolean,
@@ -11074,6 +12202,7 @@ var require_htmlelts = __commonJS({
       },
       attributes: {
         type: String,
+        // Obsolete
         compact: Boolean
       }
     });
@@ -11186,6 +12315,7 @@ var require_htmlelts = __commonJS({
         HTMLElement.call(this, doc, localName, prefix);
       },
       props: {
+        // The menuitem's label
         _label: {
           get: function() {
             var val = this._getattr("label");
@@ -11196,6 +12326,7 @@ var require_htmlelts = __commonJS({
             return val.replace(/[ \t\n\f\r]+/g, " ").trim();
           }
         },
+        // The menuitem label IDL attribute
         label: {
           get: function() {
             var val = this._getattr("label");
@@ -11275,6 +12406,7 @@ var require_htmlelts = __commonJS({
       }
     });
     define({
+      // obsolete
       tag: "font",
       name: "HTMLFontElement",
       ctor: function HTMLFontElement(doc, localName, prefix) {
@@ -11287,6 +12419,7 @@ var require_htmlelts = __commonJS({
       }
     });
     define({
+      // obsolete
       tag: "dir",
       name: "HTMLDirectoryElement",
       ctor: function HTMLDirectoryElement(doc, localName, prefix) {
@@ -11338,6 +12471,7 @@ var require_htmlelts = __commonJS({
         "u",
         "var",
         "wbr",
+        // Legacy elements
         "acronym",
         "basefont",
         "big",
@@ -11492,11 +12626,17 @@ var require_MutationConstants = __commonJS({
     "use strict";
     module.exports = {
       VALUE: 1,
+      // The value of a Text, Comment or PI node changed
       ATTR: 2,
+      // A new attribute was added or an attribute value and/or prefix changed
       REMOVE_ATTR: 3,
+      // An attribute was removed
       REMOVE: 4,
+      // A node was removed
       MOVE: 5,
+      // A node was moved
       INSERT: 6
+      // A node (or a subtree of nodes) was inserted
     };
   }
 });
@@ -11608,11 +12748,17 @@ var require_Document = __commonJS({
       return { namespace, prefix, localName };
     }
     Document.prototype = Object.create(ContainerNode.prototype, {
+      // This method allows dom.js to communicate with a renderer
+      // that displays the document in some way
+      // XXX: I should probably move this to the window object
       _setMutationHandler: {
         value: function(handler) {
           this.mutationHandler = handler;
         }
       },
+      // This method allows dom.js to receive event notifications
+      // from the renderer.
+      // XXX: I should probably move this to the window object
       _dispatchRendererEvent: {
         value: function(targetNid, type, details) {
           var target = this._nodes[targetNid];
@@ -11629,6 +12775,7 @@ var require_Document = __commonJS({
         set: function() {
         }
       },
+      // XXX: DOMCore may remove documentURI, so it is NYI for now
       documentURI: {
         get: function() {
           return this._address;
@@ -11707,6 +12854,8 @@ var require_Document = __commonJS({
         },
         writable: isApiWritable
       },
+      // This is used directly by HTML parser, which allows it to create
+      // elements with localNames containing ':' and non-default namespaces
       _createElementNS: {
         value: function(localName, namespace, prefix) {
           if (namespace === NAMESPACE.HTML) {
@@ -11731,6 +12880,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // See: http://www.w3.org/TR/dom/#dom-document-createtreewalker
       createTreeWalker: {
         value: function(root2, whatToShow, filter) {
           if (!root2) {
@@ -11744,6 +12894,7 @@ var require_Document = __commonJS({
           return new TreeWalker(root2, whatToShow, filter);
         }
       },
+      // See: http://www.w3.org/TR/dom/#dom-document-createnodeiterator
       createNodeIterator: {
         value: function(root2, whatToShow, filter) {
           if (!root2) {
@@ -11780,6 +12931,10 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Maintain the documentElement and
+      // doctype properties of the document.  Each of the following
+      // methods chains to the Node implementation of the method
+      // to do the actual inserting, removal or replacement.
       _updateDocTypeElement: {
         value: function _updateDocTypeElement() {
           this.doctype = this.documentElement = null;
@@ -11828,6 +12983,7 @@ var require_Document = __commonJS({
           return this.byId[id] instanceof MultiId;
         }
       },
+      // Just copy this method from the Element prototype
       getElementsByName: { value: Element.prototype.getElementsByName },
       getElementsByTagName: { value: Element.prototype.getElementsByTagName },
       getElementsByTagNameNS: { value: Element.prototype.getElementsByTagNameNS },
@@ -11852,6 +13008,7 @@ var require_Document = __commonJS({
         },
         writable: isApiWritable
       },
+      // The following attributes and methods are from the HTML spec
       origin: {
         get: function origin() {
           return null;
@@ -11951,6 +13108,7 @@ var require_Document = __commonJS({
         "bgColor",
         ""
       ),
+      // Historical aliases of Document#characterSet
       charset: {
         get: function() {
           return this.characterSet;
@@ -11966,12 +13124,15 @@ var require_Document = __commonJS({
           return this._quirks ? this.body : this.documentElement;
         }
       },
+      // Return the first <body> child of the document element.
+      // XXX For now, setting this attribute is not implemented.
       body: {
         get: function() {
           return namedHTMLChild(this.documentElement, "body");
         },
         set: utils.nyi
       },
+      // Return the first <head> child of the document element.
       head: {
         get: function() {
           return namedHTMLChild(this.documentElement, "head");
@@ -12039,6 +13200,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Utility methods
       clone: {
         value: function clone() {
           var d = new Document(this.isHTML, this._address);
@@ -12047,6 +13209,7 @@ var require_Document = __commonJS({
           return d;
         }
       },
+      // We need to adopt the nodes if we do a deep clone
       cloneNode: {
         value: function cloneNode(deep) {
           var clone = Node.prototype.cloneNode.call(this, false);
@@ -12064,6 +13227,8 @@ var require_Document = __commonJS({
           return true;
         }
       },
+      // Implementation-specific function.  Called when a text, comment,
+      // or pi value changes.
       mutateValue: {
         value: function(node) {
           if (this.mutationHandler) {
@@ -12075,6 +13240,9 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Invoked when an attribute's value changes. Attr holds the new
+      // value.  oldval is the old value.  Attribute mutations can also
+      // involve changes to the prefix (and therefore the qualified name)
       mutateAttr: {
         value: function(attr, oldval) {
           if (this.mutationHandler) {
@@ -12086,6 +13254,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Used by removeAttribute and removeAttributeNS for attributes.
       mutateRemoveAttr: {
         value: function(attr) {
           if (this.mutationHandler) {
@@ -12097,6 +13266,10 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Called by Node.removeChild, etc. to remove a rooted element from
+      // the tree. Only needs to generate a single mutation event when a
+      // node is removed, but must recursively mark all descendants as not
+      // rooted.
       mutateRemove: {
         value: function(node) {
           if (this.mutationHandler) {
@@ -12109,6 +13282,9 @@ var require_Document = __commonJS({
           recursivelyUproot(node);
         }
       },
+      // Called when a new element becomes rooted.  It must recursively
+      // generate mutation events for each of the children, and mark them all
+      // as rooted.
       mutateInsert: {
         value: function(node) {
           recursivelyRoot(node);
@@ -12121,6 +13297,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Called when a rooted element is moved within the document
       mutateMove: {
         value: function(node) {
           if (this.mutationHandler) {
@@ -12131,6 +13308,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Add a mapping from  id to n for n.ownerDocument
       addId: {
         value: function addId(id, n) {
           var val = this.byId[id];
@@ -12145,6 +13323,7 @@ var require_Document = __commonJS({
           }
         }
       },
+      // Delete the mapping from id to n for n.ownerDocument
       delId: {
         value: function delId(id, n) {
           var val = this.byId[id];
@@ -12386,6 +13565,7 @@ var require_DocumentType = __commonJS({
         set: function() {
         }
       },
+      // Utility methods
       clone: {
         value: function clone() {
           return new DocumentType(this.ownerDocument, this.name, this.publicId, this.systemId);
@@ -12505,6 +13685,9 @@ var require_HTMLParser = __commonJS({
       title: true,
       tr: true,
       track: true,
+      // Note that "xmp" was removed from the "special" set in the latest
+      // spec, apparently by accident; see
+      // https://github.com/whatwg/html/pull/1919
       ul: true,
       wbr: true,
       xmp: true
@@ -15426,6 +16609,8 @@ var require_HTMLParser = __commonJS({
         document: function() {
           return doc;
         },
+        // Convenience function for internal use. Can only be called once,
+        // as it removes the nodes from `doc` to add them to fragment.
         _asDocumentFragment: function() {
           var frag = doc.createDocumentFragment();
           var root2 = doc.firstChild;
@@ -15434,13 +16619,21 @@ var require_HTMLParser = __commonJS({
           }
           return frag;
         },
+        // Internal function used from HTMLScriptElement to pause the
+        // parser while a script is being loaded from the network
         pause: function() {
           paused++;
         },
+        // Called when a script finishes loading
         resume: function() {
           paused--;
           this.parse("");
         },
+        // Parse the HTML text s.
+        // The second argument should be true if there is no more
+        // text to be parsed, and should be false or omitted otherwise.
+        // The second argument must not be set for recursive invocations
+        // from document.write()
         parse: function(s, end, shouldPauseFunc) {
           var moreToDo;
           if (paused > 0) {
@@ -16441,7 +17634,10 @@ var require_HTMLParser = __commonJS({
             tagnamebuf += String.fromCharCode(c + 32);
             break;
           case 0:
-            tagnamebuf += String.fromCharCode(65533);
+            tagnamebuf += String.fromCharCode(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             emitEOF();
@@ -17561,7 +18757,10 @@ var require_HTMLParser = __commonJS({
             attrnamebuf += String.fromCharCode(c + 32);
             break;
           case 0:
-            attrnamebuf += String.fromCharCode(65533);
+            attrnamebuf += String.fromCharCode(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case 34:
           case 39:
@@ -17634,7 +18833,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = character_reference_state;
             break;
           case 0:
-            attrvaluebuf += String.fromCharCode(65533);
+            attrvaluebuf += String.fromCharCode(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             emitEOF();
@@ -17658,7 +18860,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = character_reference_state;
             break;
           case 0:
-            attrvaluebuf += String.fromCharCode(65533);
+            attrvaluebuf += String.fromCharCode(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             emitEOF();
@@ -17690,7 +18895,10 @@ var require_HTMLParser = __commonJS({
             emitTag();
             break;
           case 0:
-            attrvaluebuf += String.fromCharCode(65533);
+            attrvaluebuf += String.fromCharCode(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             nextchar--;
@@ -17805,7 +19013,10 @@ var require_HTMLParser = __commonJS({
             emitEOF();
             break;
           default:
-            commentbuf.push(45);
+            commentbuf.push(
+              45
+              /* HYPHEN-MINUS */
+            );
             reconsume(c, comment_state);
             break;
         }
@@ -17820,7 +19031,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = comment_end_dash_state;
             break;
           case 0:
-            commentbuf.push(65533);
+            commentbuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             insertToken(COMMENT, buf2str(commentbuf));
@@ -17886,7 +19100,10 @@ var require_HTMLParser = __commonJS({
             emitEOF();
             break;
           default:
-            commentbuf.push(45);
+            commentbuf.push(
+              45
+              /* HYPHEN-MINUS */
+            );
             reconsume(c, comment_state);
             break;
         }
@@ -18059,7 +19276,10 @@ var require_HTMLParser = __commonJS({
             doctypenamebuf.push(c + 32);
             break;
           case 0:
-            doctypenamebuf.push(65533);
+            doctypenamebuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case -1:
             forcequirks();
@@ -18174,7 +19394,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = after_doctype_public_identifier_state;
             break;
           case 0:
-            doctypepublicbuf.push(65533);
+            doctypepublicbuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case 62:
             forcequirks();
@@ -18197,7 +19420,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = after_doctype_public_identifier_state;
             break;
           case 0:
-            doctypepublicbuf.push(65533);
+            doctypepublicbuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case 62:
             forcequirks();
@@ -18344,7 +19570,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = after_doctype_system_identifier_state;
             break;
           case 0:
-            doctypesystembuf.push(65533);
+            doctypesystembuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case 62:
             forcequirks();
@@ -18367,7 +19596,10 @@ var require_HTMLParser = __commonJS({
             tokenizer = after_doctype_system_identifier_state;
             break;
           case 0:
-            doctypesystembuf.push(65533);
+            doctypesystembuf.push(
+              65533
+              /* REPLACEMENT CHARACTER */
+            );
             break;
           case 62:
             forcequirks();
@@ -20481,9 +21713,13 @@ var require_DOMImplementation = __commonJS({
     }
     var supportedFeatures = {
       xml: { "": true, "1.0": true, "2.0": true },
+      // DOM Core
       core: { "": true, "2.0": true },
+      // DOM Core
       html: { "": true, "1.0": true, "2.0": true },
+      // HTML
       xhtml: { "": true, "1.0": true, "2.0": true }
+      // HTML
     };
     DOMImplementation.prototype = {
       hasFeature: function hasFeature(feature, version) {
@@ -20556,6 +21792,7 @@ var require_Location = __commonJS({
     }
     Location.prototype = Object.create(URLUtils.prototype, {
       constructor: { value: Location },
+      // Special behavior when href is set
       href: {
         get: function() {
           return this._href;
@@ -20684,6 +21921,7 @@ var require_Window = __commonJS({
         }
       },
       navigator: { value: require_NavigatorID() },
+      // Self-referential properties
       window: {
         get: function() {
           return this;
@@ -20699,6 +21937,7 @@ var require_Window = __commonJS({
           return this;
         }
       },
+      // Self-referential properties for a top-level window
       parent: {
         get: function() {
           return this;
@@ -20709,9 +21948,16 @@ var require_Window = __commonJS({
           return this;
         }
       },
+      // We don't support any other windows for now
       length: { value: 0 },
+      // no frames
       frameElement: { value: null },
+      // not part of a frame
       opener: { value: null },
+      // not opened by another window
+      // The onload event handler.
+      // XXX: need to support a bunch of other event types, too,
+      // and have them interoperate with document.body.
       onload: {
         get: function() {
           return this._getEventHandler("load");
@@ -20720,6 +21966,7 @@ var require_Window = __commonJS({
           this._setEventHandler("load", v);
         }
       },
+      // XXX This is a completely broken implementation
       getComputedStyle: {
         value: function getComputedStyle(elt) {
           return elt.style;
@@ -20752,6 +21999,7 @@ var require_lib = __commonJS({
     exports.createIncrementalHTMLParser = function() {
       var parser = new HTMLParser();
       return {
+        /** Provide an additional chunk of text to be parsed. */
         write: function(s) {
           if (s.length > 0) {
             parser.parse(s, false, function() {
@@ -20759,14 +22007,43 @@ var require_lib = __commonJS({
             });
           }
         },
+        /**
+         * Signal that we are done providing input text, optionally
+         * providing one last chunk as a parameter.
+         */
         end: function(s) {
           parser.parse(s || "", true, function() {
             return true;
           });
         },
+        /**
+         * Performs a chunk of parsing work, returning at the end of
+         * the next token as soon as shouldPauseFunc() returns true.
+         * Returns true iff there is more work to do.
+         *
+         * For example:
+         * ```
+         *  var incrParser = domino.createIncrementalHTMLParser();
+         *  incrParser.end('...long html document...');
+         *  while (true) {
+         *    // Pause every 10ms
+         *    var start = Date.now();
+         *    var pauseIn10 = function() { return (Date.now() - start) >= 10; };
+         *    if (!incrParser.process(pauseIn10)) {
+         *      break;
+         *    }
+         *    ...yield to other tasks, do other housekeeping, etc...
+         *  }
+         * ```
+         */
         process: function(shouldPauseFunc) {
           return parser.parse("", false, shouldPauseFunc);
         },
+        /**
+         * Returns the result of the incremental parse.  Valid after
+         * `this.end()` has been called and `this.process()` has returned
+         * false.
+         */
         document: function() {
           return parser.document();
         }
