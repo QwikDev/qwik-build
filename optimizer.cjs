@@ -957,7 +957,7 @@ globalThis.qwikOptimizer = function(module) {
     return err;
   }
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
-  var SERVER_STRIP_CTX_NAME = [ "useServerMount$", "action$", "loader$" ];
+  var SERVER_STRIP_CTX_NAME = [ "server", "useServer", "action$", "loader$" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
@@ -1136,7 +1136,7 @@ globalThis.qwikOptimizer = function(module) {
           transformOpts.stripExports = SERVER_STRIP_EXPORTS;
           transformOpts.isServer = false;
         } else if ("ssr" === opts.target) {
-          transformOpts.stripCtxName = [ "useClientMount$", "useClientEffect$" ];
+          transformOpts.stripCtxName = [ "useClient", "client" ];
           transformOpts.stripCtxKind = "event";
           transformOpts.isServer = true;
         }
