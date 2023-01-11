@@ -7734,7 +7734,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         else {
             const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const recursive = opts?.recursive ?? false;
+            const recursive = opts?.deep ?? opts?.recursive ?? false;
             const flags = recursive ? QObjectRecursive : 0;
             const newStore = getOrCreateProxy(value, containerState, flags);
             set(newStore);

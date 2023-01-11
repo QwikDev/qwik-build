@@ -3352,8 +3352,20 @@ export declare const useStore: <STATE extends object>(initialState: STATE | (() 
  * @public
  */
 export declare interface UseStoreOptions {
-    recursive?: boolean;
+    /**
+     * If `true` then all nested objects and arrays will be tracked as well.
+     * Default is `false`.
+     */
+    deep?: boolean;
+    /**
+     * If `false` then the object will not be tracked for changes.
+     * Default is `true`.
+     */
     reactive?: boolean;
+    /**
+     * @deprecated - use `deep` instead
+     */
+    recursive?: boolean;
 }
 
 /**
@@ -3607,7 +3619,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230111132017
+ * 0.16.2-dev20230111133255
  * @public
  */
 export declare const version: string;

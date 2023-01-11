@@ -4204,7 +4204,7 @@ const useStore = (initialState, opts) => {
     }
     {
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const newStore = getOrCreateProxy(value, containerState, opts?.recursive ?? false ? 1 : 0);
+        const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
         return set(newStore), newStore;
     }
 };
