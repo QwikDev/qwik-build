@@ -540,7 +540,7 @@ declare interface ContainerState {
     readonly $base$: string;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
-    $envData$: Record<string, any>;
+    $serverProps$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;
     readonly $styleIds$: Set<string>;
@@ -2967,13 +2967,9 @@ export declare interface UseEffectOptions {
 
 /**
  * @alpha
+ * @deprecated Please use `useServerProps` instead.
  */
-export declare function useEnvData<T>(key: string): T | undefined;
-
-/**
- * @alpha
- */
-export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | B;
+export declare const useEnvData: typeof useServerProps;
 
 /**
  * @alpha
@@ -3267,6 +3263,16 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
+
+/**
+ * @alpha
+ */
+export declare function useServerProps<T>(key: string): T | undefined;
+
+/**
+ * @alpha
+ */
+export declare function useServerProps<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
  * @alpha
@@ -3577,12 +3583,6 @@ export declare interface UseTaskOptions {
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
 /**
- * @alpha
- * @deprecated Please use `useEnvData` instead.
- */
-export declare const useUserContext: typeof useEnvData;
-
-/**
  * @beta
  * @deprecated - use `useTask$()` instead
  */
@@ -3601,7 +3601,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230111104001
+ * 0.16.2-dev20230111110947
  * @public
  */
 export declare const version: string;

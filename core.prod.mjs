@@ -741,7 +741,7 @@ const createContainerState = (containerEl, base) => {
         $hostsStaging$: new Set,
         $styleIds$: new Set,
         $events$: new Set,
-        $envData$: {},
+        $serverProps$: {},
         $base$: base,
         $renderPromise$: void 0,
         $hostsRendering$: void 0,
@@ -1280,7 +1280,7 @@ const addExtraItems = (node, elCtx) => elCtx.$extraRender$ ? [ node, elCtx.$extr
 const createRenderContext = (doc, containerState) => ({
     $static$: {
         $doc$: doc,
-        $locale$: containerState.$envData$.locale,
+        $locale$: containerState.$serverProps$.locale,
         $containerState$: containerState,
         $hostElements$: new Set,
         $operations$: [],
@@ -3641,7 +3641,7 @@ const render = async (parent, jsxNode, opts) => {
     injectQContainer(containerEl);
     const containerState = getContainerState(containerEl);
     const envData = opts?.envData;
-    envData && Object.assign(containerState.$envData$, envData), containerState.$hostsRendering$ = new Set, 
+    envData && Object.assign(containerState.$serverProps$, envData), containerState.$hostsRendering$ = new Set, 
     containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
     const renderCtx = await containerState.$renderPromise$;
     await postRendering(containerState, renderCtx);
@@ -3672,7 +3672,7 @@ const renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? "/");
-    containerState.$envData$.locale = opts.envData?.locale;
+    containerState.$serverProps$.locale = opts.envData?.locale;
     const rCtx = createRenderContext({
         nodeType: 9
     }, containerState);
@@ -3700,7 +3700,7 @@ const renderSSR = async (node, opts) => {
         children: "html" === root ? [ node ] : [ headNodes, node ]
     };
     "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-    containerState.$envData$ = {
+    containerState.$serverProps$ = {
         url: opts.url,
         ...opts.envData
     }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
@@ -4222,11 +4222,11 @@ const useId = () => {
     return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
 };
 
-function useEnvData(key, defaultValue) {
-    return useInvokeContext().$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
+function useServerProps(key, defaultValue) {
+    return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverProps$[key] ?? defaultValue;
 }
 
-const useUserContext = useEnvData;
+const useEnvData = useServerProps;
 
 const STYLE_CACHE = new Map;
 
@@ -4461,4 +4461,4 @@ const useRender = jsx => {
     extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerMount$, useServerMountQrl, useServerProps, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useWatch$, useWatchQrl, version, withLocale };
