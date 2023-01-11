@@ -2208,7 +2208,7 @@ declare interface RenderOperation {
  * @alpha
  */
 export declare interface RenderOptions {
-    envData?: Record<string, any>;
+    serverProps?: Record<string, any>;
 }
 
 /**
@@ -2224,7 +2224,7 @@ export declare interface RenderSSROptions {
     containerAttributes: Record<string, string>;
     stream: StreamWriter;
     base?: string;
-    envData?: Record<string, any>;
+    serverProps?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode<string>[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean) => Promise<JSXNode>;
@@ -3601,7 +3601,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230111110947
+ * 0.16.2-dev20230111113004
  * @public
  */
 export declare const version: string;

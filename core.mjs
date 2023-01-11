@@ -6757,9 +6757,9 @@ const render = async (parent, jsxNode, opts) => {
     // }
     injectQContainer(containerEl);
     const containerState = getContainerState(containerEl);
-    const envData = opts?.envData;
-    if (envData) {
-        Object.assign(containerState.$serverProps$, envData);
+    const serverProps = opts?.serverProps;
+    if (serverProps) {
+        Object.assign(containerState.$serverProps$, serverProps);
     }
     containerState.$hostsRendering$ = new Set();
     containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
@@ -6814,7 +6814,7 @@ const renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? '/');
-    containerState.$serverProps$.locale = opts.envData?.locale;
+    containerState.$serverProps$.locale = opts.serverProps?.locale;
     const doc = createDocument();
     const rCtx = createRenderContext(doc, containerState);
     const headNodes = opts.beforeContent ?? [];
@@ -6823,7 +6823,7 @@ const renderSSR = async (node, opts) => {
             $contexts$: [],
             $dynamic$: false,
             $headNodes$: root === 'html' ? headNodes : [],
-            $locale$: opts.envData?.locale,
+            $locale$: opts.serverProps?.locale,
         },
         $projectedChildren$: undefined,
         $projectedCtxs$: undefined,
@@ -6840,7 +6840,7 @@ const renderSSR = async (node, opts) => {
         'q:version': version ?? 'dev',
         'q:render': qRender,
         'q:base': opts.base,
-        'q:locale': opts.envData?.locale,
+        'q:locale': opts.serverProps?.locale,
         children: root === 'html' ? [node] : [headNodes, node],
     };
     if (root !== 'html') {
@@ -6849,7 +6849,7 @@ const renderSSR = async (node, opts) => {
     }
     containerState.$serverProps$ = {
         url: opts.url,
-        ...opts.envData,
+        ...opts.serverProps,
     };
     node = jsx(root, containerAttributes);
     containerState.$hostsRendering$ = new Set();
