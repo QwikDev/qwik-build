@@ -1503,7 +1503,7 @@
             $hostsStaging$: new Set(),
             $styleIds$: new Set(),
             $events$: new Set(),
-            $serverProps$: {},
+            $serverData$: {},
             $base$: base,
             $renderPromise$: undefined,
             $hostsRendering$: undefined,
@@ -2612,7 +2612,7 @@
         const ctx = {
             $static$: {
                 $doc$: doc,
-                $locale$: containerState.$serverProps$.locale,
+                $locale$: containerState.$serverData$.locale,
                 $containerState$: containerState,
                 $hostElements$: new Set(),
                 $operations$: [],
@@ -6771,7 +6771,7 @@
         const containerState = getContainerState(containerEl);
         const serverProps = opts?.serverProps;
         if (serverProps) {
-            Object.assign(containerState.$serverProps$, serverProps);
+            Object.assign(containerState.$serverData$, serverProps);
         }
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
@@ -6826,7 +6826,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? '/');
-        containerState.$serverProps$.locale = opts.serverProps?.locale;
+        containerState.$serverData$.locale = opts.serverProps?.locale;
         const doc = createDocument();
         const rCtx = createRenderContext(doc, containerState);
         const headNodes = opts.beforeContent ?? [];
@@ -6859,7 +6859,7 @@
             containerAttributes.class =
                 'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
         }
-        containerState.$serverProps$ = {
+        containerState.$serverData$ = {
             url: opts.url,
             ...opts.serverProps,
         };
@@ -7802,15 +7802,20 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     /**
      * @alpha
      */
-    function useServerProps(key, defaultValue) {
+    function useServerData(key, defaultValue) {
         const ctx = useInvokeContext();
-        return ctx.$renderCtx$.$static$.$containerState$.$serverProps$[key] ?? defaultValue;
+        return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
     /**
      * @alpha
-     * @deprecated Please use `useServerProps` instead.
+     * @deprecated Please use `useServerData` instead.
      */
-    const useEnvData = useServerProps;
+    const useUserContext = useServerData;
+    /**
+     * @alpha
+     * @deprecated Please use `useServerData` instead.
+     */
+    const useEnvData = useServerData;
 
     /* eslint-disable no-console */
     const STYLE_CACHE = new Map();
@@ -8521,9 +8526,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useRender = useRender;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
+    exports.useServerData = useServerData;
     exports.useServerMount$ = useServerMount$;
     exports.useServerMountQrl = useServerMountQrl;
-    exports.useServerProps = useServerProps;
     exports.useSignal = useSignal;
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
@@ -8532,6 +8537,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useStylesScopedQrl = useStylesScopedQrl;
     exports.useTask$ = useTask$;
     exports.useTaskQrl = useTaskQrl;
+    exports.useUserContext = useUserContext;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;

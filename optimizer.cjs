@@ -1692,7 +1692,7 @@ globalThis.qwikOptimizer = function(module) {
         const domain = "http://" + (req.headers.host ?? "localhost");
         const url = new URL(req.originalUrl, domain);
         if (shouldSsrRender(req, url)) {
-          const serverProps = {
+          const serverData = {
             ...res._qwikEnvData,
             url: url.href
           };
@@ -1700,7 +1700,7 @@ globalThis.qwikOptimizer = function(module) {
           if (isClientDevOnly) {
             const relPath = path.relative(opts.rootDir, clientDevInput);
             const entryUrl = "/" + relPath.replace(/\\/g, "/");
-            let html = getViteDevIndexHtml(entryUrl, serverProps);
+            let html = getViteDevIndexHtml(entryUrl, serverData);
             html = await server.transformIndexHtml(url.pathname, html);
             res.setHeader("Content-Type", "text/html; charset=utf-8");
             res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");
@@ -1742,7 +1742,7 @@ globalThis.qwikOptimizer = function(module) {
             }));
             const renderOpts = {
               debug: true,
-              locale: serverProps.locale,
+              locale: serverData.locale,
               stream: res,
               snapshot: !isClientDevOnly,
               manifest: isClientDevOnly ? void 0 : manifest,
@@ -1753,7 +1753,7 @@ globalThis.qwikOptimizer = function(module) {
                 }
               },
               prefetchStrategy: null,
-              serverProps: serverProps
+              serverData: serverData
             };
             res.setHeader("Content-Type", "text/html; charset=utf-8");
             res.setHeader("Cache-Control", "no-cache, no-store, max-age=0");

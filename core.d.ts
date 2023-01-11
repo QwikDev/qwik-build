@@ -540,7 +540,7 @@ declare interface ContainerState {
     readonly $base$: string;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
-    $serverProps$: Record<string, any>;
+    $serverData$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;
     readonly $styleIds$: Set<string>;
@@ -2967,9 +2967,9 @@ export declare interface UseEffectOptions {
 
 /**
  * @alpha
- * @deprecated Please use `useServerProps` instead.
+ * @deprecated Please use `useServerData` instead.
  */
-export declare const useEnvData: typeof useServerProps;
+export declare const useEnvData: typeof useServerData;
 
 /**
  * @alpha
@@ -3227,6 +3227,16 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
+ * @alpha
+ */
+export declare function useServerData<T>(key: string): T | undefined;
+
+/**
+ * @alpha
+ */
+export declare function useServerData<T, B = T>(key: string, defaultValue: B): T | B;
+
+/**
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
@@ -3263,16 +3273,6 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  * @deprecated - use `useTask$()` with `isServer` instead. See
  */
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
-
-/**
- * @alpha
- */
-export declare function useServerProps<T>(key: string): T | undefined;
-
-/**
- * @alpha
- */
-export declare function useServerProps<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
  * @alpha
@@ -3583,6 +3583,12 @@ export declare interface UseTaskOptions {
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
 /**
+ * @alpha
+ * @deprecated Please use `useServerData` instead.
+ */
+export declare const useUserContext: typeof useServerData;
+
+/**
  * @beta
  * @deprecated - use `useTask$()` instead
  */
@@ -3601,7 +3607,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230111113004
+ * 0.16.2-dev20230111130438
  * @public
  */
 export declare const version: string;

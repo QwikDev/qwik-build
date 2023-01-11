@@ -583,7 +583,7 @@
             $hostsStaging$: new Set,
             $styleIds$: new Set,
             $events$: new Set,
-            $serverProps$: {},
+            $serverData$: {},
             $base$: base,
             $renderPromise$: void 0,
             $hostsRendering$: void 0,
@@ -1037,7 +1037,7 @@
     const createRenderContext = (doc, containerState) => ({
         $static$: {
             $doc$: doc,
-            $locale$: containerState.$serverProps$.locale,
+            $locale$: containerState.$serverData$.locale,
             $containerState$: containerState,
             $hostElements$: new Set,
             $operations$: [],
@@ -3625,10 +3625,11 @@
             return set(newStore), newStore;
         }
     };
-    function useServerProps(key, defaultValue) {
-        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverProps$[key] ?? defaultValue;
+    function useServerData(key, defaultValue) {
+        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
-    const useEnvData = useServerProps;
+    const useUserContext = useServerData;
+    const useEnvData = useServerData;
     const STYLE_CACHE = new Map;
     const getScopedStyles = (css, scopeId) => {
         let styleCss = STYLE_CACHE.get(scopeId);
@@ -3907,7 +3908,7 @@
         })(containerEl);
         const containerState = getContainerState(containerEl);
         const serverProps = opts?.serverProps;
-        serverProps && Object.assign(containerState.$serverProps$, serverProps), containerState.$hostsRendering$ = new Set, 
+        serverProps && Object.assign(containerState.$serverData$, serverProps), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = (async (parent, jsxNode, doc, containerState, containerEl) => {
             const rCtx = createRenderContext(doc, containerState);
             const staticCtx = rCtx.$static$;
@@ -3927,7 +3928,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? "/");
-        containerState.$serverProps$.locale = opts.serverProps?.locale;
+        containerState.$serverData$.locale = opts.serverProps?.locale;
         const rCtx = createRenderContext({
             nodeType: 9
         }, containerState);
@@ -3955,7 +3956,7 @@
             children: "html" === root ? [ node ] : [ headNodes, node ]
         };
         "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-        containerState.$serverProps$ = {
+        containerState.$serverData$ = {
             url: opts.url,
             ...opts.serverProps
         }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
@@ -4007,8 +4008,8 @@
         let extraRender = elCtx.$extraRender$;
         extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
     }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
-    exports.useResourceQrl = useResourceQrl, exports.useServerMount$ = useServerMount$, 
-    exports.useServerMountQrl = useServerMountQrl, exports.useServerProps = useServerProps, 
+    exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
+    exports.useServerMount$ = useServerMount$, exports.useServerMountQrl = useServerMountQrl, 
     exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {
@@ -4022,8 +4023,9 @@
         return set(signal), signal;
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
-    exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useWatch$ = useWatch$, 
-    exports.useWatchQrl = useWatchQrl, exports.version = "0.16.2", exports.withLocale = function(locale, fn) {
+    exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.16.2", 
+    exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();
