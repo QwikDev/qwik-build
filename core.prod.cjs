@@ -3907,8 +3907,8 @@
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
-        const serverProps = opts?.serverProps;
-        serverProps && Object.assign(containerState.$serverData$, serverProps), containerState.$hostsRendering$ = new Set, 
+        const serverData = opts?.serverData;
+        serverData && Object.assign(containerState.$serverData$, serverData), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = (async (parent, jsxNode, doc, containerState, containerEl) => {
             const rCtx = createRenderContext(doc, containerState);
             const staticCtx = rCtx.$static$;
@@ -3928,7 +3928,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? "/");
-        containerState.$serverData$.locale = opts.serverProps?.locale;
+        containerState.$serverData$.locale = opts.serverData?.locale;
         const rCtx = createRenderContext({
             nodeType: 9
         }, containerState);
@@ -3938,7 +3938,7 @@
                 $contexts$: [],
                 $dynamic$: false,
                 $headNodes$: "html" === root ? headNodes : [],
-                $locale$: opts.serverProps?.locale
+                $locale$: opts.serverData?.locale
             },
             $projectedChildren$: void 0,
             $projectedCtxs$: void 0,
@@ -3952,13 +3952,13 @@
             "q:version": "0.16.2",
             "q:render": qRender,
             "q:base": opts.base,
-            "q:locale": opts.serverProps?.locale,
+            "q:locale": opts.serverData?.locale,
             children: "html" === root ? [ node ] : [ headNodes, node ]
         };
         "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
         containerState.$serverData$ = {
             url: opts.url,
-            ...opts.serverProps
+            ...opts.serverData
         }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
             const beforeClose = opts.beforeClose;

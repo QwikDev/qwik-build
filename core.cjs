@@ -6769,9 +6769,9 @@
         // }
         injectQContainer(containerEl);
         const containerState = getContainerState(containerEl);
-        const serverProps = opts?.serverProps;
-        if (serverProps) {
-            Object.assign(containerState.$serverData$, serverProps);
+        const serverData = opts?.serverData;
+        if (serverData) {
+            Object.assign(containerState.$serverData$, serverData);
         }
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
@@ -6826,7 +6826,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? '/');
-        containerState.$serverData$.locale = opts.serverProps?.locale;
+        containerState.$serverData$.locale = opts.serverData?.locale;
         const doc = createDocument();
         const rCtx = createRenderContext(doc, containerState);
         const headNodes = opts.beforeContent ?? [];
@@ -6835,7 +6835,7 @@
                 $contexts$: [],
                 $dynamic$: false,
                 $headNodes$: root === 'html' ? headNodes : [],
-                $locale$: opts.serverProps?.locale,
+                $locale$: opts.serverData?.locale,
             },
             $projectedChildren$: undefined,
             $projectedCtxs$: undefined,
@@ -6852,7 +6852,7 @@
             'q:version': version ?? 'dev',
             'q:render': qRender,
             'q:base': opts.base,
-            'q:locale': opts.serverProps?.locale,
+            'q:locale': opts.serverData?.locale,
             children: root === 'html' ? [node] : [headNodes, node],
         };
         if (root !== 'html') {
@@ -6861,7 +6861,7 @@
         }
         containerState.$serverData$ = {
             url: opts.url,
-            ...opts.serverProps,
+            ...opts.serverData,
         };
         node = jsx(root, containerAttributes);
         containerState.$hostsRendering$ = new Set();

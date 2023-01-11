@@ -1841,8 +1841,8 @@ var PERF_WARNING = '\n<script>\nif (!window.__qwikViteLog) {\n  window.__qwikVit
 
 var END_SSR_SCRIPT = opts => `\n<script type="module" src="/@vite/client"><\/script>\n${DEV_ERROR_HANDLING}\n${ERROR_HOST}\n${PERF_WARNING}\n${DEV_QWIK_INSPECTOR(opts.devTools)}\n`;
 
-function getViteDevIndexHtml(entryUrl, serverProps) {
-  return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const serverProps = JSON.parse(${JSON.stringify(JSON.stringify(serverProps))})\n        mod.default({\n          serverProps,\n        });\n      }\n    }\n    main();\n    <\/script>\n    ${DEV_ERROR_HANDLING}\n  </body>\n</html>`;
+function getViteDevIndexHtml(entryUrl, serverData) {
+  return `<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <script type="module">\n    async function main() {\n      const mod = await import("${entryUrl}?${VITE_DEV_CLIENT_QS}=");\n      if (mod.default) {\n        const serverData = JSON.parse(${JSON.stringify(JSON.stringify(serverData))})\n        mod.default({\n          serverData,\n        });\n      }\n    }\n    main();\n    <\/script>\n    ${DEV_ERROR_HANDLING}\n  </body>\n</html>`;
 }
 
 var VITE_DEV_CLIENT_QS = "qwik-vite-dev-client";
