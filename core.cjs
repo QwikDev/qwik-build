@@ -1503,7 +1503,7 @@
             $hostsStaging$: new Set(),
             $styleIds$: new Set(),
             $events$: new Set(),
-            $envData$: {},
+            $serverData$: {},
             $base$: base,
             $renderPromise$: undefined,
             $hostsRendering$: undefined,
@@ -2612,7 +2612,7 @@
         const ctx = {
             $static$: {
                 $doc$: doc,
-                $locale$: containerState.$envData$.locale,
+                $locale$: containerState.$serverData$.locale,
                 $containerState$: containerState,
                 $hostElements$: new Set(),
                 $operations$: [],
@@ -6769,9 +6769,9 @@
         // }
         injectQContainer(containerEl);
         const containerState = getContainerState(containerEl);
-        const envData = opts?.envData;
-        if (envData) {
-            Object.assign(containerState.$envData$, envData);
+        const serverData = opts?.serverData;
+        if (serverData) {
+            Object.assign(containerState.$serverData$, serverData);
         }
         containerState.$hostsRendering$ = new Set();
         containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
@@ -6826,7 +6826,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? '/');
-        containerState.$envData$.locale = opts.envData?.locale;
+        containerState.$serverData$.locale = opts.serverData?.locale;
         const doc = createDocument();
         const rCtx = createRenderContext(doc, containerState);
         const headNodes = opts.beforeContent ?? [];
@@ -6835,7 +6835,7 @@
                 $contexts$: [],
                 $dynamic$: false,
                 $headNodes$: root === 'html' ? headNodes : [],
-                $locale$: opts.envData?.locale,
+                $locale$: opts.serverData?.locale,
             },
             $projectedChildren$: undefined,
             $projectedCtxs$: undefined,
@@ -6852,16 +6852,16 @@
             'q:version': version ?? 'dev',
             'q:render': qRender,
             'q:base': opts.base,
-            'q:locale': opts.envData?.locale,
+            'q:locale': opts.serverData?.locale,
             children: root === 'html' ? [node] : [headNodes, node],
         };
         if (root !== 'html') {
             containerAttributes.class =
                 'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
         }
-        containerState.$envData$ = {
+        containerState.$serverData$ = {
             url: opts.url,
-            ...opts.envData,
+            ...opts.serverData,
         };
         node = jsx(root, containerAttributes);
         containerState.$hostsRendering$ = new Set();
@@ -7734,7 +7734,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         else {
             const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const recursive = opts?.recursive ?? false;
+            const recursive = opts?.deep ?? opts?.recursive ?? false;
             const flags = recursive ? QObjectRecursive : 0;
             const newStore = getOrCreateProxy(value, containerState, flags);
             set(newStore);
@@ -7802,15 +7802,20 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     /**
      * @alpha
      */
-    function useEnvData(key, defaultValue) {
+    function useServerData(key, defaultValue) {
         const ctx = useInvokeContext();
-        return ctx.$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
+        return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
     /**
      * @alpha
-     * @deprecated Please use `useEnvData` instead.
+     * @deprecated Please use `useServerData` instead.
      */
-    const useUserContext = useEnvData;
+    const useUserContext = useServerData;
+    /**
+     * @alpha
+     * @deprecated Please use `useServerData` instead.
+     */
+    const useEnvData = useServerData;
 
     /* eslint-disable no-console */
     const STYLE_CACHE = new Map();
@@ -8521,6 +8526,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useRender = useRender;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
+    exports.useServerData = useServerData;
     exports.useServerMount$ = useServerMount$;
     exports.useServerMountQrl = useServerMountQrl;
     exports.useSignal = useSignal;

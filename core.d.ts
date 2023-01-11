@@ -540,7 +540,7 @@ declare interface ContainerState {
     readonly $base$: string;
     $hostsRendering$: Set<QwikElement> | undefined;
     $renderPromise$: Promise<RenderContext> | undefined;
-    $envData$: Record<string, any>;
+    $serverData$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;
     readonly $styleIds$: Set<string>;
@@ -2208,7 +2208,7 @@ declare interface RenderOperation {
  * @alpha
  */
 export declare interface RenderOptions {
-    envData?: Record<string, any>;
+    serverData?: Record<string, any>;
 }
 
 /**
@@ -2224,7 +2224,7 @@ export declare interface RenderSSROptions {
     containerAttributes: Record<string, string>;
     stream: StreamWriter;
     base?: string;
-    envData?: Record<string, any>;
+    serverData?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode<string>[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean) => Promise<JSXNode>;
@@ -2967,13 +2967,9 @@ export declare interface UseEffectOptions {
 
 /**
  * @alpha
+ * @deprecated Please use `useServerData` instead.
  */
-export declare function useEnvData<T>(key: string): T | undefined;
-
-/**
- * @alpha
- */
-export declare function useEnvData<T, B = T>(key: string, defaultValue: B): T | B;
+export declare const useEnvData: typeof useServerData;
 
 /**
  * @alpha
@@ -3231,6 +3227,16 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
+ * @alpha
+ */
+export declare function useServerData<T>(key: string): T | undefined;
+
+/**
+ * @alpha
+ */
+export declare function useServerData<T, B = T>(key: string, defaultValue: B): T | B;
+
+/**
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
@@ -3346,8 +3352,20 @@ export declare const useStore: <STATE extends object>(initialState: STATE | (() 
  * @public
  */
 export declare interface UseStoreOptions {
-    recursive?: boolean;
+    /**
+     * If `true` then all nested objects and arrays will be tracked as well.
+     * Default is `false`.
+     */
+    deep?: boolean;
+    /**
+     * If `false` then the object will not be tracked for changes.
+     * Default is `true`.
+     */
     reactive?: boolean;
+    /**
+     * @deprecated - use `deep` instead
+     */
+    recursive?: boolean;
 }
 
 /**
@@ -3578,9 +3596,9 @@ export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => vo
 
 /**
  * @alpha
- * @deprecated Please use `useEnvData` instead.
+ * @deprecated Please use `useServerData` instead.
  */
-export declare const useUserContext: typeof useEnvData;
+export declare const useUserContext: typeof useServerData;
 
 /**
  * @beta
@@ -3601,7 +3619,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230111111120
+ * 0.16.2-dev20230111160518
  * @public
  */
 export declare const version: string;

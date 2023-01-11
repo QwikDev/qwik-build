@@ -583,7 +583,7 @@
             $hostsStaging$: new Set,
             $styleIds$: new Set,
             $events$: new Set,
-            $envData$: {},
+            $serverData$: {},
             $base$: base,
             $renderPromise$: void 0,
             $hostsRendering$: void 0,
@@ -1037,7 +1037,7 @@
     const createRenderContext = (doc, containerState) => ({
         $static$: {
             $doc$: doc,
-            $locale$: containerState.$envData$.locale,
+            $locale$: containerState.$serverData$.locale,
             $containerState$: containerState,
             $hostElements$: new Set,
             $operations$: [],
@@ -3621,14 +3621,15 @@
         }
         {
             const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const newStore = getOrCreateProxy(value, containerState, opts?.recursive ?? false ? 1 : 0);
+            const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
             return set(newStore), newStore;
         }
     };
-    function useEnvData(key, defaultValue) {
-        return useInvokeContext().$renderCtx$.$static$.$containerState$.$envData$[key] ?? defaultValue;
+    function useServerData(key, defaultValue) {
+        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
-    const useUserContext = useEnvData;
+    const useUserContext = useServerData;
+    const useEnvData = useServerData;
     const STYLE_CACHE = new Map;
     const getScopedStyles = (css, scopeId) => {
         let styleCss = STYLE_CACHE.get(scopeId);
@@ -3906,8 +3907,8 @@
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = getContainerState(containerEl);
-        const envData = opts?.envData;
-        envData && Object.assign(containerState.$envData$, envData), containerState.$hostsRendering$ = new Set, 
+        const serverData = opts?.serverData;
+        serverData && Object.assign(containerState.$serverData$, serverData), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = (async (parent, jsxNode, doc, containerState, containerEl) => {
             const rCtx = createRenderContext(doc, containerState);
             const staticCtx = rCtx.$static$;
@@ -3927,7 +3928,7 @@
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
         const containerState = createContainerState(containerEl, opts.base ?? "/");
-        containerState.$envData$.locale = opts.envData?.locale;
+        containerState.$serverData$.locale = opts.serverData?.locale;
         const rCtx = createRenderContext({
             nodeType: 9
         }, containerState);
@@ -3937,7 +3938,7 @@
                 $contexts$: [],
                 $dynamic$: false,
                 $headNodes$: "html" === root ? headNodes : [],
-                $locale$: opts.envData?.locale
+                $locale$: opts.serverData?.locale
             },
             $projectedChildren$: void 0,
             $projectedCtxs$: void 0,
@@ -3951,13 +3952,13 @@
             "q:version": "0.16.2",
             "q:render": qRender,
             "q:base": opts.base,
-            "q:locale": opts.envData?.locale,
+            "q:locale": opts.serverData?.locale,
             children: "html" === root ? [ node ] : [ headNodes, node ]
         };
         "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-        containerState.$envData$ = {
+        containerState.$serverData$ = {
             url: opts.url,
-            ...opts.envData
+            ...opts.serverData
         }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
             const beforeClose = opts.beforeClose;
@@ -4007,8 +4008,9 @@
         let extraRender = elCtx.$extraRender$;
         extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
     }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
-    exports.useResourceQrl = useResourceQrl, exports.useServerMount$ = useServerMount$, 
-    exports.useServerMountQrl = useServerMountQrl, exports.useSignal = initialState => {
+    exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
+    exports.useServerMount$ = useServerMount$, exports.useServerMountQrl = useServerMountQrl, 
+    exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {
             return get;
