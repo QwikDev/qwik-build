@@ -478,7 +478,7 @@ class SignalWrapper {
 
 const _wrapSignal = (obj, prop) => {
     if (!isObject(obj)) {
-        return;
+        return obj[prop];
     }
     if (obj instanceof SignalImpl) {
         return obj;

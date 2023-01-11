@@ -1013,7 +1013,7 @@
      */
     const _wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
-            return undefined;
+            return obj[prop];
         }
         if (obj instanceof SignalImpl) {
             assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
