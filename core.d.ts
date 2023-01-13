@@ -3619,7 +3619,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230113175947
+ * 0.16.2-dev20230113182544
  * @public
  */
 export declare const version: string;
