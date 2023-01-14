@@ -1356,7 +1356,7 @@ var RESOLVE_EXTS = {
   ".cjs": true
 };
 
-var TRANSFORM_REGEX = /\.qwik\.(m|c)?js$/;
+var TRANSFORM_REGEX = /\.qwik\.[mc]?js$/;
 
 var QWIK_CORE_ID = "@builder.io/qwik";
 
@@ -2211,7 +2211,7 @@ function qwikVite(qwikViteOpts = {}) {
 }
 
 function updateEntryDev(code) {
-  code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);
+  code = code.replace(/["']@builder.io\/qwik["']/g, `'${VITE_CLIENT_MODULE}'`);
   return code;
 }
 

@@ -1409,7 +1409,7 @@ globalThis.qwikOptimizer = function(module) {
     ".mjs": true,
     ".cjs": true
   };
-  var TRANSFORM_REGEX = /\.qwik\.(m|c)?js$/;
+  var TRANSFORM_REGEX = /\.qwik\.[mc]?js$/;
   var QWIK_CORE_ID = "@builder.io/qwik";
   var QWIK_BUILD_ID = "@builder.io/qwik/build";
   var QWIK_JSX_RUNTIME_ID = "@builder.io/qwik/jsx-runtime";
@@ -2227,7 +2227,7 @@ globalThis.qwikOptimizer = function(module) {
     return vitePlugin;
   }
   function updateEntryDev(code) {
-    code = code.replace(/("|')@builder.io\/qwik("|')/g, `'${VITE_CLIENT_MODULE}'`);
+    code = code.replace(/["']@builder.io\/qwik["']/g, `'${VITE_CLIENT_MODULE}'`);
     return code;
   }
   function getViteDevModule(opts) {
