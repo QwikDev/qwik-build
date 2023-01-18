@@ -297,9 +297,17 @@
         }
         return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
     };
-    const setEvent = (existingListeners, prop, input, containerEl) => (prop.endsWith("$"), 
-    prop = normalizeOnProp(prop.slice(0, -1)), input && (isArray(input) ? existingListeners.push(...input.map((q => [ prop, ensureQrl(q, containerEl) ]))) : existingListeners.push([ prop, ensureQrl(input, containerEl) ])), 
-    prop);
+    const setEvent = (existingListeners, prop, input, containerEl) => {
+        if (prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1)), input) {
+            if (isArray(input)) {
+                const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
+                existingListeners.push(...processed);
+            } else {
+                existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
+            }
+        }
+        return prop;
+    };
     const PREFIXES = [ "on", "window:on", "document:on" ];
     const SCOPED = [ "on", "on-window", "on-document" ];
     const normalizeOnProp = prop => {
