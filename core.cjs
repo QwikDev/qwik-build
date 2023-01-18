@@ -850,7 +850,11 @@
         prop = normalizeOnProp(prop.slice(0, -1));
         if (input) {
             if (isArray(input)) {
-                existingListeners.push(...input.map((q) => [prop, ensureQrl(q, containerEl)]));
+                const processed = input
+                    .flat(Infinity)
+                    .filter((q) => q != null)
+                    .map((q) => [prop, ensureQrl(q, containerEl)]);
+                existingListeners.push(...processed);
             }
             else {
                 existingListeners.push([prop, ensureQrl(input, containerEl)]);

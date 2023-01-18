@@ -1075,7 +1075,7 @@ declare type QwikEventMap<T> = {
     InputCapture: Event;
     Reset: Event;
     ResetCapture: Event;
-    Submit: Event;
+    Submit: QwikSubmitEvent<T>;
     SubmitCapture: Event;
     Invalid: QwikInvalidEvent<T>;
     InvalidCapture: QwikInvalidEvent<T>;
@@ -1317,6 +1317,12 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 /**
  * @beta
  */
+declare interface QwikSubmitEvent<T = Element> extends SyntheticEvent<T> {
+}
+
+/**
+ * @beta
+ */
 declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTouchEvent> {
     altKey: boolean;
     changedTouches: TouchList;
@@ -1400,7 +1406,7 @@ declare interface Signal<T = any> {
     value: T;
 }
 
-declare type SingleOrArray<T> = T | T[];
+declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
