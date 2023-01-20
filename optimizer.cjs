@@ -1778,6 +1778,8 @@ globalThis.qwikOptimizer = function(module) {
         server.ssrFixStacktrace(e);
         await formatError(sys, e);
         next(e);
+      } finally {
+        "function" === typeof res._qwikRenderResolve && res._qwikRenderResolve();
       }
     }));
   }
