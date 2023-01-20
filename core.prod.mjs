@@ -2938,7 +2938,6 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     const el = watch.$el$;
     const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, void 0, "WatchEvent");
     const {$subsManager$: subsManager} = containerState;
-    watch.$qrl$.$captureRef$;
     const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
         subsManager.$clearSub$(watch);
     }));
@@ -2970,15 +2969,13 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     const setState = (resolved, value) => !done && (done = true, resolved ? (done = true, 
     resource.loading = false, resource._state = "resolved", resource._resolved = value, 
     resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
-    resource._state = "rejected", resource._resolved = void 0, resource._error = value, 
-    reject(value)), true);
+    resource._state = "rejected", resource._error = value, reject(value)), true);
     invoke(invocationContext, (() => {
-        resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
-        resource.value = new Promise(((r, re) => {
+        resource._state = "pending", resource.loading = !isServer(), resource.value = new Promise(((r, re) => {
             resolve = r, reject = re;
         }));
     })), watch.$destroy$ = noSerialize((() => {
-        cleanups.forEach((fn => fn()));
+        done = true, cleanups.forEach((fn => fn()));
     }));
     const promise = safeCall((() => then(waitOn, (() => watchFn(opts)))), (value => {
         setState(true, value);
@@ -3095,6 +3092,9 @@ const Resource = props => {
                 if ("rejected" === state) {
                     throw resource._error;
                 }
+            }
+            if (void 0 !== untrack((() => resource._resolved))) {
+                return props.onResolved(resource._resolved);
             }
         }
         promise = resource.value;
