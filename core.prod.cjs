@@ -223,8 +223,8 @@
         return ctx;
     };
     const useInvokeContext = () => {
-        const ctx = getInvokeContext();
-        if ("qRender" !== ctx.$event$) {
+        const ctx = tryGetInvokeContext();
+        if (!ctx || "qRender" !== ctx.$event$) {
             throw qError(20);
         }
         return ctx.$hostElement$, ctx.$waitOn$, ctx.$renderCtx$, ctx.$subscriber$, ctx;
@@ -632,19 +632,6 @@
         const colonPos = attribute.indexOf(":");
         return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
     };
-    const jsx = (type, props, key) => {
-        const processed = null == key ? null : String(key);
-        return new JSXNodeImpl(type, props, processed);
-    };
-    class JSXNodeImpl {
-        constructor(type, props, key = null) {
-            this.type = type, this.props = props, this.key = key, "string" == typeof type && "className" in props && (props.class = props.className, 
-            delete props.className);
-        }
-    }
-    const isJSXNode = n => n instanceof JSXNodeImpl;
-    const Fragment = props => props.children;
-    new Set;
     const SkipRender = Symbol("skip render");
     const RenderOnce = (props, key) => jsx(Virtual, {
         ...props,
@@ -657,6 +644,18 @@
     const Virtual = props => props.children;
     const SSRHint = props => props.children;
     const InternalSSRStream = () => null;
+    const jsx = (type, props, key) => {
+        const processed = null == key ? null : String(key);
+        return new JSXNodeImpl(type, props, processed);
+    };
+    class JSXNodeImpl {
+        constructor(type, props, key = null) {
+            this.type = type, this.props = props, this.key = key;
+        }
+    }
+    const isJSXNode = n => n instanceof JSXNodeImpl;
+    const Fragment = props => props.children;
+    new Set;
     const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
     const setAttribute = (ctx, el, prop, value) => {
         ctx ? ctx.$operations$.push({
@@ -3452,9 +3451,7 @@
     };
     const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (null != node && "boolean" != typeof node) {
-            if (isString(node) || "number" == typeof node) {
-                stream.write(escapeHtml(String(node)));
-            } else {
+            if (!isString(node) && "number" != typeof node) {
                 if (isJSXNode(node)) {
                     return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
                 }
@@ -3475,10 +3472,9 @@
                     }
                     return void stream.write(escapeHtml(jsxToString(value)));
                 }
-                if (isPromise(node)) {
-                    return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)));
-                }
+                return isPromise(node) ? (stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)))) : void 0;
             }
+            stream.write(escapeHtml(String(node)));
         }
     };
     const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
