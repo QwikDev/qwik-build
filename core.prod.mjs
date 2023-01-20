@@ -300,8 +300,8 @@ const getInvokeContext = () => {
 };
 
 const useInvokeContext = () => {
-    const ctx = tryGetInvokeContext();
-    if (!ctx || "qRender" !== ctx.$event$) {
+    const ctx = getInvokeContext();
+    if ("qRender" !== ctx.$event$) {
         throw qError(20);
     }
     return ctx.$hostElement$, ctx.$waitOn$, ctx.$renderCtx$, ctx.$subscriber$, ctx;
@@ -388,17 +388,9 @@ const groupListeners = listeners => {
     return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
 };
 
-const setEvent = (existingListeners, prop, input, containerEl) => {
-    if (prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1)), input) {
-        if (isArray(input)) {
-            const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
-            existingListeners.push(...processed);
-        } else {
-            existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
-        }
-    }
-    return prop;
-};
+const setEvent = (existingListeners, prop, input, containerEl) => (prop.endsWith("$"), 
+prop = normalizeOnProp(prop.slice(0, -1)), input && (isArray(input) ? existingListeners.push(...input.map((q => [ prop, ensureQrl(q, containerEl) ]))) : existingListeners.push([ prop, ensureQrl(input, containerEl) ])), 
+prop);
 
 const PREFIXES = [ "on", "window:on", "document:on" ];
 
@@ -795,6 +787,35 @@ const getEventName = attribute => {
     return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
 };
 
+const jsx = (type, props, key) => {
+    const processed = null == key ? null : String(key);
+    return new JSXNodeImpl(type, props, processed);
+};
+
+class JSXNodeImpl {
+    constructor(type, props, key = null) {
+        this.type = type, this.props = props, this.key = key, "string" == typeof type && "className" in props && (props.class = props.className, 
+        delete props.className);
+    }
+}
+
+const isJSXNode = n => n instanceof JSXNodeImpl;
+
+const Fragment = props => props.children;
+
+const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+    const processed = null == key ? null : String(key);
+    const node = new JSXNodeImpl(type, props, processed);
+    return node.dev = {
+        isStatic: isStatic,
+        ctx: ctx,
+        stack: (new Error).stack,
+        ...opts
+    }, node;
+};
+
+new Set;
+
 const SkipRender = Symbol("skip render");
 
 const RenderOnce = (props, key) => jsx(Virtual, {
@@ -823,34 +844,6 @@ const SSRStream = (props, key) => jsx(RenderOnce, {
 const SSRHint = props => props.children;
 
 const InternalSSRStream = () => null;
-
-const jsx = (type, props, key) => {
-    const processed = null == key ? null : String(key);
-    return new JSXNodeImpl(type, props, processed);
-};
-
-class JSXNodeImpl {
-    constructor(type, props, key = null) {
-        this.type = type, this.props = props, this.key = key;
-    }
-}
-
-const isJSXNode = n => n instanceof JSXNodeImpl;
-
-const Fragment = props => props.children;
-
-const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
-    const processed = null == key ? null : String(key);
-    const node = new JSXNodeImpl(type, props, processed);
-    return node.dev = {
-        isStatic: isStatic,
-        ctx: ctx,
-        stack: (new Error).stack,
-        ...opts
-    }, node;
-};
-
-new Set;
 
 const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
 
@@ -2937,6 +2930,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     const el = watch.$el$;
     const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, void 0, "WatchEvent");
     const {$subsManager$: subsManager} = containerState;
+    watch.$qrl$.$captureRef$;
     const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
         subsManager.$clearSub$(watch);
     }));
@@ -2968,13 +2962,15 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     const setState = (resolved, value) => !done && (done = true, resolved ? (done = true, 
     resource.loading = false, resource._state = "resolved", resource._resolved = value, 
     resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
-    resource._state = "rejected", resource._error = value, reject(value)), true);
+    resource._state = "rejected", resource._resolved = void 0, resource._error = value, 
+    reject(value)), true);
     invoke(invocationContext, (() => {
-        resource._state = "pending", resource.loading = !isServer(), resource.value = new Promise(((r, re) => {
+        resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
+        resource.value = new Promise(((r, re) => {
             resolve = r, reject = re;
         }));
     })), watch.$destroy$ = noSerialize((() => {
-        done = true, cleanups.forEach((fn => fn()));
+        cleanups.forEach((fn => fn()));
     }));
     const promise = safeCall((() => then(waitOn, (() => watchFn(opts)))), (value => {
         setState(true, value);
@@ -3091,9 +3087,6 @@ const Resource = props => {
                 if ("rejected" === state) {
                     throw resource._error;
                 }
-            }
-            if (void 0 !== untrack((() => resource._resolved))) {
-                return props.onResolved(resource._resolved);
             }
         }
         promise = resource.value;
@@ -4016,7 +4009,9 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
 
 const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     if (null != node && "boolean" != typeof node) {
-        if (!isString(node) && "number" != typeof node) {
+        if (isString(node) || "number" == typeof node) {
+            stream.write(escapeHtml(String(node)));
+        } else {
             if (isJSXNode(node)) {
                 return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
             }
@@ -4037,9 +4032,10 @@ const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 }
                 return void stream.write(escapeHtml(jsxToString(value)));
             }
-            return isPromise(node) ? (stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)))) : void 0;
+            if (isPromise(node)) {
+                return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)));
+            }
         }
-        stream.write(escapeHtml(String(node)));
     }
 };
 

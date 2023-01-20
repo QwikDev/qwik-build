@@ -181,8 +181,7 @@
                 'props are immutable',
                 '<div> component can only be used at the root of a Qwik component$()',
                 'Props are immutable by default.',
-                `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.
-For more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules`,
+                'use- method must be called only at the root level of a component$()',
                 'Container is already paused. Skipping',
                 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
                 'When rendering directly on top of Document, the root node must be a <html>',
@@ -692,8 +691,8 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return ctx;
     };
     const useInvokeContext = () => {
-        const ctx = tryGetInvokeContext();
-        if (!ctx || ctx.$event$ !== RenderEvent) {
+        const ctx = getInvokeContext();
+        if (ctx.$event$ !== RenderEvent) {
             throw qError(QError_useInvokeContext);
         }
         assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
@@ -851,11 +850,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         prop = normalizeOnProp(prop.slice(0, -1));
         if (input) {
             if (isArray(input)) {
-                const processed = input
-                    .flat(Infinity)
-                    .filter((q) => q != null)
-                    .map((q) => [prop, ensureQrl(q, containerEl)]);
-                existingListeners.push(...processed);
+                existingListeners.push(...input.map((q) => [prop, ensureQrl(q, containerEl)]));
             }
             else {
                 existingListeners.push([prop, ensureQrl(input, containerEl)]);
@@ -1572,6 +1567,126 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
     };
 
+    let warnClassname = false;
+    /**
+     * @public
+     */
+    const jsx = (type, props, key) => {
+        const processed = key == null ? null : String(key);
+        const node = new JSXNodeImpl(type, props, processed);
+        seal(node);
+        return node;
+    };
+    const SKIP_RENDER_TYPE = ':skipRender';
+    class JSXNodeImpl {
+        constructor(type, props, key = null) {
+            this.type = type;
+            this.props = props;
+            this.key = key;
+            if (qDev) {
+                invoke(undefined, () => {
+                    if (!isString(type) && !isFunction(type)) {
+                        throw qError(QError_invalidJsxNodeType, type);
+                    }
+                    if (isArray(props.children)) {
+                        const keys = {};
+                        props.children.flat().forEach((child) => {
+                            if (isJSXNode(child) && child.key != null) {
+                                if (keys[child.key]) {
+                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                    if (err) {
+                                        logError(err);
+                                    }
+                                }
+                                else {
+                                    keys[child.key] = true;
+                                }
+                            }
+                        });
+                    }
+                    if (!qRuntimeQrl && props) {
+                        for (const prop of Object.keys(props)) {
+                            const value = props[prop];
+                            if (prop.endsWith('$') && value) {
+                                if (!isQrl(value) && !Array.isArray(value)) {
+                                    throw qError(QError_invalidJsxNodeType, type);
+                                }
+                            }
+                            if (prop !== 'children' && isQwikComponent(type) && value) {
+                                verifySerializable(value, `The value of the JSX property "${prop}" can not be serialized`);
+                            }
+                        }
+                    }
+                });
+            }
+            if (typeof type === 'string' && 'className' in props) {
+                props['class'] = props['className'];
+                delete props['className'];
+                if (qDev && !warnClassname) {
+                    warnClassname = true;
+                    logWarn('jsx: `className` is deprecated. Use `class` instead.');
+                }
+            }
+        }
+    }
+    const isJSXNode = (n) => {
+        if (qDev) {
+            if (n instanceof JSXNodeImpl) {
+                return true;
+            }
+            if (isObject(n) && 'key' in n && 'props' in n && 'type' in n) {
+                logWarn(`Duplicate implementations of "JSXNode" found`);
+                return true;
+            }
+            return false;
+        }
+        else {
+            return n instanceof JSXNodeImpl;
+        }
+    };
+    /**
+     * @public
+     */
+    const Fragment = (props) => props.children;
+    /**
+     * @public
+     */
+    const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+        const processed = key == null ? null : String(key);
+        const node = new JSXNodeImpl(type, props, processed);
+        node.dev = {
+            isStatic,
+            ctx,
+            stack: new Error().stack,
+            ...opts,
+        };
+        seal(node);
+        return node;
+    };
+    const ONCE_JSX = new Set();
+    const createJSXError = (message, node) => {
+        const error = new Error(message);
+        if (!node.dev) {
+            return error;
+        }
+        const id = node.dev.fileName;
+        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
+        if (ONCE_JSX.has(key)) {
+            return undefined;
+        }
+        Object.assign(error, {
+            id,
+            loc: {
+                file: id,
+                column: node.dev.columnNumber,
+                line: node.dev.lineNumber,
+            },
+        });
+        error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
+        ONCE_JSX.add(key);
+        return error;
+    };
+
     const QOnce = 'qonce';
     /**
      * @alpha
@@ -1617,194 +1732,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      */
     const SSRHint = ((props) => props.children);
     const InternalSSRStream = () => null;
-
-    let warnClassname = false;
-    /**
-     * @public
-     */
-    const jsx = (type, props, key) => {
-        const processed = key == null ? null : String(key);
-        const node = new JSXNodeImpl(type, props, processed);
-        seal(node);
-        return node;
-    };
-    const SKIP_RENDER_TYPE = ':skipRender';
-    class JSXNodeImpl {
-        constructor(type, props, key = null) {
-            this.type = type;
-            this.props = props;
-            this.key = key;
-            if (qDev) {
-                invoke(undefined, () => {
-                    const isQwikC = isQwikComponent(type);
-                    if (!isString(type) && !isFunction(type)) {
-                        throw qError(QError_invalidJsxNodeType, type);
-                    }
-                    if (isArray(props.children)) {
-                        const flatChildren = props.children.flat();
-                        if (isString(type) || isQwikC) {
-                            flatChildren.forEach((child) => {
-                                if (!isValidJSXChild(child)) {
-                                    const typeObj = typeof child;
-                                    let explanation = '';
-                                    if (typeObj === 'object') {
-                                        if (child?.constructor) {
-                                            explanation = `it's an instance of "${child?.constructor.name}".`;
-                                        }
-                                        else {
-                                            explanation = `it's a object literal: ${printObjectLiteral(child)} `;
-                                        }
-                                    }
-                                    else if (typeObj === 'function') {
-                                        explanation += `it's a function named "${child.name}".`;
-                                    }
-                                    else {
-                                        explanation = `it's a "${typeObj}": ${String(child)}.`;
-                                    }
-                                    throw createJSXError(`One of the children of <${type} /> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal that resolves to one of those types. Instead, ${explanation}`, this);
-                                }
-                            });
-                        }
-                        const keys = {};
-                        flatChildren.forEach((child) => {
-                            if (isJSXNode(child) && child.key != null) {
-                                if (keys[child.key]) {
-                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
-                                    if (err) {
-                                        logError(err);
-                                    }
-                                }
-                                else {
-                                    keys[child.key] = true;
-                                }
-                            }
-                        });
-                    }
-                    if (!qRuntimeQrl && props) {
-                        for (const prop of Object.keys(props)) {
-                            const value = props[prop];
-                            if (prop.endsWith('$') && value) {
-                                if (!isQrl(value) && !Array.isArray(value)) {
-                                    throw qError(QError_invalidJsxNodeType, type);
-                                }
-                            }
-                            if (prop !== 'children' && isQwikC && value) {
-                                verifySerializable(value, `The value of the JSX property "${prop}" can not be serialized`);
-                            }
-                        }
-                    }
-                    if (isString(type)) {
-                        if (type === 'style') {
-                            if (props.children) {
-                                logWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
-In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
-
-However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.builder.io/docs/components/styles/#usestyles for more information.`);
-                            }
-                        }
-                        if (type === 'script') {
-                            if (props.children) {
-                                logWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
-In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
-                            }
-                        }
-                        if ('className' in props) {
-                            props['class'] = props['className'];
-                            delete props['className'];
-                            if (qDev && !warnClassname) {
-                                warnClassname = true;
-                                logWarn('jsx: `className` is deprecated. Use `class` instead.');
-                            }
-                        }
-                    }
-                });
-            }
-        }
-    }
-    const printObjectLiteral = (obj) => {
-        return `{ ${Object.keys(obj)
-        .map((key) => `"${key}"`)
-        .join(', ')} }`;
-    };
-    const isJSXNode = (n) => {
-        if (qDev) {
-            if (n instanceof JSXNodeImpl) {
-                return true;
-            }
-            if (isObject(n) && 'key' in n && 'props' in n && 'type' in n) {
-                logWarn(`Duplicate implementations of "JSXNode" found`);
-                return true;
-            }
-            return false;
-        }
-        else {
-            return n instanceof JSXNodeImpl;
-        }
-    };
-    const isValidJSXChild = (node) => {
-        if (!node) {
-            return true;
-        }
-        else if (node === SkipRender) {
-            return true;
-        }
-        else if (isString(node) || typeof node === 'number' || typeof node === 'boolean') {
-            return true;
-        }
-        else if (isJSXNode(node)) {
-            return true;
-        }
-        if (isSignal(node)) {
-            return isValidJSXChild(node.value);
-        }
-        else if (isPromise(node)) {
-            return true;
-        }
-        return false;
-    };
-    /**
-     * @public
-     */
-    const Fragment = (props) => props.children;
-    /**
-     * @public
-     */
-    const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
-        const processed = key == null ? null : String(key);
-        const node = new JSXNodeImpl(type, props, processed);
-        node.dev = {
-            isStatic,
-            ctx,
-            stack: new Error().stack,
-            ...opts,
-        };
-        seal(node);
-        return node;
-    };
-    const ONCE_JSX = new Set();
-    const createJSXError = (message, node) => {
-        const error = new Error(message);
-        if (!node.dev) {
-            return error;
-        }
-        const id = node.dev.fileName;
-        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
-        if (ONCE_JSX.has(key)) {
-            return undefined;
-        }
-        Object.assign(error, {
-            id,
-            loc: {
-                file: id,
-                column: node.dev.columnNumber,
-                line: node.dev.lineNumber,
-            },
-        });
-        error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
-        ONCE_JSX.add(key);
-        return error;
-    };
 
     const getDocument = (node) => {
         if (!qDynamicPlatform) {
@@ -5273,6 +5200,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const el = watch.$el$;
         const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
+        watch.$qrl$.$captureRef$;
         const watchFn = watch.$qrl$.getFn(invocationContext, () => {
             subsManager.$clearSub$(watch);
         });
@@ -5338,6 +5266,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     done = true;
                     resource.loading = false;
                     resource._state = 'rejected';
+                    resource._resolved = undefined;
                     resource._error = value;
                     reject(value);
                 }
@@ -5349,13 +5278,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         invoke(invocationContext, () => {
             resource._state = 'pending';
             resource.loading = !isServer();
+            resource._resolved = undefined;
             resource.value = new Promise((r, re) => {
                 resolve = r;
                 reject = re;
             });
         });
         watch.$destroy$ = noSerialize(() => {
-            done = true;
             cleanups.forEach((fn) => fn());
         });
         const promise = safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
@@ -5704,9 +5633,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     else if (state === 'rejected') {
                         throw resource._error;
                     }
-                }
-                if (untrack(() => resource._resolved) !== undefined) {
-                    return props.onResolved(resource._resolved);
                 }
             }
             promise = resource.value;
@@ -7451,7 +7377,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         else {
             logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
-            return;
         }
     };
     const walkChildren = (children, rCtx, ssrContext, stream, flags) => {

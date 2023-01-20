@@ -1853,7 +1853,7 @@ declare type QwikEventMap<T> = {
     InputCapture: Event;
     Reset: Event;
     ResetCapture: Event;
-    Submit: QwikSubmitEvent<T>;
+    Submit: Event;
     SubmitCapture: Event;
     Invalid: QwikInvalidEvent<T>;
     InvalidCapture: QwikInvalidEvent<T>;
@@ -1984,6 +1984,12 @@ export declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, N
 }
 
 /**
+ * @beta
+ */
+export declare interface QwikFormEvent<T = Element> extends SyntheticEvent<T> {
+}
+
+/**
  * @public
  */
 declare interface QwikIntrinsicAttributes {
@@ -2105,12 +2111,6 @@ declare interface QwikProps<T> extends PreventDefault<T> {
 
 declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
     events?: string[];
-}
-
-/**
- * @beta
- */
-export declare interface QwikSubmitEvent<T = Element> extends SyntheticEvent<T> {
 }
 
 /**
@@ -2430,7 +2430,7 @@ export declare interface Signal<T = any> {
     value: T;
 }
 
-declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
+declare type SingleOrArray<T> = T | T[];
 
 /**
  * @alpha
@@ -3619,7 +3619,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230120105118
+ * 0.16.2-dev20230120182257
  * @public
  */
 export declare const version: string;

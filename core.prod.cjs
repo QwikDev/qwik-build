@@ -223,8 +223,8 @@
         return ctx;
     };
     const useInvokeContext = () => {
-        const ctx = tryGetInvokeContext();
-        if (!ctx || "qRender" !== ctx.$event$) {
+        const ctx = getInvokeContext();
+        if ("qRender" !== ctx.$event$) {
             throw qError(20);
         }
         return ctx.$hostElement$, ctx.$waitOn$, ctx.$renderCtx$, ctx.$subscriber$, ctx;
@@ -276,7 +276,6 @@
         $locale$: locale
     });
     const getWrappingContainer = el => el.closest("[q\\:container]");
-    const untrack = fn => invoke(void 0, fn);
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
     };
@@ -298,17 +297,9 @@
         }
         return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
     };
-    const setEvent = (existingListeners, prop, input, containerEl) => {
-        if (prop.endsWith("$"), prop = normalizeOnProp(prop.slice(0, -1)), input) {
-            if (isArray(input)) {
-                const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
-                existingListeners.push(...processed);
-            } else {
-                existingListeners.push([ prop, ensureQrl(input, containerEl) ]);
-            }
-        }
-        return prop;
-    };
+    const setEvent = (existingListeners, prop, input, containerEl) => (prop.endsWith("$"), 
+    prop = normalizeOnProp(prop.slice(0, -1)), input && (isArray(input) ? existingListeners.push(...input.map((q => [ prop, ensureQrl(q, containerEl) ]))) : existingListeners.push([ prop, ensureQrl(input, containerEl) ])), 
+    prop);
     const PREFIXES = [ "on", "window:on", "document:on" ];
     const SCOPED = [ "on", "on-window", "on-document" ];
     const normalizeOnProp = prop => {
@@ -632,6 +623,19 @@
         const colonPos = attribute.indexOf(":");
         return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
     };
+    const jsx = (type, props, key) => {
+        const processed = null == key ? null : String(key);
+        return new JSXNodeImpl(type, props, processed);
+    };
+    class JSXNodeImpl {
+        constructor(type, props, key = null) {
+            this.type = type, this.props = props, this.key = key, "string" == typeof type && "className" in props && (props.class = props.className, 
+            delete props.className);
+        }
+    }
+    const isJSXNode = n => n instanceof JSXNodeImpl;
+    const Fragment = props => props.children;
+    new Set;
     const SkipRender = Symbol("skip render");
     const RenderOnce = (props, key) => jsx(Virtual, {
         ...props,
@@ -644,18 +648,6 @@
     const Virtual = props => props.children;
     const SSRHint = props => props.children;
     const InternalSSRStream = () => null;
-    const jsx = (type, props, key) => {
-        const processed = null == key ? null : String(key);
-        return new JSXNodeImpl(type, props, processed);
-    };
-    class JSXNodeImpl {
-        constructor(type, props, key = null) {
-            this.type = type, this.props = props, this.key = key;
-        }
-    }
-    const isJSXNode = n => n instanceof JSXNodeImpl;
-    const Fragment = props => props.children;
-    new Set;
     const getDocument = node => "undefined" != typeof document ? document : 9 === node.nodeType ? node : node.ownerDocument;
     const setAttribute = (ctx, el, prop, value) => {
         ctx ? ctx.$operations$.push({
@@ -2582,6 +2574,7 @@
         const el = watch.$el$;
         const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, void 0, "WatchEvent");
         const {$subsManager$: subsManager} = containerState;
+        watch.$qrl$.$captureRef$;
         const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
             subsManager.$clearSub$(watch);
         }));
@@ -2613,13 +2606,15 @@
         const setState = (resolved, value) => !done && (done = true, resolved ? (done = true, 
         resource.loading = false, resource._state = "resolved", resource._resolved = value, 
         resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
-        resource._state = "rejected", resource._error = value, reject(value)), true);
+        resource._state = "rejected", resource._resolved = void 0, resource._error = value, 
+        reject(value)), true);
         invoke(invocationContext, (() => {
-            resource._state = "pending", resource.loading = !isServer(), resource.value = new Promise(((r, re) => {
+            resource._state = "pending", resource.loading = !isServer(), resource._resolved = void 0, 
+            resource.value = new Promise(((r, re) => {
                 resolve = r, reject = re;
             }));
         })), watch.$destroy$ = noSerialize((() => {
-            done = true, cleanups.forEach((fn => fn()));
+            cleanups.forEach((fn => fn()));
         }));
         const promise = safeCall((() => then(waitOn, (() => watchFn(opts)))), (value => {
             setState(true, value);
@@ -3451,7 +3446,9 @@
     };
     const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (null != node && "boolean" != typeof node) {
-            if (!isString(node) && "number" != typeof node) {
+            if (isString(node) || "number" == typeof node) {
+                stream.write(escapeHtml(String(node)));
+            } else {
                 if (isJSXNode(node)) {
                     return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
                 }
@@ -3472,9 +3469,10 @@
                     }
                     return void stream.write(escapeHtml(jsxToString(value)));
                 }
-                return isPromise(node) ? (stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)))) : void 0;
+                if (isPromise(node)) {
+                    return stream.write("\x3c!--qkssr-f--\x3e"), node.then((node => processData(node, rCtx, ssrCtx, stream, flags, beforeClose)));
+                }
             }
-            stream.write(escapeHtml(String(node)));
         }
     };
     const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
@@ -3805,9 +3803,6 @@
                         throw resource._error;
                     }
                 }
-                if (void 0 !== untrack((() => resource._resolved))) {
-                    return props.onResolved(resource._resolved);
-                }
             }
             promise = resource.value;
         } else if (resource instanceof Promise) {
@@ -3972,8 +3967,8 @@
                 return processData(result, rCtx, ssrCtx, stream, 0, void 0);
             } : void 0), rCtx;
         })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
-    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useCleanup$ = useCleanup$, 
-    exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
+    }, exports.setPlatform = plt => _platform = plt, exports.untrack = fn => invoke(void 0, fn), 
+    exports.useCleanup$ = useCleanup$, exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
     exports.useClientEffectQrl = useClientEffectQrl, exports.useClientMount$ = useClientMount$, 
     exports.useClientMountQrl = useClientMountQrl, exports.useContext = (context, defaultValue) => {
         const {get: get, set: set, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
