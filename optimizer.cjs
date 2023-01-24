@@ -1722,6 +1722,7 @@ globalThis.qwikOptimizer = function(module) {
               injections: [],
               version: "1"
             };
+            const added = new Set;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 var _a, _b;
@@ -1730,14 +1731,17 @@ globalThis.qwikOptimizer = function(module) {
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 hook && (manifest.mapping[hook.name] = url2);
                 const {pathId: pathId, query: query} = parseId(v.url);
-                "" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext))) && manifest.injections.push({
-                  tag: "link",
-                  location: "head",
-                  attributes: {
-                    rel: "stylesheet",
-                    href: url2
-                  }
-                });
+                if ("" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext)))) {
+                  added.add(url2);
+                  manifest.injections.push({
+                    tag: "link",
+                    location: "head",
+                    attributes: {
+                      rel: "stylesheet",
+                      href: url2
+                    }
+                  });
+                }
               }));
             }));
             const renderOpts = {
@@ -1761,13 +1765,15 @@ globalThis.qwikOptimizer = function(module) {
             res.setHeader("X-Powered-By", "Qwik Vite Dev Server");
             res.writeHead(status);
             const result = await render(renderOpts);
-            if ("html" in result) {
-              res.write(END_SSR_SCRIPT(opts));
-              res.end(result.html);
-            } else {
-              res.write(END_SSR_SCRIPT(opts));
-              res.end();
-            }
+            Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
+              entry[1].forEach((v => {
+                const {pathId: pathId, query: query} = parseId(v.url);
+                !added.has(v.url) && "" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext))) && res.write(`<link rel="stylesheet" href="${v.url}">`);
+              }));
+            }));
+            "html" in result && res.write(result.html);
+            res.write(END_SSR_SCRIPT(opts));
+            res.end();
           } else {
             next();
           }

@@ -1655,7 +1655,7 @@ class JSXNodeImpl {
                     }
                     const keys = {};
                     flatChildren.forEach((child) => {
-                        if (isJSXNode(child) && child.key != null) {
+                        if (isJSXNode(child) && !isString(child.type) && child.key != null) {
                             if (keys[child.key]) {
                                 const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
                                 if (err) {
@@ -7334,7 +7334,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         if (flags & IS_HEAD) {
             openingElement += ' q:head';
         }
-        if (qDev && qInspector && node.dev) {
+        if (qDev && qInspector && node.dev && !(flags & IS_HEAD)) {
             const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
             if (sanitizedFileName) {
                 openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`;
