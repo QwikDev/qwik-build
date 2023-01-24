@@ -1626,7 +1626,7 @@ class JSXNodeImpl {
             invoke(undefined, () => {
                 const isQwikC = isQwikComponent(type);
                 if (!isString(type) && !isFunction(type)) {
-                    throw qError(QError_invalidJsxNodeType, type);
+                    throw qError(QError_invalidJsxNodeType, String(type));
                 }
                 if (isArray(props.children)) {
                     const flatChildren = props.children.flat();
@@ -1673,7 +1673,7 @@ class JSXNodeImpl {
                         const value = props[prop];
                         if (prop.endsWith('$') && value) {
                             if (!isQrl(value) && !Array.isArray(value)) {
-                                throw qError(QError_invalidJsxNodeType, type);
+                                throw qError(QError_invalidJsxNodeType, String(value));
                             }
                         }
                         if (prop !== 'children' && isQwikC && value) {

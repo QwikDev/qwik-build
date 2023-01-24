@@ -1638,7 +1638,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 invoke(undefined, () => {
                     const isQwikC = isQwikComponent(type);
                     if (!isString(type) && !isFunction(type)) {
-                        throw qError(QError_invalidJsxNodeType, type);
+                        throw qError(QError_invalidJsxNodeType, String(type));
                     }
                     if (isArray(props.children)) {
                         const flatChildren = props.children.flat();
@@ -1685,7 +1685,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                             const value = props[prop];
                             if (prop.endsWith('$') && value) {
                                 if (!isQrl(value) && !Array.isArray(value)) {
-                                    throw qError(QError_invalidJsxNodeType, type);
+                                    throw qError(QError_invalidJsxNodeType, String(value));
                                 }
                             }
                             if (prop !== 'children' && isQwikC && value) {
