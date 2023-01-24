@@ -339,8 +339,8 @@ declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
     type: string;
 }
 
-declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event> = {
-    bivarianceHack(event: T, element: Element): any;
+declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = {
+    bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
 declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1389,7 +1389,7 @@ export declare type NativeDragEvent = DragEvent;
 /**
  * @public
  */
-declare type NativeEventHandler<T extends Event = Event> = BivariantEventHandler<T> | QRL<BivariantEventHandler<T>>[];
+declare type NativeEventHandler<T extends Event = Event, EL = Element> = BivariantEventHandler<T, EL> | QRL<BivariantEventHandler<T, EL>>[];
 
 /** @beta */
 export declare type NativeFocusEvent = FocusEvent;
@@ -1800,8 +1800,8 @@ export declare interface QwikCompositionEvent<T = Element> extends SyntheticEven
     data: string;
 }
 
-declare interface QwikCustomEvents {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event>> | SingleOrArray<Function> | SingleOrArray<undefined>;
+declare interface QwikCustomEvents<El> {
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event, El>> | SingleOrArray<Function> | SingleOrArray<undefined>;
 }
 
 declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1968,11 +1968,11 @@ declare type QwikEventMap<T> = {
 /**
  * @public
  */
-declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents {
-    'document:onLoad$'?: BivariantEventHandler<Event>;
-    'document:onScroll$'?: BivariantEventHandler<QwikUIEvent<T>>;
-    'document:onVisible$'?: BivariantEventHandler<Event>;
-    'document:onVisibilityChange$'?: BivariantEventHandler<Event>;
+declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> {
+    'document:onLoad$'?: BivariantEventHandler<Event, T>;
+    'document:onScroll$'?: BivariantEventHandler<QwikUIEvent<T>, T>;
+    'document:onVisible$'?: BivariantEventHandler<Event, T>;
+    'document:onVisibilityChange$'?: BivariantEventHandler<Event, T>;
 }
 
 /**
@@ -2044,7 +2044,7 @@ export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T
 }
 
 declare type QwikKnownEvents<T> = {
-    [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K]>>;
+    [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K], T>>;
 };
 
 /**
@@ -3619,7 +3619,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230123081036
+ * 0.16.2-dev20230124100109
  * @public
  */
 export declare const version: string;
