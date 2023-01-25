@@ -900,7 +900,7 @@ function createRollupError(id, reportMessage) {
 
 var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
 
-var SERVER_STRIP_CTX_NAME = [ "server", "useServer", "action$", "loader$" ];
+var SERVER_STRIP_CTX_NAME = [ "server", "useServer", "action$", "loader$", "zod$" ];
 
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
