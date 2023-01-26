@@ -1544,11 +1544,11 @@ var findLocation = e => {
   if ("string" === typeof stack) {
     const lines = stack.split("\n");
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
+      const line = lines[i].replace("file:///", "/");
       if (/^\s+at/.test(line)) {
-        const start = line.indexOf("(/") + 1;
+        const start = line.indexOf("/");
         const end = line.indexOf(")", start);
-        if (start > 0 && end > start) {
+        if (start > 0) {
           const path = line.slice(start, end);
           const parts = path.split(":");
           const nu0 = safeParseInt(parts[parts.length - 1]);
@@ -1978,7 +1978,7 @@ function qwikVite(qwikViteOpts = {}) {
         },
         esbuild: "serve" !== viteCommand && {
           logLevel: "error",
-          jsx: "preserve"
+          jsx: "automatic"
         },
         optimizeDeps: {
           exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
