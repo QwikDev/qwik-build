@@ -8302,7 +8302,7 @@ const useStylesScopedQrl = (styles) => {
     const scopeId = ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true);
     return {
         scopeId,
-        className: (className) => `${scopeId} ${className}`,
+        scopedClass: (className) => `${scopeId} ${className}`,
     };
 };
 // <docs markdown="../readme.md#useStylesScoped">

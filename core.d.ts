@@ -3439,7 +3439,7 @@ export declare const useStylesScoped$: (first: string) => UseStylesScoped;
  */
 export declare interface UseStylesScoped {
     scopeId: string;
-    className: (str: string) => string;
+    scopedClass: (str: string) => string;
 }
 
 /**
@@ -3620,7 +3620,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230127121543
+ * 0.16.2-dev20230127135904
  * @public
  */
 export declare const version: string;

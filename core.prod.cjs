@@ -3747,7 +3747,7 @@
         const scopeId = "⭐️" + _useStyles(styles, getScopedStyles, true);
         return {
             scopeId: scopeId,
-            className: className => `${scopeId} ${className}`
+            scopedClass: className => `${scopeId} ${className}`
         };
     };
     const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
