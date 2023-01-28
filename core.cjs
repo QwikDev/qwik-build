@@ -7107,6 +7107,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         let mode = rule;
         let lastCh = 0;
         while (idx < end) {
+            const chIdx = idx;
             let ch = css.charCodeAt(idx++);
             if (ch === BACKSLASH) {
                 idx++;
@@ -7177,7 +7178,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                                 }
                                 else if (newMode === pseudoElement) {
                                     // We are entering pseudoElement `::foo`; insert scoping in front of it.
-                                    insertScopingSelector(findStart(idx - 1));
+                                    insertScopingSelector(chIdx);
                                 }
                                 mode = newMode;
                             }
@@ -7190,18 +7191,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         flush(idx);
         return out.join('');
-        function findStart(idx) {
-            let isIdentCh = isIdent(css.charCodeAt(idx));
-            let isPrevIdentCh = idx > 0 ? isIdent(css.charCodeAt(idx - 1)) : true;
-            while (idx > 0) {
-                if (isPrevIdentCh && !isIdentCh)
-                    break;
-                idx--;
-                isIdentCh = isPrevIdentCh;
-                isPrevIdentCh = idx > 0 ? isIdent(css.charCodeAt(idx - 1)) : true;
-            }
-            return idx;
-        }
         function flush(idx) {
             out.push(css.substring(lastIdx, idx));
             lastIdx = idx;
