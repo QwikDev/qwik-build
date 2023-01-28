@@ -436,11 +436,6 @@ const QObjectManagerSymbol = Symbol("proxy manager");
 
 const _IMMUTABLE = Symbol("IMMUTABLE");
 
-const _createSignal = (value, containerState, subcriptions) => {
-    const manager = containerState.$subsManager$.$createManager$(subcriptions);
-    return new SignalImpl(value, manager);
-};
-
 class SignalImpl {
     constructor(v, manager) {
         this.untrackedValue = v, this[QObjectManagerSymbol] = manager;
@@ -4015,8 +4010,10 @@ const useSignal = initialState => {
         return get;
     }
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const value = isFunction(initialState) ? initialState() : initialState;
-    const signal = _createSignal(value, containerState, void 0);
+    const signal = ((value, containerState, subcriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(void 0);
+        return new SignalImpl(value, manager);
+    })(isFunction(initialState) ? initialState() : initialState, containerState);
     return set(signal), signal;
 };
 
@@ -4578,4 +4575,4 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _createSignal, _deserializeData, _getContainerState, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
