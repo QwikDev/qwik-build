@@ -727,6 +727,11 @@ export declare interface CorePlatform {
  */
 export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
 
+/**
+ * @internal
+ */
+export declare const _createSignal: <T>(value: T, containerState: ContainerState, subcriptions?: Subscriptions[]) => Signal<T>;
+
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
@@ -820,6 +825,11 @@ export declare const Fragment: FunctionComponent<{
 export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
 }
+
+/**
+ * @internal
+ */
+export declare const _getContainerState: (containerEl: Element) => ContainerState;
 
 /**
  * Retrieve the current lang.
@@ -1321,6 +1331,7 @@ declare class LocalSubscriptionManager {
     $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
     $addSub$(sub: Subscriptions): void;
     $notifySubs$(key?: string | undefined): void;
+    $isTreeshakeable$(prop: string): boolean;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2212,9 +2223,9 @@ export declare interface RenderOptions {
 }
 
 /**
- * @alpha
+ * @internal
  */
-export declare const renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
+export declare const _renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
 
 /**
  * @alpha
@@ -2852,6 +2863,7 @@ export declare const useClientMount$: <T>(first: MountFn<T>) => void;
 export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 declare interface UseContext {
+    <STATE extends object, T>(context: Context<STATE>, transformer: (value: STATE) => T): T;
     <STATE extends object, T>(context: Context<STATE>, defaultValue: T): STATE | T;
     <STATE extends object>(context: Context<STATE>): STATE;
 }
@@ -3619,7 +3631,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230128091053
+ * 0.16.2-dev20230128141226
  * @public
  */
 export declare const version: string;
@@ -3665,6 +3677,11 @@ declare interface VirtualElement {
 }
 
 declare type WatchDescriptor = DescriptorBase<TaskFn>;
+
+/**
+ * @internal
+ */
+export declare const _weakSerialize: <T extends Record<string, any>>(input: T) => Partial<T>;
 
 declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
