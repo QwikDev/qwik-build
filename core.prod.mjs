@@ -436,6 +436,11 @@ const QObjectManagerSymbol = Symbol("proxy manager");
 
 const _IMMUTABLE = Symbol("IMMUTABLE");
 
+const _createSignal = (value, containerState, subcriptions) => {
+    const manager = containerState.$subsManager$.$createManager$(subcriptions);
+    return new SignalImpl(value, manager);
+};
+
 class SignalImpl {
     constructor(v, manager) {
         this.untrackedValue = v, this[QObjectManagerSymbol] = manager;
@@ -731,7 +736,7 @@ const _useOn = (eventName, eventQrl) => {
 
 const CONTAINER_STATE = Symbol("ContainerState");
 
-const getContainerState = containerEl => {
+const _getContainerState = containerEl => {
     let set = containerEl[CONTAINER_STATE];
     return set || (isServer(), containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
     set;
@@ -1176,6 +1181,9 @@ const useContext = (context, defaultValue) => {
         return get;
     }
     const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
+    if ("function" == typeof defaultValue) {
+        return set(defaultValue(value));
+    }
     if (void 0 !== value) {
         return set(value);
     }
@@ -2037,6 +2045,69 @@ const serializeSStyle = scopeIds => {
     }
 };
 
+const _serializeData = data => {
+    const containerState = {};
+    const collector = createCollector(containerState);
+    collectValue(data, collector, false);
+    const objs = Array.from(collector.$objSet$.keys());
+    let count = 0;
+    const objToId = new Map;
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count)), count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(void 0);
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    const mustGetObjId = obj => {
+        const key = objToId.get(obj);
+        if (void 0 === key) {
+            throw qError(27, obj);
+        }
+        return key;
+    };
+    const convertedObjs = objs.map((obj => {
+        if (null === obj) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+          case "undefined":
+            return UNDEFINED_PREFIX;
+
+          case "number":
+            if (!Number.isFinite(obj)) {
+                break;
+            }
+            return obj;
+
+          case "string":
+          case "boolean":
+            return obj;
+        }
+        const value = serializeValue(obj, mustGetObjId, containerState);
+        if (void 0 !== value) {
+            return value;
+        }
+        if ("object" === typeObj) {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key of Object.keys(obj)) {
+                    output[key] = mustGetObjId(obj[key]);
+                }
+                return output;
+            }
+        }
+        throw qError(3, obj);
+    }));
+    return JSON.stringify([ mustGetObjId(data), convertedObjs ]);
+};
+
 const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
     const collector = createCollector(containerState);
     let hasListeners = false;
@@ -2189,7 +2260,8 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             if (isSerializableObject(obj)) {
                 const output = {};
                 for (const key of Object.keys(obj)) {
-                    output[key] = mustGetObjId(obj[key]);
+                    const id = getObjId(obj[key]);
+                    null !== id && (output[key] = id);
                 }
                 return output;
             }
@@ -2364,7 +2436,7 @@ const collectValue = (obj, collector, leaks) => {
                 if (seen.has(obj)) {
                     return;
                 }
-                if (seen.add(obj), !fastShouldSerialize(obj)) {
+                if (seen.add(obj), fastSkipSerialize(obj)) {
                     return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
                 }
                 const input = obj;
@@ -2373,7 +2445,10 @@ const collectValue = (obj, collector, leaks) => {
                     if (obj = target, seen.has(obj)) {
                         return;
                     }
-                    seen.add(obj), leaks && collectSubscriptions(getProxyManager(input), collector);
+                    if (seen.add(obj), fastWeakSerialize(input)) {
+                        return void collector.$objSet$.add(obj);
+                    }
+                    leaks && collectSubscriptions(getProxyManager(input), collector);
                 }
                 if (collectDeps(obj, collector, leaks)) {
                     return void collector.$objSet$.add(obj);
@@ -2450,6 +2525,17 @@ const resumeIfNeeded = containerEl => {
     appendQwikDevTools(containerEl));
 };
 
+const _deserializeData = data => {
+    const [mainID, convertedObjs] = JSON.parse(data);
+    const parser = createParser({}, {});
+    reviveValues(convertedObjs, parser);
+    const getObject = id => convertedObjs[strToInt(id)];
+    for (const obj of convertedObjs) {
+        reviveNestedObjects(obj, getObject, parser);
+    }
+    return getObject(mainID);
+};
+
 const resumeContainer = containerEl => {
     if (!(isElement$1(el = containerEl) && el.hasAttribute("q:container"))) {
         return;
@@ -2472,7 +2558,7 @@ const resumeContainer = containerEl => {
     if (!getQwikJSON(parentJSON)) {
         return;
     }
-    const containerState = getContainerState(containerEl);
+    const containerState = _getContainerState(containerEl);
     moveStyles(containerEl, containerState);
     const elements = new Map;
     let node = null;
@@ -2634,7 +2720,7 @@ const appendQwikDevTools = containerEl => {
                 throw qError(21);
             }
             const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-            const containerState = getContainerState(containerEl);
+            const containerState = _getContainerState(containerEl);
             const contexts = ((parent, predicate) => {
                 const results = [];
                 const v = predicate(parent);
@@ -2688,7 +2774,7 @@ const appendQwikDevTools = containerEl => {
             return eventsScript.textContent = `window.qwikevents||=[];window.qwikevents.push(${extraListeners.join(", ")})`, 
             parentJSON.appendChild(eventsScript), data;
         })(containerEl),
-        state: getContainerState(containerEl)
+        state: _getContainerState(containerEl)
     };
 };
 
@@ -2706,7 +2792,7 @@ const useLexicalScope = () => {
         const el = context.$element$;
         const container = getWrappingContainer(el);
         qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), resumeIfNeeded(container);
-        const elCtx = getContext(el, getContainerState(container));
+        const elCtx = getContext(el, _getContainerState(container));
         inflateQrl(qrl, elCtx);
     }
     return qrl.$captureRef$;
@@ -2753,7 +2839,7 @@ containerState.$renderPromise$);
 
 const _hW = () => {
     const [watch] = useLexicalScope();
-    notifyWatch(watch, getContainerState(getWrappingContainer(watch.$el$)));
+    notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
 };
 
 const renderMarked = async containerState => {
@@ -3286,7 +3372,14 @@ const serializers = [ QRLSerializer, {
 }, {
     prefix: "",
     test: v => v instanceof SignalWrapper,
-    collect: (obj, collector, leaks) => (collectValue(obj.ref, collector, leaks), obj),
+    collect(obj, collector, leaks) {
+        if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
+            const manager = getProxyManager(obj.ref);
+            manager.$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks), 
+            collectSubscriptions(manager, collector);
+        }
+        return obj;
+    },
     serialize: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
     prepare: data => {
         const [id, prop] = data.split(" ");
@@ -3389,11 +3482,17 @@ const OBJECT_TRANSFORMS = {
 
 const noSerializeSet = new WeakSet;
 
+const weakSerializeSet = new WeakSet;
+
 const shouldSerialize = obj => !isObject(obj) && !isFunction(obj) || !noSerializeSet.has(obj);
 
-const fastShouldSerialize = obj => !noSerializeSet.has(obj);
+const fastSkipSerialize = obj => noSerializeSet.has(obj);
+
+const fastWeakSerialize = obj => weakSerializeSet.has(obj);
 
 const noSerialize = input => (null != input && noSerializeSet.add(input), input);
+
+const _weakSerialize = input => (weakSerializeSet.add(input), input);
 
 const mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
 v);
@@ -3489,6 +3588,19 @@ class LocalSubscriptionManager {
             const compare = sub[sub.length - 1];
             key && compare && compare !== key || notifyChange(sub, this.$containerState$);
         }
+    }
+    $isTreeshakeable$(prop) {
+        const subs = this.$subs$;
+        const groups = this.$groupToManagers$;
+        for (const sub of subs) {
+            if (prop === sub[sub.length - 1]) {
+                const group = groups.get(sub[1]);
+                if (group.length > 1 && group.some((g => g !== this && g.$subs$.some((s => 0 === s[0]))))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 
@@ -3646,7 +3758,7 @@ const render = async (parent, jsxNode, opts) => {
     const doc = getDocument(parent);
     const containerEl = getElement(parent);
     injectQContainer(containerEl);
-    const containerState = getContainerState(containerEl);
+    const containerState = _getContainerState(containerEl);
     const serverData = opts?.serverData;
     serverData && Object.assign(containerState.$serverData$, serverData), containerState.$hostsRendering$ = new Set, 
     containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
@@ -3675,7 +3787,276 @@ const injectQContainer = containerEl => {
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
-const renderSSR = async (node, opts) => {
+const useStore = (initialState, opts) => {
+    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+    if (null != get) {
+        return get;
+    }
+    const value = isFunction(initialState) ? initialState() : initialState;
+    if (false === opts?.reactive) {
+        return set(value), value;
+    }
+    {
+        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+        const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
+        return set(newStore), newStore;
+    }
+};
+
+const useRef = current => useStore({
+    current: current
+});
+
+const useId = () => {
+    const {get: get, set: set, elCtx: elCtx, iCtx: iCtx} = useSequentialScope();
+    if (null != get) {
+        return get;
+    }
+    const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
+    return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
+};
+
+function useServerData(key, defaultValue) {
+    return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+}
+
+const useUserContext = useServerData;
+
+const useEnvData = useServerData;
+
+const STYLE_CACHE = new Map;
+
+const getScopedStyles = (css, scopeId) => {
+    let styleCss = STYLE_CACHE.get(scopeId);
+    return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 
+    styleCss;
+};
+
+const scopeStylesheet = (css, scopeId) => {
+    const end = css.length;
+    const out = [];
+    const stack = [];
+    let idx = 0;
+    let lastIdx = idx;
+    let mode = rule;
+    let lastCh = 0;
+    for (;idx < end; ) {
+        const chIdx = idx;
+        let ch = css.charCodeAt(idx++);
+        ch === BACKSLASH && (idx++, ch = A);
+        const arcs = STATE_MACHINE[mode];
+        for (let i = 0; i < arcs.length; i++) {
+            const arc = arcs[i];
+            const [expectLastCh, expectCh, newMode] = arc;
+            if ((expectLastCh === lastCh || expectLastCh === ANY || expectLastCh === IDENT && isIdent(lastCh) || expectLastCh === WHITESPACE && isWhiteSpace(lastCh)) && (expectCh === ch || expectCh === ANY || expectCh === IDENT && isIdent(ch) || expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT || expectCh === WHITESPACE && isWhiteSpace(ch)) && (3 == arc.length || lookAhead(arc))) {
+                if (arc.length > 3 && (ch = css.charCodeAt(idx - 1)), newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
+                    newMode === EXIT_INSERT_SCOPE && (mode !== starSelector || shouldNotInsertScoping() ? isChainedSelector(ch) || insertScopingSelector(idx - (expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0)) : (isChainedSelector(ch) ? flush(idx - 2) : insertScopingSelector(idx - 2), 
+                    lastIdx++)), expectCh === NOT_IDENT && (idx--, ch = lastCh);
+                    do {
+                        mode = stack.pop() || rule, mode === pseudoGlobal && (flush(idx - 1), lastIdx++);
+                    } while (isSelfClosingRule(mode));
+                } else {
+                    stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(chIdx), 
+                    mode = newMode;
+                }
+                break;
+            }
+        }
+        lastCh = ch;
+    }
+    return flush(idx), out.join("");
+    function flush(idx) {
+        out.push(css.substring(lastIdx, idx)), lastIdx = idx;
+    }
+    function insertScopingSelector(idx) {
+        mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", "⭐️", scopeId));
+    }
+    function lookAhead(arc) {
+        let prefix = 0;
+        if (css.charCodeAt(idx) === DASH) {
+            for (let i = 1; i < 10; i++) {
+                if (css.charCodeAt(idx + i) === DASH) {
+                    prefix = i + 1;
+                    break;
+                }
+            }
+        }
+        words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
+            const txt = arc[arcIndx];
+            for (let i = 0; i < txt.length; i++) {
+                if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
+                    continue words;
+                }
+            }
+            return idx += txt.length + prefix, true;
+        }
+        return false;
+    }
+    function shouldNotInsertScoping() {
+        return -1 !== stack.indexOf(pseudoGlobal) || -1 !== stack.indexOf(atRuleSelector);
+    }
+};
+
+const isIdent = ch => ch >= _0 && ch <= _9 || ch >= A && ch <= Z || ch >= a && ch <= z || ch >= 128 || ch === UNDERSCORE || ch === DASH;
+
+const isChainedSelector = ch => ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
+
+const isSelfClosingRule = mode => mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal;
+
+const isWhiteSpace = ch => ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
+
+const rule = 0;
+
+const starSelector = 2;
+
+const pseudoGlobal = 5;
+
+const pseudoElement = 6;
+
+const atRuleSelector = 10;
+
+const atRuleBlock = 11;
+
+const atRuleInert = 12;
+
+const EXIT = 17;
+
+const EXIT_INSERT_SCOPE = 18;
+
+const ANY = 0;
+
+const IDENT = 1;
+
+const NOT_IDENT = 2;
+
+const WHITESPACE = 3;
+
+const TAB = 9;
+
+const NEWLINE = 10;
+
+const CARRIAGE_RETURN = 13;
+
+const SPACE = 32;
+
+const HASH = 35;
+
+const CLOSE_PARENTHESIS = 41;
+
+const DASH = 45;
+
+const DOT = 46;
+
+const _0 = 48;
+
+const _9 = 57;
+
+const COLON = 58;
+
+const A = 65;
+
+const Z = 90;
+
+const OPEN_BRACKET = 91;
+
+const BACKSLASH = 92;
+
+const UNDERSCORE = 95;
+
+const LOWERCASE = 32;
+
+const a = 97;
+
+const z = 122;
+
+const STRINGS_COMMENTS = [ [ ANY, 39, 14 ], [ ANY, 34, 15 ], [ ANY, 47, 16, "*" ] ];
+
+const STATE_MACHINE = [ [ [ ANY, 42, starSelector ], [ ANY, OPEN_BRACKET, 7 ], [ ANY, COLON, pseudoElement, ":", "before", "after", "first-letter", "first-line" ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, COLON, 3, "has", "host-context", "not", "where", "is", "matches", "any" ], [ ANY, COLON, 4 ], [ ANY, IDENT, 1 ], [ ANY, DOT, 1 ], [ ANY, HASH, 1 ], [ ANY, 64, atRuleSelector, "keyframe" ], [ ANY, 64, atRuleBlock, "media", "supports" ], [ ANY, 64, atRuleInert ], [ ANY, 123, 13 ], [ 47, 42, 16 ], [ ANY, 59, EXIT ], [ ANY, 125, EXIT ], [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, 8 ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, 93, EXIT_INSERT_SCOPE ], [ ANY, 39, 14 ], [ ANY, 34, 15 ] ], [ [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ WHITESPACE, IDENT, 1 ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, 123, 13 ], ...STRINGS_COMMENTS ], [ [ ANY, 123, rule ], [ ANY, 59, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 59, EXIT ], [ ANY, 123, 9 ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ ANY, 123, 13 ], [ ANY, 40, 8 ], ...STRINGS_COMMENTS ], [ [ ANY, 39, EXIT ] ], [ [ ANY, 34, EXIT ] ], [ [ 42, 47, EXIT ] ] ];
+
+const useStylesQrl = styles => {
+    _useStyles(styles, (str => str), false);
+};
+
+const useStyles$ = implicit$FirstArg(useStylesQrl);
+
+const useStylesScopedQrl = styles => ({
+    scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
+});
+
+const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
+
+const _useStyles = (styleQrl, transform, scoped) => {
+    const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
+    if (get) {
+        return get;
+    }
+    const styleId = (index = i, `${hashCode(styleQrl.$hash$)}-${index}`);
+    var index;
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
+    scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
+        return styleId;
+    }
+    containerState.$styleIds$.add(styleId);
+    const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
+    const appendStyle = styleText => {
+        elCtx.$appendStyles$, elCtx.$appendStyles$.push({
+            styleId: styleId,
+            content: transform(styleText, styleId)
+        });
+    };
+    return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
+    styleId;
+};
+
+const useSignal = initialState => {
+    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+    if (null != get) {
+        return get;
+    }
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    const value = isFunction(initialState) ? initialState() : initialState;
+    const signal = _createSignal(value, containerState, void 0);
+    return set(signal), signal;
+};
+
+const useServerMountQrl = mountQrl => {
+    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+    get || (isServer() && (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    waitAndRun(iCtx, mountQrl)), set(true));
+};
+
+const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+
+const useClientMountQrl = mountQrl => {
+    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+    get || (isServer() || (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    waitAndRun(iCtx, mountQrl)), set(true));
+};
+
+const useClientMount$ = implicit$FirstArg(useClientMountQrl);
+
+const useMountQrl = useTaskQrl;
+
+const useMount$ = useTask$;
+
+const useErrorBoundary = () => {
+    const store = useStore({
+        error: void 0
+    });
+    return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
+    store;
+};
+
+const useRender = jsx => {
+    const iCtx = useInvokeContext();
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+    let extraRender = elCtx.$extraRender$;
+    extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
+};
+
+const _renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? "/");
@@ -4197,274 +4578,4 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
-const useStore = (initialState, opts) => {
-    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
-    }
-    const value = isFunction(initialState) ? initialState() : initialState;
-    if (false === opts?.reactive) {
-        return set(value), value;
-    }
-    {
-        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
-        return set(newStore), newStore;
-    }
-};
-
-const useRef = current => useStore({
-    current: current
-});
-
-const useId = () => {
-    const {get: get, set: set, elCtx: elCtx, iCtx: iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
-    }
-    const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
-    return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
-};
-
-function useServerData(key, defaultValue) {
-    return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-}
-
-const useUserContext = useServerData;
-
-const useEnvData = useServerData;
-
-const STYLE_CACHE = new Map;
-
-const getScopedStyles = (css, scopeId) => {
-    let styleCss = STYLE_CACHE.get(scopeId);
-    return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 
-    styleCss;
-};
-
-const scopeStylesheet = (css, scopeId) => {
-    const end = css.length;
-    const out = [];
-    const stack = [];
-    let idx = 0;
-    let lastIdx = idx;
-    let mode = rule;
-    let lastCh = 0;
-    for (;idx < end; ) {
-        let ch = css.charCodeAt(idx++);
-        ch === BACKSLASH && (idx++, ch = A);
-        const arcs = STATE_MACHINE[mode];
-        for (let i = 0; i < arcs.length; i++) {
-            const arc = arcs[i];
-            const [expectLastCh, expectCh, newMode] = arc;
-            if ((expectLastCh === lastCh || expectLastCh === ANY || expectLastCh === IDENT && isIdent(lastCh) || expectLastCh === WHITESPACE && isWhiteSpace(lastCh)) && (expectCh === ch || expectCh === ANY || expectCh === IDENT && isIdent(ch) || expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT || expectCh === WHITESPACE && isWhiteSpace(ch)) && (3 == arc.length || lookAhead(arc))) {
-                if (arc.length > 3 && (ch = css.charCodeAt(idx - 1)), newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
-                    newMode === EXIT_INSERT_SCOPE && (mode !== starSelector || shouldNotInsertScoping() ? isChainedSelector(ch) || insertScopingSelector(idx - (expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0)) : (isChainedSelector(ch) ? flush(idx - 2) : insertScopingSelector(idx - 2), 
-                    lastIdx++)), expectCh === NOT_IDENT && (idx--, ch = lastCh);
-                    do {
-                        mode = stack.pop() || rule, mode === pseudoGlobal && (flush(idx - 1), lastIdx++);
-                    } while (isSelfClosingRule(mode));
-                } else {
-                    stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(idx - 2), 
-                    mode = newMode;
-                }
-                break;
-            }
-        }
-        lastCh = ch;
-    }
-    return flush(idx), out.join("");
-    function flush(idx) {
-        out.push(css.substring(lastIdx, idx)), lastIdx = idx;
-    }
-    function insertScopingSelector(idx) {
-        mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", "⭐️", scopeId));
-    }
-    function lookAhead(arc) {
-        let prefix = 0;
-        if (css.charCodeAt(idx) === DASH) {
-            for (let i = 1; i < 10; i++) {
-                if (css.charCodeAt(idx + i) === DASH) {
-                    prefix = i + 1;
-                    break;
-                }
-            }
-        }
-        words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
-            const txt = arc[arcIndx];
-            for (let i = 0; i < txt.length; i++) {
-                if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
-                    continue words;
-                }
-            }
-            return idx += txt.length + prefix, true;
-        }
-        return false;
-    }
-    function shouldNotInsertScoping() {
-        return -1 !== stack.indexOf(pseudoGlobal) || -1 !== stack.indexOf(atRuleSelector);
-    }
-};
-
-const isIdent = ch => ch >= _0 && ch <= _9 || ch >= A && ch <= Z || ch >= a && ch <= z || ch >= 128 || ch === UNDERSCORE || ch === DASH;
-
-const isChainedSelector = ch => ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
-
-const isSelfClosingRule = mode => mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal;
-
-const isWhiteSpace = ch => ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
-
-const rule = 0;
-
-const starSelector = 2;
-
-const pseudoGlobal = 5;
-
-const pseudoElement = 6;
-
-const atRuleSelector = 10;
-
-const atRuleBlock = 11;
-
-const atRuleInert = 12;
-
-const EXIT = 17;
-
-const EXIT_INSERT_SCOPE = 18;
-
-const ANY = 0;
-
-const IDENT = 1;
-
-const NOT_IDENT = 2;
-
-const WHITESPACE = 3;
-
-const TAB = 9;
-
-const NEWLINE = 10;
-
-const CARRIAGE_RETURN = 13;
-
-const SPACE = 32;
-
-const HASH = 35;
-
-const CLOSE_PARENTHESIS = 41;
-
-const DASH = 45;
-
-const DOT = 46;
-
-const _0 = 48;
-
-const _9 = 57;
-
-const COLON = 58;
-
-const A = 65;
-
-const Z = 90;
-
-const OPEN_BRACKET = 91;
-
-const BACKSLASH = 92;
-
-const UNDERSCORE = 95;
-
-const LOWERCASE = 32;
-
-const a = 97;
-
-const z = 122;
-
-const STRINGS_COMMENTS = [ [ ANY, 39, 14 ], [ ANY, 34, 15 ], [ ANY, 47, 16, "*" ] ];
-
-const STATE_MACHINE = [ [ [ ANY, 42, starSelector ], [ ANY, OPEN_BRACKET, 7 ], [ ANY, COLON, pseudoElement, ":" ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, COLON, 3, "has", "host-context", "not", "where", "is", "matches", "any" ], [ ANY, COLON, 4 ], [ ANY, IDENT, 1 ], [ ANY, DOT, 1 ], [ ANY, HASH, 1 ], [ ANY, 64, atRuleSelector, "keyframe" ], [ ANY, 64, atRuleBlock, "media", "supports" ], [ ANY, 64, atRuleInert ], [ ANY, 123, 13 ], [ 47, 42, 16 ], [ ANY, 59, EXIT ], [ ANY, 125, EXIT ], [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, 8 ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, 93, EXIT_INSERT_SCOPE ], [ ANY, 39, 14 ], [ ANY, 34, 15 ] ], [ [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ WHITESPACE, IDENT, 1 ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, 123, 13 ], ...STRINGS_COMMENTS ], [ [ ANY, 123, rule ], [ ANY, 59, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 59, EXIT ], [ ANY, 123, 9 ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ ANY, 123, 13 ], [ ANY, 40, 8 ], ...STRINGS_COMMENTS ], [ [ ANY, 39, EXIT ] ], [ [ ANY, 34, EXIT ] ], [ [ 42, 47, EXIT ] ] ];
-
-const useStylesQrl = styles => {
-    _useStyles(styles, (str => str), false);
-};
-
-const useStyles$ = implicit$FirstArg(useStylesQrl);
-
-const useStylesScopedQrl = styles => ({
-    scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
-});
-
-const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
-
-const _useStyles = (styleQrl, transform, scoped) => {
-    const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
-    if (get) {
-        return get;
-    }
-    const styleId = (index = i, `${hashCode(styleQrl.$hash$)}-${index}`);
-    var index;
-    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
-    scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
-        return styleId;
-    }
-    containerState.$styleIds$.add(styleId);
-    const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
-    const appendStyle = styleText => {
-        elCtx.$appendStyles$, elCtx.$appendStyles$.push({
-            styleId: styleId,
-            content: transform(styleText, styleId)
-        });
-    };
-    return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
-    styleId;
-};
-
-const useSignal = initialState => {
-    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
-    }
-    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const signal = ((value, containerState, subcriptions) => {
-        const manager = containerState.$subsManager$.$createManager$(void 0);
-        return new SignalImpl(value, manager);
-    })(isFunction(initialState) ? initialState() : initialState, containerState);
-    return set(signal), signal;
-};
-
-const useServerMountQrl = mountQrl => {
-    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    get || (isServer() && (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-    waitAndRun(iCtx, mountQrl)), set(true));
-};
-
-const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-
-const useClientMountQrl = mountQrl => {
-    const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    get || (isServer() || (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-    waitAndRun(iCtx, mountQrl)), set(true));
-};
-
-const useClientMount$ = implicit$FirstArg(useClientMountQrl);
-
-const useMountQrl = useTaskQrl;
-
-const useMount$ = useTask$;
-
-const useErrorBoundary = () => {
-    const store = useStore({
-        error: void 0
-    });
-    return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
-    store;
-};
-
-const useRender = jsx => {
-    const iCtx = useInvokeContext();
-    const hostElement = iCtx.$hostElement$;
-    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    let extraRender = elCtx.$extraRender$;
-    extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
-};
-
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _createSignal, _deserializeData, _getContainerState, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

@@ -46,7 +46,7 @@ var versions = {
 };
 
 // packages/qwik/src/server/render.ts
-import { renderSSR, Fragment as Fragment2, jsx as jsx2, _pauseFromContexts } from "@builder.io/qwik";
+import { _renderSSR, Fragment as Fragment2, jsx as jsx2, _pauseFromContexts } from "@builder.io/qwik";
 
 // packages/qwik/src/server/platform.ts
 import { setPlatform } from "@builder.io/qwik";
@@ -639,7 +639,7 @@ async function renderToStream(rootNode, opts) {
   let renderTime = 0;
   let snapshotTime = 0;
   let containsDynamic = false;
-  await renderSSR(rootNode, {
+  await _renderSSR(rootNode, {
     stream,
     containerTagName,
     containerAttributes,

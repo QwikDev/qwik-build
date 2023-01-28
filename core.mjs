@@ -927,7 +927,10 @@ const QObjectManagerSymbol = Symbol('proxy manager');
 const _IMMUTABLE = Symbol('IMMUTABLE');
 const _IMMUTABLE_PREFIX = '$$';
 
-const createSignal = (value, containerState, subcriptions) => {
+/**
+ * @internal
+ */
+const _createSignal = (value, containerState, subcriptions) => {
     const manager = containerState.$subsManager$.$createManager$(subcriptions);
     const signal = new SignalImpl(value, manager);
     return signal;
@@ -1476,7 +1479,10 @@ const _useOn = (eventName, eventQrl) => {
 };
 
 const CONTAINER_STATE = Symbol('ContainerState');
-const getContainerState = (containerEl) => {
+/**
+ * @internal
+ */
+const _getContainerState = (containerEl) => {
     let set = containerEl[CONTAINER_STATE];
     if (!set) {
         assertTrue(!isServer(), 'Container state can only be created lazily on the browser');
@@ -2492,6 +2498,9 @@ const useContext = (context, defaultValue) => {
         validateContext(context);
     }
     const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
+    if (typeof defaultValue === 'function') {
+        return set(defaultValue(value));
+    }
     if (value !== undefined) {
         return set(value);
     }
@@ -3761,6 +3770,71 @@ const serializeSStyle = (scopeIds) => {
     return undefined;
 };
 
+/**
+ * @internal
+ */
+const _serializeData = (data) => {
+    const containerState = {};
+    const collector = createCollector(containerState);
+    collectValue(data, collector, false);
+    const objs = Array.from(collector.$objSet$.keys());
+    let count = 0;
+    const objToId = new Map();
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count));
+        count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(undefined);
+        assertDefined(undefinedID, 'undefined ID must be defined');
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    const mustGetObjId = (obj) => {
+        const key = objToId.get(obj);
+        if (key === undefined) {
+            throw qError(QError_missingObjectId, obj);
+        }
+        return key;
+    };
+    const convertedObjs = objs.map((obj) => {
+        if (obj === null) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+            case 'undefined':
+                return UNDEFINED_PREFIX;
+            case 'number':
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+            case 'string':
+            case 'boolean':
+                return obj;
+        }
+        const value = serializeValue(obj, mustGetObjId, containerState);
+        if (value !== undefined) {
+            return value;
+        }
+        if (typeObj === 'object') {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key of Object.keys(obj)) {
+                    output[key] = mustGetObjId(obj[key]);
+                }
+                return output;
+            }
+        }
+        throw qError(QError_verifySerializable, obj);
+    });
+    return JSON.stringify([mustGetObjId(data), convertedObjs]);
+};
 // <docs markdown="../readme.md#pauseContainer">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#pauseContainer instead)
@@ -3775,7 +3849,7 @@ const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
         throw qError(QError_containerAlreadyPaused);
     }
     const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
-    const containerState = getContainerState(containerEl);
+    const containerState = _getContainerState(containerEl);
     const contexts = getNodesInScope(containerEl, hasContext);
     // Set container to paused
     directSetAttribute(containerEl, QContainerAttr, 'paused');
@@ -4043,7 +4117,10 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             if (isSerializableObject(obj)) {
                 const output = {};
                 for (const key of Object.keys(obj)) {
-                    output[key] = mustGetObjId(obj[key]);
+                    const id = getObjId(obj[key]);
+                    if (id !== null) {
+                        output[key] = id;
+                    }
                 }
                 return output;
             }
@@ -4315,7 +4392,7 @@ const collectValue = (obj, collector, leaks) => {
                     return;
                 }
                 seen.add(obj);
-                if (!fastShouldSerialize(obj)) {
+                if (fastSkipSerialize(obj)) {
                     collector.$objSet$.add(undefined);
                     collector.$noSerialize$.push(obj);
                     return;
@@ -4328,6 +4405,10 @@ const collectValue = (obj, collector, leaks) => {
                         return;
                     }
                     seen.add(obj);
+                    if (fastWeakSerialize(input)) {
+                        collector.$objSet$.add(obj);
+                        return;
+                    }
                     if (leaks) {
                         collectSubscriptions(getProxyManager(input), collector);
                     }
@@ -4436,6 +4517,19 @@ const getPauseState = (containerEl) => {
         return JSON.parse(unescapeText(data) || '{}');
     }
 };
+/**
+ * @internal
+ */
+const _deserializeData = (data) => {
+    const [mainID, convertedObjs] = JSON.parse(data);
+    const parser = createParser({}, {});
+    reviveValues(convertedObjs, parser);
+    const getObject = (id) => convertedObjs[strToInt(id)];
+    for (const obj of convertedObjs) {
+        reviveNestedObjects(obj, getObject, parser);
+    }
+    return getObject(mainID);
+};
 const resumeContainer = (containerEl) => {
     if (!isContainer$1(containerEl)) {
         logWarn('Skipping hydration because parent element is not q:container');
@@ -4455,7 +4549,7 @@ const resumeContainer = (containerEl) => {
         logWarn('Skipping hydration qwik/json metadata was not found.');
         return;
     }
-    const containerState = getContainerState(containerEl);
+    const containerState = _getContainerState(containerEl);
     moveStyles(containerEl, containerState);
     // Collect all elements
     const elements = new Map();
@@ -4657,7 +4751,7 @@ const getTextNode = (mark) => {
 const appendQwikDevTools = (containerEl) => {
     containerEl['qwik'] = {
         pause: () => pauseContainer(containerEl),
-        state: getContainerState(containerEl),
+        state: _getContainerState(containerEl),
     };
 };
 const getID = (stuff) => {
@@ -4693,7 +4787,7 @@ const useLexicalScope = () => {
         qrl = parseQRL(decodeURIComponent(String(context.$url$)), container);
         assertQrl(qrl);
         resumeIfNeeded(container);
-        const elCtx = getContext(el, getContainerState(container));
+        const elCtx = getContext(el, _getContainerState(container));
         inflateQrl(qrl, elCtx);
     }
     else {
@@ -4822,7 +4916,7 @@ const scheduleFrame = (containerState) => {
  */
 const _hW = () => {
     const [watch] = useLexicalScope();
-    notifyWatch(watch, getContainerState(getWrappingContainer(watch.$el$)));
+    notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
 };
 const renderMarked = async (containerState) => {
     const doc = getDocument(containerState.$containerEl$);
@@ -5969,6 +6063,13 @@ const SignalWrapperSerializer = {
     test: (v) => v instanceof SignalWrapper,
     collect(obj, collector, leaks) {
         collectValue(obj.ref, collector, leaks);
+        if (fastWeakSerialize(obj.ref)) {
+            const manager = getProxyManager(obj.ref);
+            if (!manager.$isTreeshakeable$(obj.prop)) {
+                collectValue(obj.ref[obj.prop], collector, leaks);
+            }
+            collectSubscriptions(manager, collector);
+        }
         return obj;
     },
     serialize: (obj, getObjId) => {
@@ -6195,14 +6296,18 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
     return value;
 };
 const noSerializeSet = /*#__PURE__*/ new WeakSet();
+const weakSerializeSet = /*#__PURE__*/ new WeakSet();
 const shouldSerialize = (obj) => {
     if (isObject(obj) || isFunction(obj)) {
         return !noSerializeSet.has(obj);
     }
     return true;
 };
-const fastShouldSerialize = (obj) => {
-    return !noSerializeSet.has(obj);
+const fastSkipSerialize = (obj) => {
+    return noSerializeSet.has(obj);
+};
+const fastWeakSerialize = (obj) => {
+    return weakSerializeSet.has(obj);
 };
 // <docs markdown="../readme.md#noSerialize">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -6228,6 +6333,13 @@ const noSerialize = (input) => {
     if (input != null) {
         noSerializeSet.add(input);
     }
+    return input;
+};
+/**
+ * @internal
+ */
+const _weakSerialize = (input) => {
+    weakSerializeSet.add(input);
     return input;
 };
 /**
@@ -6378,6 +6490,20 @@ class LocalSubscriptionManager {
             }
             notifyChange(sub, this.$containerState$);
         }
+    }
+    $isTreeshakeable$(prop) {
+        const subs = this.$subs$;
+        const groups = this.$groupToManagers$;
+        for (const sub of subs) {
+            const compare = sub[sub.length - 1];
+            if (prop === compare) {
+                const group = groups.get(sub[1]);
+                if (group.length > 1 && group.some((g) => g !== this && g.$subs$.some((s) => s[0] === 0))) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 const must = (a) => {
@@ -6830,7 +6956,7 @@ const render = async (parent, jsxNode, opts) => {
     //   }
     // }
     injectQContainer(containerEl);
-    const containerState = getContainerState(containerEl);
+    const containerState = _getContainerState(containerEl);
     const serverData = opts?.serverData;
     if (serverData) {
         Object.assign(containerState.$serverData$, serverData);
@@ -6868,6 +6994,816 @@ const injectQContainer = (containerEl) => {
     directSetAttribute(containerEl, 'q:render', qDev ? 'dom-dev' : 'dom');
 };
 
+// <docs markdown="../readme.md#useStore">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStore instead)
+/**
+ * Creates an object that Qwik can track across serializations.
+ *
+ * Use `useStore` to create a state for your application. The returned object is a proxy that has
+ * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ *
+ * ### Example
+ *
+ * Example showing how `useStore` is used in Counter example to keep track of the count.
+ *
+ * ```tsx
+ * const Stores = component$(() => {
+ *   const counter = useCounter(1);
+ *
+ *   // Reactivity happens even for nested objects and arrays
+ *   const userData = useStore({
+ *     name: 'Manu',
+ *     address: {
+ *       address: '',
+ *       city: '',
+ *     },
+ *     orgs: [],
+ *   });
+ *
+ *   // useStore() can also accept a function to calculate the initial value
+ *   const state = useStore(() => {
+ *     return {
+ *       value: expensiveInitialValue(),
+ *     };
+ *   });
+ *
+ *   return (
+ *     <div>
+ *       <div>Counter: {counter.value}</div>
+ *       <Child userData={userData} state={state} />
+ *     </div>
+ *   );
+ * });
+ *
+ * function useCounter(step: number) {
+ *   // Multiple stores can be created in custom hooks for convenience and composability
+ *   const counterStore = useStore({
+ *     value: 0,
+ *   });
+ *   useClientEffect$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       counterStore.value += step;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *   return counterStore;
+ * }
+ * ```
+ *
+ * @public
+ */
+// </docs>
+const useStore = (initialState, opts) => {
+    const { get, set, iCtx } = useSequentialScope();
+    if (get != null) {
+        return get;
+    }
+    const value = isFunction(initialState) ? initialState() : initialState;
+    if (opts?.reactive === false) {
+        set(value);
+        return value;
+    }
+    else {
+        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+        const recursive = opts?.deep ?? opts?.recursive ?? false;
+        const flags = recursive ? QObjectRecursive : 0;
+        const newStore = getOrCreateProxy(value, containerState, flags);
+        set(newStore);
+        return newStore;
+    }
+};
+
+// <docs markdown="../readme.md#useRef">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useRef instead)
+/**
+ * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
+ * to the `ref` property in JSX.
+ *
+ * ```tsx
+ * export function useRef<T = Element>(current?: T): Ref<T> {
+ *   return useStore({ current });
+ * }
+ * ```
+ *
+ * ### Example
+ *
+ * ```tsx
+ * const Cmp = component$(() => {
+ *   const input = useRef<HTMLInputElement>();
+ *
+ *   useClientEffect$(({ track }) => {
+ *     const el = track(() => input.current)!;
+ *     el.focus();
+ *   });
+ *
+ *   return (
+ *     <div>
+ *       <input type="text" ref={input} />
+ *     </div>
+ *   );
+ * });
+ *
+ * ```
+ *
+ * @deprecated Use `useSignal` instead.
+ * @alpha
+ */
+// </docs>
+const useRef = (current) => {
+    return useStore({ current });
+};
+
+/**
+ * @alpha
+ */
+const useId = () => {
+    const { get, set, elCtx, iCtx } = useSequentialScope();
+    if (get != null) {
+        return get;
+    }
+    const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || '';
+    const base = containerBase ? hashCode(containerBase) : '';
+    const hash = elCtx.$componentQrl$?.getHash() || '';
+    const counter = getNextIndex(iCtx.$renderCtx$) || '';
+    const id = `${base}-${hash}-${counter}`; // If no base and no hash, then "--#"
+    return set(id);
+};
+
+/**
+ * @alpha
+ */
+function useServerData(key, defaultValue) {
+    const ctx = useInvokeContext();
+    return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+}
+/**
+ * @alpha
+ * @deprecated Please use `useServerData` instead.
+ */
+const useUserContext = useServerData;
+/**
+ * @alpha
+ * @deprecated Please use `useServerData` instead.
+ */
+const useEnvData = useServerData;
+
+/* eslint-disable no-console */
+const STYLE_CACHE = new Map();
+const getScopedStyles = (css, scopeId) => {
+    if (qDev) {
+        return scopeStylesheet(css, scopeId);
+    }
+    let styleCss = STYLE_CACHE.get(scopeId);
+    if (!styleCss) {
+        STYLE_CACHE.set(scopeId, (styleCss = scopeStylesheet(css, scopeId)));
+    }
+    return styleCss;
+};
+const scopeStylesheet = (css, scopeId) => {
+    const end = css.length;
+    const out = [];
+    const stack = [];
+    let idx = 0;
+    let lastIdx = idx;
+    let mode = rule;
+    let lastCh = 0;
+    while (idx < end) {
+        const chIdx = idx;
+        let ch = css.charCodeAt(idx++);
+        if (ch === BACKSLASH) {
+            idx++;
+            ch = A; // Pretend it's a letter
+        }
+        const arcs = STATE_MACHINE[mode];
+        for (let i = 0; i < arcs.length; i++) {
+            const arc = arcs[i];
+            const [expectLastCh, expectCh, newMode] = arc;
+            if (expectLastCh === lastCh ||
+                expectLastCh === ANY ||
+                (expectLastCh === IDENT && isIdent(lastCh)) ||
+                (expectLastCh === WHITESPACE && isWhiteSpace(lastCh))) {
+                if (expectCh === ch ||
+                    expectCh === ANY ||
+                    (expectCh === IDENT && isIdent(ch)) ||
+                    (expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT) ||
+                    (expectCh === WHITESPACE && isWhiteSpace(ch))) {
+                    if (arc.length == 3 || lookAhead(arc)) {
+                        if (arc.length > 3) {
+                            // If matched on lookAhead than we we have to update current `ch`
+                            ch = css.charCodeAt(idx - 1);
+                        }
+                        // We found a match!
+                        if (newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
+                            if (newMode === EXIT_INSERT_SCOPE) {
+                                if (mode === starSelector && !shouldNotInsertScoping()) {
+                                    // Replace `*` with the scoping elementClassIdSelector.
+                                    if (isChainedSelector(ch)) {
+                                        // *foo
+                                        flush(idx - 2);
+                                    }
+                                    else {
+                                        // * (by itself)
+                                        insertScopingSelector(idx - 2);
+                                    }
+                                    lastIdx++;
+                                }
+                                else {
+                                    if (!isChainedSelector(ch)) {
+                                        // We are exiting one of the Selector so we may need to
+                                        const offset = expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0;
+                                        insertScopingSelector(idx - offset);
+                                    }
+                                }
+                            }
+                            if (expectCh === NOT_IDENT) {
+                                // NOT_IDENT is not a real character more like lack of what we expected.
+                                // if pseudoGlobal we need to give it a chance to exit as well.
+                                // For this reason we need to reparse the last character again.
+                                idx--;
+                                ch = lastCh;
+                            }
+                            do {
+                                mode = stack.pop() || rule;
+                                if (mode === pseudoGlobal) {
+                                    // Skip over the `)` in `:global(...)`.
+                                    flush(idx - 1);
+                                    lastIdx++;
+                                }
+                            } while (isSelfClosingRule(mode));
+                        }
+                        else {
+                            stack.push(mode);
+                            if (mode === pseudoGlobal && newMode === rule) {
+                                flush(idx - 8); // `:global(`.length
+                                lastIdx = idx; // skip over ":global("
+                            }
+                            else if (newMode === pseudoElement) {
+                                // We are entering pseudoElement `::foo`; insert scoping in front of it.
+                                insertScopingSelector(chIdx);
+                            }
+                            mode = newMode;
+                        }
+                        break; // get out of the for loop as we found a match
+                    }
+                }
+            }
+        }
+        lastCh = ch;
+    }
+    flush(idx);
+    return out.join('');
+    function flush(idx) {
+        out.push(css.substring(lastIdx, idx));
+        lastIdx = idx;
+    }
+    function insertScopingSelector(idx) {
+        if (mode === pseudoGlobal || shouldNotInsertScoping())
+            return;
+        flush(idx);
+        out.push('.', ComponentStylesPrefixContent, scopeId);
+    }
+    function lookAhead(arc) {
+        let prefix = 0; // Ignore vendor prefixes such as `-webkit-`.
+        if (css.charCodeAt(idx) === DASH) {
+            for (let i = 1; i < 10; i++) {
+                // give up after 10 characters
+                if (css.charCodeAt(idx + i) === DASH) {
+                    prefix = i + 1;
+                    break;
+                }
+            }
+        }
+        words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
+            const txt = arc[arcIndx];
+            for (let i = 0; i < txt.length; i++) {
+                if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
+                    continue words;
+                }
+            }
+            // we found a match;
+            idx += txt.length + prefix;
+            return true;
+        }
+        return false;
+    }
+    function shouldNotInsertScoping() {
+        return stack.indexOf(pseudoGlobal) !== -1 || stack.indexOf(atRuleSelector) !== -1;
+    }
+};
+const isIdent = (ch) => {
+    return ((ch >= _0 && ch <= _9) ||
+        (ch >= A && ch <= Z) ||
+        (ch >= a && ch <= z) ||
+        ch >= 0x80 ||
+        ch === UNDERSCORE ||
+        ch === DASH);
+};
+const isChainedSelector = (ch) => {
+    return ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
+};
+const isSelfClosingRule = (mode) => {
+    return (mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal);
+};
+const isWhiteSpace = (ch) => {
+    return ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
+};
+const rule = 0; // top level initial space.
+const elementClassIdSelector = 1; // .elementClassIdSelector {}
+const starSelector = 2; // * {}
+const pseudoClassWithSelector = 3; // :pseudoClass(elementClassIdSelector) {}
+const pseudoClass = 4; // :pseudoClass {}
+const pseudoGlobal = 5; // :global(elementClassIdSelector)
+const pseudoElement = 6; // ::pseudoElement {}
+const attrSelector = 7; // [attr] {}
+const inertParenthesis = 8; // (ignored)
+const inertBlock = 9; // {ignored}
+const atRuleSelector = 10; // @keyframe elementClassIdSelector {}
+const atRuleBlock = 11; // @media {elementClassIdSelector {}}
+const atRuleInert = 12; // @atRule something;
+const body = 13; // .elementClassIdSelector {body}
+const stringSingle = 14; // 'text'
+const stringDouble = 15; // 'text'
+const commentMultiline = 16; // /* ... */
+// NOT REAL MODES
+const EXIT = 17; // Exit the mode
+const EXIT_INSERT_SCOPE = 18; // Exit the mode INSERT SCOPE
+const ANY = 0;
+const IDENT = 1;
+const NOT_IDENT = 2;
+const WHITESPACE = 3;
+const TAB = 9; // `\t`.charCodeAt(0);
+const NEWLINE = 10; // `\n`.charCodeAt(0);
+const CARRIAGE_RETURN = 13; // `\r`.charCodeAt(0);
+const SPACE = 32; // ` `.charCodeAt(0);
+const DOUBLE_QUOTE = 34; // `"`.charCodeAt(0);
+const HASH = 35; // `#`.charCodeAt(0);
+const SINGLE_QUOTE = 39; // `'`.charCodeAt(0);
+const OPEN_PARENTHESIS = 40; // `(`.charCodeAt(0);
+const CLOSE_PARENTHESIS = 41; // `)`.charCodeAt(0);
+const STAR = 42; // `*`.charCodeAt(0);
+// const COMMA = 44; // `,`.charCodeAt(0);
+const DASH = 45; // `-`.charCodeAt(0);
+const DOT = 46; // `.`.charCodeAt(0);
+const FORWARD_SLASH = 47; // `/`.charCodeAt(0);
+const _0 = 48; // `0`.charCodeAt(0);
+const _9 = 57; // `9`.charCodeAt(0);
+const COLON = 58; // `:`.charCodeAt(0);
+const SEMICOLON = 59; // `;`.charCodeAt(0);
+// const LESS_THAN = 60; // `<`.charCodeAt(0);
+const AT = 64; // `@`.charCodeAt(0);
+const A = 65; // `A`.charCodeAt(0);
+const Z = 90; // `Z`.charCodeAt(0);
+const OPEN_BRACKET = 91; // `[`.charCodeAt(0);
+const CLOSE_BRACKET = 93; // `]`.charCodeAt(0);
+const BACKSLASH = 92; // `\\`.charCodeAt(0);
+const UNDERSCORE = 95; // `_`.charCodeAt(0);
+const LOWERCASE = 0x20; // `a`.charCodeAt(0);
+const a = 97; // `a`.charCodeAt(0);
+// const d = 100; // `d`.charCodeAt(0);
+// const g = 103; // 'g'.charCodeAt(0);
+// const h = 104; // `h`.charCodeAt(0);
+// const i = 105; // `i`.charCodeAt(0);
+// const l = 108; // `l`.charCodeAt(0);
+// const t = 116; // `t`.charCodeAt(0);
+const z = 122; // `z`.charCodeAt(0);
+const OPEN_BRACE = 123; // `{`.charCodeAt(0);
+const CLOSE_BRACE = 125; // `}`.charCodeAt(0);
+const STRINGS_COMMENTS = /*__PURE__*/ (() => [
+    [ANY, SINGLE_QUOTE, stringSingle],
+    [ANY, DOUBLE_QUOTE, stringDouble],
+    [ANY, FORWARD_SLASH, commentMultiline, '*'],
+])();
+const STATE_MACHINE = /*__PURE__*/ (() => [
+    [
+        /// rule
+        [ANY, STAR, starSelector],
+        [ANY, OPEN_BRACKET, attrSelector],
+        [ANY, COLON, pseudoElement, ':', 'before', 'after', 'first-letter', 'first-line'],
+        [ANY, COLON, pseudoGlobal, 'global'],
+        [
+            ANY,
+            COLON,
+            pseudoClassWithSelector,
+            'has',
+            'host-context',
+            'not',
+            'where',
+            'is',
+            'matches',
+            'any',
+        ],
+        [ANY, COLON, pseudoClass],
+        [ANY, IDENT, elementClassIdSelector],
+        [ANY, DOT, elementClassIdSelector],
+        [ANY, HASH, elementClassIdSelector],
+        [ANY, AT, atRuleSelector, 'keyframe'],
+        [ANY, AT, atRuleBlock, 'media', 'supports'],
+        [ANY, AT, atRuleInert],
+        [ANY, OPEN_BRACE, body],
+        [FORWARD_SLASH, STAR, commentMultiline],
+        [ANY, SEMICOLON, EXIT],
+        [ANY, CLOSE_BRACE, EXIT],
+        [ANY, CLOSE_PARENTHESIS, EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// elementClassIdSelector
+        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// starSelector
+        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoClassWithSelector
+        [ANY, OPEN_PARENTHESIS, rule],
+        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoClass
+        [ANY, OPEN_PARENTHESIS, inertParenthesis],
+        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
+    ],
+    [
+        /// pseudoGlobal
+        [ANY, OPEN_PARENTHESIS, rule],
+        [ANY, NOT_IDENT, EXIT],
+    ],
+    [
+        /// pseudoElement
+        [ANY, NOT_IDENT, EXIT],
+    ],
+    [
+        /// attrSelector
+        [ANY, CLOSE_BRACKET, EXIT_INSERT_SCOPE],
+        [ANY, SINGLE_QUOTE, stringSingle],
+        [ANY, DOUBLE_QUOTE, stringDouble],
+    ],
+    [
+        /// inertParenthesis
+        [ANY, CLOSE_PARENTHESIS, EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// inertBlock
+        [ANY, CLOSE_BRACE, EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleSelector
+        [ANY, CLOSE_BRACE, EXIT],
+        [WHITESPACE, IDENT, elementClassIdSelector],
+        [ANY, COLON, pseudoGlobal, 'global'],
+        [ANY, OPEN_BRACE, body],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleBlock
+        [ANY, OPEN_BRACE, rule],
+        [ANY, SEMICOLON, EXIT],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// atRuleInert
+        [ANY, SEMICOLON, EXIT],
+        [ANY, OPEN_BRACE, inertBlock],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// body
+        [ANY, CLOSE_BRACE, EXIT],
+        [ANY, OPEN_BRACE, body],
+        [ANY, OPEN_PARENTHESIS, inertParenthesis],
+        ...STRINGS_COMMENTS,
+    ],
+    [
+        /// stringSingle
+        [ANY, SINGLE_QUOTE, EXIT],
+    ],
+    [
+        /// stringDouble
+        [ANY, DOUBLE_QUOTE, EXIT],
+    ],
+    [
+        /// commentMultiline
+        [STAR, FORWARD_SLASH, EXIT],
+    ],
+])();
+
+// <docs markdown="../readme.md#useStyles">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStyles instead)
+/**
+ * A lazy-loadable reference to a component's styles.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <div>Some text</div>;
+ * });
+ * ```
+ *
+ * @see `useStylesScoped`
+ *
+ * @public
+ */
+// </docs>
+const useStylesQrl = (styles) => {
+    _useStyles(styles, (str) => str, false);
+};
+// <docs markdown="../readme.md#useStyles">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStyles instead)
+/**
+ * A lazy-loadable reference to a component's styles.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import styles from './code-block.css?inline';
+ *
+ * export const CmpStyles = component$(() => {
+ *   useStyles$(styles);
+ *
+ *   return <div>Some text</div>;
+ * });
+ * ```
+ *
+ * @see `useStylesScoped`
+ *
+ * @public
+ */
+// </docs>
+const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
+// <docs markdown="../readme.md#useStylesScoped">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStylesScoped instead)
+/**
+ * A lazy-loadable reference to a component's styles, that is scoped to the component.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import scoped from './code-block.css?inline';
+ *
+ * export const CmpScopedStyles = component$(() => {
+ *   useStylesScoped$(scoped);
+ *
+ *   return <div>Some text</div>;
+ * });
+ * ```
+ *
+ * @see `useStyles`
+ *
+ * @alpha
+ */
+// </docs>
+const useStylesScopedQrl = (styles) => {
+    return {
+        scopeId: ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true),
+    };
+};
+// <docs markdown="../readme.md#useStylesScoped">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useStylesScoped instead)
+/**
+ * A lazy-loadable reference to a component's styles, that is scoped to the component.
+ *
+ * Component styles allow Qwik to lazy load the style information for the component only when
+ * needed. (And avoid double loading it in case of SSR hydration.)
+ *
+ * ```tsx
+ * import scoped from './code-block.css?inline';
+ *
+ * export const CmpScopedStyles = component$(() => {
+ *   useStylesScoped$(scoped);
+ *
+ *   return <div>Some text</div>;
+ * });
+ * ```
+ *
+ * @see `useStyles`
+ *
+ * @alpha
+ */
+// </docs>
+const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
+const _useStyles = (styleQrl, transform, scoped) => {
+    assertQrl(styleQrl);
+    const { get, set, iCtx, i, elCtx } = useSequentialScope();
+    if (get) {
+        return get;
+    }
+    const styleId = styleKey(styleQrl, i);
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    set(styleId);
+    if (!elCtx.$appendStyles$) {
+        elCtx.$appendStyles$ = [];
+    }
+    if (!elCtx.$scopeIds$) {
+        elCtx.$scopeIds$ = [];
+    }
+    if (scoped) {
+        elCtx.$scopeIds$.push(styleContent(styleId));
+    }
+    if (hasStyle(containerState, styleId)) {
+        return styleId;
+    }
+    containerState.$styleIds$.add(styleId);
+    const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
+    const appendStyle = (styleText) => {
+        assertDefined(elCtx.$appendStyles$, 'appendStyles must be defined');
+        elCtx.$appendStyles$.push({
+            styleId,
+            content: transform(styleText, styleId),
+        });
+    };
+    if (isPromise(value)) {
+        iCtx.$waitOn$.push(value.then(appendStyle));
+    }
+    else {
+        appendStyle(value);
+    }
+    return styleId;
+};
+
+/**
+ * @alpha
+ */
+const useSignal = (initialState) => {
+    const { get, set, iCtx } = useSequentialScope();
+    if (get != null) {
+        return get;
+    }
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    const value = isFunction(initialState) ? initialState() : initialState;
+    const signal = _createSignal(value, containerState, undefined);
+    set(signal);
+    return signal;
+};
+
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Deprecated API, equivalent of doing:
+ *
+ * ```tsx
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isServer } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
+ * });
+ * ```
+ *
+ * @see `useTask`
+ * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ */
+// </docs>
+const useServerMountQrl = (mountQrl) => {
+    const { get, set, iCtx } = useSequentialScope();
+    if (get) {
+        return;
+    }
+    if (isServer()) {
+        assertQrl(mountQrl);
+        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
+        waitAndRun(iCtx, mountQrl);
+    }
+    set(true);
+};
+// <docs markdown="../readme.md#useServerMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useServerMount instead)
+/**
+ * Deprecated API, equivalent of doing:
+ *
+ * ```tsx
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isServer } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isServer) {
+ *     // only runs on server
+ *   }
+ * });
+ * ```
+ *
+ * @see `useTask`
+ * @public
+ * @deprecated - use `useTask$()` with `isServer` instead. See
+ */
+// </docs>
+const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
+// <docs markdown="../readme.md#useClientMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientMount instead)
+/**
+ * Deprecated API, equivalent of doing:
+ *
+ * ```tsx
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isBrowser } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
+ * });
+ * ```
+ *
+ * @see `useTask`
+ * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
+ */
+// </docs>
+const useClientMountQrl = (mountQrl) => {
+    const { get, set, iCtx } = useSequentialScope();
+    if (get) {
+        return;
+    }
+    if (!isServer()) {
+        assertQrl(mountQrl);
+        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
+        waitAndRun(iCtx, mountQrl);
+    }
+    set(true);
+};
+// <docs markdown="../readme.md#useClientMount">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useClientMount instead)
+/**
+ * Deprecated API, equivalent of doing:
+ *
+ * ```tsx
+ * import { useTask$ } from '@builder.io/qwik';
+ * import { isBrowser } from '@builder.io/qwik/build';
+ * useTask$(() => {
+ *   if (isBrowser) {
+ *     // only runs on server
+ *   }
+ * });
+ * ```
+ *
+ * @see `useTask`
+ * @public
+ * @deprecated - use `useTask$()` with `isBrowser` instead. See
+ * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
+ */
+// </docs>
+const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+const useMountQrl = useTaskQrl;
+/**
+ * @beta
+ * @deprecated - use `useTask$()` instead
+ */
+const useMount$ =  useTask$;
+
+/**
+ * @alpha
+ */
+const useErrorBoundary = () => {
+    const store = useStore({
+        error: undefined,
+    });
+    useOn('error-boundary', qrl('/runtime', 'error', [store]));
+    useContextProvider(ERROR_CONTEXT, store);
+    return store;
+};
+
+/**
+ * @alpha
+ */
+const useRender = (jsx) => {
+    const iCtx = useInvokeContext();
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+    let extraRender = elCtx.$extraRender$;
+    if (!extraRender) {
+        extraRender = elCtx.$extraRender$ = [];
+    }
+    extraRender.push(jsx);
+};
+
 const FLUSH_COMMENT = '<!--qkssr-f-->';
 const IS_HEAD = 1 << 0;
 const IS_HTML = 1 << 2;
@@ -6882,9 +7818,9 @@ const createDocument = () => {
     return doc;
 };
 /**
- * @alpha
+ * @internal
  */
-const renderSSR = async (node, opts) => {
+const _renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? '/');
@@ -7722,814 +8658,5 @@ const hasDynamicChildren = (node) => {
     return node.props[_IMMUTABLE]?.children === false;
 };
 
-// <docs markdown="../readme.md#useStore">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStore instead)
-/**
- * Creates an object that Qwik can track across serializations.
- *
- * Use `useStore` to create a state for your application. The returned object is a proxy that has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
- *
- * ### Example
- *
- * Example showing how `useStore` is used in Counter example to keep track of the count.
- *
- * ```tsx
- * const Stores = component$(() => {
- *   const counter = useCounter(1);
- *
- *   // Reactivity happens even for nested objects and arrays
- *   const userData = useStore({
- *     name: 'Manu',
- *     address: {
- *       address: '',
- *       city: '',
- *     },
- *     orgs: [],
- *   });
- *
- *   // useStore() can also accept a function to calculate the initial value
- *   const state = useStore(() => {
- *     return {
- *       value: expensiveInitialValue(),
- *     };
- *   });
- *
- *   return (
- *     <div>
- *       <div>Counter: {counter.value}</div>
- *       <Child userData={userData} state={state} />
- *     </div>
- *   );
- * });
- *
- * function useCounter(step: number) {
- *   // Multiple stores can be created in custom hooks for convenience and composability
- *   const counterStore = useStore({
- *     value: 0,
- *   });
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       counterStore.value += step;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *   return counterStore;
- * }
- * ```
- *
- * @public
- */
-// </docs>
-const useStore = (initialState, opts) => {
-    const { get, set, iCtx } = useSequentialScope();
-    if (get != null) {
-        return get;
-    }
-    const value = isFunction(initialState) ? initialState() : initialState;
-    if (opts?.reactive === false) {
-        set(value);
-        return value;
-    }
-    else {
-        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const recursive = opts?.deep ?? opts?.recursive ?? false;
-        const flags = recursive ? QObjectRecursive : 0;
-        const newStore = getOrCreateProxy(value, containerState, flags);
-        set(newStore);
-        return newStore;
-    }
-};
-
-// <docs markdown="../readme.md#useRef">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useRef instead)
-/**
- * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
- * to the `ref` property in JSX.
- *
- * ```tsx
- * export function useRef<T = Element>(current?: T): Ref<T> {
- *   return useStore({ current });
- * }
- * ```
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const input = useRef<HTMLInputElement>();
- *
- *   useClientEffect$(({ track }) => {
- *     const el = track(() => input.current)!;
- *     el.focus();
- *   });
- *
- *   return (
- *     <div>
- *       <input type="text" ref={input} />
- *     </div>
- *   );
- * });
- *
- * ```
- *
- * @deprecated Use `useSignal` instead.
- * @alpha
- */
-// </docs>
-const useRef = (current) => {
-    return useStore({ current });
-};
-
-/**
- * @alpha
- */
-const useId = () => {
-    const { get, set, elCtx, iCtx } = useSequentialScope();
-    if (get != null) {
-        return get;
-    }
-    const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || '';
-    const base = containerBase ? hashCode(containerBase) : '';
-    const hash = elCtx.$componentQrl$?.getHash() || '';
-    const counter = getNextIndex(iCtx.$renderCtx$) || '';
-    const id = `${base}-${hash}-${counter}`; // If no base and no hash, then "--#"
-    return set(id);
-};
-
-/**
- * @alpha
- */
-function useServerData(key, defaultValue) {
-    const ctx = useInvokeContext();
-    return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-}
-/**
- * @alpha
- * @deprecated Please use `useServerData` instead.
- */
-const useUserContext = useServerData;
-/**
- * @alpha
- * @deprecated Please use `useServerData` instead.
- */
-const useEnvData = useServerData;
-
-/* eslint-disable no-console */
-const STYLE_CACHE = new Map();
-const getScopedStyles = (css, scopeId) => {
-    if (qDev) {
-        return scopeStylesheet(css, scopeId);
-    }
-    let styleCss = STYLE_CACHE.get(scopeId);
-    if (!styleCss) {
-        STYLE_CACHE.set(scopeId, (styleCss = scopeStylesheet(css, scopeId)));
-    }
-    return styleCss;
-};
-const scopeStylesheet = (css, scopeId) => {
-    const end = css.length;
-    const out = [];
-    const stack = [];
-    let idx = 0;
-    let lastIdx = idx;
-    let mode = rule;
-    let lastCh = 0;
-    while (idx < end) {
-        let ch = css.charCodeAt(idx++);
-        if (ch === BACKSLASH) {
-            idx++;
-            ch = A; // Pretend it's a letter
-        }
-        const arcs = STATE_MACHINE[mode];
-        for (let i = 0; i < arcs.length; i++) {
-            const arc = arcs[i];
-            const [expectLastCh, expectCh, newMode] = arc;
-            if (expectLastCh === lastCh ||
-                expectLastCh === ANY ||
-                (expectLastCh === IDENT && isIdent(lastCh)) ||
-                (expectLastCh === WHITESPACE && isWhiteSpace(lastCh))) {
-                if (expectCh === ch ||
-                    expectCh === ANY ||
-                    (expectCh === IDENT && isIdent(ch)) ||
-                    (expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT) ||
-                    (expectCh === WHITESPACE && isWhiteSpace(ch))) {
-                    if (arc.length == 3 || lookAhead(arc)) {
-                        if (arc.length > 3) {
-                            // If matched on lookAhead than we we have to update current `ch`
-                            ch = css.charCodeAt(idx - 1);
-                        }
-                        // We found a match!
-                        if (newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
-                            if (newMode === EXIT_INSERT_SCOPE) {
-                                if (mode === starSelector && !shouldNotInsertScoping()) {
-                                    // Replace `*` with the scoping elementClassIdSelector.
-                                    if (isChainedSelector(ch)) {
-                                        // *foo
-                                        flush(idx - 2);
-                                    }
-                                    else {
-                                        // * (by itself)
-                                        insertScopingSelector(idx - 2);
-                                    }
-                                    lastIdx++;
-                                }
-                                else {
-                                    if (!isChainedSelector(ch)) {
-                                        // We are exiting one of the Selector so we may need to
-                                        const offset = expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0;
-                                        insertScopingSelector(idx - offset);
-                                    }
-                                }
-                            }
-                            if (expectCh === NOT_IDENT) {
-                                // NOT_IDENT is not a real character more like lack of what we expected.
-                                // if pseudoGlobal we need to give it a chance to exit as well.
-                                // For this reason we need to reparse the last character again.
-                                idx--;
-                                ch = lastCh;
-                            }
-                            do {
-                                mode = stack.pop() || rule;
-                                if (mode === pseudoGlobal) {
-                                    // Skip over the `)` in `:global(...)`.
-                                    flush(idx - 1);
-                                    lastIdx++;
-                                }
-                            } while (isSelfClosingRule(mode));
-                        }
-                        else {
-                            stack.push(mode);
-                            if (mode === pseudoGlobal && newMode === rule) {
-                                flush(idx - 8); // `:global(`.length
-                                lastIdx = idx; // skip over ":global("
-                            }
-                            else if (newMode === pseudoElement) {
-                                // We are entering pseudoElement `::foo`; insert scoping in front of it.
-                                insertScopingSelector(idx - 2);
-                            }
-                            mode = newMode;
-                        }
-                        break; // get out of the for loop as we found a match
-                    }
-                }
-            }
-        }
-        lastCh = ch;
-    }
-    flush(idx);
-    return out.join('');
-    function flush(idx) {
-        out.push(css.substring(lastIdx, idx));
-        lastIdx = idx;
-    }
-    function insertScopingSelector(idx) {
-        if (mode === pseudoGlobal || shouldNotInsertScoping())
-            return;
-        flush(idx);
-        out.push('.', ComponentStylesPrefixContent, scopeId);
-    }
-    function lookAhead(arc) {
-        let prefix = 0; // Ignore vendor prefixes such as `-webkit-`.
-        if (css.charCodeAt(idx) === DASH) {
-            for (let i = 1; i < 10; i++) {
-                // give up after 10 characters
-                if (css.charCodeAt(idx + i) === DASH) {
-                    prefix = i + 1;
-                    break;
-                }
-            }
-        }
-        words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
-            const txt = arc[arcIndx];
-            for (let i = 0; i < txt.length; i++) {
-                if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
-                    continue words;
-                }
-            }
-            // we found a match;
-            idx += txt.length + prefix;
-            return true;
-        }
-        return false;
-    }
-    function shouldNotInsertScoping() {
-        return stack.indexOf(pseudoGlobal) !== -1 || stack.indexOf(atRuleSelector) !== -1;
-    }
-};
-const isIdent = (ch) => {
-    return ((ch >= _0 && ch <= _9) ||
-        (ch >= A && ch <= Z) ||
-        (ch >= a && ch <= z) ||
-        ch >= 0x80 ||
-        ch === UNDERSCORE ||
-        ch === DASH);
-};
-const isChainedSelector = (ch) => {
-    return ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
-};
-const isSelfClosingRule = (mode) => {
-    return (mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal);
-};
-const isWhiteSpace = (ch) => {
-    return ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
-};
-const rule = 0; // top level initial space.
-const elementClassIdSelector = 1; // .elementClassIdSelector {}
-const starSelector = 2; // * {}
-const pseudoClassWithSelector = 3; // :pseudoClass(elementClassIdSelector) {}
-const pseudoClass = 4; // :pseudoClass {}
-const pseudoGlobal = 5; // :global(elementClassIdSelector)
-const pseudoElement = 6; // ::pseudoElement {}
-const attrSelector = 7; // [attr] {}
-const inertParenthesis = 8; // (ignored)
-const inertBlock = 9; // {ignored}
-const atRuleSelector = 10; // @keyframe elementClassIdSelector {}
-const atRuleBlock = 11; // @media {elementClassIdSelector {}}
-const atRuleInert = 12; // @atRule something;
-const body = 13; // .elementClassIdSelector {body}
-const stringSingle = 14; // 'text'
-const stringDouble = 15; // 'text'
-const commentMultiline = 16; // /* ... */
-// NOT REAL MODES
-const EXIT = 17; // Exit the mode
-const EXIT_INSERT_SCOPE = 18; // Exit the mode INSERT SCOPE
-const ANY = 0;
-const IDENT = 1;
-const NOT_IDENT = 2;
-const WHITESPACE = 3;
-const TAB = 9; // `\t`.charCodeAt(0);
-const NEWLINE = 10; // `\n`.charCodeAt(0);
-const CARRIAGE_RETURN = 13; // `\r`.charCodeAt(0);
-const SPACE = 32; // ` `.charCodeAt(0);
-const DOUBLE_QUOTE = 34; // `"`.charCodeAt(0);
-const HASH = 35; // `#`.charCodeAt(0);
-const SINGLE_QUOTE = 39; // `'`.charCodeAt(0);
-const OPEN_PARENTHESIS = 40; // `(`.charCodeAt(0);
-const CLOSE_PARENTHESIS = 41; // `)`.charCodeAt(0);
-const STAR = 42; // `*`.charCodeAt(0);
-// const COMMA = 44; // `,`.charCodeAt(0);
-const DASH = 45; // `-`.charCodeAt(0);
-const DOT = 46; // `.`.charCodeAt(0);
-const FORWARD_SLASH = 47; // `/`.charCodeAt(0);
-const _0 = 48; // `0`.charCodeAt(0);
-const _9 = 57; // `9`.charCodeAt(0);
-const COLON = 58; // `:`.charCodeAt(0);
-const SEMICOLON = 59; // `;`.charCodeAt(0);
-// const LESS_THAN = 60; // `<`.charCodeAt(0);
-const AT = 64; // `@`.charCodeAt(0);
-const A = 65; // `A`.charCodeAt(0);
-const Z = 90; // `Z`.charCodeAt(0);
-const OPEN_BRACKET = 91; // `[`.charCodeAt(0);
-const CLOSE_BRACKET = 93; // `]`.charCodeAt(0);
-const BACKSLASH = 92; // `\\`.charCodeAt(0);
-const UNDERSCORE = 95; // `_`.charCodeAt(0);
-const LOWERCASE = 0x20; // `a`.charCodeAt(0);
-const a = 97; // `a`.charCodeAt(0);
-// const d = 100; // `d`.charCodeAt(0);
-// const g = 103; // 'g'.charCodeAt(0);
-// const h = 104; // `h`.charCodeAt(0);
-// const i = 105; // `i`.charCodeAt(0);
-// const l = 108; // `l`.charCodeAt(0);
-// const t = 116; // `t`.charCodeAt(0);
-const z = 122; // `z`.charCodeAt(0);
-const OPEN_BRACE = 123; // `{`.charCodeAt(0);
-const CLOSE_BRACE = 125; // `}`.charCodeAt(0);
-const STRINGS_COMMENTS = /*__PURE__*/ (() => [
-    [ANY, SINGLE_QUOTE, stringSingle],
-    [ANY, DOUBLE_QUOTE, stringDouble],
-    [ANY, FORWARD_SLASH, commentMultiline, '*'],
-])();
-const STATE_MACHINE = /*__PURE__*/ (() => [
-    [
-        /// rule
-        [ANY, STAR, starSelector],
-        [ANY, OPEN_BRACKET, attrSelector],
-        [ANY, COLON, pseudoElement, ':'],
-        [ANY, COLON, pseudoGlobal, 'global'],
-        [
-            ANY,
-            COLON,
-            pseudoClassWithSelector,
-            'has',
-            'host-context',
-            'not',
-            'where',
-            'is',
-            'matches',
-            'any',
-        ],
-        [ANY, COLON, pseudoClass],
-        [ANY, IDENT, elementClassIdSelector],
-        [ANY, DOT, elementClassIdSelector],
-        [ANY, HASH, elementClassIdSelector],
-        [ANY, AT, atRuleSelector, 'keyframe'],
-        [ANY, AT, atRuleBlock, 'media', 'supports'],
-        [ANY, AT, atRuleInert],
-        [ANY, OPEN_BRACE, body],
-        [FORWARD_SLASH, STAR, commentMultiline],
-        [ANY, SEMICOLON, EXIT],
-        [ANY, CLOSE_BRACE, EXIT],
-        [ANY, CLOSE_PARENTHESIS, EXIT],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// elementClassIdSelector
-        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
-    ],
-    [
-        /// starSelector
-        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
-    ],
-    [
-        /// pseudoClassWithSelector
-        [ANY, OPEN_PARENTHESIS, rule],
-        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
-    ],
-    [
-        /// pseudoClass
-        [ANY, OPEN_PARENTHESIS, inertParenthesis],
-        [ANY, NOT_IDENT, EXIT_INSERT_SCOPE],
-    ],
-    [
-        /// pseudoGlobal
-        [ANY, OPEN_PARENTHESIS, rule],
-        [ANY, NOT_IDENT, EXIT],
-    ],
-    [
-        /// pseudoElement
-        [ANY, NOT_IDENT, EXIT],
-    ],
-    [
-        /// attrSelector
-        [ANY, CLOSE_BRACKET, EXIT_INSERT_SCOPE],
-        [ANY, SINGLE_QUOTE, stringSingle],
-        [ANY, DOUBLE_QUOTE, stringDouble],
-    ],
-    [
-        /// inertParenthesis
-        [ANY, CLOSE_PARENTHESIS, EXIT],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// inertBlock
-        [ANY, CLOSE_BRACE, EXIT],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// atRuleSelector
-        [ANY, CLOSE_BRACE, EXIT],
-        [WHITESPACE, IDENT, elementClassIdSelector],
-        [ANY, COLON, pseudoGlobal, 'global'],
-        [ANY, OPEN_BRACE, body],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// atRuleBlock
-        [ANY, OPEN_BRACE, rule],
-        [ANY, SEMICOLON, EXIT],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// atRuleInert
-        [ANY, SEMICOLON, EXIT],
-        [ANY, OPEN_BRACE, inertBlock],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// body
-        [ANY, CLOSE_BRACE, EXIT],
-        [ANY, OPEN_BRACE, body],
-        [ANY, OPEN_PARENTHESIS, inertParenthesis],
-        ...STRINGS_COMMENTS,
-    ],
-    [
-        /// stringSingle
-        [ANY, SINGLE_QUOTE, EXIT],
-    ],
-    [
-        /// stringDouble
-        [ANY, DOUBLE_QUOTE, EXIT],
-    ],
-    [
-        /// commentMultiline
-        [STAR, FORWARD_SLASH, EXIT],
-    ],
-])();
-
-// <docs markdown="../readme.md#useStyles">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStyles instead)
-/**
- * A lazy-loadable reference to a component's styles.
- *
- * Component styles allow Qwik to lazy load the style information for the component only when
- * needed. (And avoid double loading it in case of SSR hydration.)
- *
- * ```tsx
- * import styles from './code-block.css?inline';
- *
- * export const CmpStyles = component$(() => {
- *   useStyles$(styles);
- *
- *   return <div>Some text</div>;
- * });
- * ```
- *
- * @see `useStylesScoped`
- *
- * @public
- */
-// </docs>
-const useStylesQrl = (styles) => {
-    _useStyles(styles, (str) => str, false);
-};
-// <docs markdown="../readme.md#useStyles">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStyles instead)
-/**
- * A lazy-loadable reference to a component's styles.
- *
- * Component styles allow Qwik to lazy load the style information for the component only when
- * needed. (And avoid double loading it in case of SSR hydration.)
- *
- * ```tsx
- * import styles from './code-block.css?inline';
- *
- * export const CmpStyles = component$(() => {
- *   useStyles$(styles);
- *
- *   return <div>Some text</div>;
- * });
- * ```
- *
- * @see `useStylesScoped`
- *
- * @public
- */
-// </docs>
-const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
-// <docs markdown="../readme.md#useStylesScoped">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStylesScoped instead)
-/**
- * A lazy-loadable reference to a component's styles, that is scoped to the component.
- *
- * Component styles allow Qwik to lazy load the style information for the component only when
- * needed. (And avoid double loading it in case of SSR hydration.)
- *
- * ```tsx
- * import scoped from './code-block.css?inline';
- *
- * export const CmpScopedStyles = component$(() => {
- *   useStylesScoped$(scoped);
- *
- *   return <div>Some text</div>;
- * });
- * ```
- *
- * @see `useStyles`
- *
- * @alpha
- */
-// </docs>
-const useStylesScopedQrl = (styles) => {
-    return {
-        scopeId: ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true),
-    };
-};
-// <docs markdown="../readme.md#useStylesScoped">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useStylesScoped instead)
-/**
- * A lazy-loadable reference to a component's styles, that is scoped to the component.
- *
- * Component styles allow Qwik to lazy load the style information for the component only when
- * needed. (And avoid double loading it in case of SSR hydration.)
- *
- * ```tsx
- * import scoped from './code-block.css?inline';
- *
- * export const CmpScopedStyles = component$(() => {
- *   useStylesScoped$(scoped);
- *
- *   return <div>Some text</div>;
- * });
- * ```
- *
- * @see `useStyles`
- *
- * @alpha
- */
-// </docs>
-const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
-const _useStyles = (styleQrl, transform, scoped) => {
-    assertQrl(styleQrl);
-    const { get, set, iCtx, i, elCtx } = useSequentialScope();
-    if (get) {
-        return get;
-    }
-    const styleId = styleKey(styleQrl, i);
-    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    set(styleId);
-    if (!elCtx.$appendStyles$) {
-        elCtx.$appendStyles$ = [];
-    }
-    if (!elCtx.$scopeIds$) {
-        elCtx.$scopeIds$ = [];
-    }
-    if (scoped) {
-        elCtx.$scopeIds$.push(styleContent(styleId));
-    }
-    if (hasStyle(containerState, styleId)) {
-        return styleId;
-    }
-    containerState.$styleIds$.add(styleId);
-    const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
-    const appendStyle = (styleText) => {
-        assertDefined(elCtx.$appendStyles$, 'appendStyles must be defined');
-        elCtx.$appendStyles$.push({
-            styleId,
-            content: transform(styleText, styleId),
-        });
-    };
-    if (isPromise(value)) {
-        iCtx.$waitOn$.push(value.then(appendStyle));
-    }
-    else {
-        appendStyle(value);
-    }
-    return styleId;
-};
-
-/**
- * @alpha
- */
-const useSignal = (initialState) => {
-    const { get, set, iCtx } = useSequentialScope();
-    if (get != null) {
-        return get;
-    }
-    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const value = isFunction(initialState) ? initialState() : initialState;
-    const signal = createSignal(value, containerState, undefined);
-    set(signal);
-    return signal;
-};
-
-// <docs markdown="../readme.md#useServerMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useServerMount instead)
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '@builder.io/qwik';
- * import { isServer } from '@builder.io/qwik/build';
- * useTask$(() => {
- *   if (isServer) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- */
-// </docs>
-const useServerMountQrl = (mountQrl) => {
-    const { get, set, iCtx } = useSequentialScope();
-    if (get) {
-        return;
-    }
-    if (isServer()) {
-        assertQrl(mountQrl);
-        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
-        waitAndRun(iCtx, mountQrl);
-    }
-    set(true);
-};
-// <docs markdown="../readme.md#useServerMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useServerMount instead)
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '@builder.io/qwik';
- * import { isServer } from '@builder.io/qwik/build';
- * useTask$(() => {
- *   if (isServer) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- */
-// </docs>
-const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
-// <docs markdown="../readme.md#useClientMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientMount instead)
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '@builder.io/qwik';
- * import { isBrowser } from '@builder.io/qwik/build';
- * useTask$(() => {
- *   if (isBrowser) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isBrowser` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
- */
-// </docs>
-const useClientMountQrl = (mountQrl) => {
-    const { get, set, iCtx } = useSequentialScope();
-    if (get) {
-        return;
-    }
-    if (!isServer()) {
-        assertQrl(mountQrl);
-        mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
-        waitAndRun(iCtx, mountQrl);
-    }
-    set(true);
-};
-// <docs markdown="../readme.md#useClientMount">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useClientMount instead)
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '@builder.io/qwik';
- * import { isBrowser } from '@builder.io/qwik/build';
- * useTask$(() => {
- *   if (isBrowser) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isBrowser` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
- */
-// </docs>
-const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
-/**
- * @beta
- * @deprecated - use `useTask$()` instead
- */
-const useMountQrl = useTaskQrl;
-/**
- * @beta
- * @deprecated - use `useTask$()` instead
- */
-const useMount$ =  useTask$;
-
-/**
- * @alpha
- */
-const useErrorBoundary = () => {
-    const store = useStore({
-        error: undefined,
-    });
-    useOn('error-boundary', qrl('/runtime', 'error', [store]));
-    useContextProvider(ERROR_CONTEXT, store);
-    return store;
-};
-
-/**
- * @alpha
- */
-const useRender = (jsx) => {
-    const iCtx = useInvokeContext();
-    const hostElement = iCtx.$hostElement$;
-    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    let extraRender = elCtx.$extraRender$;
-    if (!extraRender) {
-        extraRender = elCtx.$extraRender$ = [];
-    }
-    extraRender.push(jsx);
-};
-
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _hW, _noopQrl, _pauseFromContexts, _restProps, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, renderSSR, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _createSignal, _deserializeData, _getContainerState, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
