@@ -334,10 +334,6 @@
     const QObjectFlagsSymbol = Symbol("proxy flags");
     const QObjectManagerSymbol = Symbol("proxy manager");
     const _IMMUTABLE = Symbol("IMMUTABLE");
-    const _createSignal = (value, containerState, subcriptions) => {
-        const manager = containerState.$subsManager$.$createManager$(subcriptions);
-        return new SignalImpl(value, manager);
-    };
     class SignalImpl {
         constructor(v, manager) {
             this.untrackedValue = v, this[QObjectManagerSymbol] = manager;
@@ -3864,7 +3860,7 @@
         return jsx(Virtual, {
             "q:s": ""
         }, name);
-    }, exports._IMMUTABLE = _IMMUTABLE, exports._createSignal = _createSignal, exports._deserializeData = data => {
+    }, exports._IMMUTABLE = _IMMUTABLE, exports._deserializeData = data => {
         const [mainID, convertedObjs] = JSON.parse(data);
         const parser = createParser({}, {});
         reviveValues(convertedObjs, parser);
@@ -3873,7 +3869,7 @@
             reviveNestedObjects(obj, getObject, parser);
         }
         return getObject(mainID);
-    }, exports._getContainerState = _getContainerState, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
+    }, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
     exports._pauseFromContexts = _pauseFromContexts, exports._renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
@@ -4125,8 +4121,10 @@
             return get;
         }
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const value = isFunction(initialState) ? initialState() : initialState;
-        const signal = _createSignal(value, containerState, void 0);
+        const signal = ((value, containerState, subcriptions) => {
+            const manager = containerState.$subsManager$.$createManager$(void 0);
+            return new SignalImpl(value, manager);
+        })(isFunction(initialState) ? initialState() : initialState, containerState);
         return set(signal), signal;
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
