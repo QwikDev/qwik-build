@@ -334,6 +334,10 @@
     const QObjectFlagsSymbol = Symbol("proxy flags");
     const QObjectManagerSymbol = Symbol("proxy manager");
     const _IMMUTABLE = Symbol("IMMUTABLE");
+    const _createSignal = (value, containerState, subcriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(subcriptions);
+        return new SignalImpl(value, manager);
+    };
     class SignalImpl {
         constructor(v, manager) {
             this.untrackedValue = v, this[QObjectManagerSymbol] = manager;
@@ -575,7 +579,7 @@
         elCtx.$flags$ |= 2;
     };
     const CONTAINER_STATE = Symbol("ContainerState");
-    const getContainerState = containerEl => {
+    const _getContainerState = containerEl => {
         let set = containerEl[CONTAINER_STATE];
         return set || (isServer(), containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
         set;
@@ -1887,7 +1891,8 @@
                 if (isSerializableObject(obj)) {
                     const output = {};
                     for (const key of Object.keys(obj)) {
-                        output[key] = mustGetObjId(obj[key]);
+                        const id = getObjId(obj[key]);
+                        null !== id && (output[key] = id);
                     }
                     return output;
                 }
@@ -2052,7 +2057,7 @@
                     if (seen.has(obj)) {
                         return;
                     }
-                    if (seen.add(obj), !fastShouldSerialize(obj)) {
+                    if (seen.add(obj), fastSkipSerialize(obj)) {
                         return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
                     }
                     const input = obj;
@@ -2061,7 +2066,10 @@
                         if (obj = target, seen.has(obj)) {
                             return;
                         }
-                        seen.add(obj), leaks && collectSubscriptions(getProxyManager(input), collector);
+                        if (seen.add(obj), fastWeakSerialize(input)) {
+                            return void collector.$objSet$.add(obj);
+                        }
+                        leaks && collectSubscriptions(getProxyManager(input), collector);
                     }
                     if (collectDeps(obj, collector, leaks)) {
                         return void collector.$objSet$.add(obj);
@@ -2154,7 +2162,7 @@
         if (!getQwikJSON(parentJSON)) {
             return;
         }
-        const containerState = getContainerState(containerEl);
+        const containerState = _getContainerState(containerEl);
         moveStyles(containerEl, containerState);
         const elements = new Map;
         let node = null;
@@ -2308,7 +2316,7 @@
                     throw qError(21);
                 }
                 const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-                const containerState = getContainerState(containerEl);
+                const containerState = _getContainerState(containerEl);
                 const contexts = ((parent, predicate) => {
                     const results = [];
                     const v = predicate(parent);
@@ -2362,7 +2370,7 @@
                 return eventsScript.textContent = `window.qwikevents||=[];window.qwikevents.push(${extraListeners.join(", ")})`, 
                 parentJSON.appendChild(eventsScript), data;
             })(containerEl),
-            state: getContainerState(containerEl)
+            state: _getContainerState(containerEl)
         };
     };
     const getID = stuff => {
@@ -2378,7 +2386,7 @@
             const el = context.$element$;
             const container = getWrappingContainer(el);
             qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), resumeIfNeeded(container);
-            const elCtx = getContext(el, getContainerState(container));
+            const elCtx = getContext(el, _getContainerState(container));
             inflateQrl(qrl, elCtx);
         }
         return qrl.$captureRef$;
@@ -2419,7 +2427,7 @@
     containerState.$renderPromise$);
     const _hW = () => {
         const [watch] = useLexicalScope();
-        notifyWatch(watch, getContainerState(getWrappingContainer(watch.$el$)));
+        notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
     };
     const renderMarked = async containerState => {
         const doc = getDocument(containerState.$containerEl$);
@@ -2867,7 +2875,14 @@
     }, {
         prefix: "",
         test: v => v instanceof SignalWrapper,
-        collect: (obj, collector, leaks) => (collectValue(obj.ref, collector, leaks), obj),
+        collect(obj, collector, leaks) {
+            if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
+                const manager = getProxyManager(obj.ref);
+                manager.$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks), 
+                collectSubscriptions(manager, collector);
+            }
+            return obj;
+        },
         serialize: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
         prepare: data => {
             const [id, prop] = data.split(" ");
@@ -2963,8 +2978,10 @@
         _: obj => Promise.reject(obj)
     };
     const noSerializeSet = new WeakSet;
+    const weakSerializeSet = new WeakSet;
     const shouldSerialize = obj => !isObject(obj) && !isFunction(obj) || !noSerializeSet.has(obj);
-    const fastShouldSerialize = obj => !noSerializeSet.has(obj);
+    const fastSkipSerialize = obj => noSerializeSet.has(obj);
+    const fastWeakSerialize = obj => weakSerializeSet.has(obj);
     const noSerialize = input => (null != input && noSerializeSet.add(input), input);
     const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     const getProxyTarget = obj => obj[QOjectTargetSymbol];
@@ -3050,6 +3067,19 @@
                 const compare = sub[sub.length - 1];
                 key && compare && compare !== key || notifyChange(sub, this.$containerState$);
             }
+        }
+        $isTreeshakeable$(prop) {
+            const subs = this.$subs$;
+            const groups = this.$groupToManagers$;
+            for (const sub of subs) {
+                if (prop === sub[sub.length - 1]) {
+                    const group = groups.get(sub[1]);
+                    if (group.length > 1 && group.some((g => g !== this && g.$subs$.some((s => 0 === s[0]))))) {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
     }
     const must = a => {
@@ -3167,6 +3197,179 @@
         }
         return dst;
     };
+    const useStore = (initialState, opts) => {
+        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+        if (null != get) {
+            return get;
+        }
+        const value = isFunction(initialState) ? initialState() : initialState;
+        if (false === opts?.reactive) {
+            return set(value), value;
+        }
+        {
+            const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+            const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
+            return set(newStore), newStore;
+        }
+    };
+    function useServerData(key, defaultValue) {
+        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+    }
+    const useUserContext = useServerData;
+    const useEnvData = useServerData;
+    const STYLE_CACHE = new Map;
+    const getScopedStyles = (css, scopeId) => {
+        let styleCss = STYLE_CACHE.get(scopeId);
+        return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 
+        styleCss;
+    };
+    const scopeStylesheet = (css, scopeId) => {
+        const end = css.length;
+        const out = [];
+        const stack = [];
+        let idx = 0;
+        let lastIdx = idx;
+        let mode = rule;
+        let lastCh = 0;
+        for (;idx < end; ) {
+            const chIdx = idx;
+            let ch = css.charCodeAt(idx++);
+            ch === BACKSLASH && (idx++, ch = A);
+            const arcs = STATE_MACHINE[mode];
+            for (let i = 0; i < arcs.length; i++) {
+                const arc = arcs[i];
+                const [expectLastCh, expectCh, newMode] = arc;
+                if ((expectLastCh === lastCh || expectLastCh === ANY || expectLastCh === IDENT && isIdent(lastCh) || expectLastCh === WHITESPACE && isWhiteSpace(lastCh)) && (expectCh === ch || expectCh === ANY || expectCh === IDENT && isIdent(ch) || expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT || expectCh === WHITESPACE && isWhiteSpace(ch)) && (3 == arc.length || lookAhead(arc))) {
+                    if (arc.length > 3 && (ch = css.charCodeAt(idx - 1)), newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
+                        newMode === EXIT_INSERT_SCOPE && (mode !== starSelector || shouldNotInsertScoping() ? isChainedSelector(ch) || insertScopingSelector(idx - (expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0)) : (isChainedSelector(ch) ? flush(idx - 2) : insertScopingSelector(idx - 2), 
+                        lastIdx++)), expectCh === NOT_IDENT && (idx--, ch = lastCh);
+                        do {
+                            mode = stack.pop() || rule, mode === pseudoGlobal && (flush(idx - 1), lastIdx++);
+                        } while (isSelfClosingRule(mode));
+                    } else {
+                        stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(chIdx), 
+                        mode = newMode;
+                    }
+                    break;
+                }
+            }
+            lastCh = ch;
+        }
+        return flush(idx), out.join("");
+        function flush(idx) {
+            out.push(css.substring(lastIdx, idx)), lastIdx = idx;
+        }
+        function insertScopingSelector(idx) {
+            mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", "⭐️", scopeId));
+        }
+        function lookAhead(arc) {
+            let prefix = 0;
+            if (css.charCodeAt(idx) === DASH) {
+                for (let i = 1; i < 10; i++) {
+                    if (css.charCodeAt(idx + i) === DASH) {
+                        prefix = i + 1;
+                        break;
+                    }
+                }
+            }
+            words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
+                const txt = arc[arcIndx];
+                for (let i = 0; i < txt.length; i++) {
+                    if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
+                        continue words;
+                    }
+                }
+                return idx += txt.length + prefix, true;
+            }
+            return false;
+        }
+        function shouldNotInsertScoping() {
+            return -1 !== stack.indexOf(pseudoGlobal) || -1 !== stack.indexOf(atRuleSelector);
+        }
+    };
+    const isIdent = ch => ch >= _0 && ch <= _9 || ch >= A && ch <= Z || ch >= a && ch <= z || ch >= 128 || ch === UNDERSCORE || ch === DASH;
+    const isChainedSelector = ch => ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
+    const isSelfClosingRule = mode => mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal;
+    const isWhiteSpace = ch => ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
+    const rule = 0;
+    const starSelector = 2;
+    const pseudoGlobal = 5;
+    const pseudoElement = 6;
+    const atRuleSelector = 10;
+    const atRuleBlock = 11;
+    const atRuleInert = 12;
+    const EXIT = 17;
+    const EXIT_INSERT_SCOPE = 18;
+    const ANY = 0;
+    const IDENT = 1;
+    const NOT_IDENT = 2;
+    const WHITESPACE = 3;
+    const TAB = 9;
+    const NEWLINE = 10;
+    const CARRIAGE_RETURN = 13;
+    const SPACE = 32;
+    const HASH = 35;
+    const CLOSE_PARENTHESIS = 41;
+    const DASH = 45;
+    const DOT = 46;
+    const _0 = 48;
+    const _9 = 57;
+    const COLON = 58;
+    const A = 65;
+    const Z = 90;
+    const OPEN_BRACKET = 91;
+    const BACKSLASH = 92;
+    const UNDERSCORE = 95;
+    const LOWERCASE = 32;
+    const a = 97;
+    const z = 122;
+    const STRINGS_COMMENTS = [ [ ANY, 39, 14 ], [ ANY, 34, 15 ], [ ANY, 47, 16, "*" ] ];
+    const STATE_MACHINE = [ [ [ ANY, 42, starSelector ], [ ANY, OPEN_BRACKET, 7 ], [ ANY, COLON, pseudoElement, ":", "before", "after", "first-letter", "first-line" ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, COLON, 3, "has", "host-context", "not", "where", "is", "matches", "any" ], [ ANY, COLON, 4 ], [ ANY, IDENT, 1 ], [ ANY, DOT, 1 ], [ ANY, HASH, 1 ], [ ANY, 64, atRuleSelector, "keyframe" ], [ ANY, 64, atRuleBlock, "media", "supports" ], [ ANY, 64, atRuleInert ], [ ANY, 123, 13 ], [ 47, 42, 16 ], [ ANY, 59, EXIT ], [ ANY, 125, EXIT ], [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, 8 ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, 93, EXIT_INSERT_SCOPE ], [ ANY, 39, 14 ], [ ANY, 34, 15 ] ], [ [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ WHITESPACE, IDENT, 1 ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, 123, 13 ], ...STRINGS_COMMENTS ], [ [ ANY, 123, rule ], [ ANY, 59, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 59, EXIT ], [ ANY, 123, 9 ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ ANY, 123, 13 ], [ ANY, 40, 8 ], ...STRINGS_COMMENTS ], [ [ ANY, 39, EXIT ] ], [ [ ANY, 34, EXIT ] ], [ [ 42, 47, EXIT ] ] ];
+    const useStylesQrl = styles => {
+        _useStyles(styles, (str => str), false);
+    };
+    const useStyles$ = implicit$FirstArg(useStylesQrl);
+    const useStylesScopedQrl = styles => ({
+        scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
+    });
+    const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
+    const _useStyles = (styleQrl, transform, scoped) => {
+        const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
+        if (get) {
+            return get;
+        }
+        const styleId = (index = i, `${hashCode(styleQrl.$hash$)}-${index}`);
+        var index;
+        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+        if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
+        scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
+            return styleId;
+        }
+        containerState.$styleIds$.add(styleId);
+        const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
+        const appendStyle = styleText => {
+            elCtx.$appendStyles$, elCtx.$appendStyles$.push({
+                styleId: styleId,
+                content: transform(styleText, styleId)
+            });
+        };
+        return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
+        styleId;
+    };
+    const useServerMountQrl = mountQrl => {
+        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+        get || (isServer() && (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(iCtx, mountQrl)), set(true));
+    };
+    const useServerMount$ = implicit$FirstArg(useServerMountQrl);
+    const useClientMountQrl = mountQrl => {
+        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+        get || (isServer() || (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+        waitAndRun(iCtx, mountQrl)), set(true));
+    };
+    const useClientMount$ = implicit$FirstArg(useClientMountQrl);
+    const useMountQrl = useTaskQrl;
+    const useMount$ = useTask$;
     const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const props = node.props;
         const renderQrl = props["q:renderFn"];
@@ -3612,178 +3815,6 @@
     };
     const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
     const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
-    const useStore = (initialState, opts) => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-        if (null != get) {
-            return get;
-        }
-        const value = isFunction(initialState) ? initialState() : initialState;
-        if (false === opts?.reactive) {
-            return set(value), value;
-        }
-        {
-            const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
-            return set(newStore), newStore;
-        }
-    };
-    function useServerData(key, defaultValue) {
-        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }
-    const useUserContext = useServerData;
-    const useEnvData = useServerData;
-    const STYLE_CACHE = new Map;
-    const getScopedStyles = (css, scopeId) => {
-        let styleCss = STYLE_CACHE.get(scopeId);
-        return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 
-        styleCss;
-    };
-    const scopeStylesheet = (css, scopeId) => {
-        const end = css.length;
-        const out = [];
-        const stack = [];
-        let idx = 0;
-        let lastIdx = idx;
-        let mode = rule;
-        let lastCh = 0;
-        for (;idx < end; ) {
-            let ch = css.charCodeAt(idx++);
-            ch === BACKSLASH && (idx++, ch = A);
-            const arcs = STATE_MACHINE[mode];
-            for (let i = 0; i < arcs.length; i++) {
-                const arc = arcs[i];
-                const [expectLastCh, expectCh, newMode] = arc;
-                if ((expectLastCh === lastCh || expectLastCh === ANY || expectLastCh === IDENT && isIdent(lastCh) || expectLastCh === WHITESPACE && isWhiteSpace(lastCh)) && (expectCh === ch || expectCh === ANY || expectCh === IDENT && isIdent(ch) || expectCh === NOT_IDENT && !isIdent(ch) && ch !== DOT || expectCh === WHITESPACE && isWhiteSpace(ch)) && (3 == arc.length || lookAhead(arc))) {
-                    if (arc.length > 3 && (ch = css.charCodeAt(idx - 1)), newMode === EXIT || newMode == EXIT_INSERT_SCOPE) {
-                        newMode === EXIT_INSERT_SCOPE && (mode !== starSelector || shouldNotInsertScoping() ? isChainedSelector(ch) || insertScopingSelector(idx - (expectCh == NOT_IDENT ? 1 : expectCh == CLOSE_PARENTHESIS ? 2 : 0)) : (isChainedSelector(ch) ? flush(idx - 2) : insertScopingSelector(idx - 2), 
-                        lastIdx++)), expectCh === NOT_IDENT && (idx--, ch = lastCh);
-                        do {
-                            mode = stack.pop() || rule, mode === pseudoGlobal && (flush(idx - 1), lastIdx++);
-                        } while (isSelfClosingRule(mode));
-                    } else {
-                        stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(idx - 2), 
-                        mode = newMode;
-                    }
-                    break;
-                }
-            }
-            lastCh = ch;
-        }
-        return flush(idx), out.join("");
-        function flush(idx) {
-            out.push(css.substring(lastIdx, idx)), lastIdx = idx;
-        }
-        function insertScopingSelector(idx) {
-            mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", "⭐️", scopeId));
-        }
-        function lookAhead(arc) {
-            let prefix = 0;
-            if (css.charCodeAt(idx) === DASH) {
-                for (let i = 1; i < 10; i++) {
-                    if (css.charCodeAt(idx + i) === DASH) {
-                        prefix = i + 1;
-                        break;
-                    }
-                }
-            }
-            words: for (let arcIndx = 3; arcIndx < arc.length; arcIndx++) {
-                const txt = arc[arcIndx];
-                for (let i = 0; i < txt.length; i++) {
-                    if ((css.charCodeAt(idx + i + prefix) | LOWERCASE) !== txt.charCodeAt(i)) {
-                        continue words;
-                    }
-                }
-                return idx += txt.length + prefix, true;
-            }
-            return false;
-        }
-        function shouldNotInsertScoping() {
-            return -1 !== stack.indexOf(pseudoGlobal) || -1 !== stack.indexOf(atRuleSelector);
-        }
-    };
-    const isIdent = ch => ch >= _0 && ch <= _9 || ch >= A && ch <= Z || ch >= a && ch <= z || ch >= 128 || ch === UNDERSCORE || ch === DASH;
-    const isChainedSelector = ch => ch === COLON || ch === DOT || ch === OPEN_BRACKET || ch === HASH || isIdent(ch);
-    const isSelfClosingRule = mode => mode === atRuleBlock || mode === atRuleSelector || mode === atRuleInert || mode === pseudoGlobal;
-    const isWhiteSpace = ch => ch === SPACE || ch === TAB || ch === NEWLINE || ch === CARRIAGE_RETURN;
-    const rule = 0;
-    const starSelector = 2;
-    const pseudoGlobal = 5;
-    const pseudoElement = 6;
-    const atRuleSelector = 10;
-    const atRuleBlock = 11;
-    const atRuleInert = 12;
-    const EXIT = 17;
-    const EXIT_INSERT_SCOPE = 18;
-    const ANY = 0;
-    const IDENT = 1;
-    const NOT_IDENT = 2;
-    const WHITESPACE = 3;
-    const TAB = 9;
-    const NEWLINE = 10;
-    const CARRIAGE_RETURN = 13;
-    const SPACE = 32;
-    const HASH = 35;
-    const CLOSE_PARENTHESIS = 41;
-    const DASH = 45;
-    const DOT = 46;
-    const _0 = 48;
-    const _9 = 57;
-    const COLON = 58;
-    const A = 65;
-    const Z = 90;
-    const OPEN_BRACKET = 91;
-    const BACKSLASH = 92;
-    const UNDERSCORE = 95;
-    const LOWERCASE = 32;
-    const a = 97;
-    const z = 122;
-    const STRINGS_COMMENTS = [ [ ANY, 39, 14 ], [ ANY, 34, 15 ], [ ANY, 47, 16, "*" ] ];
-    const STATE_MACHINE = [ [ [ ANY, 42, starSelector ], [ ANY, OPEN_BRACKET, 7 ], [ ANY, COLON, pseudoElement, ":" ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, COLON, 3, "has", "host-context", "not", "where", "is", "matches", "any" ], [ ANY, COLON, 4 ], [ ANY, IDENT, 1 ], [ ANY, DOT, 1 ], [ ANY, HASH, 1 ], [ ANY, 64, atRuleSelector, "keyframe" ], [ ANY, 64, atRuleBlock, "media", "supports" ], [ ANY, 64, atRuleInert ], [ ANY, 123, 13 ], [ 47, 42, 16 ], [ ANY, 59, EXIT ], [ ANY, 125, EXIT ], [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, 8 ], [ ANY, NOT_IDENT, EXIT_INSERT_SCOPE ] ], [ [ ANY, 40, rule ], [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, NOT_IDENT, EXIT ] ], [ [ ANY, 93, EXIT_INSERT_SCOPE ], [ ANY, 39, 14 ], [ ANY, 34, 15 ] ], [ [ ANY, CLOSE_PARENTHESIS, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ WHITESPACE, IDENT, 1 ], [ ANY, COLON, pseudoGlobal, "global" ], [ ANY, 123, 13 ], ...STRINGS_COMMENTS ], [ [ ANY, 123, rule ], [ ANY, 59, EXIT ], ...STRINGS_COMMENTS ], [ [ ANY, 59, EXIT ], [ ANY, 123, 9 ], ...STRINGS_COMMENTS ], [ [ ANY, 125, EXIT ], [ ANY, 123, 13 ], [ ANY, 40, 8 ], ...STRINGS_COMMENTS ], [ [ ANY, 39, EXIT ] ], [ [ ANY, 34, EXIT ] ], [ [ 42, 47, EXIT ] ] ];
-    const useStylesQrl = styles => {
-        _useStyles(styles, (str => str), false);
-    };
-    const useStyles$ = implicit$FirstArg(useStylesQrl);
-    const useStylesScopedQrl = styles => ({
-        scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
-    });
-    const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
-    const _useStyles = (styleQrl, transform, scoped) => {
-        const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
-        if (get) {
-            return get;
-        }
-        const styleId = (index = i, `${hashCode(styleQrl.$hash$)}-${index}`);
-        var index;
-        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
-        scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
-            return styleId;
-        }
-        containerState.$styleIds$.add(styleId);
-        const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
-        const appendStyle = styleText => {
-            elCtx.$appendStyles$, elCtx.$appendStyles$.push({
-                styleId: styleId,
-                content: transform(styleText, styleId)
-            });
-        };
-        return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
-        styleId;
-    };
-    const useServerMountQrl = mountQrl => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-        get || (isServer() && (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-        waitAndRun(iCtx, mountQrl)), set(true));
-    };
-    const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-    const useClientMountQrl = mountQrl => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-        get || (isServer() || (mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-        waitAndRun(iCtx, mountQrl)), set(true));
-    };
-    const useClientMount$ = implicit$FirstArg(useClientMountQrl);
-    const useMountQrl = useTaskQrl;
-    const useMount$ = useTask$;
     exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServer();
         const resource = props.value;
@@ -3833,7 +3864,7 @@
         return jsx(Virtual, {
             "q:s": ""
         }, name);
-    }, exports._IMMUTABLE = _IMMUTABLE, exports._deserializeData = data => {
+    }, exports._IMMUTABLE = _IMMUTABLE, exports._createSignal = _createSignal, exports._deserializeData = data => {
         const [mainID, convertedObjs] = JSON.parse(data);
         const parser = createParser({}, {});
         reviveValues(convertedObjs, parser);
@@ -3842,8 +3873,51 @@
             reviveNestedObjects(obj, getObject, parser);
         }
         return getObject(mainID);
-    }, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
-    exports._pauseFromContexts = _pauseFromContexts, exports._restProps = (props, omit) => {
+    }, exports._getContainerState = _getContainerState, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
+    exports._pauseFromContexts = _pauseFromContexts, exports._renderSSR = async (node, opts) => {
+        const root = opts.containerTagName;
+        const containerEl = createSSRContext(1).$element$;
+        const containerState = createContainerState(containerEl, opts.base ?? "/");
+        containerState.$serverData$.locale = opts.serverData?.locale;
+        const rCtx = createRenderContext({
+            nodeType: 9
+        }, containerState);
+        const headNodes = opts.beforeContent ?? [];
+        const ssrCtx = {
+            $static$: {
+                $contexts$: [],
+                $dynamic$: false,
+                $headNodes$: "html" === root ? headNodes : [],
+                $locale$: opts.serverData?.locale
+            },
+            $projectedChildren$: void 0,
+            $projectedCtxs$: void 0,
+            $invocationContext$: void 0
+        };
+        let qRender = "ssr";
+        opts.containerAttributes["q:render"] && (qRender = `${opts.containerAttributes["q:render"]}-${qRender}`);
+        const containerAttributes = {
+            ...opts.containerAttributes,
+            "q:container": "paused",
+            "q:version": "0.16.2",
+            "q:render": qRender,
+            "q:base": opts.base,
+            "q:locale": opts.serverData?.locale,
+            children: "html" === root ? [ node ] : [ headNodes, node ]
+        };
+        "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
+        containerState.$serverData$ = {
+            url: opts.url,
+            ...opts.serverData
+        }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
+        containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
+            const beforeClose = opts.beforeClose;
+            return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
+                return processData(result, rCtx, ssrCtx, stream, 0, void 0);
+            } : void 0), rCtx;
+        })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
+    }, exports._restProps = (props, omit) => {
         const rest = {};
         for (const key in props) {
             omit.includes(key) || (rest[key] = props[key]);
@@ -3910,7 +3984,7 @@
             throw qError(3, obj);
         }));
         return JSON.stringify([ mustGetObjId(data), convertedObjs ]);
-    }, exports._wrapSignal = (obj, prop) => {
+    }, exports._weakSerialize = input => (weakSerializeSet.add(input), input), exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];
         }
@@ -3981,7 +4055,7 @@
             directSetAttribute(containerEl, "q:version", "0.16.2"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
-        const containerState = getContainerState(containerEl);
+        const containerState = _getContainerState(containerEl);
         const serverData = opts?.serverData;
         serverData && Object.assign(containerState.$serverData$, serverData), containerState.$hostsRendering$ = new Set, 
         containerState.$renderPromise$ = (async (parent, jsxNode, doc, containerState, containerEl) => {
@@ -3999,49 +4073,6 @@
         })(containerEl, jsxNode, doc, containerState);
         const renderCtx = await containerState.$renderPromise$;
         await postRendering(containerState, renderCtx);
-    }, exports.renderSSR = async (node, opts) => {
-        const root = opts.containerTagName;
-        const containerEl = createSSRContext(1).$element$;
-        const containerState = createContainerState(containerEl, opts.base ?? "/");
-        containerState.$serverData$.locale = opts.serverData?.locale;
-        const rCtx = createRenderContext({
-            nodeType: 9
-        }, containerState);
-        const headNodes = opts.beforeContent ?? [];
-        const ssrCtx = {
-            $static$: {
-                $contexts$: [],
-                $dynamic$: false,
-                $headNodes$: "html" === root ? headNodes : [],
-                $locale$: opts.serverData?.locale
-            },
-            $projectedChildren$: void 0,
-            $projectedCtxs$: void 0,
-            $invocationContext$: void 0
-        };
-        let qRender = "ssr";
-        opts.containerAttributes["q:render"] && (qRender = `${opts.containerAttributes["q:render"]}-${qRender}`);
-        const containerAttributes = {
-            ...opts.containerAttributes,
-            "q:container": "paused",
-            "q:version": "0.16.2",
-            "q:render": qRender,
-            "q:base": opts.base,
-            "q:locale": opts.serverData?.locale,
-            children: "html" === root ? [ node ] : [ headNodes, node ]
-        };
-        "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-        containerState.$serverData$ = {
-            url: opts.url,
-            ...opts.serverData
-        }, node = jsx(root, containerAttributes), containerState.$hostsRendering$ = new Set, 
-        containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
-            const beforeClose = opts.beforeClose;
-            return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
-                return processData(result, rCtx, ssrCtx, stream, 0, void 0);
-            } : void 0), rCtx;
-        })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;
     }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useCleanup$ = useCleanup$, 
     exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
     exports.useClientEffectQrl = useClientEffectQrl, exports.useClientMount$ = useClientMount$, 
@@ -4051,6 +4082,9 @@
             return get;
         }
         const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
+        if ("function" == typeof defaultValue) {
+            return set(defaultValue(value));
+        }
         if (void 0 !== value) {
             return set(value);
         }
@@ -4091,10 +4125,8 @@
             return get;
         }
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const signal = ((value, containerState, subcriptions) => {
-            const manager = containerState.$subsManager$.$createManager$(void 0);
-            return new SignalImpl(value, manager);
-        })(isFunction(initialState) ? initialState() : initialState, containerState);
+        const value = isFunction(initialState) ? initialState() : initialState;
+        const signal = _createSignal(value, containerState, void 0);
         return set(signal), signal;
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 

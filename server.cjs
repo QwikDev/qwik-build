@@ -684,7 +684,7 @@ async function renderToStream(rootNode, opts) {
   let renderTime = 0;
   let snapshotTime = 0;
   let containsDynamic = false;
-  await (0, import_qwik3.renderSSR)(rootNode, {
+  await (0, import_qwik3._renderSSR)(rootNode, {
     stream,
     containerTagName,
     containerAttributes,
