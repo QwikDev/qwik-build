@@ -3782,6 +3782,71 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return undefined;
     };
 
+    /**
+     * @internal
+     */
+    const _serializeData = (data) => {
+        const containerState = {};
+        const collector = createCollector(containerState);
+        collectValue(data, collector, false);
+        const objs = Array.from(collector.$objSet$.keys());
+        let count = 0;
+        const objToId = new Map();
+        for (const obj of objs) {
+            objToId.set(obj, intToStr(count));
+            count++;
+        }
+        if (collector.$noSerialize$.length > 0) {
+            const undefinedID = objToId.get(undefined);
+            assertDefined(undefinedID, 'undefined ID must be defined');
+            for (const obj of collector.$noSerialize$) {
+                objToId.set(obj, undefinedID);
+            }
+        }
+        const mustGetObjId = (obj) => {
+            const key = objToId.get(obj);
+            if (key === undefined) {
+                throw qError(QError_missingObjectId, obj);
+            }
+            return key;
+        };
+        const convertedObjs = objs.map((obj) => {
+            if (obj === null) {
+                return null;
+            }
+            const typeObj = typeof obj;
+            switch (typeObj) {
+                case 'undefined':
+                    return UNDEFINED_PREFIX;
+                case 'number':
+                    if (!Number.isFinite(obj)) {
+                        break;
+                    }
+                    return obj;
+                case 'string':
+                case 'boolean':
+                    return obj;
+            }
+            const value = serializeValue(obj, mustGetObjId, containerState);
+            if (value !== undefined) {
+                return value;
+            }
+            if (typeObj === 'object') {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key of Object.keys(obj)) {
+                        output[key] = mustGetObjId(obj[key]);
+                    }
+                    return output;
+                }
+            }
+            throw qError(QError_verifySerializable, obj);
+        });
+        return JSON.stringify([mustGetObjId(data), convertedObjs]);
+    };
     // <docs markdown="../readme.md#pauseContainer">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#pauseContainer instead)
@@ -4463,6 +4528,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const data = script.firstChild.data;
             return JSON.parse(unescapeText(data) || '{}');
         }
+    };
+    /**
+     * @internal
+     */
+    const _deserializeData = (data) => {
+        const [mainID, convertedObjs] = JSON.parse(data);
+        const parser = createParser({}, {});
+        reviveValues(convertedObjs, parser);
+        const getObject = (id) => convertedObjs[strToInt(id)];
+        for (const obj of convertedObjs) {
+            reviveNestedObjects(obj, getObject, parser);
+        }
+        return getObject(mainID);
     };
     const resumeContainer = (containerEl) => {
         if (!isContainer$1(containerEl)) {
@@ -8605,12 +8683,14 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.Slot = Slot;
     exports._IMMUTABLE = _IMMUTABLE;
     exports._createSignal = _createSignal;
+    exports._deserializeData = _deserializeData;
     exports._getContainerState = _getContainerState;
     exports._hW = _hW;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
     exports._renderSSR = _renderSSR;
     exports._restProps = _restProps;
+    exports._serializeData = _serializeData;
     exports._weakSerialize = _weakSerialize;
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;

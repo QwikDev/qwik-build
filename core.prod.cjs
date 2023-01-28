@@ -3864,8 +3864,16 @@
         return jsx(Virtual, {
             "q:s": ""
         }, name);
-    }, exports._IMMUTABLE = _IMMUTABLE, exports._createSignal = _createSignal, exports._getContainerState = _getContainerState, 
-    exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
+    }, exports._IMMUTABLE = _IMMUTABLE, exports._createSignal = _createSignal, exports._deserializeData = data => {
+        const [mainID, convertedObjs] = JSON.parse(data);
+        const parser = createParser({}, {});
+        reviveValues(convertedObjs, parser);
+        const getObject = id => convertedObjs[strToInt(id)];
+        for (const obj of convertedObjs) {
+            reviveNestedObjects(obj, getObject, parser);
+        }
+        return getObject(mainID);
+    }, exports._getContainerState = _getContainerState, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
     exports._pauseFromContexts = _pauseFromContexts, exports._renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
@@ -3915,6 +3923,67 @@
             omit.includes(key) || (rest[key] = props[key]);
         }
         return rest;
+    }, exports._serializeData = data => {
+        const containerState = {};
+        const collector = createCollector(containerState);
+        collectValue(data, collector, false);
+        const objs = Array.from(collector.$objSet$.keys());
+        let count = 0;
+        const objToId = new Map;
+        for (const obj of objs) {
+            objToId.set(obj, intToStr(count)), count++;
+        }
+        if (collector.$noSerialize$.length > 0) {
+            const undefinedID = objToId.get(void 0);
+            for (const obj of collector.$noSerialize$) {
+                objToId.set(obj, undefinedID);
+            }
+        }
+        const mustGetObjId = obj => {
+            const key = objToId.get(obj);
+            if (void 0 === key) {
+                throw qError(27, obj);
+            }
+            return key;
+        };
+        const convertedObjs = objs.map((obj => {
+            if (null === obj) {
+                return null;
+            }
+            const typeObj = typeof obj;
+            switch (typeObj) {
+              case "undefined":
+                return UNDEFINED_PREFIX;
+
+              case "number":
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+
+              case "string":
+              case "boolean":
+                return obj;
+            }
+            const value = serializeValue(obj, mustGetObjId, containerState);
+            if (void 0 !== value) {
+                return value;
+            }
+            if ("object" === typeObj) {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key of Object.keys(obj)) {
+                        output[key] = mustGetObjId(obj[key]);
+                    }
+                    return output;
+                }
+            }
+            throw qError(3, obj);
+        }));
+        return JSON.stringify([ mustGetObjId(data), convertedObjs ]);
     }, exports._weakSerialize = input => (weakSerializeSet.add(input), input), exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];

@@ -753,6 +753,11 @@ declare interface DescriptorBase<T = any, B = undefined> {
     $resource$: B;
 }
 
+/**
+ * @internal
+ */
+export declare const _deserializeData: (data: string) => any;
+
 declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
@@ -2423,6 +2428,11 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * @internal
+ */
+export declare const _serializeData: (data: any) => string;
+
+/**
  * Sets the `CorePlatform`.
  *
  * This is useful to override the platform in tests to change the behavior of,
@@ -3631,7 +3641,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230128141226
+ * 0.16.2-dev20230128143349
  * @public
  */
 export declare const version: string;

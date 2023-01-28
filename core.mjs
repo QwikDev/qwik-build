@@ -3770,6 +3770,71 @@ const serializeSStyle = (scopeIds) => {
     return undefined;
 };
 
+/**
+ * @internal
+ */
+const _serializeData = (data) => {
+    const containerState = {};
+    const collector = createCollector(containerState);
+    collectValue(data, collector, false);
+    const objs = Array.from(collector.$objSet$.keys());
+    let count = 0;
+    const objToId = new Map();
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count));
+        count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(undefined);
+        assertDefined(undefinedID, 'undefined ID must be defined');
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    const mustGetObjId = (obj) => {
+        const key = objToId.get(obj);
+        if (key === undefined) {
+            throw qError(QError_missingObjectId, obj);
+        }
+        return key;
+    };
+    const convertedObjs = objs.map((obj) => {
+        if (obj === null) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+            case 'undefined':
+                return UNDEFINED_PREFIX;
+            case 'number':
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+            case 'string':
+            case 'boolean':
+                return obj;
+        }
+        const value = serializeValue(obj, mustGetObjId, containerState);
+        if (value !== undefined) {
+            return value;
+        }
+        if (typeObj === 'object') {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key of Object.keys(obj)) {
+                    output[key] = mustGetObjId(obj[key]);
+                }
+                return output;
+            }
+        }
+        throw qError(QError_verifySerializable, obj);
+    });
+    return JSON.stringify([mustGetObjId(data), convertedObjs]);
+};
 // <docs markdown="../readme.md#pauseContainer">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#pauseContainer instead)
@@ -4451,6 +4516,19 @@ const getPauseState = (containerEl) => {
         const data = script.firstChild.data;
         return JSON.parse(unescapeText(data) || '{}');
     }
+};
+/**
+ * @internal
+ */
+const _deserializeData = (data) => {
+    const [mainID, convertedObjs] = JSON.parse(data);
+    const parser = createParser({}, {});
+    reviveValues(convertedObjs, parser);
+    const getObject = (id) => convertedObjs[strToInt(id)];
+    for (const obj of convertedObjs) {
+        reviveNestedObjects(obj, getObject, parser);
+    }
+    return getObject(mainID);
 };
 const resumeContainer = (containerEl) => {
     if (!isContainer$1(containerEl)) {
@@ -8580,5 +8658,5 @@ const hasDynamicChildren = (node) => {
     return node.props[_IMMUTABLE]?.children === false;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _createSignal, _getContainerState, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _createSignal, _deserializeData, _getContainerState, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
