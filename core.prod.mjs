@@ -4251,6 +4251,7 @@ const scopeStylesheet = (css, scopeId) => {
     let mode = rule;
     let lastCh = 0;
     for (;idx < end; ) {
+        const chIdx = idx;
         let ch = css.charCodeAt(idx++);
         ch === BACKSLASH && (idx++, ch = A);
         const arcs = STATE_MACHINE[mode];
@@ -4265,7 +4266,7 @@ const scopeStylesheet = (css, scopeId) => {
                         mode = stack.pop() || rule, mode === pseudoGlobal && (flush(idx - 1), lastIdx++);
                     } while (isSelfClosingRule(mode));
                 } else {
-                    stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(findStart(idx - 1)), 
+                    stack.push(mode), mode === pseudoGlobal && newMode === rule ? (flush(idx - 8), lastIdx = idx) : newMode === pseudoElement && insertScopingSelector(chIdx), 
                     mode = newMode;
                 }
                 break;
@@ -4274,14 +4275,6 @@ const scopeStylesheet = (css, scopeId) => {
         lastCh = ch;
     }
     return flush(idx), out.join("");
-    function findStart(idx) {
-        let isIdentCh = isIdent(css.charCodeAt(idx));
-        let isPrevIdentCh = !(idx > 0) || isIdent(css.charCodeAt(idx - 1));
-        for (;idx > 0 && (!isPrevIdentCh || isIdentCh); ) {
-            isIdentCh = isPrevIdentCh, isPrevIdentCh = !(--idx > 0) || isIdent(css.charCodeAt(idx - 1));
-        }
-        return idx;
-    }
     function flush(idx) {
         out.push(css.substring(lastIdx, idx)), lastIdx = idx;
     }
