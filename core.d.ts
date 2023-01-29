@@ -727,11 +727,6 @@ export declare interface CorePlatform {
  */
 export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
 
-/**
- * @internal
- */
-export declare const _createSignal: <T>(value: T, containerState: ContainerState, subcriptions?: Subscriptions[]) => Signal<T>;
-
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
@@ -796,7 +791,10 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface ErrorBoundaryStore {
+/**
+ * @alpha
+ */
+export declare interface ErrorBoundaryStore {
     error: any | undefined;
 }
 
@@ -830,11 +828,6 @@ export declare const Fragment: FunctionComponent<{
 export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
 }
-
-/**
- * @internal
- */
-export declare const _getContainerState: (containerEl: Element) => ContainerState;
 
 /**
  * Retrieve the current lang.
@@ -3641,7 +3634,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230128152018
+ * 0.16.2-dev20230129165217
  * @public
  */
 export declare const version: string;

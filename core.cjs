@@ -8682,9 +8682,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.SkipRender = SkipRender;
     exports.Slot = Slot;
     exports._IMMUTABLE = _IMMUTABLE;
-    exports._createSignal = _createSignal;
     exports._deserializeData = _deserializeData;
-    exports._getContainerState = _getContainerState;
     exports._hW = _hW;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
