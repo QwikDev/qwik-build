@@ -1097,7 +1097,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
     step?: number | string | undefined;
     type?: HTMLInputTypeAttribute | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
+    value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
     width?: number | string | undefined;
     children?: undefined;
 }
@@ -3634,7 +3634,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.16.2-dev20230201203712
+ * 0.17.0-dev20230201215935
  * @public
  */
 export declare const version: string;

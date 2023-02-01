@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.16.2
+ * @builder.io/qwik 0.17.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3198,7 +3198,7 @@
         if (null != get) {
             return get;
         }
-        const value = isFunction(initialState) ? initialState() : initialState;
+        const value = isFunction(initialState) ? invoke(void 0, initialState) : initialState;
         if (false === opts?.reactive) {
             return set(value), value;
         }
@@ -3895,7 +3895,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.16.2",
+            "q:version": "0.17.0",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4048,7 +4048,7 @@
         const containerEl = isDocument(docOrElm = parent) ? docOrElm.documentElement : docOrElm;
         var docOrElm;
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.16.2"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.17.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4079,7 +4079,7 @@
         }
         const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
         if ("function" == typeof defaultValue) {
-            return set(defaultValue(value));
+            return set(invoke(void 0, defaultValue, value));
         }
         if (void 0 !== value) {
             return set(value);
@@ -4124,12 +4124,12 @@
         const signal = ((value, containerState, subcriptions) => {
             const manager = containerState.$subsManager$.$createManager$(void 0);
             return new SignalImpl(value, manager);
-        })(isFunction(initialState) ? initialState() : initialState, containerState);
+        })(isFunction(initialState) ? invoke(void 0, initialState) : initialState, containerState);
         return set(signal), signal;
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.16.2", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.17.0", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

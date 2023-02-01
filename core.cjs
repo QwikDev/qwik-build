@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.16.2
+ * @builder.io/qwik 0.17.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2511,7 +2511,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
         if (typeof defaultValue === 'function') {
-            return set(defaultValue(value));
+            return set(invoke(undefined, defaultValue, value));
         }
         if (value !== undefined) {
             return set(value);
@@ -6938,7 +6938,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * QWIK_VERSION
      * @public
      */
-    const version = "0.16.2";
+    const version = "0.17.0";
 
     /**
      * Render JSX.
@@ -7074,7 +7074,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (get != null) {
             return get;
         }
-        const value = isFunction(initialState) ? initialState() : initialState;
+        const value = isFunction(initialState) ? invoke(undefined, initialState) : initialState;
         if (opts?.reactive === false) {
             set(value);
             return value;
@@ -7661,7 +7661,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return get;
         }
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const value = isFunction(initialState) ? initialState() : initialState;
+        const value = isFunction(initialState) ? invoke(undefined, initialState) : initialState;
         const signal = _createSignal(value, containerState, undefined);
         set(signal);
         return signal;
