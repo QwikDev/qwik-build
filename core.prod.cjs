@@ -539,8 +539,7 @@
             $contexts$: null,
             $dynamicSlots$: null,
             $parent$: null,
-            $slotParent$: null,
-            $extraRender$: null
+            $slotParent$: null
         };
         return element._qc_ = ctx, ctx;
     };
@@ -1019,8 +1018,7 @@
         }
     };
     const executeComponent = (rCtx, elCtx) => {
-        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.$extraRender$ = null, 
-        elCtx.li.length = 0;
+        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
@@ -1031,17 +1029,16 @@
         invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(invocationContext);
         return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: addExtraItems(jsxNode, elCtx),
+            node: jsxNode,
             rCtx: newCtx
         })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: addExtraItems(jsxNode, elCtx),
+            node: jsxNode,
             rCtx: newCtx
         }), (err => (handleError(err, hostElement, rCtx), {
             node: SkipRender,
             rCtx: newCtx
         })));
     };
-    const addExtraItems = (node, elCtx) => elCtx.$extraRender$ ? [ node, elCtx.$extraRender$ ] : node;
     const createRenderContext = (doc, containerState) => ({
         $static$: {
             $doc$: doc,
@@ -3861,14 +3858,21 @@
             "q:s": ""
         }, name);
     }, exports._IMMUTABLE = _IMMUTABLE, exports._deserializeData = data => {
-        const [mainID, convertedObjs] = JSON.parse(data);
+        const obj = JSON.parse(data);
+        if ("object" != typeof obj) {
+            return null;
+        }
+        const {_objs: _objs, _entry: _entry} = obj;
+        if (void 0 === _objs || void 0 === _entry) {
+            return null;
+        }
         const parser = createParser({}, {});
-        reviveValues(convertedObjs, parser);
-        const getObject = id => convertedObjs[strToInt(id)];
-        for (const obj of convertedObjs) {
+        reviveValues(_objs, parser);
+        const getObject = id => _objs[strToInt(id)];
+        for (const obj of _objs) {
             reviveNestedObjects(obj, getObject, parser);
         }
-        return getObject(mainID);
+        return getObject(_entry);
     }, exports._hW = _hW, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
     exports._pauseFromContexts = _pauseFromContexts, exports._renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
@@ -3979,7 +3983,10 @@
             }
             throw qError(3, obj);
         }));
-        return JSON.stringify([ mustGetObjId(data), convertedObjs ]);
+        return JSON.stringify({
+            _entry: mustGetObjId(data),
+            _objs: convertedObjs
+        });
     }, exports._weakSerialize = input => (weakSerializeSet.add(input), input), exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];
@@ -4106,13 +4113,7 @@
     exports.useOn = useOn, exports.useOnDocument = useOnDocument, exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useRef = current => useStore({
         current: current
-    }), exports.useRender = jsx => {
-        const iCtx = useInvokeContext();
-        const hostElement = iCtx.$hostElement$;
-        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-        let extraRender = elCtx.$extraRender$;
-        extraRender || (extraRender = elCtx.$extraRender$ = []), extraRender.push(jsx);
-    }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
+    }), exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
     exports.useServerMount$ = useServerMount$, exports.useServerMountQrl = useServerMountQrl, 
     exports.useSignal = initialState => {

@@ -1308,7 +1308,6 @@ const createContext$1 = (element) => {
         $dynamicSlots$: null,
         $parent$: null,
         $slotParent$: null,
-        $extraRender$: null,
     };
     seal(ctx);
     element[Q_CTX] = ctx;
@@ -2626,7 +2625,6 @@ const executeComponent = (rCtx, elCtx) => {
     elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
     elCtx.$flags$ |= HOST_FLAG_MOUNTED;
     elCtx.$slots$ = [];
-    elCtx.$extraRender$ = null;
     elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
@@ -2652,7 +2650,7 @@ const executeComponent = (rCtx, elCtx) => {
                     return executeComponent(rCtx, elCtx);
                 }
                 return {
-                    node: addExtraItems(jsxNode, elCtx),
+                    node: jsxNode,
                     rCtx: newCtx,
                 };
             });
@@ -2661,7 +2659,7 @@ const executeComponent = (rCtx, elCtx) => {
             return executeComponent(rCtx, elCtx);
         }
         return {
-            node: addExtraItems(jsxNode, elCtx),
+            node: jsxNode,
             rCtx: newCtx,
         };
     }, (err) => {
@@ -2671,12 +2669,6 @@ const executeComponent = (rCtx, elCtx) => {
             rCtx: newCtx,
         };
     });
-};
-const addExtraItems = (node, elCtx) => {
-    if (elCtx.$extraRender$) {
-        return [node, elCtx.$extraRender$];
-    }
-    return node;
 };
 const createRenderContext = (doc, containerState) => {
     const ctx = {
@@ -3833,7 +3825,10 @@ const _serializeData = (data) => {
         }
         throw qError(QError_verifySerializable, obj);
     });
-    return JSON.stringify([mustGetObjId(data), convertedObjs]);
+    return JSON.stringify({
+        _entry: mustGetObjId(data),
+        _objs: convertedObjs,
+    });
 };
 // <docs markdown="../readme.md#pauseContainer">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4521,14 +4516,21 @@ const getPauseState = (containerEl) => {
  * @internal
  */
 const _deserializeData = (data) => {
-    const [mainID, convertedObjs] = JSON.parse(data);
+    const obj = JSON.parse(data);
+    if (typeof obj !== 'object') {
+        return null;
+    }
+    const { _objs, _entry } = obj;
+    if (typeof _objs === 'undefined' || typeof _entry === 'undefined') {
+        return null;
+    }
     const parser = createParser({}, {});
-    reviveValues(convertedObjs, parser);
-    const getObject = (id) => convertedObjs[strToInt(id)];
-    for (const obj of convertedObjs) {
+    reviveValues(_objs, parser);
+    const getObject = (id) => _objs[strToInt(id)];
+    for (const obj of _objs) {
         reviveNestedObjects(obj, getObject, parser);
     }
-    return getObject(mainID);
+    return getObject(_entry);
 };
 const resumeContainer = (containerEl) => {
     if (!isContainer$1(containerEl)) {
@@ -7790,20 +7792,6 @@ const useErrorBoundary = () => {
     return store;
 };
 
-/**
- * @alpha
- */
-const useRender = (jsx) => {
-    const iCtx = useInvokeContext();
-    const hostElement = iCtx.$hostElement$;
-    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    let extraRender = elCtx.$extraRender$;
-    if (!extraRender) {
-        extraRender = elCtx.$extraRender$ = [];
-    }
-    extraRender.push(jsx);
-};
-
 const FLUSH_COMMENT = '<!--qkssr-f-->';
 const IS_HEAD = 1 << 0;
 const IS_HTML = 1 << 2;
@@ -8658,5 +8646,5 @@ const hasDynamicChildren = (node) => {
     return node.props[_IMMUTABLE]?.children === false;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useRender, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

@@ -1320,7 +1320,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             $dynamicSlots$: null,
             $parent$: null,
             $slotParent$: null,
-            $extraRender$: null,
         };
         seal(ctx);
         element[Q_CTX] = ctx;
@@ -2638,7 +2637,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
         elCtx.$flags$ |= HOST_FLAG_MOUNTED;
         elCtx.$slots$ = [];
-        elCtx.$extraRender$ = null;
         elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
         const componentQRL = elCtx.$componentQrl$;
@@ -2664,7 +2662,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         return executeComponent(rCtx, elCtx);
                     }
                     return {
-                        node: addExtraItems(jsxNode, elCtx),
+                        node: jsxNode,
                         rCtx: newCtx,
                     };
                 });
@@ -2673,7 +2671,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 return executeComponent(rCtx, elCtx);
             }
             return {
-                node: addExtraItems(jsxNode, elCtx),
+                node: jsxNode,
                 rCtx: newCtx,
             };
         }, (err) => {
@@ -2683,12 +2681,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 rCtx: newCtx,
             };
         });
-    };
-    const addExtraItems = (node, elCtx) => {
-        if (elCtx.$extraRender$) {
-            return [node, elCtx.$extraRender$];
-        }
-        return node;
     };
     const createRenderContext = (doc, containerState) => {
         const ctx = {
@@ -3845,7 +3837,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             throw qError(QError_verifySerializable, obj);
         });
-        return JSON.stringify([mustGetObjId(data), convertedObjs]);
+        return JSON.stringify({
+            _entry: mustGetObjId(data),
+            _objs: convertedObjs,
+        });
     };
     // <docs markdown="../readme.md#pauseContainer">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -4533,14 +4528,21 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @internal
      */
     const _deserializeData = (data) => {
-        const [mainID, convertedObjs] = JSON.parse(data);
+        const obj = JSON.parse(data);
+        if (typeof obj !== 'object') {
+            return null;
+        }
+        const { _objs, _entry } = obj;
+        if (typeof _objs === 'undefined' || typeof _entry === 'undefined') {
+            return null;
+        }
         const parser = createParser({}, {});
-        reviveValues(convertedObjs, parser);
-        const getObject = (id) => convertedObjs[strToInt(id)];
-        for (const obj of convertedObjs) {
+        reviveValues(_objs, parser);
+        const getObject = (id) => _objs[strToInt(id)];
+        for (const obj of _objs) {
             reviveNestedObjects(obj, getObject, parser);
         }
-        return getObject(mainID);
+        return getObject(_entry);
     };
     const resumeContainer = (containerEl) => {
         if (!isContainer$1(containerEl)) {
@@ -7802,20 +7804,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return store;
     };
 
-    /**
-     * @alpha
-     */
-    const useRender = (jsx) => {
-        const iCtx = useInvokeContext();
-        const hostElement = iCtx.$hostElement$;
-        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-        let extraRender = elCtx.$extraRender$;
-        if (!extraRender) {
-            extraRender = elCtx.$extraRender$ = [];
-        }
-        extraRender.push(jsx);
-    };
-
     const FLUSH_COMMENT = '<!--qkssr-f-->';
     const IS_HEAD = 1 << 0;
     const IS_HTML = 1 << 2;
@@ -8728,7 +8716,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;
     exports.useRef = useRef;
-    exports.useRender = useRender;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
     exports.useServerData = useServerData;

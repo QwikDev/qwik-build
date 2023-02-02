@@ -1,5 +1,3 @@
-import type { JSXNode as JSXNode_2 } from './core/jsx-runtime';
-
 /**
  * Qwik Optimizer marker function.
  *
@@ -1590,7 +1588,6 @@ declare interface QContext {
     $dynamicSlots$: QContext[] | null;
     $parent$: QContext | null;
     $slotParent$: QContext | null;
-    $extraRender$: JSXNode_2[] | null;
 }
 
 /**
@@ -3125,11 +3122,6 @@ export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: 
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
 /**
- * @alpha
- */
-export declare const useRender: (jsx: JSXNode_2) => void;
-
-/**
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
@@ -3634,7 +3626,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.17.0-dev20230201221619
+ * 0.17.0-dev20230202104640
  * @public
  */
 export declare const version: string;
