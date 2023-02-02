@@ -641,6 +641,7 @@
         data: `\x3c!--${props.data}--\x3e`
     }, null);
     const Virtual = props => props.children;
+    const SSRHint = props => props.children;
     const InternalSSRStream = () => null;
     const jsx = (type, props, key) => {
         const processed = null == key ? null : String(key);
@@ -1737,7 +1738,7 @@
         for (const ctx of allContexts) {
             if (ctx.$watches$) {
                 for (const watch of ctx.$watches$) {
-                    destroyWatch(watch);
+                    isResourceTask(watch) && collector.$resources$.push(watch.$resource$), destroyWatch(watch);
                 }
             }
         }
@@ -1767,6 +1768,7 @@
                 },
                 objs: [],
                 qrls: [],
+                resources: collector.$resources$,
                 mode: "static"
             };
         }
@@ -1942,6 +1944,7 @@
                 subs: subs
             },
             objs: objs,
+            resources: collector.$resources$,
             qrls: collector.$qrls$,
             mode: canRender ? "render" : "listeners"
         };
@@ -1970,6 +1973,7 @@
         $objSet$: new Set,
         $prefetch$: 0,
         $noSerialize$: [],
+        $resources$: [],
         $elements$: [],
         $qrls$: [],
         $deferElements$: [],
@@ -3637,6 +3641,7 @@
                 }
             })(node, rCtx, ssrCtx, stream, flags);
         }
+        tagName === SSRHint && true === node.props.dynamic && (ssrCtx.$static$.$dynamic$ = true);
         const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
         return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
     };
@@ -3840,7 +3845,8 @@
         return jsx(Fragment, {
             children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))
         });
-    }, exports.SSRComment = SSRComment, exports.SSRRaw = SSRRaw, exports.SSRStream = (props, key) => jsx(RenderOnce, {
+    }, exports.SSRComment = SSRComment, exports.SSRHint = SSRHint, exports.SSRRaw = SSRRaw, 
+    exports.SSRStream = (props, key) => jsx(RenderOnce, {
         children: jsx(InternalSSRStream, props)
     }, key), exports.SSRStreamBlock = props => [ jsx(SSRComment, {
         data: "qkssr-pu"
@@ -3880,6 +3886,7 @@
         const ssrCtx = {
             $static$: {
                 $contexts$: [],
+                $dynamic$: false,
                 $headNodes$: "html" === root ? headNodes : [],
                 $locale$: opts.serverData?.locale
             },
@@ -3906,7 +3913,7 @@
         containerState.$renderPromise$ = Promise.resolve().then((() => (async (node, rCtx, ssrCtx, stream, containerState, opts) => {
             const beforeClose = opts.beforeClose;
             return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState);
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
                 return processData(result, rCtx, ssrCtx, stream, 0, void 0);
             } : void 0), rCtx;
         })(node, rCtx, ssrCtx, opts.stream, containerState, opts))), await containerState.$renderPromise$;

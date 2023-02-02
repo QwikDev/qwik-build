@@ -819,6 +819,8 @@ const SSRStream = (props, key) => jsx(RenderOnce, {
     children: jsx(InternalSSRStream, props)
 }, key);
 
+const SSRHint = props => props.children;
+
 const InternalSSRStream = () => null;
 
 const jsx = (type, props, key) => {
@@ -2106,7 +2108,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     for (const ctx of allContexts) {
         if (ctx.$watches$) {
             for (const watch of ctx.$watches$) {
-                destroyWatch(watch);
+                isResourceTask(watch) && collector.$resources$.push(watch.$resource$), destroyWatch(watch);
             }
         }
     }
@@ -2136,6 +2138,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             },
             objs: [],
             qrls: [],
+            resources: collector.$resources$,
             mode: "static"
         };
     }
@@ -2311,6 +2314,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             subs: subs
         },
         objs: objs,
+        resources: collector.$resources$,
         qrls: collector.$qrls$,
         mode: canRender ? "render" : "listeners"
     };
@@ -2341,6 +2345,7 @@ const createCollector = containerState => ({
     $objSet$: new Set,
     $prefetch$: 0,
     $noSerialize$: [],
+    $resources$: [],
     $elements$: [],
     $qrls$: [],
     $deferElements$: [],
@@ -4058,6 +4063,7 @@ const _renderSSR = async (node, opts) => {
     const ssrCtx = {
         $static$: {
             $contexts$: [],
+            $dynamic$: false,
             $headNodes$: "html" === root ? headNodes : [],
             $locale$: opts.serverData?.locale
         },
@@ -4088,7 +4094,7 @@ const _renderSSR = async (node, opts) => {
 const renderRoot = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
     const beforeClose = opts.beforeClose;
     return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
-        const result = beforeClose(ssrCtx.$static$.$contexts$, containerState);
+        const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
         return processData(result, rCtx, ssrCtx, stream, 0, void 0);
     } : void 0), rCtx;
 };
@@ -4379,6 +4385,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             }
         })(node, rCtx, ssrCtx, stream, flags);
     }
+    tagName === SSRHint && true === node.props.dynamic && (ssrCtx.$static$.$dynamic$ = true);
     const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
     return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
 };
@@ -4566,4 +4573,4 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

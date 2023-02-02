@@ -1605,6 +1605,10 @@ const SSRStreamBlock = (props) => {
  * @alpha
  */
 const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+/**
+ * @alpha
+ */
+const SSRHint = ((props) => props.children);
 const InternalSSRStream = () => null;
 
 let warnClassname = false;
@@ -3901,6 +3905,9 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                         logWarn('Serializing disconneted watch. Looks like an internal error.');
                     }
                 }
+                if (isResourceTask(watch)) {
+                    collector.$resources$.push(watch.$resource$);
+                }
                 destroyWatch(watch);
             }
         }
@@ -3933,6 +3940,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             },
             objs: [],
             qrls: [],
+            resources: collector.$resources$,
             mode: 'static',
         };
     }
@@ -4198,6 +4206,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             subs,
         },
         objs,
+        resources: collector.$resources$,
         qrls: collector.$qrls$,
         mode: canRender ? 'render' : 'listeners',
     };
@@ -4252,6 +4261,7 @@ const createCollector = (containerState) => {
         $objSet$: new Set(),
         $prefetch$: 0,
         $noSerialize$: [],
+        $resources$: [],
         $elements$: [],
         $qrls$: [],
         $deferElements$: [],
@@ -7809,6 +7819,7 @@ const _renderSSR = async (node, opts) => {
     const ssrCtx = {
         $static$: {
             $contexts$: [],
+            $dynamic$: false,
             $headNodes$: root === 'html' ? headNodes : [],
             $locale$: opts.serverData?.locale,
         },
@@ -7847,7 +7858,7 @@ const renderRoot = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
     const beforeClose = opts.beforeClose;
     await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
         ? (stream) => {
-            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState);
+            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
             return processData(result, rCtx, ssrCtx, stream, 0, undefined);
         }
         : undefined);
@@ -8308,6 +8319,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     if (tagName === InternalSSRStream) {
         return renderGenerator(node, rCtx, ssrCtx, stream, flags);
     }
+    if (tagName === SSRHint && node.props.dynamic === true) {
+        ssrCtx.$static$.$dynamic$ = true;
+    }
     const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
     return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
 };
@@ -8632,5 +8646,5 @@ const hasDynamicChildren = (node) => {
     return node.props[_IMMUTABLE]?.children === false;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

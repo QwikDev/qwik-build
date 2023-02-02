@@ -1617,6 +1617,10 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      * @alpha
      */
     const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+    /**
+     * @alpha
+     */
+    const SSRHint = ((props) => props.children);
     const InternalSSRStream = () => null;
 
     let warnClassname = false;
@@ -3913,6 +3917,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                             logWarn('Serializing disconneted watch. Looks like an internal error.');
                         }
                     }
+                    if (isResourceTask(watch)) {
+                        collector.$resources$.push(watch.$resource$);
+                    }
                     destroyWatch(watch);
                 }
             }
@@ -3945,6 +3952,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 },
                 objs: [],
                 qrls: [],
+                resources: collector.$resources$,
                 mode: 'static',
             };
         }
@@ -4210,6 +4218,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 subs,
             },
             objs,
+            resources: collector.$resources$,
             qrls: collector.$qrls$,
             mode: canRender ? 'render' : 'listeners',
         };
@@ -4264,6 +4273,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             $objSet$: new Set(),
             $prefetch$: 0,
             $noSerialize$: [],
+            $resources$: [],
             $elements$: [],
             $qrls$: [],
             $deferElements$: [],
@@ -7821,6 +7831,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const ssrCtx = {
             $static$: {
                 $contexts$: [],
+                $dynamic$: false,
                 $headNodes$: root === 'html' ? headNodes : [],
                 $locale$: opts.serverData?.locale,
             },
@@ -7859,7 +7870,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const beforeClose = opts.beforeClose;
         await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
             ? (stream) => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState);
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
                 return processData(result, rCtx, ssrCtx, stream, 0, undefined);
             }
             : undefined);
@@ -8320,6 +8331,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         if (tagName === InternalSSRStream) {
             return renderGenerator(node, rCtx, ssrCtx, stream, flags);
         }
+        if (tagName === SSRHint && node.props.dynamic === true) {
+            ssrCtx.$static$.$dynamic$ = true;
+        }
         const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
         return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
     };
@@ -8649,6 +8663,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.RenderOnce = RenderOnce;
     exports.Resource = Resource;
     exports.SSRComment = SSRComment;
+    exports.SSRHint = SSRHint;
     exports.SSRRaw = SSRRaw;
     exports.SSRStream = SSRStream;
     exports.SSRStreamBlock = SSRStreamBlock;

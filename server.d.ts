@@ -176,6 +176,7 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
 export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
     snapshotResult: SnapshotResult | undefined;
+    isStatic: boolean;
     manifest?: QwikManifest;
     /** @internal TODO: Move to snapshotResult */
     _symbols?: string[];

@@ -2233,7 +2233,7 @@ export declare interface RenderSSROptions {
     serverData?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode<string>[];
-    beforeClose?: (contexts: QContext[], containerState: ContainerState) => Promise<JSXNode>;
+    beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean) => Promise<JSXNode>;
 }
 
 declare interface RenderStaticContext {
@@ -2492,6 +2492,7 @@ export declare interface SnapshotResult {
     state: SnapshotState;
     qrls: QRL[];
     objs: any[];
+    resources: ResourceReturnInternal<any>[];
     mode: 'render' | 'listeners' | 'static';
 }
 
@@ -2522,6 +2523,18 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare const SSRComment: FunctionComponent<{
     data: string;
 }>;
+
+/**
+ * @alpha
+ */
+export declare const SSRHint: FunctionComponent<SSRHintProps>;
+
+/**
+ * @alpha
+ */
+export declare interface SSRHintProps {
+    dynamic?: boolean;
+}
 
 /**
  * @alpha
@@ -3613,7 +3626,7 @@ export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => v
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
 /**
- * 0.17.0-dev20230202100150
+ * 0.17.0-dev20230202102257
  * @public
  */
 export declare const version: string;
