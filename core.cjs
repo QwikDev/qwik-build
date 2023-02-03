@@ -6237,6 +6237,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
 
+    /**
+     * @internal
+     */
     const verifySerializable = (value, preMessage) => {
         const seen = new Set();
         return _verifySerializable(value, seen, '_', preMessage);
@@ -8677,6 +8680,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports._renderSSR = _renderSSR;
     exports._restProps = _restProps;
     exports._serializeData = _serializeData;
+    exports._verifySerializable = verifySerializable;
     exports._weakSerialize = _weakSerialize;
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;

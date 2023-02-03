@@ -2970,6 +2970,71 @@
         "~": obj => Promise.resolve(obj),
         _: obj => Promise.reject(obj)
     };
+    const _verifySerializable = (value, seen, ctx, preMessage) => {
+        const unwrapped = unwrapProxy(value);
+        if (null == unwrapped) {
+            return value;
+        }
+        if (shouldSerialize(unwrapped)) {
+            if (seen.has(unwrapped)) {
+                return value;
+            }
+            if (seen.add(unwrapped), (obj => {
+                for (const s of serializers) {
+                    if (s.test(obj)) {
+                        return true;
+                    }
+                }
+                return false;
+            })(unwrapped)) {
+                return value;
+            }
+            const typeObj = typeof unwrapped;
+            switch (typeObj) {
+              case "object":
+                if (isPromise(unwrapped)) {
+                    return value;
+                }
+                if (isQwikElement(unwrapped)) {
+                    return value;
+                }
+                if (isDocument(unwrapped)) {
+                    return value;
+                }
+                if (isArray(unwrapped)) {
+                    let expectIndex = 0;
+                    return unwrapped.forEach(((v, i) => {
+                        if (i !== expectIndex) {
+                            throw qError(3, unwrapped);
+                        }
+                        _verifySerializable(v, seen, ctx + "[" + i + "]"), expectIndex = i + 1;
+                    })), value;
+                }
+                if (isSerializableObject(unwrapped)) {
+                    for (const [key, item] of Object.entries(unwrapped)) {
+                        _verifySerializable(item, seen, ctx + "." + key);
+                    }
+                    return value;
+                }
+                break;
+
+              case "boolean":
+              case "string":
+              case "number":
+                return value;
+            }
+            let message = "";
+            if (message = preMessage || "Value cannot be serialized", "_" !== ctx && (message += ` in ${ctx},`), 
+            "object" === typeObj) {
+                message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.builder.io/docs/advanced/dollar/`;
+            } else if ("function" === typeObj) {
+                const fnName = value.name;
+                message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
+            }
+            throw console.error("Trying to serialize", value), createError(message);
+        }
+        return value;
+    };
     const noSerializeSet = new WeakSet;
     const weakSerializeSet = new WeakSet;
     const shouldSerialize = obj => !isObject(obj) && !isFunction(obj) || !noSerializeSet.has(obj);
@@ -3987,6 +4052,9 @@
             _entry: mustGetObjId(data),
             _objs: convertedObjs
         });
+    }, exports._verifySerializable = (value, preMessage) => {
+        const seen = new Set;
+        return _verifySerializable(value, seen, "_", preMessage);
     }, exports._weakSerialize = input => (weakSerializeSet.add(input), input), exports._wrapSignal = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];
