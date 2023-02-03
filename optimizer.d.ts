@@ -335,6 +335,14 @@ export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 /**
  * @alpha
  */
+export declare interface QwikViteDevResponse {
+    _qwikEnvData?: Record<string, any>;
+    _qwikRenderResolve?: () => void;
+}
+
+/**
+ * @alpha
+ */
 export declare interface QwikVitePlugin {
     name: 'vite-plugin-qwik';
     api: QwikVitePluginApi;

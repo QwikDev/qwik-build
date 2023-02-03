@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "0.17.0",
+  "version": "0.17.2",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.mjs",
@@ -30,13 +30,27 @@
     },
     "./jsx-runtime": {
       "types": "./jsx-runtime.d.ts",
-      "import": "./jsx-runtime.mjs",
-      "require": "./jsx-runtime.cjs"
+      "import": {
+        "min": "./core.min.mjs",
+        "production": "./core.prod.mjs",
+        "default": "./core.mjs"
+      },
+      "require": {
+        "production": "./core.prod.cjs",
+        "default": "./core.cjs"
+      }
     },
     "./jsx-dev-runtime": {
       "types": "./jsx-runtime.d.ts",
-      "import": "./jsx-runtime.mjs",
-      "require": "./jsx-runtime.cjs"
+      "import": {
+        "min": "./core.min.mjs",
+        "production": "./core.prod.mjs",
+        "default": "./core.mjs"
+      },
+      "require": {
+        "production": "./core.prod.cjs",
+        "default": "./core.cjs"
+      }
     },
     "./build": {
       "types": "./build/index.d.ts",
