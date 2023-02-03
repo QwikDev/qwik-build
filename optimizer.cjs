@@ -2200,7 +2200,7 @@ globalThis.qwikOptimizer = function(module) {
           }
         }
       },
-      async configureServer(server) {
+      configureServer: server => async () => {
         const opts = qwikPlugin.getOptions();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
