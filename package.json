@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "0.17.2",
+  "version": "0.17.3",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.mjs",
@@ -17,10 +17,12 @@
       "types": "./core.d.ts",
       "import": {
         "min": "./core.min.mjs",
+        "development": "./core.mjs",
         "production": "./core.prod.mjs",
         "default": "./core.mjs"
       },
       "require": {
+        "development": "./core.cjs",
         "production": "./core.prod.cjs",
         "default": "./core.cjs"
       }
@@ -32,10 +34,12 @@
       "types": "./jsx-runtime.d.ts",
       "import": {
         "min": "./core.min.mjs",
+        "development": "./core.mjs",
         "production": "./core.prod.mjs",
         "default": "./core.mjs"
       },
       "require": {
+        "development": "./core.cjs",
         "production": "./core.prod.cjs",
         "default": "./core.cjs"
       }
@@ -44,10 +48,12 @@
       "types": "./jsx-runtime.d.ts",
       "import": {
         "min": "./core.min.mjs",
+        "development": "./core.mjs",
         "production": "./core.prod.mjs",
         "default": "./core.mjs"
       },
       "require": {
+        "development": "./core.cjs",
         "production": "./core.prod.cjs",
         "default": "./core.cjs"
       }
