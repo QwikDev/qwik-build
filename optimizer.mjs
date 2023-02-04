@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.17.3
+ * @builder.io/qwik/optimizer 0.17.4
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -431,7 +431,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "0.17.3"
+  qwik: "0.17.4"
 };
 
 async function getSystem() {
@@ -2184,11 +2184,18 @@ function qwikVite(qwikViteOpts = {}) {
         }
       }
     },
-    configureServer: server => async () => {
-      const opts = qwikPlugin.getOptions();
-      const sys = qwikPlugin.getSys();
-      const path = qwikPlugin.getPath();
-      await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
+    configureServer(server) {
+      const plugin = async () => {
+        const opts = qwikPlugin.getOptions();
+        const sys = qwikPlugin.getSys();
+        const path = qwikPlugin.getPath();
+        await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
+      };
+      const isNEW = true === globalThis.__qwikCityNew;
+      if (isNEW) {
+        return plugin;
+      }
+      plugin();
     },
     configurePreviewServer: server => async () => {
       const sys = qwikPlugin.getSys();
