@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.17.4
+ * @builder.io/qwik 0.17.5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -6960,7 +6960,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.17.4";
+const version = "0.17.5";
 
 /**
  * Render JSX.
