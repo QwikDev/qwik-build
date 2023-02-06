@@ -31,7 +31,7 @@ const createError = message => {
     return err.stack && (err.stack = filterStack(err.stack)), err;
 };
 
-const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik"))).join("\n");
+const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
 
 const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
 
@@ -2036,10 +2036,13 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const _serializeData = data => {
+const _serializeData = async data => {
     const containerState = {};
     const collector = createCollector(containerState);
-    collectValue(data, collector, false);
+    let promises;
+    for (collectValue(data, collector, false); (promises = collector.$promises$).length > 0; ) {
+        collector.$promises$ = [], await Promise.all(promises);
+    }
     const objs = Array.from(collector.$objSet$.keys());
     let count = 0;
     const objToId = new Map;
@@ -2053,11 +2056,16 @@ const _serializeData = data => {
         }
     }
     const mustGetObjId = obj => {
+        let suffix = "";
+        if (isPromise(obj)) {
+            const {value: value, resolved: resolved} = getPromiseValue(obj);
+            obj = value, suffix += resolved ? "~" : "_";
+        }
         const key = objToId.get(obj);
         if (void 0 === key) {
             throw qError(27, obj);
         }
-        return key;
+        return key + suffix;
     };
     const convertedObjs = objs.map((obj => {
         if (null === obj) {
@@ -2439,10 +2447,10 @@ const collectValue = (obj, collector, leaks) => {
                     if (obj = target, seen.has(obj)) {
                         return;
                     }
-                    if (seen.add(obj), fastWeakSerialize(input)) {
+                    if (seen.add(obj), leaks && collectSubscriptions(getProxyManager(input), collector), 
+                    fastWeakSerialize(input)) {
                         return void collector.$objSet$.add(obj);
                     }
-                    leaks && collectSubscriptions(getProxyManager(input), collector);
                 }
                 if (collectDeps(obj, collector, leaks)) {
                     return void collector.$objSet$.add(obj);
@@ -3373,14 +3381,8 @@ const serializers = [ QRLSerializer, {
 }, {
     prefix: "",
     test: v => v instanceof SignalWrapper,
-    collect(obj, collector, leaks) {
-        if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
-            const manager = getProxyManager(obj.ref);
-            manager.$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks), 
-            collectSubscriptions(manager, collector);
-        }
-        return obj;
-    },
+    collect: (obj, collector, leaks) => (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref) && (getProxyManager(obj.ref).$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks)), 
+    obj),
     serialize: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
     prepare: data => {
         const [id, prop] = data.split(" ");

@@ -76,7 +76,7 @@ const filterStack = (stack, offset = 0) => {
     return stack
         .split('\n')
         .slice(offset)
-        .filter((l) => !l.includes('/node_modules/@builder.io/qwik'))
+        .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
         .join('\n');
 };
 const logErrorAndStop = (message, ...optionalParams) => {
@@ -3765,10 +3765,16 @@ const serializeSStyle = (scopeIds) => {
 /**
  * @internal
  */
-const _serializeData = (data) => {
+const _serializeData = async (data) => {
     const containerState = {};
     const collector = createCollector(containerState);
     collectValue(data, collector, false);
+    // Wait for remaining promises
+    let promises;
+    while ((promises = collector.$promises$).length > 0) {
+        collector.$promises$ = [];
+        await Promise.all(promises);
+    }
     const objs = Array.from(collector.$objSet$.keys());
     let count = 0;
     const objToId = new Map();
@@ -3784,11 +3790,22 @@ const _serializeData = (data) => {
         }
     }
     const mustGetObjId = (obj) => {
+        let suffix = '';
+        if (isPromise(obj)) {
+            const { value, resolved } = getPromiseValue(obj);
+            obj = value;
+            if (resolved) {
+                suffix += '~';
+            }
+            else {
+                suffix += '_';
+            }
+        }
         const key = objToId.get(obj);
         if (key === undefined) {
             throw qError(QError_missingObjectId, obj);
         }
-        return key;
+        return key + suffix;
     };
     const convertedObjs = objs.map((obj) => {
         if (obj === null) {
@@ -4400,12 +4417,12 @@ const collectValue = (obj, collector, leaks) => {
                         return;
                     }
                     seen.add(obj);
+                    if (leaks) {
+                        collectSubscriptions(getProxyManager(input), collector);
+                    }
                     if (fastWeakSerialize(input)) {
                         collector.$objSet$.add(obj);
                         return;
-                    }
-                    if (leaks) {
-                        collectSubscriptions(getProxyManager(input), collector);
                     }
                 }
                 const collected = collectDeps(obj, collector, leaks);
@@ -6070,7 +6087,6 @@ const SignalWrapperSerializer = {
             if (!manager.$isTreeshakeable$(obj.prop)) {
                 collectValue(obj.ref[obj.prop], collector, leaks);
             }
-            collectSubscriptions(manager, collector);
         }
         return obj;
     },
@@ -7803,6 +7819,7 @@ const IS_INVISIBLE = 1 << 4;
 const IS_PHASING = 1 << 5;
 const IS_ANCHOR = 1 << 6;
 const IS_BUTTON = 1 << 7;
+const IS_TABLE = 1 << 8;
 const createDocument = () => {
     const doc = { nodeType: 9 };
     seal(doc);
@@ -8194,6 +8211,15 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
 This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
                 }
             }
+            if (tagName === 'table') {
+                flags |= IS_TABLE;
+            }
+            else {
+                if (flags & IS_TABLE && !tableContent[tagName]) {
+                    throw createJSXError(`The <table> element requires that its direct children to be '<tbody>' or '<thead>', instead, '<${tagName}>' was rendered.`, node);
+                }
+                flags &= ~IS_TABLE;
+            }
             if (tagName === 'button') {
                 if (flags & IS_BUTTON) {
                     throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <button>.\n
@@ -8535,6 +8561,10 @@ const startPhasingContent = {
 const htmlContent = {
     head: true,
     body: true,
+};
+const tableContent = {
+    tbody: true,
+    thead: true,
 };
 const headContent = {
     meta: true,

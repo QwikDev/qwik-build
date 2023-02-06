@@ -496,7 +496,7 @@ var createError = (message) => {
   return err;
 };
 var filterStack = (stack, offset = 0) => {
-  return stack.split("\n").slice(offset).filter((l) => !l.includes("/node_modules/@builder.io/qwik")).join("\n");
+  return stack.split("\n").slice(offset).filter((l) => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:")).join("\n");
 };
 var logErrorAndStop = (message, ...optionalParams) => {
   const err = logError(message, ...optionalParams);

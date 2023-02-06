@@ -2420,7 +2420,7 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @internal
  */
-export declare const _serializeData: (data: any) => string;
+export declare const _serializeData: (data: any) => Promise<string>;
 
 /**
  * Sets the `CorePlatform`.
@@ -3631,7 +3631,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.17.4-dev20230204160002
+ * 0.17.4-dev20230206171259
  * @public
  */
 export declare const version: string;
