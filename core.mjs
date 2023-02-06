@@ -1169,6 +1169,19 @@ class ReadWriteProxyHandler {
         return false;
     }
     ownKeys(target) {
+        const flags = target[QObjectFlagsSymbol] ?? 0;
+        assertNumber(flags, 'flags must be an number');
+        const immutable = (flags & QObjectImmutable) !== 0;
+        if (!immutable) {
+            let subscriber = null;
+            const invokeCtx = tryGetInvokeContext();
+            if (invokeCtx) {
+                subscriber = invokeCtx.$subscriber$;
+            }
+            if (subscriber) {
+                this.$manager$.$addSub$([0, subscriber, undefined]);
+            }
+        }
         if (isArray(target)) {
             return Reflect.ownKeys(target);
         }

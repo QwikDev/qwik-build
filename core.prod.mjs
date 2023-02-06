@@ -585,6 +585,11 @@ class ReadWriteProxyHandler {
         return !!hasOwnProperty.call(target, property) || !("string" != typeof property || !hasOwnProperty.call(target, "$$" + property));
     }
     ownKeys(target) {
+        if (!(0 != (2 & (target[QObjectFlagsSymbol] ?? 0)))) {
+            let subscriber = null;
+            const invokeCtx = tryGetInvokeContext();
+            invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$([ 0, subscriber, void 0 ]);
+        }
         return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
     }
     getOwnPropertyDescriptor(target, prop) {
