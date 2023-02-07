@@ -11329,7 +11329,7 @@ var integrations = null;
 async function loadIntegrations() {
   if (!integrations) {
     const loadingIntegrations = [];
-    const integrationTypes = ["app", "feature", "adaptor"];
+    const integrationTypes = ["app", "feature", "adapter"];
     const integrationsDir = (0, import_node_path3.join)(__dirname, "starters");
     const integrationsDirNames = await import_node_fs3.default.promises.readdir(integrationsDir);
     await Promise.all(
@@ -12531,7 +12531,7 @@ async function runAddInteractive(app, id) {
     console.log(`\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)}`);
     console.log(``);
     const integrationChoices = [
-      ...integrations2.filter((i) => i.type === "adaptor"),
+      ...integrations2.filter((i) => i.type === "adapter"),
       ...integrations2.filter((i) => i.type === "feature")
     ].map((f) => {
       return { title: f.name, value: f.id };
@@ -12671,14 +12671,14 @@ function logUpdateAppCommitResult(result) {
 // packages/qwik/src/cli/add/print-add-help.ts
 async function printAddHelp() {
   const integrations2 = await loadIntegrations();
-  const adaptors = integrations2.filter((i) => i.type === "adaptor");
+  const adapters = integrations2.filter((i) => i.type === "adapter");
   const features = integrations2.filter((i) => i.type === "feature");
   const pmRun = pmRunCmd();
   console.log(``);
   console.log(`${pmRun} qwik ${kleur_default.magenta(`add`)} [integration]`);
   console.log(``);
-  console.log(`  ${kleur_default.cyan("Adaptors")}`);
-  for (const s of adaptors) {
+  console.log(`  ${kleur_default.cyan("Adapters")}`);
+  for (const s of adapters) {
     console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
   }
   console.log(``);

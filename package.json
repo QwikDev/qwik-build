@@ -139,7 +139,7 @@
     "server.d.ts",
     "server.mjs",
     "server/package.json",
-    "starters/adaptors",
+    "starters/adapters",
     "starters/features",
     "testing/index.cjs",
     "testing/index.d.ts",
