@@ -995,7 +995,8 @@ class JSXNodeImpl {
             "script" === type && props.children && logWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'"), 
             "className" in props && (props.class = props.className, delete props.className, 
             qDev && !warnClassname && (warnClassname = true, logWarn("jsx: `className` is deprecated. Use `class` instead."))));
-        }));
+        })), isString(type) && "className" in props && (props.class = props.className, delete props.className, 
+        qDev && !warnClassname && (warnClassname = true, logWarn("jsx: `className` is deprecated. Use `class` instead.")));
     }
 }
 

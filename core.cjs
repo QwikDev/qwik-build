@@ -1738,6 +1738,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     }
                 });
             }
+            if (isString(type)) {
+                if ('className' in props) {
+                    props['class'] = props['className'];
+                    delete props['className'];
+                    if (qDev && !warnClassname) {
+                        warnClassname = true;
+                        logWarn('jsx: `className` is deprecated. Use `class` instead.');
+                    }
+                }
+            }
         }
     }
     const printObjectLiteral = (obj) => {
