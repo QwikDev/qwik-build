@@ -533,13 +533,7 @@ var logError = (message, ...optionalParams) => {
 };
 var createError = (message) => {
   const err = new Error(message);
-  if (err.stack) {
-    err.stack = filterStack(err.stack);
-  }
   return err;
-};
-var filterStack = (stack, offset = 0) => {
-  return stack.split("\n").slice(offset).filter((l) => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:")).join("\n");
 };
 var logErrorAndStop = (message, ...optionalParams) => {
   const err = logError(message, ...optionalParams);

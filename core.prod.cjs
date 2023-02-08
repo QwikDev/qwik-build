@@ -42,11 +42,7 @@
         return console.error("%cQWIK ERROR", STYLE, messageStr, ...printParams(optionalParams)), 
         err;
     };
-    const createError = message => {
-        const err = new Error(message);
-        return err.stack && (err.stack = filterStack(err.stack)), err;
-    };
-    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
+    const createError = message => new Error(message);
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
     const logWarn = (message, ...optionalParams) => {
         qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
@@ -822,6 +818,7 @@
         }), error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, ONCE_JSX.add(key), 
         error);
     };
+    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
     const getDocument = node => {
         if ("undefined" != typeof document) {
             return document;

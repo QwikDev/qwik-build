@@ -67,17 +67,7 @@ const logError = (message, ...optionalParams) => {
 };
 const createError = (message) => {
     const err = new Error(message);
-    if (err.stack) {
-        err.stack = filterStack(err.stack);
-    }
     return err;
-};
-const filterStack = (stack, offset = 0) => {
-    return stack
-        .split('\n')
-        .slice(offset)
-        .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
-        .join('\n');
 };
 const logErrorAndStop = (message, ...optionalParams) => {
     const err = logError(message, ...optionalParams);
@@ -1820,6 +1810,13 @@ const createJSXError = (message, node) => {
     error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
     ONCE_JSX.add(key);
     return error;
+};
+const filterStack = (stack, offset = 0) => {
+    return stack
+        .split('\n')
+        .slice(offset)
+        .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
+        .join('\n');
 };
 
 const getDocument = (node) => {
