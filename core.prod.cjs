@@ -546,16 +546,20 @@
         }
     }
     const wrap = (value, containerState) => {
-        if (isQrl(value)) {
-            return value;
-        }
         if (isObject(value)) {
             if (Object.isFrozen(value)) {
                 return value;
             }
             const nakedValue = unwrapProxy(value);
-            return nakedValue !== value || isNode$1(nakedValue) ? value : shouldSerialize(nakedValue) ? (qDev && verifySerializable(value), 
-            containerState.$proxyMap$.get(value) || getOrCreateProxy(value, containerState, 1)) : value;
+            if (nakedValue !== value) {
+                return value;
+            }
+            if (fastSkipSerialize(nakedValue)) {
+                return value;
+            }
+            if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
+                return containerState.$proxyMap$.get(nakedValue) || getOrCreateProxy(nakedValue, containerState, 1);
+            }
         }
         return value;
     };
@@ -829,8 +833,8 @@
         const doc = node.ownerDocument;
         return assertDefined(doc, "doc must be defined"), doc;
     };
-    const setAttribute = (ctx, el, prop, value) => {
-        ctx ? ctx.$operations$.push({
+    const setAttribute = (staticCtx, el, prop, value) => {
+        staticCtx ? staticCtx.$operations$.push({
             $operation$: _setAttribute,
             $args$: [ el, prop, value ]
         }) : _setAttribute(el, prop, value);
@@ -843,8 +847,8 @@
             directSetAttribute(el, prop, str);
         }
     };
-    const setProperty = (ctx, node, key, value) => {
-        ctx ? ctx.$operations$.push({
+    const setProperty = (staticCtx, node, key, value) => {
+        staticCtx ? staticCtx.$operations$.push({
             $operation$: _setProperty,
             $args$: [ node, key, value ]
         }) : _setProperty(node, key, value);
@@ -861,10 +865,20 @@
         }
     };
     const createElement = (doc, expectTag, isSvg) => isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
-    const insertBefore = (ctx, parent, newChild, refChild) => (ctx.$operations$.push({
+    const insertBefore = (staticCtx, parent, newChild, refChild) => (staticCtx.$operations$.push({
         $operation$: directInsertBefore,
         $args$: [ parent, newChild, refChild || null ]
     }), newChild);
+    const appendChild = (staticCtx, parent, newChild) => (staticCtx.$operations$.push({
+        $operation$: directAppendChild,
+        $args$: [ parent, newChild ]
+    }), newChild);
+    const appendHeadStyle = (staticCtx, styleTask) => {
+        staticCtx.$containerState$.$styleIds$.add(styleTask.styleId), staticCtx.$postOperations$.push({
+            $operation$: _appendHeadStyle,
+            $args$: [ staticCtx.$containerState$.$containerEl$, styleTask ]
+        });
+    };
     const _setClasslist = (elm, toRemove, toAdd) => {
         const classList = elm.classList;
         classList.remove(...toRemove), classList.add(...toAdd);
@@ -878,10 +892,10 @@
         directSetAttribute(style, "hidden", ""), style.textContent = styleTask.content, 
         isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
     };
-    const removeNode = (ctx, el) => {
-        ctx.$operations$.push({
+    const removeNode = (staticCtx, el) => {
+        staticCtx.$operations$.push({
             $operation$: _removeNode,
-            $args$: [ el, ctx ]
+            $args$: [ el, staticCtx ]
         });
     };
     const _removeNode = (el, staticCtx) => {
@@ -901,38 +915,38 @@
         return directSetAttribute(template, QSlot, slotName), directSetAttribute(template, "hidden", ""), 
         directSetAttribute(template, "aria-hidden", "true"), template;
     };
-    const executeDOMRender = ctx => {
-        for (const op of ctx.$operations$) {
+    const executeDOMRender = staticCtx => {
+        for (const op of staticCtx.$operations$) {
             op.$operation$.apply(void 0, op.$args$);
         }
-        resolveSlotProjection(ctx);
+        resolveSlotProjection(staticCtx);
     };
     const getKey = el => directGetAttribute(el, "q:key");
     const setKey = (el, key) => {
         null !== key && directSetAttribute(el, "q:key", key);
     };
-    const resolveSlotProjection = ctx => {
-        const subsManager = ctx.$containerState$.$subsManager$;
-        for (const slotEl of ctx.$rmSlots$) {
+    const resolveSlotProjection = staticCtx => {
+        const subsManager = staticCtx.$containerState$.$subsManager$;
+        for (const slotEl of staticCtx.$rmSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, "slots must have a key");
             const slotChildren = getChildren(slotEl, "root");
             if (slotChildren.length > 0) {
                 const sref = slotEl.getAttribute("q:sref");
-                const hostCtx = ctx.$roots$.find((r => r.$id$ === sref));
+                const hostCtx = staticCtx.$roots$.find((r => r.$id$ === sref));
                 if (hostCtx) {
-                    const template = createTemplate(ctx.$doc$, key);
+                    const template = createTemplate(staticCtx.$doc$, key);
                     const hostElm = hostCtx.$element$;
                     for (const child of slotChildren) {
                         directAppendChild(template, child);
                     }
                     directInsertBefore(hostElm, template, hostElm.firstChild);
                 } else {
-                    cleanupTree(slotEl, ctx, subsManager, false);
+                    cleanupTree(slotEl, staticCtx, subsManager, false);
                 }
             }
         }
-        for (const [slotEl, hostElm] of ctx.$addSlots$) {
+        for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, "slots must have a key");
             const template = Array.from(hostElm.childNodes).find((node => isSlotTemplate(node) && node.getAttribute(QSlot) === key));
@@ -941,19 +955,19 @@
             })), template.remove());
         }
     };
-    const printRenderStats = ctx => {
+    const printRenderStats = staticCtx => {
         if (qDev && "undefined" != typeof window && null != window.document) {
             const byOp = {};
-            for (const op of ctx.$operations$) {
+            for (const op of staticCtx.$operations$) {
                 byOp[op.$operation$.name] = (byOp[op.$operation$.name] ?? 0) + 1;
             }
             const stats = {
                 byOp: byOp,
-                roots: ctx.$roots$.map((ctx => ctx.$element$)),
-                hostElements: Array.from(ctx.$hostElements$),
-                operations: ctx.$operations$.map((v => [ v.$operation$.name, ...v.$args$ ]))
+                roots: staticCtx.$roots$.map((ctx => ctx.$element$)),
+                hostElements: Array.from(staticCtx.$hostElements$),
+                operations: staticCtx.$operations$.map((v => [ v.$operation$.name, ...v.$args$ ]))
             };
-            const noOps = 0 === ctx.$operations$.length;
+            const noOps = 0 === staticCtx.$operations$.length;
             logDebug("Render stats.", noOps ? "No operations" : "", stats);
         }
     };
@@ -1332,14 +1346,9 @@
             if (staticCtx.$hostElements$.add(hostElement), invocationContext.$subscriber$ = hostElement, 
             invocationContext.$renderCtx$ = newCtx, justMounted && elCtx.$appendStyles$) {
                 for (const style of elCtx.$appendStyles$) {
-                    styleTask = style, (ctx = staticCtx).$containerState$.$styleIds$.add(styleTask.styleId), 
-                    ctx.$postOperations$.push({
-                        $operation$: _appendHeadStyle,
-                        $args$: [ ctx.$containerState$.$containerEl$, styleTask ]
-                    });
+                    appendHeadStyle(staticCtx, style);
                 }
             }
-            var ctx, styleTask;
             const processedJSXNode = processData$1(res.node, invocationContext);
             return then(processedJSXNode, (processedJSXNode => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
@@ -1627,13 +1636,12 @@
             templateEl && (splittedNewChidren[key] && !slotMaps.slots[key] || (removeNode(staticCtx, templateEl), 
             slotMaps.templates[key] = void 0));
         }
-        return promiseAll(Object.keys(splittedNewChidren).map((key => {
-            const newVdom = splittedNewChidren[key];
-            const slotElm = getSlotElement(staticCtx, slotMaps, hostCtx.$element$, key);
-            const slotCtx = getContext(slotElm, rCtx.$static$.$containerState$);
+        return promiseAll(Object.keys(splittedNewChidren).map((slotName => {
+            const newVdom = splittedNewChidren[slotName];
+            const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
-            return slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotElm, 
+            return slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotCtx.$element$, 
             smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
         })));
     };
@@ -1647,28 +1655,30 @@
         }
         return promiseAllLazy(promises);
     };
-    const removeVnodes = (ctx, nodes, startIdx, endIdx) => {
+    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
         for (;startIdx <= endIdx; ++startIdx) {
             const ch = nodes[startIdx];
-            ch && (assertDefined(ch.$elm$, "vnode elm must be defined"), removeNode(ctx, ch.$elm$));
+            ch && (assertDefined(ch.$elm$, "vnode elm must be defined"), removeNode(staticCtx, ch.$elm$));
         }
     };
-    const getSlotElement = (ctx, slotMaps, parentEl, slotName) => {
+    const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
         const slotEl = slotMaps.slots[slotName];
         if (slotEl) {
-            return slotEl;
+            return getContext(slotEl, containerState);
         }
         const templateEl = slotMaps.templates[slotName];
         if (templateEl) {
-            return templateEl;
+            return getContext(templateEl, containerState);
         }
-        const template = createTemplate(ctx.$doc$, slotName);
-        return ((ctx, parent, newChild) => {
-            ctx.$operations$.push({
+        const template = createTemplate(staticCtx.$doc$, slotName);
+        const elCtx = createContext$1(template);
+        return elCtx.$parent$ = hostCtx, ((staticCtx, parent, newChild) => {
+            staticCtx.$operations$.push({
                 $operation$: directInsertBefore,
                 $args$: [ parent, newChild, parent.firstChild ]
             });
-        })(ctx, parentEl, template), slotMaps.templates[slotName] = template, template;
+        })(staticCtx, hostCtx.$element$, template), slotMaps.templates[slotName] = template, 
+        elCtx;
     };
     const getSlotName = node => node.$props$[QSlot] ?? "";
     const createElm = (rCtx, vnode, flags, promises) => {
@@ -1718,17 +1728,13 @@
                 const slotMap = getSlotMap(elCtx);
                 const p = [];
                 for (const node of children) {
-                    const slotEl = getSlotElement(staticCtx, slotMap, elm, getSlotName(node));
+                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, getSlotName(node), staticCtx.$containerState$);
                     const slotRctx = pushRenderContext(rCtx);
-                    slotRctx.$slotCtx$ = getContext(slotEl, staticCtx.$containerState$);
+                    slotRctx.$slotCtx$ = slotCtx;
                     const nodeElm = createElm(slotRctx, node, flags, p);
                     assertDefined(node.$elm$, "vnode elm must be defined"), assertEqual(nodeElm, node.$elm$, "vnode elm must be defined"), 
-                    parent = slotEl, newChild = nodeElm, staticCtx.$operations$.push({
-                        $operation$: directAppendChild,
-                        $args$: [ parent, newChild ]
-                    });
+                    appendChild(staticCtx, slotCtx.$element$, nodeElm);
                 }
-                var parent, newChild;
                 return promiseAllLazy(p);
             }));
             return isPromise(wait) && promises.push(wait), elm;
@@ -1811,8 +1817,8 @@
             assertTrue(null == newValue || "string" == typeof newValue, "class newValue must be either nullish or string", newValue);
             const oldClasses = parseClassList(oldValue);
             const newClasses = parseClassList(newValue);
-            return ((ctx, elm, toRemove, toAdd) => {
-                ctx ? ctx.$operations$.push({
+            return ((staticCtx, elm, toRemove, toAdd) => {
+                staticCtx ? staticCtx.$operations$.push({
                     $operation$: _setClasslist,
                     $args$: [ elm, toRemove, toAdd ]
                 }) : _setClasslist(elm, toRemove, toAdd);

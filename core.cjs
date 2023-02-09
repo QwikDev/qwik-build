@@ -1204,9 +1204,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
     }
     const wrap = (value, containerState) => {
-        if (isQrl(value)) {
-            return value;
-        }
         if (isObject(value)) {
             if (Object.isFrozen(value)) {
                 return value;
@@ -1216,21 +1213,15 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 // already a proxy return;
                 return value;
             }
-            if (isNode$1(nakedValue)) {
+            if (fastSkipSerialize(nakedValue)) {
                 return value;
             }
-            if (!shouldSerialize(nakedValue)) {
-                return value;
+            if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
+                const proxy = containerState.$proxyMap$.get(nakedValue);
+                return proxy ? proxy : getOrCreateProxy(nakedValue, containerState, QObjectRecursive);
             }
-            if (qDev) {
-                verifySerializable(value);
-            }
-            const proxy = containerState.$proxyMap$.get(value);
-            return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
         }
-        else {
-            return value;
-        }
+        return value;
     };
 
     const Q_CTX = '_qc_';
@@ -1846,9 +1837,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return doc;
     };
 
-    const setAttribute = (ctx, el, prop, value) => {
-        if (ctx) {
-            ctx.$operations$.push({
+    const setAttribute = (staticCtx, el, prop, value) => {
+        if (staticCtx) {
+            staticCtx.$operations$.push({
                 $operation$: _setAttribute,
                 $args$: [el, prop, value],
             });
@@ -1866,9 +1857,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             directSetAttribute(el, prop, str);
         }
     };
-    const setProperty = (ctx, node, key, value) => {
-        if (ctx) {
-            ctx.$operations$.push({
+    const setProperty = (staticCtx, node, key, value) => {
+        if (staticCtx) {
+            staticCtx.$operations$.push({
                 $operation$: _setProperty,
                 $args$: [node, key, value],
             });
@@ -1892,30 +1883,30 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
         return el;
     };
-    const insertBefore = (ctx, parent, newChild, refChild) => {
-        ctx.$operations$.push({
+    const insertBefore = (staticCtx, parent, newChild, refChild) => {
+        staticCtx.$operations$.push({
             $operation$: directInsertBefore,
             $args$: [parent, newChild, refChild ? refChild : null],
         });
         return newChild;
     };
-    const appendChild = (ctx, parent, newChild) => {
-        ctx.$operations$.push({
+    const appendChild = (staticCtx, parent, newChild) => {
+        staticCtx.$operations$.push({
             $operation$: directAppendChild,
             $args$: [parent, newChild],
         });
         return newChild;
     };
-    const appendHeadStyle = (ctx, styleTask) => {
-        ctx.$containerState$.$styleIds$.add(styleTask.styleId);
-        ctx.$postOperations$.push({
+    const appendHeadStyle = (staticCtx, styleTask) => {
+        staticCtx.$containerState$.$styleIds$.add(styleTask.styleId);
+        staticCtx.$postOperations$.push({
             $operation$: _appendHeadStyle,
-            $args$: [ctx.$containerState$.$containerEl$, styleTask],
+            $args$: [staticCtx.$containerState$.$containerEl$, styleTask],
         });
     };
-    const setClasslist = (ctx, elm, toRemove, toAdd) => {
-        if (ctx) {
-            ctx.$operations$.push({
+    const setClasslist = (staticCtx, elm, toRemove, toAdd) => {
+        if (staticCtx) {
+            staticCtx.$operations$.push({
                 $operation$: _setClasslist,
                 $args$: [elm, toRemove, toAdd],
             });
@@ -1947,16 +1938,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             directInsertBefore(containerEl, style, containerEl.firstChild);
         }
     };
-    const prepend = (ctx, parent, newChild) => {
-        ctx.$operations$.push({
+    const prepend = (staticCtx, parent, newChild) => {
+        staticCtx.$operations$.push({
             $operation$: directInsertBefore,
             $args$: [parent, newChild, parent.firstChild],
         });
     };
-    const removeNode = (ctx, el) => {
-        ctx.$operations$.push({
+    const removeNode = (staticCtx, el) => {
+        staticCtx.$operations$.push({
             $operation$: _removeNode,
-            $args$: [el, ctx],
+            $args$: [el, staticCtx],
         });
     };
     const _removeNode = (el, staticCtx) => {
@@ -1979,11 +1970,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         directSetAttribute(template, 'aria-hidden', 'true');
         return template;
     };
-    const executeDOMRender = (ctx) => {
-        for (const op of ctx.$operations$) {
+    const executeDOMRender = (staticCtx) => {
+        for (const op of staticCtx.$operations$) {
             op.$operation$.apply(undefined, op.$args$);
         }
-        resolveSlotProjection(ctx);
+        resolveSlotProjection(staticCtx);
     };
     const getKey = (el) => {
         return directGetAttribute(el, 'q:key');
@@ -1993,18 +1984,18 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             directSetAttribute(el, 'q:key', key);
         }
     };
-    const resolveSlotProjection = (ctx) => {
+    const resolveSlotProjection = (staticCtx) => {
         // Slots removed
-        const subsManager = ctx.$containerState$.$subsManager$;
-        for (const slotEl of ctx.$rmSlots$) {
+        const subsManager = staticCtx.$containerState$.$subsManager$;
+        for (const slotEl of staticCtx.$rmSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, 'slots must have a key');
             const slotChildren = getChildren(slotEl, 'root');
             if (slotChildren.length > 0) {
                 const sref = slotEl.getAttribute(QSlotRef);
-                const hostCtx = ctx.$roots$.find((r) => r.$id$ === sref);
+                const hostCtx = staticCtx.$roots$.find((r) => r.$id$ === sref);
                 if (hostCtx) {
-                    const template = createTemplate(ctx.$doc$, key);
+                    const template = createTemplate(staticCtx.$doc$, key);
                     const hostElm = hostCtx.$element$;
                     for (const child of slotChildren) {
                         directAppendChild(template, child);
@@ -2014,12 +2005,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 else {
                     // If slot content cannot be relocated, it means it's content is definively removed
                     // Cleanup needs to be executed
-                    cleanupTree(slotEl, ctx, subsManager, false);
+                    cleanupTree(slotEl, staticCtx, subsManager, false);
                 }
             }
         }
         // Slots added
-        for (const [slotEl, hostElm] of ctx.$addSlots$) {
+        for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, 'slots must have a key');
             const template = Array.from(hostElm.childNodes).find((node) => {
@@ -2037,20 +2028,20 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const createTextNode = (doc, text) => {
         return doc.createTextNode(text);
     };
-    const printRenderStats = (ctx) => {
+    const printRenderStats = (staticCtx) => {
         if (qDev) {
             if (typeof window !== 'undefined' && window.document != null) {
                 const byOp = {};
-                for (const op of ctx.$operations$) {
+                for (const op of staticCtx.$operations$) {
                     byOp[op.$operation$.name] = (byOp[op.$operation$.name] ?? 0) + 1;
                 }
                 const stats = {
                     byOp,
-                    roots: ctx.$roots$.map((ctx) => ctx.$element$),
-                    hostElements: Array.from(ctx.$hostElements$),
-                    operations: ctx.$operations$.map((v) => [v.$operation$.name, ...v.$args$]),
+                    roots: staticCtx.$roots$.map((ctx) => ctx.$element$),
+                    hostElements: Array.from(staticCtx.$hostElements$),
+                    operations: staticCtx.$operations$.map((v) => [v.$operation$.name, ...v.$args$]),
                 };
-                const noOps = ctx.$operations$.length === 0;
+                const noOps = staticCtx.$operations$.length === 0;
                 logDebug('Render stats.', noOps ? 'No operations' : '', stats);
             }
         }
@@ -3276,15 +3267,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
         // Render into slots
-        return promiseAll(Object.keys(splittedNewChidren).map((key) => {
-            const newVdom = splittedNewChidren[key];
-            const slotElm = getSlotElement(staticCtx, slotMaps, hostCtx.$element$, key);
-            const slotCtx = getContext(slotElm, rCtx.$static$.$containerState$);
+        return promiseAll(Object.keys(splittedNewChidren).map((slotName) => {
+            const newVdom = splittedNewChidren[slotName];
+            const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
             slotRctx.$slotCtx$ = slotCtx;
             slotCtx.$vdom$ = newVdom;
-            newVdom.$elm$ = slotElm;
+            newVdom.$elm$ = slotCtx.$element$;
             return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
         }));
     };
@@ -3298,28 +3288,30 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return promiseAllLazy(promises);
     };
-    const removeVnodes = (ctx, nodes, startIdx, endIdx) => {
+    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
         for (; startIdx <= endIdx; ++startIdx) {
             const ch = nodes[startIdx];
             if (ch) {
                 assertDefined(ch.$elm$, 'vnode elm must be defined');
-                removeNode(ctx, ch.$elm$);
+                removeNode(staticCtx, ch.$elm$);
             }
         }
     };
-    const getSlotElement = (ctx, slotMaps, parentEl, slotName) => {
+    const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
         const slotEl = slotMaps.slots[slotName];
         if (slotEl) {
-            return slotEl;
+            return getContext(slotEl, containerState);
         }
         const templateEl = slotMaps.templates[slotName];
         if (templateEl) {
-            return templateEl;
+            return getContext(templateEl, containerState);
         }
-        const template = createTemplate(ctx.$doc$, slotName);
-        prepend(ctx, parentEl, template);
+        const template = createTemplate(staticCtx.$doc$, slotName);
+        const elCtx = createContext$1(template);
+        elCtx.$parent$ = hostCtx;
+        prepend(staticCtx, hostCtx.$element$, template);
         slotMaps.templates[slotName] = template;
-        return template;
+        return elCtx;
     };
     const getSlotName = (node) => {
         return node.$props$[QSlot] ?? '';
@@ -3399,13 +3391,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 const slotMap = getSlotMap(elCtx);
                 const p = [];
                 for (const node of children) {
-                    const slotEl = getSlotElement(staticCtx, slotMap, elm, getSlotName(node));
+                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, getSlotName(node), staticCtx.$containerState$);
                     const slotRctx = pushRenderContext(rCtx);
-                    slotRctx.$slotCtx$ = getContext(slotEl, staticCtx.$containerState$);
+                    slotRctx.$slotCtx$ = slotCtx;
                     const nodeElm = createElm(slotRctx, node, flags, p);
                     assertDefined(node.$elm$, 'vnode elm must be defined');
                     assertEqual(nodeElm, node.$elm$, 'vnode elm must be defined');
-                    appendChild(staticCtx, slotEl, nodeElm);
+                    appendChild(staticCtx, slotCtx.$element$, nodeElm);
                 }
                 return promiseAllLazy(p);
             });
