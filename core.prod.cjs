@@ -546,20 +546,16 @@
         }
     }
     const wrap = (value, containerState) => {
+        if (isQrl(value)) {
+            return value;
+        }
         if (isObject(value)) {
             if (Object.isFrozen(value)) {
                 return value;
             }
             const nakedValue = unwrapProxy(value);
-            if (nakedValue !== value) {
-                return value;
-            }
-            if (fastSkipSerialize(nakedValue)) {
-                return value;
-            }
-            if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
-                return containerState.$proxyMap$.get(nakedValue) || getOrCreateProxy(nakedValue, containerState, 1);
-            }
+            return nakedValue !== value || isNode$1(nakedValue) ? value : shouldSerialize(nakedValue) ? (qDev && verifySerializable(value), 
+            containerState.$proxyMap$.get(value) || getOrCreateProxy(value, containerState, 1)) : value;
         }
         return value;
     };

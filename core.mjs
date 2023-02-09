@@ -1192,6 +1192,9 @@ class ReadWriteProxyHandler {
     }
 }
 const wrap = (value, containerState) => {
+    if (isQrl(value)) {
+        return value;
+    }
     if (isObject(value)) {
         if (Object.isFrozen(value)) {
             return value;
@@ -1201,15 +1204,21 @@ const wrap = (value, containerState) => {
             // already a proxy return;
             return value;
         }
-        if (fastSkipSerialize(nakedValue)) {
+        if (isNode$1(nakedValue)) {
             return value;
         }
-        if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
-            const proxy = containerState.$proxyMap$.get(nakedValue);
-            return proxy ? proxy : getOrCreateProxy(nakedValue, containerState, QObjectRecursive);
+        if (!shouldSerialize(nakedValue)) {
+            return value;
         }
+        if (qDev) {
+            verifySerializable(value);
+        }
+        const proxy = containerState.$proxyMap$.get(value);
+        return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
     }
-    return value;
+    else {
+        return value;
+    }
 };
 
 const Q_CTX = '_qc_';
