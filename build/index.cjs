@@ -21,9 +21,13 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var build_exports = {};
 __export(build_exports, {
   isBrowser: () => isBrowser,
+  isDev: () => isDev,
   isServer: () => isServer
 });
 module.exports = __toCommonJS(build_exports);
 var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && typeof HTMLElement !== "undefined" && !!window.document && String(HTMLElement).includes("[native code]"))();
 var isServer = !isBrowser;
+var isDev = /* @__PURE__ */ (() => {
+  return globalThis.qDev === true;
+})();
 //# sourceMappingURL=index.cjs.map

@@ -6,6 +6,13 @@
 export declare const isBrowser: boolean;
 
 /**
+ * True when build is in dev mode.
+ *
+ * @alpha
+ */
+export declare const isDev: boolean;
+
+/**
  * True when build is made for SSR purposes.
  *
  * @alpha

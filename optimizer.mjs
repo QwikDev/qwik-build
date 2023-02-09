@@ -1302,7 +1302,8 @@ function createPlugin(optimizerOptions = {}) {
   };
   function getQwikBuildModule(loadOpts) {
     const isServer = "ssr" === opts.target || !!loadOpts.ssr;
-    return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\n`;
+    const isDev = "development" === opts.buildMode;
+    return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\nexport const isDev = ${JSON.stringify(isDev)};\n`;
   }
   async function getQwikServerManifestModule(loadOpts) {
     const isServer = "ssr" === opts.target || !!loadOpts.ssr;
