@@ -6108,7 +6108,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             collectValue(obj.ref, collector, leaks);
             if (fastWeakSerialize(obj.ref)) {
                 const manager = getProxyManager(obj.ref);
-                if (!manager.$isTreeshakeable$(obj.prop)) {
+                if (leaks || !manager.$isTreeshakeable$(obj.prop)) {
                     collectValue(obj.ref[obj.prop], collector, leaks);
                 }
             }

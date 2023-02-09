@@ -3151,8 +3151,13 @@
     }, {
         prefix: "",
         test: v => v instanceof SignalWrapper,
-        collect: (obj, collector, leaks) => (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref) && (getProxyManager(obj.ref).$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks)), 
-        obj),
+        collect(obj, collector, leaks) {
+            if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
+                const manager = getProxyManager(obj.ref);
+                !leaks && manager.$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks);
+            }
+            return obj;
+        },
         serialize: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
         prepare: data => {
             const [id, prop] = data.split(" ");
