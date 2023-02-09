@@ -1204,9 +1204,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
     }
     const wrap = (value, containerState) => {
-        if (isQrl(value)) {
-            return value;
-        }
         if (isObject(value)) {
             if (Object.isFrozen(value)) {
                 return value;
@@ -1216,21 +1213,15 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 // already a proxy return;
                 return value;
             }
-            if (isNode$1(nakedValue)) {
+            if (fastSkipSerialize(nakedValue)) {
                 return value;
             }
-            if (!shouldSerialize(nakedValue)) {
-                return value;
+            if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
+                const proxy = containerState.$proxyMap$.get(nakedValue);
+                return proxy ? proxy : getOrCreateProxy(nakedValue, containerState, QObjectRecursive);
             }
-            if (qDev) {
-                verifySerializable(value);
-            }
-            const proxy = containerState.$proxyMap$.get(value);
-            return proxy ? proxy : getOrCreateProxy(value, containerState, QObjectRecursive);
         }
-        else {
-            return value;
-        }
+        return value;
     };
 
     const Q_CTX = '_qc_';
