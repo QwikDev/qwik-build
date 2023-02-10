@@ -1253,7 +1253,7 @@ globalThis.qwikOptimizer = function(module) {
       const path = getPath();
       const {pathId: pathId} = parseId(id2);
       const {ext: ext, dir: dir, base: base} = path.parse(pathId);
-      if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId)) {
+      if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
         const normalizedID = normalizePath(pathId);
         log("transform()", "Transforming", pathId);
         let filePath = base;
@@ -1387,6 +1387,20 @@ globalThis.qwikOptimizer = function(module) {
       validateSource: validateSource
     };
   }
+  var insideRoots = (ext, dir, srcDir, vendorRoots) => {
+    if (".js" !== ext) {
+      return false;
+    }
+    if (null != srcDir && dir.startsWith(srcDir)) {
+      return true;
+    }
+    for (const root of vendorRoots) {
+      if (dir.startsWith(root)) {
+        return true;
+      }
+    }
+    return false;
+  };
   function parseId(originalId) {
     const [pathId, query] = originalId.split("?");
     const queryStr = query || "";
