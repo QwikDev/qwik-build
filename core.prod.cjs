@@ -2056,8 +2056,11 @@
         const getObjId = obj => {
             let suffix = "";
             if (isPromise(obj)) {
-                const {value: value, resolved: resolved} = getPromiseValue(obj);
-                obj = value, suffix += resolved ? "~" : "_";
+                const promiseValue = getPromiseValue(obj);
+                if (!promiseValue) {
+                    return null;
+                }
+                obj = promiseValue.value, promiseValue.resolved ? suffix += "~" : suffix += "_";
             }
             if (isObject(obj)) {
                 const target = getProxyTarget(obj);
@@ -2306,8 +2309,7 @@
         }
     };
     const PROMISE_VALUE = Symbol();
-    const getPromiseValue = promise => (assertTrue(PROMISE_VALUE in promise, "pause: promise was not resolved previously", promise), 
-    promise[PROMISE_VALUE]);
+    const getPromiseValue = promise => promise[PROMISE_VALUE];
     const collectValue = (obj, collector, leaks) => {
         if (null !== obj) {
             const objType = typeof obj;
@@ -4440,8 +4442,11 @@
         const mustGetObjId = obj => {
             let suffix = "";
             if (isPromise(obj)) {
-                const {value: value, resolved: resolved} = getPromiseValue(obj);
-                obj = value, suffix += resolved ? "~" : "_";
+                const promiseValue = getPromiseValue(obj);
+                if (!promiseValue) {
+                    throw qError(27, obj);
+                }
+                obj = promiseValue.value, promiseValue.resolved ? suffix += "~" : suffix += "_";
             }
             const key = objToId.get(obj);
             if (void 0 === key) {

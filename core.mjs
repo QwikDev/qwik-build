@@ -3804,9 +3804,12 @@ const _serializeData = async (data) => {
     const mustGetObjId = (obj) => {
         let suffix = '';
         if (isPromise(obj)) {
-            const { value, resolved } = getPromiseValue(obj);
-            obj = value;
-            if (resolved) {
+            const promiseValue = getPromiseValue(obj);
+            if (!promiseValue) {
+                throw qError(QError_missingObjectId, obj);
+            }
+            obj = promiseValue.value;
+            if (promiseValue.resolved) {
                 suffix += '~';
             }
             else {
@@ -4012,9 +4015,12 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     const getObjId = (obj) => {
         let suffix = '';
         if (isPromise(obj)) {
-            const { value, resolved } = getPromiseValue(obj);
-            obj = value;
-            if (resolved) {
+            const promiseValue = getPromiseValue(obj);
+            if (!promiseValue) {
+                return null;
+            }
+            obj = promiseValue.value;
+            if (promiseValue.resolved) {
                 suffix += '~';
             }
             else {
@@ -4402,7 +4408,6 @@ const resolvePromise = (promise) => {
     });
 };
 const getPromiseValue = (promise) => {
-    assertTrue(PROMISE_VALUE in promise, 'pause: promise was not resolved previously', promise);
     return promise[PROMISE_VALUE];
 };
 const collectValue = (obj, collector, leaks) => {
