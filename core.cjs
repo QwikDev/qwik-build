@@ -180,7 +180,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 'Invalid JSXNode type. It must be either a function or a string. Found:',
                 'Tracking value changes can only be done to useStore() objects and component props',
                 'Missing Object ID for captured object',
-                'The provided Context reference is not a valid context created by createContext()',
+                'The provided Context reference is not a valid context created by createContextId()',
                 '<html> is the root container, it can not be rendered inside a component',
                 'QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.',
                 'QRLs can not be dynamically resolved, because it does not have a chunk path',
@@ -2332,15 +2332,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
 
-    // <docs markdown="../readme.md#createContext">
+    // <docs markdown="../readme.md#createContextId">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#createContext instead)
+    // (edit ../readme.md#createContextId instead)
     /**
      * Create a context ID to be used in your application.
+     * The name should be written with no spaces.
      *
      * Context is a way to pass stores to the child components without prop-drilling.
      *
-     * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+     * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
      * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
      * for the values. Qwik needs a serializable ID for the context so that the it can track context
      * providers and consumers in a way that survives resumability.
@@ -2354,7 +2355,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * }
      * // Create a Context ID (no data is saved here.)
      * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
+     * export const TodosContext = createContextId<TodosStore>('Todos');
      *
      * // Example of providing context to child components.
      * export const App = component$(() => {
@@ -2385,11 +2386,18 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     // </docs>
-    const createContext = (name) => {
+    const createContextId = (name) => {
         assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
         return /*#__PURE__*/ Object.freeze({
             id: fromCamelToKebabCase(name),
         });
+    };
+    /**
+     * @beta
+     * @deprecated Please use `createContextId` instead.
+     */
+    const createContext = (name) => {
+        return createContextId(name);
     };
     // <docs markdown="../readme.md#useContextProvider">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2412,7 +2420,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * }
      * // Create a Context ID (no data is saved here.)
      * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
+     * export const TodosContext = createContextId<TodosStore>('Todos');
      *
      * // Example of providing context to child components.
      * export const App = component$(() => {
@@ -2480,7 +2488,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * }
      * // Create a Context ID (no data is saved here.)
      * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContext<TodosStore>('Todos');
+     * export const TodosContext = createContextId<TodosStore>('Todos');
      *
      * // Example of providing context to child components.
      * export const App = component$(() => {
@@ -2600,7 +2608,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
 
-    const ERROR_CONTEXT = /*#__PURE__*/ createContext('qk-error');
+    const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
     const handleError = (err, hostElement, rCtx) => {
         const elCtx = tryGetContext(hostElement);
         if (qDev) {
@@ -6753,7 +6761,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *
      * ```tsx
      *
-     * import { createContext, useContext, useContextProvider } from './use/use-context';
+     * import { createContextId, useContext, useContextProvider } from './use/use-context';
      * import { useRef } from './use/use-ref';
      * import { Resource, useResource$ } from './use/use-resource';
      *
@@ -8733,6 +8741,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
     exports.createContext = createContext;
+    exports.createContextId = createContextId;
     exports.getLocale = getLocale;
     exports.getPlatform = getPlatform;
     exports.h = h;

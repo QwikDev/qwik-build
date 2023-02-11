@@ -65,7 +65,7 @@
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
     };
-    const codeToText = code => qDev ? `Code(${code}): ${[ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.\nFor more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules", "Container is already paused. Skipping", 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", "Invalid JSXNode type. It must be either a function or a string. Found:", "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", "The provided Context reference is not a valid context created by createContext()", "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ][code] ?? ""}` : `Code(${code})`;
+    const codeToText = code => qDev ? `Code(${code}): ${[ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.\nFor more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules", "Container is already paused. Skipping", 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", "Invalid JSXNode type. It must be either a function or a string. Found:", "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", "The provided Context reference is not a valid context created by createContextId()", "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ][code] ?? ""}` : `Code(${code})`;
     const isSerializableObject = v => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || null === proto;
@@ -1146,7 +1146,7 @@
         throw new Error("close not found");
     };
     const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
-    const createContext = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name), 
+    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name), 
     Object.freeze({
         id: fromCamelToKebabCase(name)
     }));
@@ -1219,7 +1219,7 @@
             throw qError(28, context);
         }
     };
-    const ERROR_CONTEXT = createContext("qk-error");
+    const ERROR_CONTEXT = createContextId("qk-error");
     const handleError = (err, hostElement, rCtx) => {
         const elCtx = tryGetContext(hostElement);
         if (qDev) {
@@ -4521,7 +4521,8 @@
         const immutable = obj[_IMMUTABLE]?.[prop];
         return isSignal(immutable) ? immutable : obj[prop];
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
-    exports.createContext = createContext, exports.getLocale = function(defaultLocale) {
+    exports.createContext = name => createContextId(name), exports.createContextId = createContextId, 
+    exports.getLocale = function(defaultLocale) {
         if (void 0 === _locale) {
             const ctx = tryGetInvokeContext();
             if (ctx && ctx.$locale$) {

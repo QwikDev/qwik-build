@@ -168,7 +168,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             'Invalid JSXNode type. It must be either a function or a string. Found:',
             'Tracking value changes can only be done to useStore() objects and component props',
             'Missing Object ID for captured object',
-            'The provided Context reference is not a valid context created by createContext()',
+            'The provided Context reference is not a valid context created by createContextId()',
             '<html> is the root container, it can not be rendered inside a component',
             'QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.',
             'QRLs can not be dynamically resolved, because it does not have a chunk path',
@@ -2320,15 +2320,16 @@ const getRootNode = (node) => {
     }
 };
 
-// <docs markdown="../readme.md#createContext">
+// <docs markdown="../readme.md#createContextId">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#createContext instead)
+// (edit ../readme.md#createContextId instead)
 /**
  * Create a context ID to be used in your application.
+ * The name should be written with no spaces.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
  * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
  * for the values. Qwik needs a serializable ID for the context so that the it can track context
  * providers and consumers in a way that survives resumability.
@@ -2342,7 +2343,7 @@ const getRootNode = (node) => {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -2373,11 +2374,18 @@ const getRootNode = (node) => {
  * @public
  */
 // </docs>
-const createContext = (name) => {
+const createContextId = (name) => {
     assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
     return /*#__PURE__*/ Object.freeze({
         id: fromCamelToKebabCase(name),
     });
+};
+/**
+ * @beta
+ * @deprecated Please use `createContextId` instead.
+ */
+const createContext = (name) => {
+    return createContextId(name);
 };
 // <docs markdown="../readme.md#useContextProvider">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2400,7 +2408,7 @@ const createContext = (name) => {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -2468,7 +2476,7 @@ const useContextProvider = (context, newValue) => {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -2588,7 +2596,7 @@ const validateContext = (context) => {
     }
 };
 
-const ERROR_CONTEXT = /*#__PURE__*/ createContext('qk-error');
+const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
 const handleError = (err, hostElement, rCtx) => {
     const elCtx = tryGetContext(hostElement);
     if (qDev) {
@@ -6741,7 +6749,7 @@ let runtimeSymbolId = 0;
  *
  * ```tsx
  *
- * import { createContext, useContext, useContextProvider } from './use/use-context';
+ * import { createContextId, useContext, useContextProvider } from './use/use-context';
  * import { useRef } from './use/use-ref';
  * import { Resource, useResource$ } from './use/use-resource';
  *
@@ -8696,5 +8704,5 @@ const hasDynamicChildren = (node) => {
     return node.props[_IMMUTABLE]?.children === false;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

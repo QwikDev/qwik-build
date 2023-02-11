@@ -43,7 +43,7 @@
  *
  * ```tsx
  *
- * import { createContext, useContext, useContextProvider } from './use/use-context';
+ * import { createContextId, useContext, useContextProvider } from './use/use-context';
  * import { useRef } from './use/use-ref';
  * import { Resource, useResource$ } from './use/use-resource';
  *
@@ -546,11 +546,18 @@ declare interface ContainerState {
 }
 
 /**
- * Context is a typesafe ID for your context.
+ * @beta
+ * @deprecated Please use `ContextId` instead.
+ */
+export declare interface Context<STATE extends object> extends ContextId<STATE> {
+}
+
+/**
+ * ContextId is a typesafe ID for your context.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
  * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
  * for the values. Qwik needs a serializable ID for the context so that the it can track context
  * providers and consumers in a way that survives resumability.
@@ -564,7 +571,7 @@ declare interface ContainerState {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -593,7 +600,7 @@ declare interface ContainerState {
  * ```
  * @public
  */
-export declare interface Context<STATE extends object> {
+export declare interface ContextId<STATE extends object> {
     /**
      * Design-time property to store type information for the context.
      */
@@ -675,11 +682,18 @@ export declare interface CorePlatform {
 }
 
 /**
+ * @beta
+ * @deprecated Please use `createContextId` instead.
+ */
+export declare const createContext: <STATE extends object>(name: string) => ContextId<STATE>;
+
+/**
  * Create a context ID to be used in your application.
+ * The name should be written with no spaces.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContext()` to create a `Context`. `Context` is just a serializable identifier for
+ * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
  * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
  * for the values. Qwik needs a serializable ID for the context so that the it can track context
  * providers and consumers in a way that survives resumability.
@@ -693,7 +707,7 @@ export declare interface CorePlatform {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -723,7 +737,7 @@ export declare interface CorePlatform {
  * @param name - The name of the context.
  * @public
  */
-export declare const createContext: <STATE extends object>(name: string) => Context<STATE>;
+export declare const createContextId: <STATE extends object>(name: string) => ContextId<STATE>;
 
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -2863,9 +2877,9 @@ export declare const useClientMount$: <T>(first: MountFn<T>) => void;
 export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 declare interface UseContext {
-    <STATE extends object, T>(context: Context<STATE>, transformer: (value: STATE) => T): T;
-    <STATE extends object, T>(context: Context<STATE>, defaultValue: T): STATE | T;
-    <STATE extends object>(context: Context<STATE>): STATE;
+    <STATE extends object, T>(context: ContextId<STATE>, transformer: (value: STATE) => T): T;
+    <STATE extends object, T>(context: ContextId<STATE>, defaultValue: T): STATE | T;
+    <STATE extends object>(context: ContextId<STATE>): STATE;
 }
 
 /**
@@ -2883,7 +2897,7 @@ declare interface UseContext {
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -2933,7 +2947,7 @@ export declare const useContext: UseContext;
  * }
  * // Create a Context ID (no data is saved here.)
  * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContext<TodosStore>('Todos');
+ * export const TodosContext = createContextId<TodosStore>('Todos');
  *
  * // Example of providing context to child components.
  * export const App = component$(() => {
@@ -2964,7 +2978,7 @@ export declare const useContext: UseContext;
  * @param value - The value to assign to the context.
  * @public
  */
-export declare const useContextProvider: <STATE extends object>(context: Context<STATE>, newValue: STATE) => void;
+export declare const useContextProvider: <STATE extends object>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /**
  * @public
@@ -3631,7 +3645,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.17.6-dev20230211081223
+ * 0.17.6-dev20230211130609
  * @public
  */
 export declare const version: string;
