@@ -267,7 +267,7 @@ export declare interface QwikRollupPluginOptions {
      */
     debug?: boolean;
     /**
-     * The Qwik entry strategy to use while bunding for production.
+     * The Qwik entry strategy to use while building for production.
      * During development the type is always `hook`.
      * Default `{ type: "smart" }`)
      */
@@ -275,7 +275,7 @@ export declare interface QwikRollupPluginOptions {
     forceFullBuild?: boolean;
     /**
      * The source directory to find all the Qwik components. Since Qwik
-     * does not have a single input, the `srcDir` is use to recursively
+     * does not have a single input, the `srcDir` is used to recursively
      * find Qwik files.
      * Default `src`
      */
@@ -369,14 +369,14 @@ export declare interface QwikVitePluginOptions {
      */
     debug?: boolean;
     /**
-     * The Qwik entry strategy to use while bundling for production.
+     * The Qwik entry strategy to use while building for production.
      * During development the type is always `hook`.
      * Default `{ type: "smart" }`)
      */
     entryStrategy?: EntryStrategy;
     /**
      * The source directory to find all the Qwik components. Since Qwik
-     * does not have a single input, the `srcDir` is use to recursively
+     * does not have a single input, the `srcDir` is used to recursively
      * find Qwik files.
      * Default `src`
      */
@@ -388,8 +388,8 @@ export declare interface QwikVitePluginOptions {
     vendorRoots?: string[];
     client?: {
         /**
-         * The entry point for the client builds. Typically this would be
-         * the application's main component.
+         * The entry point for the client builds. This would be
+         * the application's root component typically.
          * Default `src/components/app/app.tsx`
          */
         input?: string[] | string;
@@ -422,7 +422,7 @@ export declare interface QwikVitePluginOptions {
         input?: string;
         /**
          * Output directory for the server build.
-         * Default `dist`
+         * Default `server`
          */
         outDir?: string;
         /**
