@@ -1494,6 +1494,24 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null;
 
+/**
+ * @public
+ */
+export declare interface OnVisibleTaskOptions {
+    /**
+     * The strategy to use to determine when the "VisibleTask" should first execute.
+     *
+     * - `intersection-observer`: the task will first execute when the element is visible in the viewport, under the hood it uses the IntersectionObserver API.
+     * - `document-ready`: the task will first execute when the document is ready, under the hood it uses the document `load` event.
+     * - `document-idle`: the task will first execute when the document is idle, under the hood it uses the requestIdleCallback API.
+     */
+    strategy?: VisibleTaskStrategy;
+    /**
+     * @deprecated Use `strategy` instead.
+     */
+    eagerness?: EagernessOptions;
+}
+
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
@@ -2769,11 +2787,61 @@ declare type TransformProps<PROPS extends {}> = {
 export declare const untrack: <T>(fn: () => T) => T;
 
 /**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useBrowserVisibleTask$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <div>{store.count}</div>;
+ * });
+ * ```
+ *
+ * @public
+ */
+export declare const useBrowserVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
+
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useBrowserVisibleTask$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <div>{store.count}</div>;
+ * });
+ * ```
+ *
+ * @public
+ */
+export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
+
+/**
  * It can be used to release resources, abort network requests, stop timers...
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useClientEffect$()` instead.
+ * `useBrowserVisibleTask$()` instead.
  */
 export declare const useCleanup$: (first: () => void) => void;
 
@@ -2782,59 +2850,21 @@ export declare const useCleanup$: (first: () => void) => void;
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useClientEffect$()` instead.
+ * `useBrowserVisibleTask$()` instead.
  */
 export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
 
 /**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <div>{store.count}</div>;
- * });
- * ```
- *
- * @public
+ * @alpha
+ * @deprecated - use `useBrowserVisibleTask$()` instead
  */
-export declare const useClientEffect$: (first: TaskFn, opts?: UseEffectOptions | undefined) => void;
+export declare const useClientEffect$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useClientEffect$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <div>{store.count}</div>;
- * });
- * ```
- *
- * @public
+ * @alpha
+ * @deprecated - use `useBrowserVisibleTask$()` instead
  */
-export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: UseEffectOptions) => void;
+export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
 
 /**
  * Deprecated API, equivalent of doing:
@@ -2981,17 +3011,6 @@ export declare const useContext: UseContext;
 export declare const useContextProvider: <STATE extends object>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /**
- * @public
- */
-export declare interface UseEffectOptions {
-    /**
-     * - `visible`: run the effect when the element is visible.
-     * - `load`: eagerly run the effect when the application resumes.
-     */
-    eagerness?: EagernessOptions;
-}
-
-/**
  * @alpha
  * @deprecated Please use `useServerData` instead.
  */
@@ -3116,7 +3135,7 @@ export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: 
  * const Cmp = component$(() => {
  *   const input = useRef<HTMLInputElement>();
  *
- *   useClientEffect$(({ track }) => {
+ *   useBrowserVisibleTask$(({ track }) => {
  *     const el = track(() => input.current)!;
  *     el.focus();
  *   });
@@ -3352,7 +3371,7 @@ export declare const useSignal: UseSignal;
  *   const counterStore = useStore({
  *     value: 0,
  *   });
- *   useClientEffect$(() => {
+ *   useBrowserVisibleTask$(() => {
  *     // Only runs in the client
  *     const timer = setInterval(() => {
  *       counterStore.value += step;
@@ -3645,7 +3664,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.17.6-dev20230213194112
+ * 0.17.6-dev20230213201406
  * @public
  */
 export declare const version: string;
@@ -3689,6 +3708,11 @@ declare interface VirtualElement {
     readonly isConnected: boolean;
     readonly parentElement: Element | null;
 }
+
+/**
+ * @public
+ */
+export declare type VisibleTaskStrategy = 'intersection-observer' | 'document-ready' | 'document-idle';
 
 declare type WatchDescriptor = DescriptorBase<TaskFn>;
 

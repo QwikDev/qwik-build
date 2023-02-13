@@ -547,7 +547,7 @@ class SignalImpl {
         if (qDev) {
             verifySerializable(v);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()", invokeCtx.$hostElement$);
+            invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", invokeCtx.$hostElement$);
         }
         const manager = this[QObjectManagerSymbol];
         const oldValue = this.untrackedValue;
@@ -675,7 +675,7 @@ class ReadWriteProxyHandler {
         if (qDev) {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()", prop);
+            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", prop);
         }
         return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
         true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
@@ -3331,9 +3331,9 @@ const useWatch$ = useTask$;
 
 const useWatchQrl = useTaskQrl;
 
-const useClientEffectQrl = (qrl, opts) => {
+const useBrowserVisibleTaskQrl = (qrl, opts) => {
     const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
-    const eagerness = opts?.eagerness ?? "visible";
+    const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
     if (get) {
         return void (isServer() && useRunWatch(get, eagerness));
     }
@@ -3345,7 +3345,11 @@ const useClientEffectQrl = (qrl, opts) => {
     notifyWatch(watch, containerState));
 };
 
-const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+const useBrowserVisibleTask$ = implicit$FirstArg(useBrowserVisibleTaskQrl);
+
+const useClientEffectQrl = useBrowserVisibleTaskQrl;
+
+const useClientEffect$ = useBrowserVisibleTask$;
 
 const isResourceTask = watch => !!watch.$resource$;
 
@@ -3459,7 +3463,7 @@ const destroyWatch = watch => {
 };
 
 const useRunWatch = (watch, eagerness) => {
-    "visible" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" === eagerness && useOnDocument("qidle", getWatchHandlerQrl(watch));
+    "visible" === eagerness || "intersection-observer" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness || "document-ready" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" !== eagerness && "document-idle" !== eagerness || useOnDocument("qidle", getWatchHandlerQrl(watch));
 };
 
 const getWatchHandlerQrl = watch => {
@@ -4650,7 +4654,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                     const eventName = normalizeInvisibleEvents(listener[0]);
                     attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), addQwikEvent(eventName, rCtx.$static$.$containerState$);
                 }
-                renderNodeElementSync("script", attributes, stream), logWarn("Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.\n          This is likely to the usage of useClientEffect$() in a component that renders no elements.");
+                renderNodeElementSync("script", attributes, stream), logWarn("Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.\n          This is likely to the usage of useBrowserVisibleTask$() in a component that renders no elements.");
             }
             return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream);
         }));
@@ -5131,4 +5135,4 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };

@@ -964,7 +964,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 verifySerializable(v);
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logWarn('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', invokeCtx.$hostElement$);
+                    logWarn('State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()', invokeCtx.$hostElement$);
                 }
             }
             const manager = this[QObjectManagerSymbol];
@@ -1142,7 +1142,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logError('State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()', prop);
+                    logError('State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()', prop);
                 }
             }
             const isA = isArray(target);
@@ -1365,7 +1365,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      *
      * @alpha
      * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useClientEffect$()` instead.
+     * `useBrowserVisibleTask$()` instead.
      */
     // </docs>
     const useCleanupQrl = (unmountFn) => {
@@ -1388,7 +1388,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      *
      * @alpha
      * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useClientEffect$()` instead.
+     * `useBrowserVisibleTask$()` instead.
      */
     // </docs>
     const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
@@ -5326,9 +5326,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @deprecated - use `useTask$()` instead
      */
     const useWatchQrl =  useTaskQrl;
-    // <docs markdown="../readme.md#useClientEffect">
+    // <docs markdown="../readme.md#useBrowserVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientEffect instead)
+    // (edit ../readme.md#useBrowserVisibleTask instead)
     /**
      * ```tsx
      * const Timer = component$(() => {
@@ -5336,7 +5336,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     count: 0,
      *   });
      *
-     *   useClientEffect$(() => {
+     *   useBrowserVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       store.count++;
@@ -5353,9 +5353,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     // </docs>
-    const useClientEffectQrl = (qrl, opts) => {
+    const useBrowserVisibleTaskQrl = (qrl, opts) => {
         const { get, set, i, iCtx, elCtx } = useSequentialScope();
-        const eagerness = opts?.eagerness ?? 'visible';
+        const eagerness = opts?.strategy ?? opts?.eagerness ?? 'intersection-observer';
         if (get) {
             if (isServer()) {
                 useRunWatch(get, eagerness);
@@ -5376,9 +5376,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             notifyWatch(watch, containerState);
         }
     };
-    // <docs markdown="../readme.md#useClientEffect">
+    // <docs markdown="../readme.md#useBrowserVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientEffect instead)
+    // (edit ../readme.md#useBrowserVisibleTask instead)
     /**
      * ```tsx
      * const Timer = component$(() => {
@@ -5386,7 +5386,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     count: 0,
      *   });
      *
-     *   useClientEffect$(() => {
+     *   useBrowserVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       store.count++;
@@ -5403,7 +5403,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     // </docs>
-    const useClientEffect$ = /*#__PURE__*/ implicit$FirstArg(useClientEffectQrl);
+    const useBrowserVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useBrowserVisibleTaskQrl);
+    /**
+     * @alpha
+     * @deprecated - use `useBrowserVisibleTask$()` instead
+     */
+    const useClientEffectQrl = useBrowserVisibleTaskQrl;
+    /**
+     * @alpha
+     * @deprecated - use `useBrowserVisibleTask$()` instead
+     */
+    const useClientEffect$ = useBrowserVisibleTask$;
     const isResourceTask = (watch) => {
         return !!watch.$resource$;
     };
@@ -5595,13 +5605,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
     const useRunWatch = (watch, eagerness) => {
-        if (eagerness === 'visible') {
+        if (eagerness === 'visible' || eagerness === 'intersection-observer') {
             useOn('qvisible', getWatchHandlerQrl(watch));
         }
-        else if (eagerness === 'load') {
+        else if (eagerness === 'load' || eagerness === 'document-ready') {
             useOnDocument('qinit', getWatchHandlerQrl(watch));
         }
-        else if (eagerness === 'idle') {
+        else if (eagerness === 'idle' || eagerness === 'document-idle') {
             useOnDocument('qidle', getWatchHandlerQrl(watch));
         }
     };
@@ -7110,7 +7120,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *   const counterStore = useStore({
      *     value: 0,
      *   });
-     *   useClientEffect$(() => {
+     *   useBrowserVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       counterStore.value += step;
@@ -7165,7 +7175,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * const Cmp = component$(() => {
      *   const input = useRef<HTMLInputElement>();
      *
-     *   useClientEffect$(({ track }) => {
+     *   useBrowserVisibleTask$(({ track }) => {
      *     const el = track(() => input.current)!;
      *     el.focus();
      *   });
@@ -8110,7 +8120,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     }
                     renderNodeElementSync('script', attributes, stream);
                     logWarn(`Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.
-          This is likely to the usage of useClientEffect$() in a component that renders no elements.`);
+          This is likely to the usage of useBrowserVisibleTask$() in a component that renders no elements.`);
                 }
                 if (beforeClose) {
                     return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));
@@ -8769,6 +8779,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.render = render;
     exports.setPlatform = setPlatform;
     exports.untrack = untrack;
+    exports.useBrowserVisibleTask$ = useBrowserVisibleTask$;
+    exports.useBrowserVisibleTaskQrl = useBrowserVisibleTaskQrl;
     exports.useCleanup$ = useCleanup$;
     exports.useCleanupQrl = useCleanupQrl;
     exports.useClientEffect$ = useClientEffect$;

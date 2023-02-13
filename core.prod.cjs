@@ -430,7 +430,7 @@
             if (qDev) {
                 verifySerializable(v);
                 const invokeCtx = tryGetInvokeContext();
-                invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()", invokeCtx.$hostElement$);
+                invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", invokeCtx.$hostElement$);
             }
             const manager = this[QObjectManagerSymbol];
             const oldValue = this.untrackedValue;
@@ -516,7 +516,7 @@
             if (qDev) {
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
-                invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useWatch(), useClientEffect() or useServerMount()", prop);
+                invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", prop);
             }
             return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
             true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
@@ -2851,9 +2851,9 @@
     const useTask$ = implicit$FirstArg(useTaskQrl);
     const useWatch$ = useTask$;
     const useWatchQrl = useTaskQrl;
-    const useClientEffectQrl = (qrl, opts) => {
+    const useBrowserVisibleTaskQrl = (qrl, opts) => {
         const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
-        const eagerness = opts?.eagerness ?? "visible";
+        const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
         if (get) {
             return void (isServer() && useRunWatch(get, eagerness));
         }
@@ -2864,7 +2864,9 @@
         useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
         notifyWatch(watch, containerState));
     };
-    const useClientEffect$ = implicit$FirstArg(useClientEffectQrl);
+    const useBrowserVisibleTask$ = implicit$FirstArg(useBrowserVisibleTaskQrl);
+    const useClientEffectQrl = useBrowserVisibleTaskQrl;
+    const useClientEffect$ = useBrowserVisibleTask$;
     const isResourceTask = watch => !!watch.$resource$;
     const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, "Resource is not dirty", watch), 
     isResourceTask(watch) ? runResource(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
@@ -2971,7 +2973,7 @@
         watch.$qrl$)()) : cleanupWatch(watch);
     };
     const useRunWatch = (watch, eagerness) => {
-        "visible" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" === eagerness && useOnDocument("qidle", getWatchHandlerQrl(watch));
+        "visible" === eagerness || "intersection-observer" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness || "document-ready" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" !== eagerness && "document-idle" !== eagerness || useOnDocument("qidle", getWatchHandlerQrl(watch));
     };
     const getWatchHandlerQrl = watch => {
         const watchQrl = watch.$qrl$;
@@ -3854,7 +3856,7 @@
                         const eventName = normalizeInvisibleEvents(listener[0]);
                         attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), addQwikEvent(eventName, rCtx.$static$.$containerState$);
                     }
-                    renderNodeElementSync("script", attributes, stream), logWarn("Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.\n          This is likely to the usage of useClientEffect$() in a component that renders no elements.");
+                    renderNodeElementSync("script", attributes, stream), logWarn("Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.\n          This is likely to the usage of useBrowserVisibleTask$() in a component that renders no elements.");
                 }
                 return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream);
             }));
@@ -4598,7 +4600,8 @@
         })(containerEl, jsxNode, doc, containerState, containerEl);
         const renderCtx = await containerState.$renderPromise$;
         await postRendering(containerState, renderCtx);
-    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useCleanup$ = useCleanup$, 
+    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useBrowserVisibleTask$ = useBrowserVisibleTask$, 
+    exports.useBrowserVisibleTaskQrl = useBrowserVisibleTaskQrl, exports.useCleanup$ = useCleanup$, 
     exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
     exports.useClientEffectQrl = useClientEffectQrl, exports.useClientMount$ = useClientMount$, 
     exports.useClientMountQrl = useClientMountQrl, exports.useContext = (context, defaultValue) => {
