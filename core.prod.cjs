@@ -892,6 +892,9 @@
         directSetAttribute(style, "hidden", ""), style.textContent = styleTask.content, 
         isDoc && headEl ? directAppendChild(headEl, style) : directInsertBefore(containerEl, style, containerEl.firstChild);
     };
+    const directPrepend = (parent, newChild) => {
+        directInsertBefore(parent, newChild, parent.firstChild);
+    };
     const removeNode = (staticCtx, el) => {
         staticCtx.$operations$.push({
             $operation$: _removeNode,
@@ -935,12 +938,16 @@
                 const sref = slotEl.getAttribute("q:sref");
                 const hostCtx = staticCtx.$roots$.find((r => r.$id$ === sref));
                 if (hostCtx) {
-                    const template = createTemplate(staticCtx.$doc$, key);
                     const hostElm = hostCtx.$element$;
-                    for (const child of slotChildren) {
-                        directAppendChild(template, child);
+                    if (Array.from(hostElm.childNodes).some((node => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key))) {
+                        cleanupTree(slotEl, staticCtx, subsManager, false);
+                    } else {
+                        const template = createTemplate(staticCtx.$doc$, key);
+                        for (const child of slotChildren) {
+                            directAppendChild(template, child);
+                        }
+                        directInsertBefore(hostElm, template, hostElm.firstChild);
                     }
-                    directInsertBefore(hostElm, template, hostElm.firstChild);
                 } else {
                     cleanupTree(slotEl, staticCtx, subsManager, false);
                 }
@@ -1633,16 +1640,16 @@
         }
         for (const key of Object.keys(slotMaps.templates)) {
             const templateEl = slotMaps.templates[key];
-            templateEl && (splittedNewChidren[key] && !slotMaps.slots[key] || (removeNode(staticCtx, templateEl), 
-            slotMaps.templates[key] = void 0));
+            templateEl && !splittedNewChidren[key] && (slotMaps.templates[key] = void 0, removeNode(staticCtx, templateEl));
         }
         return promiseAll(Object.keys(splittedNewChidren).map((slotName => {
             const newVdom = splittedNewChidren[slotName];
             const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
-            return slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotCtx.$element$, 
-            smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
+            slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotCtx.$element$;
+            const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotCtx.$element$));
+            return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
         })));
     };
     const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
@@ -1674,8 +1681,8 @@
         const elCtx = createContext$1(template);
         return elCtx.$parent$ = hostCtx, ((staticCtx, parent, newChild) => {
             staticCtx.$operations$.push({
-                $operation$: directInsertBefore,
-                $args$: [ parent, newChild, parent.firstChild ]
+                $operation$: directPrepend,
+                $args$: [ parent, newChild ]
             });
         })(staticCtx, hostCtx.$element$, template), slotMaps.templates[slotName] = template, 
         elCtx;

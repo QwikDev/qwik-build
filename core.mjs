@@ -1928,9 +1928,12 @@ const _appendHeadStyle = (containerEl, styleTask) => {
 };
 const prepend = (staticCtx, parent, newChild) => {
     staticCtx.$operations$.push({
-        $operation$: directInsertBefore,
-        $args$: [parent, newChild, parent.firstChild],
+        $operation$: directPrepend,
+        $args$: [parent, newChild],
     });
+};
+const directPrepend = (parent, newChild) => {
+    directInsertBefore(parent, newChild, parent.firstChild);
 };
 const removeNode = (staticCtx, el) => {
     staticCtx.$operations$.push({
@@ -1983,12 +1986,18 @@ const resolveSlotProjection = (staticCtx) => {
             const sref = slotEl.getAttribute(QSlotRef);
             const hostCtx = staticCtx.$roots$.find((r) => r.$id$ === sref);
             if (hostCtx) {
-                const template = createTemplate(staticCtx.$doc$, key);
                 const hostElm = hostCtx.$element$;
-                for (const child of slotChildren) {
-                    directAppendChild(template, child);
+                const hasTemplate = Array.from(hostElm.childNodes).some((node) => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key);
+                if (!hasTemplate) {
+                    const template = createTemplate(staticCtx.$doc$, key);
+                    for (const child of slotChildren) {
+                        directAppendChild(template, child);
+                    }
+                    directInsertBefore(hostElm, template, hostElm.firstChild);
                 }
-                directInsertBefore(hostElm, template, hostElm.firstChild);
+                else {
+                    cleanupTree(slotEl, staticCtx, subsManager, false);
+                }
             }
             else {
                 // If slot content cannot be relocated, it means it's content is definively removed
@@ -3255,11 +3264,9 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
     // Remove empty templates
     for (const key of Object.keys(slotMaps.templates)) {
         const templateEl = slotMaps.templates[key];
-        if (templateEl) {
-            if (!splittedNewChidren[key] || slotMaps.slots[key]) {
-                removeNode(staticCtx, templateEl);
-                slotMaps.templates[key] = undefined;
-            }
+        if (templateEl && !splittedNewChidren[key]) {
+            slotMaps.templates[key] = undefined;
+            removeNode(staticCtx, templateEl);
         }
     }
     // Render into slots
@@ -3271,6 +3278,10 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         slotRctx.$slotCtx$ = slotCtx;
         slotCtx.$vdom$ = newVdom;
         newVdom.$elm$ = slotCtx.$element$;
+        const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotCtx.$element$);
+        if (index >= 0) {
+            staticCtx.$addSlots$.splice(index, 1);
+        }
         return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
     }));
 };
