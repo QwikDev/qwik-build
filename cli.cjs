@@ -11875,8 +11875,10 @@ function runCommand(cmd, args, cwd) {
   };
   return { abort, install };
 }
-function startSpinner(msg) {
-  const spinner = ora(msg).start();
+function startSpinner(msg, hideSpinner = false) {
+  const spinner = hideSpinner ? { succeed: () => {
+  }, fail: () => {
+  } } : ora(msg).start();
   return spinner;
 }
 
@@ -12489,24 +12491,28 @@ var import_node_path6 = require("path");
 
 // packages/qwik/src/cli/utils/log.ts
 function logSuccessFooter(docs) {
+  const outString = [];
   if (docs.length > 0) {
-    console.log(`\u{1F4DA} ${kleur_default.cyan("Relevant docs:")}`);
+    outString.push(`\u{1F4C4} ${kleur_default.cyan("Relevant docs:")}`);
     docs.forEach((link) => {
-      console.log(`   ${link}`);
+      outString.push(`   ${link}`);
     });
   }
-  console.log(``);
-  console.log(`\u{1F4AC} ${kleur_default.cyan("Questions? Start the conversation at:")}`);
-  console.log(`   https://qwik.builder.io/chat`);
-  console.log(`   https://twitter.com/QwikDev`);
-  console.log(``);
+  outString.push(``);
+  outString.push(`\u{1F4AC} ${kleur_default.cyan("Questions? Start the conversation at:")}`);
+  outString.push(`   https://qwik.builder.io/chat`);
+  outString.push(`   https://twitter.com/QwikDev`);
+  outString.push(``);
+  return outString.join("\n");
 }
 function logNextStep(nextSteps) {
+  const outString = [];
   if (nextSteps) {
-    console.log(`\u{1F7E3} ${kleur_default.bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
-    nextSteps.lines.forEach((step) => console.log(`   ${step}`));
-    console.log(``);
+    outString.push(`\u{1F7E3} ${kleur_default.bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
+    nextSteps.lines.forEach((step) => outString.push(`   ${step}`));
+    outString.push(``);
   }
+  return outString.join("\n");
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
