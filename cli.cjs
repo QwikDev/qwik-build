@@ -11303,7 +11303,7 @@ async function readPackageJson(dir) {
   const pkgJson = JSON.parse(await import_node_fs2.default.promises.readFile(path3, "utf-8"));
   return pkgJson;
 }
-function dashToTitlelCase(str) {
+function dashToTitleCase(str) {
   return str.toLocaleLowerCase().split("-").map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)).join(" ");
 }
 function getPackageManager() {
@@ -11347,7 +11347,7 @@ async function loadIntegrations() {
                 const pkgJson = await readPackageJson(dirPath);
                 const integration = {
                   id: dirItem,
-                  name: ((_a = pkgJson.__qwik__) == null ? void 0 : _a.displayName) ?? dashToTitlelCase(dirItem),
+                  name: ((_a = pkgJson.__qwik__) == null ? void 0 : _a.displayName) ?? dashToTitleCase(dirItem),
                   type: integrationType,
                   dir: dirPath,
                   pkgJson,
