@@ -72,7 +72,6 @@
         : '';
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : createError(message);
-        // eslint-disable-next-line no-console
         const messageStr = err.stack || err.message;
         console.error('%cQWIK ERROR', STYLE, messageStr, ...printParams(optionalParams));
         return err;
@@ -88,7 +87,6 @@
         return err;
     };
     const logWarn = (message, ...optionalParams) => {
-        // eslint-disable-next-line no-console
         if (qDev) {
             console.warn('%cQWIK WARN', STYLE, message, ...printParams(optionalParams));
         }
