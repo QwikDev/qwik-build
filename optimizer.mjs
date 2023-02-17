@@ -619,6 +619,7 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       mode: fsOpts.mode,
       scope: fsOpts.scope,
       input: input,
+      regCtxName: fsOpts.regCtxName,
       stripCtxKind: fsOpts.stripCtxKind,
       stripCtxName: fsOpts.stripCtxName,
       stripExports: fsOpts.stripExports,
@@ -640,6 +641,7 @@ var convertOptions = opts => {
     mode: "lib",
     manualChunks: void 0,
     scope: void 0,
+    regCtxName: void 0,
     stripExports: void 0,
     stripCtxName: void 0,
     stripCtxKind: void 0,
@@ -898,14 +900,20 @@ function createRollupError(id, reportMessage) {
   return err;
 }
 
+var REG_CTX_NAME = [ "server$" ];
+
 var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
 
 var SERVER_STRIP_CTX_NAME = [ "server", "useServer", "action$", "loader$", "zod$" ];
+
+var CLIENT_STRIP_CTX_NAME = [ "useClient", "client", "useBrowser", "browser" ];
 
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
   const results = new Map;
   const transformedOutputs = new Map;
+  const ssrResults = new Map;
+  const ssrTransformedOutputs = new Map;
   let internalOptimizer = null;
   let linter;
   let diagnosticsCallback = () => {};
@@ -957,7 +965,9 @@ function createPlugin(optimizerOptions = {}) {
     updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
       ...updatedOpts.entryStrategy
     });
-    opts.entryStrategy || ("ssr" === opts.target || "lib" === opts.target ? opts.entryStrategy = {
+    opts.entryStrategy || ("ssr" === opts.target ? opts.entryStrategy = {
+      type: "hoist"
+    } : "lib" === opts.target ? opts.entryStrategy = {
       type: "inline"
     } : "production" === opts.buildMode ? opts.entryStrategy = {
       type: "smart"
@@ -978,8 +988,8 @@ function createPlugin(optimizerOptions = {}) {
     } else {
       opts.srcDir = srcDir;
     }
-    "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type || !!updatedOpts.srcInputs;
-    if (false === opts.forceFullBuild && "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type) {
+    "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type && "hoist" !== opts.entryStrategy.type || !!updatedOpts.srcInputs;
+    if (false === opts.forceFullBuild && "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type && "hoist" !== opts.entryStrategy.type) {
       console.error(`forceFullBuild cannot be false with entryStrategy ${opts.entryStrategy.type}`);
       opts.forceFullBuild = true;
     }
@@ -1079,21 +1089,24 @@ function createPlugin(optimizerOptions = {}) {
         transformOpts.stripExports = SERVER_STRIP_EXPORTS;
         transformOpts.isServer = false;
       } else if ("ssr" === opts.target) {
-        transformOpts.stripCtxName = [ "useClient", "client", "useBrowser", "browser" ];
+        transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
         transformOpts.stripCtxKind = "event";
         transformOpts.isServer = true;
+        transformOpts.regCtxName = REG_CTX_NAME;
       }
       const result = await optimizer.transformFs(transformOpts);
       for (const output of result.modules) {
         const key = normalizePath(path.join(srcDir, output.path));
         log("buildStart() add transformedOutput", key, output.hook?.displayName);
         transformedOutputs.set(key, [ output, key ]);
+        ssrTransformedOutputs.set(key, [ output, key ]);
       }
       diagnosticsCallback(result.diagnostics, optimizer, srcDir);
       results.set("@buildStart", result);
+      ssrResults.set("@buildStart", result);
     }
   };
-  const resolveId = async (_ctx, id2, importer, _resolveIdOpts) => {
+  const resolveId = async (_ctx, id2, importer, resolveIdOpts) => {
     if (id2.startsWith("\0")) {
       return;
     }
@@ -1141,7 +1154,7 @@ function createPlugin(optimizerOptions = {}) {
         const parsedImporterId = parseId(importer);
         const dir = path.dirname(parsedImporterId.pathId);
         importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(path.join(dir, importeePathId)) : normalizePath(path.resolve(dir, importeePathId));
-        const transformedOutput = transformedOutputs.get(importeePathId);
+        const transformedOutput = resolveIdOpts?.ssr ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
         if (transformedOutput) {
           log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
           return {
@@ -1173,7 +1186,7 @@ function createPlugin(optimizerOptions = {}) {
     const parsedId = parseId(id2);
     const path = getPath();
     id2 = normalizePath(parsedId.pathId);
-    const transformedModule = transformedOutputs.get(id2);
+    const transformedModule = loadOpts?.ssr ? ssrTransformedOutputs.get(id2) : transformedOutputs.get(id2);
     if (transformedModule) {
       log("load()", "Found", id2);
       let code = transformedModule[0].code;
@@ -1188,7 +1201,7 @@ function createPlugin(optimizerOptions = {}) {
     }
     return null;
   };
-  const transform = async function(ctx, code, id2) {
+  const transform = async function(ctx, code, id2, ssrOpts = {}) {
     if (opts.forceFullBuild) {
       return null;
     }
@@ -1220,21 +1233,65 @@ function createPlugin(optimizerOptions = {}) {
         mode: mode,
         scope: opts.scope ? opts.scope : void 0
       };
-      const isSSR = ctx.ssr;
-      if (!isSSR) {
+      const isSSR = !!ssrOpts.ssr;
+      if (isSSR) {
+        transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
+        transformOpts.stripCtxKind = "event";
+        transformOpts.entryStrategy = {
+          type: "hoist"
+        };
+        transformOpts.regCtxName = REG_CTX_NAME;
+        transformOpts.isServer = true;
+      } else {
         transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
         transformOpts.stripExports = SERVER_STRIP_EXPORTS;
+        transformOpts.isServer = false;
       }
       const newOutput = optimizer.transformModulesSync(transformOpts);
       diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
-      0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
-      results.set(normalizedID, newOutput);
+      if (isSSR) {
+        0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
+        ssrResults.set(normalizedID, newOutput);
+      } else {
+        results.set(normalizedID, newOutput);
+      }
       const deps = [];
       for (const mod of newOutput.modules) {
         if (mod.isEntry) {
           const key = normalizePath(path.join(srcDir, mod.path));
-          transformedOutputs.set(key, [ mod, id2 ]);
+          isSSR ? ssrTransformedOutputs.set(key, [ mod, id2 ]) : transformedOutputs.set(key, [ mod, id2 ]);
           deps.push(key);
+        }
+      }
+      if (isSSR) {
+        const clientTransformOpts = {
+          input: [ {
+            code: code,
+            path: filePath
+          } ],
+          entryStrategy: opts.entryStrategy,
+          minify: "simplify",
+          sourceMaps: "development" === opts.buildMode,
+          transpileTs: true,
+          transpileJsx: true,
+          explicitExtensions: true,
+          preserveFilenames: true,
+          srcDir: srcDir,
+          mode: mode,
+          scope: opts.scope ? opts.scope : void 0
+        };
+        clientTransformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
+        clientTransformOpts.stripExports = SERVER_STRIP_EXPORTS;
+        clientTransformOpts.isServer = false;
+        const clientNewOutput = optimizer.transformModulesSync(clientTransformOpts);
+        diagnosticsCallback(clientNewOutput.diagnostics, optimizer, srcDir);
+        results.set(normalizedID, clientNewOutput);
+        for (const mod of clientNewOutput.modules) {
+          if (mod.isEntry) {
+            const key = normalizePath(path.join(srcDir, mod.path));
+            ctx.addWatchFile(key);
+            transformedOutputs.set(key, [ mod, id2 ]);
+          }
         }
       }
       const module = newOutput.modules.find((m => !m.isEntry));
@@ -1732,10 +1789,12 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
             snapshot: !isClientDevOnly,
             manifest: isClientDevOnly ? void 0 : manifest,
             symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
+              const defaultChunk = [ symbolName, `/src/${symbolName.toLowerCase()}.js` ];
               if (mapper) {
                 const hash = getSymbolHash(symbolName);
-                return mapper[hash];
+                return mapper[hash] ?? defaultChunk;
               }
+              return defaultChunk;
             },
             prefetchStrategy: null,
             serverData: serverData
@@ -1924,7 +1983,9 @@ function qwikVite(qwikViteOpts = {}) {
         };
         forceFullBuild = false;
       } else {
-        "ssr" !== target && "lib" !== target || (qwikViteOpts.entryStrategy = {
+        "ssr" === target ? qwikViteOpts.entryStrategy = {
+          type: "hoist"
+        } : "lib" === target && (qwikViteOpts.entryStrategy = {
           type: "inline"
         });
         forceFullBuild = true;
@@ -2098,7 +2159,7 @@ function qwikVite(qwikViteOpts = {}) {
       }
       return qwikPlugin.load(this, id, loadOpts);
     },
-    transform(code, id) {
+    transform(code, id, transformOpts) {
       if (id.startsWith("\0")) {
         return null;
       }
@@ -2106,7 +2167,7 @@ function qwikVite(qwikViteOpts = {}) {
         const parsedId = parseId(id);
         parsedId.params.has(VITE_DEV_CLIENT_QS) && (code = updateEntryDev(code));
       }
-      return qwikPlugin.transform(this, code, id);
+      return qwikPlugin.transform(this, code, id, transformOpts);
     },
     generateBundle: {
       order: "post",

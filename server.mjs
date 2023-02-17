@@ -62,9 +62,15 @@ function createPlatform(opts, resolvedManifest) {
       return result;
     }
   };
+  const regSymbols = /* @__PURE__ */ new Map();
   const serverPlatform = {
     isServer: true,
     async importSymbol(_containerEl, url, symbolName) {
+      const hash = getSymbolHash(symbolName);
+      const regSym = globalThis.__qwik_reg_symbols?.get(hash);
+      if (regSym) {
+        return regSym;
+      }
       let modulePath = String(url);
       if (!modulePath.endsWith(".js")) {
         modulePath += ".js";
@@ -73,8 +79,7 @@ function createPlatform(opts, resolvedManifest) {
       if (!(symbolName in module)) {
         throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${modulePath}'.`);
       }
-      const symbol = module[symbolName];
-      return symbol;
+      return module[symbolName];
     },
     raf: () => {
       console.error("server can not rerender");
@@ -86,6 +91,9 @@ function createPlatform(opts, resolvedManifest) {
           resolve(fn());
         });
       });
+    },
+    regSymbol(symbol, hash) {
+      regSymbols.set(hash, symbol);
     },
     chunkForSymbol(symbolName) {
       return mapperFn(symbolName, mapper);

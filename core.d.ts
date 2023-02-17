@@ -653,7 +653,7 @@ export declare interface CorePlatform {
      * @param symbol - The name of the symbol to import.
      * @returns A promise that resolves to the imported symbol.
      */
-    importSymbol: (containerEl: Element, url: string | URL, symbol: string) => ValueOrPromise<any>;
+    importSymbol: (containerEl: Element | undefined, url: string | URL | undefined | null, symbol: string) => ValueOrPromise<any>;
     /**
      * Perform operation on next request-animation-frame.
      *
@@ -763,7 +763,7 @@ declare interface DescriptorBase<T = any, B = undefined> {
 /**
  * @internal
  */
-export declare const _deserializeData: (data: string) => any;
+export declare const _deserializeData: (data: string, element?: unknown) => any;
 
 declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
     open?: boolean | undefined;
@@ -840,6 +840,11 @@ export declare const Fragment: FunctionComponent<{
 export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null): JSXNode | null;
 }
+
+/**
+ * @internal
+ */
+export declare const _getContextElement: () => unknown;
 
 /**
  * Retrieve the current lang.
@@ -1800,7 +1805,7 @@ declare interface QRLInternalMethods<TYPE> {
     getSymbol(): string;
     getHash(): string;
     getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer Return ? (...args: ARGS) => ValueOrPromise<Return> : any;
-    $setContainer$(containerEl: Element | undefined): void;
+    $setContainer$(containerEl: Element | undefined): Element | undefined;
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 
@@ -2203,6 +2208,11 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
 export declare interface Ref<T = Element> {
     current: T | undefined;
 }
+
+/**
+ * @internal
+ */
+export declare const _regSymbol: (symbol: any, hash: string) => any;
 
 /**
  * Render JSX.
@@ -3664,7 +3674,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.18.1-dev20230217093412
+ * 0.18.1-dev20230217102301
  * @public
  */
 export declare const version: string;

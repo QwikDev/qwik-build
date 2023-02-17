@@ -37,7 +37,7 @@ declare type EmitMode = 'dev' | 'prod' | 'lib';
 /**
  * @alpha
  */
-export declare type EntryStrategy = InlineEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
+export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /**
  * @alpha
@@ -48,6 +48,13 @@ export declare interface GlobalInjections {
         [key: string]: string;
     };
     location: 'head' | 'body';
+}
+
+/**
+ * @alpha
+ */
+declare interface HoistEntryStrategy {
+    type: 'hoist';
 }
 
 /**
@@ -551,6 +558,7 @@ export declare interface TransformOptions {
     mode?: EmitMode;
     scope?: string;
     stripExports?: string[];
+    regCtxName?: string[];
     stripCtxName?: string[];
     stripCtxKind?: 'function' | 'event';
     isServer?: boolean;

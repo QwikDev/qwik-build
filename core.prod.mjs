@@ -93,27 +93,20 @@ const isString = v => "string" == typeof v;
 
 const isFunction = v => "function" == typeof v;
 
-let _platform = {
+const createPlatform = () => ({
     isServer: false,
     importSymbol(containerEl, url, symbolName) {
-        const urlDoc = ((doc, containerEl, url) => {
-            const baseURI = doc.baseURI;
-            const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-            return new URL(url, base);
-        })(containerEl.ownerDocument, containerEl, url).toString();
+        if (!url) {
+            throw qError(31, symbolName);
+        }
+        if (!containerEl) {
+            throw qError(30, url, symbolName);
+        }
+        const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
         const urlCopy = new URL(urlDoc);
         urlCopy.hash = "", urlCopy.search = "";
         const importURL = urlCopy.href;
-        return import(importURL).then((mod => ((module, symbol) => {
-            if (symbol in module) {
-                return module[symbol];
-            }
-            for (const v of Object.values(module)) {
-                if (isObject(v) && symbol in v) {
-                    return v[symbol];
-                }
-            }
-        })(mod, symbolName)));
+        return import(importURL).then((mod => findSymbol(mod, symbolName)));
     },
     raf: fn => new Promise((resolve => {
         requestAnimationFrame((() => {
@@ -126,7 +119,26 @@ let _platform = {
         }));
     })),
     chunkForSymbol() {}
+});
+
+const findSymbol = (module, symbol) => {
+    if (symbol in module) {
+        return module[symbol];
+    }
+    for (const v of Object.values(module)) {
+        if (isObject(v) && symbol in v) {
+            return v[symbol];
+        }
+    }
 };
+
+const toUrl = (doc, containerEl, url) => {
+    const baseURI = doc.baseURI;
+    const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+    return new URL(url, base);
+};
+
+let _platform = createPlatform();
 
 const setPlatform = plt => _platform = plt;
 
@@ -328,11 +340,89 @@ qrl.$captureRef$ = qrl.$capture$.map((idx => {
     obj;
 })));
 
+const _regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols && (globalThis.__qwik_reg_symbols = new Map), 
+globalThis.__qwik_reg_symbols.set(hash, symbol), symbol);
+
+const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
+
 const OnRenderProp = "q:renderFn";
 
 const ComponentStylesPrefixContent = "⭐️";
 
 const QSlot = "q:slot";
+
+const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
+
+const directGetAttribute = (el, prop) => el.getAttribute(prop);
+
+const CONTAINER_STATE = Symbol("ContainerState");
+
+const _getContainerState = containerEl => {
+    let set = containerEl[CONTAINER_STATE];
+    return set || (assertTrue(!isServer(), "Container state can only be created lazily on the browser"), 
+    containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
+    set;
+};
+
+const createContainerState = (containerEl, base) => {
+    const containerState = {
+        $containerEl$: containerEl,
+        $elementIndex$: 0,
+        $proxyMap$: new WeakMap,
+        $opsNext$: new Set,
+        $watchNext$: new Set,
+        $watchStaging$: new Set,
+        $hostsNext$: new Set,
+        $hostsStaging$: new Set,
+        $styleIds$: new Set,
+        $events$: new Set,
+        $serverData$: {},
+        $base$: base,
+        $renderPromise$: void 0,
+        $hostsRendering$: void 0,
+        $pauseCtx$: void 0,
+        $subsManager$: null
+    };
+    return seal(containerState), containerState.$subsManager$ = createSubscriptionManager(containerState), 
+    containerState;
+};
+
+const setRef = (value, elm) => {
+    if (isFunction(value)) {
+        return value(elm);
+    }
+    if (isObject(value)) {
+        if ("current" in value) {
+            return value.current = elm;
+        }
+        if ("value" in value) {
+            return value.value = elm;
+        }
+    }
+    throw qError(32, value);
+};
+
+const addQwikEvent = (prop, containerState) => {
+    var _a;
+    const eventName = getEventName(prop);
+    if (!qTest && !isServer()) {
+        try {
+            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
+        } catch (err) {
+            logWarn(err);
+        }
+    }
+    containerState.$events$.add(eventName);
+};
+
+const intToStr = nu => nu.toString(36);
+
+const strToInt = nu => parseInt(nu, 36);
+
+const getEventName = attribute => {
+    const colonPos = attribute.indexOf(":");
+    return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
+};
 
 let _locale;
 
@@ -448,11 +538,16 @@ const getWrappingContainer = el => el.closest("[q\\:container]");
 
 const untrack = fn => invoke(void 0, fn);
 
+const _getContextElement = () => {
+    const iCtx = tryGetInvokeContext();
+    if (iCtx) {
+        return iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(void 0);
+    }
+};
+
 const implicit$FirstArg = fn => function(first, ...rest) {
     return fn.call(null, $(first), ...rest);
 };
-
-const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
 
 const ON_PROP_REGEX = /^(on|window:|document:)/;
 
@@ -505,10 +600,6 @@ const normalizeOnProp = prop => {
 
 const ensureQrl = (value, containerEl) => (assertQrl(value), value.$setContainer$(containerEl), 
 value);
-
-const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
-
-const directGetAttribute = (el, prop) => el.getAttribute(prop);
 
 function isElement(value) {
     return function(value) {
@@ -844,75 +935,6 @@ const _useOn = (eventName, eventQrl) => {
     const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
     assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
     elCtx.$flags$ |= 2;
-};
-
-const CONTAINER_STATE = Symbol("ContainerState");
-
-const _getContainerState = containerEl => {
-    let set = containerEl[CONTAINER_STATE];
-    return set || (assertTrue(!isServer(), "Container state can only be created lazily on the browser"), 
-    containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
-    set;
-};
-
-const createContainerState = (containerEl, base) => {
-    const containerState = {
-        $containerEl$: containerEl,
-        $elementIndex$: 0,
-        $proxyMap$: new WeakMap,
-        $opsNext$: new Set,
-        $watchNext$: new Set,
-        $watchStaging$: new Set,
-        $hostsNext$: new Set,
-        $hostsStaging$: new Set,
-        $styleIds$: new Set,
-        $events$: new Set,
-        $serverData$: {},
-        $base$: base,
-        $renderPromise$: void 0,
-        $hostsRendering$: void 0,
-        $pauseCtx$: void 0,
-        $subsManager$: null
-    };
-    return seal(containerState), containerState.$subsManager$ = createSubscriptionManager(containerState), 
-    containerState;
-};
-
-const setRef = (value, elm) => {
-    if (isFunction(value)) {
-        return value(elm);
-    }
-    if (isObject(value)) {
-        if ("current" in value) {
-            return value.current = elm;
-        }
-        if ("value" in value) {
-            return value.value = elm;
-        }
-    }
-    throw qError(32, value);
-};
-
-const addQwikEvent = (prop, containerState) => {
-    var _a;
-    const eventName = getEventName(prop);
-    if (!qTest && !isServer()) {
-        try {
-            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
-        } catch (err) {
-            logWarn(err);
-        }
-    }
-    containerState.$events$.add(eventName);
-};
-
-const intToStr = nu => nu.toString(36);
-
-const strToInt = nu => parseInt(nu, 36);
-
-const getEventName = attribute => {
-    const colonPos = attribute.indexOf(":");
-    return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
 };
 
 const SkipRender = Symbol("skip render");
@@ -2840,7 +2862,7 @@ const resumeIfNeeded = containerEl => {
     appendQwikDevTools(containerEl));
 };
 
-const _deserializeData = data => {
+const _deserializeData = (data, element) => {
     const obj = JSON.parse(data);
     if ("object" != typeof obj) {
         return null;
@@ -2849,7 +2871,13 @@ const _deserializeData = data => {
     if (void 0 === _objs || void 0 === _entry) {
         return null;
     }
-    const parser = createParser({}, {});
+    let doc = {};
+    let containerState = {};
+    if (element && isQwikElement(element)) {
+        const containerEl = getWrappingContainer(element);
+        containerEl && (containerState = _getContainerState(containerEl), doc = containerEl.ownerDocument);
+    }
+    const parser = createParser(containerState, doc);
     reviveValues(_objs, parser);
     const getObject = id => _objs[strToInt(id)];
     for (const obj of _objs) {
@@ -4033,9 +4061,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
     }
     let _containerEl;
-    const setContainer = el => {
-        _containerEl || (_containerEl = el);
-    };
+    const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
     const resolve = async containerEl => {
         if (containerEl && setContainer(containerEl), null !== symbolRef) {
             return symbolRef;
@@ -4044,12 +4070,6 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             return symbolRef = symbolFn().then((module => symbolRef = module[symbol]));
         }
         {
-            if (!chunk) {
-                throw qError(31, symbol);
-            }
-            if (!_containerEl) {
-                throw qError(30, chunk, symbol);
-            }
             const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
             return symbolRef = then(symbol2, (ref => symbolRef = ref));
         }
@@ -5135,4 +5155,4 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 
 const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _hW, _noopQrl, _pauseFromContexts, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
