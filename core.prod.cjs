@@ -767,7 +767,7 @@
             this.type = type, this.props = props, this.key = key, qDev && invoke(void 0, (() => {
                 const isQwikC = isQwikComponent(type);
                 if (!isString(type) && !isFunction(type)) {
-                    throw qError(25, String(type));
+                    throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
                 }
                 if (isArray(props.children)) {
                     const flatChildren = props.children.flat();
@@ -795,9 +795,9 @@
                     for (const prop of Object.keys(props)) {
                         const value = props[prop];
                         if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-                            throw qError(25, String(value));
+                            throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped around $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
                         }
-                        "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX property "${prop}" can not be serialized`);
+                        "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
                     }
                 }
                 isString(type) && ("style" === type && props.children && logWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
@@ -3161,7 +3161,7 @@
         collect: (obj, collector, leaks) => (collectValue(obj.untrackedValue, collector, leaks), 
         leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector), obj),
         serialize: (obj, getObjId) => getObjId(obj.untrackedValue),
-        prepare: (data, containerState) => new SignalImpl(data, containerState.$subsManager$.$createManager$()),
+        prepare: (data, containerState) => new SignalImpl(data, containerState?.$subsManager$?.$createManager$()),
         subs: (signal, subs) => {
             signal[QObjectManagerSymbol].$addSubs$(subs);
         },

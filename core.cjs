@@ -1663,7 +1663,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 invoke(undefined, () => {
                     const isQwikC = isQwikComponent(type);
                     if (!isString(type) && !isFunction(type)) {
-                        throw qError(QError_invalidJsxNodeType, String(type));
+                        throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
                     }
                     if (isArray(props.children)) {
                         const flatChildren = props.children.flat();
@@ -1710,11 +1710,11 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                             const value = props[prop];
                             if (prop.endsWith('$') && value) {
                                 if (!isQrl(value) && !Array.isArray(value)) {
-                                    throw qError(QError_invalidJsxNodeType, String(value));
+                                    throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped around $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
                                 }
                             }
                             if (prop !== 'children' && isQwikC && value) {
-                                verifySerializable(value, `The value of the JSX property "${prop}" can not be serialized`);
+                                verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
                             }
                         }
                     }
@@ -6161,7 +6161,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return getObjId(obj.untrackedValue);
         },
         prepare: (data, containerState) => {
-            return new SignalImpl(data, containerState.$subsManager$.$createManager$());
+            return new SignalImpl(data, containerState?.$subsManager$?.$createManager$());
         },
         subs: (signal, subs) => {
             signal[QObjectManagerSymbol].$addSubs$(subs);
