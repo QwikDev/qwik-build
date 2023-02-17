@@ -1698,7 +1698,7 @@ class JSXNodeImpl {
                         const value = props[prop];
                         if (prop.endsWith('$') && value) {
                             if (!isQrl(value) && !Array.isArray(value)) {
-                                throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped around $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
+                                throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
                             }
                         }
                         if (prop !== 'children' && isQwikC && value) {

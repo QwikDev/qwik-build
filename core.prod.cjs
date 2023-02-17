@@ -795,7 +795,7 @@
                     for (const prop of Object.keys(props)) {
                         const value = props[prop];
                         if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-                            throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped around $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
+                            throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
                         }
                         "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
                     }
