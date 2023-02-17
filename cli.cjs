@@ -13680,7 +13680,7 @@ async function runBuildCommand(app) {
   }
   console.log(``);
   let typecheck = null;
-  if (buildTypes && buildTypes.startsWith("tsc")) {
+  if (buildTypes) {
     let copyScript = buildTypes;
     if (!copyScript.includes("--pretty")) {
       copyScript += " --pretty";
