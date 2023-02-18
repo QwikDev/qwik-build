@@ -992,8 +992,19 @@ declare interface QRL<TYPE = any> {
      * Resolve the QRL and return the actual value.
      */
     resolve(): Promise<TYPE>;
+    getCaptured(): any[] | null;
     getSymbol(): string;
     getHash(): string;
+    dev: QRLDev | null;
+}
+
+/**
+ * @alpha
+ */
+declare interface QRLDev {
+    file: string;
+    lo: number;
+    hi: number;
 }
 
 declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {

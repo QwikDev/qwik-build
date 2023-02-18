@@ -678,7 +678,7 @@ export declare interface CorePlatform {
      * @param symbolName - Resolve `symbolName` against the manifest and return the chunk that
      * contains the symbol.
      */
-    chunkForSymbol: (symbolName: string) => [symbol: string, chunk: string] | undefined;
+    chunkForSymbol: (symbolName: string, chunk: string | null) => [symbol: string, chunk: string] | undefined;
 }
 
 /**
@@ -1760,8 +1760,10 @@ export declare interface QRL<TYPE = any> {
      * Resolve the QRL and return the actual value.
      */
     resolve(): Promise<TYPE>;
+    getCaptured(): any[] | null;
     getSymbol(): string;
     getHash(): string;
+    dev: QRLDev | null;
 }
 
 /**
@@ -1779,6 +1781,9 @@ export declare interface QRL<TYPE = any> {
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[], stackOffset?: number) => QRL<T>;
 
+/**
+ * @alpha
+ */
 declare interface QRLDev {
     file: string;
     lo: number;
@@ -1800,10 +1805,11 @@ declare interface QRLInternalMethods<TYPE> {
     readonly $hash$: string;
     $capture$: string[] | null;
     $captureRef$: any[] | null;
-    $dev$: QRLDev | null;
+    dev: QRLDev | null;
     resolve(): Promise<TYPE>;
     getSymbol(): string;
     getHash(): string;
+    getCaptured(): any[] | null;
     getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: infer ARGS) => infer Return ? (...args: ARGS) => ValueOrPromise<Return> : any;
     $setContainer$(containerEl: Element | undefined): Element | undefined;
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
@@ -2462,7 +2468,7 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @internal
  */
-export declare const _serializeData: (data: any) => Promise<string>;
+export declare const _serializeData: (data: any, pureQRL?: boolean) => Promise<string>;
 
 /**
  * Sets the `CorePlatform`.
@@ -3674,7 +3680,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.18.1-dev20230217205908
+ * 0.18.1-dev20230218093727
  * @public
  */
 export declare const version: string;

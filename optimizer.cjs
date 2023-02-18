@@ -960,8 +960,8 @@ globalThis.qwikOptimizer = function(module) {
   }
   var REG_CTX_NAME = [ "server$" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
-  var SERVER_STRIP_CTX_NAME = [ "server", "useServer", "action$", "loader$", "zod$" ];
-  var CLIENT_STRIP_CTX_NAME = [ "useClient", "client", "useBrowser", "browser" ];
+  var SERVER_STRIP_CTX_NAME = [ "useServer", "server", "action$", "loader$", "zod$" ];
+  var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "client", "browser" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;
@@ -1648,7 +1648,7 @@ globalThis.qwikOptimizer = function(module) {
   var findLocation = e => {
     const stack = e.stack;
     if ("string" === typeof stack) {
-      const lines = stack.split("\n").filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:")));
+      const lines = stack.split("\n").filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:") && !l.includes("/qwik-city/lib/")));
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].replace("file:///", "/");
         if (/^\s+at/.test(line)) {
@@ -1698,6 +1698,9 @@ globalThis.qwikOptimizer = function(module) {
   function posToNumber(source, pos) {
     if ("number" === typeof pos) {
       return pos;
+    }
+    if (null != pos.lo) {
+      return pos.lo;
     }
     const lines = source.split(splitRE);
     const {line: line, column: column} = pos;

@@ -118,7 +118,7 @@ const createPlatform = () => ({
             resolve(fn());
         }));
     })),
-    chunkForSymbol() {}
+    chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
 });
 
 const findSymbol = (module, symbol) => {
@@ -258,12 +258,12 @@ const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(nu
 
 const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
     const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
-    return newQrl.$dev$ = opts, newQrl;
+    return newQrl.dev = opts, newQrl;
 };
 
 const inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
     const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
-    return qrl.$dev$ = opts, qrl;
+    return qrl.dev = opts, qrl;
 };
 
 const serializeQRL = (qrl, opts = {}) => {
@@ -273,7 +273,7 @@ const serializeQRL = (qrl, opts = {}) => {
     const refSymbol = qrl.$refSymbol$ ?? symbol;
     const platform = getPlatform();
     if (platform) {
-        const result = platform.chunkForSymbol(refSymbol);
+        const result = platform.chunkForSymbol(refSymbol, chunk);
         result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
     }
     if (!chunk) {
@@ -1061,7 +1061,7 @@ const createJSXError = (message, node) => {
     error);
 };
 
-const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
+const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:") && !l.includes("/qwik-city/lib/"))).join("\n");
 
 const getDocument = node => {
     if ("undefined" != typeof document) {
@@ -2356,7 +2356,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const _serializeData = async data => {
+const _serializeData = async (data, pureQRL) => {
     const containerState = {};
     const collector = createCollector(containerState);
     let promises;
@@ -4103,6 +4103,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     const methods = {
         getSymbol: () => resolvedSymbol,
         getHash: () => hash,
+        getCaptured: () => captureRef,
         resolve: resolve,
         $resolveLazy$: resolveLazy,
         $setContainer$: setContainer,
@@ -4113,7 +4114,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         getFn: invokeFn,
         $capture$: capture,
         $captureRef$: captureRef,
-        $dev$: null
+        dev: null
     };
     const qrl = Object.assign(invokeQRL, methods);
     return seal(qrl), qrl;

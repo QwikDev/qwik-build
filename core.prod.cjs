@@ -99,7 +99,7 @@
                 resolve(fn());
             }));
         })),
-        chunkForSymbol() {}
+        chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
     });
     const findSymbol = (module, symbol) => {
         if (symbol in module) {
@@ -214,7 +214,7 @@
         const refSymbol = qrl.$refSymbol$ ?? symbol;
         const platform = getPlatform();
         if (platform) {
-            const result = platform.chunkForSymbol(refSymbol);
+            const result = platform.chunkForSymbol(refSymbol, chunk);
             result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
         }
         if (!chunk) {
@@ -831,7 +831,7 @@
         }), error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, ONCE_JSX.add(key), 
         error);
     };
-    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
+    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:") && !l.includes("/qwik-city/lib/"))).join("\n");
     const getDocument = node => {
         if ("undefined" != typeof document) {
             return document;
@@ -3504,6 +3504,7 @@
         const methods = {
             getSymbol: () => resolvedSymbol,
             getHash: () => hash,
+            getCaptured: () => captureRef,
             resolve: resolve,
             $resolveLazy$: resolveLazy,
             $setContainer$: setContainer,
@@ -3514,7 +3515,7 @@
             getFn: invokeFn,
             $capture$: capture,
             $captureRef$: captureRef,
-            $dev$: null
+            dev: null
         };
         const qrl = Object.assign(invokeQRL, methods);
         return seal(qrl), qrl;
@@ -4441,7 +4442,7 @@
             omit.includes(key) || (rest[key] = props[key]);
         }
         return rest;
-    }, exports._serializeData = async data => {
+    }, exports._serializeData = async (data, pureQRL) => {
         const containerState = {};
         const collector = createCollector(containerState);
         let promises;
@@ -4569,7 +4570,7 @@
     }, exports.implicit$FirstArg = implicit$FirstArg, exports.inlinedQrl = inlinedQrl, 
     exports.inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
-        return qrl.$dev$ = opts, qrl;
+        return qrl.dev = opts, qrl;
     }, exports.jsx = jsx, exports.jsxDEV = (type, props, key, isStatic, opts, ctx) => {
         const processed = null == key ? null : String(key);
         const node = new JSXNodeImpl(type, props, processed);
@@ -4582,7 +4583,7 @@
     }, exports.jsxs = jsx, exports.mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
     v), exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
-        return newQrl.$dev$ = opts, newQrl;
+        return newQrl.dev = opts, newQrl;
     }, exports.render = async (parent, jsxNode, opts) => {
         isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
         const doc = getDocument(parent);

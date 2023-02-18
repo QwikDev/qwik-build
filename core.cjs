@@ -244,8 +244,8 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                     });
                 });
             },
-            chunkForSymbol() {
-                return undefined;
+            chunkForSymbol(symbolName, chunk) {
+                return [symbolName, chunk ?? '_'];
             },
         };
     };
@@ -483,7 +483,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      */
     const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
-        newQrl.$dev$ = opts;
+        newQrl.dev = opts;
         return newQrl;
     };
     /**
@@ -491,7 +491,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      */
     const inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
-        qrl.$dev$ = opts;
+        qrl.dev = opts;
         return qrl;
     };
     const serializeQRL = (qrl, opts = {}) => {
@@ -502,7 +502,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         const refSymbol = qrl.$refSymbol$ ?? symbol;
         const platform = getPlatform();
         if (platform) {
-            const result = platform.chunkForSymbol(refSymbol);
+            const result = platform.chunkForSymbol(refSymbol, chunk);
             if (result) {
                 chunk = result[1];
                 if (!qrl.$refSymbol$) {
@@ -1844,7 +1844,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return stack
             .split('\n')
             .slice(offset)
-            .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
+            .filter((l) => !l.includes('/node_modules/@builder.io/qwik') &&
+            !l.includes('(node:') &&
+            !l.includes('/qwik-city/lib/'))
             .join('\n');
     };
 
@@ -3834,7 +3836,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     /**
      * @internal
      */
-    const _serializeData = async (data) => {
+    const _serializeData = async (data, pureQRL) => {
         const containerState = {};
         const collector = createCollector(containerState);
         collectValue(data, collector, false);
@@ -6708,6 +6710,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const methods = {
             getSymbol: () => resolvedSymbol,
             getHash: () => hash,
+            getCaptured: () => captureRef,
             resolve,
             $resolveLazy$: resolveLazy,
             $setContainer$: setContainer,
@@ -6718,7 +6721,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             getFn: invokeFn,
             $capture$: capture,
             $captureRef$: captureRef,
-            $dev$: null,
+            dev: null,
         };
         const qrl = Object.assign(invokeQRL, methods);
         seal(qrl);
