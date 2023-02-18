@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.18.1
+ * @builder.io/qwik 0.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -398,7 +398,8 @@
     };
     const newInvokeContextFromTuple = context => {
         const element = context[0];
-        const locale = element.closest("[q\\:container]")?.getAttribute("q:locale") || void 0;
+        const container = element.closest("[q\\:container]");
+        const locale = container?.getAttribute("q:locale") || void 0;
         return locale && function(locale) {
             _locale = locale;
         }(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
@@ -831,7 +832,7 @@
         }), error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, ONCE_JSX.add(key), 
         error);
     };
-    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:") && !l.includes("/qwik-city/lib/"))).join("\n");
+    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
     const getDocument = node => {
         if ("undefined" != typeof document) {
             return document;
@@ -4417,7 +4418,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.18.1",
+            "q:version": "0.19.0",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4593,7 +4594,7 @@
             throw qError(5, containerEl);
         }
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.18.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.19.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4670,7 +4671,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.18.1", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.19.0", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

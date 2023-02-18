@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.18.1
+ * @builder.io/qwik/cli 0.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -12713,7 +12713,7 @@ async function runAddCommand(app) {
   }
 }
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/index.js
 var import_node_buffer = require("buffer");
 var import_node_path8 = __toESM(require("path"), 1);
 var import_node_child_process = __toESM(require("child_process"), 1);
@@ -12853,10 +12853,10 @@ onetime2.callCount = (function_) => {
 };
 var onetime_default = onetime2;
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/main.js
-var import_os2 = require("os");
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/main.js
+var import_node_os2 = require("os");
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/realtime.js
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/realtime.js
 var getRealtimeSignals = function() {
   const length = SIGRTMAX - SIGRTMIN + 1;
   return Array.from({ length }, getRealtimeSignal);
@@ -12873,10 +12873,10 @@ var getRealtimeSignal = function(value, index) {
 var SIGRTMIN = 34;
 var SIGRTMAX = 64;
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/signals.js
-var import_os = require("os");
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/signals.js
+var import_node_os = require("os");
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/core.js
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/core.js
 var SIGNALS = [
   {
     name: "SIGHUP",
@@ -13149,7 +13149,7 @@ var SIGNALS = [
   }
 ];
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/signals.js
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/signals.js
 var getSignals = function() {
   const realtimeSignals = getRealtimeSignals();
   const signals = [...SIGNALS, ...realtimeSignals].map(normalizeSignal);
@@ -13165,22 +13165,30 @@ var normalizeSignal = function({
 }) {
   const {
     signals: { [name]: constantSignal }
-  } = import_os.constants;
+  } = import_node_os.constants;
   const supported = constantSignal !== void 0;
   const number = supported ? constantSignal : defaultNumber;
   return { name, number, description, supported, action, forced, standard };
 };
 
-// node_modules/.pnpm/human-signals@3.0.1/node_modules/human-signals/build/src/main.js
+// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/main.js
 var getSignalsByName = function() {
   const signals = getSignals();
-  return signals.reduce(getSignalByName, {});
+  return Object.fromEntries(signals.map(getSignalByName));
 };
-var getSignalByName = function(signalByNameMemo, { name, number, description, supported, action, forced, standard }) {
-  return {
-    ...signalByNameMemo,
-    [name]: { name, number, description, supported, action, forced, standard }
-  };
+var getSignalByName = function({
+  name,
+  number,
+  description,
+  supported,
+  action,
+  forced,
+  standard
+}) {
+  return [
+    name,
+    { name, number, description, supported, action, forced, standard }
+  ];
 };
 var signalsByName = getSignalsByName();
 var getSignalsByNumber = function() {
@@ -13208,7 +13216,7 @@ var getSignalByNumber = function(number, signals) {
   };
 };
 var findSignalByNumber = function(number, signals) {
-  const signal = signals.find(({ name }) => import_os2.constants.signals[name] === number);
+  const signal = signals.find(({ name }) => import_node_os2.constants.signals[name] === number);
   if (signal !== void 0) {
     return signal;
   }
@@ -13216,7 +13224,7 @@ var findSignalByNumber = function(number, signals) {
 };
 var signalsByNumber = getSignalsByNumber();
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/error.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/error.js
 var getErrorPrefix = ({ timedOut, timeout, errorCode, signal, signalDescription, exitCode, isCanceled }) => {
   if (timedOut) {
     return `timed out after ${timeout} milliseconds`;
@@ -13286,7 +13294,7 @@ ${error.message}` : execaMessage;
   return error;
 };
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/stdio.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/stdio.js
 var aliases = ["stdin", "stdout", "stderr"];
 var hasAlias = (options) => aliases.some((alias) => options[alias] !== void 0);
 var normalizeStdio = (options) => {
@@ -13310,8 +13318,8 @@ var normalizeStdio = (options) => {
   return Array.from({ length }, (value, index) => stdio[index]);
 };
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/kill.js
-var import_node_os = __toESM(require("os"), 1);
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/kill.js
+var import_node_os3 = __toESM(require("os"), 1);
 var import_signal_exit2 = __toESM(require_signal_exit(), 1);
 var DEFAULT_FORCE_KILL_TIMEOUT = 1e3 * 5;
 var spawnedKill = (kill, signal = "SIGTERM", options = {}) => {
@@ -13332,7 +13340,7 @@ var setKillTimeout = (kill, signal, options, killResult) => {
   }
 };
 var shouldForceKill = (signal, { forceKillAfterTimeout }, killResult) => isSigterm(signal) && forceKillAfterTimeout !== false && killResult;
-var isSigterm = (signal) => signal === import_node_os.default.constants.signals.SIGTERM || typeof signal === "string" && signal.toUpperCase() === "SIGTERM";
+var isSigterm = (signal) => signal === import_node_os3.default.constants.signals.SIGTERM || typeof signal === "string" && signal.toUpperCase() === "SIGTERM";
 var getForceKillAfterTimeout = ({ forceKillAfterTimeout = true }) => {
   if (forceKillAfterTimeout === true) {
     return DEFAULT_FORCE_KILL_TIMEOUT;
@@ -13389,11 +13397,11 @@ function isStream(stream) {
   return stream !== null && typeof stream === "object" && typeof stream.pipe === "function";
 }
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/stream.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/stream.js
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
 var handleInput = (spawned, input) => {
-  if (input === void 0 || spawned.stdin === void 0) {
+  if (input === void 0) {
     return;
   }
   if (isStream(input)) {
@@ -13416,7 +13424,7 @@ var makeAllStream = (spawned, { all }) => {
   return mixed;
 };
 var getBufferedData = async (stream, streamPromise) => {
-  if (!stream) {
+  if (!stream || streamPromise === void 0) {
     return;
   }
   stream.destroy();
@@ -13451,7 +13459,7 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
   }
 };
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/promise.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/promise.js
 var nativePromisePrototype = (async () => {
 })().constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
@@ -13479,7 +13487,7 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   }
 });
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/lib/command.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/command.js
 var normalizeArgs = (file, args = []) => {
   if (!Array.isArray(args)) {
     return [file];
@@ -13510,7 +13518,7 @@ var parseCommand = (command) => {
   return tokens;
 };
 
-// node_modules/.pnpm/execa@6.1.0/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.0.0/node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
 var getEnv = ({ env: envOption, extendEnv, preferLocal, localDir, execPath }) => {
   const env = extendEnv ? { ...import_node_process7.default.env, ...envOption } : envOption;
@@ -13914,7 +13922,7 @@ async function printHelp() {
   console.log(``);
 }
 function printVersion() {
-  console.log("0.18.1");
+  console.log("0.19.0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

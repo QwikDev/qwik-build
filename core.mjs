@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.18.1
+ * @builder.io/qwik 0.19.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1832,9 +1832,7 @@ const filterStack = (stack, offset = 0) => {
     return stack
         .split('\n')
         .slice(offset)
-        .filter((l) => !l.includes('/node_modules/@builder.io/qwik') &&
-        !l.includes('(node:') &&
-        !l.includes('/qwik-city/lib/'))
+        .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
         .join('\n');
 };
 
@@ -7026,7 +7024,7 @@ const Slot = (props) => {
  * QWIK_VERSION
  * @public
  */
-const version = "0.18.1";
+const version = "0.19.0";
 
 /**
  * Render JSX.
