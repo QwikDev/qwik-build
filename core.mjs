@@ -1379,7 +1379,7 @@ const getContext = (el, containerState) => {
                     if (host) {
                         const [renderQrl, props] = host.split(' ');
                         const styleIds = el.getAttribute(QScopedStyle);
-                        elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
+                        elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
                         elCtx.$flags$ = HOST_FLAG_MOUNTED;
                         if (renderQrl) {
                             elCtx.$componentQrl$ = getObject(renderQrl);
@@ -3814,7 +3814,7 @@ const styleContent = (styleId) => {
     return ComponentStylesPrefixContent + styleId;
 };
 const serializeSStyle = (scopeIds) => {
-    const value = scopeIds.join(' ');
+    const value = scopeIds.join('|');
     if (value.length > 0) {
         return value;
     }
@@ -8140,8 +8140,6 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                     addQwikEvent(eventName, rCtx.$static$.$containerState$);
                 }
                 renderNodeElementSync('script', attributes, stream);
-                logWarn(`Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.
-          This is likely to the usage of useBrowserVisibleTask$() in a component that renders no elements.`);
             }
             if (beforeClose) {
                 return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));

@@ -682,7 +682,7 @@
                         if (host) {
                             const [renderQrl, props] = host.split(" ");
                             const styleIds = el.getAttribute("q:sstyle");
-                            elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
+                            elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
                             elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
                         }
                     }
@@ -2003,7 +2003,7 @@
         return Number(Math.abs(hash)).toString(36);
     };
     const serializeSStyle = scopeIds => {
-        const value = scopeIds.join(" ");
+        const value = scopeIds.join("|");
         if (value.length > 0) {
             return value;
         }
@@ -3858,7 +3858,7 @@
                         const eventName = normalizeInvisibleEvents(listener[0]);
                         attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), addQwikEvent(eventName, rCtx.$static$.$containerState$);
                     }
-                    renderNodeElementSync("script", attributes, stream), logWarn("Component has listeners attached, but it does not render any elements, injecting a new <script> element to attach listeners.\n          This is likely to the usage of useBrowserVisibleTask$() in a component that renders no elements.");
+                    renderNodeElementSync("script", attributes, stream);
                 }
                 return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream);
             }));
