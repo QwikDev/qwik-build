@@ -682,7 +682,7 @@
                         if (host) {
                             const [renderQrl, props] = host.split(" ");
                             const styleIds = el.getAttribute("q:sstyle");
-                            elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
+                            elCtx.$scopeIds$ = styleIds ? styleIds.split(" ") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
                             elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
                         }
                     }
@@ -2003,7 +2003,7 @@
         return Number(Math.abs(hash)).toString(36);
     };
     const serializeSStyle = scopeIds => {
-        const value = scopeIds.join("|");
+        const value = scopeIds.join(" ");
         if (value.length > 0) {
             return value;
         }

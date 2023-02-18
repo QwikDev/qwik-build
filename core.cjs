@@ -1391,7 +1391,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                         if (host) {
                             const [renderQrl, props] = host.split(' ');
                             const styleIds = el.getAttribute(QScopedStyle);
-                            elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
+                            elCtx.$scopeIds$ = styleIds ? styleIds.split(' ') : null;
                             elCtx.$flags$ = HOST_FLAG_MOUNTED;
                             if (renderQrl) {
                                 elCtx.$componentQrl$ = getObject(renderQrl);
@@ -3826,7 +3826,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return ComponentStylesPrefixContent + styleId;
     };
     const serializeSStyle = (scopeIds) => {
-        const value = scopeIds.join('|');
+        const value = scopeIds.join(' ');
         if (value.length > 0) {
             return value;
         }
