@@ -1267,6 +1267,11 @@ export { jsx }
 export { jsx as jsxs }
 
 /**
+ * @internal
+ */
+export declare const _jsxBranch: (input?: any) => any;
+
+/**
  * @public
  */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode;
@@ -1346,7 +1351,6 @@ declare class LocalSubscriptionManager {
     $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
     $addSub$(sub: Subscriptions): void;
     $notifySubs$(key?: string | undefined): void;
-    $isTreeshakeable$(prop: string): boolean;
 }
 
 declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2637,6 +2641,7 @@ declare type SubscriberHost = QwikElement;
 declare type SubscriberSignal = B | C;
 
 declare interface SubscriptionManager {
+    $groupToManagers$: GroupToManagersMap;
     $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
     $clearSub$: (sub: SubscriberEffect | SubscriberHost) => void;
 }
@@ -3680,7 +3685,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.19.0-dev20230218113646
+ * 0.19.0-dev20230219211109
  * @public
  */
 export declare const version: string;

@@ -726,213 +726,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
     };
 
-    let _locale = undefined;
-    /**
-     * Retrieve the current lang.
-     *
-     * If no current lang and there is no `defaultLang` the function throws an error.
-     *
-     * @returns  the lang.
-     * @internal
-     */
-    function getLocale(defaultLocale) {
-        if (_locale === undefined) {
-            const ctx = tryGetInvokeContext();
-            if (ctx && ctx.$locale$) {
-                return ctx.$locale$;
-            }
-            if (defaultLocale !== undefined) {
-                return defaultLocale;
-            }
-            throw new Error('Reading `locale` outside of context.');
-        }
-        return _locale;
-    }
-    /**
-     * Override the `getLocale` with `lang` within the `fn` execution.
-     *
-     * @internal
-     */
-    function withLocale(locale, fn) {
-        const previousLang = _locale;
-        try {
-            _locale = locale;
-            return fn();
-        }
-        finally {
-            _locale = previousLang;
-        }
-    }
-    /**
-     * Globally set a lang.
-     *
-     * This can be used only in browser. Server execution requires that each
-     * request could potentially be a different lang, therefore setting
-     * a global lang would produce incorrect responses.
-     *
-     * @param lang
-     */
-    function setLocale(locale) {
-        _locale = locale;
-    }
-
-    let _context;
-    /**
-     * @alpha
-     */
-    const tryGetInvokeContext = () => {
-        if (!_context) {
-            const context = typeof document !== 'undefined' && document && document.__q_context__;
-            if (!context) {
-                return undefined;
-            }
-            if (isArray(context)) {
-                return (document.__q_context__ = newInvokeContextFromTuple(context));
-            }
-            return context;
-        }
-        return _context;
-    };
-    const getInvokeContext = () => {
-        const ctx = tryGetInvokeContext();
-        if (!ctx) {
-            throw qError(QError_useMethodOutsideContext);
-        }
-        return ctx;
-    };
-    const useInvokeContext = () => {
-        const ctx = tryGetInvokeContext();
-        if (!ctx || ctx.$event$ !== RenderEvent) {
-            throw qError(QError_useInvokeContext);
-        }
-        assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
-        assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
-        assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
-        assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
-        return ctx;
-    };
-    const useBindInvokeContext = (callback) => {
-        if (callback == null) {
-            return callback;
-        }
-        const ctx = getInvokeContext();
-        return ((...args) => {
-            return invoke(ctx, callback.bind(undefined, ...args));
-        });
-    };
-    const invoke = (context, fn, ...args) => {
-        const previousContext = _context;
-        let returnValue;
-        try {
-            _context = context;
-            returnValue = fn.apply(null, args);
-        }
-        finally {
-            _context = previousContext;
-        }
-        return returnValue;
-    };
-    const waitAndRun = (ctx, callback) => {
-        const waitOn = ctx.$waitOn$;
-        if (waitOn.length === 0) {
-            const result = callback();
-            if (isPromise(result)) {
-                waitOn.push(result);
-            }
-        }
-        else {
-            waitOn.push(Promise.all(waitOn).then(callback));
-        }
-    };
-    const newInvokeContextFromTuple = (context) => {
-        const element = context[0];
-        const container = element.closest(QContainerSelector);
-        const locale = container?.getAttribute(QLocaleAttr) || undefined;
-        locale && setLocale(locale);
-        return newInvokeContext(locale, undefined, element, context[1], context[2]);
-    };
-    const newInvokeContext = (locale, hostElement, element, event, url) => {
-        const ctx = {
-            $seq$: 0,
-            $hostElement$: hostElement,
-            $element$: element,
-            $event$: event,
-            $url$: url,
-            $qrl$: undefined,
-            $props$: undefined,
-            $renderCtx$: undefined,
-            $subscriber$: undefined,
-            $waitOn$: undefined,
-            $locale$: locale,
-        };
-        seal(ctx);
-        return ctx;
-    };
-    const getWrappingContainer = (el) => {
-        return el.closest(QContainerSelector);
-    };
-    /**
-     * @alpha
-     */
-    const untrack = (fn) => {
-        return invoke(undefined, fn);
-    };
-    /**
-     * @internal
-     */
-    const _getContextElement = () => {
-        const iCtx = tryGetInvokeContext();
-        if (iCtx) {
-            return (iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(undefined));
-        }
-    };
-
-    // <docs markdown="../readme.md#implicit$FirstArg">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#implicit$FirstArg instead)
-    /**
-     * Create a `____$(...)` convenience method from `___(...)`.
-     *
-     * It is very common for functions to take a lazy-loadable resource as a first argument. For this
-     * reason, the Qwik Optimizer automatically extracts the first argument from any function which
-     * ends in `$`.
-     *
-     * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
-     * The former is just a shorthand for the latter.
-     *
-     * For example, these function calls are equivalent:
-     *
-     * - `component$(() => {...})` is same as `component($(() => {...}))`
-     *
-     * ```tsx
-     * export function myApi(callback: QRL<() => void>): void {
-     *   // ...
-     * }
-     *
-     * export const myApi$ = implicit$FirstArg(myApi);
-     * // type of myApi$: (callback: () => void): void
-     *
-     * // can be used as:
-     * myApi$(() => console.log('callback'));
-     *
-     * // will be transpiled to:
-     * // FILE: <current file>
-     * myApi(qrl('./chunk-abc.js', 'callback'));
-     *
-     * // FILE: chunk-abc.js
-     * export const callback = () => console.log('callback');
-     * ```
-     *
-     * @param fn - a function that should have its first argument automatically `$`.
-     * @alpha
-     */
-    // </docs>
-    const implicit$FirstArg = (fn) => {
-        return function (first, ...rest) {
-            return fn.call(null, $(first), ...rest);
-        };
-    };
-
     const ON_PROP_REGEX = /^(on|window:|document:)/;
     const PREVENT_DEFAULT = 'preventdefault:';
     const isOnProp = (prop) => {
@@ -1447,6 +1240,225 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         elCtx.$watches$ = null;
         elCtx.$flags$ = 0;
         el[Q_CTX] = undefined;
+    };
+
+    let _locale = undefined;
+    /**
+     * Retrieve the current lang.
+     *
+     * If no current lang and there is no `defaultLang` the function throws an error.
+     *
+     * @returns  the lang.
+     * @internal
+     */
+    function getLocale(defaultLocale) {
+        if (_locale === undefined) {
+            const ctx = tryGetInvokeContext();
+            if (ctx && ctx.$locale$) {
+                return ctx.$locale$;
+            }
+            if (defaultLocale !== undefined) {
+                return defaultLocale;
+            }
+            throw new Error('Reading `locale` outside of context.');
+        }
+        return _locale;
+    }
+    /**
+     * Override the `getLocale` with `lang` within the `fn` execution.
+     *
+     * @internal
+     */
+    function withLocale(locale, fn) {
+        const previousLang = _locale;
+        try {
+            _locale = locale;
+            return fn();
+        }
+        finally {
+            _locale = previousLang;
+        }
+    }
+    /**
+     * Globally set a lang.
+     *
+     * This can be used only in browser. Server execution requires that each
+     * request could potentially be a different lang, therefore setting
+     * a global lang would produce incorrect responses.
+     *
+     * @param lang
+     */
+    function setLocale(locale) {
+        _locale = locale;
+    }
+
+    let _context;
+    /**
+     * @alpha
+     */
+    const tryGetInvokeContext = () => {
+        if (!_context) {
+            const context = typeof document !== 'undefined' && document && document.__q_context__;
+            if (!context) {
+                return undefined;
+            }
+            if (isArray(context)) {
+                return (document.__q_context__ = newInvokeContextFromTuple(context));
+            }
+            return context;
+        }
+        return _context;
+    };
+    const getInvokeContext = () => {
+        const ctx = tryGetInvokeContext();
+        if (!ctx) {
+            throw qError(QError_useMethodOutsideContext);
+        }
+        return ctx;
+    };
+    const useInvokeContext = () => {
+        const ctx = tryGetInvokeContext();
+        if (!ctx || ctx.$event$ !== RenderEvent) {
+            throw qError(QError_useInvokeContext);
+        }
+        assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
+        assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
+        assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
+        assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
+        return ctx;
+    };
+    const useBindInvokeContext = (callback) => {
+        if (callback == null) {
+            return callback;
+        }
+        const ctx = getInvokeContext();
+        return ((...args) => {
+            return invoke(ctx, callback.bind(undefined, ...args));
+        });
+    };
+    const invoke = (context, fn, ...args) => {
+        const previousContext = _context;
+        let returnValue;
+        try {
+            _context = context;
+            returnValue = fn.apply(null, args);
+        }
+        finally {
+            _context = previousContext;
+        }
+        return returnValue;
+    };
+    const waitAndRun = (ctx, callback) => {
+        const waitOn = ctx.$waitOn$;
+        if (waitOn.length === 0) {
+            const result = callback();
+            if (isPromise(result)) {
+                waitOn.push(result);
+            }
+        }
+        else {
+            waitOn.push(Promise.all(waitOn).then(callback));
+        }
+    };
+    const newInvokeContextFromTuple = (context) => {
+        const element = context[0];
+        const container = element.closest(QContainerSelector);
+        const locale = container?.getAttribute(QLocaleAttr) || undefined;
+        locale && setLocale(locale);
+        return newInvokeContext(locale, undefined, element, context[1], context[2]);
+    };
+    const newInvokeContext = (locale, hostElement, element, event, url) => {
+        const ctx = {
+            $seq$: 0,
+            $hostElement$: hostElement,
+            $element$: element,
+            $event$: event,
+            $url$: url,
+            $qrl$: undefined,
+            $props$: undefined,
+            $renderCtx$: undefined,
+            $subscriber$: undefined,
+            $waitOn$: undefined,
+            $locale$: locale,
+        };
+        seal(ctx);
+        return ctx;
+    };
+    const getWrappingContainer = (el) => {
+        return el.closest(QContainerSelector);
+    };
+    /**
+     * @alpha
+     */
+    const untrack = (fn) => {
+        return invoke(undefined, fn);
+    };
+    /**
+     * @internal
+     */
+    const _getContextElement = () => {
+        const iCtx = tryGetInvokeContext();
+        if (iCtx) {
+            return (iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(undefined));
+        }
+    };
+    /**
+     * @internal
+     */
+    const _jsxBranch = (input) => {
+        const iCtx = tryGetInvokeContext();
+        if (iCtx && iCtx.$hostElement$ && iCtx.$renderCtx$) {
+            const hostElement = iCtx.$hostElement$;
+            const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+            elCtx.$flags$ |= HOST_FLAG_DYNAMIC;
+        }
+        return input;
+    };
+
+    // <docs markdown="../readme.md#implicit$FirstArg">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#implicit$FirstArg instead)
+    /**
+     * Create a `____$(...)` convenience method from `___(...)`.
+     *
+     * It is very common for functions to take a lazy-loadable resource as a first argument. For this
+     * reason, the Qwik Optimizer automatically extracts the first argument from any function which
+     * ends in `$`.
+     *
+     * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
+     * The former is just a shorthand for the latter.
+     *
+     * For example, these function calls are equivalent:
+     *
+     * - `component$(() => {...})` is same as `component($(() => {...}))`
+     *
+     * ```tsx
+     * export function myApi(callback: QRL<() => void>): void {
+     *   // ...
+     * }
+     *
+     * export const myApi$ = implicit$FirstArg(myApi);
+     * // type of myApi$: (callback: () => void): void
+     *
+     * // can be used as:
+     * myApi$(() => console.log('callback'));
+     *
+     * // will be transpiled to:
+     * // FILE: <current file>
+     * myApi(qrl('./chunk-abc.js', 'callback'));
+     *
+     * // FILE: chunk-abc.js
+     * export const callback = () => console.log('callback');
+     * ```
+     *
+     * @param fn - a function that should have its first argument automatically `$`.
+     * @alpha
+     */
+    // </docs>
+    const implicit$FirstArg = (fn) => {
+        return function (first, ...rest) {
+            return fn.call(null, $(first), ...rest);
+        };
     };
 
     const useSequentialScope = () => {
@@ -4043,7 +4055,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const canRender = collector.$elements$.length > 0;
         if (canRender) {
             for (const elCtx of collector.$deferElements$) {
-                collectElementData(elCtx, collector, false);
+                collectElementData(elCtx, collector, elCtx.$element$);
             }
             for (const ctx of allContexts) {
                 collectProps(ctx, collector);
@@ -4382,27 +4394,27 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 return;
             }
             collector.$elements$.push(ctx);
-            collectElementData(ctx, collector, false);
+            collectElementData(ctx, collector, el);
         }
     };
-    const collectElementData = (elCtx, collector, dynamic) => {
+    const collectElementData = (elCtx, collector, dynamicCtx) => {
         if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
-            collectValue(elCtx.$props$, collector, dynamic);
+            collectValue(elCtx.$props$, collector, dynamicCtx);
         }
         if (elCtx.$componentQrl$) {
-            collectValue(elCtx.$componentQrl$, collector, dynamic);
+            collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
         }
         if (elCtx.$seq$) {
             for (const obj of elCtx.$seq$) {
-                collectValue(obj, collector, dynamic);
+                collectValue(obj, collector, dynamicCtx);
             }
         }
         if (elCtx.$watches$) {
             for (const obj of elCtx.$watches$) {
-                collectValue(obj, collector, dynamic);
+                collectValue(obj, collector, dynamicCtx);
             }
         }
-        if (dynamic) {
+        if (dynamicCtx) {
             collectContext(elCtx, collector);
             if (elCtx.$dynamicSlots$) {
                 for (const slotCtx of elCtx.$dynamicSlots$) {
@@ -4491,7 +4503,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                             return;
                         }
                         seen.add(obj);
-                        if (leaks) {
+                        if (leaks === true) {
                             collectSubscriptions(getProxyManager(input), collector);
                         }
                         if (fastWeakSerialize(input)) {
@@ -6152,7 +6164,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         test: (v) => v instanceof SignalImpl,
         collect: (obj, collector, leaks) => {
             collectValue(obj.untrackedValue, collector, leaks);
-            if (leaks) {
+            if (leaks === true) {
                 collectSubscriptions(obj[QObjectManagerSymbol], collector);
             }
             return obj;
@@ -6176,8 +6188,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         collect(obj, collector, leaks) {
             collectValue(obj.ref, collector, leaks);
             if (fastWeakSerialize(obj.ref)) {
-                const manager = getProxyManager(obj.ref);
-                if (leaks || !manager.$isTreeshakeable$(obj.prop)) {
+                const localManager = getProxyManager(obj.ref);
+                if (isTreeshakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
                     collectValue(obj.ref[obj.prop], collector, leaks);
                 }
             }
@@ -6332,6 +6344,18 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         _: (obj) => {
             return Promise.reject(obj);
         },
+    };
+    const isTreeshakeable = (manager, target, leaks) => {
+        if (typeof leaks === 'boolean') {
+            return leaks;
+        }
+        const localManager = manager.$groupToManagers$.get(leaks);
+        if (localManager && localManager.length > 0) {
+            if (localManager.length === 1) {
+                return localManager[0] !== target;
+            }
+        }
+        return false;
     };
 
     /**
@@ -6533,6 +6557,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const createSubscriptionManager = (containerState) => {
         const groupToManagers = new Map();
         const manager = {
+            $groupToManagers$: groupToManagers,
             $createManager$: (initialMap) => {
                 return new LocalSubscriptionManager(groupToManagers, containerState, initialMap);
             },
@@ -6604,20 +6629,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 notifyChange(sub, this.$containerState$);
             }
-        }
-        $isTreeshakeable$(prop) {
-            const subs = this.$subs$;
-            const groups = this.$groupToManagers$;
-            for (const sub of subs) {
-                const compare = sub[sub.length - 1];
-                if (prop === compare) {
-                    const group = groups.get(sub[1]);
-                    if (group.length > 1 && group.some((g) => g !== this && g.$subs$.some((s) => s[0] === 0))) {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
     }
     const must = (a) => {
@@ -8207,14 +8218,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
         const hostCtx = rCtx.$cmpCtx$;
-        const dynamicChildren = hasDynamicChildren(node);
-        if (dynamicChildren && hostCtx) {
-            hostCtx.$flags$ |= HOST_FLAG_DYNAMIC;
-            const slotCtx = rCtx.$slotCtx$;
-            if (slotCtx) {
-                addDynamicSlot(hostCtx, slotCtx);
-            }
-        }
         if (typeof tagName === 'string') {
             const key = node.key;
             const props = node.props;
@@ -8421,10 +8424,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             const elCtx = createSSRContext(111);
             elCtx.$parent$ = rCtx.$cmpCtx$;
             elCtx.$slotParent$ = rCtx.$slotCtx$;
-            if (dynamicChildren) {
-                if (hostCtx) {
-                    addDynamicSlot(hostCtx, elCtx);
-                }
+            if (hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC) {
+                addDynamicSlot(hostCtx, elCtx);
             }
             return renderNodeVirtual(node, elCtx, undefined, rCtx, ssrCtx, stream, flags, beforeClose);
         }
@@ -8762,9 +8763,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     const normalizeInvisibleEvents = (eventName) => {
         return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
     };
-    const hasDynamicChildren = (node) => {
-        return node.props[_IMMUTABLE]?.children === false;
-    };
 
     exports.$ = $;
     exports.Fragment = Fragment;
@@ -8781,6 +8779,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports._deserializeData = _deserializeData;
     exports._getContextElement = _getContextElement;
     exports._hW = _hW;
+    exports._jsxBranch = _jsxBranch;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
     exports._regSymbol = _regSymbol;

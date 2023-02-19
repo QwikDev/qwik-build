@@ -424,132 +424,6 @@ const getEventName = attribute => {
     return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
 };
 
-let _locale;
-
-function getLocale(defaultLocale) {
-    if (void 0 === _locale) {
-        const ctx = tryGetInvokeContext();
-        if (ctx && ctx.$locale$) {
-            return ctx.$locale$;
-        }
-        if (void 0 !== defaultLocale) {
-            return defaultLocale;
-        }
-        throw new Error("Reading `locale` outside of context.");
-    }
-    return _locale;
-}
-
-function withLocale(locale, fn) {
-    const previousLang = _locale;
-    try {
-        return _locale = locale, fn();
-    } finally {
-        _locale = previousLang;
-    }
-}
-
-let _context;
-
-const tryGetInvokeContext = () => {
-    if (!_context) {
-        const context = "undefined" != typeof document && document && document.__q_context__;
-        if (!context) {
-            return;
-        }
-        return isArray(context) ? document.__q_context__ = newInvokeContextFromTuple(context) : context;
-    }
-    return _context;
-};
-
-const getInvokeContext = () => {
-    const ctx = tryGetInvokeContext();
-    if (!ctx) {
-        throw qError(14);
-    }
-    return ctx;
-};
-
-const useInvokeContext = () => {
-    const ctx = tryGetInvokeContext();
-    if (!ctx || "qRender" !== ctx.$event$) {
-        throw qError(20);
-    }
-    return assertDefined(ctx.$hostElement$, "invoke: $hostElement$ must be defined", ctx), 
-    assertDefined(ctx.$waitOn$, "invoke: $waitOn$ must be defined", ctx), assertDefined(ctx.$renderCtx$, "invoke: $renderCtx$ must be defined", ctx), 
-    assertDefined(ctx.$subscriber$, "invoke: $subscriber$ must be defined", ctx), ctx;
-};
-
-const useBindInvokeContext = callback => {
-    if (null == callback) {
-        return callback;
-    }
-    const ctx = getInvokeContext();
-    return (...args) => invoke(ctx, callback.bind(void 0, ...args));
-};
-
-const invoke = (context, fn, ...args) => {
-    const previousContext = _context;
-    let returnValue;
-    try {
-        _context = context, returnValue = fn.apply(null, args);
-    } finally {
-        _context = previousContext;
-    }
-    return returnValue;
-};
-
-const waitAndRun = (ctx, callback) => {
-    const waitOn = ctx.$waitOn$;
-    if (0 === waitOn.length) {
-        const result = callback();
-        isPromise(result) && waitOn.push(result);
-    } else {
-        waitOn.push(Promise.all(waitOn).then(callback));
-    }
-};
-
-const newInvokeContextFromTuple = context => {
-    const element = context[0];
-    const container = element.closest("[q\\:container]");
-    const locale = container?.getAttribute("q:locale") || void 0;
-    return locale && function(locale) {
-        _locale = locale;
-    }(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
-};
-
-const newInvokeContext = (locale, hostElement, element, event, url) => {
-    const ctx = {
-        $seq$: 0,
-        $hostElement$: hostElement,
-        $element$: element,
-        $event$: event,
-        $url$: url,
-        $qrl$: void 0,
-        $props$: void 0,
-        $renderCtx$: void 0,
-        $subscriber$: void 0,
-        $waitOn$: void 0,
-        $locale$: locale
-    };
-    return seal(ctx), ctx;
-};
-
-const getWrappingContainer = el => el.closest("[q\\:container]");
-
-const untrack = fn => invoke(void 0, fn);
-
-const _getContextElement = () => {
-    const iCtx = tryGetInvokeContext();
-    if (iCtx) {
-        return iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(void 0);
-    }
-};
-
-const implicit$FirstArg = fn => function(first, ...rest) {
-    return fn.call(null, $(first), ...rest);
-};
-
 const ON_PROP_REGEX = /^(on|window:|document:)/;
 
 const isOnProp = prop => prop.endsWith("$") && ON_PROP_REGEX.test(prop);
@@ -897,6 +771,141 @@ const createContext$1 = element => {
         $slotParent$: null
     };
     return seal(ctx), element._qc_ = ctx, ctx;
+};
+
+let _locale;
+
+function getLocale(defaultLocale) {
+    if (void 0 === _locale) {
+        const ctx = tryGetInvokeContext();
+        if (ctx && ctx.$locale$) {
+            return ctx.$locale$;
+        }
+        if (void 0 !== defaultLocale) {
+            return defaultLocale;
+        }
+        throw new Error("Reading `locale` outside of context.");
+    }
+    return _locale;
+}
+
+function withLocale(locale, fn) {
+    const previousLang = _locale;
+    try {
+        return _locale = locale, fn();
+    } finally {
+        _locale = previousLang;
+    }
+}
+
+let _context;
+
+const tryGetInvokeContext = () => {
+    if (!_context) {
+        const context = "undefined" != typeof document && document && document.__q_context__;
+        if (!context) {
+            return;
+        }
+        return isArray(context) ? document.__q_context__ = newInvokeContextFromTuple(context) : context;
+    }
+    return _context;
+};
+
+const getInvokeContext = () => {
+    const ctx = tryGetInvokeContext();
+    if (!ctx) {
+        throw qError(14);
+    }
+    return ctx;
+};
+
+const useInvokeContext = () => {
+    const ctx = tryGetInvokeContext();
+    if (!ctx || "qRender" !== ctx.$event$) {
+        throw qError(20);
+    }
+    return assertDefined(ctx.$hostElement$, "invoke: $hostElement$ must be defined", ctx), 
+    assertDefined(ctx.$waitOn$, "invoke: $waitOn$ must be defined", ctx), assertDefined(ctx.$renderCtx$, "invoke: $renderCtx$ must be defined", ctx), 
+    assertDefined(ctx.$subscriber$, "invoke: $subscriber$ must be defined", ctx), ctx;
+};
+
+const useBindInvokeContext = callback => {
+    if (null == callback) {
+        return callback;
+    }
+    const ctx = getInvokeContext();
+    return (...args) => invoke(ctx, callback.bind(void 0, ...args));
+};
+
+const invoke = (context, fn, ...args) => {
+    const previousContext = _context;
+    let returnValue;
+    try {
+        _context = context, returnValue = fn.apply(null, args);
+    } finally {
+        _context = previousContext;
+    }
+    return returnValue;
+};
+
+const waitAndRun = (ctx, callback) => {
+    const waitOn = ctx.$waitOn$;
+    if (0 === waitOn.length) {
+        const result = callback();
+        isPromise(result) && waitOn.push(result);
+    } else {
+        waitOn.push(Promise.all(waitOn).then(callback));
+    }
+};
+
+const newInvokeContextFromTuple = context => {
+    const element = context[0];
+    const container = element.closest("[q\\:container]");
+    const locale = container?.getAttribute("q:locale") || void 0;
+    return locale && function(locale) {
+        _locale = locale;
+    }(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
+};
+
+const newInvokeContext = (locale, hostElement, element, event, url) => {
+    const ctx = {
+        $seq$: 0,
+        $hostElement$: hostElement,
+        $element$: element,
+        $event$: event,
+        $url$: url,
+        $qrl$: void 0,
+        $props$: void 0,
+        $renderCtx$: void 0,
+        $subscriber$: void 0,
+        $waitOn$: void 0,
+        $locale$: locale
+    };
+    return seal(ctx), ctx;
+};
+
+const getWrappingContainer = el => el.closest("[q\\:container]");
+
+const untrack = fn => invoke(void 0, fn);
+
+const _getContextElement = () => {
+    const iCtx = tryGetInvokeContext();
+    if (iCtx) {
+        return iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(void 0);
+    }
+};
+
+const _jsxBranch = input => {
+    const iCtx = tryGetInvokeContext();
+    if (iCtx && iCtx.$hostElement$ && iCtx.$renderCtx$) {
+        const hostElement = iCtx.$hostElement$;
+        getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$).$flags$ |= 8;
+    }
+    return input;
+};
+
+const implicit$FirstArg = fn => function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
 };
 
 const useSequentialScope = () => {
@@ -2484,7 +2493,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
     const canRender = collector.$elements$.length > 0;
     if (canRender) {
         for (const elCtx of collector.$deferElements$) {
-            collectElementData(elCtx, collector, false);
+            collectElementData(elCtx, collector, elCtx.$element$);
         }
         for (const ctx of allContexts) {
             collectProps(ctx, collector);
@@ -2708,24 +2717,24 @@ const collectElement = (el, collector) => {
         if (collector.$elements$.includes(ctx)) {
             return;
         }
-        collector.$elements$.push(ctx), collectElementData(ctx, collector, false);
+        collector.$elements$.push(ctx), collectElementData(ctx, collector, el);
     }
 };
 
-const collectElementData = (elCtx, collector, dynamic) => {
-    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && collectValue(elCtx.$props$, collector, dynamic), 
-    elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamic), 
+const collectElementData = (elCtx, collector, dynamicCtx) => {
+    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && collectValue(elCtx.$props$, collector, dynamicCtx), 
+    elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx), 
     elCtx.$seq$) {
         for (const obj of elCtx.$seq$) {
-            collectValue(obj, collector, dynamic);
+            collectValue(obj, collector, dynamicCtx);
         }
     }
     if (elCtx.$watches$) {
         for (const obj of elCtx.$watches$) {
-            collectValue(obj, collector, dynamic);
+            collectValue(obj, collector, dynamicCtx);
         }
     }
-    if (dynamic && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {
+    if (dynamicCtx && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {
         for (const slotCtx of elCtx.$dynamicSlots$) {
             collectContext(slotCtx, collector);
         }
@@ -2783,7 +2792,7 @@ const collectValue = (obj, collector, leaks) => {
                     if (obj = target, seen.has(obj)) {
                         return;
                     }
-                    if (seen.add(obj), leaks && collectSubscriptions(getProxyManager(input), collector), 
+                    if (seen.add(obj), true === leaks && collectSubscriptions(getProxyManager(input), collector), 
                     fastWeakSerialize(input)) {
                         return void collector.$objSet$.add(obj);
                     }
@@ -3729,7 +3738,7 @@ const serializers = [ QRLSerializer, {
     prefix: "",
     test: v => v instanceof SignalImpl,
     collect: (obj, collector, leaks) => (collectValue(obj.untrackedValue, collector, leaks), 
-    leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector), obj),
+    true === leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector), obj),
     serialize: (obj, getObjId) => getObjId(obj.untrackedValue),
     prepare: (data, containerState) => new SignalImpl(data, containerState?.$subsManager$?.$createManager$()),
     subs: (signal, subs) => {
@@ -3743,8 +3752,8 @@ const serializers = [ QRLSerializer, {
     test: v => v instanceof SignalWrapper,
     collect(obj, collector, leaks) {
         if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
-            const manager = getProxyManager(obj.ref);
-            !leaks && manager.$isTreeshakeable$(obj.prop) || collectValue(obj.ref[obj.prop], collector, leaks);
+            const localManager = getProxyManager(obj.ref);
+            isTreeshakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
         }
         return obj;
     },
@@ -3846,6 +3855,14 @@ const OBJECT_TRANSFORMS = {
     "!": (obj, containerState) => containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState),
     "~": obj => Promise.resolve(obj),
     _: obj => Promise.reject(obj)
+};
+
+const isTreeshakeable = (manager, target, leaks) => {
+    if ("boolean" == typeof leaks) {
+        return leaks;
+    }
+    const localManager = manager.$groupToManagers$.get(leaks);
+    return !!(localManager && localManager.length > 0 && 1 === localManager.length) && localManager[0] !== target;
 };
 
 const verifySerializable = (value, preMessage) => {
@@ -3982,6 +3999,7 @@ const parseSubscription = (sub, getObject) => {
 const createSubscriptionManager = containerState => {
     const groupToManagers = new Map;
     const manager = {
+        $groupToManagers$: groupToManagers,
         $createManager$: initialMap => new LocalSubscriptionManager(groupToManagers, containerState, initialMap),
         $clearSub$: group => {
             const managers = groupToManagers.get(group);
@@ -4030,19 +4048,6 @@ class LocalSubscriptionManager {
             const compare = sub[sub.length - 1];
             key && compare && compare !== key || notifyChange(sub, this.$containerState$);
         }
-    }
-    $isTreeshakeable$(prop) {
-        const subs = this.$subs$;
-        const groups = this.$groupToManagers$;
-        for (const sub of subs) {
-            if (prop === sub[sub.length - 1]) {
-                const group = groups.get(sub[1]);
-                if (group.length > 1 && group.some((g => g !== this && g.$subs$.some((s => 0 === s[0]))))) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 }
 
@@ -4727,12 +4732,6 @@ const createSSRContext = nodeType => {
 const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     const tagName = node.type;
     const hostCtx = rCtx.$cmpCtx$;
-    const dynamicChildren = hasDynamicChildren(node);
-    if (dynamicChildren && hostCtx) {
-        hostCtx.$flags$ |= 8;
-        const slotCtx = rCtx.$slotCtx$;
-        slotCtx && addDynamicSlot(hostCtx, slotCtx);
-    }
     if ("string" == typeof tagName) {
         const key = node.key;
         const props = node.props;
@@ -4862,7 +4861,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     }
     if (tagName === Virtual) {
         const elCtx = createSSRContext(111);
-        return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, dynamicChildren && hostCtx && addDynamicSlot(hostCtx, elCtx), 
+        return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, hostCtx && 8 & hostCtx.$flags$ && addDynamicSlot(hostCtx, elCtx), 
         renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
     }
     if (tagName === SSRRaw) {
@@ -5155,6 +5154,4 @@ const addDynamicSlot = (hostCtx, elCtx) => {
 
 const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
 
-const hasDynamicChildren = node => false === node.props[_IMMUTABLE]?.children;
-
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
