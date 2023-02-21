@@ -310,30 +310,31 @@ function flattenPrefetchResources(prefetchResources) {
 }
 
 // packages/qwik/src/server/prefetch-implementation.ts
-function applyPrefetchImplementation(prefetchStrategy, prefetchResources) {
+function applyPrefetchImplementation(prefetchStrategy, prefetchResources, nonce) {
   const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy?.implementation);
   const prefetchNodes = [];
   if (prefetchImpl.prefetchEvent === "always") {
-    prefetchUrlsEvent(prefetchNodes, prefetchResources);
+    prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce);
   }
   if (prefetchImpl.linkInsert === "html-append") {
     linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl);
   }
   if (prefetchImpl.linkInsert === "js-append") {
-    linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl);
+    linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, nonce);
   } else if (prefetchImpl.workerFetchInsert === "always") {
-    workerFetchImplementation(prefetchNodes, prefetchResources);
+    workerFetchImplementation(prefetchNodes, prefetchResources, nonce);
   }
   if (prefetchNodes.length > 0) {
     return jsx(Fragment, { children: prefetchNodes });
   }
   return null;
 }
-function prefetchUrlsEvent(prefetchNodes, prefetchResources) {
+function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
   prefetchNodes.push(
     jsx("script", {
       type: "module",
-      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources)
+      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources),
+      nonce
     })
   );
 }
@@ -352,7 +353,7 @@ function linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl) 
     prefetchNodes.push(jsx("link", attributes, void 0));
   }
 }
-function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
+function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, nonce) {
   const rel = prefetchImpl.linkRel || "prefetch";
   let s = ``;
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
@@ -383,17 +384,19 @@ function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
   prefetchNodes.push(
     jsx("script", {
       type: "module",
-      dangerouslySetInnerHTML: s
+      dangerouslySetInnerHTML: s,
+      nonce
     })
   );
 }
-function workerFetchImplementation(prefetchNodes, prefetchResources) {
+function workerFetchImplementation(prefetchNodes, prefetchResources, nonce) {
   let s = `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
   s += workerFetchScript();
   prefetchNodes.push(
     jsx("script", {
       type: "module",
-      dangerouslySetInnerHTML: s
+      dangerouslySetInnerHTML: s,
+      nonce
     })
   );
 }
@@ -657,7 +660,8 @@ async function renderToStream(rootNode, opts) {
       const children = [
         jsx2("script", {
           type: "qwik/json",
-          dangerouslySetInnerHTML: escapeText(jsonData)
+          dangerouslySetInnerHTML: escapeText(jsonData),
+          nonce: opts.serverData?.nonce
         })
       ];
       if (opts.prefetchStrategy !== null) {
@@ -665,7 +669,8 @@ async function renderToStream(rootNode, opts) {
         if (prefetchResources.length > 0) {
           const prefetchImpl = applyPrefetchImplementation(
             opts.prefetchStrategy,
-            prefetchResources
+            prefetchResources,
+            opts.serverData?.nonce
           );
           if (prefetchImpl) {
             children.push(prefetchImpl);
@@ -683,7 +688,8 @@ async function renderToStream(rootNode, opts) {
         children.push(
           jsx2("script", {
             id: "qwikloader",
-            dangerouslySetInnerHTML: qwikLoaderScript
+            dangerouslySetInnerHTML: qwikLoaderScript,
+            nonce: opts.serverData?.nonce
           })
         );
       }
@@ -695,7 +701,8 @@ async function renderToStream(rootNode, opts) {
         }
         children.push(
           jsx2("script", {
-            dangerouslySetInnerHTML: content
+            dangerouslySetInnerHTML: content,
+            nonce: opts.serverData?.nonce
           })
         );
       }

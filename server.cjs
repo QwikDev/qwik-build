@@ -354,30 +354,31 @@ function flattenPrefetchResources(prefetchResources) {
 }
 
 // packages/qwik/src/server/prefetch-implementation.ts
-function applyPrefetchImplementation(prefetchStrategy, prefetchResources) {
+function applyPrefetchImplementation(prefetchStrategy, prefetchResources, nonce) {
   const prefetchImpl = normalizePrefetchImplementation(prefetchStrategy == null ? void 0 : prefetchStrategy.implementation);
   const prefetchNodes = [];
   if (prefetchImpl.prefetchEvent === "always") {
-    prefetchUrlsEvent(prefetchNodes, prefetchResources);
+    prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce);
   }
   if (prefetchImpl.linkInsert === "html-append") {
     linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl);
   }
   if (prefetchImpl.linkInsert === "js-append") {
-    linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl);
+    linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, nonce);
   } else if (prefetchImpl.workerFetchInsert === "always") {
-    workerFetchImplementation(prefetchNodes, prefetchResources);
+    workerFetchImplementation(prefetchNodes, prefetchResources, nonce);
   }
   if (prefetchNodes.length > 0) {
     return (0, import_qwik2.jsx)(import_qwik2.Fragment, { children: prefetchNodes });
   }
   return null;
 }
-function prefetchUrlsEvent(prefetchNodes, prefetchResources) {
+function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
   prefetchNodes.push(
     (0, import_qwik2.jsx)("script", {
       type: "module",
-      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources)
+      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources),
+      nonce
     })
   );
 }
@@ -396,7 +397,7 @@ function linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl) 
     prefetchNodes.push((0, import_qwik2.jsx)("link", attributes, void 0));
   }
 }
-function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
+function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, nonce) {
   const rel = prefetchImpl.linkRel || "prefetch";
   let s = ``;
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
@@ -427,17 +428,19 @@ function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
   prefetchNodes.push(
     (0, import_qwik2.jsx)("script", {
       type: "module",
-      dangerouslySetInnerHTML: s
+      dangerouslySetInnerHTML: s,
+      nonce
     })
   );
 }
-function workerFetchImplementation(prefetchNodes, prefetchResources) {
+function workerFetchImplementation(prefetchNodes, prefetchResources, nonce) {
   let s = `const u=${JSON.stringify(flattenPrefetchResources(prefetchResources))};`;
   s += workerFetchScript();
   prefetchNodes.push(
     (0, import_qwik2.jsx)("script", {
       type: "module",
-      dangerouslySetInnerHTML: s
+      dangerouslySetInnerHTML: s,
+      nonce
     })
   );
 }
@@ -695,7 +698,7 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, dynamic) => {
-      var _a2, _b;
+      var _a2, _b, _c, _d, _e, _f;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       containsDynamic = dynamic;
@@ -704,7 +707,8 @@ async function renderToStream(rootNode, opts) {
       const children = [
         (0, import_qwik3.jsx)("script", {
           type: "qwik/json",
-          dangerouslySetInnerHTML: escapeText(jsonData)
+          dangerouslySetInnerHTML: escapeText(jsonData),
+          nonce: (_a2 = opts.serverData) == null ? void 0 : _a2.nonce
         })
       ];
       if (opts.prefetchStrategy !== null) {
@@ -712,7 +716,8 @@ async function renderToStream(rootNode, opts) {
         if (prefetchResources.length > 0) {
           const prefetchImpl = applyPrefetchImplementation(
             opts.prefetchStrategy,
-            prefetchResources
+            prefetchResources,
+            (_b = opts.serverData) == null ? void 0 : _b.nonce
           );
           if (prefetchImpl) {
             children.push(prefetchImpl);
@@ -720,17 +725,18 @@ async function renderToStream(rootNode, opts) {
         }
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeMode = ((_a2 = opts.qwikLoader) == null ? void 0 : _a2.include) ?? "auto";
+      const includeMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.include) ?? "auto";
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
-          events: (_b = opts.qwikLoader) == null ? void 0 : _b.events,
+          events: (_d = opts.qwikLoader) == null ? void 0 : _d.events,
           debug: opts.debug
         });
         children.push(
           (0, import_qwik3.jsx)("script", {
             id: "qwikloader",
-            dangerouslySetInnerHTML: qwikLoaderScript
+            dangerouslySetInnerHTML: qwikLoaderScript,
+            nonce: (_e = opts.serverData) == null ? void 0 : _e.nonce
           })
         );
       }
@@ -742,7 +748,8 @@ async function renderToStream(rootNode, opts) {
         }
         children.push(
           (0, import_qwik3.jsx)("script", {
-            dangerouslySetInnerHTML: content
+            dangerouslySetInnerHTML: content,
+            nonce: (_f = opts.serverData) == null ? void 0 : _f.nonce
           })
         );
       }
