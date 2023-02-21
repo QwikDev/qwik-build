@@ -887,15 +887,8 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     };
     const addSignalSub = (type, hostEl, signal, elm, property) => {
         const subscription = signal instanceof SignalWrapper
-            ? [
-                type,
-                hostEl,
-                getProxyTarget(signal.ref),
-                elm,
-                property,
-                signal.prop === 'value' ? undefined : signal.prop,
-            ]
-            : [type, hostEl, signal, elm, property, undefined];
+            ? [type, hostEl, getProxyTarget(signal.ref), elm, property, signal.prop]
+            : [type, hostEl, signal, elm, property, 'value'];
         getProxyManager(signal).$addSub$(subscription);
     };
     class SignalWrapper {
@@ -3151,13 +3144,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const attr = attributes.item(i);
             assertDefined(attr, 'attribute must be defined');
             const name = attr.name;
-            if (!name.includes(':')) {
-                if (name === 'class') {
-                    props[name] = parseDomClass(attr.value);
+            if (name.includes(':')) {
+                continue;
+            }
+            if (qDev) {
+                if (name === 'data-qwik-inspector') {
+                    continue;
                 }
-                else {
-                    props[name] = attr.value;
-                }
+            }
+            if (name === 'class') {
+                props[name] = parseDomClass(attr.value);
+            }
+            else {
+                props[name] = attr.value;
             }
         }
         return props;
@@ -4912,7 +4911,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
 
     const executeSignalOperation = (staticCtx, operation) => {
-        const prop = operation[5] ?? 'value';
+        const prop = operation[5];
         let value = operation[2][prop];
         switch (operation[0]) {
             case 1: {

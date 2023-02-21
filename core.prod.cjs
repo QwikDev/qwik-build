@@ -427,7 +427,7 @@
     }
     const isSignal = obj => obj instanceof SignalImpl || obj instanceof SignalWrapper;
     const addSignalSub = (type, hostEl, signal, elm, property) => {
-        const subscription = signal instanceof SignalWrapper ? [ type, hostEl, getProxyTarget(signal.ref), elm, property, "value" === signal.prop ? void 0 : signal.prop ] : [ type, hostEl, signal, elm, property, void 0 ];
+        const subscription = signal instanceof SignalWrapper ? [ type, hostEl, getProxyTarget(signal.ref), elm, property, signal.prop ] : [ type, hostEl, signal, elm, property, "value" ];
         getProxyManager(signal).$addSub$(subscription);
     };
     class SignalWrapper {
@@ -1557,7 +1557,7 @@
             const attr = attributes.item(i);
             assertDefined(attr, "attribute must be defined");
             const name = attr.name;
-            name.includes(":") || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
+            name.includes(":") || qDev && "data-qwik-inspector" === name || (props[name] = "class" === name ? parseDomClass(attr.value) : attr.value);
         }
         return props;
     };
@@ -2729,7 +2729,7 @@
             const renderingQueue = Array.from(hostsRendering);
             sortNodes(renderingQueue), containerState.$opsNext$.forEach((op => {
                 ((staticCtx, operation) => {
-                    const prop = operation[5] ?? "value";
+                    const prop = operation[5];
                     let value = operation[2][prop];
                     switch (operation[0]) {
                       case 1:

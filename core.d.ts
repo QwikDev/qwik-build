@@ -311,7 +311,7 @@ subscriber: SubscriberHost,
 signal: Record<string, any>,
 elm: QwikElement,
 prop: string,
-key: string | undefined
+key: string
 ];
 
 declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
@@ -367,7 +367,7 @@ subscriber: SubscriberHost,
 signal: Record<string, any>,
 elm: Node,
 attribute: string,
-key: string | undefined
+key: string
 ];
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -3685,7 +3685,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.19.0-dev20230221120608
+ * 0.19.0-dev20230221121223
  * @public
  */
 export declare const version: string;
