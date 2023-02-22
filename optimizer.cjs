@@ -1819,6 +1819,7 @@ globalThis.qwikOptimizer = function(module) {
                 }
               }));
             }));
+            const srcBase = opts.srcDir ? path.relative(opts.rootDir, opts.srcDir).replace(/\\/g, "/") : "src";
             const renderOpts = {
               debug: true,
               locale: serverData.locale,
@@ -1826,7 +1827,7 @@ globalThis.qwikOptimizer = function(module) {
               snapshot: !isClientDevOnly,
               manifest: isClientDevOnly ? void 0 : manifest,
               symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
-                const defaultChunk = [ symbolName, `/src/${symbolName.toLowerCase()}.js` ];
+                const defaultChunk = [ symbolName, `/${srcBase}/${symbolName.toLowerCase()}.js` ];
                 if (mapper) {
                   const hash = getSymbolHash(symbolName);
                   return mapper[hash] ?? defaultChunk;
@@ -2016,6 +2017,7 @@ globalThis.qwikOptimizer = function(module) {
           buildMode: buildMode,
           debug: qwikViteOpts.debug,
           entryStrategy: qwikViteOpts.entryStrategy,
+          srcDir: qwikViteOpts.srcDir,
           rootDir: viteConfig.root,
           resolveQwikBuild: "build" === viteCommand,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
