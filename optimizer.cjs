@@ -1014,12 +1014,13 @@ globalThis.qwikOptimizer = function(module) {
       const optimizer = getOptimizer();
       const path = optimizer.sys.path;
       opts.debug = !!updatedOpts.debug;
-      "ssr" === updatedOpts.target || "client" === updatedOpts.target || "lib" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target = "client";
+      updatedOpts.target;
+      "ssr" === updatedOpts.target || "client" === updatedOpts.target || "lib" === updatedOpts.target || "test" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target = "client";
       "lib" === opts.target ? opts.buildMode = "development" : "production" === updatedOpts.buildMode || "development" === updatedOpts.buildMode ? opts.buildMode = updatedOpts.buildMode : opts.buildMode = "development";
       updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
         ...updatedOpts.entryStrategy
       });
-      opts.entryStrategy || ("ssr" === opts.target ? opts.entryStrategy = {
+      opts.entryStrategy || ("ssr" === opts.target || "test" === opts.target ? opts.entryStrategy = {
         type: "hoist"
       } : "lib" === opts.target ? opts.entryStrategy = {
         type: "inline"
@@ -1054,7 +1055,7 @@ globalThis.qwikOptimizer = function(module) {
       Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
         i.path = normalizePath(path.resolve(opts.rootDir, i.path));
       })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
-      Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root.tsx") ] : "lib" === opts.target && (opts.input = [ path.resolve(srcDir, "index.ts") ]);
+      Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root.tsx") ] : "lib" === opts.target ? opts.input = [ path.resolve(srcDir, "index.ts") ] : opts.input = [];
       opts.input = opts.input.reduce(((inputs, i) => {
         let input = i;
         i.startsWith("@") || i.startsWith("~") || (input = normalizePath(path.resolve(opts.rootDir, i)));
@@ -1265,6 +1266,7 @@ globalThis.qwikOptimizer = function(module) {
       const {pathId: pathId} = parseId(id2);
       const {ext: ext, dir: dir, base: base} = path.parse(pathId);
       if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
+        const strip = "client" === opts.target || "ssr" === opts.target;
         const normalizedID = normalizePath(pathId);
         log("transform()", "Transforming", pathId);
         let filePath = base;
@@ -1289,18 +1291,20 @@ globalThis.qwikOptimizer = function(module) {
           scope: opts.scope ? opts.scope : void 0
         };
         const isSSR = !!ssrOpts.ssr;
-        if (isSSR) {
-          transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
-          transformOpts.stripCtxKind = "event";
-          transformOpts.entryStrategy = {
-            type: "hoist"
-          };
-          transformOpts.regCtxName = REG_CTX_NAME;
-          transformOpts.isServer = true;
-        } else {
-          transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
-          transformOpts.stripExports = SERVER_STRIP_EXPORTS;
-          transformOpts.isServer = false;
+        if (strip) {
+          if (isSSR) {
+            transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
+            transformOpts.stripCtxKind = "event";
+            transformOpts.entryStrategy = {
+              type: "hoist"
+            };
+            transformOpts.regCtxName = REG_CTX_NAME;
+            transformOpts.isServer = true;
+          } else {
+            transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
+            transformOpts.stripExports = SERVER_STRIP_EXPORTS;
+            transformOpts.isServer = false;
+          }
         }
         const newOutput = optimizer.transformModulesSync(transformOpts);
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
@@ -1318,7 +1322,7 @@ globalThis.qwikOptimizer = function(module) {
             deps.push(key);
           }
         }
-        if (isSSR) {
+        if (isSSR && strip) {
           const clientTransformOpts = {
             input: [ {
               code: code,
