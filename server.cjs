@@ -96,16 +96,20 @@ var import_qwik = require("@builder.io/qwik");
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
   const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
+    var _a;
     if (mapper) {
       const hash = getSymbolHash(symbolName);
       const result = mapper[hash];
       if (!result) {
+        const isRegistered = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.has(hash);
+        if (isRegistered) {
+          return [symbolName, "_"];
+        }
         console.error("Cannot resolve symbol", symbolName, "in", mapper);
       }
       return result;
     }
   };
-  const regSymbols = /* @__PURE__ */ new Map();
   const serverPlatform = {
     isServer: true,
     async importSymbol(_containerEl, url, symbolName) {
@@ -135,9 +139,6 @@ function createPlatform(opts, resolvedManifest) {
           resolve(fn());
         });
       });
-    },
-    regSymbol(symbol, hash) {
-      regSymbols.set(hash, symbol);
     },
     chunkForSymbol(symbolName) {
       return mapperFn(symbolName, mapper);

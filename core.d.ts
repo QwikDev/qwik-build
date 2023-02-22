@@ -678,7 +678,7 @@ export declare interface CorePlatform {
      * @param symbolName - Resolve `symbolName` against the manifest and return the chunk that
      * contains the symbol.
      */
-    chunkForSymbol: (symbolName: string, chunk: string | null) => [symbol: string, chunk: string] | undefined;
+    chunkForSymbol: (symbolName: string, chunk: string | null) => readonly [symbol: string, chunk: string] | undefined;
 }
 
 /**
@@ -3685,7 +3685,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.19.0-dev20230222143332
+ * 0.19.0-dev20230222151729
  * @public
  */
 export declare const version: string;

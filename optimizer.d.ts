@@ -498,12 +498,12 @@ export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 /**
  * @alpha
  */
-export declare type SymbolMapper = Record<string, [symbol: string, chunk: string]>;
+export declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /**
  * @alpha
  */
-export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => [symbol: string, chunk: string] | undefined;
+export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => readonly [symbol: string, chunk: string] | undefined;
 
 /**
  * @alpha
