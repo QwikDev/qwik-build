@@ -73,6 +73,8 @@ const printElement = el => {
     };
 };
 
+const QError_qrlIsNotFunction = 10;
+
 const qError = (code, ...parts) => {
     const text = codeToText(code);
     return logErrorAndStop(text, ...parts);
@@ -837,16 +839,16 @@ const useBindInvokeContext = callback => {
     return (...args) => invoke(ctx, callback.bind(void 0, ...args));
 };
 
-const invoke = (context, fn, ...args) => {
+function invoke(context, fn, ...args) {
     const previousContext = _context;
     let returnValue;
     try {
-        _context = context, returnValue = fn.apply(null, args);
+        _context = context, returnValue = fn.apply(this, args);
     } finally {
         _context = previousContext;
     }
     return returnValue;
-};
+}
 
 const waitAndRun = (ctx, callback) => {
     const waitOn = ctx.$waitOn$;
@@ -4081,26 +4083,28 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
-    const invokeFn = (currentCtx, beforeFn) => (...args) => {
-        const start = now();
-        const fn = resolveLazy();
-        return then(fn, (fn => {
-            if (isFunction(fn)) {
-                if (beforeFn && false === beforeFn()) {
-                    return;
+    function invokeFn(currentCtx, beforeFn) {
+        return (...args) => {
+            const start = now();
+            const fn = resolveLazy();
+            return then(fn, (fn => {
+                if (isFunction(fn)) {
+                    if (beforeFn && false === beforeFn()) {
+                        return;
+                    }
+                    const context = {
+                        ...createInvokationContext(currentCtx),
+                        $qrl$: QRL
+                    };
+                    return emitUsedSymbol(symbol, context.$element$, start), invoke.call(this, context, fn, ...args);
                 }
-                const context = {
-                    ...createInvokationContext(currentCtx),
-                    $qrl$: QRL
-                };
-                return emitUsedSymbol(symbol, context.$element$, start), invoke(context, fn, ...args);
-            }
-            throw qError(10);
-        }));
-    };
+                throw qError(QError_qrlIsNotFunction);
+            }));
+        };
+    }
     const createInvokationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
     const invokeQRL = async function(...args) {
-        const fn = invokeFn();
+        const fn = invokeFn.call(this);
         return await fn(...args);
     };
     const resolvedSymbol = refSymbol ?? symbol;

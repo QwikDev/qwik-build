@@ -1317,18 +1317,18 @@ const useBindInvokeContext = (callback) => {
         return invoke(ctx, callback.bind(undefined, ...args));
     });
 };
-const invoke = (context, fn, ...args) => {
+function invoke(context, fn, ...args) {
     const previousContext = _context;
     let returnValue;
     try {
         _context = context;
-        returnValue = fn.apply(null, args);
+        returnValue = fn.apply(this, args);
     }
     finally {
         _context = previousContext;
     }
     return returnValue;
-};
+}
 const waitAndRun = (ctx, callback) => {
     const waitOn = ctx.$waitOn$;
     if (waitOn.length === 0) {
@@ -6663,7 +6663,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     const resolveLazy = (containerEl) => {
         return symbolRef !== null ? symbolRef : resolve(containerEl);
     };
-    const invokeFn = (currentCtx, beforeFn) => {
+    function invokeFn(currentCtx, beforeFn) {
         return ((...args) => {
             const start = now();
             const fn = resolveLazy();
@@ -6678,12 +6678,12 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         $qrl$: QRL,
                     };
                     emitUsedSymbol(symbol, context.$element$, start);
-                    return invoke(context, fn, ...args);
+                    return invoke.call(this, context, fn, ...args);
                 }
                 throw qError(QError_qrlIsNotFunction);
             });
         });
-    };
+    }
     const createInvokationContext = (invoke) => {
         if (invoke == null) {
             return newInvokeContext();
@@ -6696,7 +6696,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
     };
     const invokeQRL = async function (...args) {
-        const fn = invokeFn();
+        const fn = invokeFn.call(this);
         const result = await fn(...args);
         return result;
     };
