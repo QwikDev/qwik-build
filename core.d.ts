@@ -2891,8 +2891,8 @@ export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTask
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * import { useTask$ } from './core';
- * import { isBrowser } from './core/build';
+ * import { useTask$ } from '.';
+ * import { isBrowser } from './build';
  * useTask$(() => {
  *   if (isBrowser) {
  *     // only runs on server
@@ -2911,8 +2911,8 @@ export declare const useClientMount$: <T>(first: MountFn<T>) => void;
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * import { useTask$ } from './core';
- * import { isBrowser } from './core/build';
+ * import { useTask$ } from '.';
+ * import { isBrowser } from './build';
  * useTask$(() => {
  *   if (isBrowser) {
  *     // only runs on server
@@ -3301,8 +3301,8 @@ export declare function useServerData<T, B = T>(key: string, defaultValue: B): T
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * import { useTask$ } from './core';
- * import { isServer } from './core/build';
+ * import { useTask$ } from '.';
+ * import { isServer } from './build';
  * useTask$(() => {
  *   if (isServer) {
  *     // only runs on server
@@ -3320,8 +3320,8 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
  * Deprecated API, equivalent of doing:
  *
  * ```tsx
- * import { useTask$ } from './core';
- * import { isServer } from './core/build';
+ * import { useTask$ } from '.';
+ * import { isServer } from './build';
  * useTask$(() => {
  *   if (isServer) {
  *     // only runs on server
@@ -3685,7 +3685,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.19.1-dev20230223000519
+ * 0.19.1-dev20230223114738
  * @public
  */
 export declare const version: string;

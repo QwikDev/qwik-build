@@ -1,4 +1,4 @@
-import type { JSXNode } from '../core/jsx-runtime';
+import type { JSXNode } from '../jsx-runtime';
 
 /**
  * CreatePlatfrom and CreateDocument

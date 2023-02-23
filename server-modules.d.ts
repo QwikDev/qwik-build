@@ -1,7 +1,7 @@
 /// <reference types="./server" />
 /// <reference types="./core" />
 declare module '@qwik-client-manifest' {
-  const manifest: QwikManifest;
+  const manifest: import('./optimizer').QwikManifest;
   export { manifest };
 }
 // MD

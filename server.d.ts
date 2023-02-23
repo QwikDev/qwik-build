@@ -1,10 +1,10 @@
 /// <reference path="./server-modules.d.ts" />
 
-import type { QwikManifest } from './core/optimizer';
-import type { SnapshotResult } from './core';
-import type { StreamWriter } from './core';
-import type { SymbolMapper } from './core/optimizer';
-import type { SymbolMapperFn } from './core/optimizer';
+import type { QwikManifest } from './optimizer';
+import type { SnapshotResult } from '.';
+import type { StreamWriter } from '.';
+import type { SymbolMapper } from './optimizer';
+import type { SymbolMapperFn } from './optimizer';
 
 /**
  * `link-prefetch-html`: Render link rel=prefetch within the html
