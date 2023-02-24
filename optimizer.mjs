@@ -2052,8 +2052,6 @@ function qwikVite(qwikViteOpts = {}) {
       manifestInput = pluginOpts.manifestInput || null;
       clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.client?.outDir || CLIENT_OUT_DIR));
       ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.ssr?.outDir || SSR_OUT_DIR));
-      globalThis.QWIK_MANIFEST = manifestInput;
-      globalThis.QWIK_CLIENT_OUT_DIR = clientOutDir;
       clientDevInput = "string" === typeof qwikViteOpts.client?.devInput ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
       clientDevInput = qwikPlugin.normalizePath(clientDevInput);
       const vendorIds = vendorRoots.map((v => v.id));
