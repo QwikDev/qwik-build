@@ -960,7 +960,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var REG_CTX_NAME = [ "server$" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
-  var SERVER_STRIP_CTX_NAME = [ "useServer", "server", "action$", "loader$", "zod$" ];
+  var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
   var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "client", "browser" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
