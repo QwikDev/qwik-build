@@ -1259,12 +1259,12 @@ function createPlugin(optimizerOptions = {}) {
       } else {
         results.set(normalizedID, newOutput);
       }
-      const deps = [];
+      const deps = new Set;
       for (const mod of newOutput.modules) {
         if (mod.isEntry) {
           const key = normalizePath(path.join(srcDir, mod.path));
           isSSR ? ssrTransformedOutputs.set(key, [ mod, id2 ]) : transformedOutputs.set(key, [ mod, id2 ]);
-          deps.push(key);
+          deps.add(key);
         }
       }
       if (isSSR && strip) {
@@ -1295,6 +1295,7 @@ function createPlugin(optimizerOptions = {}) {
             const key = normalizePath(path.join(srcDir, mod.path));
             ctx.addWatchFile(key);
             transformedOutputs.set(key, [ mod, id2 ]);
+            deps.add(key);
           }
         }
       }
@@ -1304,7 +1305,7 @@ function createPlugin(optimizerOptions = {}) {
         map: module.map,
         meta: {
           hook: module.hook,
-          qwikdeps: deps
+          qwikdeps: Array.from(deps)
         }
       };
     }
