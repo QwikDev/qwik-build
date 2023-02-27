@@ -620,7 +620,7 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       scope: fsOpts.scope,
       input: input,
       regCtxName: fsOpts.regCtxName,
-      stripCtxKind: fsOpts.stripCtxKind,
+      stripEventHandlers: fsOpts.stripEventHandlers,
       stripCtxName: fsOpts.stripCtxName,
       stripExports: fsOpts.stripExports,
       isServer: fsOpts.isServer
@@ -642,9 +642,9 @@ var convertOptions = opts => {
     manualChunks: void 0,
     scope: void 0,
     regCtxName: void 0,
+    stripEventHandlers: false,
     stripExports: void 0,
     stripCtxName: void 0,
-    stripCtxKind: void 0,
     isServer: void 0
   };
   Object.entries(opts).forEach((([key, value]) => {
@@ -1091,7 +1091,7 @@ function createPlugin(optimizerOptions = {}) {
         transformOpts.isServer = false;
       } else if ("ssr" === opts.target) {
         transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
-        transformOpts.stripCtxKind = "event";
+        transformOpts.stripEventHandlers = true;
         transformOpts.isServer = true;
         transformOpts.regCtxName = REG_CTX_NAME;
       }
@@ -1239,7 +1239,7 @@ function createPlugin(optimizerOptions = {}) {
       if (strip) {
         if (isSSR) {
           transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
-          transformOpts.stripCtxKind = "event";
+          transformOpts.stripEventHandlers = true;
           transformOpts.entryStrategy = {
             type: "hoist"
           };
