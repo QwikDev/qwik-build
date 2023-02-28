@@ -270,6 +270,11 @@ export declare interface SerializeDocumentOptions {
 /**
  * @alpha
  */
+export declare function setServerPlatform(manifest: QwikManifest | ResolvedManifest | undefined): Promise<void>;
+
+/**
+ * @alpha
+ */
 export declare interface StreamingOptions {
     inOrder?: InOrderStreaming;
 }

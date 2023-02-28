@@ -5,6 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+import { isServer } from "@builder.io/qwik/build";
+
 const qDev = false;
 
 const qTest = false;
@@ -96,8 +98,15 @@ const isString = v => "string" == typeof v;
 const isFunction = v => "function" == typeof v;
 
 const createPlatform = () => ({
-    isServer: false,
+    isServer: isServer,
     importSymbol(containerEl, url, symbolName) {
+        if (isServer) {
+            const hash = getSymbolHash(symbolName);
+            const regSym = globalThis.__qwik_reg_symbols?.get(hash);
+            if (regSym) {
+                return regSym;
+            }
+        }
         if (!url) {
             throw qError(31, symbolName);
         }
@@ -146,7 +155,7 @@ const setPlatform = plt => _platform = plt;
 
 const getPlatform = () => _platform;
 
-const isServer = () => _platform.isServer;
+const isServerPlatform = () => _platform.isServer;
 
 function assertDefined(value, text, ...parts) {
     if (qDev) {
@@ -361,7 +370,7 @@ const CONTAINER_STATE = Symbol("ContainerState");
 
 const _getContainerState = containerEl => {
     let set = containerEl[CONTAINER_STATE];
-    return set || (assertTrue(!isServer(), "Container state can only be created lazily on the browser"), 
+    return set || (assertTrue(!isServerPlatform(), "Container state can only be created lazily on the browser"), 
     containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
     set;
 };
@@ -407,7 +416,7 @@ const setRef = (value, elm) => {
 const addQwikEvent = (prop, containerState) => {
     var _a;
     const eventName = getEventName(prop);
-    if (!qTest && !isServer()) {
+    if (!qTest && !isServerPlatform()) {
         try {
             ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
         } catch (err) {
@@ -1536,7 +1545,7 @@ const ERROR_CONTEXT = createContextId("qk-error");
 const handleError = (err, hostElement, rCtx) => {
     const elCtx = tryGetContext(hostElement);
     if (qDev) {
-        if (!isServer() && "undefined" != typeof document && isVirtualElement(hostElement)) {
+        if (!isServerPlatform() && "undefined" != typeof document && isVirtualElement(hostElement)) {
             elCtx.$vdom$ = null;
             const errorDiv = document.createElement("errored-host");
             err && err instanceof Error && (errorDiv.props = {
@@ -1549,7 +1558,7 @@ const handleError = (err, hostElement, rCtx) => {
             throw err;
         }
     }
-    if (isServer()) {
+    if (isServerPlatform()) {
         throw err;
     }
     {
@@ -3174,7 +3183,7 @@ const notifyChange = (subAction, containerState) => {
 };
 
 const notifyRender = (hostElement, containerState) => {
-    const server = isServer();
+    const server = isServerPlatform();
     server || resumeIfNeeded(containerState.$containerEl$);
     const elCtx = getContext(hostElement, containerState);
     if (assertDefined(elCtx.$componentQrl$, "render: notified host element must have a defined $renderQrl$", elCtx), 
@@ -3362,7 +3371,7 @@ const useTaskQrl = (qrl, opts) => {
     const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, void 0);
     set(true), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
     elCtx.$watches$.push(watch), waitAndRun(iCtx, (() => runSubscriber(watch, containerState, iCtx.$renderCtx$))), 
-    isServer() && useRunWatch(watch, opts?.eagerness);
+    isServerPlatform() && useRunWatch(watch, opts?.eagerness);
 };
 
 const useTask$ = implicit$FirstArg(useTaskQrl);
@@ -3375,13 +3384,13 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
     const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
     const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
     if (get) {
-        return void (isServer() && useRunWatch(get, eagerness));
+        return void (isServerPlatform() && useRunWatch(get, eagerness));
     }
     assertQrl(qrl);
     const watch = new Task(WatchFlagsIsEffect, i, elCtx.$element$, qrl, void 0);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
-    useRunWatch(watch, eagerness), isServer() || (qrl.$resolveLazy$(containerState.$containerEl$), 
+    useRunWatch(watch, eagerness), isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), 
     notifyWatch(watch, containerState));
 };
 
@@ -3435,7 +3444,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
     resource._state = "rejected", resource._error = value, reject(value)), true);
     invoke(invocationContext, (() => {
-        resource._state = "pending", resource.loading = !isServer(), resource.value = new Promise(((r, re) => {
+        resource._state = "pending", resource.loading = !isServerPlatform(), resource.value = new Promise(((r, re) => {
             resolve = r, reject = re;
         }));
     })), watch.$destroy$ = noSerialize((() => {
@@ -3538,7 +3547,7 @@ const useResourceQrl = (qrl, opts) => {
 const useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts);
 
 const Resource = props => {
-    const isBrowser = !isServer();
+    const isBrowser = !isServerPlatform();
     const resource = props.value;
     let promise;
     if (isResourceReturn(resource)) {
@@ -3579,7 +3588,7 @@ const Resource = props => {
 const _createResourceReturn = opts => ({
     __brand: "resource",
     value: void 0,
-    loading: !isServer(),
+    loading: !isServerPlatform(),
     _resolved: void 0,
     _error: void 0,
     _state: "pending",
@@ -4150,13 +4159,13 @@ const emitUsedSymbol = (symbol, element, reqTime) => {
 };
 
 const emitEvent = (eventName, detail) => {
-    qTest || isServer() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
+    qTest || isServerPlatform() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
         bubbles: false,
         detail: detail
     }));
 };
 
-const now = () => qTest || isServer() ? 0 : "object" == typeof performance ? performance.now() : 0;
+const now = () => qTest || isServerPlatform() ? 0 : "object" == typeof performance ? performance.now() : 0;
 
 const $ = expression => {
     throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
@@ -4489,7 +4498,7 @@ const useSignal = initialState => {
 
 const useServerMountQrl = mountQrl => {
     const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    get || (isServer() && (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    get || (isServerPlatform() && (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
     waitAndRun(iCtx, mountQrl)), set(true));
 };
 
@@ -4497,7 +4506,7 @@ const useServerMount$ = implicit$FirstArg(useServerMountQrl);
 
 const useClientMountQrl = mountQrl => {
     const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-    get || (isServer() || (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
+    get || (isServerPlatform() || (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
     waitAndRun(iCtx, mountQrl)), set(true));
 };
 

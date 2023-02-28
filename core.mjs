@@ -5,6 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+import { isServer } from '@builder.io/qwik/build';
+
 const qDev = globalThis.qDev === true;
 const qInspector = globalThis.qInspector === true;
 const qSerialize = globalThis.qSerialize !== false;
@@ -201,8 +203,15 @@ const isFunction = (v) => {
 
 const createPlatform = () => {
     return {
-        isServer: false,
+        isServer,
         importSymbol(containerEl, url, symbolName) {
+            if (isServer) {
+                const hash = getSymbolHash(symbolName);
+                const regSym = globalThis.__qwik_reg_symbols?.get(hash);
+                if (regSym) {
+                    return regSym;
+                }
+            }
             if (!url) {
                 throw qError(QError_qrlMissingChunk, symbolName);
             }
@@ -298,7 +307,7 @@ const setPlatform = (plt) => (_platform = plt);
 const getPlatform = () => {
     return _platform;
 };
-const isServer = () => {
+const isServerPlatform = () => {
     if (qDynamicPlatform) {
         return _platform.isServer;
     }
@@ -633,7 +642,7 @@ const CONTAINER_STATE = Symbol('ContainerState');
 const _getContainerState = (containerEl) => {
     let set = containerEl[CONTAINER_STATE];
     if (!set) {
-        assertTrue(!isServer(), 'Container state can only be created lazily on the browser');
+        assertTrue(!isServerPlatform(), 'Container state can only be created lazily on the browser');
         containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
     }
     return set;
@@ -678,7 +687,7 @@ const setRef = (value, elm) => {
 const addQwikEvent = (prop, containerState) => {
     var _a;
     const eventName = getEventName(prop);
-    if (!qTest && !isServer()) {
+    if (!qTest && !isServerPlatform()) {
         try {
             const qwikevents = ((_a = globalThis).qwikevents || (_a.qwikevents = []));
             qwikevents.push(eventName);
@@ -2641,7 +2650,7 @@ const handleError = (err, hostElement, rCtx) => {
     const elCtx = tryGetContext(hostElement);
     if (qDev) {
         // Clean vdom
-        if (!isServer() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
+        if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
             elCtx.$vdom$ = null;
             const errorDiv = document.createElement('errored-host');
             if (err && err instanceof Error) {
@@ -2660,7 +2669,7 @@ const handleError = (err, hostElement, rCtx) => {
             throw err;
         }
     }
-    if (isServer()) {
+    if (isServerPlatform()) {
         throw err;
     }
     else {
@@ -4952,7 +4961,7 @@ const notifyChange = (subAction, containerState) => {
  *
  */
 const notifyRender = (hostElement, containerState) => {
-    const server = isServer();
+    const server = isServerPlatform();
     if (!server) {
         resumeIfNeeded(containerState.$containerEl$);
     }
@@ -5283,7 +5292,7 @@ const useTaskQrl = (qrl, opts) => {
     }
     elCtx.$watches$.push(watch);
     waitAndRun(iCtx, () => runSubscriber(watch, containerState, iCtx.$renderCtx$));
-    if (isServer()) {
+    if (isServerPlatform()) {
         useRunWatch(watch, opts?.eagerness);
     }
 };
@@ -5391,7 +5400,7 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
     const { get, set, i, iCtx, elCtx } = useSequentialScope();
     const eagerness = opts?.strategy ?? opts?.eagerness ?? 'intersection-observer';
     if (get) {
-        if (isServer()) {
+        if (isServerPlatform()) {
             useRunWatch(get, eagerness);
         }
         return;
@@ -5405,7 +5414,7 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
     elCtx.$watches$.push(watch);
     set(watch);
     useRunWatch(watch, eagerness);
-    if (!isServer()) {
+    if (!isServerPlatform()) {
         qrl.$resolveLazy$(containerState.$containerEl$);
         notifyWatch(watch, containerState);
     }
@@ -5541,7 +5550,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     // Execute mutation inside empty invokation
     invoke(invocationContext, () => {
         resource._state = 'pending';
-        resource.loading = !isServer();
+        resource.loading = !isServerPlatform();
         resource.value = new Promise((r, re) => {
             resolve = r;
             reject = re;
@@ -5875,7 +5884,7 @@ const useResource$ = (generatorFn, opts) => {
  */
 // </docs>
 const Resource = (props) => {
-    const isBrowser = !isServer();
+    const isBrowser = !isServerPlatform();
     const resource = props.value;
     let promise;
     if (isResourceReturn(resource)) {
@@ -5922,7 +5931,7 @@ const _createResourceReturn = (opts) => {
     const resource = {
         __brand: 'resource',
         value: undefined,
-        loading: isServer() ? false : true,
+        loading: isServerPlatform() ? false : true,
         _resolved: undefined,
         _error: undefined,
         _state: 'pending',
@@ -6745,7 +6754,7 @@ const emitUsedSymbol = (symbol, element, reqTime) => {
     });
 };
 const emitEvent = (eventName, detail) => {
-    if (!qTest && !isServer() && typeof document === 'object') {
+    if (!qTest && !isServerPlatform() && typeof document === 'object') {
         document.dispatchEvent(new CustomEvent(eventName, {
             bubbles: false,
             detail,
@@ -6753,7 +6762,7 @@ const emitEvent = (eventName, detail) => {
     }
 };
 const now = () => {
-    if (qTest || isServer()) {
+    if (qTest || isServerPlatform()) {
         return 0;
     }
     if (typeof performance === 'object') {
@@ -7789,7 +7798,7 @@ const useServerMountQrl = (mountQrl) => {
     if (get) {
         return;
     }
-    if (isServer()) {
+    if (isServerPlatform()) {
         assertQrl(mountQrl);
         mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
         waitAndRun(iCtx, mountQrl);
@@ -7845,7 +7854,7 @@ const useClientMountQrl = (mountQrl) => {
     if (get) {
         return;
     }
-    if (!isServer()) {
+    if (!isServerPlatform()) {
         assertQrl(mountQrl);
         mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
         waitAndRun(iCtx, mountQrl);
