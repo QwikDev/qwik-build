@@ -4837,7 +4837,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 addQwikEvent(eventName, rCtx.$static$.$containerState$);
             }
         }
-        if (null != key && (openingElement += ' q:key="' + key + '"'), "ref" in props || useSignal || listeners.length > 0) {
+        if (null != key && (openingElement += ' q:key="' + escapeAttr(key) + '"'), "ref" in props || useSignal || listeners.length > 0) {
             if ("ref" in props || useSignal || listenersNeedId(listeners)) {
                 const newID = getNextIndex(rCtx);
                 openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID;
