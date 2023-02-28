@@ -61,262 +61,16 @@ __export(server_exports, {
   versions: () => versions
 });
 module.exports = __toCommonJS(server_exports);
-
-// packages/qwik/src/build/index.ts
-var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && typeof HTMLElement !== "undefined" && !!window.document && String(HTMLElement).includes("[native code]"))();
-var isServer = !isBrowser;
-
-// packages/qwik/src/core/util/qdev.ts
-var qDev = globalThis.qDev === true;
-var qInspector = globalThis.qInspector === true;
-var qSerialize = globalThis.qSerialize !== false;
-var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
-var qTest = globalThis.qTest === true;
-var qRuntimeQrl = globalThis.qRuntimeQrl === true;
-
-// packages/qwik/src/core/util/element.ts
-var isNode = (value) => {
-  return value && typeof value.nodeType === "number";
-};
-var isElement = (value) => {
-  return value.nodeType === 1;
-};
-
-// packages/qwik/src/core/util/log.ts
-var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
-var logError = (message, ...optionalParams) => {
-  const err = message instanceof Error ? message : createError(message);
-  const messageStr = err.stack || err.message;
-  console.error("%cQWIK ERROR", STYLE, messageStr, ...printParams(optionalParams));
-  return err;
-};
-var createError = (message) => {
-  const err = new Error(message);
-  return err;
-};
-var logErrorAndStop = (message, ...optionalParams) => {
-  const err = logError(message, ...optionalParams);
-  debugger;
-  return err;
-};
-var tryGetContext = (element) => {
-  return element["_qc_"];
-};
-var printParams = (optionalParams) => {
-  if (qDev) {
-    return optionalParams.map((p) => {
-      if (isNode(p) && isElement(p)) {
-        return printElement(p);
-      }
-      return p;
-    });
-  }
-  return optionalParams;
-};
-var printElement = (el) => {
-  var _a;
-  const ctx = tryGetContext(el);
-  const isServer2 = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
-  return {
-    tagName: el.tagName,
-    renderQRL: (_a = ctx == null ? void 0 : ctx.$componentQrl$) == null ? void 0 : _a.getSymbol(),
-    element: isServer2 ? void 0 : el,
-    ctx: isServer2 ? void 0 : ctx
-  };
-};
-
-// packages/qwik/src/core/error/error.ts
-var QError_qrlMissingContainer = 30;
-var QError_qrlMissingChunk = 31;
-var qError = (code, ...parts) => {
-  const text = codeToText(code);
-  return logErrorAndStop(text, ...parts);
-};
-var codeToText = (code) => {
-  if (qDev) {
-    const MAP = [
-      "Error while serializing class attribute",
-      // 0
-      "Can not serialize a HTML Node that is not an Element",
-      // 1
-      "Runtime but no instance found on element.",
-      // 2
-      "Only primitive and object literals can be serialized",
-      // 3
-      "Crash while rendering",
-      // 4
-      "You can render over a existing q:container. Skipping render().",
-      // 5
-      "Set property",
-      // 6
-      "Only function's and 'string's are supported.",
-      // 7
-      "Only objects can be wrapped in 'QObject'",
-      // 8
-      `Only objects literals can be wrapped in 'QObject'`,
-      // 9
-      "QRL is not a function",
-      // 10
-      "Dynamic import not found",
-      // 11
-      "Unknown type argument",
-      // 12
-      "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()",
-      // 13
-      "Invoking 'use*()' method outside of invocation context.",
-      // 14
-      "Cant access renderCtx for existing context",
-      // 15
-      "Cant access document for existing context",
-      // 16
-      "props are immutable",
-      // 17
-      "<div> component can only be used at the root of a Qwik component$()",
-      // 18
-      "Props are immutable by default.",
-      // 19
-      `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.
-For more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules`,
-      // 20
-      "Container is already paused. Skipping",
-      // 21
-      'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
-      // 22
-      "When rendering directly on top of Document, the root node must be a <html>",
-      // 23
-      "A <html> node must have 2 children. The first one <head> and the second one a <body>",
-      // 24
-      "Invalid JSXNode type. It must be either a function or a string. Found:",
-      // 25
-      "Tracking value changes can only be done to useStore() objects and component props",
-      // 26
-      "Missing Object ID for captured object",
-      // 27
-      "The provided Context reference is not a valid context created by createContextId()",
-      // 28
-      "<html> is the root container, it can not be rendered inside a component",
-      // 29
-      "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.",
-      // 30
-      "QRLs can not be dynamically resolved, because it does not have a chunk path",
-      // 31
-      "The JSX ref attribute must be a Signal"
-      // 32
-    ];
-    return `Code(${code}): ${MAP[code] ?? ""}`;
-  } else {
-    return `Code(${code})`;
-  }
-};
-
-// packages/qwik/src/core/error/assert.ts
-function assertDefined(value, text, ...parts) {
-  if (qDev) {
-    if (value != null)
-      return;
-    throw logErrorAndStop(text, ...parts);
-  }
-}
-
-// packages/qwik/src/core/util/types.ts
-var isObject = (v) => {
-  return v && typeof v === "object";
-};
-
-// packages/qwik/src/core/util/flyweight.ts
-var EMPTY_ARRAY = [];
-var EMPTY_OBJ = {};
-if (qDev) {
-  Object.freeze(EMPTY_ARRAY);
-  Object.freeze(EMPTY_OBJ);
-  Error.stackTraceLimit = 9999;
-}
-
-// packages/qwik/src/core/qrl/qrl-class.ts
-var getSymbolHash = (symbolName) => {
-  const index = symbolName.lastIndexOf("_");
-  if (index > -1) {
-    return symbolName.slice(index + 1);
-  }
-  return symbolName;
-};
-
-// packages/qwik/src/core/platform/platform.ts
-var createPlatform = () => {
-  return {
-    isServer,
-    importSymbol(containerEl, url, symbolName) {
-      var _a;
-      if (isServer) {
-        const hash = getSymbolHash(symbolName);
-        const regSym = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.get(hash);
-        if (regSym) {
-          return regSym;
-        }
-      }
-      if (!url) {
-        throw qError(QError_qrlMissingChunk, symbolName);
-      }
-      if (!containerEl) {
-        throw qError(QError_qrlMissingContainer, url, symbolName);
-      }
-      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
-      const urlCopy = new URL(urlDoc);
-      urlCopy.hash = "";
-      urlCopy.search = "";
-      const importURL = urlCopy.href;
-      return import(
-        /* @vite-ignore */
-        importURL
-      ).then((mod) => {
-        return findSymbol(mod, symbolName);
-      });
-    },
-    raf: (fn) => {
-      return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-          resolve(fn());
-        });
-      });
-    },
-    nextTick: (fn) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(fn());
-        });
-      });
-    },
-    chunkForSymbol(symbolName, chunk) {
-      return [symbolName, chunk ?? "_"];
-    }
-  };
-};
-var findSymbol = (module2, symbol) => {
-  if (symbol in module2) {
-    return module2[symbol];
-  }
-  for (const v of Object.values(module2)) {
-    if (isObject(v) && symbol in v) {
-      return v[symbol];
-    }
-  }
-};
-var toUrl = (doc, containerEl, url) => {
-  const baseURI = doc.baseURI;
-  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-  return new URL(url, base);
-};
-var _platform = /* @__PURE__ */ createPlatform();
-var setPlatform = (plt) => _platform = plt;
+var import_qwik4 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
 var import_qwik = require("@builder.io/qwik");
-function createPlatform2(opts, resolvedManifest) {
+function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
   const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
     var _a;
     if (mapper) {
-      const hash = getSymbolHash2(symbolName);
+      const hash = getSymbolHash(symbolName);
       const result = mapper[hash];
       if (!result) {
         const isRegistered = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.has(hash);
@@ -332,7 +86,7 @@ function createPlatform2(opts, resolvedManifest) {
     isServer: true,
     async importSymbol(_containerEl, url, symbolName) {
       var _a;
-      const hash = getSymbolHash2(symbolName);
+      const hash = getSymbolHash(symbolName);
       const regSym = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.get(hash);
       if (regSym) {
         return regSym;
@@ -365,10 +119,10 @@ function createPlatform2(opts, resolvedManifest) {
   return serverPlatform;
 }
 async function setServerPlatform(opts, manifest) {
-  const platform = createPlatform2(opts, manifest);
+  const platform = createPlatform(opts, manifest);
   (0, import_qwik.setPlatform)(platform);
 }
-var getSymbolHash2 = (symbolName) => {
+var getSymbolHash = (symbolName) => {
   const index = symbolName.lastIndexOf("_");
   if (index > -1) {
     return symbolName.slice(index + 1);
@@ -405,6 +159,7 @@ var versions = {
 
 // packages/qwik/src/server/render.ts
 var import_qwik3 = require("@builder.io/qwik");
+var import_build = require("@builder.io/qwik/build");
 
 // packages/qwik/src/server/scripts.ts
 var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=window,i=new Set,s=t=>e.querySelectorAll(t),r=(e,t,n=t.type)=>{s("[on"+e+"\\\\:"+n+"]").forEach((o=>f(o,e,t,n)))},a=(e,t)=>e.getAttribute(t),l=t=>{if(void 0===t._qwikjson_){let n=(t===e.documentElement?e.body:t).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===a(n,"type")){t._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/g,"<$1"));break}n=n.previousElementSibling}}},c=(e,t)=>new CustomEvent(e,{detail:t}),f=async(t,o,i,s=i.type)=>{const r="on"+o+":"+s;t.hasAttribute("preventdefault:"+s)&&i.preventDefault();const c=t._qc_,f=null==c?void 0:c.li.filter((e=>e[0]===r));if(f&&f.length>0){for(const e of f)await e[1].getFn([t,i],(()=>t.isConnected))(i,t);return}const d=a(t,r);if(d){const o=t.closest("[q\\\\:container]"),s=new URL(a(o,"q:base"),e.baseURI);for(const r of d.split("\\n")){const a=new URL(r,s),c=a.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",f=performance.now(),d=import(a.href.split("#")[0]);l(o);const p=b(await d,c),w=e[n];if(t.isConnected)try{e[n]=[t,i,a],u("qsymbol",{symbol:c,element:t,reqTime:f}),await p(i,t)}finally{e[n]=w}}}},u=(t,n)=>{e.dispatchEvent(c(t,n))},b=(e,t)=>{if(t in e)return e[t];for(const n of Object.values(e))if("object"==typeof n&&n&&t in n)return n[t]},d=e=>e.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),p=async e=>{let t=d(e.type),n=e.target;for(r("-document",e,t);n&&n.getAttribute;)await f(n,"",e,t),n=e.bubbles&&!0!==e.cancelBubble?n.parentElement:null},w=e=>{r("-window",e,d(e.type))},q=()=>{var n;const r=e.readyState;if(!t&&("interactive"==r||"complete"==r)&&(t=1,u("qinit"),(null!=(n=o.requestIdleCallback)?n:o.setTimeout).bind(o)((()=>u("qidle"))),i.has("qvisible"))){const e=s("[on\\\\:qvisible]"),t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),f(n.target,"",c("qvisible",n)))}));e.forEach((e=>t.observe(e)))}},v=(e,t,n,o=!1)=>e.addEventListener(t,n,{capture:o}),y=t=>{for(const n of t)i.has(n)||(v(e,n,p,!0),v(o,n,w),i.add(n))};if(!e.qR){const t=o.qwikevents;Array.isArray(t)&&y(t),o.qwikevents={push:(...e)=>y(e)},v(e,"readystatechange",q),q()}})(document);';
@@ -856,7 +611,7 @@ async function renderToStream(rootNode, opts) {
   await setServerPlatform(opts, resolvedManifest);
   let snapshotResult;
   const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
-  const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? EMPTY_OBJ)) : void 0;
+  const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? {})) : void 0;
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -875,7 +630,7 @@ async function renderToStream(rootNode, opts) {
       const snapshotTimer = createTimer();
       containsDynamic = dynamic;
       snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState);
-      const jsonData = JSON.stringify(snapshotResult.state, void 0, qDev ? "  " : void 0);
+      const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
       const children = [
         (0, import_qwik3.jsx)("script", {
           type: "qwik/json",
@@ -934,7 +689,6 @@ async function renderToStream(rootNode, opts) {
     stream.write("<!--/cq-->");
   }
   flush();
-  assertDefined(snapshotResult, "snapshotResult must be defined");
   const isDynamic = containsDynamic || snapshotResult.resources.some((r) => r._cache !== Infinity);
   const result = {
     prefetchResources: void 0,
@@ -979,7 +733,7 @@ function resolveManifest(manifest) {
   if (manifest) {
     const mapper = {};
     Object.entries(manifest.mapping).forEach(([key, value]) => {
-      mapper[getSymbolHash2(key)] = [key, value];
+      mapper[getSymbolHash(key)] = [key, value];
     });
     return {
       mapper,
@@ -1012,8 +766,8 @@ function normalizeOptions(opts) {
 
 // packages/qwik/src/server/index.ts
 async function setServerPlatform2(manifest) {
-  const platform = createPlatform2({ manifest }, resolveManifest(manifest));
-  setPlatform(platform);
+  const platform = createPlatform({ manifest }, resolveManifest(manifest));
+  (0, import_qwik4.setPlatform)(platform);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
