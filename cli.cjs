@@ -94,38 +94,38 @@ var require_which_pm_runs = __commonJS({
 var require_kleur = __commonJS({
   "node_modules/.pnpm/kleur@3.0.3/node_modules/kleur/index.js"(exports, module2) {
     "use strict";
-    var { FORCE_COLOR: FORCE_COLOR2, NODE_DISABLE_COLORS: NODE_DISABLE_COLORS2, TERM: TERM2 } = process.env;
-    var $2 = {
-      enabled: !NODE_DISABLE_COLORS2 && TERM2 !== "dumb" && FORCE_COLOR2 !== "0",
+    var { FORCE_COLOR: FORCE_COLOR3, NODE_DISABLE_COLORS: NODE_DISABLE_COLORS3, TERM: TERM3 } = process.env;
+    var $3 = {
+      enabled: !NODE_DISABLE_COLORS3 && TERM3 !== "dumb" && FORCE_COLOR3 !== "0",
       // modifiers
-      reset: init2(0, 0),
-      bold: init2(1, 22),
-      dim: init2(2, 22),
-      italic: init2(3, 23),
-      underline: init2(4, 24),
-      inverse: init2(7, 27),
-      hidden: init2(8, 28),
-      strikethrough: init2(9, 29),
+      reset: init3(0, 0),
+      bold: init3(1, 22),
+      dim: init3(2, 22),
+      italic: init3(3, 23),
+      underline: init3(4, 24),
+      inverse: init3(7, 27),
+      hidden: init3(8, 28),
+      strikethrough: init3(9, 29),
       // colors
-      black: init2(30, 39),
-      red: init2(31, 39),
-      green: init2(32, 39),
-      yellow: init2(33, 39),
-      blue: init2(34, 39),
-      magenta: init2(35, 39),
-      cyan: init2(36, 39),
-      white: init2(37, 39),
-      gray: init2(90, 39),
-      grey: init2(90, 39),
+      black: init3(30, 39),
+      red: init3(31, 39),
+      green: init3(32, 39),
+      yellow: init3(33, 39),
+      blue: init3(34, 39),
+      magenta: init3(35, 39),
+      cyan: init3(36, 39),
+      white: init3(37, 39),
+      gray: init3(90, 39),
+      grey: init3(90, 39),
       // background colors
-      bgBlack: init2(40, 49),
-      bgRed: init2(41, 49),
-      bgGreen: init2(42, 49),
-      bgYellow: init2(43, 49),
-      bgBlue: init2(44, 49),
-      bgMagenta: init2(45, 49),
-      bgCyan: init2(46, 49),
-      bgWhite: init2(47, 49)
+      bgBlack: init3(40, 49),
+      bgRed: init3(41, 49),
+      bgGreen: init3(42, 49),
+      bgYellow: init3(43, 49),
+      bgBlue: init3(44, 49),
+      bgMagenta: init3(45, 49),
+      bgCyan: init3(46, 49),
+      bgWhite: init3(47, 49)
     };
     function run2(arr, str) {
       let i = 0, tmp, beg = "", end = "";
@@ -141,35 +141,35 @@ var require_kleur = __commonJS({
     }
     function chain2(has, keys) {
       let ctx = { has, keys };
-      ctx.reset = $2.reset.bind(ctx);
-      ctx.bold = $2.bold.bind(ctx);
-      ctx.dim = $2.dim.bind(ctx);
-      ctx.italic = $2.italic.bind(ctx);
-      ctx.underline = $2.underline.bind(ctx);
-      ctx.inverse = $2.inverse.bind(ctx);
-      ctx.hidden = $2.hidden.bind(ctx);
-      ctx.strikethrough = $2.strikethrough.bind(ctx);
-      ctx.black = $2.black.bind(ctx);
-      ctx.red = $2.red.bind(ctx);
-      ctx.green = $2.green.bind(ctx);
-      ctx.yellow = $2.yellow.bind(ctx);
-      ctx.blue = $2.blue.bind(ctx);
-      ctx.magenta = $2.magenta.bind(ctx);
-      ctx.cyan = $2.cyan.bind(ctx);
-      ctx.white = $2.white.bind(ctx);
-      ctx.gray = $2.gray.bind(ctx);
-      ctx.grey = $2.grey.bind(ctx);
-      ctx.bgBlack = $2.bgBlack.bind(ctx);
-      ctx.bgRed = $2.bgRed.bind(ctx);
-      ctx.bgGreen = $2.bgGreen.bind(ctx);
-      ctx.bgYellow = $2.bgYellow.bind(ctx);
-      ctx.bgBlue = $2.bgBlue.bind(ctx);
-      ctx.bgMagenta = $2.bgMagenta.bind(ctx);
-      ctx.bgCyan = $2.bgCyan.bind(ctx);
-      ctx.bgWhite = $2.bgWhite.bind(ctx);
+      ctx.reset = $3.reset.bind(ctx);
+      ctx.bold = $3.bold.bind(ctx);
+      ctx.dim = $3.dim.bind(ctx);
+      ctx.italic = $3.italic.bind(ctx);
+      ctx.underline = $3.underline.bind(ctx);
+      ctx.inverse = $3.inverse.bind(ctx);
+      ctx.hidden = $3.hidden.bind(ctx);
+      ctx.strikethrough = $3.strikethrough.bind(ctx);
+      ctx.black = $3.black.bind(ctx);
+      ctx.red = $3.red.bind(ctx);
+      ctx.green = $3.green.bind(ctx);
+      ctx.yellow = $3.yellow.bind(ctx);
+      ctx.blue = $3.blue.bind(ctx);
+      ctx.magenta = $3.magenta.bind(ctx);
+      ctx.cyan = $3.cyan.bind(ctx);
+      ctx.white = $3.white.bind(ctx);
+      ctx.gray = $3.gray.bind(ctx);
+      ctx.grey = $3.grey.bind(ctx);
+      ctx.bgBlack = $3.bgBlack.bind(ctx);
+      ctx.bgRed = $3.bgRed.bind(ctx);
+      ctx.bgGreen = $3.bgGreen.bind(ctx);
+      ctx.bgYellow = $3.bgYellow.bind(ctx);
+      ctx.bgBlue = $3.bgBlue.bind(ctx);
+      ctx.bgMagenta = $3.bgMagenta.bind(ctx);
+      ctx.bgCyan = $3.bgCyan.bind(ctx);
+      ctx.bgWhite = $3.bgWhite.bind(ctx);
       return ctx;
     }
-    function init2(open, close) {
+    function init3(open, close) {
       let blk = {
         open: `\x1B[${open}m`,
         close: `\x1B[${close}m`,
@@ -178,12 +178,12 @@ var require_kleur = __commonJS({
       return function(txt) {
         if (this !== void 0 && this.has !== void 0) {
           this.has.includes(open) || (this.has.push(open), this.keys.push(blk));
-          return txt === void 0 ? this : $2.enabled ? run2(this.keys, txt + "") : txt + "";
+          return txt === void 0 ? this : $3.enabled ? run2(this.keys, txt + "") : txt + "";
         }
-        return txt === void 0 ? chain2([open], [blk]) : $2.enabled ? run2([blk], txt + "") : txt + "";
+        return txt === void 0 ? chain2([open], [blk]) : $3.enabled ? run2([blk], txt + "") : txt + "";
       };
     }
-    module2.exports = $2;
+    module2.exports = $3;
   }
 });
 
@@ -2609,7 +2609,7 @@ var require_elements = __commonJS({
 var require_prompts = __commonJS({
   "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/dist/prompts.js"(exports) {
     "use strict";
-    var $2 = exports;
+    var $3 = exports;
     var el = require_elements();
     var noop = (v) => v;
     function toPrompt(type, args, opts = {}) {
@@ -2624,27 +2624,27 @@ var require_prompts = __commonJS({
         p.on("abort", (x) => rej(onAbort(x)));
       });
     }
-    $2.text = (args) => toPrompt("TextPrompt", args);
-    $2.password = (args) => {
+    $3.text = (args) => toPrompt("TextPrompt", args);
+    $3.password = (args) => {
       args.style = "password";
-      return $2.text(args);
+      return $3.text(args);
     };
-    $2.invisible = (args) => {
+    $3.invisible = (args) => {
       args.style = "invisible";
-      return $2.text(args);
+      return $3.text(args);
     };
-    $2.number = (args) => toPrompt("NumberPrompt", args);
-    $2.date = (args) => toPrompt("DatePrompt", args);
-    $2.confirm = (args) => toPrompt("ConfirmPrompt", args);
-    $2.list = (args) => {
+    $3.number = (args) => toPrompt("NumberPrompt", args);
+    $3.date = (args) => toPrompt("DatePrompt", args);
+    $3.confirm = (args) => toPrompt("ConfirmPrompt", args);
+    $3.list = (args) => {
       const sep = args.separator || ",";
       return toPrompt("TextPrompt", args, {
         onSubmit: (str) => str.split(sep).map((s) => s.trim())
       });
     };
-    $2.toggle = (args) => toPrompt("TogglePrompt", args);
-    $2.select = (args) => toPrompt("SelectPrompt", args);
-    $2.multiselect = (args) => {
+    $3.toggle = (args) => toPrompt("TogglePrompt", args);
+    $3.select = (args) => toPrompt("SelectPrompt", args);
+    $3.multiselect = (args) => {
       args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
       return toPrompt("MultiselectPrompt", args, {
@@ -2652,7 +2652,7 @@ var require_prompts = __commonJS({
         onSubmit: toSelected
       });
     };
-    $2.autocompleteMultiselect = (args) => {
+    $3.autocompleteMultiselect = (args) => {
       args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
       return toPrompt("AutocompleteMultiselectPrompt", args, {
@@ -2661,7 +2661,7 @@ var require_prompts = __commonJS({
       });
     };
     var byTitle = (input, choices) => Promise.resolve(choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase()));
-    $2.autocomplete = (args) => {
+    $3.autocomplete = (args) => {
       args.suggest = args.suggest || byTitle;
       args.choices = [].concat(args.choices || []);
       return toPrompt("AutocompletePrompt", args);
@@ -4997,7 +4997,7 @@ var require_elements2 = __commonJS({
 var require_prompts2 = __commonJS({
   "node_modules/.pnpm/prompts@2.4.2/node_modules/prompts/lib/prompts.js"(exports) {
     "use strict";
-    var $2 = exports;
+    var $3 = exports;
     var el = require_elements2();
     var noop = (v) => v;
     function toPrompt(type, args, opts = {}) {
@@ -5012,27 +5012,27 @@ var require_prompts2 = __commonJS({
         p.on("abort", (x) => rej(onAbort(x)));
       });
     }
-    $2.text = (args) => toPrompt("TextPrompt", args);
-    $2.password = (args) => {
+    $3.text = (args) => toPrompt("TextPrompt", args);
+    $3.password = (args) => {
       args.style = "password";
-      return $2.text(args);
+      return $3.text(args);
     };
-    $2.invisible = (args) => {
+    $3.invisible = (args) => {
       args.style = "invisible";
-      return $2.text(args);
+      return $3.text(args);
     };
-    $2.number = (args) => toPrompt("NumberPrompt", args);
-    $2.date = (args) => toPrompt("DatePrompt", args);
-    $2.confirm = (args) => toPrompt("ConfirmPrompt", args);
-    $2.list = (args) => {
+    $3.number = (args) => toPrompt("NumberPrompt", args);
+    $3.date = (args) => toPrompt("DatePrompt", args);
+    $3.confirm = (args) => toPrompt("ConfirmPrompt", args);
+    $3.list = (args) => {
       const sep = args.separator || ",";
       return toPrompt("TextPrompt", args, {
         onSubmit: (str) => str.split(sep).map((s) => s.trim())
       });
     };
-    $2.toggle = (args) => toPrompt("TogglePrompt", args);
-    $2.select = (args) => toPrompt("SelectPrompt", args);
-    $2.multiselect = (args) => {
+    $3.toggle = (args) => toPrompt("TogglePrompt", args);
+    $3.select = (args) => toPrompt("SelectPrompt", args);
+    $3.multiselect = (args) => {
       args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
       return toPrompt("MultiselectPrompt", args, {
@@ -5040,7 +5040,7 @@ var require_prompts2 = __commonJS({
         onSubmit: toSelected
       });
     };
-    $2.autocompleteMultiselect = (args) => {
+    $3.autocompleteMultiselect = (args) => {
       args.choices = [].concat(args.choices || []);
       const toSelected = (items) => items.filter((item) => item.selected).map((item) => item.value);
       return toPrompt("AutocompleteMultiselectPrompt", args, {
@@ -5051,7 +5051,7 @@ var require_prompts2 = __commonJS({
     var byTitle = (input, choices) => Promise.resolve(
       choices.filter((item) => item.title.slice(0, input.length).toLowerCase() === input.toLowerCase())
     );
-    $2.autocomplete = (args) => {
+    $3.autocomplete = (args) => {
       args.suggest = args.suggest || byTitle;
       args.choices = [].concat(args.choices || []);
       return toPrompt("AutocompletePrompt", args);
@@ -11147,7 +11147,7 @@ __export(cli_exports, {
 });
 module.exports = __toCommonJS(cli_exports);
 
-// node_modules/.pnpm/kleur@4.1.5/node_modules/kleur/index.mjs
+// node_modules/.pnpm/kleur@4.1.5/node_modules/kleur/colors.mjs
 var FORCE_COLOR;
 var NODE_DISABLE_COLORS;
 var NO_COLOR;
@@ -11158,94 +11158,43 @@ if (typeof process !== "undefined") {
   isTTY = process.stdout && process.stdout.isTTY;
 }
 var $ = {
-  enabled: !NODE_DISABLE_COLORS && NO_COLOR == null && TERM !== "dumb" && (FORCE_COLOR != null && FORCE_COLOR !== "0" || isTTY),
-  // modifiers
-  reset: init(0, 0),
-  bold: init(1, 22),
-  dim: init(2, 22),
-  italic: init(3, 23),
-  underline: init(4, 24),
-  inverse: init(7, 27),
-  hidden: init(8, 28),
-  strikethrough: init(9, 29),
-  // colors
-  black: init(30, 39),
-  red: init(31, 39),
-  green: init(32, 39),
-  yellow: init(33, 39),
-  blue: init(34, 39),
-  magenta: init(35, 39),
-  cyan: init(36, 39),
-  white: init(37, 39),
-  gray: init(90, 39),
-  grey: init(90, 39),
-  // background colors
-  bgBlack: init(40, 49),
-  bgRed: init(41, 49),
-  bgGreen: init(42, 49),
-  bgYellow: init(43, 49),
-  bgBlue: init(44, 49),
-  bgMagenta: init(45, 49),
-  bgCyan: init(46, 49),
-  bgWhite: init(47, 49)
+  enabled: !NODE_DISABLE_COLORS && NO_COLOR == null && TERM !== "dumb" && (FORCE_COLOR != null && FORCE_COLOR !== "0" || isTTY)
 };
-function run(arr, str) {
-  let i = 0, tmp, beg = "", end = "";
-  for (; i < arr.length; i++) {
-    tmp = arr[i];
-    beg += tmp.open;
-    end += tmp.close;
-    if (!!~str.indexOf(tmp.close)) {
-      str = str.replace(tmp.rgx, tmp.close + tmp.open);
-    }
-  }
-  return beg + str + end;
-}
-function chain(has, keys) {
-  let ctx = { has, keys };
-  ctx.reset = $.reset.bind(ctx);
-  ctx.bold = $.bold.bind(ctx);
-  ctx.dim = $.dim.bind(ctx);
-  ctx.italic = $.italic.bind(ctx);
-  ctx.underline = $.underline.bind(ctx);
-  ctx.inverse = $.inverse.bind(ctx);
-  ctx.hidden = $.hidden.bind(ctx);
-  ctx.strikethrough = $.strikethrough.bind(ctx);
-  ctx.black = $.black.bind(ctx);
-  ctx.red = $.red.bind(ctx);
-  ctx.green = $.green.bind(ctx);
-  ctx.yellow = $.yellow.bind(ctx);
-  ctx.blue = $.blue.bind(ctx);
-  ctx.magenta = $.magenta.bind(ctx);
-  ctx.cyan = $.cyan.bind(ctx);
-  ctx.white = $.white.bind(ctx);
-  ctx.gray = $.gray.bind(ctx);
-  ctx.grey = $.grey.bind(ctx);
-  ctx.bgBlack = $.bgBlack.bind(ctx);
-  ctx.bgRed = $.bgRed.bind(ctx);
-  ctx.bgGreen = $.bgGreen.bind(ctx);
-  ctx.bgYellow = $.bgYellow.bind(ctx);
-  ctx.bgBlue = $.bgBlue.bind(ctx);
-  ctx.bgMagenta = $.bgMagenta.bind(ctx);
-  ctx.bgCyan = $.bgCyan.bind(ctx);
-  ctx.bgWhite = $.bgWhite.bind(ctx);
-  return ctx;
-}
-function init(open, close) {
-  let blk = {
-    open: `\x1B[${open}m`,
-    close: `\x1B[${close}m`,
-    rgx: new RegExp(`\\x1b\\[${close}m`, "g")
-  };
+function init(x, y) {
+  let rgx = new RegExp(`\\x1b\\[${y}m`, "g");
+  let open = `\x1B[${x}m`, close = `\x1B[${y}m`;
   return function(txt) {
-    if (this !== void 0 && this.has !== void 0) {
-      !!~this.has.indexOf(open) || (this.has.push(open), this.keys.push(blk));
-      return txt === void 0 ? this : $.enabled ? run(this.keys, txt + "") : txt + "";
-    }
-    return txt === void 0 ? chain([open], [blk]) : $.enabled ? run([blk], txt + "") : txt + "";
+    if (!$.enabled || txt == null)
+      return txt;
+    return open + (!!~("" + txt).indexOf(close) ? txt.replace(rgx, close + open) : txt) + close;
   };
 }
-var kleur_default = $;
+var reset = init(0, 0);
+var bold = init(1, 22);
+var dim = init(2, 22);
+var italic = init(3, 23);
+var underline = init(4, 24);
+var inverse = init(7, 27);
+var hidden = init(8, 28);
+var strikethrough = init(9, 29);
+var black = init(30, 39);
+var red = init(31, 39);
+var green = init(32, 39);
+var yellow = init(33, 39);
+var blue = init(34, 39);
+var magenta = init(35, 39);
+var cyan = init(36, 39);
+var white = init(37, 39);
+var gray = init(90, 39);
+var grey = init(90, 39);
+var bgBlack = init(40, 49);
+var bgRed = init(41, 49);
+var bgGreen = init(42, 49);
+var bgYellow = init(43, 49);
+var bgBlue = init(44, 49);
+var bgMagenta = init(45, 49);
+var bgCyan = init(46, 49);
+var bgWhite = init(47, 49);
 
 // packages/qwik/src/cli/utils/app-command.ts
 var import_node_fs = require("fs");
@@ -11319,7 +11268,7 @@ function pmRunCmd() {
 }
 function panic(msg) {
   console.error(`
-\u274C ${kleur_default.red(msg)}
+\u274C ${red(msg)}
 `);
   process.exit(1);
 }
@@ -11382,6 +11331,106 @@ var import_node_fs5 = __toESM(require("fs"), 1);
 
 // node_modules/.pnpm/ora@6.1.2/node_modules/ora/index.js
 var import_node_process5 = __toESM(require("process"), 1);
+
+// node_modules/.pnpm/kleur@4.1.5/node_modules/kleur/index.mjs
+var FORCE_COLOR2;
+var NODE_DISABLE_COLORS2;
+var NO_COLOR2;
+var TERM2;
+var isTTY2 = true;
+if (typeof process !== "undefined") {
+  ({ FORCE_COLOR: FORCE_COLOR2, NODE_DISABLE_COLORS: NODE_DISABLE_COLORS2, NO_COLOR: NO_COLOR2, TERM: TERM2 } = process.env || {});
+  isTTY2 = process.stdout && process.stdout.isTTY;
+}
+var $2 = {
+  enabled: !NODE_DISABLE_COLORS2 && NO_COLOR2 == null && TERM2 !== "dumb" && (FORCE_COLOR2 != null && FORCE_COLOR2 !== "0" || isTTY2),
+  // modifiers
+  reset: init2(0, 0),
+  bold: init2(1, 22),
+  dim: init2(2, 22),
+  italic: init2(3, 23),
+  underline: init2(4, 24),
+  inverse: init2(7, 27),
+  hidden: init2(8, 28),
+  strikethrough: init2(9, 29),
+  // colors
+  black: init2(30, 39),
+  red: init2(31, 39),
+  green: init2(32, 39),
+  yellow: init2(33, 39),
+  blue: init2(34, 39),
+  magenta: init2(35, 39),
+  cyan: init2(36, 39),
+  white: init2(37, 39),
+  gray: init2(90, 39),
+  grey: init2(90, 39),
+  // background colors
+  bgBlack: init2(40, 49),
+  bgRed: init2(41, 49),
+  bgGreen: init2(42, 49),
+  bgYellow: init2(43, 49),
+  bgBlue: init2(44, 49),
+  bgMagenta: init2(45, 49),
+  bgCyan: init2(46, 49),
+  bgWhite: init2(47, 49)
+};
+function run(arr, str) {
+  let i = 0, tmp, beg = "", end = "";
+  for (; i < arr.length; i++) {
+    tmp = arr[i];
+    beg += tmp.open;
+    end += tmp.close;
+    if (!!~str.indexOf(tmp.close)) {
+      str = str.replace(tmp.rgx, tmp.close + tmp.open);
+    }
+  }
+  return beg + str + end;
+}
+function chain(has, keys) {
+  let ctx = { has, keys };
+  ctx.reset = $2.reset.bind(ctx);
+  ctx.bold = $2.bold.bind(ctx);
+  ctx.dim = $2.dim.bind(ctx);
+  ctx.italic = $2.italic.bind(ctx);
+  ctx.underline = $2.underline.bind(ctx);
+  ctx.inverse = $2.inverse.bind(ctx);
+  ctx.hidden = $2.hidden.bind(ctx);
+  ctx.strikethrough = $2.strikethrough.bind(ctx);
+  ctx.black = $2.black.bind(ctx);
+  ctx.red = $2.red.bind(ctx);
+  ctx.green = $2.green.bind(ctx);
+  ctx.yellow = $2.yellow.bind(ctx);
+  ctx.blue = $2.blue.bind(ctx);
+  ctx.magenta = $2.magenta.bind(ctx);
+  ctx.cyan = $2.cyan.bind(ctx);
+  ctx.white = $2.white.bind(ctx);
+  ctx.gray = $2.gray.bind(ctx);
+  ctx.grey = $2.grey.bind(ctx);
+  ctx.bgBlack = $2.bgBlack.bind(ctx);
+  ctx.bgRed = $2.bgRed.bind(ctx);
+  ctx.bgGreen = $2.bgGreen.bind(ctx);
+  ctx.bgYellow = $2.bgYellow.bind(ctx);
+  ctx.bgBlue = $2.bgBlue.bind(ctx);
+  ctx.bgMagenta = $2.bgMagenta.bind(ctx);
+  ctx.bgCyan = $2.bgCyan.bind(ctx);
+  ctx.bgWhite = $2.bgWhite.bind(ctx);
+  return ctx;
+}
+function init2(open, close) {
+  let blk = {
+    open: `\x1B[${open}m`,
+    close: `\x1B[${close}m`,
+    rgx: new RegExp(`\\x1b\\[${close}m`, "g")
+  };
+  return function(txt) {
+    if (this !== void 0 && this.has !== void 0) {
+      !!~this.has.indexOf(open) || (this.has.push(open), this.keys.push(blk));
+      return txt === void 0 ? this : $2.enabled ? run(this.keys, txt + "") : txt + "";
+    }
+    return txt === void 0 ? chain([open], [blk]) : $2.enabled ? run([blk], txt + "") : txt + "";
+  };
+}
+var kleur_default = $2;
 
 // node_modules/.pnpm/cli-cursor@4.0.0/node_modules/cli-cursor/index.js
 var import_node_process2 = __toESM(require("process"), 1);
@@ -12461,11 +12510,11 @@ async function updateApp(pkgManager, opts) {
       if (!passed) {
         const errorMessage = `
 
-\u274C ${kleur_default.bgRed(
+\u274C ${bgRed(
           `  ${pkgManager} install failed  `
         )}
 
-   You might need to run "${kleur_default.green(
+   You might need to run "${green(
           `${pkgManager} install`
         )}" manually inside the root of the project.
 
@@ -12493,13 +12542,13 @@ var import_node_path6 = require("path");
 function logSuccessFooter(docs) {
   const outString = [];
   if (docs.length > 0) {
-    outString.push(`\u{1F4C4} ${kleur_default.cyan("Relevant docs:")}`);
+    outString.push(`\u{1F4C4} ${cyan("Relevant docs:")}`);
     docs.forEach((link) => {
       outString.push(`   ${link}`);
     });
   }
   outString.push(``);
-  outString.push(`\u{1F4AC} ${kleur_default.cyan("Questions? Start the conversation at:")}`);
+  outString.push(`\u{1F4AC} ${cyan("Questions? Start the conversation at:")}`);
   outString.push(`   https://qwik.builder.io/chat`);
   outString.push(`   https://twitter.com/QwikDev`);
   outString.push(``);
@@ -12508,7 +12557,7 @@ function logSuccessFooter(docs) {
 function logNextStep(nextSteps) {
   const outString = [];
   if (nextSteps) {
-    outString.push(`\u{1F7E3} ${kleur_default.bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
+    outString.push(`\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
     nextSteps.lines.forEach((step) => outString.push(`   ${step}`));
     outString.push(``);
   }
@@ -12529,12 +12578,10 @@ async function runAddInteractive(app, id) {
     if (!integration) {
       throw new Error(`Invalid integration: ${id}`);
     }
-    console.log(
-      `\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)} ${kleur_default.bold(kleur_default.magenta(integration.id))}`
-    );
+    console.log(`\u{1F98B} ${bgCyan(` Add Integration `)} ${bold(magenta(integration.id))}`);
     console.log(``);
   } else {
-    console.log(`\u{1F98B} ${kleur_default.bgCyan(` Add Integration `)}`);
+    console.log(`\u{1F98B} ${bgCyan(` Add Integration `)}`);
     console.log(``);
     const integrationChoices = [
       ...integrations2.filter((i) => i.type === "adapter"),
@@ -12600,28 +12647,24 @@ async function logUpdateAppResult(pkgManager, result) {
   console.log(``);
   console.clear();
   console.log(``);
-  console.log(
-    `\u{1F47B} ${kleur_default.bgCyan(` Ready? `)} Add ${kleur_default.bold(
-      kleur_default.magenta(result.integration.id)
-    )} to your app?`
-  );
+  console.log(`\u{1F47B} ${bgCyan(` Ready? `)} Add ${bold(magenta(result.integration.id))} to your app?`);
   console.log(``);
   if (modifyFiles.length > 0) {
-    console.log(`\u{1F42C} ${kleur_default.cyan(`Modify`)}`);
+    console.log(`\u{1F42C} ${cyan(`Modify`)}`);
     for (const f of modifyFiles) {
       console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (createFiles.length > 0) {
-    console.log(`\u{1F31F} ${kleur_default.cyan(`Create`)}`);
+    console.log(`\u{1F31F} ${cyan(`Create`)}`);
     for (const f of createFiles) {
       console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
     }
     console.log(``);
   }
   if (overwriteFiles.length > 0) {
-    console.log(`\u{1F433} ${kleur_default.cyan(`Overwrite`)}`);
+    console.log(`\u{1F433} ${cyan(`Overwrite`)}`);
     for (const f of overwriteFiles) {
       console.log(`   - ${(0, import_node_path6.relative)(process.cwd(), f.path)}`);
     }
@@ -12629,9 +12672,7 @@ async function logUpdateAppResult(pkgManager, result) {
   }
   if (installDeps2) {
     console.log(
-      `\u{1F4BE} ${kleur_default.cyan(
-        `Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`
-      )}`
+      `\u{1F4BE} ${cyan(`Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`)}`
     );
     installDepNames.forEach((depName) => {
       console.log(`   - ${depName} ${result.updates.installedDeps[depName]}`);
@@ -12642,9 +12683,7 @@ async function logUpdateAppResult(pkgManager, result) {
     {
       type: "select",
       name: "commit",
-      message: `Ready to apply the ${kleur_default.bold(
-        kleur_default.magenta(result.integration.id)
-      )} updates to your app?`,
+      message: `Ready to apply the ${bold(magenta(result.integration.id))} updates to your app?`,
       choices: [
         { title: "Yes looks good, finish update!", value: true },
         { title: "Nope, cancel update", value: false }
@@ -12664,9 +12703,7 @@ async function logUpdateAppResult(pkgManager, result) {
 function logUpdateAppCommitResult(result) {
   var _a;
   console.log(
-    `\u{1F984} ${kleur_default.bgMagenta(` Success! `)} Added ${kleur_default.bold(
-      kleur_default.cyan(result.integration.id)
-    )} to your app`
+    `\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`
   );
   console.log(``);
   logSuccessFooter(result.integration.docs);
@@ -12681,16 +12718,16 @@ async function printAddHelp() {
   const features = integrations2.filter((i) => i.type === "feature");
   const pmRun = pmRunCmd();
   console.log(``);
-  console.log(`${pmRun} qwik ${kleur_default.magenta(`add`)} [integration]`);
+  console.log(`${pmRun} qwik ${magenta(`add`)} [integration]`);
   console.log(``);
-  console.log(`  ${kleur_default.cyan("Adapters")}`);
+  console.log(`  ${cyan("Adapters")}`);
   for (const s of adapters) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
+    console.log(`    ${s.id}  ${dim(s.pkgJson.description)}`);
   }
   console.log(``);
-  console.log(`  ${kleur_default.cyan("Features")}`);
+  console.log(`  ${cyan("Features")}`);
   for (const s of features) {
-    console.log(`    ${s.id}  ${kleur_default.dim(s.pkgJson.description)}`);
+    console.log(`    ${s.id}  ${dim(s.pkgJson.description)}`);
   }
   console.log(``);
 }
@@ -12706,7 +12743,7 @@ async function runAddCommand(app) {
     }
   } catch (e) {
     console.error(`
-\u274C ${kleur_default.red(String(e))}
+\u274C ${red(String(e))}
 `);
     await printAddHelp();
     process.exit(1);
@@ -13684,7 +13721,7 @@ async function runBuildCommand(app) {
   }
   console.log(``);
   for (const script of scripts) {
-    console.log(kleur_default.dim(script));
+    console.log(dim(script));
   }
   console.log(``);
   let typecheck = null;
@@ -13714,7 +13751,7 @@ async function runBuildCommand(app) {
       process.exit(1);
     });
     console.log(``);
-    console.log(`${kleur_default.cyan("\u2713")} Built client modules`);
+    console.log(`${cyan("\u2713")} Built client modules`);
   }
   const step2 = [];
   if (buildLibScript) {
@@ -13831,15 +13868,15 @@ async function runBuildCommand(app) {
           console.log("");
           console.log(step.stdout);
         }
-        console.log(`${kleur_default.cyan("\u2713")} ${step.title}`);
+        console.log(`${cyan("\u2713")} ${step.title}`);
       });
       if (!isPreviewBuild && !buildServerScript && !buildStaticScript && !isLibraryBuild) {
         const pmRun = pmRunCmd();
         console.log(``);
-        console.log(`${kleur_default.bgMagenta(" Missing an integration ")}`);
+        console.log(`${bgMagenta(" Missing an integration ")}`);
         console.log(``);
-        console.log(`${kleur_default.magenta("\u30FB")} Use ${kleur_default.magenta(pmRun + " qwik add")} to add an integration`);
-        console.log(`${kleur_default.magenta("\u30FB")} Use ${kleur_default.magenta(pmRun + " preview")} to preview the build`);
+        console.log(`${magenta("\u30FB")} Use ${magenta(pmRun + " qwik add")} to add an integration`);
+        console.log(`${magenta("\u30FB")} Use ${magenta(pmRun + " preview")} to preview the build`);
       }
       if (isPreviewBuild && buildStaticScript && runSsgScript) {
         return execaCommand(buildStaticScript, {
@@ -13896,7 +13933,7 @@ async function runCommand2(app) {
     }
   }
   if (typeof app.task === "string") {
-    console.log(kleur_default.red(`Unrecognized qwik command: ${app.task}`) + "\n");
+    console.log(red(`Unrecognized qwik command: ${app.task}`) + "\n");
   }
   await printHelp();
   process.exit(1);
@@ -13904,20 +13941,14 @@ async function runCommand2(app) {
 async function printHelp() {
   const pmRun = pmRunCmd();
   console.log(``);
-  console.log(kleur_default.bgMagenta(` Qwik Help `));
+  console.log(bgMagenta(` Qwik Help `));
   console.log(``);
+  console.log(`  ${pmRun} qwik ${cyan(`add`)}            ${dim(`Add an integration to this app`)}`);
   console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`add`)}            ${kleur_default.dim(`Add an integration to this app`)}`
+    `  ${pmRun} qwik ${cyan(`build`)}          ${dim(`Parallelize builds and type checking`)}`
   );
   console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`build`)}          ${kleur_default.dim(
-      `Parallelize builds and type checking`
-    )}`
-  );
-  console.log(
-    `  ${pmRun} qwik ${kleur_default.cyan(`build preview`)}  ${kleur_default.dim(
-      `Same as "build", but for preview server`
-    )}`
+    `  ${pmRun} qwik ${cyan(`build preview`)}  ${dim(`Same as "build", but for preview server`)}`
   );
   console.log(``);
 }
