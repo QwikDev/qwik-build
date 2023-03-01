@@ -523,6 +523,22 @@ declare type ComponentChildren<PROPS extends {}> = PROPS extends {
  */
 export declare const componentQrl: <PROPS extends {}>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
+declare interface Computed {
+    <T>(qrl: ComputedFn<T>): Readonly<Signal<T>>;
+}
+
+declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, SignalInternal<T>> {
+}
+
+/**
+ * @public
+ */
+declare type ComputedFn<T> = () => T;
+
+declare interface ComputedQRL {
+    <T>(qrl: QRL<ComputedFn<T>>): Readonly<Signal<T>>;
+}
+
 /**
  * @alpha
  */
@@ -757,7 +773,7 @@ declare interface DescriptorBase<T = any, B = undefined> {
     $flags$: number;
     $index$: number;
     $destroy$?: NoSerialize<() => void>;
-    $resource$: B;
+    $state$: B;
 }
 
 /**
@@ -1631,6 +1647,10 @@ declare interface QContext {
     $slotParent$: QContext | null;
 }
 
+declare const QObjectManagerSymbol: unique symbol;
+
+declare const QObjectSignalFlags: unique symbol;
+
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
  *
@@ -2493,6 +2513,12 @@ export declare interface Signal<T = any> {
     value: T;
 }
 
+declare interface SignalInternal<T> extends Signal<T> {
+    untrackedValue: T;
+    [QObjectManagerSymbol]: LocalSubscriptionManager;
+    [QObjectSignalFlags]: number;
+}
+
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
 /**
@@ -2634,7 +2660,7 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: string;
 }
 
-declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any>;
+declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
 
 declare type SubscriberHost = QwikElement;
 
@@ -2926,6 +2952,16 @@ export declare const useClientMount$: <T>(first: MountFn<T>) => void;
  * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
  */
 export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
+
+/**
+ * @alpha
+ */
+export declare const useComputed$: Computed;
+
+/**
+ * @alpha
+ */
+export declare const useComputedQrl: ComputedQRL;
 
 declare interface UseContext {
     <STATE extends object, T>(context: ContextId<STATE>, transformer: (value: STATE) => T): T;
@@ -3685,7 +3721,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.20.2-dev20230301162308
+ * 0.20.2-dev20230301180854
  * @public
  */
 export declare const version: string;

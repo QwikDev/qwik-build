@@ -833,18 +833,25 @@ const QObjectManagerSymbol = Symbol('proxy manager');
 const _IMMUTABLE = Symbol('IMMUTABLE');
 const _IMMUTABLE_PREFIX = '$$';
 
+var _a;
 /**
  * @internal
  */
-const _createSignal = (value, containerState, subcriptions) => {
+const _createSignal = (value, containerState, flags, subcriptions) => {
     const manager = containerState.$subsManager$.$createManager$(subcriptions);
-    const signal = new SignalImpl(value, manager);
+    const signal = new SignalImpl(value, manager, flags);
     return signal;
 };
+const QObjectSignalFlags = Symbol('proxy manager');
+const SIGNAL_IMMUTABLE = 1 << 0;
+const SIGNAL_UNASSIGNED = 1 << 1;
+const SignalUnassignedException = Symbol('unasigned signal');
 class SignalImpl {
-    constructor(v, manager) {
+    constructor(v, manager, flags) {
+        this[_a] = 0;
         this.untrackedValue = v;
         this[QObjectManagerSymbol] = manager;
+        this[QObjectSignalFlags] = flags;
     }
     // prevent accidental use as value
     valueOf() {
@@ -859,16 +866,27 @@ class SignalImpl {
     get value() {
         const sub = tryGetInvokeContext()?.$subscriber$;
         if (sub) {
+            if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
+                throw SignalUnassignedException;
+            }
             this[QObjectManagerSymbol].$addSub$([0, sub, undefined]);
         }
         return this.untrackedValue;
     }
     set value(v) {
         if (qDev) {
+            if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
+                throw new Error('Cannot mutate immutable signal');
+            }
             verifySerializable(v);
             const invokeCtx = tryGetInvokeContext();
-            if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                logWarn('State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()', invokeCtx.$hostElement$);
+            if (invokeCtx) {
+                if (invokeCtx.$event$ === RenderEvent) {
+                    logWarn('State mutation inside render function. Use useTask$() instead.', invokeCtx.$hostElement$);
+                }
+                if (invokeCtx.$event$ === 'ComputedEvent') {
+                    logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                }
             }
         }
         const manager = this[QObjectManagerSymbol];
@@ -879,6 +897,7 @@ class SignalImpl {
         }
     }
 }
+_a = QObjectSignalFlags;
 const isSignal = (obj) => {
     return obj instanceof SignalImpl || obj instanceof SignalWrapper;
 };
@@ -2745,6 +2764,11 @@ const executeComponent = (rCtx, elCtx) => {
             rCtx: newCtx,
         };
     }, (err) => {
+        if (err === SignalUnassignedException) {
+            return Promise.all(waitOn).then(() => {
+                return executeComponent(rCtx, elCtx);
+            });
+        }
         handleError(err, hostElement, rCtx);
         return {
             node: SkipRender,
@@ -4017,7 +4041,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                     }
                 }
                 if (isResourceTask(watch)) {
-                    collector.$resources$.push(watch.$resource$);
+                    collector.$resources$.push(watch.$state$);
                 }
                 destroyWatch(watch);
             }
@@ -5116,7 +5140,7 @@ const getFlags = (el) => {
 const postRendering = async (containerState, rCtx) => {
     const hostElements = rCtx.$static$.$hostElements$;
     await executeWatchesAfter(containerState, rCtx, (watch, stage) => {
-        if ((watch.$flags$ & WatchFlagsIsEffect) === 0) {
+        if ((watch.$flags$ & WatchFlagsIsVisibleTask) === 0) {
             return false;
         }
         if (stage) {
@@ -5142,7 +5166,7 @@ const executeWatchesBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
     const resourcesPromises = [];
     const watchPromises = [];
-    const isWatch = (watch) => (watch.$flags$ & WatchFlagsIsWatch) !== 0;
+    const isWatch = (watch) => (watch.$flags$ & WatchFlagsIsTask) !== 0;
     const isResourceWatch = (watch) => (watch.$flags$ & WatchFlagsIsResource) !== 0;
     containerState.$watchNext$.forEach((watch) => {
         if (isWatch(watch)) {
@@ -5227,11 +5251,12 @@ const sortWatches = (watches) => {
     });
 };
 
-const WatchFlagsIsEffect = 1 << 0;
-const WatchFlagsIsWatch = 1 << 1;
-const WatchFlagsIsDirty = 1 << 2;
-const WatchFlagsIsCleanup = 1 << 3;
-const WatchFlagsIsResource = 1 << 4;
+const WatchFlagsIsVisibleTask = 1 << 0;
+const WatchFlagsIsTask = 1 << 1;
+const WatchFlagsIsResource = 1 << 2;
+const WatchFlagsIsComputed = 1 << 3;
+const WatchFlagsIsDirty = 1 << 4;
+const WatchFlagsIsCleanup = 1 << 5;
 // <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useTask instead)
@@ -5301,18 +5326,42 @@ const useTaskQrl = (qrl, opts) => {
     }
     assertQrl(qrl);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsWatch, i, elCtx.$element$, qrl, undefined);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask, i, elCtx.$element$, qrl, undefined);
     set(true);
     qrl.$resolveLazy$(containerState.$containerEl$);
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
     }
     elCtx.$watches$.push(watch);
-    waitAndRun(iCtx, () => runSubscriber(watch, containerState, iCtx.$renderCtx$));
+    waitAndRun(iCtx, () => runWatch(watch, containerState, iCtx.$renderCtx$));
     if (isServerPlatform()) {
         useRunWatch(watch, opts?.eagerness);
     }
 };
+/**
+ * @alpha
+ */
+const useComputedQrl = (qrl) => {
+    const { get, set, iCtx, i, elCtx } = useSequentialScope();
+    if (get) {
+        return get;
+    }
+    assertQrl(qrl);
+    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    const signal = _createSignal(undefined, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, undefined);
+    const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask | WatchFlagsIsComputed, i, elCtx.$element$, qrl, signal);
+    qrl.$resolveLazy$(containerState.$containerEl$);
+    if (!elCtx.$watches$) {
+        elCtx.$watches$ = [];
+    }
+    elCtx.$watches$.push(watch);
+    waitAndRun(iCtx, () => runComputed(watch, containerState, iCtx.$renderCtx$));
+    return set(signal);
+};
+/**
+ * @alpha
+ */
+const useComputed$ = implicit$FirstArg(useComputedQrl);
 // <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useTask instead)
@@ -5423,7 +5472,7 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
         return;
     }
     assertQrl(qrl);
-    const watch = new Task(WatchFlagsIsEffect, i, elCtx.$element$, qrl, undefined);
+    const watch = new Task(WatchFlagsIsVisibleTask, i, elCtx.$element$, qrl, undefined);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     if (!elCtx.$watches$) {
         elCtx.$watches$ = [];
@@ -5475,12 +5524,18 @@ const useClientEffectQrl = useBrowserVisibleTaskQrl;
  */
 const useClientEffect$ = useBrowserVisibleTask$;
 const isResourceTask = (watch) => {
-    return !!watch.$resource$;
+    return (watch.$flags$ & WatchFlagsIsResource) !== 0;
+};
+const isComputedTask = (watch) => {
+    return (watch.$flags$ & WatchFlagsIsComputed) !== 0;
 };
 const runSubscriber = async (watch, containerState, rCtx) => {
     assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
     if (isResourceTask(watch)) {
         return runResource(watch, containerState, rCtx);
+    }
+    else if (isComputedTask(watch)) {
+        return runComputed(watch, containerState, rCtx);
     }
     else {
         return runWatch(watch, containerState, rCtx);
@@ -5496,7 +5551,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
         subsManager.$clearSub$(watch);
     });
     const cleanups = [];
-    const resource = watch.$resource$;
+    const resource = watch.$state$;
     assertDefined(resource, 'useResource: when running a resource, "watch.r" must be a defined.', watch);
     const track = (obj, prop) => {
         if (isFunction(obj)) {
@@ -5642,6 +5697,26 @@ const runWatch = (watch, containerState, rCtx) => {
         handleError(reason, hostElement, rCtx);
     });
 };
+const runComputed = (watch, containerState, rCtx) => {
+    assertSignal(watch.$state$);
+    watch.$flags$ &= ~WatchFlagsIsDirty;
+    cleanupWatch(watch);
+    const hostElement = watch.$el$;
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'ComputedEvent');
+    iCtx.$subscriber$ = watch;
+    const { $subsManager$: subsManager } = containerState;
+    const watchFn = watch.$qrl$.getFn(iCtx, () => {
+        subsManager.$clearSub$(watch);
+    });
+    return safeCall(watchFn, (returnValue) => untrack(() => {
+        const signal = watch.$state$;
+        signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+        signal.untrackedValue = returnValue;
+        signal[QObjectManagerSymbol].$notifySubs$();
+    }), (reason) => {
+        handleError(reason, hostElement, rCtx);
+    });
+};
 const cleanupWatch = (watch) => {
     const destroy = watch.$destroy$;
     if (destroy) {
@@ -5685,8 +5760,8 @@ const isSubscriberDescriptor = (obj) => {
 };
 const serializeWatch = (watch, getObjId) => {
     let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
-    if (isResourceTask(watch)) {
-        value += ` ${getObjId(watch.$resource$)}`;
+    if (watch.$state$) {
+        value += ` ${getObjId(watch.$state$)}`;
     }
     return value;
 };
@@ -5695,12 +5770,12 @@ const parseTask = (data) => {
     return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
 };
 class Task {
-    constructor($flags$, $index$, $el$, $qrl$, $resource$) {
+    constructor($flags$, $index$, $el$, $qrl$, $state$) {
         this.$flags$ = $flags$;
         this.$index$ = $index$;
         this.$el$ = $el$;
         this.$qrl$ = $qrl$;
-        this.$resource$ = $resource$;
+        this.$state$ = $state$;
     }
 }
 
@@ -6047,8 +6122,8 @@ const WatchSerializer = {
     test: (v) => isSubscriberDescriptor(v),
     collect: (v, collector, leaks) => {
         collectValue(v.$qrl$, collector, leaks);
-        if (v.$resource$) {
-            collectValue(v.$resource$, collector, leaks);
+        if (v.$state$) {
+            collectValue(v.$state$, collector, leaks);
         }
     },
     serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
@@ -6056,8 +6131,8 @@ const WatchSerializer = {
     fill: (watch, getObject) => {
         watch.$el$ = getObject(watch.$el$);
         watch.$qrl$ = getObject(watch.$qrl$);
-        if (watch.$resource$) {
-            watch.$resource$ = getObject(watch.$resource$);
+        if (watch.$state$) {
+            watch.$state$ = getObject(watch.$state$);
         }
     },
 };
@@ -6186,7 +6261,7 @@ const SignalSerializer = {
         return getObjId(obj.untrackedValue);
     },
     prepare: (data, containerState) => {
-        return new SignalImpl(data, containerState?.$subsManager$?.$createManager$());
+        return new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0);
     },
     subs: (signal, subs) => {
         signal[QObjectManagerSymbol].$addSubs$(subs);
@@ -6760,6 +6835,13 @@ function assertQrl(qrl) {
     if (qDev) {
         if (!isQrl(qrl)) {
             throw new Error('Not a QRL');
+        }
+    }
+}
+function assertSignal(obj) {
+    if (qDev) {
+        if (!isSignal(obj)) {
+            throw new Error('Not a Signal');
         }
     }
 }
@@ -7784,9 +7866,8 @@ const useSignal = (initialState) => {
     }
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const value = isFunction(initialState) ? invoke(undefined, initialState) : initialState;
-    const signal = _createSignal(value, containerState, undefined);
-    set(signal);
-    return signal;
+    const signal = _createSignal(value, containerState, 0, undefined);
+    return set(signal);
 };
 
 // <docs markdown="../readme.md#useServerMount">
@@ -8777,5 +8858,5 @@ const normalizeInvisibleEvents = (eventName) => {
     return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
