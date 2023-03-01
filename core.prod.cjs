@@ -2298,8 +2298,9 @@
             }
         }
         if (elCtx.$watches$) {
+            const map = collector.$containerState$.$subsManager$.$groupToManagers$;
             for (const obj of elCtx.$watches$) {
-                collectValue(obj, collector, dynamicCtx);
+                map.has(obj) && collectValue(obj, collector, dynamicCtx);
             }
         }
         if (dynamicCtx && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {

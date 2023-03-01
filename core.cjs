@@ -4416,8 +4416,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
         if (elCtx.$watches$) {
+            const map = collector.$containerState$.$subsManager$.$groupToManagers$;
             for (const obj of elCtx.$watches$) {
-                collectValue(obj, collector, dynamicCtx);
+                if (map.has(obj)) {
+                    collectValue(obj, collector, dynamicCtx);
+                }
             }
         }
         if (dynamicCtx) {
