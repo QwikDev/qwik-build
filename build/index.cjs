@@ -1,3 +1,4 @@
+globalThis.qwikBuild = (function (module) {
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -30,4 +31,5 @@ var isServer = !isBrowser;
 var isDev = /* @__PURE__ */ (() => {
   return globalThis.qDev === true;
 })();
+return module.exports; })(typeof module === 'object' && module.exports ? module : { exports: {} });
 //# sourceMappingURL=index.cjs.map
