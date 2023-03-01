@@ -452,6 +452,35 @@
             this.ref[this.prop] = value;
         }
     }
+    const _wrapProp = (obj, prop) => {
+        if (!isObject(obj)) {
+            return obj[prop];
+        }
+        if (obj instanceof SignalImpl) {
+            return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
+            obj;
+        }
+        if (obj instanceof SignalWrapper) {
+            return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
+            obj;
+        }
+        const target = getProxyTarget(obj);
+        if (target) {
+            const signal = target["$$" + prop];
+            if (signal) {
+                return assertTrue(isSignal(signal), "$$ has to be a signal kind"), signal;
+            }
+            if (true !== target[_IMMUTABLE]?.[prop]) {
+                return new SignalWrapper(obj, prop);
+            }
+        }
+        const immutable = obj[_IMMUTABLE]?.[prop];
+        if (isSignal(immutable)) {
+            return immutable;
+        }
+        const value = obj[prop];
+        return isSignal(value) ? _IMMUTABLE : value;
+    };
     const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || (0 !== flags && setObjectFlags(target, flags), 
     createProxy(target, containerState, void 0));
     const createProxy = (target, containerState, subs) => {
@@ -4526,30 +4555,9 @@
             _objs: convertedObjs
         });
     }, exports._verifySerializable = verifySerializable, exports._weakSerialize = input => (weakSerializeSet.add(input), 
-    input), exports._wrapSignal = (obj, prop) => {
-        if (!isObject(obj)) {
-            return obj[prop];
-        }
-        if (obj instanceof SignalImpl) {
-            return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
-            obj;
-        }
-        if (obj instanceof SignalWrapper) {
-            return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
-            obj;
-        }
-        const target = getProxyTarget(obj);
-        if (target) {
-            const signal = target["$$" + prop];
-            if (signal) {
-                return assertTrue(isSignal(signal), "$$ has to be a signal kind"), signal;
-            }
-            if (true !== target[_IMMUTABLE]?.[prop]) {
-                return new SignalWrapper(obj, prop);
-            }
-        }
-        const immutable = obj[_IMMUTABLE]?.[prop];
-        return isSignal(immutable) ? immutable : obj[prop];
+    input), exports._wrapProp = _wrapProp, exports._wrapSignal = (obj, prop) => {
+        const r = _wrapProp(obj, prop);
+        return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
     exports.createContext = name => createContextId(name), exports.createContextId = createContextId, 
     exports.getLocale = function(defaultLocale) {

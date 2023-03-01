@@ -906,7 +906,7 @@ class SignalWrapper {
 /**
  * @internal
  */
-const _wrapSignal = (obj, prop) => {
+const _wrapProp = (obj, prop) => {
     if (!isObject(obj)) {
         return obj[prop];
     }
@@ -933,7 +933,21 @@ const _wrapSignal = (obj, prop) => {
     if (isSignal(immutable)) {
         return immutable;
     }
-    return obj[prop];
+    const value = obj[prop];
+    if (isSignal(value)) {
+        return _IMMUTABLE;
+    }
+    return value;
+};
+/**
+ * @internal
+ */
+const _wrapSignal = (obj, prop) => {
+    const r = _wrapProp(obj, prop);
+    if (r === _IMMUTABLE) {
+        return obj[prop];
+    }
+    return r;
 };
 
 /**
@@ -8763,5 +8777,5 @@ const normalizeInvisibleEvents = (eventName) => {
     return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

@@ -916,7 +916,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     /**
      * @internal
      */
-    const _wrapSignal = (obj, prop) => {
+    const _wrapProp = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];
         }
@@ -943,7 +943,21 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         if (isSignal(immutable)) {
             return immutable;
         }
-        return obj[prop];
+        const value = obj[prop];
+        if (isSignal(value)) {
+            return _IMMUTABLE;
+        }
+        return value;
+    };
+    /**
+     * @internal
+     */
+    const _wrapSignal = (obj, prop) => {
+        const r = _wrapProp(obj, prop);
+        if (r === _IMMUTABLE) {
+            return obj[prop];
+        }
+        return r;
     };
 
     /**
@@ -8797,6 +8811,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports._serializeData = _serializeData;
     exports._verifySerializable = verifySerializable;
     exports._weakSerialize = _weakSerialize;
+    exports._wrapProp = _wrapProp;
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;

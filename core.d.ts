@@ -1274,7 +1274,7 @@ export declare const _jsxBranch: (input?: any) => any;
 /**
  * @public
  */
-export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | JSXNode;
+export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
 /**
  * @public
@@ -3685,7 +3685,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.20.2-dev20230301135608
+ * 0.20.2-dev20230301162308
  * @public
  */
 export declare const version: string;
@@ -3768,6 +3768,11 @@ declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
  * @internal
  */
 export declare function withLocale<T>(locale: string, fn: () => T): T;
+
+/**
+ * @internal
+ */
+export declare const _wrapProp: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => any;
 
 /**
  * @internal
