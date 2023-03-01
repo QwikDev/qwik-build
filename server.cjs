@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 0.20.1
+ * @builder.io/qwik/server 0.20.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -27,6 +27,12 @@ if (typeof require !== 'function' && typeof location !== 'undefined' && typeof n
         throw new Error('Qwik Core global, "globalThis.qwikCore", must already be loaded for the Qwik Server to be used within a browser.');
       }
       return self.qwikCore;
+    }
+    if (path === '@builder.io/qwik/build') {
+      if (!self.qwikBuild) {
+        throw new Error('Qwik Build global, "globalThis.qwikBuild", must already be loaded for the Qwik Server to be used within a browser.');
+      }
+      return self.qwikBuild;
     }
     throw new Error('Unable to require() path "' + path + '" from a browser environment.');
   };
@@ -153,7 +159,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.20.1",
+  qwik: "0.20.2",
   qwikDom: "2.1.19"
 };
 
