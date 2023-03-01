@@ -877,7 +877,7 @@ class SignalImpl {
             verifySerializable(v);
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                logWarn('State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()', invokeCtx.$hostElement$);
+                logWarn('State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()', invokeCtx.$hostElement$);
             }
         }
         const manager = this[QObjectManagerSymbol];
@@ -1048,7 +1048,7 @@ class ReadWriteProxyHandler {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                logError('State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()', prop);
+                logError('State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()', prop);
             }
         }
         const isA = isArray(target);

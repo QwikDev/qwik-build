@@ -524,7 +524,7 @@ class SignalImpl {
         if (qDev) {
             verifySerializable(v);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", invokeCtx.$hostElement$);
+            invokeCtx && "qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()", invokeCtx.$hostElement$);
         }
         const manager = this[QObjectManagerSymbol];
         const oldValue = this.untrackedValue;
@@ -652,7 +652,7 @@ class ReadWriteProxyHandler {
         if (qDev) {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useWatch(), useBrowserVisibleTask() or useServerMount()", prop);
+            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()", prop);
         }
         return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
         true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
