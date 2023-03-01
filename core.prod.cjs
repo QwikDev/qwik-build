@@ -559,7 +559,7 @@
             if (qDev) {
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
-                invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()", prop);
+                invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop);
             }
             return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
             true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
@@ -2932,7 +2932,7 @@
     const useTask$ = implicit$FirstArg(useTaskQrl);
     const useWatch$ = useTask$;
     const useWatchQrl = useTaskQrl;
-    const useBrowserVisibleTaskQrl = (qrl, opts) => {
+    const useVisibleTaskQrl = (qrl, opts) => {
         const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
         const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
         if (get) {
@@ -2945,9 +2945,11 @@
         useRunWatch(watch, eagerness), isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), 
         notifyWatch(watch, containerState));
     };
-    const useBrowserVisibleTask$ = implicit$FirstArg(useBrowserVisibleTaskQrl);
-    const useClientEffectQrl = useBrowserVisibleTaskQrl;
-    const useClientEffect$ = useBrowserVisibleTask$;
+    const useVisibleTask$ = implicit$FirstArg(useVisibleTaskQrl);
+    const useClientEffectQrl = useVisibleTaskQrl;
+    const useClientEffect$ = useVisibleTask$;
+    const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
+    const useBrowserVisibleTask$ = useVisibleTask$;
     const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
     const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, "Resource is not dirty", watch), 
     isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
@@ -4736,6 +4738,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
+    exports.useVisibleTask$ = useVisibleTask$, exports.useVisibleTaskQrl = useVisibleTaskQrl, 
     exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.20.2", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;

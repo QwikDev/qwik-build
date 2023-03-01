@@ -2834,52 +2834,14 @@ declare type TransformProps<PROPS extends {}> = {
 export declare const untrack: <T>(fn: () => T) => T;
 
 /**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useBrowserVisibleTask$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <div>{store.count}</div>;
- * });
- * ```
- *
- * @public
+ * @alpha
+ * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useBrowserVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
- * ```tsx
- * const Timer = component$(() => {
- *   const store = useStore({
- *     count: 0,
- *   });
- *
- *   useBrowserVisibleTask$(() => {
- *     // Only runs in the client
- *     const timer = setInterval(() => {
- *       store.count++;
- *     }, 500);
- *     return () => {
- *       clearInterval(timer);
- *     };
- *   });
- *
- *   return <div>{store.count}</div>;
- * });
- * ```
- *
- * @public
+ * @alpha
+ * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
 
@@ -2888,7 +2850,7 @@ export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisib
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useBrowserVisibleTask$()` instead.
+ * `useVisibleTask$()` instead.
  */
 export declare const useCleanup$: (first: () => void) => void;
 
@@ -2897,19 +2859,19 @@ export declare const useCleanup$: (first: () => void) => void;
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useBrowserVisibleTask$()` instead.
+ * `useVisibleTask$()` instead.
  */
 export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
 
 /**
  * @alpha
- * @deprecated - use `useBrowserVisibleTask$()` instead
+ * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useClientEffect$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
  * @alpha
- * @deprecated - use `useBrowserVisibleTask$()` instead
+ * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
 
@@ -3192,7 +3154,7 @@ export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: 
  * const Cmp = component$(() => {
  *   const input = useRef<HTMLInputElement>();
  *
- *   useBrowserVisibleTask$(({ track }) => {
+ *   useVisibleTask$(({ track }) => {
  *     const el = track(() => input.current)!;
  *     el.focus();
  *   });
@@ -3428,7 +3390,7 @@ export declare const useSignal: UseSignal;
  *   const counterStore = useStore({
  *     value: 0,
  *   });
- *   useBrowserVisibleTask$(() => {
+ *   useVisibleTask$(() => {
  *     // Only runs in the client
  *     const timer = setInterval(() => {
  *       counterStore.value += step;
@@ -3698,6 +3660,56 @@ export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => vo
 export declare const useUserContext: typeof useServerData;
 
 /**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useVisibleTask$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <div>{store.count}</div>;
+ * });
+ * ```
+ *
+ * @public
+ */
+export declare const useVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
+
+/**
+ * ```tsx
+ * const Timer = component$(() => {
+ *   const store = useStore({
+ *     count: 0,
+ *   });
+ *
+ *   useVisibleTask$(() => {
+ *     // Only runs in the client
+ *     const timer = setInterval(() => {
+ *       store.count++;
+ *     }, 500);
+ *     return () => {
+ *       clearInterval(timer);
+ *     };
+ *   });
+ *
+ *   return <div>{store.count}</div>;
+ * });
+ * ```
+ *
+ * @public
+ */
+export declare const useVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
+
+/**
  * @beta
  * @deprecated - use `useTask$()` instead
  */
@@ -3721,7 +3733,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.20.2-dev20230301180854
+ * 0.20.2-dev20230301191204
  * @public
  */
 export declare const version: string;

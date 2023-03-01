@@ -1072,7 +1072,7 @@ class ReadWriteProxyHandler {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                logError('State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()', prop);
+                logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
             }
         }
         const isA = isArray(target);
@@ -1514,7 +1514,7 @@ const useSequentialScope = () => {
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useBrowserVisibleTask$()` instead.
+ * `useVisibleTask$()` instead.
  */
 // </docs>
 const useCleanupQrl = (unmountFn) => {
@@ -1537,7 +1537,7 @@ const useCleanupQrl = (unmountFn) => {
  *
  * @alpha
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useBrowserVisibleTask$()` instead.
+ * `useVisibleTask$()` instead.
  */
 // </docs>
 const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
@@ -5445,7 +5445,7 @@ const useWatchQrl =  useTaskQrl;
  *     count: 0,
  *   });
  *
- *   useBrowserVisibleTask$(() => {
+ *   useVisibleTask$(() => {
  *     // Only runs in the client
  *     const timer = setInterval(() => {
  *       store.count++;
@@ -5462,7 +5462,7 @@ const useWatchQrl =  useTaskQrl;
  * @public
  */
 // </docs>
-const useBrowserVisibleTaskQrl = (qrl, opts) => {
+const useVisibleTaskQrl = (qrl, opts) => {
     const { get, set, i, iCtx, elCtx } = useSequentialScope();
     const eagerness = opts?.strategy ?? opts?.eagerness ?? 'intersection-observer';
     if (get) {
@@ -5495,7 +5495,7 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
  *     count: 0,
  *   });
  *
- *   useBrowserVisibleTask$(() => {
+ *   useVisibleTask$(() => {
  *     // Only runs in the client
  *     const timer = setInterval(() => {
  *       store.count++;
@@ -5512,17 +5512,27 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
  * @public
  */
 // </docs>
-const useBrowserVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useBrowserVisibleTaskQrl);
+const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
 /**
  * @alpha
- * @deprecated - use `useBrowserVisibleTask$()` instead
+ * @deprecated - use `useVisibleTask$()` instead
  */
-const useClientEffectQrl = useBrowserVisibleTaskQrl;
+const useClientEffectQrl = useVisibleTaskQrl;
 /**
  * @alpha
- * @deprecated - use `useBrowserVisibleTask$()` instead
+ * @deprecated - use `useVisibleTask$()` instead
  */
-const useClientEffect$ = useBrowserVisibleTask$;
+const useClientEffect$ = useVisibleTask$;
+/**
+ * @alpha
+ * @deprecated - use `useVisibleTask$()` instead
+ */
+const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
+/**
+ * @alpha
+ * @deprecated - use `useVisibleTask$()` instead
+ */
+const useBrowserVisibleTask$ = useVisibleTask$;
 const isResourceTask = (watch) => {
     return (watch.$flags$ & WatchFlagsIsResource) !== 0;
 };
@@ -7257,7 +7267,7 @@ const injectQContainer = (containerEl) => {
  *   const counterStore = useStore({
  *     value: 0,
  *   });
- *   useBrowserVisibleTask$(() => {
+ *   useVisibleTask$(() => {
  *     // Only runs in the client
  *     const timer = setInterval(() => {
  *       counterStore.value += step;
@@ -7312,7 +7322,7 @@ const useStore = (initialState, opts) => {
  * const Cmp = component$(() => {
  *   const input = useRef<HTMLInputElement>();
  *
- *   useBrowserVisibleTask$(({ track }) => {
+ *   useVisibleTask$(({ track }) => {
  *     const el = track(() => input.current)!;
  *     el.focus();
  *   });
@@ -8858,5 +8868,5 @@ const normalizeInvisibleEvents = (eventName) => {
     return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

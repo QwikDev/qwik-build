@@ -789,7 +789,7 @@ globalThis.qwikOptimizer = function(module) {
     }));
   }
   var EVENT_PRIORITY = [ "click", "dblclick", "contextmenu", "auxclick", "pointerdown", "pointerup", "pointermove", "pointerover", "pointerenter", "pointerleave", "pointerout", "pointercancel", "gotpointercapture", "lostpointercapture", "touchstart", "touchend", "touchmove", "touchcancel", "mousedown", "mouseup", "mousemove", "mouseenter", "mouseleave", "mouseover", "mouseout", "wheel", "gesturestart", "gesturechange", "gestureend", "keydown", "keyup", "keypress", "input", "change", "search", "invalid", "beforeinput", "select", "focusin", "focusout", "focus", "blur", "submit", "reset", "scroll" ].map((n => `on${n.toLowerCase()}$`));
-  var FUNCTION_PRIORITY = [ "useTask$", "useBrowserVisibleTask$", "useEffect$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase()));
+  var FUNCTION_PRIORITY = [ "useTask$", "useVisibleTask$", "component$", "useStyles$", "useStylesScoped$" ].map((n => n.toLowerCase()));
   function sortBundleNames(manifest) {
     return Object.keys(manifest.bundles).sort(sortAlphabetical);
   }
@@ -961,7 +961,7 @@ globalThis.qwikOptimizer = function(module) {
   var REG_CTX_NAME = [ "server$" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
-  var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "client", "browser" ];
+  var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const results = new Map;

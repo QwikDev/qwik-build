@@ -247,8 +247,7 @@ var EVENT_PRIORITY = [
 ].map((n) => `on${n.toLowerCase()}$`);
 var FUNCTION_PRIORITY = [
   "useTask$",
-  "useBrowserVisibleTask$",
-  "useEffect$",
+  "useVisibleTask$",
   "component$",
   "useStyles$",
   "useStylesScoped$"

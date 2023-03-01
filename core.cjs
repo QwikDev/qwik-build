@@ -1082,7 +1082,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logError('State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()', prop);
+                    logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
                 }
             }
             const isA = isArray(target);
@@ -1524,7 +1524,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      *
      * @alpha
      * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useBrowserVisibleTask$()` instead.
+     * `useVisibleTask$()` instead.
      */
     // </docs>
     const useCleanupQrl = (unmountFn) => {
@@ -1547,7 +1547,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      *
      * @alpha
      * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useBrowserVisibleTask$()` instead.
+     * `useVisibleTask$()` instead.
      */
     // </docs>
     const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
@@ -5455,7 +5455,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     count: 0,
      *   });
      *
-     *   useBrowserVisibleTask$(() => {
+     *   useVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       store.count++;
@@ -5472,7 +5472,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     // </docs>
-    const useBrowserVisibleTaskQrl = (qrl, opts) => {
+    const useVisibleTaskQrl = (qrl, opts) => {
         const { get, set, i, iCtx, elCtx } = useSequentialScope();
         const eagerness = opts?.strategy ?? opts?.eagerness ?? 'intersection-observer';
         if (get) {
@@ -5505,7 +5505,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     count: 0,
      *   });
      *
-     *   useBrowserVisibleTask$(() => {
+     *   useVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       store.count++;
@@ -5522,17 +5522,27 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     // </docs>
-    const useBrowserVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useBrowserVisibleTaskQrl);
+    const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
     /**
      * @alpha
-     * @deprecated - use `useBrowserVisibleTask$()` instead
+     * @deprecated - use `useVisibleTask$()` instead
      */
-    const useClientEffectQrl = useBrowserVisibleTaskQrl;
+    const useClientEffectQrl = useVisibleTaskQrl;
     /**
      * @alpha
-     * @deprecated - use `useBrowserVisibleTask$()` instead
+     * @deprecated - use `useVisibleTask$()` instead
      */
-    const useClientEffect$ = useBrowserVisibleTask$;
+    const useClientEffect$ = useVisibleTask$;
+    /**
+     * @alpha
+     * @deprecated - use `useVisibleTask$()` instead
+     */
+    const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
+    /**
+     * @alpha
+     * @deprecated - use `useVisibleTask$()` instead
+     */
+    const useBrowserVisibleTask$ = useVisibleTask$;
     const isResourceTask = (watch) => {
         return (watch.$flags$ & WatchFlagsIsResource) !== 0;
     };
@@ -7267,7 +7277,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *   const counterStore = useStore({
      *     value: 0,
      *   });
-     *   useBrowserVisibleTask$(() => {
+     *   useVisibleTask$(() => {
      *     // Only runs in the client
      *     const timer = setInterval(() => {
      *       counterStore.value += step;
@@ -7322,7 +7332,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * const Cmp = component$(() => {
      *   const input = useRef<HTMLInputElement>();
      *
-     *   useBrowserVisibleTask$(({ track }) => {
+     *   useVisibleTask$(({ track }) => {
      *     const el = track(() => input.current)!;
      *     el.focus();
      *   });
@@ -8950,6 +8960,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports.useTask$ = useTask$;
     exports.useTaskQrl = useTaskQrl;
     exports.useUserContext = useUserContext;
+    exports.useVisibleTask$ = useVisibleTask$;
+    exports.useVisibleTaskQrl = useVisibleTaskQrl;
     exports.useWatch$ = useWatch$;
     exports.useWatchQrl = useWatchQrl;
     exports.version = version;

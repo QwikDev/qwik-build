@@ -684,7 +684,7 @@ class ReadWriteProxyHandler {
         if (qDev) {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useBrowserVisibleTask$()", prop);
+            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop);
         }
         return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
         true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
@@ -3430,7 +3430,7 @@ const useWatch$ = useTask$;
 
 const useWatchQrl = useTaskQrl;
 
-const useBrowserVisibleTaskQrl = (qrl, opts) => {
+const useVisibleTaskQrl = (qrl, opts) => {
     const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
     const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
     if (get) {
@@ -3444,11 +3444,15 @@ const useBrowserVisibleTaskQrl = (qrl, opts) => {
     notifyWatch(watch, containerState));
 };
 
-const useBrowserVisibleTask$ = implicit$FirstArg(useBrowserVisibleTaskQrl);
+const useVisibleTask$ = implicit$FirstArg(useVisibleTaskQrl);
 
-const useClientEffectQrl = useBrowserVisibleTaskQrl;
+const useClientEffectQrl = useVisibleTaskQrl;
 
-const useClientEffect$ = useBrowserVisibleTask$;
+const useClientEffect$ = useVisibleTask$;
+
+const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
+
+const useBrowserVisibleTask$ = useVisibleTask$;
 
 const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
 
@@ -5235,4 +5239,4 @@ const addDynamicSlot = (hostCtx, elCtx) => {
 
 const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
