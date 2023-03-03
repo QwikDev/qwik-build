@@ -6244,19 +6244,6 @@ const ComponentSerializer = {
         }
     },
 };
-const PureFunctionSerializer = {
-    prefix: '\u0011',
-    test: (obj) => typeof obj === 'function' && obj.__qwik_serializable__ !== undefined,
-    serialize: (obj) => {
-        return obj.toString();
-    },
-    prepare: (data) => {
-        const fn = new Function('return ' + data)();
-        fn.__qwik_serializable__ = true;
-        return fn;
-    },
-    fill: undefined,
-};
 const SignalSerializer = {
     prefix: '\u0012',
     test: (v) => v instanceof SignalImpl,
@@ -6359,10 +6346,9 @@ const serializers = [
     ErrorSerializer,
     DocumentSerializer,
     ComponentSerializer,
-    PureFunctionSerializer,
     NoFiniteNumberSerializer,
     URLSearchParamsSerializer,
-    FormDataSerializer,
+    FormDataSerializer, ///////// \u0016
 ];
 const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
 const canSerialize = (obj) => {

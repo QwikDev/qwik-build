@@ -3852,15 +3852,6 @@ const serializers = [ QRLSerializer, {
         signal.ref = getObject(signal.ref);
     }
 }, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, {
-    prefix: "",
-    test: obj => "function" == typeof obj && void 0 !== obj.__qwik_serializable__,
-    serialize: obj => obj.toString(),
-    prepare: data => {
-        const fn = new Function("return " + data)();
-        return fn.__qwik_serializable__ = true, fn;
-    },
-    fill: void 0
-}, {
     prefix: "",
     test: v => "number" == typeof v,
     serialize: v => String(v),
