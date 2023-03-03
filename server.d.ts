@@ -7,28 +7,6 @@ import type { SymbolMapper } from './optimizer';
 import type { SymbolMapperFn } from './optimizer';
 
 /**
- * `link-prefetch-html`: Render link rel=prefetch within the html
- *
- * `link-prefetch`: Use JS to add link rel=prefetch, add worker-fetch if not supported
- *
- * `link-preload-html`: Render link rel=preload within the html
- *
- * `link-preload`: Use JS to add link rel=preload, add worker-fetch if not supported
- *
- * `link-modulepreload-html`: Render link rel=modulepreload within the html
- *
- * `link-modulepreload`: Use JS to add link rel=modulepreload, add worker-fetch if not supported
- *
- * `worker-fetch`: Add worker-fetch JS
- *
- * `none`: Do not add any prefetch links
- *
- * @deprecated Use the `PrefetchImplementation` object options instead.
- * @alpha
- */
-declare type DeprecatedPrefetchImplementation = 'link-prefetch-html' | 'link-prefetch' | 'link-preload-html' | 'link-preload' | 'link-modulepreload-html' | 'link-modulepreload' | 'worker-fetch' | 'none';
-
-/**
  * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader
  * script into HTML.
  * @alpha
@@ -117,7 +95,7 @@ export declare interface PrefetchResource {
  * @alpha
  */
 export declare interface PrefetchStrategy {
-    implementation?: PrefetchImplementation | DeprecatedPrefetchImplementation;
+    implementation?: PrefetchImplementation;
     symbolsToPrefetch?: SymbolsToPrefetch;
 }
 

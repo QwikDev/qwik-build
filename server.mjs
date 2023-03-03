@@ -387,71 +387,6 @@ function workerFetchImplementation(prefetchNodes, prefetchResources, nonce) {
   );
 }
 function normalizePrefetchImplementation(input) {
-  if (typeof input === "string") {
-    switch (input) {
-      case "link-prefetch-html": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "html-append",
-          linkRel: "prefetch",
-          workerFetchInsert: null,
-          prefetchEvent: null
-        };
-      }
-      case "link-prefetch": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "js-append",
-          linkRel: "prefetch",
-          workerFetchInsert: "no-link-support",
-          prefetchEvent: null
-        };
-      }
-      case "link-preload-html": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "html-append",
-          linkRel: "preload",
-          workerFetchInsert: null,
-          prefetchEvent: null
-        };
-      }
-      case "link-preload": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "js-append",
-          linkRel: "preload",
-          workerFetchInsert: "no-link-support",
-          prefetchEvent: null
-        };
-      }
-      case "link-modulepreload-html": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "html-append",
-          linkRel: "modulepreload",
-          workerFetchInsert: null,
-          prefetchEvent: null
-        };
-      }
-      case "link-modulepreload": {
-        deprecatedWarning(input, "linkInsert");
-        return {
-          linkInsert: "js-append",
-          linkRel: "modulepreload",
-          workerFetchInsert: "no-link-support",
-          prefetchEvent: null
-        };
-      }
-    }
-    deprecatedWarning(input, "workerFetchInsert");
-    return {
-      linkInsert: null,
-      linkRel: null,
-      workerFetchInsert: "always",
-      prefetchEvent: null
-    };
-  }
   if (input && typeof input === "object") {
     return input;
   }
@@ -463,11 +398,6 @@ var PrefetchImplementationDefault = {
   workerFetchInsert: null,
   prefetchEvent: "always"
 };
-function deprecatedWarning(oldApi, newApi) {
-  console.warn(
-    `The Prefetch Strategy Implementation "${oldApi}" has been deprecated and will be removed in an upcoming release. Please update to use the "prefetchStrategy.implementation.${newApi}" interface.`
-  );
-}
 
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
