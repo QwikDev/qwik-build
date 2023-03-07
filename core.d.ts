@@ -74,7 +74,7 @@
  */
 export declare const $: <T>(expression: T) => QRL<T>;
 
-declare type A = [type: 0, subscriber: SubscriberEffect | SubscriberHost, key: string | undefined];
+declare type A = [type: 0, host: SubscriberEffect | SubscriberHost, key: string | undefined];
 
 declare interface AbstractView {
     styleMedia: StyleMedia;
@@ -305,14 +305,7 @@ export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'articl
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
-declare type B = [
-type: 1,
-subscriber: SubscriberHost,
-signal: Record<string, any>,
-elm: QwikElement,
-prop: string,
-key: string
-];
+declare type B = [type: 1, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
 
 declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
@@ -361,14 +354,7 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare type C = [
-type: 2,
-subscriber: SubscriberHost,
-signal: Record<string, any>,
-elm: Node,
-attribute: string,
-key: string
-];
+declare type C = [type: 2, host: SubscriberHost, signal: Signal, elm: Text];
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -832,6 +818,11 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+/**
+ * @alpha
+ */
+export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr: string) => SignalDerived<any, any[]>;
+
 declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
@@ -1268,7 +1259,7 @@ declare interface InvokeContext {
     $event$: any | undefined;
     $qrl$: QRL<any> | undefined;
     $waitOn$: Promise<any>[] | undefined;
-    $subscriber$: SubscriberEffect | SubscriberHost | null | undefined;
+    $subscriber$: Subscriber | null | undefined;
     $renderCtx$: RenderContext | undefined;
     $locale$: string | undefined;
 }
@@ -1365,7 +1356,7 @@ declare class LocalSubscriptionManager {
     $addSubs$(subs: Subscriptions[]): void;
     $addToGroup$(group: SubscriberHost | SubscriberEffect, manager: LocalSubscriptionManager): void;
     $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
-    $addSub$(sub: Subscriptions): void;
+    $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
 }
 
@@ -2513,6 +2504,14 @@ export declare interface Signal<T = any> {
     value: T;
 }
 
+declare class SignalDerived<T = any, ARGS extends any[] = any> {
+    $func$: (...args: ARGS) => T;
+    $args$: ARGS;
+    $funcStr$: string;
+    constructor($func$: (...args: ARGS) => T, $args$: ARGS, $funcStr$: string);
+    get value(): T;
+}
+
 declare interface SignalInternal<T> extends Signal<T> {
     untrackedValue: T;
     [QObjectManagerSymbol]: LocalSubscriptionManager;
@@ -2659,6 +2658,14 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
     children?: string;
 }
+
+declare type Subscriber = SubscriberA | SubscriberB | SubscriberC;
+
+declare type SubscriberA = [type: 0, host: SubscriberEffect | SubscriberHost];
+
+declare type SubscriberB = [type: 1, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
+
+declare type SubscriberC = [type: 2, host: SubscriberHost, signal: Signal, elm: Node | string];
 
 declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
 
@@ -3733,7 +3740,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.21.0-dev20230307091924
+ * 0.21.0-dev20230307144809
  * @public
  */
 export declare const version: string;

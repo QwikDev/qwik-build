@@ -833,6 +833,40 @@ const QObjectManagerSymbol = Symbol('proxy manager');
 const _IMMUTABLE = Symbol('IMMUTABLE');
 const _IMMUTABLE_PREFIX = '$$';
 
+class SignalDerived {
+    constructor($func$, $args$, $funcStr$) {
+        this.$func$ = $func$;
+        this.$args$ = $args$;
+        this.$funcStr$ = $funcStr$;
+    }
+    get value() {
+        return this.$func$.apply(undefined, this.$args$);
+    }
+}
+/**
+ * @alpha
+ */
+const _fnSignal = (fn, args, fnStr) => {
+    return new SignalDerived(fn, args, fnStr);
+};
+const serializeDerivedSignal = (signal, getObjID) => {
+    const parts = signal.$args$.map(getObjID);
+    const fnBody = signal.$funcStr$;
+    return parts.join(' ') + ':' + fnBody;
+};
+const parseDerivedSignal = (data) => {
+    if (isServer || isServerPlatform()) {
+        throw new Error('For security reasons. Derived signals cannot be deserialized on the server.');
+    }
+    const colonIndex = data.indexOf(':');
+    const objects = data.slice(0, colonIndex).split(' ');
+    const fnStr = data.slice(colonIndex + 1);
+    const args = objects.map((_, i) => `p${i}`);
+    args.push(`return ${fnStr}`);
+    const fn = new Function(...args);
+    return new SignalDerived(fn, objects, fnStr);
+};
+
 var _a;
 /**
  * @internal
@@ -869,7 +903,7 @@ class SignalImpl {
             if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
                 throw SignalUnassignedException;
             }
-            this[QObjectManagerSymbol].$addSub$([0, sub, undefined]);
+            this[QObjectManagerSymbol].$addSub$(sub);
         }
         return this.untrackedValue;
     }
@@ -899,13 +933,7 @@ class SignalImpl {
 }
 _a = QObjectSignalFlags;
 const isSignal = (obj) => {
-    return obj instanceof SignalImpl || obj instanceof SignalWrapper;
-};
-const addSignalSub = (type, hostEl, signal, elm, property) => {
-    const subscription = signal instanceof SignalWrapper
-        ? [type, hostEl, getProxyTarget(signal.ref), elm, property, signal.prop]
-        : [type, hostEl, signal, elm, property, 'value'];
-    getProxyManager(signal).$addSub$(subscription);
+    return obj instanceof SignalImpl || obj instanceof SignalWrapper || obj instanceof SignalDerived;
 };
 class SignalWrapper {
     constructor(ref, prop) {
@@ -1051,7 +1079,7 @@ class ReadWriteProxyHandler {
         }
         if (subscriber) {
             const isA = isArray(target);
-            this.$manager$.$addSub$([0, subscriber, isA ? undefined : prop]);
+            this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
         }
         return recursive ? wrap(value, this.$containerState$) : value;
     }
@@ -1111,7 +1139,7 @@ class ReadWriteProxyHandler {
                 subscriber = invokeCtx.$subscriber$;
             }
             if (subscriber) {
-                this.$manager$.$addSub$([0, subscriber, undefined]);
+                this.$manager$.$addSub$(subscriber);
             }
         }
         if (isArray(target)) {
@@ -1415,6 +1443,14 @@ const getWrappingContainer = (el) => {
  */
 const untrack = (fn) => {
     return invoke(undefined, fn);
+};
+const trackInvokation = newInvokeContext();
+/**
+ * @alpha
+ */
+const trackSignal = (signal, sub) => {
+    trackInvokation.$subscriber$ = sub;
+    return invoke(trackInvokation, () => signal.value);
 };
 /**
  * @internal
@@ -2739,7 +2775,7 @@ const executeComponent = (rCtx, elCtx) => {
     newCtx.$cmpCtx$ = elCtx;
     newCtx.$slotCtx$ = null;
     // Invoke render hook
-    invocationContext.$subscriber$ = hostElement;
+    invocationContext.$subscriber$ = [0, hostElement];
     invocationContext.$renderCtx$ = rCtx;
     // Resolve render function
     componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
@@ -2872,7 +2908,7 @@ const renderComponent = (rCtx, elCtx, flags) => {
         const newCtx = res.rCtx;
         const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
         staticCtx.$hostElements$.add(hostElement);
-        invocationContext.$subscriber$ = hostElement;
+        invocationContext.$subscriber$ = [0, hostElement];
         invocationContext.$renderCtx$ = newCtx;
         if (justMounted) {
             if (elCtx.$appendStyles$) {
@@ -2960,9 +2996,7 @@ const processData$1 = (node, invocationContext) => {
         return processNode(node, invocationContext);
     }
     else if (isSignal(node)) {
-        const value = node.value;
         const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, EMPTY_ARRAY, null);
-        newNode.$text$ = jsxToString(value);
         newNode.$signal$ = node;
         return newNode;
     }
@@ -3018,11 +3052,11 @@ const smartUpdateChildren = (ctx, oldVnode, newVnode, mode, flags) => {
         return removeVnodes(ctx.$static$, oldCh, 0, oldCh.length - 1);
     }
 };
-const getVnodeChildren = (vnode, mode) => {
-    const oldCh = vnode.$children$;
-    const elm = vnode.$elm$;
+const getVnodeChildren = (oldVnode, mode) => {
+    const oldCh = oldVnode.$children$;
+    const elm = oldVnode.$elm$;
     if (oldCh === CHILDREN_PLACEHOLDER) {
-        return (vnode.$children$ = getChildrenVnodes(elm, mode));
+        return (oldVnode.$children$ = getChildrenVnodes(elm, mode));
     }
     return oldCh;
 };
@@ -3245,8 +3279,8 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
     const elm = oldVnode.$elm$;
     const tag = newVnode.$type$;
     const staticCtx = rCtx.$static$;
-    const isVirtual = tag === VIRTUAL;
     const currentComponent = rCtx.$cmpCtx$;
+    const isVirtual = tag === VIRTUAL;
     assertDefined(elm, 'while patching element must be defined');
     assertDefined(currentComponent, 'while patching current component must be defined');
     newVnode.$elm$ = elm;
@@ -3254,7 +3288,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
     if (tag === '#text') {
         const signal = newVnode.$signal$;
         if (signal) {
-            addSignalSub(2, currentComponent.$element$, signal, elm, 'data');
+            newVnode.$text$ = jsxToString(trackSignal(signal, [2, currentComponent.$element$, signal, elm]));
         }
         if (oldVnode.$text$ !== newVnode.$text$) {
             setProperty(staticCtx, elm, 'data', newVnode.$text$);
@@ -3414,8 +3448,9 @@ const createElm = (rCtx, vnode, flags, promises) => {
     if (tag === '#text') {
         const signal = vnode.$signal$;
         const elm = createTextNode(doc, vnode.$text$);
-        if (signal && currentComponent) {
-            addSignalSub(2, currentComponent.$element$, signal, elm, 'data');
+        if (signal) {
+            assertDefined(currentComponent, 'signals can not be used outside components');
+            elm.data = vnode.$text$ = jsxToString(trackSignal(signal, [2, currentComponent.$element$, signal, elm]));
         }
         return (vnode.$elm$ = elm);
     }
@@ -3650,8 +3685,7 @@ const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) 
             continue;
         }
         if (isSignal(newValue)) {
-            addSignalSub(1, hostElm, newValue, elm, prop);
-            newValue = newValue.value;
+            newValue = trackSignal(newValue, [1, hostElm, newValue, elm, prop]);
         }
         if (prop === 'class') {
             newValue = serializeClass(newValue);
@@ -3721,17 +3755,18 @@ const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
         }
         const sig = isSignal(newValue);
         if (sig) {
-            if (hostElm)
-                addSignalSub(1, hostElm, newValue, elm, prop);
-            newValue = newValue.value;
+            if (hostElm) {
+                newValue = trackSignal(newValue, [1, hostElm, newValue, elm, prop]);
+            }
+            else {
+                newValue = newValue.value;
+            }
         }
         const normalizedProp = isSvg ? prop : prop.toLowerCase();
         if (normalizedProp === 'class') {
             if (qDev && values.class)
                 throw new TypeError('Can only provide one of class or className');
-            // Signals shouldn't be changed
-            if (!sig)
-                newValue = serializeClass(newValue);
+            newValue = serializeClass(newValue);
         }
         values[normalizedProp] = newValue;
         smartSetProperty(staticCtx, elm, prop, newValue, undefined, isSvg);
@@ -4476,7 +4511,7 @@ const collectContext = (elCtx, collector) => {
 const escapeText = (str) => {
     return str.replace(/<(\/?script)/g, '\\x3C$1');
 };
-const collectSubscriptions = (manager, collector) => {
+const collectSubscriptions = (manager, collector, leaks) => {
     if (collector.$seen$.has(manager)) {
         return;
     }
@@ -4484,14 +4519,20 @@ const collectSubscriptions = (manager, collector) => {
     const subs = manager.$subs$;
     assertDefined(subs, 'subs must be defined');
     for (const key of subs) {
-        const host = key[1];
-        if (isNode$1(host) && isVirtualElement(host)) {
-            if (key[0] === 0) {
-                collectDeferElement(host, collector);
-            }
+        const type = key[0];
+        if (type > 0) {
+            collectValue(key[2], collector, true);
         }
-        else {
-            collectValue(host, collector, true);
+        if (leaks === true) {
+            const host = key[1];
+            if (isNode$1(host) && isVirtualElement(host)) {
+                if (type === 0) {
+                    collectDeferElement(host, collector);
+                }
+            }
+            else {
+                collectValue(host, collector, true);
+            }
         }
     }
 };
@@ -4540,9 +4581,7 @@ const collectValue = (obj, collector, leaks) => {
                         return;
                     }
                     seen.add(obj);
-                    if (leaks === true) {
-                        collectSubscriptions(getProxyManager(input), collector);
-                    }
+                    collectSubscriptions(getProxyManager(input), collector, leaks);
                     if (fastWeakSerialize(input)) {
                         collector.$objSet$.add(obj);
                         return;
@@ -4949,8 +4988,7 @@ const useLexicalScope = () => {
 };
 
 const executeSignalOperation = (staticCtx, operation) => {
-    const prop = operation[5];
-    let value = operation[2][prop];
+    let value = operation[2].value;
     switch (operation[0]) {
         case 1: {
             const prop = operation[4];
@@ -4968,8 +5006,10 @@ const executeSignalOperation = (staticCtx, operation) => {
             }
             return smartSetProperty(staticCtx, elm, prop, value, oldValue, isSVG);
         }
-        case 2:
-            return setProperty(staticCtx, operation[3], 'data', jsxToString(value));
+        case 2: {
+            const elm = operation[3];
+            return setProperty(staticCtx, elm, 'data', jsxToString(value));
+        }
     }
 };
 
@@ -5566,12 +5606,12 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
     const track = (obj, prop) => {
         if (isFunction(obj)) {
             const ctx = newInvokeContext();
-            ctx.$subscriber$ = watch;
+            ctx.$subscriber$ = [0, watch];
             return invoke(ctx, obj);
         }
         const manager = getProxyManager(obj);
         if (manager) {
-            manager.$addSub$([0, watch, prop]);
+            manager.$addSub$([0, watch], prop);
         }
         else {
             logErrorAndStop(codeToText(QError_trackUseStore), obj);
@@ -5672,12 +5712,12 @@ const runWatch = (watch, containerState, rCtx) => {
     const track = (obj, prop) => {
         if (isFunction(obj)) {
             const ctx = newInvokeContext();
-            ctx.$subscriber$ = watch;
+            ctx.$subscriber$ = [0, watch];
             return invoke(ctx, obj);
         }
         const manager = getProxyManager(obj);
         if (manager) {
-            manager.$addSub$([0, watch, prop]);
+            manager.$addSub$([0, watch], prop);
         }
         else {
             logErrorAndStop(codeToText(QError_trackUseStore), obj);
@@ -5713,7 +5753,7 @@ const runComputed = (watch, containerState, rCtx) => {
     cleanupWatch(watch);
     const hostElement = watch.$el$;
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'ComputedEvent');
-    iCtx.$subscriber$ = watch;
+    iCtx.$subscriber$ = [0, watch];
     const { $subsManager$: subsManager } = containerState;
     const watchFn = watch.$qrl$.getFn(iCtx, () => {
         subsManager.$clearSub$(watch);
@@ -6244,13 +6284,33 @@ const ComponentSerializer = {
         }
     },
 };
+const DerivedSignalSerializer = {
+    prefix: '\u0011',
+    test: (obj) => obj instanceof SignalDerived,
+    collect: (obj, collector, leaks) => {
+        if (obj.$args$) {
+            for (const arg of obj.$args$) {
+                collectValue(arg, collector, leaks);
+            }
+        }
+    },
+    serialize: (fn, getObj) => {
+        return serializeDerivedSignal(fn, getObj);
+    },
+    prepare: (data) => {
+        return parseDerivedSignal(data);
+    },
+    fill: (fn, getObject) => {
+        fn.$args$ = fn.$args$.map(getObject);
+    },
+};
 const SignalSerializer = {
     prefix: '\u0012',
     test: (v) => v instanceof SignalImpl,
     collect: (obj, collector, leaks) => {
         collectValue(obj.untrackedValue, collector, leaks);
         if (leaks === true) {
-            collectSubscriptions(obj[QObjectManagerSymbol], collector);
+            collectSubscriptions(obj[QObjectManagerSymbol], collector, leaks);
         }
         return obj;
     },
@@ -6346,6 +6406,7 @@ const serializers = [
     ErrorSerializer,
     DocumentSerializer,
     ComponentSerializer,
+    DerivedSignalSerializer,
     NoFiniteNumberSerializer,
     URLSearchParamsSerializer,
     FormDataSerializer, ///////// \u0016
@@ -6602,17 +6663,17 @@ const serializeSubscription = (sub, getObjId) => {
         return undefined;
     }
     let base = type + ' ' + host;
-    if (sub[0] === 0) {
+    if (type === 0) {
         if (sub[2]) {
             base += ' ' + sub[2];
         }
     }
-    else {
+    else if (type === 1) {
+        base += ` ${must(getObjId(sub[2]))} ${must(getObjId(sub[3]))} ${sub[4]}`;
+    }
+    else if (type === 2) {
         const nodeID = typeof sub[3] === 'string' ? sub[3] : must(getObjId(sub[3]));
-        base += ` ${must(getObjId(sub[2]))} ${nodeID} ${sub[4]}`;
-        if (sub[5]) {
-            base += ` ${sub[5]}`;
-        }
+        base += ` ${must(getObjId(sub[2]))} ${nodeID}`;
     }
     return base;
 };
@@ -6632,9 +6693,13 @@ const parseSubscription = (sub, getObject) => {
         assertTrue(parts.length <= 3, 'Max 3 parts');
         subscription.push(parts[2]);
     }
-    else {
-        assertTrue(parts.length === 5 || parts.length === 6, 'Max 5 parts');
+    else if (type === 1) {
+        assertTrue(parts.length === 5, 'Type 1 has 5');
         subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5]);
+    }
+    else if (type === 2) {
+        assertTrue(parts.length === 4, 'Type 2 has 4');
+        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4]);
     }
     return subscription;
 };
@@ -6694,14 +6759,13 @@ class LocalSubscriptionManager {
             }
         }
     }
-    $addSub$(sub) {
+    $addSub$(sub, key) {
         const subs = this.$subs$;
         const group = sub[1];
-        const key = sub[sub.length - 1];
         if (subs.some(([_type, _group, _key]) => _type === 0 && _group === group && _key === key)) {
             return;
         }
-        subs.push(sub);
+        subs.push([...sub, key]);
         this.$addToGroup$(group, this);
     }
     $notifySubs$(key) {
@@ -8203,7 +8267,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
         const hostElement = elCtx.$element$;
         const newRCtx = res.rCtx;
         const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
-        invocationContext.$subscriber$ = hostElement;
+        invocationContext.$subscriber$ = [0, hostElement];
         invocationContext.$renderCtx$ = newRCtx;
         const newSSrContext = {
             ...ssrCtx,
@@ -8341,10 +8405,12 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             if (isSignal(value)) {
                 if (hostCtx) {
                     const hostEl = hostCtx.$element$;
-                    addSignalSub(1, hostEl, value, elm, attrName);
+                    value = trackSignal(value, [1, hostEl, value, elm, attrName]);
                     useSignal = true;
                 }
-                value = value.value;
+                else {
+                    value = value.value;
+                }
             }
             if (prop.startsWith(PREVENT_DEFAULT)) {
                 addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
@@ -8556,9 +8622,8 @@ const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         let value;
         if (hostEl) {
             if (!insideText) {
-                value = node.value;
                 const id = getNextIndex(rCtx);
-                addSignalSub(2, hostEl, node, '#' + id, 'data');
+                value = trackSignal(node, [2, hostEl, node, ('#' + id)]);
                 stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
                 return;
             }
@@ -8869,5 +8934,5 @@ const normalizeInvisibleEvents = (eventName) => {
     return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
