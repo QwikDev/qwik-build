@@ -4859,7 +4859,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3);
         }
         if (qDev) {
-            if (32 & flags && !phasingContent[tagName]) {
+            if (32 & flags && !(512 & flags) && !phasingContent[tagName]) {
                 throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n\nThis goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
             }
             if ("table" === tagName) {
@@ -4882,7 +4882,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 }
                 flags |= 64;
             }
-            if (1 & flags && !headContent[tagName]) {
+            if ("svg" !== tagName && "math" !== tagName || (flags |= 512), 1 & flags && !headContent[tagName]) {
                 throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
             }
             if (4 & flags && !htmlContent[tagName]) {
@@ -5135,8 +5135,10 @@ const headContent = {
 const phasingContent = {
     a: true,
     abbr: true,
+    area: true,
     audio: true,
     b: true,
+    bdi: true,
     bdo: true,
     br: true,
     button: true,
@@ -5146,6 +5148,7 @@ const phasingContent = {
     command: true,
     data: true,
     datalist: true,
+    del: true,
     dfn: true,
     em: true,
     embed: true,
@@ -5153,11 +5156,16 @@ const phasingContent = {
     iframe: true,
     img: true,
     input: true,
+    ins: true,
+    itemprop: true,
     kbd: true,
     keygen: true,
     label: true,
+    link: true,
+    map: true,
     mark: true,
     math: true,
+    meta: true,
     meter: true,
     noscript: true,
     object: true,
@@ -5170,12 +5178,14 @@ const phasingContent = {
     samp: true,
     script: true,
     select: true,
+    slot: true,
     small: true,
     span: true,
     strong: true,
     sub: true,
     sup: true,
     svg: true,
+    template: true,
     textarea: true,
     time: true,
     u: true,

@@ -8010,6 +8010,7 @@ const IS_PHASING = 1 << 5;
 const IS_ANCHOR = 1 << 6;
 const IS_BUTTON = 1 << 7;
 const IS_TABLE = 1 << 8;
+const IS_PHRASING_CONTAINER = 1 << 9;
 const createDocument = () => {
     const doc = { nodeType: 9 };
     seal(doc);
@@ -8385,7 +8386,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         }
         // Reset HOST flags
         if (qDev) {
-            if (flags & IS_PHASING) {
+            if (flags & IS_PHASING && !(flags & IS_PHRASING_CONTAINER)) {
                 if (!phasingContent[tagName]) {
                     throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n
 This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
@@ -8417,6 +8418,10 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 else {
                     flags |= IS_ANCHOR;
                 }
+            }
+            if (tagName === 'svg' || tagName === 'math') {
+                // These types of elements are considered phrasing content, but contain children that aren't phrasing content.
+                flags |= IS_PHRASING_CONTAINER;
             }
             if (flags & IS_HEAD) {
                 if (!headContent[tagName]) {
@@ -8757,8 +8762,10 @@ const headContent = {
 const phasingContent = {
     a: true,
     abbr: true,
+    area: true,
     audio: true,
     b: true,
+    bdi: true,
     bdo: true,
     br: true,
     button: true,
@@ -8768,6 +8775,7 @@ const phasingContent = {
     command: true,
     data: true,
     datalist: true,
+    del: true,
     dfn: true,
     em: true,
     embed: true,
@@ -8775,11 +8783,16 @@ const phasingContent = {
     iframe: true,
     img: true,
     input: true,
+    ins: true,
+    itemprop: true,
     kbd: true,
     keygen: true,
     label: true,
+    link: true,
+    map: true,
     mark: true,
     math: true,
+    meta: true,
     meter: true,
     noscript: true,
     object: true,
@@ -8792,12 +8805,14 @@ const phasingContent = {
     samp: true,
     script: true,
     select: true,
+    slot: true,
     small: true,
     span: true,
     strong: true,
     sub: true,
     sup: true,
     svg: true,
+    template: true,
     textarea: true,
     time: true,
     u: true,
