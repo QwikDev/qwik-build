@@ -957,7 +957,7 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * ```
  * <div q:base="/build/">
- *   <button on:lick="./chunk-abc.js#onClick">...</button>
+ *   <button on:click="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *

@@ -1740,7 +1740,7 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * ```
  * <div q:base="/build/">
- *   <button on:lick="./chunk-abc.js#onClick">...</button>
+ *   <button on:click="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
@@ -3740,7 +3740,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.21.0-dev20230307224236
+ * 0.21.0-dev20230308064954
  * @public
  */
 export declare const version: string;
