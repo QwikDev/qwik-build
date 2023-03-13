@@ -1065,6 +1065,11 @@ const insertBefore = (staticCtx, parent, newChild, refChild) => (staticCtx.$oper
     $args$: [ parent, newChild, refChild || null ]
 }), newChild);
 
+const insertAfter = (staticCtx, parent, newChild, refChild) => (staticCtx.$operations$.push({
+    $operation$: directInsertAfter,
+    $args$: [ parent, newChild, refChild || null ]
+}), newChild);
+
 const appendChild = (staticCtx, parent, newChild) => (staticCtx.$operations$.push({
     $operation$: directAppendChild,
     $args$: [ parent, newChild ]
@@ -3345,7 +3350,7 @@ const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
             newEndVnode = newCh[--newEndIdx];
         } else if (oldStartVnode.$key$ && oldStartVnode.$id$ === newEndVnode.$id$) {
             assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
-            results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags)), insertBefore(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$.nextSibling), 
+            results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags)), insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$), 
             oldStartVnode = oldCh[++oldStartIdx], newEndVnode = newCh[--newEndIdx];
         } else if (oldEndVnode.$key$ && oldEndVnode.$id$ === newStartVnode.$id$) {
             assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
@@ -3828,6 +3833,10 @@ const directAppendChild = (parent, child) => {
 
 const directRemoveChild = (parent, child) => {
     isVirtualElement(child) ? child.remove() : parent.removeChild(child);
+};
+
+const directInsertAfter = (parent, child, ref) => {
+    isVirtualElement(child) ? child.insertBeforeTo(parent, getRootNode(ref)?.nextSibling) : parent.insertBefore(child, getRootNode(ref)?.nextSibling);
 };
 
 const directInsertBefore = (parent, child, ref) => {
@@ -4644,7 +4653,7 @@ const isTreeshakeable = (manager, target, leaks) => {
         return leaks;
     }
     const localManager = manager.$groupToManagers$.get(leaks);
-    return !!(localManager && localManager.length > 0 && 1 === localManager.length) && localManager[0] !== target;
+    return !!(localManager && localManager.length > 0) && (1 !== localManager.length || localManager[0] !== target);
 };
 
 const verifySerializable = (value, preMessage) => {

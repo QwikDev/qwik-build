@@ -1758,6 +1758,13 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         });
         return newChild;
     };
+    const insertAfter = (staticCtx, parent, newChild, refChild) => {
+        staticCtx.$operations$.push({
+            $operation$: directInsertAfter,
+            $args$: [parent, newChild, refChild ? refChild : null],
+        });
+        return newChild;
+    };
     const appendChild = (staticCtx, parent, newChild) => {
         staticCtx.$operations$.push({
             $operation$: directAppendChild,
@@ -5172,7 +5179,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
                 // Vnode moved right
                 results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags));
-                insertBefore(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$.nextSibling);
+                insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$);
                 oldStartVnode = oldCh[++oldStartIdx];
                 newEndVnode = newCh[--newEndIdx];
             }
@@ -5888,6 +5895,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else {
             parent.removeChild(child);
+        }
+    };
+    const directInsertAfter = (parent, child, ref) => {
+        if (isVirtualElement(child)) {
+            child.insertBeforeTo(parent, getRootNode(ref)?.nextSibling);
+        }
+        else {
+            parent.insertBefore(child, getRootNode(ref)?.nextSibling);
         }
     };
     const directInsertBefore = (parent, child, ref) => {
@@ -7498,6 +7513,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (localManager.length === 1) {
                 return localManager[0] !== target;
             }
+            return true;
         }
         return false;
     };
