@@ -1722,6 +1722,11 @@ var require_ContainerNode = __commonJS({
           this._firstChild = null;
         }
       },
+      replaceChildren: {
+        value: function replaceChildren() {
+          this.removeChildren();
+        }
+      },
       // Remove all of this node's children.  This is a minor
       // optimization that only calls modify() once.
       removeChildren: {

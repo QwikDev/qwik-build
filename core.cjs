@@ -655,6 +655,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const directGetAttribute = (el, prop) => {
         return el.getAttribute(prop);
     };
+    const directRemoveAttribute = (el, prop) => {
+        return el.removeAttribute(prop);
+    };
 
     const CONTAINER_STATE = Symbol('ContainerState');
     /**
@@ -690,6 +693,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         seal(containerState);
         containerState.$subsManager$ = createSubscriptionManager(containerState);
         return containerState;
+    };
+    const removeContainerState = (containerEl) => {
+        delete containerEl[CONTAINER_STATE];
     };
     const setRef = (value, elm) => {
         if (isFunction(value)) {
@@ -8223,10 +8229,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * Use this method to render JSX. This function does reconciling which means
      * it always tries to reuse what is already in the DOM (rather then destroy and
      * recreate content.)
+     * It returns a cleanup function you could use for cleaning up subscriptions.
      *
      * @param parent - Element which will act as a parent to `jsxNode`. When
      *     possible the rendering will try to reuse existing nodes.
      * @param jsxNode - JSX to render
+     * @returns an object containing a cleanup function.
      * @alpha
      */
     const render = async (parent, jsxNode, opts) => {
@@ -8254,6 +8262,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         containerState.$hostsRendering$ = new Set();
         await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl);
         await postRendering(containerState, rCtx);
+        return {
+            cleanup() {
+                cleanupContainer(rCtx, containerEl);
+            },
+        };
     };
     const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
         const staticCtx = rCtx.$static$;
@@ -8281,6 +8294,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
         directSetAttribute(containerEl, 'q:render', qDev ? 'dom-dev' : 'dom');
     };
+    function cleanupContainer(renderCtx, container) {
+        const subsManager = renderCtx.$static$.$containerState$.$subsManager$;
+        cleanupTree(container, renderCtx.$static$, subsManager, true);
+        removeContainerState(container);
+        // Clean up attributes
+        directRemoveAttribute(container, 'q:version');
+        directRemoveAttribute(container, QContainerAttr);
+        directRemoveAttribute(container, 'q:render');
+        // Remove children
+        container.replaceChildren();
+    }
 
     // <docs markdown="../readme.md#useStore">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!

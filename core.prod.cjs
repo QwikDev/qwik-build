@@ -296,6 +296,7 @@
     const QSlot = "q:slot";
     const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
     const directGetAttribute = (el, prop) => el.getAttribute(prop);
+    const directRemoveAttribute = (el, prop) => el.removeAttribute(prop);
     const CONTAINER_STATE = Symbol("ContainerState");
     const _getContainerState = containerEl => {
         let set = containerEl[CONTAINER_STATE];
@@ -4728,7 +4729,7 @@
         const serverData = opts?.serverData;
         serverData && Object.assign(containerState.$serverData$, serverData);
         const rCtx = createRenderContext(doc, containerState);
-        containerState.$hostsRendering$ = new Set, await (async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
+        return containerState.$hostsRendering$ = new Set, await (async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
             const staticCtx = rCtx.$static$;
             try {
                 const processedNodes = await processData(jsxNode);
@@ -4739,7 +4740,18 @@
             }
             staticCtx.$operations$.push(...staticCtx.$postOperations$), executeDOMRender(staticCtx), 
             qDev && appendQwikDevTools(containerEl), printRenderStats(staticCtx);
-        })(rCtx, containerEl, jsxNode, 0, 0, containerEl), await postRendering(containerState, rCtx);
+        })(rCtx, containerEl, jsxNode, 0, 0, containerEl), await postRendering(containerState, rCtx), 
+        {
+            cleanup() {
+                !function(renderCtx, container) {
+                    const subsManager = renderCtx.$static$.$containerState$.$subsManager$;
+                    cleanupTree(container, renderCtx.$static$, subsManager, true), (containerEl => {
+                        delete containerEl[CONTAINER_STATE];
+                    })(container), directRemoveAttribute(container, "q:version"), directRemoveAttribute(container, "q:container"), 
+                    directRemoveAttribute(container, "q:render"), container.replaceChildren();
+                }(rCtx, containerEl);
+            }
+        };
     }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useBrowserVisibleTask$ = useBrowserVisibleTask$, 
     exports.useBrowserVisibleTaskQrl = useBrowserVisibleTaskQrl, exports.useCleanup$ = useCleanup$, 
     exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 

@@ -375,6 +375,8 @@ const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
 
 const directGetAttribute = (el, prop) => el.getAttribute(prop);
 
+const directRemoveAttribute = (el, prop) => el.removeAttribute(prop);
+
 const CONTAINER_STATE = Symbol("ContainerState");
 
 const _getContainerState = containerEl => {
@@ -5009,8 +5011,18 @@ const render = async (parent, jsxNode, opts) => {
     const serverData = opts?.serverData;
     serverData && Object.assign(containerState.$serverData$, serverData);
     const rCtx = createRenderContext(doc, containerState);
-    containerState.$hostsRendering$ = new Set, await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
-    await postRendering(containerState, rCtx);
+    return containerState.$hostsRendering$ = new Set, await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
+    await postRendering(containerState, rCtx), {
+        cleanup() {
+            !function(renderCtx, container) {
+                const subsManager = renderCtx.$static$.$containerState$.$subsManager$;
+                cleanupTree(container, renderCtx.$static$, subsManager, true), (containerEl => {
+                    delete containerEl[CONTAINER_STATE];
+                })(container), directRemoveAttribute(container, "q:version"), directRemoveAttribute(container, "q:container"), 
+                directRemoveAttribute(container, "q:render"), container.replaceChildren();
+            }(rCtx, containerEl);
+        }
+    };
 };
 
 const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {

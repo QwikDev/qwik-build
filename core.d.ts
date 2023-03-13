@@ -2257,13 +2257,15 @@ export declare const _regSymbol: (symbol: any, hash: string) => any;
  * Use this method to render JSX. This function does reconciling which means
  * it always tries to reuse what is already in the DOM (rather then destroy and
  * recreate content.)
+ * It returns a cleanup function you could use for cleaning up subscriptions.
  *
  * @param parent - Element which will act as a parent to `jsxNode`. When
  *     possible the rendering will try to reuse existing nodes.
  * @param jsxNode - JSX to render
+ * @returns an object containing a cleanup function.
  * @alpha
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<void>;
+export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
 
 /**
  * @alpha
@@ -2294,6 +2296,13 @@ declare interface RenderOperation {
  */
 export declare interface RenderOptions {
     serverData?: Record<string, any>;
+}
+
+/**
+ * @alpha
+ */
+export declare interface RenderResult {
+    cleanup(): void;
 }
 
 /**
@@ -3771,7 +3780,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.21.0-dev20230313210506
+ * 0.21.0-dev20230313221413
  * @public
  */
 export declare const version: string;
