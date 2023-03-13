@@ -22474,6 +22474,7 @@ var HOST_FLAG_DIRTY = 1 << 0;
 var HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
 var HOST_FLAG_MOUNTED = 1 << 2;
 var HOST_FLAG_DYNAMIC = 1 << 3;
+var HOST_REMOVED = 1 << 4;
 var tryGetContext = (element) => {
   return element[Q_CTX];
 };

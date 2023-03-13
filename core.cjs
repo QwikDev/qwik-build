@@ -86,6 +86,16 @@
         debugger;
         return err;
     };
+    const _printed = /*@__PURE__*/ new Set();
+    const logOnceWarn = (message, ...optionalParams) => {
+        if (qDev) {
+            const key = 'warn' + String(message);
+            if (!_printed.has(key)) {
+                _printed.add(key);
+                logWarn(message, ...optionalParams);
+            }
+        }
+    };
     const logWarn = (message, ...optionalParams) => {
         if (qDev) {
             console.warn('%cQWIK WARN', STYLE, message, ...printParams(optionalParams));
@@ -395,13 +405,14 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         });
     };
 
+    // import { qDev } from './qdev';
     const EMPTY_ARRAY = [];
     const EMPTY_OBJ = {};
-    if (qDev) {
-        Object.freeze(EMPTY_ARRAY);
-        Object.freeze(EMPTY_OBJ);
-        Error.stackTraceLimit = 9999;
-    }
+    // if (qDev) {
+    Object.freeze(EMPTY_ARRAY);
+    Object.freeze(EMPTY_OBJ);
+    // Error.stackTraceLimit = 9999;
+    // }
 
     // https://regexr.com/68v72
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
@@ -843,16 +854,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const _IMMUTABLE = Symbol('IMMUTABLE');
     const _IMMUTABLE_PREFIX = '$$';
 
-    class SignalDerived {
-        constructor($func$, $args$, $funcStr$) {
-            this.$func$ = $func$;
-            this.$args$ = $args$;
-            this.$funcStr$ = $funcStr$;
-        }
-        get value() {
-            return this.$func$.apply(undefined, this.$args$);
-        }
-    }
     /**
      * @alpha
      */
@@ -890,8 +891,11 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const SIGNAL_IMMUTABLE = 1 << 0;
     const SIGNAL_UNASSIGNED = 1 << 1;
     const SignalUnassignedException = Symbol('unasigned signal');
-    class SignalImpl {
+    class SignalBase {
+    }
+    class SignalImpl extends SignalBase {
         constructor(v, manager, flags) {
+            super();
             this[_a] = 0;
             this.untrackedValue = v;
             this[QObjectManagerSymbol] = manager;
@@ -942,11 +946,20 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
     }
     _a = QObjectSignalFlags;
-    const isSignal = (obj) => {
-        return obj instanceof SignalImpl || obj instanceof SignalWrapper || obj instanceof SignalDerived;
-    };
-    class SignalWrapper {
+    class SignalDerived extends SignalBase {
+        constructor($func$, $args$, $funcStr$) {
+            super();
+            this.$func$ = $func$;
+            this.$args$ = $args$;
+            this.$funcStr$ = $funcStr$;
+        }
+        get value() {
+            return this.$func$.apply(undefined, this.$args$);
+        }
+    }
+    class SignalWrapper extends SignalBase {
         constructor(ref, prop) {
+            super();
             this.ref = ref;
             this.prop = prop;
         }
@@ -960,6 +973,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             this.ref[this.prop] = value;
         }
     }
+    const isSignal = (obj) => {
+        return obj instanceof SignalBase;
+    };
     /**
      * @internal
      */
@@ -1293,13 +1309,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             subsManager.$clearSub$(watch);
             destroyWatch(watch);
         });
-        if (elCtx.$componentQrl$) {
-            subsManager.$clearSub$(el);
-        }
         elCtx.$componentQrl$ = null;
         elCtx.$seq$ = null;
         elCtx.$watches$ = null;
-        elCtx.$flags$ = 0;
         el[Q_CTX] = undefined;
     };
 
@@ -1454,7 +1466,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const untrack = (fn) => {
         return invoke(undefined, fn);
     };
-    const trackInvokation = newInvokeContext();
+    const trackInvokation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
     /**
      * @alpha
      */
@@ -1678,257 +1690,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
     };
 
-    const QOnce = 'qonce';
-    /**
-     * @alpha
-     */
-    const SkipRender = Symbol('skip render');
-    /**
-     * @alpha
-     */
-    const RenderOnce = (props, key) => {
-        return jsx(Virtual, {
-            ...props,
-            [QOnce]: '',
-        }, key);
-    };
-    /**
-     * @alpha
-     */
-    const SSRRaw = (() => null);
-    /**
-     * @alpha
-     */
-    const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
-    /**
-     * @alpha
-     */
-    const Virtual = ((props) => props.children);
-    /**
-     * @alpha
-     */
-    const SSRStreamBlock = (props) => {
-        return [
-            jsx(SSRComment, { data: 'qkssr-pu' }),
-            props.children,
-            jsx(SSRComment, { data: 'qkssr-po' }),
-        ];
-    };
-    /**
-     * @alpha
-     */
-    const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
-    /**
-     * @alpha
-     */
-    const SSRHint = ((props) => props.children);
-    const InternalSSRStream = () => null;
-
-    let warnClassname = false;
-    /**
-     * @public
-     */
-    const jsx = (type, props, key) => {
-        const processed = key == null ? null : String(key);
-        const node = new JSXNodeImpl(type, props, processed);
-        seal(node);
-        return node;
-    };
-    const SKIP_RENDER_TYPE = ':skipRender';
-    class JSXNodeImpl {
-        constructor(type, props, key = null) {
-            this.type = type;
-            this.props = props;
-            this.key = key;
-            if (qDev) {
-                invoke(undefined, () => {
-                    const isQwikC = isQwikComponent(type);
-                    if (!isString(type) && !isFunction(type)) {
-                        throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
-                    }
-                    if (isArray(props.children)) {
-                        const flatChildren = props.children.flat();
-                        if (isString(type) || isQwikC) {
-                            flatChildren.forEach((child) => {
-                                if (!isValidJSXChild(child)) {
-                                    const typeObj = typeof child;
-                                    let explanation = '';
-                                    if (typeObj === 'object') {
-                                        if (child?.constructor) {
-                                            explanation = `it's an instance of "${child?.constructor.name}".`;
-                                        }
-                                        else {
-                                            explanation = `it's a object literal: ${printObjectLiteral(child)} `;
-                                        }
-                                    }
-                                    else if (typeObj === 'function') {
-                                        explanation += `it's a function named "${child.name}".`;
-                                    }
-                                    else {
-                                        explanation = `it's a "${typeObj}": ${String(child)}.`;
-                                    }
-                                    throw createJSXError(`One of the children of <${type} /> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal that resolves to one of those types. Instead, ${explanation}`, this);
-                                }
-                            });
-                        }
-                        const keys = {};
-                        flatChildren.forEach((child) => {
-                            if (isJSXNode(child) && !isString(child.type) && child.key != null) {
-                                if (keys[child.key]) {
-                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
-                                    if (err) {
-                                        logError(err);
-                                    }
-                                }
-                                else {
-                                    keys[child.key] = true;
-                                }
-                            }
-                        });
-                    }
-                    if (!qRuntimeQrl && props) {
-                        for (const prop of Object.keys(props)) {
-                            const value = props[prop];
-                            if (prop.endsWith('$') && value) {
-                                if (!isQrl(value) && !Array.isArray(value)) {
-                                    throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
-                                }
-                            }
-                            if (prop !== 'children' && isQwikC && value) {
-                                verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
-                            }
-                        }
-                    }
-                    if (isString(type)) {
-                        if (type === 'style') {
-                            if (props.children) {
-                                logWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
-In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
-
-However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.builder.io/docs/components/styles/#usestyles for more information.`);
-                            }
-                        }
-                        if (type === 'script') {
-                            if (props.children) {
-                                logWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
-In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
-                            }
-                        }
-                        if ('className' in props) {
-                            props['class'] = props['className'];
-                            delete props['className'];
-                            if (qDev && !warnClassname) {
-                                warnClassname = true;
-                                logWarn('jsx: `className` is deprecated. Use `class` instead.');
-                            }
-                        }
-                    }
-                });
-            }
-            if (isString(type)) {
-                if ('className' in props) {
-                    props['class'] = props['className'];
-                    delete props['className'];
-                    if (qDev && !warnClassname) {
-                        warnClassname = true;
-                        logWarn('jsx: `className` is deprecated. Use `class` instead.');
-                    }
-                }
-            }
-        }
-    }
-    const printObjectLiteral = (obj) => {
-        return `{ ${Object.keys(obj)
-        .map((key) => `"${key}"`)
-        .join(', ')} }`;
-    };
-    const isJSXNode = (n) => {
-        if (qDev) {
-            if (n instanceof JSXNodeImpl) {
-                return true;
-            }
-            if (isObject(n) && 'key' in n && 'props' in n && 'type' in n) {
-                logWarn(`Duplicate implementations of "JSXNode" found`);
-                return true;
-            }
-            return false;
-        }
-        else {
-            return n instanceof JSXNodeImpl;
-        }
-    };
-    const isValidJSXChild = (node) => {
-        if (!node) {
-            return true;
-        }
-        else if (node === SkipRender) {
-            return true;
-        }
-        else if (isString(node) || typeof node === 'number' || typeof node === 'boolean') {
-            return true;
-        }
-        else if (isJSXNode(node)) {
-            return true;
-        }
-        if (isSignal(node)) {
-            return isValidJSXChild(node.value);
-        }
-        else if (isPromise(node)) {
-            return true;
-        }
-        return false;
-    };
-    /**
-     * @public
-     */
-    const Fragment = (props) => props.children;
-    /**
-     * @public
-     */
-    const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
-        const processed = key == null ? null : String(key);
-        const node = new JSXNodeImpl(type, props, processed);
-        node.dev = {
-            isStatic,
-            ctx,
-            stack: new Error().stack,
-            ...opts,
-        };
-        seal(node);
-        return node;
-    };
-    const ONCE_JSX = new Set();
-    const createJSXError = (message, node) => {
-        const error = new Error(message);
-        if (!node.dev) {
-            return error;
-        }
-        const id = node.dev.fileName;
-        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
-        if (ONCE_JSX.has(key)) {
-            return undefined;
-        }
-        Object.assign(error, {
-            id,
-            loc: {
-                file: id,
-                column: node.dev.columnNumber,
-                line: node.dev.lineNumber,
-            },
-        });
-        error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
-        ONCE_JSX.add(key);
-        return error;
-    };
-    const filterStack = (stack, offset = 0) => {
-        return stack
-            .split('\n')
-            .slice(offset)
-            .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
-            .join('\n');
-    };
-
     const getDocument = (node) => {
         if (!qDynamicPlatform) {
             return document;
@@ -2011,22 +1772,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             $args$: [staticCtx.$containerState$.$containerEl$, styleTask],
         });
     };
-    const setClasslist = (staticCtx, elm, toRemove, toAdd) => {
-        if (staticCtx) {
-            staticCtx.$operations$.push({
-                $operation$: _setClasslist,
-                $args$: [elm, toRemove, toAdd],
-            });
-        }
-        else {
-            _setClasslist(elm, toRemove, toAdd);
-        }
-    };
-    const _setClasslist = (elm, toRemove, toAdd) => {
-        const classList = elm.classList;
-        classList.remove(...toRemove);
-        classList.add(...toAdd);
-    };
     const _appendHeadStyle = (containerEl, styleTask) => {
         const doc = getDocument(containerEl);
         const isDoc = doc.documentElement === containerEl;
@@ -2055,6 +1800,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         directInsertBefore(parent, newChild, parent.firstChild);
     };
     const removeNode = (staticCtx, el) => {
+        if (el.nodeType === 1 || el.nodeType === 111) {
+            const subsManager = staticCtx.$containerState$.$subsManager$;
+            cleanupTree(el, staticCtx, subsManager, true);
+        }
         staticCtx.$operations$.push({
             $operation$: _removeNode,
             $args$: [el, staticCtx],
@@ -2063,10 +1812,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const _removeNode = (el, staticCtx) => {
         const parent = el.parentElement;
         if (parent) {
-            if (el.nodeType === 1 || el.nodeType === 111) {
-                const subsManager = staticCtx.$containerState$.$subsManager$;
-                cleanupTree(el, staticCtx, subsManager, true);
-            }
             directRemoveChild(parent, el);
         }
         else if (qDev) {
@@ -2140,9 +1885,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 template.remove();
             }
         }
-    };
-    const createTextNode = (doc, text) => {
-        return doc.createTextNode(text);
     };
     const printRenderStats = (staticCtx) => {
         if (qDev) {
@@ -2255,6 +1997,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         remove() {
             const parent = this.parentElement;
             if (parent) {
+                // const ch = this.childNodes;
                 const ch = Array.from(this.childNodes);
                 assertEqual(this.template.childElementCount, 0, 'children should be empty');
                 parent.removeChild(this.open);
@@ -2266,6 +2009,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return this.insertBefore(node, null);
         }
         insertBeforeTo(newParent, child) {
+            // const ch = this.childNodes;
             const ch = Array.from(this.childNodes);
             // TODO
             // if (this.parentElement) {
@@ -2730,6 +2474,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (qDev) {
             // Clean vdom
             if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
+                // (hostElement as any).$vdom$ = null;
                 elCtx.$vdom$ = null;
                 const errorDiv = document.createElement('errored-host');
                 if (err && err instanceof Error) {
@@ -2834,6 +2579,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 $roots$: [],
                 $addSlots$: [],
                 $rmSlots$: [],
+                $visited$: [],
             },
             $cmpCtx$: null,
             $slotCtx$: null,
@@ -2850,6 +2596,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         };
         return newCtx;
     };
+    const serializeClassWithHost = (obj, hostCtx) => {
+        if (hostCtx && hostCtx.$scopeIds$) {
+            return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
+        }
+        return serializeClass(obj);
+    };
     const serializeClass = (obj) => {
         if (!obj)
             return '';
@@ -2862,8 +2614,26 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }, '');
         return Object.entries(obj).reduce((result, [key, value]) => (value ? (result ? `${result} ${key.trim()}` : key.trim()) : result), '');
     };
-    const parseClassListRegex = /\s/;
-    const parseClassList = (value) => !value ? EMPTY_ARRAY : value.split(parseClassListRegex);
+    // export const serializeClass = (obj: ClassList): string => {
+    //   if (!obj) return '';
+    //   if (isString(obj)) return obj.trim();
+    //   let reduced = '';
+    //   if (isArray(obj)) {
+    //     for (const o of obj) {
+    //       const classList = serializeClass(o);
+    //       if (classList) {
+    //         reduced += ' ' + classList.trim();
+    //       }
+    //     }
+    //   } else {
+    //     for (const key of Object.keys(obj)) {
+    //       if (obj[key]) {
+    //         reduced += ' ' + key;
+    //       }
+    //     }
+    //   }
+    //   return reduced.trim();
+    // };
     const stringifyStyle = (obj) => {
         if (obj == null)
             return '';
@@ -2898,1003 +2668,64 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return containerState.$styleIds$.has(styleId);
     };
     const jsxToString = (data) => {
+        if (isSignal(data)) {
+            return jsxToString(data.value);
+        }
         return data == null || typeof data === 'boolean' ? '' : String(data);
     };
     function isAriaAttribute(prop) {
         return prop.startsWith('aria-');
     }
+    const shouldWrapFunctional = (res, node) => {
+        if (node.key) {
+            return !isJSXNode(res) || (!isFunction(res.type) && res.key != node.key);
+        }
+        return false;
+    };
+    const static_listeners = 1 << 0;
+    const static_subtree = 1 << 1;
 
-    const renderComponent = (rCtx, elCtx, flags) => {
-        const justMounted = !(elCtx.$flags$ & HOST_FLAG_MOUNTED);
-        const hostElement = elCtx.$element$;
-        const containerState = rCtx.$static$.$containerState$;
-        // Component is not dirty any more
-        containerState.$hostsStaging$.delete(hostElement);
-        // Clean current subscription before render
-        containerState.$subsManager$.$clearSub$(hostElement);
-        // TODO, serialize scopeIds
-        return then(executeComponent(rCtx, elCtx), (res) => {
-            const staticCtx = rCtx.$static$;
-            const newCtx = res.rCtx;
-            const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
-            staticCtx.$hostElements$.add(hostElement);
-            invocationContext.$subscriber$ = [0, hostElement];
-            invocationContext.$renderCtx$ = newCtx;
-            if (justMounted) {
-                if (elCtx.$appendStyles$) {
-                    for (const style of elCtx.$appendStyles$) {
-                        appendHeadStyle(staticCtx, style);
-                    }
-                }
-            }
-            const processedJSXNode = processData$1(res.node, invocationContext);
-            return then(processedJSXNode, (processedJSXNode) => {
-                const newVdom = wrapJSX(hostElement, processedJSXNode);
-                const oldVdom = getVdom(elCtx);
-                return then(visitJsxNode(newCtx, oldVdom, newVdom, flags), () => {
-                    elCtx.$vdom$ = newVdom;
-                });
-            });
-        });
+    /**
+     * @alpha
+     */
+    const SkipRender = Symbol('skip render');
+    /**
+     * @alpha
+     */
+    const RenderOnce = (props, key) => {
+        return _jsxQ(Virtual, null, null, props.children, static_subtree, key);
     };
-    const getVdom = (elCtx) => {
-        if (!elCtx.$vdom$) {
-            elCtx.$vdom$ = domToVnode(elCtx.$element$);
-        }
-        return elCtx.$vdom$;
+    /**
+     * @alpha
+     */
+    const SSRRaw = (() => null);
+    /**
+     * @alpha
+     */
+    const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
+    /**
+     * @alpha
+     */
+    const Virtual = ((props) => props.children);
+    /**
+     * @alpha
+     */
+    const SSRStreamBlock = (props) => {
+        return [
+            jsx(SSRComment, { data: 'qkssr-pu' }),
+            props.children,
+            jsx(SSRComment, { data: 'qkssr-po' }),
+        ];
     };
-    class ProcessedJSXNodeImpl {
-        constructor($type$, $props$, $children$, $key$) {
-            this.$type$ = $type$;
-            this.$props$ = $props$;
-            this.$children$ = $children$;
-            this.$key$ = $key$;
-            this.$elm$ = null;
-            this.$text$ = '';
-            this.$signal$ = null;
-            seal(this);
-        }
-    }
-    const processNode = (node, invocationContext) => {
-        const key = node.key != null ? String(node.key) : null;
-        const nodeType = node.type;
-        const props = node.props;
-        const originalChildren = props.children;
-        let textType = '';
-        if (isString(nodeType)) {
-            textType = nodeType;
-        }
-        else if (nodeType === Virtual) {
-            textType = VIRTUAL;
-        }
-        else if (isFunction(nodeType)) {
-            const res = invoke(invocationContext, nodeType, props, node.key);
-            return processData$1(res, invocationContext);
-        }
-        else {
-            throw qError(QError_invalidJsxNodeType, nodeType);
-        }
-        let children = EMPTY_ARRAY;
-        if (originalChildren != null) {
-            return then(processData$1(originalChildren, invocationContext), (result) => {
-                if (result !== undefined) {
-                    children = isArray(result) ? result : [result];
-                }
-                return new ProcessedJSXNodeImpl(textType, props, children, key);
-            });
-        }
-        else {
-            return new ProcessedJSXNodeImpl(textType, props, children, key);
-        }
-    };
-    const wrapJSX = (element, input) => {
-        const children = input === undefined ? EMPTY_ARRAY : isArray(input) ? input : [input];
-        const node = new ProcessedJSXNodeImpl(':virtual', {}, children, null);
-        node.$elm$ = element;
-        return node;
-    };
-    const processData$1 = (node, invocationContext) => {
-        if (node == null || typeof node === 'boolean') {
-            return undefined;
-        }
-        if (isPrimitive(node)) {
-            const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, EMPTY_ARRAY, null);
-            newNode.$text$ = String(node);
-            return newNode;
-        }
-        else if (isJSXNode(node)) {
-            return processNode(node, invocationContext);
-        }
-        else if (isSignal(node)) {
-            const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, EMPTY_ARRAY, null);
-            newNode.$signal$ = node;
-            return newNode;
-        }
-        else if (isArray(node)) {
-            const output = promiseAll(node.flatMap((n) => processData$1(n, invocationContext)));
-            return then(output, (array) => array.flat(100).filter(isNotNullable));
-        }
-        else if (isPromise(node)) {
-            return node.then((node) => processData$1(node, invocationContext));
-        }
-        else if (node === SkipRender) {
-            return new ProcessedJSXNodeImpl(SKIP_RENDER_TYPE, EMPTY_OBJ, EMPTY_ARRAY, null);
-        }
-        else {
-            logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
-            return undefined;
-        }
-    };
-    const isPrimitive = (obj) => {
-        return isString(obj) || typeof obj === 'number';
-    };
-
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    const IS_SVG = 1 << 0;
-    const IS_HEAD$1 = 1 << 1;
-    const CHILDREN_PLACEHOLDER = [];
-    const visitJsxNode = (ctx, oldVnode, newVnode, flags) => {
-        return smartUpdateChildren(ctx, oldVnode, newVnode, 'root', flags);
-    };
-    const smartUpdateChildren = (ctx, oldVnode, newVnode, mode, flags) => {
-        assertQwikElement(oldVnode.$elm$);
-        const ch = newVnode.$children$;
-        if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
-            return;
-        }
-        const elm = oldVnode.$elm$;
-        const needsDOMRead = oldVnode.$children$ === CHILDREN_PLACEHOLDER;
-        if (needsDOMRead) {
-            const isHead = elm.nodeName === 'HEAD';
-            if (isHead) {
-                mode = 'head';
-                flags |= IS_HEAD$1;
-            }
-        }
-        const oldCh = getVnodeChildren(oldVnode, mode);
-        if (oldCh.length > 0 && ch.length > 0) {
-            return updateChildren(ctx, elm, oldCh, ch, flags);
-        }
-        else if (ch.length > 0) {
-            return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, flags);
-        }
-        else if (oldCh.length > 0) {
-            return removeVnodes(ctx.$static$, oldCh, 0, oldCh.length - 1);
-        }
-    };
-    const getVnodeChildren = (oldVnode, mode) => {
-        const oldCh = oldVnode.$children$;
-        const elm = oldVnode.$elm$;
-        if (oldCh === CHILDREN_PLACEHOLDER) {
-            return (oldVnode.$children$ = getChildrenVnodes(elm, mode));
-        }
-        return oldCh;
-    };
-    const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
-        let oldStartIdx = 0;
-        let newStartIdx = 0;
-        let oldEndIdx = oldCh.length - 1;
-        let oldStartVnode = oldCh[0];
-        let oldEndVnode = oldCh[oldEndIdx];
-        let newEndIdx = newCh.length - 1;
-        let newStartVnode = newCh[0];
-        let newEndVnode = newCh[newEndIdx];
-        let oldKeyToIdx;
-        let idxInOld;
-        let elmToMove;
-        const results = [];
-        const staticCtx = ctx.$static$;
-        while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-            if (oldStartVnode == null) {
-                oldStartVnode = oldCh[++oldStartIdx]; // Vnode might have been moved left
-            }
-            else if (oldEndVnode == null) {
-                oldEndVnode = oldCh[--oldEndIdx];
-            }
-            else if (newStartVnode == null) {
-                newStartVnode = newCh[++newStartIdx];
-            }
-            else if (newEndVnode == null) {
-                newEndVnode = newCh[--newEndIdx];
-            }
-            else if (sameVnode(oldStartVnode, newStartVnode)) {
-                results.push(patchVnode(ctx, oldStartVnode, newStartVnode, flags));
-                oldStartVnode = oldCh[++oldStartIdx];
-                newStartVnode = newCh[++newStartIdx];
-            }
-            else if (sameVnode(oldEndVnode, newEndVnode)) {
-                results.push(patchVnode(ctx, oldEndVnode, newEndVnode, flags));
-                oldEndVnode = oldCh[--oldEndIdx];
-                newEndVnode = newCh[--newEndIdx];
-            }
-            else if (sameVnode(oldStartVnode, newEndVnode)) {
-                assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
-                assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
-                // Vnode moved right
-                results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags));
-                insertBefore(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$.nextSibling);
-                oldStartVnode = oldCh[++oldStartIdx];
-                newEndVnode = newCh[--newEndIdx];
-            }
-            else if (sameVnode(oldEndVnode, newStartVnode)) {
-                assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
-                assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
-                // Vnode moved left
-                results.push(patchVnode(ctx, oldEndVnode, newStartVnode, flags));
-                insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$);
-                oldEndVnode = oldCh[--oldEndIdx];
-                newStartVnode = newCh[++newStartIdx];
-            }
-            else {
-                if (oldKeyToIdx === undefined) {
-                    oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
-                }
-                idxInOld = oldKeyToIdx[newStartVnode.$key$];
-                if (idxInOld === undefined) {
-                    // New element
-                    const newElm = createElm(ctx, newStartVnode, flags, results);
-                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-                }
-                else {
-                    elmToMove = oldCh[idxInOld];
-                    if (!isTagName(elmToMove, newStartVnode.$type$)) {
-                        const newElm = createElm(ctx, newStartVnode, flags, results);
-                        then(newElm, (newElm) => {
-                            insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-                        });
-                    }
-                    else {
-                        results.push(patchVnode(ctx, elmToMove, newStartVnode, flags));
-                        oldCh[idxInOld] = undefined;
-                        assertDefined(elmToMove.$elm$, 'elmToMove $elm$ must be defined');
-                        insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
-                    }
-                }
-                newStartVnode = newCh[++newStartIdx];
-            }
-        }
-        if (newStartIdx <= newEndIdx) {
-            const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
-            results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
-        }
-        let wait = promiseAll(results);
-        if (oldStartIdx <= oldEndIdx) {
-            wait = then(wait, () => {
-                removeVnodes(staticCtx, oldCh, oldStartIdx, oldEndIdx);
-            });
-        }
-        return wait;
-    };
-    const getCh = (elm, filter) => {
-        const end = isVirtualElement(elm) ? elm.close : null;
-        const nodes = [];
-        let node = elm.firstChild;
-        while ((node = processVirtualNodes(node))) {
-            if (filter(node)) {
-                nodes.push(node);
-            }
-            node = node.nextSibling;
-            if (node === end) {
-                break;
-            }
-        }
-        return nodes;
-    };
-    const getChildren = (elm, mode) => {
-        // console.warn('DOM READ: getChildren()', elm);
-        switch (mode) {
-            case 'root':
-                return getCh(elm, isChildComponent);
-            case 'head':
-                return getCh(elm, isHeadChildren);
-            case 'elements':
-                return getCh(elm, isQwikElement);
-        }
-    };
-    const getChildrenVnodes = (elm, mode) => {
-        return getChildren(elm, mode).map(getVnodeFromEl);
-    };
-    const getVnodeFromEl = (el) => {
-        if (isElement$1(el)) {
-            return tryGetContext(el)?.$vdom$ ?? domToVnode(el);
-        }
-        return domToVnode(el);
-    };
-    const domToVnode = (node) => {
-        if (isQwikElement(node)) {
-            const props = isVirtualElement(node) ? EMPTY_OBJ : getProps(node);
-            const t = new ProcessedJSXNodeImpl(node.localName, props, CHILDREN_PLACEHOLDER, getKey(node));
-            t.$elm$ = node;
-            return t;
-        }
-        else if (isText(node)) {
-            const t = new ProcessedJSXNodeImpl(node.nodeName, {}, CHILDREN_PLACEHOLDER, null);
-            t.$text$ = node.data;
-            t.$elm$ = node;
-            return t;
-        }
-        throw new Error('invalid node');
-    };
-    const getProps = (node) => {
-        const props = {};
-        const attributes = node.attributes;
-        const len = attributes.length;
-        for (let i = 0; i < len; i++) {
-            const attr = attributes.item(i);
-            assertDefined(attr, 'attribute must be defined');
-            const name = attr.name;
-            if (name.includes(':')) {
-                continue;
-            }
-            if (qDev) {
-                if (name === 'data-qwik-inspector') {
-                    continue;
-                }
-            }
-            if (name === 'class') {
-                props[name] = parseDomClass(attr.value);
-            }
-            else {
-                props[name] = attr.value;
-            }
-        }
-        return props;
-    };
-    const parseDomClass = (value) => {
-        return parseClassList(value)
-            .filter((c) => !c.startsWith(ComponentStylesPrefixContent))
-            .join(' ');
-    };
-    const isHeadChildren = (node) => {
-        const type = node.nodeType;
-        if (type === 1) {
-            return node.hasAttribute('q:head');
-        }
-        return type === 111;
-    };
-    const isSlotTemplate = (node) => {
-        return node.nodeName === 'Q:TEMPLATE';
-    };
-    const isChildComponent = (node) => {
-        const type = node.nodeType;
-        if (type === 3 || type === 111) {
-            return true;
-        }
-        if (type !== 1) {
-            return false;
-        }
-        const nodeName = node.nodeName;
-        if (nodeName === 'Q:TEMPLATE') {
-            return false;
-        }
-        if (nodeName === 'HEAD') {
-            return node.hasAttribute('q:head');
-        }
-        return true;
-    };
-    const splitChildren = (input) => {
-        const output = {};
-        for (const item of input) {
-            const key = getSlotName(item);
-            const node = output[key] ??
-                (output[key] = new ProcessedJSXNodeImpl(VIRTUAL, {
-                    [QSlotS]: '',
-                }, [], key));
-            node.$children$.push(item);
-        }
-        return output;
-    };
-    const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
-        assertEqual(oldVnode.$type$, newVnode.$type$, 'old and new vnodes type must be the same');
-        const elm = oldVnode.$elm$;
-        const tag = newVnode.$type$;
-        const staticCtx = rCtx.$static$;
-        const currentComponent = rCtx.$cmpCtx$;
-        const isVirtual = tag === VIRTUAL;
-        assertDefined(elm, 'while patching element must be defined');
-        assertDefined(currentComponent, 'while patching current component must be defined');
-        newVnode.$elm$ = elm;
-        // Render text nodes
-        if (tag === '#text') {
-            const signal = newVnode.$signal$;
-            if (signal) {
-                newVnode.$text$ = jsxToString(trackSignal(signal, [2, currentComponent.$element$, signal, elm]));
-            }
-            if (oldVnode.$text$ !== newVnode.$text$) {
-                setProperty(staticCtx, elm, 'data', newVnode.$text$);
-            }
-            return;
-        }
-        assertQwikElement(elm);
-        // Track SVG state
-        let isSvg = !!(flags & IS_SVG);
-        if (!isSvg && tag === 'svg') {
-            flags |= IS_SVG;
-            isSvg = true;
-        }
-        const props = newVnode.$props$;
-        const isComponent = isVirtual && OnRenderProp in props;
-        const elCtx = getContext(elm, rCtx.$static$.$containerState$);
-        assertDefined(currentComponent, 'slots can not be rendered outside a component', elm);
-        if (!isComponent) {
-            const pendingListeners = currentComponent.li;
-            const listeners = elCtx.li;
-            listeners.length = 0;
-            newVnode.$props$ = updateProperties(staticCtx, elCtx, currentComponent.$element$, oldVnode.$props$, props, isSvg);
-            if (pendingListeners.length > 0) {
-                listeners.push(...pendingListeners);
-                pendingListeners.length = 0;
-            }
-            if (isSvg && tag === 'foreignObject') {
-                flags &= ~IS_SVG;
-                isSvg = false;
-            }
-            const isSlot = isVirtual && QSlotS in props;
-            if (isSlot) {
-                assertDefined(currentComponent.$slots$, 'current component slots must be a defined array');
-                currentComponent.$slots$.push(newVnode);
-                return;
-            }
-            const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
-            if (setsInnerHTML) {
-                if (qDev && newVnode.$children$.length > 0) {
-                    logWarn('Node can not have children when innerHTML is set');
-                }
-                return;
-            }
-            const isRenderOnce = isVirtual && QOnce in props;
-            if (isRenderOnce) {
-                return;
-            }
-            if (tag === 'textarea') {
-                return;
-            }
-            return smartUpdateChildren(rCtx, oldVnode, newVnode, 'root', flags);
-        }
-        const cmpProps = props.props;
-        let needsRender = setComponentProps$1(elCtx, rCtx, cmpProps);
-        // TODO: review this corner case
-        if (!needsRender && !elCtx.$componentQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
-            setQId(rCtx, elCtx);
-            elCtx.$componentQrl$ = cmpProps[OnRenderProp];
-            assertQrl(elCtx.$componentQrl$);
-            needsRender = true;
-        }
-        // Rendering of children of component is more complicated,
-        // since the children must be projected into the rendered slots
-        // In addition, nested childen might need rerendering, if that's the case
-        // we need to render the nested component, and wait before projecting the content
-        // since otherwise we don't know where the slots
-        if (needsRender) {
-            return then(renderComponent(rCtx, elCtx, flags), () => renderContentProjection(rCtx, elCtx, newVnode, flags));
-        }
-        return renderContentProjection(rCtx, elCtx, newVnode, flags);
-    };
-    const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
-        const newChildren = vnode.$children$;
-        const staticCtx = rCtx.$static$;
-        const splittedNewChidren = splitChildren(newChildren);
-        const slotMaps = getSlotMap(hostCtx);
-        // Remove content from empty slots
-        for (const key of Object.keys(slotMaps.slots)) {
-            if (!splittedNewChidren[key]) {
-                const slotEl = slotMaps.slots[key];
-                const oldCh = getChildrenVnodes(slotEl, 'root');
-                if (oldCh.length > 0) {
-                    const slotCtx = tryGetContext(slotEl);
-                    if (slotCtx && slotCtx.$vdom$) {
-                        slotCtx.$vdom$.$children$ = [];
-                    }
-                    removeVnodes(staticCtx, oldCh, 0, oldCh.length - 1);
-                }
-            }
-        }
-        // Remove empty templates
-        for (const key of Object.keys(slotMaps.templates)) {
-            const templateEl = slotMaps.templates[key];
-            if (templateEl && !splittedNewChidren[key]) {
-                slotMaps.templates[key] = undefined;
-                removeNode(staticCtx, templateEl);
-            }
-        }
-        // Render into slots
-        return promiseAll(Object.keys(splittedNewChidren).map((slotName) => {
-            const newVdom = splittedNewChidren[slotName];
-            const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
-            const oldVdom = getVdom(slotCtx);
-            const slotRctx = pushRenderContext(rCtx);
-            slotRctx.$slotCtx$ = slotCtx;
-            slotCtx.$vdom$ = newVdom;
-            newVdom.$elm$ = slotCtx.$element$;
-            const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotCtx.$element$);
-            if (index >= 0) {
-                staticCtx.$addSlots$.splice(index, 1);
-            }
-            return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
-        }));
-    };
-    const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
-        const promises = [];
-        for (; startIdx <= endIdx; ++startIdx) {
-            const ch = vnodes[startIdx];
-            assertDefined(ch, 'render: node must be defined at index', startIdx, vnodes);
-            const elm = createElm(ctx, ch, flags, promises);
-            insertBefore(ctx.$static$, parentElm, elm, before);
-        }
-        return promiseAllLazy(promises);
-    };
-    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
-        for (; startIdx <= endIdx; ++startIdx) {
-            const ch = nodes[startIdx];
-            if (ch) {
-                assertDefined(ch.$elm$, 'vnode elm must be defined');
-                removeNode(staticCtx, ch.$elm$);
-            }
-        }
-    };
-    const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
-        const slotEl = slotMaps.slots[slotName];
-        if (slotEl) {
-            return getContext(slotEl, containerState);
-        }
-        const templateEl = slotMaps.templates[slotName];
-        if (templateEl) {
-            return getContext(templateEl, containerState);
-        }
-        const template = createTemplate(staticCtx.$doc$, slotName);
-        const elCtx = createContext$1(template);
-        elCtx.$parent$ = hostCtx;
-        prepend(staticCtx, hostCtx.$element$, template);
-        slotMaps.templates[slotName] = template;
-        return elCtx;
-    };
-    const getSlotName = (node) => {
-        return node.$props$[QSlot] ?? '';
-    };
-    const createElm = (rCtx, vnode, flags, promises) => {
-        const tag = vnode.$type$;
-        const doc = rCtx.$static$.$doc$;
-        const currentComponent = rCtx.$cmpCtx$;
-        if (tag === '#text') {
-            const signal = vnode.$signal$;
-            const elm = createTextNode(doc, vnode.$text$);
-            if (signal) {
-                assertDefined(currentComponent, 'signals can not be used outside components');
-                elm.data = vnode.$text$ = jsxToString(trackSignal(signal, [2, currentComponent.$element$, signal, elm]));
-            }
-            return (vnode.$elm$ = elm);
-        }
-        let elm;
-        let isHead = !!(flags & IS_HEAD$1);
-        let isSvg = !!(flags & IS_SVG);
-        if (!isSvg && tag === 'svg') {
-            flags |= IS_SVG;
-            isSvg = true;
-        }
-        const isVirtual = tag === VIRTUAL;
-        const props = vnode.$props$;
-        const isComponent = OnRenderProp in props;
-        const staticCtx = rCtx.$static$;
-        if (isVirtual) {
-            elm = newVirtualElement(doc);
-        }
-        else if (tag === 'head') {
-            elm = doc.head;
-            flags |= IS_HEAD$1;
-            isHead = true;
-        }
-        else {
-            elm = createElement(doc, tag, isSvg);
-            flags &= ~IS_HEAD$1;
-        }
-        if (qDev && qInspector) {
-            const dev = vnode.$dev$;
-            if (dev) {
-                directSetAttribute(elm, 'data-qwik-inspector', `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
-            }
-        }
-        vnode.$elm$ = elm;
-        if (isSvg && tag === 'foreignObject') {
-            isSvg = false;
-            flags &= ~IS_SVG;
-        }
-        const elCtx = createContext$1(elm);
-        elCtx.$parent$ = rCtx.$cmpCtx$;
-        elCtx.$slotParent$ = rCtx.$slotCtx$;
-        if (isComponent) {
-            setKey(elm, vnode.$key$);
-            assertTrue(isVirtual, 'component must be a virtual element');
-            const renderQRL = props[OnRenderProp];
-            assertQrl(renderQRL);
-            setComponentProps$1(elCtx, rCtx, props.props);
-            setQId(rCtx, elCtx);
-            if (qDev && !qTest) {
-                const symbol = renderQRL.$symbol$;
-                if (symbol) {
-                    directSetAttribute(elm, 'data-qrl', symbol);
-                }
-            }
-            // Run mount hook
-            elCtx.$componentQrl$ = renderQRL;
-            const wait = then(renderComponent(rCtx, elCtx, flags), () => {
-                let children = vnode.$children$;
-                if (children.length === 0) {
-                    return;
-                }
-                if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
-                    children = children[0].$children$;
-                }
-                const slotMap = getSlotMap(elCtx);
-                const p = [];
-                for (const node of children) {
-                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, getSlotName(node), staticCtx.$containerState$);
-                    const slotRctx = pushRenderContext(rCtx);
-                    slotRctx.$slotCtx$ = slotCtx;
-                    const nodeElm = createElm(slotRctx, node, flags, p);
-                    assertDefined(node.$elm$, 'vnode elm must be defined');
-                    assertEqual(nodeElm, node.$elm$, 'vnode elm must be defined');
-                    appendChild(staticCtx, slotCtx.$element$, nodeElm);
-                }
-                return promiseAllLazy(p);
-            });
-            if (isPromise(wait)) {
-                promises.push(wait);
-            }
-            return elm;
-        }
-        const isSlot = isVirtual && QSlotS in props;
-        const hasRef = !isVirtual && 'ref' in props;
-        const listeners = elCtx.li;
-        vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent?.$element$, props, isSvg);
-        if (currentComponent && !isVirtual) {
-            const scopedIds = currentComponent.$scopeIds$;
-            if (scopedIds) {
-                scopedIds.forEach((styleId) => {
-                    elm.classList.add(styleId);
-                });
-            }
-            if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-                listeners.push(...currentComponent.li);
-                currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
-            }
-        }
-        if (isSlot) {
-            assertDefined(currentComponent, 'slot can only be used inside component');
-            assertDefined(currentComponent.$slots$, 'current component slots must be a defined array');
-            setKey(elm, vnode.$key$);
-            directSetAttribute(elm, QSlotRef, currentComponent.$id$);
-            currentComponent.$slots$.push(vnode);
-            staticCtx.$addSlots$.push([elm, currentComponent.$element$]);
-        }
-        if (qSerialize) {
-            setKey(elm, vnode.$key$);
-            if (isHead && !isVirtual) {
-                directSetAttribute(elm, 'q:head', '');
-            }
-            if (listeners.length > 0 || hasRef) {
-                setQId(rCtx, elCtx);
-            }
-        }
-        const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
-        if (setsInnerHTML) {
-            if (qDev && vnode.$children$.length > 0) {
-                logWarn('Node can not have children when innerHTML is set');
-            }
-            return elm;
-        }
-        let children = vnode.$children$;
-        if (children.length === 0) {
-            return elm;
-        }
-        if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
-            children = children[0].$children$;
-        }
-        const nodes = children.map((ch) => createElm(rCtx, ch, flags, promises));
-        for (const node of nodes) {
-            directAppendChild(elm, node);
-        }
-        return elm;
-    };
-    const getSlots = (elCtx) => {
-        const slots = elCtx.$slots$;
-        if (!slots) {
-            const parent = elCtx.$element$.parentElement;
-            assertDefined(parent, 'component should be already attached to the dom');
-            return (elCtx.$slots$ = readDOMSlots(elCtx));
-        }
-        return slots;
-    };
-    const getSlotMap = (elCtx) => {
-        const slotsArray = getSlots(elCtx);
-        const slots = {};
-        const templates = {};
-        const t = Array.from(elCtx.$element$.childNodes).filter(isSlotTemplate);
-        // Map virtual slots
-        for (const vnode of slotsArray) {
-            assertQwikElement(vnode.$elm$);
-            slots[vnode.$key$ ?? ''] = vnode.$elm$;
-        }
-        // Map templates
-        for (const elm of t) {
-            templates[directGetAttribute(elm, QSlot) ?? ''] = elm;
-        }
-        return { slots, templates };
-    };
-    const readDOMSlots = (elCtx) => {
-        const parent = elCtx.$element$.parentElement;
-        assertDefined(parent, 'component should be already attached to the dom');
-        return queryAllVirtualByAttribute(parent, QSlotRef, elCtx.$id$).map(domToVnode);
-    };
-    const handleStyle = (ctx, elm, _, newValue) => {
-        setProperty(ctx, elm.style, 'cssText', stringifyStyle(newValue));
-        return true;
-    };
-    const handleClass = (ctx, elm, _, newValue, oldValue) => {
-        assertTrue(oldValue == null || typeof oldValue === 'string', 'class oldValue must be either nullish or string', oldValue);
-        assertTrue(newValue == null || typeof newValue === 'string', 'class newValue must be either nullish or string', newValue);
-        const oldClasses = parseClassList(oldValue);
-        const newClasses = parseClassList(newValue);
-        setClasslist(ctx, elm, oldClasses.filter((c) => c && !newClasses.includes(c)), newClasses.filter((c) => c && !oldClasses.includes(c)));
-        return true;
-    };
-    const checkBeforeAssign = (ctx, elm, prop, newValue) => {
-        if (prop in elm) {
-            if (elm[prop] !== newValue) {
-                setProperty(ctx, elm, prop, newValue);
-            }
-        }
-        return true;
-    };
-    const forceAttribute = (ctx, elm, prop, newValue) => {
-        setAttribute(ctx, elm, prop.toLowerCase(), newValue);
-        return true;
-    };
-    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
-    const setInnerHTML = (ctx, elm, _, newValue) => {
-        if (dangerouslySetInnerHTML in elm) {
-            setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
-        }
-        else if ('innerHTML' in elm) {
-            setProperty(ctx, elm, 'innerHTML', newValue);
-        }
-        return true;
-    };
-    const noop = () => {
-        return true;
-    };
-    const PROP_HANDLER_MAP = {
-        style: handleStyle,
-        class: handleClass,
-        value: checkBeforeAssign,
-        checked: checkBeforeAssign,
-        href: forceAttribute,
-        list: forceAttribute,
-        form: forceAttribute,
-        tabIndex: forceAttribute,
-        download: forceAttribute,
-        [dangerouslySetInnerHTML]: setInnerHTML,
-        innerHTML: noop,
-    };
-    const updateProperties = (staticCtx, elCtx, hostElm, oldProps, newProps, isSvg) => {
-        const keys = getKeys(oldProps, newProps);
-        const values = {};
-        if (keys.length === 0) {
-            return values;
-        }
-        const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
-        const elm = elCtx.$element$;
-        for (const prop of keys) {
-            if (prop === 'ref') {
-                assertElement(elm);
-                setRef(newProps[prop], elm);
-                continue;
-            }
-            let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
-            if (isOnProp(prop)) {
-                browserSetEvent(staticCtx, elCtx, prop, newValue);
-                continue;
-            }
-            if (isSignal(newValue)) {
-                newValue = trackSignal(newValue, [1, hostElm, newValue, elm, prop]);
-            }
-            if (prop === 'class') {
-                newValue = serializeClass(newValue);
-            }
-            const normalizedProp = isSvg ? prop : prop.toLowerCase();
-            const oldValue = oldProps[normalizedProp];
-            values[normalizedProp] = newValue;
-            if (oldValue === newValue) {
-                continue;
-            }
-            smartSetProperty(staticCtx, elm, prop, newValue, oldValue, isSvg);
-        }
-        return values;
-    };
-    const smartSetProperty = (staticCtx, elm, prop, newValue, oldValue, isSvg) => {
-        // aria attribute value should be rendered as string
-        if (isAriaAttribute(prop)) {
-            setAttribute(staticCtx, elm, prop, newValue != null ? String(newValue) : newValue);
-            return;
-        }
-        // Check if its an exception
-        const exception = PROP_HANDLER_MAP[prop];
-        if (exception) {
-            if (exception(staticCtx, elm, prop, newValue, oldValue)) {
-                return;
-            }
-        }
-        // Check if property in prototype
-        if (!isSvg && prop in elm) {
-            setProperty(staticCtx, elm, prop, newValue);
-            return;
-        }
-        if (prop.startsWith(PREVENT_DEFAULT)) {
-            addQwikEvent(prop.slice(PREVENT_DEFAULT.length), staticCtx.$containerState$);
-        }
-        // Fallback to render attribute
-        setAttribute(staticCtx, elm, prop, newValue);
-    };
-    const getKeys = (oldProps, newProps) => {
-        const keys = Object.keys(newProps);
-        const normalizedKeys = keys.map((s) => s.toLowerCase());
-        const oldKeys = Object.keys(oldProps);
-        keys.push(...oldKeys.filter((p) => !normalizedKeys.includes(p)));
-        return keys.filter((c) => c !== 'children');
-    };
-    const setProperties = (staticCtx, elCtx, hostElm, newProps, isSvg) => {
-        const elm = elCtx.$element$;
-        const keys = Object.keys(newProps);
-        const values = {};
-        if (keys.length === 0) {
-            return values;
-        }
-        const immutableMeta = newProps[_IMMUTABLE] ?? EMPTY_OBJ;
-        for (const prop of keys) {
-            if (prop === 'children') {
-                continue;
-            }
-            if (prop === 'ref') {
-                assertElement(elm);
-                setRef(newProps[prop], elm);
-                continue;
-            }
-            let newValue = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : newProps[prop];
-            if (isOnProp(prop)) {
-                browserSetEvent(staticCtx, elCtx, prop, newValue);
-                continue;
-            }
-            const sig = isSignal(newValue);
-            if (sig) {
-                if (hostElm) {
-                    newValue = trackSignal(newValue, [1, hostElm, newValue, elm, prop]);
-                }
-                else {
-                    newValue = newValue.value;
-                }
-            }
-            const normalizedProp = isSvg ? prop : prop.toLowerCase();
-            if (normalizedProp === 'class') {
-                if (qDev && values.class)
-                    throw new TypeError('Can only provide one of class or className');
-                newValue = serializeClass(newValue);
-            }
-            values[normalizedProp] = newValue;
-            smartSetProperty(staticCtx, elm, prop, newValue, undefined, isSvg);
-        }
-        return values;
-    };
-    const setComponentProps$1 = (elCtx, rCtx, expectProps) => {
-        const keys = Object.keys(expectProps);
-        let props = elCtx.$props$;
-        if (!props) {
-            elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$);
-        }
-        if (keys.length === 0) {
-            return false;
-        }
-        const manager = getProxyManager(props);
-        assertDefined(manager, `props have to be a proxy, but it is not`, props);
-        const target = getProxyTarget(props);
-        assertDefined(target, `props have to be a proxy, but it is not`, props);
-        const immutableMeta = (target[_IMMUTABLE] =
-            expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
-        for (const prop of keys) {
-            if (prop === 'children' || prop === QSlot) {
-                continue;
-            }
-            if (isSignal(immutableMeta[prop])) {
-                target[_IMMUTABLE_PREFIX + prop] = immutableMeta[prop];
-            }
-            else {
-                const value = expectProps[prop];
-                const oldValue = target[prop];
-                target[prop] = value;
-                if (oldValue !== value) {
-                    manager.$notifySubs$(prop);
-                }
-            }
-        }
-        return !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
-    };
-    const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
-        if (stopSlots && parent.hasAttribute(QSlotS)) {
-            staticCtx.$rmSlots$.push(parent);
-            return;
-        }
-        const ctx = tryGetContext(parent);
-        if (ctx) {
-            cleanupContext(ctx, subsManager);
-        }
-        const ch = getChildren(parent, 'elements');
-        for (const child of ch) {
-            cleanupTree(child, staticCtx, subsManager, true);
-        }
-    };
-    const executeContextWithSlots = ({ $static$: ctx }) => {
-        executeDOMRender(ctx);
-    };
-    const directAppendChild = (parent, child) => {
-        if (isVirtualElement(child)) {
-            child.appendTo(parent);
-        }
-        else {
-            parent.appendChild(child);
-        }
-    };
-    const directRemoveChild = (parent, child) => {
-        if (isVirtualElement(child)) {
-            child.remove();
-        }
-        else {
-            parent.removeChild(child);
-        }
-    };
-    const directInsertBefore = (parent, child, ref) => {
-        if (isVirtualElement(child)) {
-            child.insertBeforeTo(parent, getRootNode(ref));
-        }
-        else {
-            parent.insertBefore(child, getRootNode(ref));
-        }
-    };
-    const createKeyToOldIdx = (children, beginIdx, endIdx) => {
-        const map = {};
-        for (let i = beginIdx; i <= endIdx; ++i) {
-            const child = children[i];
-            const key = child.$key$;
-            if (key != null) {
-                map[key] = i;
-            }
-        }
-        return map;
-    };
-    const browserSetEvent = (staticCtx, elCtx, prop, input) => {
-        const containerState = staticCtx.$containerState$;
-        const normalized = setEvent(elCtx.li, prop, input, containerState.$containerEl$);
-        if (!prop.startsWith('on')) {
-            setAttribute(staticCtx, elCtx.$element$, normalized, '');
-        }
-        addQwikEvent(normalized, containerState);
-    };
-    const sameVnode = (vnode1, vnode2) => {
-        if (vnode1.$type$ !== vnode2.$type$) {
-            return false;
-        }
-        return vnode1.$key$ === vnode2.$key$;
-    };
-    const isTagName = (elm, tagName) => {
-        return elm.$type$ === tagName;
-    };
-
-    const emitEvent$1 = (el, eventName, detail, bubbles) => {
-        if (el && typeof CustomEvent === 'function') {
-            el.dispatchEvent(new CustomEvent(eventName, {
-                detail,
-                bubbles: bubbles,
-                composed: bubbles,
-            }));
-        }
-    };
+    /**
+     * @alpha
+     */
+    const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+    /**
+     * @alpha
+     */
+    const SSRHint = (() => null);
+    const InternalSSRStream = () => null;
 
     const hashCode = (text, hash = 0) => {
         if (text.length === 0)
@@ -4682,6 +3513,1068 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return Object.keys(obj).length === 0;
     };
 
+    /**
+     * QWIK_VERSION
+     * @public
+     */
+    const version = "0.21.0";
+
+    const FLUSH_COMMENT = '<!--qkssr-f-->';
+    const IS_HEAD$1 = 1 << 0;
+    const IS_HTML = 1 << 2;
+    const IS_TEXT = 1 << 3;
+    const IS_INVISIBLE = 1 << 4;
+    const IS_PHASING = 1 << 5;
+    const IS_ANCHOR = 1 << 6;
+    const IS_BUTTON = 1 << 7;
+    const IS_TABLE = 1 << 8;
+    const IS_PHRASING_CONTAINER = 1 << 9;
+    const IS_IMMUTABLE$1 = 1 << 10;
+    const createDocument = () => {
+        const doc = { nodeType: 9 };
+        seal(doc);
+        return doc;
+    };
+    /**
+     * @internal
+     */
+    const _renderSSR = async (node, opts) => {
+        const root = opts.containerTagName;
+        const containerEl = createSSRContext(1).$element$;
+        const containerState = createContainerState(containerEl, opts.base ?? '/');
+        containerState.$serverData$.locale = opts.serverData?.locale;
+        const doc = createDocument();
+        const rCtx = createRenderContext(doc, containerState);
+        const headNodes = opts.beforeContent ?? [];
+        const ssrCtx = {
+            $static$: {
+                $contexts$: [],
+                $dynamic$: false,
+                $headNodes$: root === 'html' ? headNodes : [],
+                $locale$: opts.serverData?.locale,
+            },
+            $projectedChildren$: undefined,
+            $projectedCtxs$: undefined,
+            $invocationContext$: undefined,
+        };
+        seal(ssrCtx);
+        let qRender = qDev ? 'ssr-dev' : 'ssr';
+        if (opts.containerAttributes['q:render']) {
+            qRender = `${opts.containerAttributes['q:render']}-${qRender}`;
+        }
+        const containerAttributes = {
+            ...opts.containerAttributes,
+            'q:container': 'paused',
+            'q:version': version ?? 'dev',
+            'q:render': qRender,
+            'q:base': opts.base,
+            'q:locale': opts.serverData?.locale,
+            children: root === 'html' ? [node] : [headNodes, node],
+        };
+        if (root !== 'html') {
+            containerAttributes.class =
+                'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
+        }
+        containerState.$serverData$ = {
+            url: opts.url,
+            ...opts.serverData,
+        };
+        node = jsx(root, containerAttributes);
+        containerState.$hostsRendering$ = new Set();
+        await Promise.resolve().then(() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts));
+    };
+    const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
+        const beforeClose = opts.beforeClose;
+        await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
+            ? (stream) => {
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
+                return processData$1(result, rCtx, ssrCtx, stream, 0, undefined);
+            }
+            : undefined);
+        if (qDev) {
+            if (ssrCtx.$static$.$headNodes$.length > 0) {
+                logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
+            }
+        }
+        return rCtx;
+    };
+    const renderGenerator = async (node, rCtx, ssrCtx, stream, flags) => {
+        stream.write(FLUSH_COMMENT);
+        const generator = node.props.children;
+        let value;
+        if (isFunction(generator)) {
+            const v = generator({
+                write(chunk) {
+                    stream.write(chunk);
+                    stream.write(FLUSH_COMMENT);
+                },
+            });
+            if (isPromise(v)) {
+                return v;
+            }
+            value = v;
+        }
+        else {
+            value = generator;
+        }
+        for await (const chunk of value) {
+            await processData$1(chunk, rCtx, ssrCtx, stream, flags, undefined);
+            stream.write(FLUSH_COMMENT);
+        }
+    };
+    const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
+        const props = node.props;
+        const renderQrl = props[OnRenderProp];
+        if (renderQrl) {
+            elCtx.$componentQrl$ = renderQrl;
+            return renderSSRComponent(rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose);
+        }
+        let virtualComment = '<!--qv' + renderVirtualAttributes(props);
+        const isSlot = QSlotS in props;
+        const key = node.key != null ? String(node.key) : null;
+        if (isSlot) {
+            assertDefined(rCtx.$cmpCtx$?.$id$, 'hostId must be defined for a slot');
+            virtualComment += ' q:sref=' + rCtx.$cmpCtx$.$id$;
+        }
+        if (key != null) {
+            virtualComment += ' q:key=' + key;
+        }
+        virtualComment += '-->';
+        stream.write(virtualComment);
+        if (extraNodes) {
+            for (const node of extraNodes) {
+                renderNodeElementSync(node.type, node.props, stream);
+            }
+        }
+        const promise = walkChildren(node.children, rCtx, ssrCtx, stream, flags);
+        return then(promise, () => {
+            // Fast path
+            if (!isSlot && !beforeClose) {
+                stream.write(CLOSE_VIRTUAL);
+                return;
+            }
+            let promise;
+            if (isSlot) {
+                assertDefined(key, 'key must be defined for a slot');
+                const content = ssrCtx.$projectedChildren$?.[key];
+                if (content) {
+                    const [rCtx, sCtx] = ssrCtx.$projectedCtxs$;
+                    const newSlotRctx = pushRenderContext(rCtx);
+                    newSlotRctx.$slotCtx$ = elCtx;
+                    ssrCtx.$projectedChildren$[key] = undefined;
+                    promise = processData$1(content, newSlotRctx, sCtx, stream, flags);
+                }
+            }
+            // Inject before close
+            if (beforeClose) {
+                promise = then(promise, () => beforeClose(stream));
+            }
+            return then(promise, () => {
+                stream.write(CLOSE_VIRTUAL);
+            });
+        });
+    };
+    const CLOSE_VIRTUAL = `<!--/qv-->`;
+    const renderAttributes = (attributes) => {
+        let text = '';
+        for (const prop of Object.keys(attributes)) {
+            if (prop === 'dangerouslySetInnerHTML') {
+                continue;
+            }
+            const value = attributes[prop];
+            if (value != null) {
+                text += ' ' + (value === '' ? prop : prop + '="' + value + '"');
+            }
+        }
+        return text;
+    };
+    const renderVirtualAttributes = (attributes) => {
+        let text = '';
+        for (const prop of Object.keys(attributes)) {
+            if (prop === 'children') {
+                continue;
+            }
+            const value = attributes[prop];
+            if (value != null) {
+                text += ' ' + (value === '' ? prop : prop + '=' + value + '');
+            }
+        }
+        return text;
+    };
+    const renderNodeElementSync = (tagName, attributes, stream) => {
+        stream.write('<' + tagName + renderAttributes(attributes) + '>');
+        const empty = !!emptyElements[tagName];
+        if (empty) {
+            return;
+        }
+        // Render innerHTML
+        const innerHTML = attributes.dangerouslySetInnerHTML;
+        if (innerHTML != null) {
+            stream.write(innerHTML);
+        }
+        stream.write(`</${tagName}>`);
+    };
+    const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => {
+        const props = node.props;
+        setComponentProps$1(rCtx, elCtx, props.props);
+        return then(executeComponent(rCtx, elCtx), (res) => {
+            const hostElement = elCtx.$element$;
+            const newRCtx = res.rCtx;
+            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
+            invocationContext.$subscriber$ = [0, hostElement];
+            invocationContext.$renderCtx$ = newRCtx;
+            const newSSrContext = {
+                ...ssrCtx,
+                $projectedChildren$: splitProjectedChildren(node.children, ssrCtx),
+                $projectedCtxs$: [rCtx, ssrCtx],
+                $invocationContext$: invocationContext,
+            };
+            const extraNodes = [];
+            if (elCtx.$appendStyles$) {
+                const isHTML = !!(flags & IS_HTML);
+                const array = isHTML ? ssrCtx.$static$.$headNodes$ : extraNodes;
+                for (const style of elCtx.$appendStyles$) {
+                    array.push(jsx('style', {
+                        [QStyle]: style.styleId,
+                        hidden: '',
+                        dangerouslySetInnerHTML: style.content,
+                    }));
+                }
+            }
+            const newID = getNextIndex(rCtx);
+            const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : undefined;
+            const processedNode = jsx(node.type, {
+                [QScopedStyle]: scopeId,
+                [ELEMENT_ID]: newID,
+                children: res.node,
+            }, node.key);
+            elCtx.$id$ = newID;
+            ssrCtx.$static$.$contexts$.push(elCtx);
+            return renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream) => {
+                if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
+                    const placeholderCtx = createSSRContext(1);
+                    const listeners = placeholderCtx.li;
+                    listeners.push(...elCtx.li);
+                    elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                    placeholderCtx.$id$ = getNextIndex(rCtx);
+                    const attributes = {
+                        type: 'placeholder',
+                        hidden: '',
+                        'q:id': placeholderCtx.$id$,
+                    };
+                    ssrCtx.$static$.$contexts$.push(placeholderCtx);
+                    const groups = groupListeners(listeners);
+                    for (const listener of groups) {
+                        const eventName = normalizeInvisibleEvents(listener[0]);
+                        attributes[eventName] = serializeQRLs(listener[1], placeholderCtx);
+                        addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                    }
+                    renderNodeElementSync('script', attributes, stream);
+                }
+                if (beforeClose) {
+                    return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));
+                }
+                else {
+                    return renderQTemplates(rCtx, newSSrContext, stream);
+                }
+            });
+        });
+    };
+    const renderQTemplates = (rCtx, ssrContext, stream) => {
+        const projectedChildren = ssrContext.$projectedChildren$;
+        if (projectedChildren) {
+            const nodes = Object.keys(projectedChildren).map((slotName) => {
+                const value = projectedChildren[slotName];
+                if (value) {
+                    return jsx('q:template', {
+                        [QSlot]: slotName,
+                        hidden: '',
+                        'aria-hidden': 'true',
+                        children: value,
+                    });
+                }
+            });
+            return processData$1(nodes, rCtx, ssrContext, stream, 0, undefined);
+        }
+    };
+    const splitProjectedChildren = (children, ssrCtx) => {
+        const flatChildren = flatVirtualChildren(children, ssrCtx);
+        if (flatChildren === null) {
+            return undefined;
+        }
+        const slotMap = {};
+        for (const child of flatChildren) {
+            let slotName = '';
+            if (isJSXNode(child)) {
+                slotName = child.props[QSlot] ?? '';
+            }
+            let array = slotMap[slotName];
+            if (!array) {
+                slotMap[slotName] = array = [];
+            }
+            array.push(child);
+        }
+        return slotMap;
+    };
+    const createSSRContext = (nodeType) => {
+        const elm = {
+            nodeType,
+            [Q_CTX]: null,
+        };
+        seal(elm);
+        return createContext$1(elm);
+    };
+    const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
+        const tagName = node.type;
+        const hostCtx = rCtx.$cmpCtx$;
+        if (typeof tagName === 'string') {
+            const key = node.key;
+            const props = node.props;
+            const immutable = node.immutableProps;
+            const elCtx = createSSRContext(1);
+            const elm = elCtx.$element$;
+            const isHead = tagName === 'head';
+            let openingElement = '<' + tagName;
+            let useSignal = false;
+            let hasRef = false;
+            let classStr = '';
+            let htmlStr = null;
+            assertElement(elm);
+            if (qDev && props.class && props.className) {
+                throw new TypeError('Can only have one of class or className');
+            }
+            for (const prop of Object.keys(props)) {
+                let value = props[prop];
+                if (prop === 'dangerouslySetInnerHTML') {
+                    htmlStr = value;
+                    continue;
+                }
+                if (prop === 'ref') {
+                    setRef(value, elm);
+                    hasRef = true;
+                    continue;
+                }
+                if (isOnProp(prop)) {
+                    setEvent(elCtx.li, prop, value, undefined);
+                    continue;
+                }
+                const attrName = processPropKey(prop);
+                if (isSignal(value)) {
+                    assertDefined(hostCtx, 'Signals can not be used outside the root');
+                    value = trackSignal(value, [2, hostCtx.$element$, value, elm, attrName]);
+                    useSignal = true;
+                }
+                if (prop.startsWith(PREVENT_DEFAULT)) {
+                    addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                }
+                const attrValue = processPropValue(attrName, value);
+                if (attrValue != null) {
+                    if (attrName === 'class') {
+                        classStr = attrValue;
+                    }
+                    else if (attrName === 'value' && tagName === 'textarea') {
+                        htmlStr = escapeHtml(attrValue);
+                    }
+                    else if (isSSRUnsafeAttr(attrName)) {
+                        if (qDev) {
+                            logError('Attribute value is unsafe for SSR');
+                        }
+                    }
+                    else {
+                        openingElement +=
+                            ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
+                    }
+                }
+            }
+            if (immutable) {
+                for (const prop of Object.keys(immutable)) {
+                    let value = immutable[prop];
+                    if (prop === 'dangerouslySetInnerHTML') {
+                        htmlStr = value;
+                        continue;
+                    }
+                    if (isOnProp(prop)) {
+                        setEvent(elCtx.li, prop, value, undefined);
+                        continue;
+                    }
+                    const attrName = processPropKey(prop);
+                    if (isSignal(value)) {
+                        assertDefined(hostCtx, 'Signals can not be used outside the root');
+                        value = trackSignal(value, [1, elm, value, hostCtx.$element$, attrName]);
+                        useSignal = true;
+                    }
+                    if (prop.startsWith(PREVENT_DEFAULT)) {
+                        addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                    }
+                    const attrValue = processPropValue(attrName, value);
+                    if (attrValue != null) {
+                        if (attrName === 'class') {
+                            classStr = attrValue;
+                        }
+                        else if (attrName === 'value' && tagName === 'textarea') {
+                            htmlStr = escapeHtml(attrValue);
+                        }
+                        else if (isSSRUnsafeAttr(attrName)) {
+                            if (qDev) {
+                                logError('Attribute value is unsafe for SSR');
+                            }
+                        }
+                        else {
+                            openingElement +=
+                                ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
+                        }
+                    }
+                }
+            }
+            const listeners = elCtx.li;
+            if (hostCtx) {
+                if (qDev) {
+                    if (tagName === 'html') {
+                        throw qError(QError_canNotRenderHTML);
+                    }
+                }
+                if (hostCtx.$scopeIds$?.length) {
+                    const extra = hostCtx.$scopeIds$.join(' ');
+                    classStr = classStr ? `${extra} ${classStr}` : extra;
+                }
+                if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
+                    listeners.push(...hostCtx.li);
+                    hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                }
+            }
+            // Reset HOST flags
+            if (qDev) {
+                if (flags & IS_PHASING && !(flags & IS_PHRASING_CONTAINER)) {
+                    if (!phasingContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
+                    }
+                }
+                if (tagName === 'table') {
+                    flags |= IS_TABLE;
+                }
+                else {
+                    if (flags & IS_TABLE && !tableContent[tagName]) {
+                        throw createJSXError(`The <table> element requires that its direct children to be '<tbody>' or '<thead>', instead, '<${tagName}>' was rendered.`, node);
+                    }
+                    flags &= ~IS_TABLE;
+                }
+                if (tagName === 'button') {
+                    if (flags & IS_BUTTON) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <button>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
+                    }
+                    else {
+                        flags |= IS_BUTTON;
+                    }
+                }
+                if (tagName === 'a') {
+                    if (flags & IS_ANCHOR) {
+                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <a>.\n
+This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
+                    }
+                    else {
+                        flags |= IS_ANCHOR;
+                    }
+                }
+                if (tagName === 'svg' || tagName === 'math') {
+                    // These types of elements are considered phrasing content, but contain children that aren't phrasing content.
+                    flags |= IS_PHRASING_CONTAINER;
+                }
+                if (flags & IS_HEAD$1) {
+                    if (!headContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
+                    }
+                }
+                if (flags & IS_HTML) {
+                    if (!htmlContent[tagName]) {
+                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid direct children of the <html> element, only <head> and <body> are allowed.`, node);
+                    }
+                }
+                if (startPhasingContent[tagName]) {
+                    flags |= IS_PHASING;
+                }
+            }
+            if (isHead) {
+                flags |= IS_HEAD$1;
+            }
+            if (invisibleElements[tagName]) {
+                flags |= IS_INVISIBLE;
+            }
+            if (textOnlyElements[tagName]) {
+                flags |= IS_TEXT;
+            }
+            if (classStr) {
+                openingElement += ' class="' + escapeAttr(classStr) + '"';
+            }
+            if (listeners.length > 0) {
+                const groups = groupListeners(listeners);
+                const isInvisible = (flags & IS_INVISIBLE) !== 0;
+                for (const listener of groups) {
+                    const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
+                    openingElement += ' ' + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"';
+                    addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                }
+            }
+            if (key != null) {
+                openingElement += ' q:key="' + escapeAttr(key) + '"';
+            }
+            if (hasRef || useSignal || listeners.length > 0) {
+                if (hasRef || useSignal || listenersNeedId(listeners)) {
+                    const newID = getNextIndex(rCtx);
+                    openingElement += ' q:id="' + newID + '"';
+                    elCtx.$id$ = newID;
+                }
+                ssrCtx.$static$.$contexts$.push(elCtx);
+            }
+            if (flags & IS_HEAD$1) {
+                openingElement += ' q:head';
+            }
+            if (qDev && qInspector && node.dev && !(flags & IS_HEAD$1)) {
+                const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
+                if (sanitizedFileName) {
+                    openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`;
+                }
+            }
+            openingElement += '>';
+            stream.write(openingElement);
+            if (emptyElements[tagName]) {
+                return;
+            }
+            if (htmlStr != null) {
+                stream.write(String(htmlStr));
+                stream.write(`</${tagName}>`);
+                return;
+            }
+            if (tagName === 'html') {
+                flags |= IS_HTML;
+            }
+            else {
+                flags &= ~IS_HTML;
+            }
+            if (node.flags & static_subtree) {
+                flags |= IS_IMMUTABLE$1;
+            }
+            const promise = processData$1(node.children, rCtx, ssrCtx, stream, flags);
+            return then(promise, () => {
+                // If head inject base styles
+                if (isHead) {
+                    for (const node of ssrCtx.$static$.$headNodes$) {
+                        renderNodeElementSync(node.type, node.props, stream);
+                    }
+                    ssrCtx.$static$.$headNodes$.length = 0;
+                }
+                // Fast path
+                if (!beforeClose) {
+                    stream.write(`</${tagName}>`);
+                    return;
+                }
+                // Inject before close
+                return then(beforeClose(stream), () => {
+                    stream.write(`</${tagName}>`);
+                });
+            });
+        }
+        if (tagName === Virtual) {
+            const elCtx = createSSRContext(111);
+            elCtx.$parent$ = rCtx.$cmpCtx$;
+            elCtx.$slotParent$ = rCtx.$slotCtx$;
+            if (hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC) {
+                addDynamicSlot(hostCtx, elCtx);
+            }
+            return renderNodeVirtual(node, elCtx, undefined, rCtx, ssrCtx, stream, flags, beforeClose);
+        }
+        if (tagName === SSRRaw) {
+            stream.write(node.props.data);
+            return;
+        }
+        if (tagName === InternalSSRStream) {
+            return renderGenerator(node, rCtx, ssrCtx, stream, flags);
+        }
+        if (tagName === SSRHint && node.props.dynamic === true) {
+            ssrCtx.$static$.$dynamic$ = true;
+            return;
+        }
+        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
+        if (!shouldWrapFunctional(res, node)) {
+            return processData$1(res, rCtx, ssrCtx, stream, flags, beforeClose);
+        }
+        return renderNode(jsx(Virtual, { children: res }, node.key), rCtx, ssrCtx, stream, flags, beforeClose);
+    };
+    const processData$1 = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
+        if (node == null || typeof node === 'boolean') {
+            return;
+        }
+        if (isString(node) || typeof node === 'number') {
+            stream.write(escapeHtml(String(node)));
+        }
+        else if (isJSXNode(node)) {
+            return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
+        }
+        else if (isArray(node)) {
+            return walkChildren(node, rCtx, ssrCtx, stream, flags);
+        }
+        else if (isSignal(node)) {
+            const insideText = flags & IS_TEXT;
+            const hostEl = rCtx.$cmpCtx$?.$element$;
+            let value;
+            if (hostEl) {
+                if (!insideText) {
+                    const id = getNextIndex(rCtx);
+                    const subs = flags & IS_IMMUTABLE$1
+                        ? [3, ('#' + id), node, ('#' + id)]
+                        : [4, hostEl, node, ('#' + id)];
+                    value = trackSignal(node, subs);
+                    stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
+                    return;
+                }
+                else {
+                    value = invoke(ssrCtx.$invocationContext$, () => node.value);
+                }
+            }
+            stream.write(escapeHtml(jsxToString(value)));
+            return;
+        }
+        else if (isPromise(node)) {
+            stream.write(FLUSH_COMMENT);
+            return node.then((node) => processData$1(node, rCtx, ssrCtx, stream, flags, beforeClose));
+        }
+        else {
+            logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
+            return;
+        }
+    };
+    const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
+        if (children == null) {
+            return;
+        }
+        if (!isArray(children)) {
+            return processData$1(children, rCtx, ssrContext, stream, flags);
+        }
+        if (children.length === 1) {
+            return processData$1(children[0], rCtx, ssrContext, stream, flags);
+        }
+        if (children.length === 0) {
+            return;
+        }
+        let currentIndex = 0;
+        const buffers = [];
+        return children.reduce((prevPromise, child, index) => {
+            const buffer = [];
+            buffers.push(buffer);
+            const localStream = prevPromise
+                ? {
+                    write(chunk) {
+                        if (currentIndex === index) {
+                            stream.write(chunk);
+                        }
+                        else {
+                            buffer.push(chunk);
+                        }
+                    },
+                }
+                : stream;
+            const rendered = processData$1(child, rCtx, ssrContext, localStream, flags);
+            const next = () => {
+                currentIndex++;
+                if (buffers.length > currentIndex) {
+                    buffers[currentIndex].forEach((chunk) => stream.write(chunk));
+                }
+            };
+            if (isPromise(rendered) && prevPromise) {
+                return Promise.all([rendered, prevPromise]).then(next);
+            }
+            else if (isPromise(rendered)) {
+                return rendered.then(next);
+            }
+            else if (prevPromise) {
+                return prevPromise.then(next);
+            }
+            else {
+                currentIndex++;
+                return undefined;
+            }
+        }, undefined);
+    };
+    const flatVirtualChildren = (children, ssrCtx) => {
+        if (children == null) {
+            return null;
+        }
+        const result = _flatVirtualChildren(children, ssrCtx);
+        const nodes = isArray(result) ? result : [result];
+        if (nodes.length === 0) {
+            return null;
+        }
+        return nodes;
+    };
+    const _flatVirtualChildren = (children, ssrCtx) => {
+        if (children == null) {
+            return null;
+        }
+        if (isArray(children)) {
+            return children.flatMap((c) => _flatVirtualChildren(c, ssrCtx));
+        }
+        else if (isJSXNode(children) &&
+            isFunction(children.type) &&
+            children.type !== SSRRaw &&
+            children.type !== InternalSSRStream &&
+            children.type !== Virtual) {
+            const res = invoke(ssrCtx.$invocationContext$, children.type, children.props, children.key, children.flags);
+            return flatVirtualChildren(res, ssrCtx);
+        }
+        return children;
+    };
+    const setComponentProps$1 = (rCtx, elCtx, expectProps) => {
+        const keys = Object.keys(expectProps);
+        const target = createPropsState();
+        elCtx.$props$ = createProxy(target, rCtx.$static$.$containerState$);
+        if (keys.length === 0) {
+            return;
+        }
+        const immutableMeta = (target[_IMMUTABLE] =
+            expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
+        for (const prop of keys) {
+            if (prop === 'children' || prop === QSlot) {
+                continue;
+            }
+            if (isSignal(immutableMeta[prop])) {
+                target[_IMMUTABLE_PREFIX + prop] = immutableMeta[prop];
+            }
+            else {
+                target[prop] = expectProps[prop];
+            }
+        }
+    };
+    const processPropKey = (prop) => {
+        if (prop === 'htmlFor') {
+            return 'for';
+        }
+        return prop;
+    };
+    const processPropValue = (prop, value) => {
+        if (prop === 'class') {
+            return serializeClass(value);
+        }
+        if (prop === 'style') {
+            return stringifyStyle(value);
+        }
+        if (isAriaAttribute(prop) || prop === 'draggable' || prop === 'spellcheck') {
+            return value != null ? String(value) : value;
+        }
+        if (value === false || value == null) {
+            return null;
+        }
+        if (value === true) {
+            return '';
+        }
+        return String(value);
+    };
+    const invisibleElements = {
+        head: true,
+        style: true,
+        script: true,
+        link: true,
+        meta: true,
+    };
+    const textOnlyElements = {
+        title: true,
+        style: true,
+        script: true,
+        noframes: true,
+        textarea: true,
+    };
+    const emptyElements = {
+        area: true,
+        base: true,
+        basefont: true,
+        bgsound: true,
+        br: true,
+        col: true,
+        embed: true,
+        frame: true,
+        hr: true,
+        img: true,
+        input: true,
+        keygen: true,
+        link: true,
+        meta: true,
+        param: true,
+        source: true,
+        track: true,
+        wbr: true,
+    };
+    const startPhasingContent = {
+        p: true,
+        pre: true,
+    };
+    const htmlContent = {
+        head: true,
+        body: true,
+    };
+    const tableContent = {
+        tbody: true,
+        thead: true,
+    };
+    const headContent = {
+        meta: true,
+        title: true,
+        link: true,
+        style: true,
+        script: true,
+        noscript: true,
+        template: true,
+        base: true,
+    };
+    const phasingContent = {
+        a: true,
+        abbr: true,
+        area: true,
+        audio: true,
+        b: true,
+        bdi: true,
+        bdo: true,
+        br: true,
+        button: true,
+        canvas: true,
+        cite: true,
+        code: true,
+        command: true,
+        data: true,
+        datalist: true,
+        del: true,
+        dfn: true,
+        em: true,
+        embed: true,
+        i: true,
+        iframe: true,
+        img: true,
+        input: true,
+        ins: true,
+        itemprop: true,
+        kbd: true,
+        keygen: true,
+        label: true,
+        link: true,
+        map: true,
+        mark: true,
+        math: true,
+        meta: true,
+        meter: true,
+        noscript: true,
+        object: true,
+        output: true,
+        picture: true,
+        progress: true,
+        q: true,
+        ruby: true,
+        s: true,
+        samp: true,
+        script: true,
+        select: true,
+        slot: true,
+        small: true,
+        span: true,
+        strong: true,
+        sub: true,
+        sup: true,
+        svg: true,
+        template: true,
+        textarea: true,
+        time: true,
+        u: true,
+        var: true,
+        video: true,
+        wbr: true,
+    };
+    const ESCAPE_HTML = /[&<>]/g;
+    const ESCAPE_ATTRIBUTES = /[&"]/g;
+    const escapeHtml = (s) => {
+        return s.replace(ESCAPE_HTML, (c) => {
+            switch (c) {
+                case '&':
+                    return '&amp;';
+                case '<':
+                    return '&lt;';
+                case '>':
+                    return '&gt;';
+                default:
+                    return '';
+            }
+        });
+    };
+    const escapeAttr = (s) => {
+        return s.replace(ESCAPE_ATTRIBUTES, (c) => {
+            switch (c) {
+                case '&':
+                    return '&amp;';
+                case '"':
+                    return '&quot;';
+                default:
+                    return '';
+            }
+        });
+    };
+    // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+    const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/; // eslint-disable-line no-control-regex
+    const isSSRUnsafeAttr = (name) => {
+        return unsafeAttrCharRE.test(name);
+    };
+    const listenersNeedId = (listeners) => {
+        return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
+    };
+    const addDynamicSlot = (hostCtx, elCtx) => {
+        let dynamicSlots = hostCtx.$dynamicSlots$;
+        if (!dynamicSlots) {
+            hostCtx.$dynamicSlots$ = dynamicSlots = [];
+        }
+        if (!dynamicSlots.includes(elCtx)) {
+            dynamicSlots.push(elCtx);
+        }
+    };
+    const normalizeInvisibleEvents = (eventName) => {
+        return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
+    };
+
+    const emitEvent$1 = (el, eventName, detail, bubbles) => {
+        if (el && typeof CustomEvent === 'function') {
+            el.dispatchEvent(new CustomEvent(eventName, {
+                detail,
+                bubbles: bubbles,
+                composed: bubbles,
+            }));
+        }
+    };
+
+    const renderComponent = (rCtx, elCtx, flags) => {
+        const justMounted = !(elCtx.$flags$ & HOST_FLAG_MOUNTED);
+        const hostElement = elCtx.$element$;
+        const containerState = rCtx.$static$.$containerState$;
+        // Component is not dirty any more
+        containerState.$hostsStaging$.delete(hostElement);
+        // Clean current subscription before render
+        containerState.$subsManager$.$clearSub$(hostElement);
+        // TODO, serialize scopeIds
+        return then(executeComponent(rCtx, elCtx), (res) => {
+            const staticCtx = rCtx.$static$;
+            const newCtx = res.rCtx;
+            const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
+            staticCtx.$hostElements$.add(hostElement);
+            invocationContext.$subscriber$ = [0, hostElement];
+            invocationContext.$renderCtx$ = newCtx;
+            if (justMounted) {
+                if (elCtx.$appendStyles$) {
+                    for (const style of elCtx.$appendStyles$) {
+                        appendHeadStyle(staticCtx, style);
+                    }
+                }
+            }
+            const processedJSXNode = processData(res.node, invocationContext);
+            return then(processedJSXNode, (processedJSXNode) => {
+                const newVdom = wrapJSX(hostElement, processedJSXNode);
+                // const oldVdom = getVdom(hostElement);
+                const oldVdom = getVdom(elCtx);
+                return then(smartUpdateChildren(newCtx, oldVdom, newVdom, 'root', flags), () => {
+                    // setVdom(hostElement, newVdom);
+                    elCtx.$vdom$ = newVdom;
+                });
+            });
+        });
+    };
+    const getVdom = (elCtx) => {
+        if (!elCtx.$vdom$) {
+            elCtx.$vdom$ = domToVnode(elCtx.$element$);
+        }
+        return elCtx.$vdom$;
+    };
+    class ProcessedJSXNodeImpl {
+        constructor($type$, $props$, $immutableProps$, $children$, $flags$, $key$) {
+            this.$type$ = $type$;
+            this.$props$ = $props$;
+            this.$immutableProps$ = $immutableProps$;
+            this.$children$ = $children$;
+            this.$flags$ = $flags$;
+            this.$key$ = $key$;
+            this.$elm$ = null;
+            this.$text$ = '';
+            this.$signal$ = null;
+            this.$id$ = $type$ + ($key$ ? ':' + $key$ : '');
+            seal(this);
+        }
+    }
+    const processNode = (node, invocationContext) => {
+        const { key, type, props, children, flags, immutableProps } = node;
+        let textType = '';
+        if (isString(type)) {
+            textType = type;
+        }
+        else if (type === Virtual) {
+            textType = VIRTUAL;
+        }
+        else if (isFunction(type)) {
+            const res = invoke(invocationContext, type, props, key, flags);
+            if (!shouldWrapFunctional(res, node)) {
+                return processData(res, invocationContext);
+            }
+            return processNode(_jsxC(Virtual, { children: res }, 0, key), invocationContext);
+        }
+        else {
+            throw qError(QError_invalidJsxNodeType, type);
+        }
+        let convertedChildren = EMPTY_ARRAY;
+        if (children != null) {
+            return then(processData(children, invocationContext), (result) => {
+                if (result !== undefined) {
+                    convertedChildren = isArray(result) ? result : [result];
+                }
+                return new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+            });
+        }
+        else {
+            return new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+        }
+    };
+    const wrapJSX = (element, input) => {
+        const children = input === undefined ? EMPTY_ARRAY : isArray(input) ? input : [input];
+        const node = new ProcessedJSXNodeImpl(':virtual', {}, null, children, 0, null);
+        node.$elm$ = element;
+        return node;
+    };
+    const processData = (node, invocationContext) => {
+        if (node == null || typeof node === 'boolean') {
+            return undefined;
+        }
+        if (isPrimitive(node)) {
+            const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
+            newNode.$text$ = String(node);
+            return newNode;
+        }
+        else if (isJSXNode(node)) {
+            return processNode(node, invocationContext);
+        }
+        else if (isSignal(node)) {
+            const newNode = new ProcessedJSXNodeImpl('#text', EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
+            newNode.$signal$ = node;
+            return newNode;
+        }
+        else if (isArray(node)) {
+            const output = promiseAll(node.flatMap((n) => processData(n, invocationContext)));
+            return then(output, (array) => array.flat(100).filter(isNotNullable));
+        }
+        else if (isPromise(node)) {
+            return node.then((node) => processData(node, invocationContext));
+        }
+        else if (node === SkipRender) {
+            return new ProcessedJSXNodeImpl(SKIP_RENDER_TYPE, EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
+        }
+        else {
+            logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
+            return undefined;
+        }
+    };
+    const isPrimitive = (obj) => {
+        return isString(obj) || typeof obj === 'number';
+    };
+
     const resumeIfNeeded = (containerEl) => {
         const isResumed = directGetAttribute(containerEl, QContainerAttr);
         if (isResumed === 'paused') {
@@ -4824,7 +4717,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 else if (isElement$1(rawElement)) {
                     finalized.set(id, rawElement);
-                    getContext(rawElement, containerState).$vdom$ = domToVnode(rawElement);
+                    getContext(rawElement, containerState);
                     return rawElement;
                 }
                 finalized.set(id, rawElement);
@@ -4962,6 +4855,1069 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return -1;
     };
 
+    /**
+     * @public
+     */
+    const _jsxQ = (type, mutableProps, immutableProps, children, flags, key) => {
+        const processed = key == null ? null : String(key);
+        const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
+        seal(node);
+        return node;
+    };
+    /**
+     * @public
+     */
+    const _jsxC = (type, mutableProps, flags, key) => {
+        const processed = key == null ? null : String(key);
+        const props = mutableProps ?? EMPTY_OBJ;
+        const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
+        seal(node);
+        return node;
+    };
+    /**
+     * @public
+     */
+    const jsx = (type, props, key) => {
+        const processed = key == null ? null : String(key);
+        const children = untrack(() => {
+            const c = props.children;
+            if (typeof type === 'string') {
+                delete props.children;
+            }
+            return c;
+        });
+        const node = new JSXNodeImpl(type, props, null, children, 0, processed);
+        seal(node);
+        return node;
+    };
+    const SKIP_RENDER_TYPE = ':skipRender';
+    class JSXNodeImpl {
+        constructor(type, props, immutableProps, children, flags, key = null) {
+            this.type = type;
+            this.props = props;
+            this.immutableProps = immutableProps;
+            this.children = children;
+            this.flags = flags;
+            this.key = key;
+            if (qDev) {
+                invoke(undefined, () => {
+                    const isQwikC = isQwikComponent(type);
+                    if (!isString(type) && !isFunction(type)) {
+                        throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
+                    }
+                    if (children) {
+                        const flatChildren = isArray(children) ? children.flat() : [children];
+                        if (isString(type) || isQwikC) {
+                            flatChildren.forEach((child) => {
+                                if (!isValidJSXChild(child)) {
+                                    const typeObj = typeof child;
+                                    let explanation = '';
+                                    if (typeObj === 'object') {
+                                        if (child?.constructor) {
+                                            explanation = `it's an instance of "${child?.constructor.name}".`;
+                                        }
+                                        else {
+                                            explanation = `it's a object literal: ${printObjectLiteral(child)} `;
+                                        }
+                                    }
+                                    else if (typeObj === 'function') {
+                                        explanation += `it's a function named "${child.name}".`;
+                                    }
+                                    else {
+                                        explanation = `it's a "${typeObj}": ${String(child)}.`;
+                                    }
+                                    throw createJSXError(`One of the children of <${type} /> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal that resolves to one of those types. Instead, ${explanation}`, this);
+                                }
+                            });
+                        }
+                        const keys = {};
+                        flatChildren.forEach((child) => {
+                            if (isJSXNode(child) && child.key != null) {
+                                if (keys[child.key]) {
+                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                    if (err) {
+                                        if (isString(child.type)) {
+                                            logOnceWarn(err);
+                                        }
+                                        else {
+                                            logOnceWarn(err);
+                                        }
+                                    }
+                                }
+                                else {
+                                    keys[child.key] = true;
+                                }
+                            }
+                        });
+                    }
+                    if (!qRuntimeQrl && props) {
+                        for (const prop of Object.keys(props)) {
+                            const value = props[prop];
+                            if (prop.endsWith('$') && value) {
+                                if (!isQrl(value) && !Array.isArray(value)) {
+                                    throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
+                                }
+                            }
+                            if (prop !== 'children' && isQwikC && value) {
+                                verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
+                            }
+                        }
+                    }
+                    if (isString(type)) {
+                        if (type === 'style') {
+                            if (children) {
+                                logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
+In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
+
+However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
+See https://qwik.builder.io/docs/components/styles/#usestyles for more information.`);
+                            }
+                        }
+                        if (type === 'script') {
+                            if (children) {
+                                logOnceWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
+In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
+                            }
+                        }
+                    }
+                });
+            }
+            if (isString(type)) {
+                if ('className' in props) {
+                    props['class'] = props['className'];
+                    delete props['className'];
+                    if (qDev) {
+                        logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
+                    }
+                }
+            }
+        }
+    }
+    const printObjectLiteral = (obj) => {
+        return `{ ${Object.keys(obj)
+        .map((key) => `"${key}"`)
+        .join(', ')} }`;
+    };
+    const isJSXNode = (n) => {
+        if (qDev) {
+            if (n instanceof JSXNodeImpl) {
+                return true;
+            }
+            if (isObject(n) && 'key' in n && 'props' in n && 'type' in n) {
+                logWarn(`Duplicate implementations of "JSXNode" found`);
+                return true;
+            }
+            return false;
+        }
+        else {
+            return n instanceof JSXNodeImpl;
+        }
+    };
+    const isValidJSXChild = (node) => {
+        if (!node) {
+            return true;
+        }
+        else if (node === SkipRender) {
+            return true;
+        }
+        else if (isString(node) || typeof node === 'number' || typeof node === 'boolean') {
+            return true;
+        }
+        else if (isJSXNode(node)) {
+            return true;
+        }
+        if (isSignal(node)) {
+            return isValidJSXChild(node.value);
+        }
+        else if (isPromise(node)) {
+            return true;
+        }
+        return false;
+    };
+    /**
+     * @public
+     */
+    const Fragment = (props) => props.children;
+    /**
+     * @public
+     */
+    const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+        const processed = key == null ? null : String(key);
+        const children = untrack(() => {
+            const c = props.children;
+            if (typeof type === 'string') {
+                delete props.children;
+            }
+            return c;
+        });
+        const node = new JSXNodeImpl(type, props, null, children, 0, processed);
+        node.dev = {
+            isStatic,
+            ctx,
+            stack: new Error().stack,
+            ...opts,
+        };
+        seal(node);
+        return node;
+    };
+    const ONCE_JSX = new Set();
+    const createJSXError = (message, node) => {
+        const error = new Error(message);
+        if (!node.dev) {
+            return error;
+        }
+        const id = node.dev.fileName;
+        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
+        if (ONCE_JSX.has(key)) {
+            return undefined;
+        }
+        Object.assign(error, {
+            id,
+            loc: {
+                file: id,
+                column: node.dev.columnNumber,
+                line: node.dev.lineNumber,
+            },
+        });
+        error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
+        ONCE_JSX.add(key);
+        return error;
+    };
+    const filterStack = (stack, offset = 0) => {
+        return stack
+            .split('\n')
+            .slice(offset)
+            .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
+            .join('\n');
+    };
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const IS_SVG = 1 << 0;
+    const IS_HEAD = 1 << 1;
+    const IS_IMMUTABLE = 1 << 2;
+    const CHILDREN_PLACEHOLDER = [];
+    const smartUpdateChildren = (ctx, oldVnode, newVnode, mode, flags) => {
+        assertQwikElement(oldVnode.$elm$);
+        const ch = newVnode.$children$;
+        if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
+            return;
+        }
+        const elm = oldVnode.$elm$;
+        const needsDOMRead = oldVnode.$children$ === CHILDREN_PLACEHOLDER;
+        if (needsDOMRead) {
+            const isHead = elm.nodeName === 'HEAD';
+            if (isHead) {
+                mode = 'head';
+                flags |= IS_HEAD;
+            }
+        }
+        const oldCh = getVnodeChildren(oldVnode, mode);
+        if (oldCh.length > 0 && ch.length > 0) {
+            return updateChildren(ctx, elm, oldCh, ch, flags);
+        }
+        else if (oldCh.length > 0 && ch.length === 0) {
+            return removeVnodes(ctx.$static$, oldCh, 0, oldCh.length - 1);
+        }
+        else if (ch.length > 0) {
+            return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, flags);
+        }
+    };
+    const getVnodeChildren = (oldVnode, mode) => {
+        const oldCh = oldVnode.$children$;
+        const elm = oldVnode.$elm$;
+        if (oldCh === CHILDREN_PLACEHOLDER) {
+            return (oldVnode.$children$ = getChildrenVnodes(elm, mode));
+        }
+        return oldCh;
+    };
+    const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
+        let oldStartIdx = 0;
+        let newStartIdx = 0;
+        let oldEndIdx = oldCh.length - 1;
+        let oldStartVnode = oldCh[0];
+        let oldEndVnode = oldCh[oldEndIdx];
+        let newEndIdx = newCh.length - 1;
+        let newStartVnode = newCh[0];
+        let newEndVnode = newCh[newEndIdx];
+        let oldKeyToIdx;
+        let idxInOld;
+        let elmToMove;
+        const results = [];
+        const staticCtx = ctx.$static$;
+        while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+            if (oldStartVnode == null) {
+                oldStartVnode = oldCh[++oldStartIdx]; // Vnode might have been moved left
+            }
+            else if (oldEndVnode == null) {
+                oldEndVnode = oldCh[--oldEndIdx];
+            }
+            else if (newStartVnode == null) {
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else if (newEndVnode == null) {
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (oldStartVnode.$id$ === newStartVnode.$id$) {
+                results.push(patchVnode(ctx, oldStartVnode, newStartVnode, flags));
+                oldStartVnode = oldCh[++oldStartIdx];
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else if (oldEndVnode.$id$ === newEndVnode.$id$) {
+                results.push(patchVnode(ctx, oldEndVnode, newEndVnode, flags));
+                oldEndVnode = oldCh[--oldEndIdx];
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (oldStartVnode.$key$ && oldStartVnode.$id$ === newEndVnode.$id$) {
+                assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
+                assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
+                // Vnode moved right
+                results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags));
+                insertBefore(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$.nextSibling);
+                oldStartVnode = oldCh[++oldStartIdx];
+                newEndVnode = newCh[--newEndIdx];
+            }
+            else if (oldEndVnode.$key$ && oldEndVnode.$id$ === newStartVnode.$id$) {
+                assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
+                assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
+                // Vnode moved left
+                results.push(patchVnode(ctx, oldEndVnode, newStartVnode, flags));
+                insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$);
+                oldEndVnode = oldCh[--oldEndIdx];
+                newStartVnode = newCh[++newStartIdx];
+            }
+            else {
+                if (oldKeyToIdx === undefined) {
+                    oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
+                }
+                idxInOld = oldKeyToIdx[newStartVnode.$key$];
+                if (idxInOld === undefined) {
+                    // New element
+                    const newElm = createElm(ctx, newStartVnode, flags, results);
+                    insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
+                }
+                else {
+                    elmToMove = oldCh[idxInOld];
+                    if (elmToMove.$type$ !== newStartVnode.$type$) {
+                        const newElm = createElm(ctx, newStartVnode, flags, results);
+                        then(newElm, (newElm) => {
+                            insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
+                        });
+                    }
+                    else {
+                        results.push(patchVnode(ctx, elmToMove, newStartVnode, flags));
+                        oldCh[idxInOld] = undefined;
+                        assertDefined(elmToMove.$elm$, 'elmToMove $elm$ must be defined');
+                        insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
+                    }
+                }
+                newStartVnode = newCh[++newStartIdx];
+            }
+        }
+        if (newStartIdx <= newEndIdx) {
+            const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
+            results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
+        }
+        let wait = promiseAll(results);
+        if (oldStartIdx <= oldEndIdx) {
+            wait = then(wait, () => {
+                removeVnodes(staticCtx, oldCh, oldStartIdx, oldEndIdx);
+            });
+        }
+        return wait;
+    };
+    const getCh = (elm, filter) => {
+        const end = isVirtualElement(elm) ? elm.close : null;
+        const nodes = [];
+        let node = elm.firstChild;
+        while ((node = processVirtualNodes(node))) {
+            if (filter(node)) {
+                nodes.push(node);
+            }
+            node = node.nextSibling;
+            if (node === end) {
+                break;
+            }
+        }
+        return nodes;
+    };
+    const getChildren = (elm, mode) => {
+        // console.warn('DOM READ: getChildren()', elm);
+        switch (mode) {
+            case 'root':
+                return getCh(elm, isChildComponent);
+            case 'head':
+                return getCh(elm, isHeadChildren);
+            case 'elements':
+                return getCh(elm, isQwikElement);
+        }
+    };
+    // const getChildrenVnodes = (elm: QwikElement, mode: ChildrenMode) => {
+    //   return getChildren(elm, mode).map(getVdom);
+    // };
+    const getChildrenVnodes = (elm, mode) => {
+        return getChildren(elm, mode).map(getVnodeFromEl);
+    };
+    const getVnodeFromEl = (el) => {
+        if (isElement$1(el)) {
+            return tryGetContext(el)?.$vdom$ ?? domToVnode(el);
+        }
+        return domToVnode(el);
+    };
+    const domToVnode = (node) => {
+        if (isQwikElement(node)) {
+            const t = new ProcessedJSXNodeImpl(node.localName, {}, null, CHILDREN_PLACEHOLDER, 0, getKey(node));
+            t.$elm$ = node;
+            return t;
+        }
+        else if (isText(node)) {
+            const t = new ProcessedJSXNodeImpl(node.nodeName, EMPTY_OBJ, null, CHILDREN_PLACEHOLDER, 0, null);
+            t.$text$ = node.data;
+            t.$elm$ = node;
+            return t;
+        }
+        throw new Error('invalid node');
+    };
+    const isHeadChildren = (node) => {
+        const type = node.nodeType;
+        if (type === 1) {
+            return node.hasAttribute('q:head');
+        }
+        return type === 111;
+    };
+    const isSlotTemplate = (node) => {
+        return node.nodeName === 'Q:TEMPLATE';
+    };
+    const isChildComponent = (node) => {
+        const type = node.nodeType;
+        if (type === 3 || type === 111) {
+            return true;
+        }
+        if (type !== 1) {
+            return false;
+        }
+        const nodeName = node.nodeName;
+        if (nodeName === 'Q:TEMPLATE') {
+            return false;
+        }
+        if (nodeName === 'HEAD') {
+            return node.hasAttribute('q:head');
+        }
+        return true;
+    };
+    const splitChildren = (input) => {
+        const output = {};
+        for (const item of input) {
+            const key = getSlotName(item);
+            const node = output[key] ??
+                (output[key] = new ProcessedJSXNodeImpl(VIRTUAL, {
+                    [QSlotS]: '',
+                }, null, [], 0, key));
+            node.$children$.push(item);
+        }
+        return output;
+    };
+    const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
+        assertEqual(oldVnode.$type$, newVnode.$type$, 'old and new vnodes type must be the same');
+        assertEqual(oldVnode.$key$, newVnode.$key$, 'old and new vnodes key must be the same');
+        assertEqual(oldVnode.$id$, newVnode.$id$, 'old and new vnodes key must be the same');
+        const elm = oldVnode.$elm$;
+        const tag = newVnode.$type$;
+        const staticCtx = rCtx.$static$;
+        const currentComponent = rCtx.$cmpCtx$;
+        assertDefined(elm, 'while patching element must be defined');
+        assertDefined(currentComponent, 'while patching current component must be defined');
+        newVnode.$elm$ = elm;
+        // Render text nodes
+        if (tag === '#text') {
+            rCtx.$static$.$visited$.push(elm);
+            const signal = newVnode.$signal$;
+            if (signal) {
+                newVnode.$text$ = jsxToString(trackSignal(signal, [4, currentComponent.$element$, signal, elm]));
+            }
+            setProperty(staticCtx, elm, 'data', newVnode.$text$);
+            return;
+        }
+        assertQwikElement(elm);
+        const props = newVnode.$props$;
+        const vnodeFlags = newVnode.$flags$;
+        const elCtx = getContext(elm, rCtx.$static$.$containerState$);
+        if (tag !== VIRTUAL) {
+            // Track SVG state
+            let isSvg = (flags & IS_SVG) !== 0;
+            if (!isSvg && tag === 'svg') {
+                flags |= IS_SVG;
+                isSvg = true;
+            }
+            if (props !== EMPTY_OBJ) {
+                // elCtx.$vdom$ = newVnode;
+                if ((vnodeFlags & static_listeners) === 0) {
+                    elCtx.li.length = 0;
+                }
+                const values = oldVnode.$props$;
+                newVnode.$props$ = values;
+                const keys = Object.keys(props);
+                for (const prop of keys) {
+                    let newValue = props[prop];
+                    if (prop === 'ref') {
+                        assertElement(elm);
+                        setRef(newValue, elm);
+                        continue;
+                    }
+                    if (isOnProp(prop)) {
+                        browserSetEvent(staticCtx, elCtx, prop, newValue);
+                        continue;
+                    }
+                    if (isSignal(newValue)) {
+                        newValue = trackSignal(newValue, [1, currentComponent.$element$, newValue, elm, prop]);
+                    }
+                    if (prop === 'class') {
+                        newValue = serializeClassWithHost(newValue, currentComponent);
+                    }
+                    else if (prop === 'style') {
+                        newValue = stringifyStyle(newValue);
+                    }
+                    if (values[prop] !== newValue) {
+                        values[prop] = newValue;
+                        smartSetProperty(staticCtx, elm, prop, newValue, isSvg);
+                    }
+                }
+            }
+            if (vnodeFlags & static_subtree) {
+                return;
+            }
+            if (isSvg && tag === 'foreignObject') {
+                flags &= ~IS_SVG;
+            }
+            const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
+            if (setsInnerHTML) {
+                if (qDev && newVnode.$children$.length > 0) {
+                    logWarn('Node can not have children when innerHTML is set');
+                }
+                return;
+            }
+            if (tag === 'textarea') {
+                return;
+            }
+            return smartUpdateChildren(rCtx, oldVnode, newVnode, 'root', flags);
+        }
+        else if (OnRenderProp in props) {
+            const cmpProps = props.props;
+            setComponentProps(elCtx, rCtx, cmpProps);
+            let needsRender = !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
+            // TODO: review this corner case
+            if (!needsRender && !elCtx.$componentQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
+                setQId(rCtx, elCtx);
+                elCtx.$componentQrl$ = cmpProps[OnRenderProp];
+                assertQrl(elCtx.$componentQrl$);
+                needsRender = true;
+            }
+            // Rendering of children of component is more complicated,
+            // since the children must be projected into the rendered slots
+            // In addition, nested childen might need rerendering, if that's the case
+            // we need to render the nested component, and wait before projecting the content
+            // since otherwise we don't know where the slots
+            if (needsRender) {
+                return then(renderComponent(rCtx, elCtx, flags), () => renderContentProjection(rCtx, elCtx, newVnode, flags));
+            }
+            return renderContentProjection(rCtx, elCtx, newVnode, flags);
+        }
+        else if (QSlotS in props) {
+            assertDefined(currentComponent.$slots$, 'current component slots must be a defined array');
+            currentComponent.$slots$.push(newVnode);
+            return;
+        }
+        if (vnodeFlags & static_subtree) {
+            return;
+        }
+        return smartUpdateChildren(rCtx, oldVnode, newVnode, 'root', flags);
+    };
+    const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
+        if (vnode.$flags$ & static_subtree) {
+            return;
+        }
+        const newChildren = vnode.$children$;
+        const staticCtx = rCtx.$static$;
+        const splittedNewChidren = splitChildren(newChildren);
+        const slotMaps = getSlotMap(hostCtx);
+        // Remove content from empty slots
+        for (const key of Object.keys(slotMaps.slots)) {
+            if (!splittedNewChidren[key]) {
+                const slotEl = slotMaps.slots[key];
+                const oldCh = getChildrenVnodes(slotEl, 'root');
+                if (oldCh.length > 0) {
+                    // getVdom(slotEl).$children$ = [];
+                    const slotCtx = tryGetContext(slotEl);
+                    if (slotCtx && slotCtx.$vdom$) {
+                        slotCtx.$vdom$.$children$ = [];
+                    }
+                    removeVnodes(staticCtx, oldCh, 0, oldCh.length - 1);
+                }
+            }
+        }
+        // Remove empty templates
+        for (const key of Object.keys(slotMaps.templates)) {
+            const templateEl = slotMaps.templates[key];
+            if (templateEl && !splittedNewChidren[key]) {
+                slotMaps.templates[key] = undefined;
+                removeNode(staticCtx, templateEl);
+            }
+        }
+        // Render into slots
+        return promiseAll(Object.keys(splittedNewChidren).map((slotName) => {
+            const newVdom = splittedNewChidren[slotName];
+            const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
+            const oldVdom = getVdom(slotCtx);
+            const slotRctx = pushRenderContext(rCtx);
+            slotRctx.$slotCtx$ = slotCtx;
+            slotCtx.$vdom$ = newVdom;
+            newVdom.$elm$ = slotCtx.$element$;
+            // const oldVdom = getVdom(slotCtx.$element$);
+            // const slotRctx = pushRenderContext(rCtx);
+            // slotRctx.$slotCtx$ = slotCtx;
+            // setVdom(slotCtx.$element$, newVdom);
+            const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotCtx.$element$);
+            if (index >= 0) {
+                staticCtx.$addSlots$.splice(index, 1);
+            }
+            return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
+        }));
+    };
+    const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
+        const promises = [];
+        for (; startIdx <= endIdx; ++startIdx) {
+            const ch = vnodes[startIdx];
+            assertDefined(ch, 'render: node must be defined at index', startIdx, vnodes);
+            const elm = createElm(ctx, ch, flags, promises);
+            insertBefore(ctx.$static$, parentElm, elm, before);
+        }
+        return promiseAllLazy(promises);
+    };
+    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
+        for (; startIdx <= endIdx; ++startIdx) {
+            const ch = nodes[startIdx];
+            if (ch) {
+                assertDefined(ch.$elm$, 'vnode elm must be defined');
+                removeNode(staticCtx, ch.$elm$);
+            }
+        }
+    };
+    const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
+        const slotEl = slotMaps.slots[slotName];
+        if (slotEl) {
+            return getContext(slotEl, containerState);
+        }
+        const templateEl = slotMaps.templates[slotName];
+        if (templateEl) {
+            return getContext(templateEl, containerState);
+        }
+        const template = createTemplate(staticCtx.$doc$, slotName);
+        const elCtx = createContext$1(template);
+        elCtx.$parent$ = hostCtx;
+        prepend(staticCtx, hostCtx.$element$, template);
+        slotMaps.templates[slotName] = template;
+        return elCtx;
+    };
+    const getSlotName = (node) => {
+        return node.$props$[QSlot] ?? '';
+    };
+    const createElm = (rCtx, vnode, flags, promises) => {
+        const tag = vnode.$type$;
+        const doc = rCtx.$static$.$doc$;
+        const currentComponent = rCtx.$cmpCtx$;
+        if (tag === '#text') {
+            const signal = vnode.$signal$;
+            const elm = doc.createTextNode(vnode.$text$);
+            if (signal) {
+                assertDefined(currentComponent, 'signals can not be used outside components');
+                const subs = flags & IS_IMMUTABLE
+                    ? [3, elm, signal, currentComponent.$element$]
+                    : [4, currentComponent.$element$, signal, elm];
+                elm.data = vnode.$text$ = jsxToString(trackSignal(signal, subs));
+            }
+            return (vnode.$elm$ = elm);
+        }
+        let elm;
+        let isSvg = !!(flags & IS_SVG);
+        if (!isSvg && tag === 'svg') {
+            flags |= IS_SVG;
+            isSvg = true;
+        }
+        const isVirtual = tag === VIRTUAL;
+        const props = vnode.$props$;
+        const staticCtx = rCtx.$static$;
+        if (isVirtual) {
+            elm = newVirtualElement(doc);
+        }
+        else if (tag === 'head') {
+            elm = doc.head;
+            flags |= IS_HEAD;
+        }
+        else {
+            elm = createElement(doc, tag, isSvg);
+            flags &= ~IS_HEAD;
+        }
+        if (vnode.$flags$ & static_subtree) {
+            flags |= IS_IMMUTABLE;
+        }
+        vnode.$elm$ = elm;
+        const elCtx = createContext$1(elm);
+        elCtx.$parent$ = rCtx.$cmpCtx$;
+        elCtx.$slotParent$ = rCtx.$slotCtx$;
+        if (!isVirtual) {
+            if (qDev && qInspector) {
+                const dev = vnode.$dev$;
+                if (dev) {
+                    directSetAttribute(elm, 'data-qwik-inspector', `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
+                }
+            }
+            if (props !== EMPTY_OBJ) {
+                elCtx.$vdom$ = vnode;
+                vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, false);
+            }
+            if (vnode.$immutableProps$) {
+                setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true);
+            }
+            if (isSvg && tag === 'foreignObject') {
+                isSvg = false;
+                flags &= ~IS_SVG;
+            }
+            if (currentComponent) {
+                const scopedIds = currentComponent.$scopeIds$;
+                if (scopedIds) {
+                    scopedIds.forEach((styleId) => {
+                        elm.classList.add(styleId);
+                    });
+                }
+                if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
+                    elCtx.li.push(...currentComponent.li);
+                    currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
+                }
+            }
+            const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
+            if (setsInnerHTML) {
+                if (qDev && vnode.$children$.length > 0) {
+                    logWarn('Node can not have children when innerHTML is set');
+                }
+                return elm;
+            }
+            if (isSvg && tag === 'foreignObject') {
+                isSvg = false;
+                flags &= ~IS_SVG;
+            }
+        }
+        else if (OnRenderProp in props) {
+            const renderQRL = props[OnRenderProp];
+            assertQrl(renderQRL);
+            const containerState = rCtx.$static$.$containerState$;
+            const target = createPropsState();
+            const manager = containerState.$subsManager$.$createManager$();
+            const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
+            const expectProps = props.props;
+            containerState.$proxyMap$.set(target, proxy);
+            elCtx.$props$ = proxy;
+            if (expectProps !== EMPTY_OBJ) {
+                const keys = Object.keys(expectProps);
+                const immutableMeta = (target[_IMMUTABLE] =
+                    expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
+                for (const prop of keys) {
+                    if (prop !== 'children' && prop !== QSlot) {
+                        const immutableValue = immutableMeta[prop];
+                        if (isSignal(immutableValue)) {
+                            target[_IMMUTABLE_PREFIX + prop] = immutableValue;
+                        }
+                        else {
+                            target[prop] = expectProps[prop];
+                        }
+                    }
+                }
+            }
+            setQId(rCtx, elCtx);
+            if (qDev && !qTest) {
+                const symbol = renderQRL.$symbol$;
+                if (symbol) {
+                    directSetAttribute(elm, 'data-qrl', symbol);
+                }
+            }
+            // Run mount hook
+            elCtx.$componentQrl$ = renderQRL;
+            const wait = then(renderComponent(rCtx, elCtx, flags), () => {
+                let children = vnode.$children$;
+                if (children.length === 0) {
+                    return;
+                }
+                if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
+                    children = children[0].$children$;
+                }
+                const slotMap = getSlotMap(elCtx);
+                const p = [];
+                for (const node of children) {
+                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, getSlotName(node), staticCtx.$containerState$);
+                    const slotRctx = pushRenderContext(rCtx);
+                    slotRctx.$slotCtx$ = slotCtx;
+                    const nodeElm = createElm(slotRctx, node, flags, p);
+                    assertDefined(node.$elm$, 'vnode elm must be defined');
+                    assertEqual(nodeElm, node.$elm$, 'vnode elm must be defined');
+                    appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                }
+                return promiseAllLazy(p);
+            });
+            if (isPromise(wait)) {
+                promises.push(wait);
+            }
+            return elm;
+        }
+        else if (QSlotS in props) {
+            assertDefined(currentComponent, 'slot can only be used inside component');
+            assertDefined(currentComponent.$slots$, 'current component slots must be a defined array');
+            setKey(elm, vnode.$key$);
+            directSetAttribute(elm, QSlotRef, currentComponent.$id$);
+            directSetAttribute(elm, QSlotS, '');
+            currentComponent.$slots$.push(vnode);
+            staticCtx.$addSlots$.push([elm, currentComponent.$element$]);
+        }
+        let children = vnode.$children$;
+        if (children.length === 0) {
+            return elm;
+        }
+        if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
+            children = children[0].$children$;
+        }
+        const nodes = children.map((ch) => createElm(rCtx, ch, flags, promises));
+        for (const node of nodes) {
+            directAppendChild(elm, node);
+        }
+        return elm;
+    };
+    const getSlots = (elCtx) => {
+        const slots = elCtx.$slots$;
+        if (!slots) {
+            const parent = elCtx.$element$.parentElement;
+            assertDefined(parent, 'component should be already attached to the dom');
+            return (elCtx.$slots$ = readDOMSlots(elCtx));
+        }
+        return slots;
+    };
+    const getSlotMap = (elCtx) => {
+        const slotsArray = getSlots(elCtx);
+        const slots = {};
+        const templates = {};
+        const t = Array.from(elCtx.$element$.childNodes).filter(isSlotTemplate);
+        // Map virtual slots
+        for (const vnode of slotsArray) {
+            assertQwikElement(vnode.$elm$);
+            slots[vnode.$key$ ?? ''] = vnode.$elm$;
+        }
+        // Map templates
+        for (const elm of t) {
+            templates[directGetAttribute(elm, QSlot) ?? ''] = elm;
+        }
+        return { slots, templates };
+    };
+    const readDOMSlots = (elCtx) => {
+        const parent = elCtx.$element$.parentElement;
+        assertDefined(parent, 'component should be already attached to the dom');
+        return queryAllVirtualByAttribute(parent, QSlotRef, elCtx.$id$).map(domToVnode);
+    };
+    const handleStyle = (ctx, elm, _, newValue) => {
+        setProperty(ctx, elm.style, 'cssText', newValue);
+        return true;
+    };
+    const handleClass = (ctx, elm, _, newValue) => {
+        assertTrue(newValue == null || typeof newValue === 'string', 'class newValue must be either nullish or string', newValue);
+        if (elm.namespaceURI === SVG_NS) {
+            setAttribute(ctx, elm, 'class', newValue);
+        }
+        else {
+            setProperty(ctx, elm, 'className', newValue);
+        }
+        return true;
+    };
+    const checkBeforeAssign = (ctx, elm, prop, newValue) => {
+        if (prop in elm) {
+            if (elm[prop] !== newValue) {
+                setProperty(ctx, elm, prop, newValue);
+            }
+        }
+        return true;
+    };
+    const forceAttribute = (ctx, elm, prop, newValue) => {
+        setAttribute(ctx, elm, prop.toLowerCase(), newValue);
+        return true;
+    };
+    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+    const setInnerHTML = (ctx, elm, _, newValue) => {
+        if (dangerouslySetInnerHTML in elm) {
+            setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+        }
+        else if ('innerHTML' in elm) {
+            setProperty(ctx, elm, 'innerHTML', newValue);
+        }
+        return true;
+    };
+    const noop = () => {
+        return true;
+    };
+    const PROP_HANDLER_MAP = {
+        style: handleStyle,
+        class: handleClass,
+        value: checkBeforeAssign,
+        checked: checkBeforeAssign,
+        href: forceAttribute,
+        list: forceAttribute,
+        form: forceAttribute,
+        tabIndex: forceAttribute,
+        download: forceAttribute,
+        [dangerouslySetInnerHTML]: setInnerHTML,
+        innerHTML: noop,
+    };
+    const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
+        // aria attribute value should be rendered as string
+        if (isAriaAttribute(prop)) {
+            setAttribute(staticCtx, elm, prop, newValue != null ? String(newValue) : newValue);
+            return;
+        }
+        // Check if its an exception
+        const exception = PROP_HANDLER_MAP[prop];
+        if (exception) {
+            if (exception(staticCtx, elm, prop, newValue)) {
+                return;
+            }
+        }
+        // Check if property in prototype
+        if (!isSvg && prop in elm) {
+            setProperty(staticCtx, elm, prop, newValue);
+            return;
+        }
+        if (prop.startsWith(PREVENT_DEFAULT)) {
+            addQwikEvent(prop.slice(PREVENT_DEFAULT.length), staticCtx.$containerState$);
+        }
+        // Fallback to render attribute
+        setAttribute(staticCtx, elm, prop, newValue);
+    };
+    const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) => {
+        const values = {};
+        const elm = elCtx.$element$;
+        const keys = Object.keys(newProps);
+        for (const prop of keys) {
+            let newValue = newProps[prop];
+            if (prop === 'ref') {
+                assertElement(elm);
+                setRef(newValue, elm);
+                continue;
+            }
+            if (isOnProp(prop)) {
+                browserSetEvent(staticCtx, elCtx, prop, newValue);
+                continue;
+            }
+            if (isSignal(newValue)) {
+                assertDefined(hostCtx, 'Signals can only be used in components');
+                newValue = trackSignal(newValue, immutable
+                    ? [1, elm, newValue, hostCtx.$element$, prop]
+                    : [2, hostCtx.$element$, newValue, elm, prop]);
+            }
+            if (prop === 'class') {
+                if (qDev && values.class)
+                    throw new TypeError('Can only provide one of class or className');
+                newValue = serializeClassWithHost(newValue, hostCtx);
+                if (!newValue) {
+                    continue;
+                }
+            }
+            else if (prop === 'style') {
+                newValue = stringifyStyle(newValue);
+            }
+            values[prop] = newValue;
+            smartSetProperty(staticCtx, elm, prop, newValue, isSvg);
+        }
+        return values;
+    };
+    const setComponentProps = (elCtx, rCtx, expectProps) => {
+        let props = elCtx.$props$;
+        if (!props) {
+            elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$);
+        }
+        if (expectProps === EMPTY_OBJ) {
+            return;
+        }
+        const keys = Object.keys(expectProps);
+        const manager = getProxyManager(props);
+        assertDefined(manager, `props have to be a proxy, but it is not`, props);
+        const target = getProxyTarget(props);
+        assertDefined(target, `props have to be a proxy, but it is not`, props);
+        const immutableMeta = (target[_IMMUTABLE] =
+            expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
+        for (const prop of keys) {
+            if (prop !== 'children' && prop !== QSlot && !immutableMeta[prop]) {
+                const value = expectProps[prop];
+                if (target[prop] !== value) {
+                    target[prop] = value;
+                    manager.$notifySubs$(prop);
+                }
+            }
+        }
+    };
+    const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
+        if (stopSlots && parent.hasAttribute(QSlotS)) {
+            staticCtx.$rmSlots$.push(parent);
+            return;
+        }
+        const ctx = tryGetContext(parent);
+        subsManager.$clearSub$(parent);
+        if (ctx) {
+            cleanupContext(ctx, subsManager);
+        }
+        const ch = getChildren(parent, 'elements');
+        for (const child of ch) {
+            cleanupTree(child, staticCtx, subsManager, true);
+        }
+    };
+    const executeContextWithSlots = ({ $static$: ctx }) => {
+        executeDOMRender(ctx);
+    };
+    const directAppendChild = (parent, child) => {
+        if (isVirtualElement(child)) {
+            child.appendTo(parent);
+        }
+        else {
+            parent.appendChild(child);
+        }
+    };
+    const directRemoveChild = (parent, child) => {
+        if (isVirtualElement(child)) {
+            child.remove();
+        }
+        else {
+            parent.removeChild(child);
+        }
+    };
+    const directInsertBefore = (parent, child, ref) => {
+        if (isVirtualElement(child)) {
+            child.insertBeforeTo(parent, getRootNode(ref));
+        }
+        else {
+            parent.insertBefore(child, getRootNode(ref));
+        }
+    };
+    const createKeyToOldIdx = (children, beginIdx, endIdx) => {
+        const map = {};
+        for (let i = beginIdx; i <= endIdx; ++i) {
+            const child = children[i];
+            const key = child.$key$;
+            if (key != null) {
+                map[key] = i;
+            }
+        }
+        return map;
+    };
+    const browserSetEvent = (staticCtx, elCtx, prop, input) => {
+        const containerState = staticCtx.$containerState$;
+        const normalized = setEvent(elCtx.li, prop, input, containerState.$containerEl$);
+        if (!prop.startsWith('on')) {
+            setAttribute(staticCtx, elCtx.$element$, normalized, '');
+        }
+        addQwikEvent(normalized, containerState);
+    };
+
     // <docs markdown="../readme.md#useLexicalScope">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useLexicalScope instead)
@@ -4998,28 +5954,65 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
 
     const executeSignalOperation = (staticCtx, operation) => {
-        let value = operation[2].value;
-        switch (operation[0]) {
-            case 1: {
-                const prop = operation[4];
-                const elm = operation[3];
-                const ctx = tryGetContext(elm);
-                const isSVG = elm.namespaceURI === SVG_NS;
-                let oldValue = undefined;
-                if (prop === 'class') {
-                    value = serializeClass(value);
+        try {
+            const type = operation[0];
+            switch (type) {
+                case 1:
+                case 2: {
+                    let elm;
+                    let hostElm;
+                    if (type === 1) {
+                        elm = operation[1];
+                        hostElm = operation[3];
+                    }
+                    else {
+                        elm = operation[3];
+                        hostElm = operation[1];
+                    }
+                    const elCtx = tryGetContext(elm);
+                    if (elCtx == null) {
+                        return;
+                    }
+                    const prop = operation[4];
+                    const isSVG = elm.namespaceURI === SVG_NS;
+                    let value = operation[2].value;
+                    if (prop === 'class') {
+                        value = serializeClassWithHost(value, tryGetContext(hostElm));
+                    }
+                    else if (prop === 'style') {
+                        value = stringifyStyle(value);
+                    }
+                    const vdom = getVdom(elCtx);
+                    if (vdom.$props$[prop] === value) {
+                        return;
+                    }
+                    vdom.$props$[prop] = value;
+                    return smartSetProperty(staticCtx, elm, prop, value, isSVG);
                 }
-                if (ctx && ctx.$vdom$) {
-                    const normalizedProp = isSVG ? prop : prop.toLowerCase();
-                    oldValue = ctx.$vdom$.$props$[normalizedProp];
-                    ctx.$vdom$.$props$[normalizedProp] = value;
+                case 3:
+                case 4: {
+                    let elm;
+                    if (type === 3) {
+                        elm = operation[1];
+                        // hostElm = operation[3];
+                    }
+                    else {
+                        elm = operation[3];
+                        // hostElm = operation[1];
+                    }
+                    if (!staticCtx.$visited$.includes(elm)) {
+                        // const vdom = getVdom(elm);
+                        const value = operation[2].value;
+                        // if (vdom.$text$ === value) {
+                        //   return;
+                        // }
+                        return setProperty(staticCtx, elm, 'data', jsxToString(value));
+                    }
                 }
-                return smartSetProperty(staticCtx, elm, prop, value, oldValue, isSVG);
             }
-            case 2: {
-                const elm = operation[3];
-                return setProperty(staticCtx, elm, 'data', jsxToString(value));
-            }
+        }
+        catch (e) {
+            // Ignore
         }
     };
 
@@ -5064,7 +6057,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         elCtx.$flags$ |= HOST_FLAG_DIRTY;
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
-            assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
             containerState.$hostsStaging$.add(hostElement);
         }
         else {
@@ -5078,12 +6070,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const notifySignalOperation = (op, containerState) => {
         const activeRendering = containerState.$hostsRendering$ !== undefined;
-        if (activeRendering) {
-            assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
-            containerState.$opsNext$.add(op);
-        }
-        else {
-            containerState.$opsNext$.add(op);
+        containerState.$opsNext$.add(op);
+        if (!activeRendering) {
             scheduleFrame(containerState);
         }
     };
@@ -5094,7 +6082,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         watch.$flags$ |= WatchFlagsIsDirty;
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
-            assertDefined(containerState.$renderPromise$, 'render: while rendering, $renderPromise$ must be defined', containerState);
             containerState.$watchStaging$.add(watch);
         }
         else {
@@ -5131,12 +6118,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 hostsRendering.add(host);
             });
             containerState.$hostsStaging$.clear();
+            const signalOperations = Array.from(containerState.$opsNext$);
+            containerState.$opsNext$.clear();
             const renderingQueue = Array.from(hostsRendering);
             sortNodes(renderingQueue);
-            containerState.$opsNext$.forEach((op) => {
-                executeSignalOperation(staticCtx, op);
-            });
-            containerState.$opsNext$.clear();
             for (const el of renderingQueue) {
                 if (!staticCtx.$hostElements$.has(el)) {
                     const elCtx = getContext(el, containerState);
@@ -5157,6 +6142,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     }
                 }
             }
+            signalOperations.forEach((op) => {
+                executeSignalOperation(staticCtx, op);
+            });
             // Add post operations
             staticCtx.$operations$.push(...staticCtx.$postOperations$);
             // Early exist, no dom operations
@@ -5165,11 +6153,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 await postRendering(containerState, rCtx);
                 return;
             }
-            await getPlatform().raf(() => {
-                executeContextWithSlots(rCtx);
-                printRenderStats(staticCtx);
-                return postRendering(containerState, rCtx);
-            });
+            // await getPlatform().raf(() => {
+            // });
+            executeContextWithSlots(rCtx);
+            printRenderStats(staticCtx);
+            return postRendering(containerState, rCtx);
         }
         catch (err) {
             logError(err);
@@ -5182,7 +6170,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 flags |= IS_SVG;
             }
             if (el.tagName === 'HEAD') {
-                flags |= IS_HEAD$1;
+                flags |= IS_HEAD;
             }
         }
         return flags;
@@ -5209,7 +6197,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             containerState.$watchNext$.size +
             containerState.$opsNext$.size;
         if (pending > 0) {
-            scheduleFrame(containerState);
+            // Immediately render again
+            containerState.$renderPromise$ = renderMarked(containerState);
         }
     };
     const executeWatchesBefore = async (containerState, rCtx) => {
@@ -6668,7 +7657,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const serializeSubscription = (sub, getObjId) => {
         const type = sub[0];
-        const host = getObjId(sub[1]);
+        const host = typeof sub[1] === 'string' ? sub[1] : getObjId(sub[1]);
         if (!host) {
             return undefined;
         }
@@ -6678,10 +7667,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 base += ' ' + sub[2];
             }
         }
-        else if (type === 1) {
+        else if (type <= 2) {
             base += ` ${must(getObjId(sub[2]))} ${must(getObjId(sub[3]))} ${sub[4]}`;
         }
-        else if (type === 2) {
+        else if (type <= 4) {
             const nodeID = typeof sub[3] === 'string' ? sub[3] : must(getObjId(sub[3]));
             base += ` ${must(getObjId(sub[2]))} ${nodeID}`;
         }
@@ -6703,11 +7692,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             assertTrue(parts.length <= 3, 'Max 3 parts');
             subscription.push(parts[2]);
         }
-        else if (type === 1) {
+        else if (type <= 2) {
             assertTrue(parts.length === 5, 'Type 1 has 5');
             subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5]);
         }
-        else if (type === 2) {
+        else if (type <= 4) {
             assertTrue(parts.length === 4, 'Type 2 has 4');
             subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4]);
         }
@@ -6772,7 +7761,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         $addSub$(sub, key) {
             const subs = this.$subs$;
             const group = sub[1];
-            if (subs.some(([_type, _group, _key]) => _type === 0 && _group === group && _key === key)) {
+            if (sub[0] === 0 &&
+                subs.some(([_type, _group, _key]) => _type === 0 && _group === group && _key === key)) {
                 return;
             }
             subs.push([...sub, key]);
@@ -6915,12 +7905,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     }
+    const EMITTED = /*@__PURE__*/ new Set();
     const emitUsedSymbol = (symbol, element, reqTime) => {
-        emitEvent('qsymbol', {
-            symbol,
-            element,
-            reqTime,
-        });
+        if (!EMITTED.has(symbol)) {
+            EMITTED.add(symbol);
+            emitEvent('qsymbol', {
+                symbol,
+                element,
+                reqTime,
+            });
+        }
     };
     const emitEvent = (eventName, detail) => {
         if (!qTest && !isServerPlatform() && typeof document === 'object') {
@@ -7083,17 +8077,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     // </docs>
     const componentQrl = (componentQrl) => {
         // Return a QComponent Factory function.
-        function QwikComponent(props, key) {
+        function QwikComponent(props, key, flags) {
             assertQrl(componentQrl);
             const hash = qTest ? 'sX' : componentQrl.$hash$.slice(0, 4);
             const finalKey = hash + ':' + (key ? key : '');
-            return jsx(Virtual, {
+            return _jsxC(Virtual, {
                 [OnRenderProp]: componentQrl,
                 [QSlot]: props[QSlot],
                 [_IMMUTABLE]: props[_IMMUTABLE],
                 children: props.children,
                 props,
-            }, finalKey);
+            }, flags, finalKey);
         }
         QwikComponent[SERIALIZABLE_STATE] = [componentQrl];
         return QwikComponent;
@@ -7193,7 +8187,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             else
                 normalizedProps[i] = props[i];
         }
-        return new JSXNodeImpl(type, normalizedProps, key);
+        return jsx(type, normalizedProps, key);
     }
 
     /**
@@ -7202,17 +8196,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     const Slot = (props) => {
-        const name = props.name ?? '';
-        return jsx(Virtual, {
+        return _jsxC(Virtual, {
             [QSlotS]: '',
-        }, name);
+        }, 0, props.name ?? '');
     };
-
-    /**
-     * QWIK_VERSION
-     * @public
-     */
-    const version = "0.21.0";
 
     /**
      * Render JSX.
@@ -7247,18 +8234,18 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (serverData) {
             Object.assign(containerState.$serverData$, serverData);
         }
-        containerState.$hostsRendering$ = new Set();
-        containerState.$renderPromise$ = renderRoot$1(containerEl, jsxNode, doc, containerState, containerEl);
-        const renderCtx = await containerState.$renderPromise$;
-        await postRendering(containerState, renderCtx);
-    };
-    const renderRoot$1 = async (parent, jsxNode, doc, containerState, containerEl) => {
         const rCtx = createRenderContext(doc, containerState);
+        containerState.$hostsRendering$ = new Set();
+        await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl);
+        await postRendering(containerState, rCtx);
+    };
+    const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
         const staticCtx = rCtx.$static$;
         try {
-            const processedNodes = await processData$1(jsxNode);
+            const processedNodes = await processData(jsxNode);
+            // const rootJsx = getVdom(parent);
             const rootJsx = domToVnode(parent);
-            await visitJsxNode(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);
+            await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 'root', 0);
         }
         catch (err) {
             logError(err);
@@ -7267,9 +8254,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         executeDOMRender(staticCtx);
         if (qDev) {
             appendQwikDevTools(containerEl);
-            printRenderStats(staticCtx);
         }
-        return rCtx;
+        printRenderStats(staticCtx);
     };
     const getElement = (docOrElm) => {
         return isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
@@ -8075,875 +9061,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return store;
     };
 
-    const FLUSH_COMMENT = '<!--qkssr-f-->';
-    const IS_HEAD = 1 << 0;
-    const IS_HTML = 1 << 2;
-    const IS_TEXT = 1 << 3;
-    const IS_INVISIBLE = 1 << 4;
-    const IS_PHASING = 1 << 5;
-    const IS_ANCHOR = 1 << 6;
-    const IS_BUTTON = 1 << 7;
-    const IS_TABLE = 1 << 8;
-    const IS_PHRASING_CONTAINER = 1 << 9;
-    const createDocument = () => {
-        const doc = { nodeType: 9 };
-        seal(doc);
-        return doc;
-    };
-    /**
-     * @internal
-     */
-    const _renderSSR = async (node, opts) => {
-        const root = opts.containerTagName;
-        const containerEl = createSSRContext(1).$element$;
-        const containerState = createContainerState(containerEl, opts.base ?? '/');
-        containerState.$serverData$.locale = opts.serverData?.locale;
-        const doc = createDocument();
-        const rCtx = createRenderContext(doc, containerState);
-        const headNodes = opts.beforeContent ?? [];
-        const ssrCtx = {
-            $static$: {
-                $contexts$: [],
-                $dynamic$: false,
-                $headNodes$: root === 'html' ? headNodes : [],
-                $locale$: opts.serverData?.locale,
-            },
-            $projectedChildren$: undefined,
-            $projectedCtxs$: undefined,
-            $invocationContext$: undefined,
-        };
-        seal(ssrCtx);
-        let qRender = qDev ? 'ssr-dev' : 'ssr';
-        if (opts.containerAttributes['q:render']) {
-            qRender = `${opts.containerAttributes['q:render']}-${qRender}`;
-        }
-        const containerAttributes = {
-            ...opts.containerAttributes,
-            'q:container': 'paused',
-            'q:version': version ?? 'dev',
-            'q:render': qRender,
-            'q:base': opts.base,
-            'q:locale': opts.serverData?.locale,
-            children: root === 'html' ? [node] : [headNodes, node],
-        };
-        if (root !== 'html') {
-            containerAttributes.class =
-                'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
-        }
-        containerState.$serverData$ = {
-            url: opts.url,
-            ...opts.serverData,
-        };
-        node = jsx(root, containerAttributes);
-        containerState.$hostsRendering$ = new Set();
-        containerState.$renderPromise$ = Promise.resolve().then(() => renderRoot(node, rCtx, ssrCtx, opts.stream, containerState, opts));
-        await containerState.$renderPromise$;
-    };
-    const renderRoot = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
-        const beforeClose = opts.beforeClose;
-        await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
-            ? (stream) => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
-                return processData(result, rCtx, ssrCtx, stream, 0, undefined);
-            }
-            : undefined);
-        if (qDev) {
-            if (ssrCtx.$static$.$headNodes$.length > 0) {
-                logError('Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app');
-            }
-        }
-        return rCtx;
-    };
-    const renderGenerator = async (node, rCtx, ssrCtx, stream, flags) => {
-        stream.write(FLUSH_COMMENT);
-        const generator = node.props.children;
-        let value;
-        if (isFunction(generator)) {
-            const v = generator({
-                write(chunk) {
-                    stream.write(chunk);
-                    stream.write(FLUSH_COMMENT);
-                },
-            });
-            if (isPromise(v)) {
-                return v;
-            }
-            value = v;
-        }
-        else {
-            value = generator;
-        }
-        for await (const chunk of value) {
-            await processData(chunk, rCtx, ssrCtx, stream, flags, undefined);
-            stream.write(FLUSH_COMMENT);
-        }
-    };
-    const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
-        const props = node.props;
-        const renderQrl = props[OnRenderProp];
-        if (renderQrl) {
-            elCtx.$componentQrl$ = renderQrl;
-            return renderSSRComponent(rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose);
-        }
-        let virtualComment = '<!--qv' + renderVirtualAttributes(props);
-        const isSlot = QSlotS in props;
-        const key = node.key != null ? String(node.key) : null;
-        if (isSlot) {
-            assertDefined(rCtx.$cmpCtx$?.$id$, 'hostId must be defined for a slot');
-            virtualComment += ' q:sref=' + rCtx.$cmpCtx$.$id$;
-        }
-        if (key != null) {
-            virtualComment += ' q:key=' + key;
-        }
-        virtualComment += '-->';
-        stream.write(virtualComment);
-        if (extraNodes) {
-            for (const node of extraNodes) {
-                renderNodeElementSync(node.type, node.props, stream);
-            }
-        }
-        const promise = walkChildren(props.children, rCtx, ssrCtx, stream, flags);
-        return then(promise, () => {
-            // Fast path
-            if (!isSlot && !beforeClose) {
-                stream.write(CLOSE_VIRTUAL);
-                return;
-            }
-            let promise;
-            if (isSlot) {
-                assertDefined(key, 'key must be defined for a slot');
-                const content = ssrCtx.$projectedChildren$?.[key];
-                if (content) {
-                    const [rCtx, sCtx] = ssrCtx.$projectedCtxs$;
-                    const newSlotRctx = pushRenderContext(rCtx);
-                    newSlotRctx.$slotCtx$ = elCtx;
-                    ssrCtx.$projectedChildren$[key] = undefined;
-                    promise = processData(content, newSlotRctx, sCtx, stream, flags);
-                }
-            }
-            // Inject before close
-            if (beforeClose) {
-                promise = then(promise, () => beforeClose(stream));
-            }
-            return then(promise, () => {
-                stream.write(CLOSE_VIRTUAL);
-            });
-        });
-    };
-    const CLOSE_VIRTUAL = `<!--/qv-->`;
-    const renderAttributes = (attributes) => {
-        let text = '';
-        for (const prop of Object.keys(attributes)) {
-            if (prop === 'dangerouslySetInnerHTML') {
-                continue;
-            }
-            const value = attributes[prop];
-            if (value != null) {
-                text += ' ' + (value === '' ? prop : prop + '="' + value + '"');
-            }
-        }
-        return text;
-    };
-    const renderVirtualAttributes = (attributes) => {
-        let text = '';
-        for (const prop of Object.keys(attributes)) {
-            if (prop === 'children') {
-                continue;
-            }
-            const value = attributes[prop];
-            if (value != null) {
-                text += ' ' + (value === '' ? prop : prop + '=' + value + '');
-            }
-        }
-        return text;
-    };
-    const renderNodeElementSync = (tagName, attributes, stream) => {
-        stream.write('<' + tagName + renderAttributes(attributes) + '>');
-        const empty = !!emptyElements[tagName];
-        if (empty) {
-            return;
-        }
-        // Render innerHTML
-        const innerHTML = attributes.dangerouslySetInnerHTML;
-        if (innerHTML != null) {
-            stream.write(innerHTML);
-        }
-        stream.write(`</${tagName}>`);
-    };
-    const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => {
-        const props = node.props;
-        setComponentProps(rCtx, elCtx, props.props);
-        return then(executeComponent(rCtx, elCtx), (res) => {
-            const hostElement = elCtx.$element$;
-            const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
-            invocationContext.$subscriber$ = [0, hostElement];
-            invocationContext.$renderCtx$ = newRCtx;
-            const newSSrContext = {
-                ...ssrCtx,
-                $projectedChildren$: splitProjectedChildren(props.children, ssrCtx),
-                $projectedCtxs$: [rCtx, ssrCtx],
-                $invocationContext$: invocationContext,
-            };
-            const extraNodes = [];
-            if (elCtx.$appendStyles$) {
-                const isHTML = !!(flags & IS_HTML);
-                const array = isHTML ? ssrCtx.$static$.$headNodes$ : extraNodes;
-                for (const style of elCtx.$appendStyles$) {
-                    array.push(jsx('style', {
-                        [QStyle]: style.styleId,
-                        hidden: '',
-                        dangerouslySetInnerHTML: style.content,
-                    }));
-                }
-            }
-            const newID = getNextIndex(rCtx);
-            const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : undefined;
-            const processedNode = jsx(node.type, {
-                [QScopedStyle]: scopeId,
-                [ELEMENT_ID]: newID,
-                children: res.node,
-            }, node.key);
-            elCtx.$id$ = newID;
-            ssrCtx.$static$.$contexts$.push(elCtx);
-            return renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream) => {
-                if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-                    const placeholderCtx = createSSRContext(1);
-                    const listeners = placeholderCtx.li;
-                    listeners.push(...elCtx.li);
-                    elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
-                    placeholderCtx.$id$ = getNextIndex(rCtx);
-                    const attributes = {
-                        type: 'placeholder',
-                        hidden: '',
-                        'q:id': placeholderCtx.$id$,
-                    };
-                    ssrCtx.$static$.$contexts$.push(placeholderCtx);
-                    const groups = groupListeners(listeners);
-                    for (const listener of groups) {
-                        const eventName = normalizeInvisibleEvents(listener[0]);
-                        attributes[eventName] = serializeQRLs(listener[1], placeholderCtx);
-                        addQwikEvent(eventName, rCtx.$static$.$containerState$);
-                    }
-                    renderNodeElementSync('script', attributes, stream);
-                }
-                if (beforeClose) {
-                    return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));
-                }
-                else {
-                    return renderQTemplates(rCtx, newSSrContext, stream);
-                }
-            });
-        });
-    };
-    const renderQTemplates = (rCtx, ssrContext, stream) => {
-        const projectedChildren = ssrContext.$projectedChildren$;
-        if (projectedChildren) {
-            const nodes = Object.keys(projectedChildren).map((slotName) => {
-                const value = projectedChildren[slotName];
-                if (value) {
-                    return jsx('q:template', {
-                        [QSlot]: slotName,
-                        hidden: '',
-                        'aria-hidden': 'true',
-                        children: value,
-                    });
-                }
-            });
-            return processData(nodes, rCtx, ssrContext, stream, 0, undefined);
-        }
-    };
-    const splitProjectedChildren = (children, ssrCtx) => {
-        const flatChildren = flatVirtualChildren(children, ssrCtx);
-        if (flatChildren === null) {
-            return undefined;
-        }
-        const slotMap = {};
-        for (const child of flatChildren) {
-            let slotName = '';
-            if (isJSXNode(child)) {
-                slotName = child.props[QSlot] ?? '';
-            }
-            let array = slotMap[slotName];
-            if (!array) {
-                slotMap[slotName] = array = [];
-            }
-            array.push(child);
-        }
-        return slotMap;
-    };
-    const createSSRContext = (nodeType) => {
-        const elm = {
-            nodeType,
-            [Q_CTX]: null,
-        };
-        seal(elm);
-        return createContext$1(elm);
-    };
-    const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
-        const tagName = node.type;
-        const hostCtx = rCtx.$cmpCtx$;
-        if (typeof tagName === 'string') {
-            const key = node.key;
-            const props = node.props;
-            const immutableMeta = props[_IMMUTABLE] ?? EMPTY_OBJ;
-            const elCtx = createSSRContext(1);
-            const elm = elCtx.$element$;
-            const isHead = tagName === 'head';
-            let openingElement = '<' + tagName;
-            let useSignal = false;
-            let classStr = '';
-            let htmlStr = null;
-            assertElement(elm);
-            if (qDev && props.class && props.className) {
-                throw new TypeError('Can only have one of class or className');
-            }
-            for (const prop of Object.keys(props)) {
-                if (prop === 'children' || prop === 'dangerouslySetInnerHTML') {
-                    continue;
-                }
-                if (prop === 'ref') {
-                    setRef(props[prop], elm);
-                    continue;
-                }
-                let value = isSignal(immutableMeta[prop]) ? immutableMeta[prop] : props[prop];
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, undefined);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                if (isSignal(value)) {
-                    if (hostCtx) {
-                        const hostEl = hostCtx.$element$;
-                        value = trackSignal(value, [1, hostEl, value, elm, attrName]);
-                        useSignal = true;
-                    }
-                    else {
-                        value = value.value;
-                    }
-                }
-                if (prop.startsWith(PREVENT_DEFAULT)) {
-                    addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
-                }
-                const attrValue = processPropValue(attrName, value);
-                if (attrValue != null) {
-                    if (attrName === 'class') {
-                        classStr = attrValue;
-                    }
-                    else if (attrName === 'value' && tagName === 'textarea') {
-                        htmlStr = escapeHtml(attrValue);
-                    }
-                    else if (isSSRUnsafeAttr(attrName)) {
-                        if (qDev) {
-                            logError('Attribute value is unsafe for SSR');
-                        }
-                    }
-                    else {
-                        openingElement +=
-                            ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
-                    }
-                }
-            }
-            const listeners = elCtx.li;
-            if (hostCtx) {
-                if (qDev) {
-                    if (tagName === 'html') {
-                        throw qError(QError_canNotRenderHTML);
-                    }
-                }
-                if (hostCtx.$scopeIds$?.length) {
-                    const extra = hostCtx.$scopeIds$.join(' ');
-                    classStr = classStr ? `${extra} ${classStr}` : extra;
-                }
-                if (hostCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-                    listeners.push(...hostCtx.li);
-                    hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
-                }
-            }
-            // Reset HOST flags
-            if (qDev) {
-                if (flags & IS_PHASING && !(flags & IS_PHRASING_CONTAINER)) {
-                    if (!phasingContent[tagName]) {
-                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n
-This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
-                    }
-                }
-                if (tagName === 'table') {
-                    flags |= IS_TABLE;
-                }
-                else {
-                    if (flags & IS_TABLE && !tableContent[tagName]) {
-                        throw createJSXError(`The <table> element requires that its direct children to be '<tbody>' or '<thead>', instead, '<${tagName}>' was rendered.`, node);
-                    }
-                    flags &= ~IS_TABLE;
-                }
-                if (tagName === 'button') {
-                    if (flags & IS_BUTTON) {
-                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <button>.\n
-This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
-                    }
-                    else {
-                        flags |= IS_BUTTON;
-                    }
-                }
-                if (tagName === 'a') {
-                    if (flags & IS_ANCHOR) {
-                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <a>.\n
-This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
-                    }
-                    else {
-                        flags |= IS_ANCHOR;
-                    }
-                }
-                if (tagName === 'svg' || tagName === 'math') {
-                    // These types of elements are considered phrasing content, but contain children that aren't phrasing content.
-                    flags |= IS_PHRASING_CONTAINER;
-                }
-                if (flags & IS_HEAD) {
-                    if (!headContent[tagName]) {
-                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
-                    }
-                }
-                if (flags & IS_HTML) {
-                    if (!htmlContent[tagName]) {
-                        throw createJSXError(`<${tagName}> can not be rendered because it's not a valid direct children of the <html> element, only <head> and <body> are allowed.`, node);
-                    }
-                }
-                if (startPhasingContent[tagName]) {
-                    flags |= IS_PHASING;
-                }
-            }
-            if (isHead) {
-                flags |= IS_HEAD;
-            }
-            if (invisibleElements[tagName]) {
-                flags |= IS_INVISIBLE;
-            }
-            if (textOnlyElements[tagName]) {
-                flags |= IS_TEXT;
-            }
-            if (classStr) {
-                openingElement += ' class="' + escapeAttr(classStr) + '"';
-            }
-            if (listeners.length > 0) {
-                const groups = groupListeners(listeners);
-                const isInvisible = (flags & IS_INVISIBLE) !== 0;
-                for (const listener of groups) {
-                    const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
-                    openingElement += ' ' + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"';
-                    addQwikEvent(eventName, rCtx.$static$.$containerState$);
-                }
-            }
-            if (key != null) {
-                openingElement += ' q:key="' + escapeAttr(key) + '"';
-            }
-            if ('ref' in props || useSignal || listeners.length > 0) {
-                if ('ref' in props || useSignal || listenersNeedId(listeners)) {
-                    const newID = getNextIndex(rCtx);
-                    openingElement += ' q:id="' + newID + '"';
-                    elCtx.$id$ = newID;
-                }
-                ssrCtx.$static$.$contexts$.push(elCtx);
-            }
-            if (flags & IS_HEAD) {
-                openingElement += ' q:head';
-            }
-            if (qDev && qInspector && node.dev && !(flags & IS_HEAD)) {
-                const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
-                if (sanitizedFileName) {
-                    openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`;
-                }
-            }
-            openingElement += '>';
-            stream.write(openingElement);
-            if (emptyElements[tagName]) {
-                return;
-            }
-            const innerHTML = props.dangerouslySetInnerHTML ?? htmlStr;
-            if (innerHTML != null) {
-                stream.write(String(innerHTML));
-                stream.write(`</${tagName}>`);
-                return;
-            }
-            if (tagName === 'html') {
-                flags |= IS_HTML;
-            }
-            else {
-                flags &= ~IS_HTML;
-            }
-            const promise = processData(props.children, rCtx, ssrCtx, stream, flags);
-            return then(promise, () => {
-                // If head inject base styles
-                if (isHead) {
-                    for (const node of ssrCtx.$static$.$headNodes$) {
-                        renderNodeElementSync(node.type, node.props, stream);
-                    }
-                    ssrCtx.$static$.$headNodes$.length = 0;
-                }
-                // Fast path
-                if (!beforeClose) {
-                    stream.write(`</${tagName}>`);
-                    return;
-                }
-                // Inject before close
-                return then(beforeClose(stream), () => {
-                    stream.write(`</${tagName}>`);
-                });
-            });
-        }
-        if (tagName === Virtual) {
-            const elCtx = createSSRContext(111);
-            elCtx.$parent$ = rCtx.$cmpCtx$;
-            elCtx.$slotParent$ = rCtx.$slotCtx$;
-            if (hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC) {
-                addDynamicSlot(hostCtx, elCtx);
-            }
-            return renderNodeVirtual(node, elCtx, undefined, rCtx, ssrCtx, stream, flags, beforeClose);
-        }
-        if (tagName === SSRRaw) {
-            stream.write(node.props.data);
-            return;
-        }
-        if (tagName === InternalSSRStream) {
-            return renderGenerator(node, rCtx, ssrCtx, stream, flags);
-        }
-        if (tagName === SSRHint && node.props.dynamic === true) {
-            ssrCtx.$static$.$dynamic$ = true;
-        }
-        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key);
-        return processData(res, rCtx, ssrCtx, stream, flags, beforeClose);
-    };
-    const processData = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
-        if (node == null || typeof node === 'boolean') {
-            return;
-        }
-        if (isString(node) || typeof node === 'number') {
-            stream.write(escapeHtml(String(node)));
-        }
-        else if (isJSXNode(node)) {
-            return renderNode(node, rCtx, ssrCtx, stream, flags, beforeClose);
-        }
-        else if (isArray(node)) {
-            return walkChildren(node, rCtx, ssrCtx, stream, flags);
-        }
-        else if (isSignal(node)) {
-            const insideText = flags & IS_TEXT;
-            const hostEl = rCtx.$cmpCtx$?.$element$;
-            let value;
-            if (hostEl) {
-                if (!insideText) {
-                    const id = getNextIndex(rCtx);
-                    value = trackSignal(node, [2, hostEl, node, ('#' + id)]);
-                    stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
-                    return;
-                }
-                else {
-                    value = invoke(ssrCtx.$invocationContext$, () => node.value);
-                }
-            }
-            stream.write(escapeHtml(jsxToString(value)));
-            return;
-        }
-        else if (isPromise(node)) {
-            stream.write(FLUSH_COMMENT);
-            return node.then((node) => processData(node, rCtx, ssrCtx, stream, flags, beforeClose));
-        }
-        else {
-            logWarn('A unsupported value was passed to the JSX, skipping render. Value:', node);
-            return;
-        }
-    };
-    const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
-        if (children == null) {
-            return;
-        }
-        if (!isArray(children)) {
-            return processData(children, rCtx, ssrContext, stream, flags);
-        }
-        if (children.length === 1) {
-            return processData(children[0], rCtx, ssrContext, stream, flags);
-        }
-        if (children.length === 0) {
-            return;
-        }
-        let currentIndex = 0;
-        const buffers = [];
-        return children.reduce((prevPromise, child, index) => {
-            const buffer = [];
-            buffers.push(buffer);
-            const localStream = prevPromise
-                ? {
-                    write(chunk) {
-                        if (currentIndex === index) {
-                            stream.write(chunk);
-                        }
-                        else {
-                            buffer.push(chunk);
-                        }
-                    },
-                }
-                : stream;
-            const rendered = processData(child, rCtx, ssrContext, localStream, flags);
-            const next = () => {
-                currentIndex++;
-                if (buffers.length > currentIndex) {
-                    buffers[currentIndex].forEach((chunk) => stream.write(chunk));
-                }
-            };
-            if (isPromise(rendered) && prevPromise) {
-                return Promise.all([rendered, prevPromise]).then(next);
-            }
-            else if (isPromise(rendered)) {
-                return rendered.then(next);
-            }
-            else if (prevPromise) {
-                return prevPromise.then(next);
-            }
-            else {
-                currentIndex++;
-                return undefined;
-            }
-        }, undefined);
-    };
-    const flatVirtualChildren = (children, ssrCtx) => {
-        if (children == null) {
-            return null;
-        }
-        const result = _flatVirtualChildren(children, ssrCtx);
-        const nodes = isArray(result) ? result : [result];
-        if (nodes.length === 0) {
-            return null;
-        }
-        return nodes;
-    };
-    const _flatVirtualChildren = (children, ssrCtx) => {
-        if (children == null) {
-            return null;
-        }
-        if (isArray(children)) {
-            return children.flatMap((c) => _flatVirtualChildren(c, ssrCtx));
-        }
-        else if (isJSXNode(children) &&
-            isFunction(children.type) &&
-            children.type !== SSRRaw &&
-            children.type !== InternalSSRStream &&
-            children.type !== Virtual) {
-            const res = invoke(ssrCtx.$invocationContext$, children.type, children.props, children.key);
-            return flatVirtualChildren(res, ssrCtx);
-        }
-        return children;
-    };
-    const setComponentProps = (rCtx, elCtx, expectProps) => {
-        const keys = Object.keys(expectProps);
-        const target = createPropsState();
-        elCtx.$props$ = createProxy(target, rCtx.$static$.$containerState$);
-        if (keys.length === 0) {
-            return;
-        }
-        const immutableMeta = (target[_IMMUTABLE] =
-            expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
-        for (const prop of keys) {
-            if (prop === 'children' || prop === QSlot) {
-                continue;
-            }
-            if (isSignal(immutableMeta[prop])) {
-                target[_IMMUTABLE_PREFIX + prop] = immutableMeta[prop];
-            }
-            else {
-                target[prop] = expectProps[prop];
-            }
-        }
-    };
-    const processPropKey = (prop) => {
-        if (prop === 'htmlFor') {
-            return 'for';
-        }
-        return prop;
-    };
-    const processPropValue = (prop, value) => {
-        if (prop === 'style') {
-            return stringifyStyle(value);
-        }
-        if (prop === 'class') {
-            return serializeClass(value);
-        }
-        if (isAriaAttribute(prop) || prop === 'draggable' || prop === 'spellcheck') {
-            return value != null ? String(value) : value;
-        }
-        if (value === false || value == null) {
-            return null;
-        }
-        if (value === true) {
-            return '';
-        }
-        return String(value);
-    };
-    const invisibleElements = {
-        head: true,
-        style: true,
-        script: true,
-        link: true,
-        meta: true,
-    };
-    const textOnlyElements = {
-        title: true,
-        style: true,
-        script: true,
-        noframes: true,
-        textarea: true,
-    };
-    const emptyElements = {
-        area: true,
-        base: true,
-        basefont: true,
-        bgsound: true,
-        br: true,
-        col: true,
-        embed: true,
-        frame: true,
-        hr: true,
-        img: true,
-        input: true,
-        keygen: true,
-        link: true,
-        meta: true,
-        param: true,
-        source: true,
-        track: true,
-        wbr: true,
-    };
-    const startPhasingContent = {
-        p: true,
-        pre: true,
-    };
-    const htmlContent = {
-        head: true,
-        body: true,
-    };
-    const tableContent = {
-        tbody: true,
-        thead: true,
-    };
-    const headContent = {
-        meta: true,
-        title: true,
-        link: true,
-        style: true,
-        script: true,
-        noscript: true,
-        template: true,
-        base: true,
-    };
-    const phasingContent = {
-        a: true,
-        abbr: true,
-        area: true,
-        audio: true,
-        b: true,
-        bdi: true,
-        bdo: true,
-        br: true,
-        button: true,
-        canvas: true,
-        cite: true,
-        code: true,
-        command: true,
-        data: true,
-        datalist: true,
-        del: true,
-        dfn: true,
-        em: true,
-        embed: true,
-        i: true,
-        iframe: true,
-        img: true,
-        input: true,
-        ins: true,
-        itemprop: true,
-        kbd: true,
-        keygen: true,
-        label: true,
-        link: true,
-        map: true,
-        mark: true,
-        math: true,
-        meta: true,
-        meter: true,
-        noscript: true,
-        object: true,
-        output: true,
-        picture: true,
-        progress: true,
-        q: true,
-        ruby: true,
-        s: true,
-        samp: true,
-        script: true,
-        select: true,
-        slot: true,
-        small: true,
-        span: true,
-        strong: true,
-        sub: true,
-        sup: true,
-        svg: true,
-        template: true,
-        textarea: true,
-        time: true,
-        u: true,
-        var: true,
-        video: true,
-        wbr: true,
-    };
-    const ESCAPE_HTML = /[&<>]/g;
-    const ESCAPE_ATTRIBUTES = /[&"]/g;
-    const escapeHtml = (s) => {
-        return s.replace(ESCAPE_HTML, (c) => {
-            switch (c) {
-                case '&':
-                    return '&amp;';
-                case '<':
-                    return '&lt;';
-                case '>':
-                    return '&gt;';
-                default:
-                    return '';
-            }
-        });
-    };
-    const escapeAttr = (s) => {
-        return s.replace(ESCAPE_ATTRIBUTES, (c) => {
-            switch (c) {
-                case '&':
-                    return '&amp;';
-                case '"':
-                    return '&quot;';
-                default:
-                    return '';
-            }
-        });
-    };
-    // https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-    const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/; // eslint-disable-line no-control-regex
-    const isSSRUnsafeAttr = (name) => {
-        return unsafeAttrCharRE.test(name);
-    };
-    const listenersNeedId = (listeners) => {
-        return listeners.some((l) => l[1].$captureRef$ && l[1].$captureRef$.length > 0);
-    };
-    const addDynamicSlot = (hostCtx, elCtx) => {
-        let dynamicSlots = hostCtx.$dynamicSlots$;
-        if (!dynamicSlots) {
-            hostCtx.$dynamicSlots$ = dynamicSlots = [];
-        }
-        if (!dynamicSlots.includes(elCtx)) {
-            dynamicSlots.push(elCtx);
-        }
-    };
-    const normalizeInvisibleEvents = (eventName) => {
-        return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
-    };
-
     exports.$ = $;
     exports.Fragment = Fragment;
     exports.RenderOnce = RenderOnce;
@@ -8961,6 +9078,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     exports._getContextElement = _getContextElement;
     exports._hW = _hW;
     exports._jsxBranch = _jsxBranch;
+    exports._jsxC = _jsxC;
+    exports._jsxQ = _jsxQ;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
     exports._regSymbol = _regSymbol;

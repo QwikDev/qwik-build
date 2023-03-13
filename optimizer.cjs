@@ -1595,9 +1595,8 @@ globalThis.qwikOptimizer = function(module) {
     return rollupPlugin;
   }
   function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
-    const outputOpts = {
-      ...rollupOutputOpts
-    };
+    const outputOpts = {};
+    rollupOutputOpts && !Array.isArray(rollupOutputOpts) && Object.assign(outputOpts, rollupOutputOpts);
     if ("ssr" === opts.target) {
       "production" === opts.buildMode && (outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]"));
     } else if ("client" === opts.target) {
@@ -1993,7 +1992,7 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -2093,7 +2092,7 @@ globalThis.qwikOptimizer = function(module) {
             rollupOptions: {
               input: opts.input,
               preserveEntrySignatures: "exports-only",
-              output: normalizeRollupOutputOptions(path, opts, {}),
+              output: normalizeRollupOutputOptions(path, opts, null == (_p = null == (_o = viteConfig.build) ? void 0 : _o.rollupOptions) ? void 0 : _p.output),
               onwarn: (warning, warn) => {
                 if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                   return;
@@ -2113,9 +2112,9 @@ globalThis.qwikOptimizer = function(module) {
           const qDevKey = "globalThis.qDev";
           const qInspectorKey = "globalThis.qInspector";
           const qSerializeKey = "globalThis.qSerialize";
-          const qDev = (null == (_o = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _o[qDevKey]) ?? true;
-          const qInspector = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qInspectorKey]) ?? true;
-          const qSerialize = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qSerializeKey]) ?? true;
+          const qDev = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qDevKey]) ?? true;
+          const qInspector = (null == (_r = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _r[qInspectorKey]) ?? true;
+          const qSerialize = (null == (_s = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _s[qSerializeKey]) ?? true;
           updatedViteConfig.define = {
             [qDevKey]: qDev,
             [qInspectorKey]: qInspector,
@@ -2132,7 +2131,7 @@ globalThis.qwikOptimizer = function(module) {
           } else {
             updatedViteConfig.publicDir = false;
             updatedViteConfig.build.ssr = true;
-            null == (null == (_r = viteConfig.build) ? void 0 : _r.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
+            null == (null == (_t = viteConfig.build) ? void 0 : _t.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
         } else if ("client" === opts.target) {
           isClientDevOnly && (updatedViteConfig.build.rollupOptions.input = clientDevInput);

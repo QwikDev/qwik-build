@@ -1556,9 +1556,8 @@ function qwikRollup(qwikRollupOpts = {}) {
 }
 
 function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
-  const outputOpts = {
-    ...rollupOutputOpts
-  };
+  const outputOpts = {};
+  rollupOutputOpts && !Array.isArray(rollupOutputOpts) && Object.assign(outputOpts, rollupOutputOpts);
   if ("ssr" === opts.target) {
     "production" === opts.buildMode && (outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]"));
   } else if ("client" === opts.target) {
@@ -2083,7 +2082,7 @@ function qwikVite(qwikViteOpts = {}) {
           rollupOptions: {
             input: opts.input,
             preserveEntrySignatures: "exports-only",
-            output: normalizeRollupOutputOptions(path, opts, {}),
+            output: normalizeRollupOutputOptions(path, opts, viteConfig.build?.rollupOptions?.output),
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                 return;

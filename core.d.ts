@@ -305,7 +305,7 @@ export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'articl
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
-declare type B = [type: 1, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
+declare type B = [type: 1 | 2, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
 
 declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
@@ -354,7 +354,7 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare type C = [type: 2, host: SubscriberHost, signal: Signal, elm: Text];
+declare type C = [type: 3 | 4, host: SubscriberHost | Text, signal: Signal, elm: Node | QwikElement];
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -539,7 +539,7 @@ declare interface ContainerState {
     readonly $hostsStaging$: Set<QwikElement>;
     readonly $base$: string;
     $hostsRendering$: Set<QwikElement> | undefined;
-    $renderPromise$: Promise<RenderContext> | undefined;
+    $renderPromise$: Promise<void> | undefined;
     $serverData$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;
@@ -845,7 +845,7 @@ export declare const Fragment: FunctionComponent<{
  * @public
  */
 export declare interface FunctionComponent<P = Record<string, any>> {
-    (props: P, key: string | null): JSXNode | null;
+    (props: P, key: string | null, flags: number): JSXNode | null;
 }
 
 /**
@@ -881,7 +881,7 @@ declare type GetObjID = (obj: any) => string | null;
  */
 export declare const getPlatform: () => CorePlatform;
 
-declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect, LocalSubscriptionManager[]>;
+declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect | Node, LocalSubscriptionManager[]>;
 
 /**
  * @public
@@ -1281,6 +1281,11 @@ export declare const _jsxBranch: (input?: any) => any;
 /**
  * @public
  */
+export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key?: string | number | null) => JSXNode<T>;
+
+/**
+ * @public
+ */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
 /**
@@ -1300,9 +1305,17 @@ declare interface JsxDevOpts {
 export declare interface JSXNode<T = string | FunctionComponent> {
     type: T;
     props: T extends FunctionComponent<infer B> ? B : Record<string, any>;
+    immutableProps: Record<string, any> | null;
+    children: any | null;
+    flags: number;
     key: string | null;
     dev?: DevJSX;
 }
+
+/**
+ * @public
+ */
+export declare const _jsxQ: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key?: string | number | null) => JSXNode<T>;
 
 /**
  * @public
@@ -1354,7 +1367,7 @@ declare class LocalSubscriptionManager {
     readonly $subs$: Subscriptions[];
     constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
     $addSubs$(subs: Subscriptions[]): void;
-    $addToGroup$(group: SubscriberHost | SubscriberEffect, manager: LocalSubscriptionManager): void;
+    $addToGroup$(group: SubscriberHost | SubscriberEffect | Node, manager: LocalSubscriptionManager): void;
     $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
     $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
@@ -1573,7 +1586,10 @@ declare type PreventDefault<T> = {
 
 declare interface ProcessedJSXNode {
     $type$: string;
+    $id$: string;
     $props$: Record<string, any>;
+    $immutableProps$: Record<string, any> | null;
+    $flags$: number;
     $children$: ProcessedJSXNode[];
     $key$: string | null;
     $elm$: Node | VirtualElement | null;
@@ -2304,6 +2320,7 @@ declare interface RenderStaticContext {
     readonly $doc$: Document;
     readonly $roots$: QContext[];
     readonly $hostElements$: Set<QwikElement>;
+    readonly $visited$: (Node | QwikElement)[];
     readonly $operations$: RenderOperation[];
     readonly $postOperations$: RenderOperation[];
     readonly $containerState$: ContainerState;
@@ -2504,7 +2521,10 @@ export declare interface Signal<T = any> {
     value: T;
 }
 
-declare class SignalDerived<T = any, ARGS extends any[] = any> {
+declare class SignalBase {
+}
+
+declare class SignalDerived<T = any, ARGS extends any[] = any> extends SignalBase {
     $func$: (...args: ARGS) => T;
     $args$: ARGS;
     $funcStr$: string;
@@ -2661,11 +2681,22 @@ declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type Subscriber = SubscriberA | SubscriberB | SubscriberC;
 
-declare type SubscriberA = [type: 0, host: SubscriberEffect | SubscriberHost];
+declare type SubscriberA = readonly [type: 0, host: SubscriberEffect | SubscriberHost];
 
-declare type SubscriberB = [type: 1, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
+declare type SubscriberB = readonly [
+type: 1 | 2,
+host: SubscriberHost,
+signal: Signal,
+elm: QwikElement,
+prop: string
+];
 
-declare type SubscriberC = [type: 2, host: SubscriberHost, signal: Signal, elm: Node | string];
+declare type SubscriberC = readonly [
+type: 3 | 4,
+host: SubscriberHost | Text,
+signal: Signal,
+elm: Node | string | QwikElement
+];
 
 declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
 
@@ -3740,7 +3771,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.21.0-dev20230313154329
+ * 0.21.0-dev20230313163823
  * @public
  */
 export declare const version: string;
