@@ -5,7 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-import { isServer } from "@builder.io/qwik/build";
+import { isServer, isBrowser } from "@builder.io/qwik/build";
 
 const qDev = false;
 
@@ -21,7 +21,12 @@ const isDocument = value => value && 9 === value.nodeType;
 
 const isElement$1 = value => 1 === value.nodeType;
 
-const isQwikElement = value => isNode$1(value) && (1 === value.nodeType || 111 === value.nodeType);
+const isQwikElement = value => 1 === value.nodeType || 111 === value.nodeType;
+
+const isNodeElement = value => {
+    const nodeType = value.nodeType;
+    return 1 === nodeType || 111 === nodeType || 3 === nodeType;
+};
 
 const isVirtualElement = value => 111 === value.nodeType;
 
@@ -514,7 +519,7 @@ const _IMMUTABLE = Symbol("IMMUTABLE");
 
 const _fnSignal = (fn, args, fnStr) => new SignalDerived(fn, args, fnStr);
 
-var _a;
+var _a$1;
 
 const _createSignal = (value, containerState, flags, subcriptions) => {
     const manager = containerState.$subsManager$.$createManager$(subcriptions);
@@ -529,7 +534,7 @@ class SignalBase {}
 
 class SignalImpl extends SignalBase {
     constructor(v, manager, flags) {
-        super(), this[_a] = 0, this.untrackedValue = v, this[QObjectManagerSymbol] = manager, 
+        super(), this[_a$1] = 0, this.untrackedValue = v, this[QObjectManagerSymbol] = manager, 
         this[QObjectSignalFlags] = flags;
     }
     valueOf() {
@@ -569,7 +574,7 @@ class SignalImpl extends SignalBase {
     }
 }
 
-_a = QObjectSignalFlags;
+_a$1 = QObjectSignalFlags;
 
 class SignalDerived extends SignalBase {
     constructor($func$, $args$, $funcStr$) {
@@ -1140,14 +1145,18 @@ const resolveSlotProjection = staticCtx => {
             const hostCtx = staticCtx.$roots$.find((r => r.$id$ === sref));
             if (hostCtx) {
                 const hostElm = hostCtx.$element$;
-                if (Array.from(hostElm.childNodes).some((node => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key))) {
-                    cleanupTree(slotEl, staticCtx, subsManager, false);
-                } else {
-                    const template = createTemplate(staticCtx.$doc$, key);
-                    for (const child of slotChildren) {
-                        directAppendChild(template, child);
+                if (hostElm.isConnected) {
+                    if (Array.from(hostElm.childNodes).some((node => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key))) {
+                        cleanupTree(slotEl, staticCtx, subsManager, false);
+                    } else {
+                        const template = createTemplate(staticCtx.$doc$, key);
+                        for (const child of slotChildren) {
+                            directAppendChild(template, child);
+                        }
+                        directInsertBefore(hostElm, template, hostElm.firstChild);
                     }
-                    directInsertBefore(hostElm, template, hostElm.firstChild);
+                } else {
+                    cleanupTree(slotEl, staticCtx, subsManager, false);
                 }
             } else {
                 cleanupTree(slotEl, staticCtx, subsManager, false);
@@ -2143,17 +2152,22 @@ const isEmptyObj = obj => 0 === Object.keys(obj).length;
 
 const version = "0.21.0";
 
+var _a;
+
+class MockElement {
+    constructor(nodeType) {
+        this.nodeType = nodeType, this[_a] = null, seal(this);
+    }
+}
+
+_a = "_qc_";
+
 const _renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? "/");
     containerState.$serverData$.locale = opts.serverData?.locale;
-    const doc = (() => {
-        const doc = {
-            nodeType: 9
-        };
-        return seal(doc), doc;
-    })();
+    const doc = new MockElement(9);
     const rCtx = createRenderContext(doc, containerState);
     const headNodes = opts.beforeContent ?? [];
     const ssrCtx = {
@@ -2353,11 +2367,8 @@ const splitProjectedChildren = (children, ssrCtx) => {
 };
 
 const createSSRContext = nodeType => {
-    const elm = {
-        nodeType: nodeType,
-        _qc_: null
-    };
-    return seal(elm), createContext$1(elm);
+    const elm = new MockElement(nodeType);
+    return createContext$1(elm);
 };
 
 const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
@@ -2818,7 +2829,7 @@ const renderComponent = (rCtx, elCtx, flags) => {
     const justMounted = !(4 & elCtx.$flags$);
     const hostElement = elCtx.$element$;
     const containerState = rCtx.$static$.$containerState$;
-    return containerState.$hostsStaging$.delete(hostElement), containerState.$subsManager$.$clearSub$(hostElement), 
+    return containerState.$hostsStaging$.delete(elCtx), containerState.$subsManager$.$clearSub$(hostElement), 
     then(executeComponent(rCtx, elCtx), (res => {
         const staticCtx = rCtx.$static$;
         const newCtx = res.rCtx;
@@ -2919,7 +2930,7 @@ const _deserializeData = (data, element) => {
     }
     let doc = {};
     let containerState = {};
-    if (element && isQwikElement(element)) {
+    if (isNode$1(element) && isQwikElement(element)) {
         const containerEl = getWrappingContainer(element);
         containerEl && (containerState = _getContainerState(containerEl), doc = containerEl.ownerDocument);
     }
@@ -3216,25 +3227,27 @@ class JSXNodeImpl {
             }
             if (children) {
                 const flatChildren = isArray(children) ? children.flat() : [ children ];
-                (isString(type) || isQwikC) && flatChildren.forEach((child => {
+                if ((isString(type) || isQwikC) && flatChildren.forEach((child => {
                     if (!isValidJSXChild(child)) {
                         const typeObj = typeof child;
                         let explanation = "";
                         throw "object" === typeObj ? explanation = child?.constructor ? `it's an instance of "${child?.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`, 
-                        createJSXError(`One of the children of <${type} /> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal that resolves to one of those types. Instead, ${explanation}`, this);
+                        createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, this);
                     }
-                }));
-                const keys = {};
-                flatChildren.forEach((child => {
-                    if (isJSXNode(child) && null != child.key) {
-                        if (keys[child.key]) {
-                            const err = createJSXError("Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop", child);
-                            err && (isString(child.type), logOnceWarn(err));
-                        } else {
-                            keys[child.key] = true;
+                })), isBrowser) {
+                    const keys = {};
+                    flatChildren.forEach((child => {
+                        if (isJSXNode(child) && null != child.key) {
+                            const key = String(child.type) + ":" + child.key;
+                            if (keys[key]) {
+                                const err = createJSXError("Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop", child);
+                                err && (isString(child.type), logOnceWarn(err));
+                            } else {
+                                keys[key] = true;
+                            }
                         }
-                    }
-                }));
+                    }));
+                }
             }
             if (props) {
                 for (const prop of Object.keys(props)) {
@@ -3257,7 +3270,7 @@ const printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`))
 const isJSXNode = n => qDev ? n instanceof JSXNodeImpl || !!(isObject(n) && "key" in n && "props" in n && "type" in n) && (logWarn('Duplicate implementations of "JSXNode" found'), 
 true) : n instanceof JSXNodeImpl;
 
-const isValidJSXChild = node => !node || node === SkipRender || !(!isString(node) && "number" != typeof node && "boolean" != typeof node) || !!isJSXNode(node) || (isSignal(node) ? isValidJSXChild(node.value) : !!isPromise(node));
+const isValidJSXChild = node => !node || node === SkipRender || !(!isString(node) && "number" != typeof node && "boolean" != typeof node) || !!isJSXNode(node) || (isArray(node) ? node.every(isValidJSXChild) : isSignal(node) ? isValidJSXChild(node.value) : !!isPromise(node));
 
 const Fragment = props => props.children;
 
@@ -3403,7 +3416,7 @@ const getChildren = (elm, mode) => {
         return getCh(elm, isHeadChildren);
 
       case "elements":
-        return getCh(elm, isQwikElement);
+        return getCh(elm, isNodeElement);
     }
 };
 
@@ -3590,7 +3603,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         const elm = doc.createTextNode(vnode.$text$);
         if (signal) {
             assertDefined(currentComponent, "signals can not be used outside components");
-            const subs = 4 & flags ? [ 3, elm, signal, currentComponent.$element$ ] : [ 4, currentComponent.$element$, signal, elm ];
+            const subs = 4 & flags ? [ 3, elm, signal, elm ] : [ 4, currentComponent.$element$, signal, elm ];
             elm.data = vnode.$text$ = jsxToString(trackSignal(signal, subs));
         }
         return vnode.$elm$ = elm;
@@ -3812,20 +3825,21 @@ const setComponentProps = (elCtx, rCtx, expectProps) => {
     }
 };
 
-const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
-    if (stopSlots && parent.hasAttribute("q:s")) {
-        return void staticCtx.$rmSlots$.push(parent);
-    }
-    const ctx = tryGetContext(parent);
-    subsManager.$clearSub$(parent), ctx && ((elCtx, subsManager) => {
-        const el = elCtx.$element$;
-        elCtx.$watches$?.forEach((watch => {
-            subsManager.$clearSub$(watch), destroyWatch(watch);
-        })), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$watches$ = null, el._qc_ = void 0;
-    })(ctx, subsManager);
-    const ch = getChildren(parent, "elements");
-    for (const child of ch) {
-        cleanupTree(child, staticCtx, subsManager, true);
+const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+    if (subsManager.$clearSub$(elm), isQwikElement(elm)) {
+        if (stopSlots && elm.hasAttribute("q:s")) {
+            return void staticCtx.$rmSlots$.push(elm);
+        }
+        const ctx = tryGetContext(elm);
+        ctx && ((elCtx, subsManager) => {
+            elCtx.$watches$?.forEach((watch => {
+                subsManager.$clearSub$(watch), destroyWatch(watch);
+            })), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$watches$ = null;
+        })(ctx, subsManager);
+        const end = isVirtualElement(elm) ? elm.close : null;
+        let node = elm.firstChild;
+        for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, true), 
+        node = node.nextSibling, node !== end); ) {}
     }
 };
 
@@ -3881,7 +3895,7 @@ const useLexicalScope = () => {
 const notifyChange = (subAction, containerState) => {
     if (0 === subAction[0]) {
         const host = subAction[1];
-        isQwikElement(host) ? notifyRender(host, containerState) : notifyWatch(host, containerState);
+        isSubscriberDescriptor(host) ? notifyWatch(host, containerState) : notifyRender(host, containerState);
     } else {
         notifySignalOperation(subAction, containerState);
     }
@@ -3894,12 +3908,12 @@ const notifyRender = (hostElement, containerState) => {
     if (assertDefined(elCtx.$componentQrl$, "render: notified host element must have a defined $renderQrl$", elCtx), 
     !(1 & elCtx.$flags$)) {
         if (elCtx.$flags$ |= 1, void 0 !== containerState.$hostsRendering$) {
-            containerState.$hostsStaging$.add(hostElement);
+            containerState.$hostsStaging$.add(elCtx);
         } else {
             if (server) {
                 return void logWarn("Can not rerender in server platform");
             }
-            containerState.$hostsNext$.add(hostElement), scheduleFrame(containerState);
+            containerState.$hostsNext$.add(elCtx), scheduleFrame(containerState);
         }
     }
 };
@@ -3936,19 +3950,17 @@ const renderMarked = async containerState => {
         containerState.$opsNext$.clear();
         const renderingQueue = Array.from(hostsRendering);
         sortNodes(renderingQueue);
-        for (const el of renderingQueue) {
-            if (!staticCtx.$hostElements$.has(el)) {
-                const elCtx = getContext(el, containerState);
-                if (elCtx.$componentQrl$) {
-                    assertTrue(el.isConnected, "element must be connected to the dom"), staticCtx.$roots$.push(elCtx);
-                    try {
-                        await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
-                    } catch (err) {
-                        if (qDev) {
-                            throw err;
-                        }
-                        logError(err);
+        for (const elCtx of renderingQueue) {
+            const el = elCtx.$element$;
+            if (!staticCtx.$hostElements$.has(el) && elCtx.$componentQrl$) {
+                assertTrue(el.isConnected, "element must be connected to the dom"), staticCtx.$roots$.push(elCtx);
+                try {
+                    await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
+                } catch (err) {
+                    if (qDev) {
+                        throw err;
                     }
+                    logError(err);
                 }
             }
         }
@@ -3982,8 +3994,8 @@ const renderMarked = async containerState => {
                       case 3:
                       case 4:
                         {
-                            let elm;
-                            if (elm = 3 === type ? operation[1] : operation[3], !staticCtx.$visited$.includes(elm)) {
+                            const elm = operation[3];
+                            if (!staticCtx.$visited$.includes(elm)) {
                                 const value = operation[2].value;
                                 return setProperty(staticCtx, elm, "data", jsxToString(value));
                             }
@@ -4063,7 +4075,7 @@ const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
 };
 
 const sortNodes = elements => {
-    elements.sort(((a, b) => 2 & a.compareDocumentPosition(getRootNode(b)) ? 1 : -1));
+    elements.sort(((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1));
 };
 
 const sortWatches = watches => {
@@ -4688,10 +4700,7 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
             if (isPromise(unwrapped)) {
                 return value;
             }
-            if (isQwikElement(unwrapped)) {
-                return value;
-            }
-            if (isDocument(unwrapped)) {
+            if (isNode$1(unwrapped)) {
                 return value;
             }
             if (isArray(unwrapped)) {
@@ -4746,7 +4755,7 @@ const _weakSerialize = input => (weakSerializeSet.add(input), input);
 const mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
 v);
 
-const isConnected = sub => isQwikElement(sub) ? !!tryGetContext(sub) || sub.isConnected : isConnected(sub.$el$);
+const isConnected = sub => isSubscriberDescriptor(sub) ? isConnected(sub.$el$) : !!tryGetContext(sub) || sub.isConnected;
 
 const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
 

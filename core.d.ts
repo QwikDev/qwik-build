@@ -535,10 +535,10 @@ declare interface ContainerState {
     readonly $watchNext$: Set<SubscriberEffect>;
     readonly $watchStaging$: Set<SubscriberEffect>;
     readonly $opsNext$: Set<SubscriberSignal>;
-    readonly $hostsNext$: Set<QwikElement>;
-    readonly $hostsStaging$: Set<QwikElement>;
+    readonly $hostsNext$: Set<QContext>;
+    readonly $hostsStaging$: Set<QContext>;
     readonly $base$: string;
-    $hostsRendering$: Set<QwikElement> | undefined;
+    $hostsRendering$: Set<QContext> | undefined;
     $renderPromise$: Promise<void> | undefined;
     $serverData$: Record<string, any>;
     $elementIndex$: number;
@@ -839,6 +839,7 @@ declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare const Fragment: FunctionComponent<{
     children?: any;
+    key?: string | number | null;
 }>;
 
 /**
@@ -1368,7 +1369,7 @@ declare class LocalSubscriptionManager {
     constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
     $addSubs$(subs: Subscriptions[]): void;
     $addToGroup$(group: SubscriberHost | SubscriberEffect | Node, manager: LocalSubscriptionManager): void;
-    $unsubGroup$(group: SubscriberEffect | SubscriberHost): void;
+    $unsubGroup$(group: SubscriberEffect | SubscriberHost | Node): void;
     $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
 }
@@ -2716,7 +2717,7 @@ declare type SubscriberSignal = B | C;
 declare interface SubscriptionManager {
     $groupToManagers$: GroupToManagersMap;
     $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
-    $clearSub$: (sub: SubscriberEffect | SubscriberHost) => void;
+    $clearSub$: (sub: SubscriberEffect | SubscriberHost | Node) => void;
 }
 
 declare type Subscriptions = A | SubscriberSignal;
@@ -3780,7 +3781,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.21.0-dev20230314014802
+ * 0.21.0-dev20230314165048
  * @public
  */
 export declare const version: string;

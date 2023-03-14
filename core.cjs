@@ -39,7 +39,11 @@
         return value.nodeType === 1;
     };
     const isQwikElement = (value) => {
-        return isNode$1(value) && (value.nodeType === 1 || value.nodeType === 111);
+        return value.nodeType === 1 || value.nodeType === 111;
+    };
+    const isNodeElement = (value) => {
+        const nodeType = value.nodeType;
+        return nodeType === 1 || nodeType === 111 || nodeType === 3;
     };
     const isVirtualElement = (value) => {
         return value.nodeType === 111;
@@ -884,7 +888,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return new SignalDerived(fn, objects, fnStr);
     };
 
-    var _a;
+    var _a$1;
     /**
      * @internal
      */
@@ -902,7 +906,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     class SignalImpl extends SignalBase {
         constructor(v, manager, flags) {
             super();
-            this[_a] = 0;
+            this[_a$1] = 0;
             this.untrackedValue = v;
             this[QObjectManagerSymbol] = manager;
             this[QObjectSignalFlags] = flags;
@@ -951,7 +955,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             }
         }
     }
-    _a = QObjectSignalFlags;
+    _a$1 = QObjectSignalFlags;
     class SignalDerived extends SignalBase {
         constructor($func$, $args$, $funcStr$) {
             super();
@@ -1310,7 +1314,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return ctx;
     };
     const cleanupContext = (elCtx, subsManager) => {
-        const el = elCtx.$element$;
         elCtx.$watches$?.forEach((watch) => {
             subsManager.$clearSub$(watch);
             destroyWatch(watch);
@@ -1318,7 +1321,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         elCtx.$componentQrl$ = null;
         elCtx.$seq$ = null;
         elCtx.$watches$ = null;
-        el[Q_CTX] = undefined;
     };
 
     let _locale = undefined;
@@ -1864,13 +1866,18 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 const hostCtx = staticCtx.$roots$.find((r) => r.$id$ === sref);
                 if (hostCtx) {
                     const hostElm = hostCtx.$element$;
-                    const hasTemplate = Array.from(hostElm.childNodes).some((node) => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key);
-                    if (!hasTemplate) {
-                        const template = createTemplate(staticCtx.$doc$, key);
-                        for (const child of slotChildren) {
-                            directAppendChild(template, child);
+                    if (hostElm.isConnected) {
+                        const hasTemplate = Array.from(hostElm.childNodes).some((node) => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key);
+                        if (!hasTemplate) {
+                            const template = createTemplate(staticCtx.$doc$, key);
+                            for (const child of slotChildren) {
+                                directAppendChild(template, child);
+                            }
+                            directInsertBefore(hostElm, template, hostElm.firstChild);
                         }
-                        directInsertBefore(hostElm, template, hostElm.firstChild);
+                        else {
+                            cleanupTree(slotEl, staticCtx, subsManager, false);
+                        }
                     }
                     else {
                         cleanupTree(slotEl, staticCtx, subsManager, false);
@@ -3532,6 +3539,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      */
     const version = "0.21.0";
 
+    var _a;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
     const IS_HEAD$1 = 1 << 0;
     const IS_HTML = 1 << 2;
@@ -3543,10 +3551,16 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const IS_TABLE = 1 << 8;
     const IS_PHRASING_CONTAINER = 1 << 9;
     const IS_IMMUTABLE$1 = 1 << 10;
+    class MockElement {
+        constructor(nodeType) {
+            this.nodeType = nodeType;
+            this[_a] = null;
+            seal(this);
+        }
+    }
+    _a = Q_CTX;
     const createDocument = () => {
-        const doc = { nodeType: 9 };
-        seal(doc);
-        return doc;
+        return new MockElement(9);
     };
     /**
      * @internal
@@ -3830,11 +3844,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return slotMap;
     };
     const createSSRContext = (nodeType) => {
-        const elm = {
-            nodeType,
-            [Q_CTX]: null,
-        };
-        seal(elm);
+        const elm = new MockElement(nodeType);
         return createContext$1(elm);
     };
     const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
@@ -4463,7 +4473,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         const hostElement = elCtx.$element$;
         const containerState = rCtx.$static$.$containerState$;
         // Component is not dirty any more
-        containerState.$hostsStaging$.delete(hostElement);
+        containerState.$hostsStaging$.delete(elCtx);
         // Clean current subscription before render
         containerState.$subsManager$.$clearSub$(hostElement);
         // TODO, serialize scopeIds
@@ -4621,7 +4631,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         let doc = {};
         let containerState = {};
-        if (element && isQwikElement(element)) {
+        if (isNode$1(element) && isQwikElement(element)) {
             const containerEl = getWrappingContainer(element);
             if (containerEl) {
                 containerState = _getContainerState(containerEl);
@@ -4939,29 +4949,32 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                                     else {
                                         explanation = `it's a "${typeObj}": ${String(child)}.`;
                                     }
-                                    throw createJSXError(`One of the children of <${type} /> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal that resolves to one of those types. Instead, ${explanation}`, this);
+                                    throw createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, this);
                                 }
                             });
                         }
-                        const keys = {};
-                        flatChildren.forEach((child) => {
-                            if (isJSXNode(child) && child.key != null) {
-                                if (keys[child.key]) {
-                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
-                                    if (err) {
-                                        if (isString(child.type)) {
-                                            logOnceWarn(err);
-                                        }
-                                        else {
-                                            logOnceWarn(err);
+                        if (build.isBrowser) {
+                            const keys = {};
+                            flatChildren.forEach((child) => {
+                                if (isJSXNode(child) && child.key != null) {
+                                    const key = String(child.type) + ':' + child.key;
+                                    if (keys[key]) {
+                                        const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                        if (err) {
+                                            if (isString(child.type)) {
+                                                logOnceWarn(err);
+                                            }
+                                            else {
+                                                logOnceWarn(err);
+                                            }
                                         }
                                     }
+                                    else {
+                                        keys[key] = true;
+                                    }
                                 }
-                                else {
-                                    keys[child.key] = true;
-                                }
-                            }
-                        });
+                            });
+                        }
                     }
                     if (!qRuntimeQrl && props) {
                         for (const prop of Object.keys(props)) {
@@ -5038,6 +5051,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else if (isJSXNode(node)) {
             return true;
+        }
+        else if (isArray(node)) {
+            return node.every(isValidJSXChild);
         }
         if (isSignal(node)) {
             return isValidJSXChild(node.value);
@@ -5261,7 +5277,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             case 'head':
                 return getCh(elm, isHeadChildren);
             case 'elements':
-                return getCh(elm, isQwikElement);
+                return getCh(elm, isNodeElement);
         }
     };
     // const getChildrenVnodes = (elm: QwikElement, mode: ChildrenMode) => {
@@ -5543,7 +5559,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (signal) {
                 assertDefined(currentComponent, 'signals can not be used outside components');
                 const subs = flags & IS_IMMUTABLE
-                    ? [3, elm, signal, currentComponent.$element$]
+                    ? [3, elm, signal, elm]
                     : [4, currentComponent.$element$, signal, elm];
                 elm.data = vnode.$text$ = jsxToString(trackSignal(signal, subs));
             }
@@ -5869,19 +5885,26 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     };
-    const cleanupTree = (parent, staticCtx, subsManager, stopSlots) => {
-        if (stopSlots && parent.hasAttribute(QSlotS)) {
-            staticCtx.$rmSlots$.push(parent);
-            return;
-        }
-        const ctx = tryGetContext(parent);
-        subsManager.$clearSub$(parent);
-        if (ctx) {
-            cleanupContext(ctx, subsManager);
-        }
-        const ch = getChildren(parent, 'elements');
-        for (const child of ch) {
-            cleanupTree(child, staticCtx, subsManager, true);
+    const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
+        subsManager.$clearSub$(elm);
+        if (isQwikElement(elm)) {
+            if (stopSlots && elm.hasAttribute(QSlotS)) {
+                staticCtx.$rmSlots$.push(elm);
+                return;
+            }
+            const ctx = tryGetContext(elm);
+            if (ctx) {
+                cleanupContext(ctx, subsManager);
+            }
+            const end = isVirtualElement(elm) ? elm.close : null;
+            let node = elm.firstChild;
+            while ((node = processVirtualNodes(node))) {
+                cleanupTree(node, staticCtx, subsManager, true);
+                node = node.nextSibling;
+                if (node === end) {
+                    break;
+                }
+            }
         }
     };
     const executeContextWithSlots = ({ $static$: ctx }) => {
@@ -5990,6 +6013,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         elm = operation[3];
                         hostElm = operation[1];
                     }
+                    // assertTrue(elm.isConnected, 'element must be connected to the dom');
+                    // assertTrue(hostElm.isConnected, 'host element must be connected to the dom');
                     const elCtx = tryGetContext(elm);
                     if (elCtx == null) {
                         return;
@@ -6012,18 +6037,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 case 3:
                 case 4: {
-                    let elm;
-                    if (type === 3) {
-                        elm = operation[1];
-                        // hostElm = operation[3];
-                    }
-                    else {
-                        elm = operation[3];
-                        // hostElm = operation[1];
-                    }
+                    const elm = operation[3];
                     if (!staticCtx.$visited$.includes(elm)) {
-                        // const vdom = getVdom(elm);
+                        // assertTrue(elm.isConnected, 'text node must be connected to the dom');
                         const value = operation[2].value;
+                        // const vdom = getVdom(elm);
                         // if (vdom.$text$ === value) {
                         //   return;
                         // }
@@ -6040,11 +6058,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const notifyChange = (subAction, containerState) => {
         if (subAction[0] === 0) {
             const host = subAction[1];
-            if (isQwikElement(host)) {
-                notifyRender(host, containerState);
+            if (isSubscriberDescriptor(host)) {
+                notifyWatch(host, containerState);
             }
             else {
-                notifyWatch(host, containerState);
+                notifyRender(host, containerState);
             }
         }
         else {
@@ -6078,14 +6096,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         elCtx.$flags$ |= HOST_FLAG_DIRTY;
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
-            containerState.$hostsStaging$.add(hostElement);
+            containerState.$hostsStaging$.add(elCtx);
         }
         else {
             if (server) {
                 logWarn('Can not rerender in server platform');
                 return undefined;
             }
-            containerState.$hostsNext$.add(hostElement);
+            containerState.$hostsNext$.add(elCtx);
             scheduleFrame(containerState);
         }
     };
@@ -6143,9 +6161,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             containerState.$opsNext$.clear();
             const renderingQueue = Array.from(hostsRendering);
             sortNodes(renderingQueue);
-            for (const el of renderingQueue) {
+            for (const elCtx of renderingQueue) {
+                const el = elCtx.$element$;
                 if (!staticCtx.$hostElements$.has(el)) {
-                    const elCtx = getContext(el, containerState);
                     if (elCtx.$componentQrl$) {
                         assertTrue(el.isConnected, 'element must be connected to the dom');
                         staticCtx.$roots$.push(elCtx);
@@ -6300,7 +6318,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         } while (containerState.$watchStaging$.size > 0);
     };
     const sortNodes = (elements) => {
-        elements.sort((a, b) => (a.compareDocumentPosition(getRootNode(b)) & 2 ? 1 : -1));
+        elements.sort((a, b) => a.$element$.compareDocumentPosition(getRootNode(b.$element$)) & 2 ? 1 : -1);
     };
     const sortWatches = (watches) => {
         watches.sort((a, b) => {
@@ -7549,9 +7567,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 case 'object':
                     if (isPromise(unwrapped))
                         return value;
-                    if (isQwikElement(unwrapped))
-                        return value;
-                    if (isDocument(unwrapped))
+                    if (isNode$1(unwrapped))
                         return value;
                     if (isArray(unwrapped)) {
                         let expectIndex = 0;
@@ -7655,11 +7671,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return v;
     };
     const isConnected = (sub) => {
-        if (isQwikElement(sub)) {
-            return !!tryGetContext(sub) || sub.isConnected;
+        if (isSubscriberDescriptor(sub)) {
+            return isConnected(sub.$el$);
         }
         else {
-            return isConnected(sub.$el$);
+            return !!tryGetContext(sub) || sub.isConnected;
         }
     };
     /**

@@ -355,6 +355,7 @@ declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare const Fragment: FunctionComponent<{
     children?: any;
+    key?: string | number | null;
 }>;
 
 /**
