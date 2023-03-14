@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.21.0
+ * @builder.io/qwik 0.22.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -8,8 +8,6 @@
 import { isServer, isBrowser } from "@builder.io/qwik/build";
 
 const qDev = false;
-
-const qTest = false;
 
 const seal = obj => {
     qDev && Object.seal(obj);
@@ -88,8 +86,6 @@ const printElement = el => {
         ctx: isServer ? void 0 : ctx
     };
 };
-
-const QError_qrlIsNotFunction = 10;
 
 const qError = (code, ...parts) => {
     const text = codeToText(code);
@@ -370,10 +366,6 @@ globalThis.__qwik_reg_symbols.set(hash, symbol), symbol);
 
 const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
 
-const OnRenderProp = "q:renderFn";
-
-const ComponentStylesPrefixContent = "⭐️";
-
 const QSlot = "q:slot";
 
 const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
@@ -432,7 +424,7 @@ const setRef = (value, elm) => {
 const addQwikEvent = (prop, containerState) => {
     var _a;
     const eventName = getEventName(prop);
-    if (!qTest && !isServerPlatform()) {
+    if (!isServerPlatform()) {
         try {
             ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
         } catch (err) {
@@ -2150,7 +2142,7 @@ const getQId = el => {
 
 const isEmptyObj = obj => 0 === Object.keys(obj).length;
 
-const version = "0.21.0";
+const version = "0.22.0";
 
 var _a;
 
@@ -2187,7 +2179,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "0.21.0",
+        "q:version": "0.22.0",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -2212,7 +2204,7 @@ const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) =>
 
 const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
     const props = node.props;
-    const renderQrl = props[OnRenderProp];
+    const renderQrl = props["q:renderFn"];
     if (renderQrl) {
         return elCtx.$componentQrl$ = renderQrl, renderSSRComponent(rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose);
     }
@@ -3500,12 +3492,12 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
         }
         return smartUpdateChildren(rCtx, oldVnode, newVnode, "root", flags);
     }
-    if (OnRenderProp in props) {
+    if ("q:renderFn" in props) {
         const cmpProps = props.props;
         setComponentProps(elCtx, rCtx, cmpProps);
         let needsRender = !!(1 & elCtx.$flags$);
         return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rCtx, elCtx), 
-        elCtx.$componentQrl$ = cmpProps[OnRenderProp], assertQrl(elCtx.$componentQrl$), 
+        elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
         needsRender = true), needsRender ? then(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
     }
     return "q:s" in props ? (assertDefined(currentComponent.$slots$, "current component slots must be a defined array"), 
@@ -3622,8 +3614,8 @@ const createElm = (rCtx, vnode, flags, promises) => {
     flags &= -3), 2 & vnode.$flags$ && (flags |= 4), vnode.$elm$ = elm;
     const elCtx = createContext$1(elm);
     if (elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, isVirtual) {
-        if (OnRenderProp in props) {
-            const renderQRL = props[OnRenderProp];
+        if ("q:renderFn" in props) {
+            const renderQRL = props["q:renderFn"];
             assertQrl(renderQRL);
             const containerState = rCtx.$static$.$containerState$;
             const target = createPropsState();
@@ -3640,7 +3632,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                     }
                 }
             }
-            if (setQId(rCtx, elCtx), qDev && !qTest) {
+            if (setQId(rCtx, elCtx), qDev && true) {
                 const symbol = renderQRL.$symbol$;
                 symbol && directSetAttribute(elm, "data-qrl", symbol);
             }
@@ -4899,7 +4891,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     };
                     return emitUsedSymbol(symbol, context.$element$, start), invoke.call(this, context, fn, ...args);
                 }
-                throw qError(QError_qrlIsNotFunction);
+                throw qError(10);
             }));
         };
     }
@@ -4953,13 +4945,13 @@ const emitUsedSymbol = (symbol, element, reqTime) => {
 };
 
 const emitEvent = (eventName, detail) => {
-    qTest || isServerPlatform() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
+    isServerPlatform() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
         bubbles: false,
         detail: detail
     }));
 };
 
-const now = () => qTest || isServerPlatform() ? 0 : "object" == typeof performance ? performance.now() : 0;
+const now = () => isServerPlatform() ? 0 : "object" == typeof performance ? performance.now() : 0;
 
 const $ = expression => {
     throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
@@ -4968,9 +4960,9 @@ const $ = expression => {
 const componentQrl = componentQrl => {
     function QwikComponent(props, key, flags) {
         assertQrl(componentQrl);
-        const finalKey = (qTest ? "sX" : componentQrl.$hash$.slice(0, 4)) + ":" + (key || "");
+        const finalKey = componentQrl.$hash$.slice(0, 4) + ":" + (key || "");
         return _jsxC(Virtual, {
-            [OnRenderProp]: componentQrl,
+            "q:renderFn": componentQrl,
             [QSlot]: props[QSlot],
             [_IMMUTABLE]: props[_IMMUTABLE],
             children: props.children,
@@ -5050,7 +5042,7 @@ const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerE
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "0.21.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "0.22.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
 };
 
@@ -5139,7 +5131,7 @@ const scopeStylesheet = (css, scopeId) => {
         out.push(css.substring(lastIdx, idx)), lastIdx = idx;
     }
     function insertScopingSelector(idx) {
-        mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", ComponentStylesPrefixContent, scopeId));
+        mode === pseudoGlobal || shouldNotInsertScoping() || (flush(idx), out.push(".", "⭐️", scopeId));
     }
     function lookAhead(arc) {
         let prefix = 0;
@@ -5250,7 +5242,7 @@ const useStylesQrl = styles => {
 const useStyles$ = implicit$FirstArg(useStylesQrl);
 
 const useStylesScopedQrl = styles => ({
-    scopeId: ComponentStylesPrefixContent + _useStyles(styles, getScopedStyles, true)
+    scopeId: "⭐️" + _useStyles(styles, getScopedStyles, true)
 });
 
 const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
@@ -5265,8 +5257,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
     var qStyles, index;
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
-    scoped && elCtx.$scopeIds$.push((styleId => ComponentStylesPrefixContent + styleId)(styleId)), 
-    ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
+    scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
         return styleId;
     }
     containerState.$styleIds$.add(styleId);

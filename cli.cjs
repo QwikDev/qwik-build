@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.21.0
+ * @builder.io/qwik/cli 0.22.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -185,8 +185,8 @@ var require_windows = __commonJS({
         return true;
       }
       for (var i = 0; i < pathext.length; i++) {
-        var p2 = pathext[i].toLowerCase();
-        if (p2 && path3.substr(-p2.length).toLowerCase() === p2) {
+        var p3 = pathext[i].toLowerCase();
+        if (p3 && path3.substr(-p3.length).toLowerCase() === p3) {
           return true;
         }
       }
@@ -232,11 +232,11 @@ var require_mode = __commonJS({
       var gid = stat.gid;
       var myUid = options.uid !== void 0 ? options.uid : process.getuid && process.getuid();
       var myGid = options.gid !== void 0 ? options.gid : process.getgid && process.getgid();
-      var u3 = parseInt("100", 8);
+      var u2 = parseInt("100", 8);
       var g3 = parseInt("010", 8);
       var o2 = parseInt("001", 8);
-      var ug = u3 | g3;
-      var ret = mod & o2 || mod & g3 && gid === myGid || mod & u3 && uid === myUid || mod & ug && myUid === 0;
+      var ug = u2 | g3;
+      var ret = mod & o2 || mod & g3 && gid === myGid || mod & u2 && uid === myUid || mod & ug && myUid === 0;
       return ret;
     }
   }
@@ -340,21 +340,21 @@ var require_which = __commonJS({
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path3.join(pathPart, cmd);
-        const p2 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
-        resolve2(subStep(p2, i, 0));
+        const p3 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
+        resolve2(subStep(p3, i, 0));
       });
-      const subStep = (p2, i, ii) => new Promise((resolve2, reject) => {
+      const subStep = (p3, i, ii) => new Promise((resolve2, reject) => {
         if (ii === pathExt.length)
           return resolve2(step(i + 1));
         const ext = pathExt[ii];
-        isexe(p2 + ext, { pathExt: pathExtExe }, (er, is) => {
+        isexe(p3 + ext, { pathExt: pathExtExe }, (er, is) => {
           if (!er && is) {
             if (opt.all)
-              found.push(p2 + ext);
+              found.push(p3 + ext);
             else
-              return resolve2(p2 + ext);
+              return resolve2(p3 + ext);
           }
-          return resolve2(subStep(p2, i, ii + 1));
+          return resolve2(subStep(p3, i, ii + 1));
         });
       });
       return cb ? step(0).then((res) => cb(null, res), cb) : step(0);
@@ -367,9 +367,9 @@ var require_which = __commonJS({
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path3.join(pathPart, cmd);
-        const p2 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
-        for (let j = 0; j < pathExt.length; j++) {
-          const cur = p2 + pathExt[j];
+        const p3 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
+        for (let j2 = 0; j2 < pathExt.length; j2++) {
+          const cur = p3 + pathExt[j2];
           try {
             const is = isexe.sync(cur, { pathExt: pathExtExe });
             if (is) {
@@ -706,11 +706,11 @@ var require_signals = __commonJS({
 // node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js
 var require_signal_exit = __commonJS({
   "node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js"(exports, module2) {
-    var process4 = global.process;
-    var processOk = function(process5) {
-      return process5 && typeof process5 === "object" && typeof process5.removeListener === "function" && typeof process5.emit === "function" && typeof process5.reallyExit === "function" && typeof process5.listeners === "function" && typeof process5.kill === "function" && typeof process5.pid === "number" && typeof process5.on === "function";
+    var process5 = global.process;
+    var processOk = function(process6) {
+      return process6 && typeof process6 === "object" && typeof process6.removeListener === "function" && typeof process6.emit === "function" && typeof process6.reallyExit === "function" && typeof process6.listeners === "function" && typeof process6.kill === "function" && typeof process6.pid === "number" && typeof process6.on === "function";
     };
-    if (!processOk(process4)) {
+    if (!processOk(process5)) {
       module2.exports = function() {
         return function() {
         };
@@ -718,15 +718,15 @@ var require_signal_exit = __commonJS({
     } else {
       assert = require("assert");
       signals = require_signals();
-      isWin = /^win/i.test(process4.platform);
+      isWin = /^win/i.test(process5.platform);
       EE = require("events");
       if (typeof EE !== "function") {
         EE = EE.EventEmitter;
       }
-      if (process4.__signal_exit_emitter__) {
-        emitter = process4.__signal_exit_emitter__;
+      if (process5.__signal_exit_emitter__) {
+        emitter = process5.__signal_exit_emitter__;
       } else {
-        emitter = process4.__signal_exit_emitter__ = new EE();
+        emitter = process5.__signal_exit_emitter__ = new EE();
         emitter.count = 0;
         emitter.emitted = {};
       }
@@ -763,12 +763,12 @@ var require_signal_exit = __commonJS({
         loaded = false;
         signals.forEach(function(sig) {
           try {
-            process4.removeListener(sig, sigListeners[sig]);
+            process5.removeListener(sig, sigListeners[sig]);
           } catch (er) {
           }
         });
-        process4.emit = originalProcessEmit;
-        process4.reallyExit = originalProcessReallyExit;
+        process5.emit = originalProcessEmit;
+        process5.reallyExit = originalProcessReallyExit;
         emitter.count -= 1;
       };
       module2.exports.unload = unload;
@@ -785,7 +785,7 @@ var require_signal_exit = __commonJS({
           if (!processOk(global.process)) {
             return;
           }
-          var listeners = process4.listeners(sig);
+          var listeners = process5.listeners(sig);
           if (listeners.length === emitter.count) {
             unload();
             emit("exit", null, sig);
@@ -793,7 +793,7 @@ var require_signal_exit = __commonJS({
             if (isWin && sig === "SIGHUP") {
               sig = "SIGINT";
             }
-            process4.kill(process4.pid, sig);
+            process5.kill(process5.pid, sig);
           }
         };
       });
@@ -809,36 +809,36 @@ var require_signal_exit = __commonJS({
         emitter.count += 1;
         signals = signals.filter(function(sig) {
           try {
-            process4.on(sig, sigListeners[sig]);
+            process5.on(sig, sigListeners[sig]);
             return true;
           } catch (er) {
             return false;
           }
         });
-        process4.emit = processEmit;
-        process4.reallyExit = processReallyExit;
+        process5.emit = processEmit;
+        process5.reallyExit = processReallyExit;
       };
       module2.exports.load = load;
-      originalProcessReallyExit = process4.reallyExit;
+      originalProcessReallyExit = process5.reallyExit;
       processReallyExit = function processReallyExit2(code) {
         if (!processOk(global.process)) {
           return;
         }
-        process4.exitCode = code || /* istanbul ignore next */
+        process5.exitCode = code || /* istanbul ignore next */
         0;
-        emit("exit", process4.exitCode, null);
-        emit("afterexit", process4.exitCode, null);
-        originalProcessReallyExit.call(process4, process4.exitCode);
+        emit("exit", process5.exitCode, null);
+        emit("afterexit", process5.exitCode, null);
+        originalProcessReallyExit.call(process5, process5.exitCode);
       };
-      originalProcessEmit = process4.emit;
+      originalProcessEmit = process5.emit;
       processEmit = function processEmit2(ev, arg) {
         if (ev === "exit" && processOk(global.process)) {
           if (arg !== void 0) {
-            process4.exitCode = arg;
+            process5.exitCode = arg;
           }
           var ret = originalProcessEmit.apply(this, arguments);
-          emit("exit", process4.exitCode, null);
-          emit("afterexit", process4.exitCode, null);
+          emit("exit", process5.exitCode, null);
+          emit("afterexit", process5.exitCode, null);
           return ret;
         } else {
           return originalProcessEmit.apply(this, arguments);
@@ -1110,134 +1110,334 @@ var import_node_path3 = require("path");
 var import_node_fs2 = __toESM(require("fs"), 1);
 var import_node_path2 = require("path");
 
-// node_modules/.pnpm/@clack+core@0.3.0/node_modules/@clack/core/dist/index.mjs
+// node_modules/.pnpm/@clack+core@0.3.2/node_modules/@clack/core/dist/index.mjs
 var import_sisteransi = __toESM(require_src(), 1);
 var import_node_process = require("process");
-var a = __toESM(require("readline"), 1);
+var f = __toESM(require("readline"), 1);
 var import_node_readline = __toESM(require("readline"), 1);
 var import_node_tty = require("tty");
-function x(o2, t) {
-  if (o2 === t)
+function z({ onlyFirst: t = false } = {}) {
+  const u2 = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"].join("|");
+  return new RegExp(u2, t ? void 0 : "g");
+}
+function $2(t) {
+  if (typeof t != "string")
+    throw new TypeError(`Expected a \`string\`, got \`${typeof t}\``);
+  return t.replace(z(), "");
+}
+var m = {};
+var G = { get exports() {
+  return m;
+}, set exports(t) {
+  m = t;
+} };
+(function(t) {
+  var u2 = {};
+  t.exports = u2, u2.eastAsianWidth = function(e2) {
+    var s = e2.charCodeAt(0), C2 = e2.length == 2 ? e2.charCodeAt(1) : 0, D2 = s;
+    return 55296 <= s && s <= 56319 && 56320 <= C2 && C2 <= 57343 && (s &= 1023, C2 &= 1023, D2 = s << 10 | C2, D2 += 65536), D2 == 12288 || 65281 <= D2 && D2 <= 65376 || 65504 <= D2 && D2 <= 65510 ? "F" : D2 == 8361 || 65377 <= D2 && D2 <= 65470 || 65474 <= D2 && D2 <= 65479 || 65482 <= D2 && D2 <= 65487 || 65490 <= D2 && D2 <= 65495 || 65498 <= D2 && D2 <= 65500 || 65512 <= D2 && D2 <= 65518 ? "H" : 4352 <= D2 && D2 <= 4447 || 4515 <= D2 && D2 <= 4519 || 4602 <= D2 && D2 <= 4607 || 9001 <= D2 && D2 <= 9002 || 11904 <= D2 && D2 <= 11929 || 11931 <= D2 && D2 <= 12019 || 12032 <= D2 && D2 <= 12245 || 12272 <= D2 && D2 <= 12283 || 12289 <= D2 && D2 <= 12350 || 12353 <= D2 && D2 <= 12438 || 12441 <= D2 && D2 <= 12543 || 12549 <= D2 && D2 <= 12589 || 12593 <= D2 && D2 <= 12686 || 12688 <= D2 && D2 <= 12730 || 12736 <= D2 && D2 <= 12771 || 12784 <= D2 && D2 <= 12830 || 12832 <= D2 && D2 <= 12871 || 12880 <= D2 && D2 <= 13054 || 13056 <= D2 && D2 <= 19903 || 19968 <= D2 && D2 <= 42124 || 42128 <= D2 && D2 <= 42182 || 43360 <= D2 && D2 <= 43388 || 44032 <= D2 && D2 <= 55203 || 55216 <= D2 && D2 <= 55238 || 55243 <= D2 && D2 <= 55291 || 63744 <= D2 && D2 <= 64255 || 65040 <= D2 && D2 <= 65049 || 65072 <= D2 && D2 <= 65106 || 65108 <= D2 && D2 <= 65126 || 65128 <= D2 && D2 <= 65131 || 110592 <= D2 && D2 <= 110593 || 127488 <= D2 && D2 <= 127490 || 127504 <= D2 && D2 <= 127546 || 127552 <= D2 && D2 <= 127560 || 127568 <= D2 && D2 <= 127569 || 131072 <= D2 && D2 <= 194367 || 177984 <= D2 && D2 <= 196605 || 196608 <= D2 && D2 <= 262141 ? "W" : 32 <= D2 && D2 <= 126 || 162 <= D2 && D2 <= 163 || 165 <= D2 && D2 <= 166 || D2 == 172 || D2 == 175 || 10214 <= D2 && D2 <= 10221 || 10629 <= D2 && D2 <= 10630 ? "Na" : D2 == 161 || D2 == 164 || 167 <= D2 && D2 <= 168 || D2 == 170 || 173 <= D2 && D2 <= 174 || 176 <= D2 && D2 <= 180 || 182 <= D2 && D2 <= 186 || 188 <= D2 && D2 <= 191 || D2 == 198 || D2 == 208 || 215 <= D2 && D2 <= 216 || 222 <= D2 && D2 <= 225 || D2 == 230 || 232 <= D2 && D2 <= 234 || 236 <= D2 && D2 <= 237 || D2 == 240 || 242 <= D2 && D2 <= 243 || 247 <= D2 && D2 <= 250 || D2 == 252 || D2 == 254 || D2 == 257 || D2 == 273 || D2 == 275 || D2 == 283 || 294 <= D2 && D2 <= 295 || D2 == 299 || 305 <= D2 && D2 <= 307 || D2 == 312 || 319 <= D2 && D2 <= 322 || D2 == 324 || 328 <= D2 && D2 <= 331 || D2 == 333 || 338 <= D2 && D2 <= 339 || 358 <= D2 && D2 <= 359 || D2 == 363 || D2 == 462 || D2 == 464 || D2 == 466 || D2 == 468 || D2 == 470 || D2 == 472 || D2 == 474 || D2 == 476 || D2 == 593 || D2 == 609 || D2 == 708 || D2 == 711 || 713 <= D2 && D2 <= 715 || D2 == 717 || D2 == 720 || 728 <= D2 && D2 <= 731 || D2 == 733 || D2 == 735 || 768 <= D2 && D2 <= 879 || 913 <= D2 && D2 <= 929 || 931 <= D2 && D2 <= 937 || 945 <= D2 && D2 <= 961 || 963 <= D2 && D2 <= 969 || D2 == 1025 || 1040 <= D2 && D2 <= 1103 || D2 == 1105 || D2 == 8208 || 8211 <= D2 && D2 <= 8214 || 8216 <= D2 && D2 <= 8217 || 8220 <= D2 && D2 <= 8221 || 8224 <= D2 && D2 <= 8226 || 8228 <= D2 && D2 <= 8231 || D2 == 8240 || 8242 <= D2 && D2 <= 8243 || D2 == 8245 || D2 == 8251 || D2 == 8254 || D2 == 8308 || D2 == 8319 || 8321 <= D2 && D2 <= 8324 || D2 == 8364 || D2 == 8451 || D2 == 8453 || D2 == 8457 || D2 == 8467 || D2 == 8470 || 8481 <= D2 && D2 <= 8482 || D2 == 8486 || D2 == 8491 || 8531 <= D2 && D2 <= 8532 || 8539 <= D2 && D2 <= 8542 || 8544 <= D2 && D2 <= 8555 || 8560 <= D2 && D2 <= 8569 || D2 == 8585 || 8592 <= D2 && D2 <= 8601 || 8632 <= D2 && D2 <= 8633 || D2 == 8658 || D2 == 8660 || D2 == 8679 || D2 == 8704 || 8706 <= D2 && D2 <= 8707 || 8711 <= D2 && D2 <= 8712 || D2 == 8715 || D2 == 8719 || D2 == 8721 || D2 == 8725 || D2 == 8730 || 8733 <= D2 && D2 <= 8736 || D2 == 8739 || D2 == 8741 || 8743 <= D2 && D2 <= 8748 || D2 == 8750 || 8756 <= D2 && D2 <= 8759 || 8764 <= D2 && D2 <= 8765 || D2 == 8776 || D2 == 8780 || D2 == 8786 || 8800 <= D2 && D2 <= 8801 || 8804 <= D2 && D2 <= 8807 || 8810 <= D2 && D2 <= 8811 || 8814 <= D2 && D2 <= 8815 || 8834 <= D2 && D2 <= 8835 || 8838 <= D2 && D2 <= 8839 || D2 == 8853 || D2 == 8857 || D2 == 8869 || D2 == 8895 || D2 == 8978 || 9312 <= D2 && D2 <= 9449 || 9451 <= D2 && D2 <= 9547 || 9552 <= D2 && D2 <= 9587 || 9600 <= D2 && D2 <= 9615 || 9618 <= D2 && D2 <= 9621 || 9632 <= D2 && D2 <= 9633 || 9635 <= D2 && D2 <= 9641 || 9650 <= D2 && D2 <= 9651 || 9654 <= D2 && D2 <= 9655 || 9660 <= D2 && D2 <= 9661 || 9664 <= D2 && D2 <= 9665 || 9670 <= D2 && D2 <= 9672 || D2 == 9675 || 9678 <= D2 && D2 <= 9681 || 9698 <= D2 && D2 <= 9701 || D2 == 9711 || 9733 <= D2 && D2 <= 9734 || D2 == 9737 || 9742 <= D2 && D2 <= 9743 || 9748 <= D2 && D2 <= 9749 || D2 == 9756 || D2 == 9758 || D2 == 9792 || D2 == 9794 || 9824 <= D2 && D2 <= 9825 || 9827 <= D2 && D2 <= 9829 || 9831 <= D2 && D2 <= 9834 || 9836 <= D2 && D2 <= 9837 || D2 == 9839 || 9886 <= D2 && D2 <= 9887 || 9918 <= D2 && D2 <= 9919 || 9924 <= D2 && D2 <= 9933 || 9935 <= D2 && D2 <= 9953 || D2 == 9955 || 9960 <= D2 && D2 <= 9983 || D2 == 10045 || D2 == 10071 || 10102 <= D2 && D2 <= 10111 || 11093 <= D2 && D2 <= 11097 || 12872 <= D2 && D2 <= 12879 || 57344 <= D2 && D2 <= 63743 || 65024 <= D2 && D2 <= 65039 || D2 == 65533 || 127232 <= D2 && D2 <= 127242 || 127248 <= D2 && D2 <= 127277 || 127280 <= D2 && D2 <= 127337 || 127344 <= D2 && D2 <= 127386 || 917760 <= D2 && D2 <= 917999 || 983040 <= D2 && D2 <= 1048573 || 1048576 <= D2 && D2 <= 1114109 ? "A" : "N";
+  }, u2.characterLength = function(e2) {
+    var s = this.eastAsianWidth(e2);
+    return s == "F" || s == "W" || s == "A" ? 2 : 1;
+  };
+  function F2(e2) {
+    return e2.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]/g) || [];
+  }
+  u2.length = function(e2) {
+    for (var s = F2(e2), C2 = 0, D2 = 0; D2 < s.length; D2++)
+      C2 = C2 + this.characterLength(s[D2]);
+    return C2;
+  }, u2.slice = function(e2, s, C2) {
+    textLen = u2.length(e2), s = s || 0, C2 = C2 || 1, s < 0 && (s = textLen + s), C2 < 0 && (C2 = textLen + C2);
+    for (var D2 = "", i = 0, o2 = F2(e2), E2 = 0; E2 < o2.length; E2++) {
+      var a2 = o2[E2], n = u2.length(a2);
+      if (i >= s - (n == 2 ? 1 : 0))
+        if (i + n <= C2)
+          D2 += a2;
+        else
+          break;
+      i += n;
+    }
+    return D2;
+  };
+})(G);
+var K = m;
+var Y = function() {
+  return /\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62(?:\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73|\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74|\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67)\uDB40\uDC7F|(?:\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFF\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB-\uDFFE])|(?:\uD83E\uDDD1\uD83C\uDFFE\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFE\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB-\uDFFD\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFD\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFD\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB\uDFFC\uDFFE\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFC\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFC\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB\uDFFD-\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFB\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFB\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFC-\uDFFF])|\uD83D\uDC68(?:\uD83C\uDFFB(?:\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF]))|\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFC-\uDFFF])|[\u2695\u2696\u2708]\uFE0F|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))?|(?:\uD83C[\uDFFC-\uDFFF])\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF]))|\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83D\uDC68|(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFE])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFD\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFC\uDFFE\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFD-\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])\uFE0F|\u200D(?:(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D[\uDC66\uDC67])|\uD83D[\uDC66\uDC67])|\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC)?|(?:\uD83D\uDC69(?:\uD83C\uDFFB\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69])|(?:\uD83C[\uDFFC-\uDFFF])\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69]))|\uD83E\uDDD1(?:\uD83C[\uDFFB-\uDFFF])\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1)(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|\uD83D\uDC69(?:\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFB\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))|\uD83E\uDDD1(?:\u200D(?:\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFB\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))|\uD83D\uDC69\u200D\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D[\uDC66\uDC67])|\uD83D\uDC69\u200D\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|(?:\uD83D\uDC41\uFE0F\u200D\uD83D\uDDE8|\uD83E\uDDD1(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])|\uD83D\uDC69(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])|\uD83D\uDE36\u200D\uD83C\uDF2B|\uD83C\uDFF3\uFE0F\u200D\u26A7|\uD83D\uDC3B\u200D\u2744|(?:(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC6F|\uD83E[\uDD3C\uDDDE\uDDDF])\u200D[\u2640\u2642]|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])\u200D[\u2640\u2642]|\uD83C\uDFF4\u200D\u2620|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])\u200D[\u2640\u2642]|[\xA9\xAE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA\u2328\u23CF\u23ED-\u23EF\u23F1\u23F2\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB\u25FC\u2600-\u2604\u260E\u2611\u2618\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E\u2692\u2694-\u2697\u2699\u269B\u269C\u26A0\u26A7\u26B0\u26B1\u26C8\u26CF\u26D1\u26D3\u26E9\u26F0\u26F1\u26F4\u26F7\u26F8\u2702\u2708\u2709\u270F\u2712\u2714\u2716\u271D\u2721\u2733\u2734\u2744\u2747\u2763\u27A1\u2934\u2935\u2B05-\u2B07\u3030\u303D\u3297\u3299]|\uD83C[\uDD70\uDD71\uDD7E\uDD7F\uDE02\uDE37\uDF21\uDF24-\uDF2C\uDF36\uDF7D\uDF96\uDF97\uDF99-\uDF9B\uDF9E\uDF9F\uDFCD\uDFCE\uDFD4-\uDFDF\uDFF5\uDFF7]|\uD83D[\uDC3F\uDCFD\uDD49\uDD4A\uDD6F\uDD70\uDD73\uDD76-\uDD79\uDD87\uDD8A-\uDD8D\uDDA5\uDDA8\uDDB1\uDDB2\uDDBC\uDDC2-\uDDC4\uDDD1-\uDDD3\uDDDC-\uDDDE\uDDE1\uDDE3\uDDE8\uDDEF\uDDF3\uDDFA\uDECB\uDECD-\uDECF\uDEE0-\uDEE5\uDEE9\uDEF0\uDEF3])\uFE0F|\uD83C\uDFF3\uFE0F\u200D\uD83C\uDF08|\uD83D\uDC69\u200D\uD83D\uDC67|\uD83D\uDC69\u200D\uD83D\uDC66|\uD83D\uDE35\u200D\uD83D\uDCAB|\uD83D\uDE2E\u200D\uD83D\uDCA8|\uD83D\uDC15\u200D\uD83E\uDDBA|\uD83E\uDDD1(?:\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC|\uD83C\uDFFB)?|\uD83D\uDC69(?:\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC|\uD83C\uDFFB)?|\uD83C\uDDFD\uD83C\uDDF0|\uD83C\uDDF6\uD83C\uDDE6|\uD83C\uDDF4\uD83C\uDDF2|\uD83D\uDC08\u200D\u2B1B|\u2764\uFE0F\u200D(?:\uD83D\uDD25|\uD83E\uDE79)|\uD83D\uDC41\uFE0F|\uD83C\uDFF3\uFE0F|\uD83C\uDDFF(?:\uD83C[\uDDE6\uDDF2\uDDFC])|\uD83C\uDDFE(?:\uD83C[\uDDEA\uDDF9])|\uD83C\uDDFC(?:\uD83C[\uDDEB\uDDF8])|\uD83C\uDDFB(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDEE\uDDF3\uDDFA])|\uD83C\uDDFA(?:\uD83C[\uDDE6\uDDEC\uDDF2\uDDF3\uDDF8\uDDFE\uDDFF])|\uD83C\uDDF9(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDED\uDDEF-\uDDF4\uDDF7\uDDF9\uDDFB\uDDFC\uDDFF])|\uD83C\uDDF8(?:\uD83C[\uDDE6-\uDDEA\uDDEC-\uDDF4\uDDF7-\uDDF9\uDDFB\uDDFD-\uDDFF])|\uD83C\uDDF7(?:\uD83C[\uDDEA\uDDF4\uDDF8\uDDFA\uDDFC])|\uD83C\uDDF5(?:\uD83C[\uDDE6\uDDEA-\uDDED\uDDF0-\uDDF3\uDDF7-\uDDF9\uDDFC\uDDFE])|\uD83C\uDDF3(?:\uD83C[\uDDE6\uDDE8\uDDEA-\uDDEC\uDDEE\uDDF1\uDDF4\uDDF5\uDDF7\uDDFA\uDDFF])|\uD83C\uDDF2(?:\uD83C[\uDDE6\uDDE8-\uDDED\uDDF0-\uDDFF])|\uD83C\uDDF1(?:\uD83C[\uDDE6-\uDDE8\uDDEE\uDDF0\uDDF7-\uDDFB\uDDFE])|\uD83C\uDDF0(?:\uD83C[\uDDEA\uDDEC-\uDDEE\uDDF2\uDDF3\uDDF5\uDDF7\uDDFC\uDDFE\uDDFF])|\uD83C\uDDEF(?:\uD83C[\uDDEA\uDDF2\uDDF4\uDDF5])|\uD83C\uDDEE(?:\uD83C[\uDDE8-\uDDEA\uDDF1-\uDDF4\uDDF6-\uDDF9])|\uD83C\uDDED(?:\uD83C[\uDDF0\uDDF2\uDDF3\uDDF7\uDDF9\uDDFA])|\uD83C\uDDEC(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEE\uDDF1-\uDDF3\uDDF5-\uDDFA\uDDFC\uDDFE])|\uD83C\uDDEB(?:\uD83C[\uDDEE-\uDDF0\uDDF2\uDDF4\uDDF7])|\uD83C\uDDEA(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDED\uDDF7-\uDDFA])|\uD83C\uDDE9(?:\uD83C[\uDDEA\uDDEC\uDDEF\uDDF0\uDDF2\uDDF4\uDDFF])|\uD83C\uDDE8(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDEE\uDDF0-\uDDF5\uDDF7\uDDFA-\uDDFF])|\uD83C\uDDE7(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEF\uDDF1-\uDDF4\uDDF6-\uDDF9\uDDFB\uDDFC\uDDFE\uDDFF])|\uD83C\uDDE6(?:\uD83C[\uDDE8-\uDDEC\uDDEE\uDDF1\uDDF2\uDDF4\uDDF6-\uDDFA\uDDFC\uDDFD\uDDFF])|[#\*0-9]\uFE0F\u20E3|\u2764\uFE0F|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])(?:\uD83C[\uDFFB-\uDFFF])|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])|\uD83C\uDFF4|(?:[\u270A\u270B]|\uD83C[\uDF85\uDFC2\uDFC7]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66\uDC67\uDC6B-\uDC6D\uDC72\uDC74-\uDC76\uDC78\uDC7C\uDC83\uDC85\uDC8F\uDC91\uDCAA\uDD7A\uDD95\uDD96\uDE4C\uDE4F\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1C\uDD1E\uDD1F\uDD30-\uDD34\uDD36\uDD77\uDDB5\uDDB6\uDDBB\uDDD2\uDDD3\uDDD5])(?:\uD83C[\uDFFB-\uDFFF])|(?:[\u261D\u270C\u270D]|\uD83D[\uDD74\uDD90])(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])|[\u270A\u270B]|\uD83C[\uDF85\uDFC2\uDFC7]|\uD83D[\uDC08\uDC15\uDC3B\uDC42\uDC43\uDC46-\uDC50\uDC66\uDC67\uDC6B-\uDC6D\uDC72\uDC74-\uDC76\uDC78\uDC7C\uDC83\uDC85\uDC8F\uDC91\uDCAA\uDD7A\uDD95\uDD96\uDE2E\uDE35\uDE36\uDE4C\uDE4F\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1C\uDD1E\uDD1F\uDD30-\uDD34\uDD36\uDD77\uDDB5\uDDB6\uDDBB\uDDD2\uDDD3\uDDD5]|\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD]|\uD83D\uDC6F|\uD83E[\uDD3C\uDDDE\uDDDF]|[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]|\uD83C[\uDC04\uDCCF\uDD8E\uDD91-\uDD9A\uDE01\uDE1A\uDE2F\uDE32-\uDE36\uDE38-\uDE3A\uDE50\uDE51\uDF00-\uDF20\uDF2D-\uDF35\uDF37-\uDF7C\uDF7E-\uDF84\uDF86-\uDF93\uDFA0-\uDFC1\uDFC5\uDFC6\uDFC8\uDFC9\uDFCF-\uDFD3\uDFE0-\uDFF0\uDFF8-\uDFFF]|\uD83D[\uDC00-\uDC07\uDC09-\uDC14\uDC16-\uDC3A\uDC3C-\uDC3E\uDC40\uDC44\uDC45\uDC51-\uDC65\uDC6A\uDC79-\uDC7B\uDC7D-\uDC80\uDC84\uDC88-\uDC8E\uDC90\uDC92-\uDCA9\uDCAB-\uDCFC\uDCFF-\uDD3D\uDD4B-\uDD4E\uDD50-\uDD67\uDDA4\uDDFB-\uDE2D\uDE2F-\uDE34\uDE37-\uDE44\uDE48-\uDE4A\uDE80-\uDEA2\uDEA4-\uDEB3\uDEB7-\uDEBF\uDEC1-\uDEC5\uDED0-\uDED2\uDED5-\uDED7\uDEEB\uDEEC\uDEF4-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0D\uDD0E\uDD10-\uDD17\uDD1D\uDD20-\uDD25\uDD27-\uDD2F\uDD3A\uDD3F-\uDD45\uDD47-\uDD76\uDD78\uDD7A-\uDDB4\uDDB7\uDDBA\uDDBC-\uDDCB\uDDD0\uDDE0-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6]|(?:[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]|\uD83C[\uDC04\uDCCF\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE1A\uDE2F\uDE32-\uDE36\uDE38-\uDE3A\uDE50\uDE51\uDF00-\uDF20\uDF2D-\uDF35\uDF37-\uDF7C\uDF7E-\uDF93\uDFA0-\uDFCA\uDFCF-\uDFD3\uDFE0-\uDFF0\uDFF4\uDFF8-\uDFFF]|\uD83D[\uDC00-\uDC3E\uDC40\uDC42-\uDCFC\uDCFF-\uDD3D\uDD4B-\uDD4E\uDD50-\uDD67\uDD7A\uDD95\uDD96\uDDA4\uDDFB-\uDE4F\uDE80-\uDEC5\uDECC\uDED0-\uDED2\uDED5-\uDED7\uDEEB\uDEEC\uDEF4-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0C-\uDD3A\uDD3C-\uDD45\uDD47-\uDD78\uDD7A-\uDDCB\uDDCD-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6])|(?:[#\*0-9\xA9\xAE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614\u2615\u2618\u261D\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E\u267F\u2692-\u2697\u2699\u269B\u269C\u26A0\u26A1\u26A7\u26AA\u26AB\u26B0\u26B1\u26BD\u26BE\u26C4\u26C5\u26C8\u26CE\u26CF\u26D1\u26D3\u26D4\u26E9\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934\u2935\u2B05-\u2B07\u2B1B\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299]|\uD83C[\uDC04\uDCCF\uDD70\uDD71\uDD7E\uDD7F\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE02\uDE1A\uDE2F\uDE32-\uDE3A\uDE50\uDE51\uDF00-\uDF21\uDF24-\uDF93\uDF96\uDF97\uDF99-\uDF9B\uDF9E-\uDFF0\uDFF3-\uDFF5\uDFF7-\uDFFF]|\uD83D[\uDC00-\uDCFD\uDCFF-\uDD3D\uDD49-\uDD4E\uDD50-\uDD67\uDD6F\uDD70\uDD73-\uDD7A\uDD87\uDD8A-\uDD8D\uDD90\uDD95\uDD96\uDDA4\uDDA5\uDDA8\uDDB1\uDDB2\uDDBC\uDDC2-\uDDC4\uDDD1-\uDDD3\uDDDC-\uDDDE\uDDE1\uDDE3\uDDE8\uDDEF\uDDF3\uDDFA-\uDE4F\uDE80-\uDEC5\uDECB-\uDED2\uDED5-\uDED7\uDEE0-\uDEE5\uDEE9\uDEEB\uDEEC\uDEF0\uDEF3-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0C-\uDD3A\uDD3C-\uDD45\uDD47-\uDD78\uDD7A-\uDDCB\uDDCD-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6])\uFE0F|(?:[\u261D\u26F9\u270A-\u270D]|\uD83C[\uDF85\uDFC2-\uDFC4\uDFC7\uDFCA-\uDFCC]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66-\uDC78\uDC7C\uDC81-\uDC83\uDC85-\uDC87\uDC8F\uDC91\uDCAA\uDD74\uDD75\uDD7A\uDD90\uDD95\uDD96\uDE45-\uDE47\uDE4B-\uDE4F\uDEA3\uDEB4-\uDEB6\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1F\uDD26\uDD30-\uDD39\uDD3C-\uDD3E\uDD77\uDDB5\uDDB6\uDDB8\uDDB9\uDDBB\uDDCD-\uDDCF\uDDD1-\uDDDD])/g;
+};
+function c(t, u2 = {}) {
+  if (typeof t != "string" || t.length === 0 || (u2 = { ambiguousIsNarrow: true, ...u2 }, t = $2(t), t.length === 0))
+    return 0;
+  t = t.replace(Y(), "  ");
+  const F2 = u2.ambiguousIsNarrow ? 1 : 2;
+  let e2 = 0;
+  for (const s of t) {
+    const C2 = s.codePointAt(0);
+    if (C2 <= 31 || C2 >= 127 && C2 <= 159 || C2 >= 768 && C2 <= 879)
+      continue;
+    switch (K.eastAsianWidth(s)) {
+      case "F":
+      case "W":
+        e2 += 2;
+        break;
+      case "A":
+        e2 += F2;
+        break;
+      default:
+        e2 += 1;
+    }
+  }
+  return e2;
+}
+var v = 10;
+var L = (t = 0) => (u2) => `\x1B[${u2 + t}m`;
+var M = (t = 0) => (u2) => `\x1B[${38 + t};5;${u2}m`;
+var T = (t = 0) => (u2, F2, e2) => `\x1B[${38 + t};2;${u2};${F2};${e2}m`;
+var r = { modifier: { reset: [0, 0], bold: [1, 22], dim: [2, 22], italic: [3, 23], underline: [4, 24], overline: [53, 55], inverse: [7, 27], hidden: [8, 28], strikethrough: [9, 29] }, color: { black: [30, 39], red: [31, 39], green: [32, 39], yellow: [33, 39], blue: [34, 39], magenta: [35, 39], cyan: [36, 39], white: [37, 39], blackBright: [90, 39], gray: [90, 39], grey: [90, 39], redBright: [91, 39], greenBright: [92, 39], yellowBright: [93, 39], blueBright: [94, 39], magentaBright: [95, 39], cyanBright: [96, 39], whiteBright: [97, 39] }, bgColor: { bgBlack: [40, 49], bgRed: [41, 49], bgGreen: [42, 49], bgYellow: [43, 49], bgBlue: [44, 49], bgMagenta: [45, 49], bgCyan: [46, 49], bgWhite: [47, 49], bgBlackBright: [100, 49], bgGray: [100, 49], bgGrey: [100, 49], bgRedBright: [101, 49], bgGreenBright: [102, 49], bgYellowBright: [103, 49], bgBlueBright: [104, 49], bgMagentaBright: [105, 49], bgCyanBright: [106, 49], bgWhiteBright: [107, 49] } };
+Object.keys(r.modifier);
+var Z = Object.keys(r.color);
+var H = Object.keys(r.bgColor);
+[...Z, ...H];
+function U() {
+  const t = /* @__PURE__ */ new Map();
+  for (const [u2, F2] of Object.entries(r)) {
+    for (const [e2, s] of Object.entries(F2))
+      r[e2] = { open: `\x1B[${s[0]}m`, close: `\x1B[${s[1]}m` }, F2[e2] = r[e2], t.set(s[0], s[1]);
+    Object.defineProperty(r, u2, { value: F2, enumerable: false });
+  }
+  return Object.defineProperty(r, "codes", { value: t, enumerable: false }), r.color.close = "\x1B[39m", r.bgColor.close = "\x1B[49m", r.color.ansi = L(), r.color.ansi256 = M(), r.color.ansi16m = T(), r.bgColor.ansi = L(v), r.bgColor.ansi256 = M(v), r.bgColor.ansi16m = T(v), Object.defineProperties(r, { rgbToAnsi256: { value: (u2, F2, e2) => u2 === F2 && F2 === e2 ? u2 < 8 ? 16 : u2 > 248 ? 231 : Math.round((u2 - 8) / 247 * 24) + 232 : 16 + 36 * Math.round(u2 / 255 * 5) + 6 * Math.round(F2 / 255 * 5) + Math.round(e2 / 255 * 5), enumerable: false }, hexToRgb: { value: (u2) => {
+    const F2 = /[a-f\d]{6}|[a-f\d]{3}/i.exec(u2.toString(16));
+    if (!F2)
+      return [0, 0, 0];
+    let [e2] = F2;
+    e2.length === 3 && (e2 = [...e2].map((C2) => C2 + C2).join(""));
+    const s = Number.parseInt(e2, 16);
+    return [s >> 16 & 255, s >> 8 & 255, s & 255];
+  }, enumerable: false }, hexToAnsi256: { value: (u2) => r.rgbToAnsi256(...r.hexToRgb(u2)), enumerable: false }, ansi256ToAnsi: { value: (u2) => {
+    if (u2 < 8)
+      return 30 + u2;
+    if (u2 < 16)
+      return 90 + (u2 - 8);
+    let F2, e2, s;
+    if (u2 >= 232)
+      F2 = ((u2 - 232) * 10 + 8) / 255, e2 = F2, s = F2;
+    else {
+      u2 -= 16;
+      const i = u2 % 36;
+      F2 = Math.floor(u2 / 36) / 5, e2 = Math.floor(i / 6) / 5, s = i % 6 / 5;
+    }
+    const C2 = Math.max(F2, e2, s) * 2;
+    if (C2 === 0)
+      return 30;
+    let D2 = 30 + (Math.round(s) << 2 | Math.round(e2) << 1 | Math.round(F2));
+    return C2 === 2 && (D2 += 60), D2;
+  }, enumerable: false }, rgbToAnsi: { value: (u2, F2, e2) => r.ansi256ToAnsi(r.rgbToAnsi256(u2, F2, e2)), enumerable: false }, hexToAnsi: { value: (u2) => r.ansi256ToAnsi(r.hexToAnsi256(u2)), enumerable: false } }), r;
+}
+var q = U();
+var p = /* @__PURE__ */ new Set(["\x1B", "\x9B"]);
+var J = 39;
+var b = "\x07";
+var W = "[";
+var Q = "]";
+var I = "m";
+var w = `${Q}8;;`;
+var N = (t) => `${p.values().next().value}${W}${t}${I}`;
+var j = (t) => `${p.values().next().value}${w}${t}${b}`;
+var X = (t) => t.split(" ").map((u2) => c(u2));
+var _ = (t, u2, F2) => {
+  const e2 = [...u2];
+  let s = false, C2 = false, D2 = c($2(t[t.length - 1]));
+  for (const [i, o2] of e2.entries()) {
+    const E2 = c(o2);
+    if (D2 + E2 <= F2 ? t[t.length - 1] += o2 : (t.push(o2), D2 = 0), p.has(o2) && (s = true, C2 = e2.slice(i + 1).join("").startsWith(w)), s) {
+      C2 ? o2 === b && (s = false, C2 = false) : o2 === I && (s = false);
+      continue;
+    }
+    D2 += E2, D2 === F2 && i < e2.length - 1 && (t.push(""), D2 = 0);
+  }
+  !D2 && t[t.length - 1].length > 0 && t.length > 1 && (t[t.length - 2] += t.pop());
+};
+var DD = (t) => {
+  const u2 = t.split(" ");
+  let F2 = u2.length;
+  for (; F2 > 0 && !(c(u2[F2 - 1]) > 0); )
+    F2--;
+  return F2 === u2.length ? t : u2.slice(0, F2).join(" ") + u2.slice(F2).join("");
+};
+var uD = (t, u2, F2 = {}) => {
+  if (F2.trim !== false && t.trim() === "")
+    return "";
+  let e2 = "", s, C2;
+  const D2 = X(t);
+  let i = [""];
+  for (const [E2, a2] of t.split(" ").entries()) {
+    F2.trim !== false && (i[i.length - 1] = i[i.length - 1].trimStart());
+    let n = c(i[i.length - 1]);
+    if (E2 !== 0 && (n >= u2 && (F2.wordWrap === false || F2.trim === false) && (i.push(""), n = 0), (n > 0 || F2.trim === false) && (i[i.length - 1] += " ", n++)), F2.hard && D2[E2] > u2) {
+      const B = u2 - n, A2 = 1 + Math.floor((D2[E2] - B - 1) / u2);
+      Math.floor((D2[E2] - 1) / u2) < A2 && i.push(""), _(i, a2, u2);
+      continue;
+    }
+    if (n + D2[E2] > u2 && n > 0 && D2[E2] > 0) {
+      if (F2.wordWrap === false && n < u2) {
+        _(i, a2, u2);
+        continue;
+      }
+      i.push("");
+    }
+    if (n + D2[E2] > u2 && F2.wordWrap === false) {
+      _(i, a2, u2);
+      continue;
+    }
+    i[i.length - 1] += a2;
+  }
+  F2.trim !== false && (i = i.map((E2) => DD(E2)));
+  const o2 = [...i.join(`
+`)];
+  for (const [E2, a2] of o2.entries()) {
+    if (e2 += a2, p.has(a2)) {
+      const { groups: B } = new RegExp(`(?:\\${W}(?<code>\\d+)m|\\${w}(?<uri>.*)${b})`).exec(o2.slice(E2).join("")) || { groups: {} };
+      if (B.code !== void 0) {
+        const A2 = Number.parseFloat(B.code);
+        s = A2 === J ? void 0 : A2;
+      } else
+        B.uri !== void 0 && (C2 = B.uri.length === 0 ? void 0 : B.uri);
+    }
+    const n = q.codes.get(Number(s));
+    o2[E2 + 1] === `
+` ? (C2 && (e2 += j("")), s && n && (e2 += N(n))) : a2 === `
+` && (s && n && (e2 += N(s)), C2 && (e2 += j(C2)));
+  }
+  return e2;
+};
+function P(t, u2, F2) {
+  return String(t).normalize().replace(/\r\n/g, `
+`).split(`
+`).map((e2) => uD(e2, u2, F2)).join(`
+`);
+}
+function FD(t, u2) {
+  if (t === u2)
     return;
-  const s = o2.split(`
-`), e2 = t.split(`
-`), i = [];
-  for (let r = 0; r < Math.max(s.length, e2.length); r++)
-    s[r] !== e2[r] && i.push(r);
-  return i;
+  const F2 = t.split(`
+`), e2 = u2.split(`
+`), s = [];
+  for (let C2 = 0; C2 < Math.max(F2.length, e2.length); C2++)
+    F2[C2] !== e2[C2] && s.push(C2);
+  return s;
 }
-var d = Symbol("clack:cancel");
-function C(o2) {
-  return o2 === d;
+var R = Symbol("clack:cancel");
+function eD(t) {
+  return t === R;
 }
-function l(o2, t) {
-  o2.isTTY && o2.setRawMode(t);
+function g(t, u2) {
+  t.isTTY && t.setRawMode(u2);
 }
-var g = /* @__PURE__ */ new Map([["k", "up"], ["j", "down"], ["h", "left"], ["l", "right"]]);
-var y = /* @__PURE__ */ new Set(["up", "down", "left", "right", "space", "enter"]);
-var u = class {
-  constructor({ render: t, input: s = import_node_process.stdin, output: e2 = import_node_process.stdout, ...i }, r = true) {
-    this._track = false, this._cursor = 0, this.state = "initial", this.error = "", this.subscribers = /* @__PURE__ */ new Map(), this._prevFrame = "", this.opts = i, this.onKeypress = this.onKeypress.bind(this), this.close = this.close.bind(this), this.render = this.render.bind(this), this._render = t.bind(this), this._track = r, this.input = s, this.output = e2;
+var V = /* @__PURE__ */ new Map([["k", "up"], ["j", "down"], ["h", "left"], ["l", "right"]]);
+var tD = /* @__PURE__ */ new Set(["up", "down", "left", "right", "space", "enter"]);
+var h = class {
+  constructor({ render: u2, input: F2 = import_node_process.stdin, output: e2 = import_node_process.stdout, ...s }, C2 = true) {
+    this._track = false, this._cursor = 0, this.state = "initial", this.error = "", this.subscribers = /* @__PURE__ */ new Map(), this._prevFrame = "", this.opts = s, this.onKeypress = this.onKeypress.bind(this), this.close = this.close.bind(this), this.render = this.render.bind(this), this._render = u2.bind(this), this._track = C2, this.input = F2, this.output = e2;
   }
   prompt() {
-    const t = new import_node_tty.WriteStream(0);
-    return t._write = (s, e2, i) => {
-      this._track && (this.value = this.rl.line.replace(/\t/g, ""), this._cursor = this.rl.cursor, this.emit("value", this.value)), i();
-    }, this.input.pipe(t), this.rl = import_node_readline.default.createInterface({ input: this.input, output: t, tabSize: 2, prompt: "", escapeCodeTimeout: 50 }), import_node_readline.default.emitKeypressEvents(this.input, this.rl), this.rl.prompt(), this.opts.initialValue !== void 0 && this._track && this.rl.write(this.opts.initialValue), this.input.on("keypress", this.onKeypress), l(this.input, true), this.render(), new Promise((s, e2) => {
+    const u2 = new import_node_tty.WriteStream(0);
+    return u2._write = (F2, e2, s) => {
+      this._track && (this.value = this.rl.line.replace(/\t/g, ""), this._cursor = this.rl.cursor, this.emit("value", this.value)), s();
+    }, this.input.pipe(u2), this.rl = import_node_readline.default.createInterface({ input: this.input, output: u2, tabSize: 2, prompt: "", escapeCodeTimeout: 50 }), import_node_readline.default.emitKeypressEvents(this.input, this.rl), this.rl.prompt(), this.opts.initialValue !== void 0 && this._track && this.rl.write(this.opts.initialValue), this.input.on("keypress", this.onKeypress), g(this.input, true), this.output.on("resize", this.render), this.render(), new Promise((F2, e2) => {
       this.once("submit", () => {
-        this.output.write(import_sisteransi.cursor.show), l(this.input, false), s(this.value);
+        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F2(this.value);
       }), this.once("cancel", () => {
-        this.output.write(import_sisteransi.cursor.show), l(this.input, false), s(d);
+        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F2(R);
       });
     });
   }
-  on(t, s) {
-    const e2 = this.subscribers.get(t) ?? [];
-    e2.push({ cb: s }), this.subscribers.set(t, e2);
+  on(u2, F2) {
+    const e2 = this.subscribers.get(u2) ?? [];
+    e2.push({ cb: F2 }), this.subscribers.set(u2, e2);
   }
-  once(t, s) {
-    const e2 = this.subscribers.get(t) ?? [];
-    e2.push({ cb: s, once: true }), this.subscribers.set(t, e2);
+  once(u2, F2) {
+    const e2 = this.subscribers.get(u2) ?? [];
+    e2.push({ cb: F2, once: true }), this.subscribers.set(u2, e2);
   }
-  emit(t, ...s) {
-    const e2 = this.subscribers.get(t) ?? [], i = [];
-    for (const r of e2)
-      r.cb(...s), r.once && i.push(() => e2.splice(e2.indexOf(r), 1));
-    for (const r of i)
-      r();
+  emit(u2, ...F2) {
+    const e2 = this.subscribers.get(u2) ?? [], s = [];
+    for (const C2 of e2)
+      C2.cb(...F2), C2.once && s.push(() => e2.splice(e2.indexOf(C2), 1));
+    for (const C2 of s)
+      C2();
   }
   unsubscribe() {
     this.subscribers.clear();
   }
-  onKeypress(t, s) {
-    if (this.state === "error" && (this.state = "active"), (s == null ? void 0 : s.name) && !this._track && g.has(s.name) && this.emit("cursor", g.get(s.name)), (s == null ? void 0 : s.name) && y.has(s.name) && this.emit("cursor", s.name), t && (t.toLowerCase() === "y" || t.toLowerCase() === "n") && this.emit("confirm", t.toLowerCase() === "y"), t && this.emit("key", t.toLowerCase()), (s == null ? void 0 : s.name) === "return") {
+  onKeypress(u2, F2) {
+    if (this.state === "error" && (this.state = "active"), (F2 == null ? void 0 : F2.name) && !this._track && V.has(F2.name) && this.emit("cursor", V.get(F2.name)), (F2 == null ? void 0 : F2.name) && tD.has(F2.name) && this.emit("cursor", F2.name), u2 && (u2.toLowerCase() === "y" || u2.toLowerCase() === "n") && this.emit("confirm", u2.toLowerCase() === "y"), u2 && this.emit("key", u2.toLowerCase()), (F2 == null ? void 0 : F2.name) === "return") {
       if (this.opts.validate) {
         const e2 = this.opts.validate(this.value);
         e2 && (this.error = e2, this.state = "error", this.rl.write(this.value));
       }
       this.state !== "error" && (this.state = "submit");
     }
-    t === "" && (this.state = "cancel"), (this.state === "submit" || this.state === "cancel") && this.emit("finalize"), this.render(), (this.state === "submit" || this.state === "cancel") && this.close();
+    u2 === "" && (this.state = "cancel"), (this.state === "submit" || this.state === "cancel") && this.emit("finalize"), this.render(), (this.state === "submit" || this.state === "cancel") && this.close();
   }
   close() {
     this.input.unpipe(), this.input.removeListener("keypress", this.onKeypress), this.output.write(`
-`), l(this.input, false), this.rl.close(), this.emit(`${this.state}`, this.value), this.unsubscribe();
+`), g(this.input, false), this.rl.close(), this.emit(`${this.state}`, this.value), this.unsubscribe();
   }
   restoreCursor() {
-    const t = this._prevFrame.split(`
+    const u2 = P(this._prevFrame, process.stdout.columns, { hard: true }).split(`
 `).length - 1;
-    this.output.write(import_sisteransi.cursor.move(-999, t * -1));
+    this.output.write(import_sisteransi.cursor.move(-999, u2 * -1));
   }
   render() {
-    const t = this._render(this) ?? "";
-    if (t !== this._prevFrame) {
+    const u2 = P(this._render(this) ?? "", process.stdout.columns, { hard: true });
+    if (u2 !== this._prevFrame) {
       if (this.state === "initial")
         this.output.write(import_sisteransi.cursor.hide);
       else {
-        const s = x(this._prevFrame, t);
-        if (this.restoreCursor(), s && (s == null ? void 0 : s.length) === 1) {
-          const e2 = s[0];
+        const F2 = FD(this._prevFrame, u2);
+        if (this.restoreCursor(), F2 && (F2 == null ? void 0 : F2.length) === 1) {
+          const e2 = F2[0];
           this.output.write(import_sisteransi.cursor.move(0, e2)), this.output.write(import_sisteransi.erase.lines(1));
-          const i = t.split(`
+          const s = u2.split(`
 `);
-          this.output.write(i[e2]), this._prevFrame = t, this.output.write(import_sisteransi.cursor.move(0, i.length - e2 - 1));
+          this.output.write(s[e2]), this._prevFrame = u2, this.output.write(import_sisteransi.cursor.move(0, s.length - e2 - 1));
           return;
-        } else if (s && (s == null ? void 0 : s.length) > 1) {
-          const e2 = s[0];
+        } else if (F2 && (F2 == null ? void 0 : F2.length) > 1) {
+          const e2 = F2[0];
           this.output.write(import_sisteransi.cursor.move(0, e2)), this.output.write(import_sisteransi.erase.down());
-          const r = t.split(`
+          const C2 = u2.split(`
 `).slice(e2);
-          this.output.write(r.join(`
-`)), this._prevFrame = t;
+          this.output.write(C2.join(`
+`)), this._prevFrame = u2;
           return;
         }
         this.output.write(import_sisteransi.erase.down());
       }
-      this.output.write(t), this.state === "initial" && (this.state = "active"), this._prevFrame = t;
+      this.output.write(u2), this.state === "initial" && (this.state = "active"), this._prevFrame = u2;
     }
   }
 };
-var V = class extends u {
+var sD = class extends h {
   get cursor() {
     return this.value ? 0 : 1;
   }
   get _value() {
     return this.cursor === 0;
   }
-  constructor(t) {
-    super(t, false), this.value = !!t.initialValue, this.on("value", () => {
+  constructor(u2) {
+    super(u2, false), this.value = !!u2.initialValue, this.on("value", () => {
       this.value = this._value;
-    }), this.on("confirm", (s) => {
-      this.output.write(import_sisteransi.cursor.move(0, -1)), this.value = s, this.state = "submit", this.close();
+    }), this.on("confirm", (F2) => {
+      this.output.write(import_sisteransi.cursor.move(0, -1)), this.value = F2, this.state = "submit", this.close();
     }), this.on("cursor", () => {
       this.value = !this.value;
     });
   }
 };
-var $2 = class extends u {
-  constructor(t) {
-    super(t, false), this.cursor = 0, this.options = t.options, this.cursor = this.options.findIndex(({ value: s }) => s === t.initialValue), this.cursor === -1 && (this.cursor = 0), this.changeValue(), this.on("cursor", (s) => {
-      switch (s) {
+var ED = class extends h {
+  constructor(u2) {
+    super(u2, false), this.cursor = 0, this.options = u2.options, this.cursor = this.options.findIndex(({ value: F2 }) => F2 === u2.initialValue), this.cursor === -1 && (this.cursor = 0), this.changeValue(), this.on("cursor", (F2) => {
+      switch (F2) {
         case "left":
         case "up":
           this.cursor = this.cursor === 0 ? this.options.length - 1 : this.cursor - 1;
@@ -1257,56 +1457,56 @@ var $2 = class extends u {
     this.value = this._value.value;
   }
 };
-function W({ input: o2 = import_node_process.stdin, output: t = import_node_process.stdout, overwrite: s = true, hideCursor: e2 = true } = {}) {
-  const i = a.createInterface({ input: o2, output: t, prompt: "", tabSize: 1 });
-  a.emitKeypressEvents(o2, i), o2.isTTY && o2.setRawMode(true);
-  const r = (w2, { name: p2 }) => {
-    if (String(w2) === "" && process.exit(0), !s)
+function aD({ input: t = import_node_process.stdin, output: u2 = import_node_process.stdout, overwrite: F2 = true, hideCursor: e2 = true } = {}) {
+  const s = f.createInterface({ input: t, output: u2, prompt: "", tabSize: 1 });
+  f.emitKeypressEvents(t, s), t.isTTY && t.setRawMode(true);
+  const C2 = (D2, { name: i }) => {
+    if (String(D2) === "" && process.exit(0), !F2)
       return;
-    let b = p2 === "return" ? 0 : -1, _2 = p2 === "return" ? -1 : 0;
-    a.moveCursor(t, b, _2, () => {
-      a.clearLine(t, 1, () => {
-        o2.once("keypress", r);
+    let E2 = i === "return" ? 0 : -1, a2 = i === "return" ? -1 : 0;
+    f.moveCursor(u2, E2, a2, () => {
+      f.clearLine(u2, 1, () => {
+        t.once("keypress", C2);
       });
     });
   };
-  return e2 && process.stdout.write(import_sisteransi.cursor.hide), o2.once("keypress", r), () => {
-    o2.off("keypress", r), e2 && process.stdout.write(import_sisteransi.cursor.show), i.terminal = false, i.close();
+  return e2 && process.stdout.write(import_sisteransi.cursor.hide), t.once("keypress", C2), () => {
+    t.off("keypress", C2), e2 && process.stdout.write(import_sisteransi.cursor.show), s.terminal = false, s.close();
   };
 }
 
-// node_modules/.pnpm/@clack+prompts@0.6.1/node_modules/@clack/prompts/dist/index.mjs
+// node_modules/.pnpm/@clack+prompts@0.6.3/node_modules/@clack/prompts/dist/index.mjs
 var import_node_process2 = __toESM(require("process"), 1);
 var import_picocolors = __toESM(require_picocolors(), 1);
 var import_sisteransi2 = __toESM(require_src(), 1);
-function N() {
+function N2() {
   return import_node_process2.default.platform !== "win32" ? import_node_process2.default.env.TERM !== "linux" : Boolean(import_node_process2.default.env.CI) || Boolean(import_node_process2.default.env.WT_SESSION) || Boolean(import_node_process2.default.env.TERMINUS_SUBLIME) || import_node_process2.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process2.default.env.TERM_PROGRAM === "Terminus-Sublime" || import_node_process2.default.env.TERM_PROGRAM === "vscode" || import_node_process2.default.env.TERM === "xterm-256color" || import_node_process2.default.env.TERM === "alacritty" || import_node_process2.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
 }
-var p = N();
-var u2 = (r, n) => p ? r : n;
-var W2 = u2("\u25C6", "*");
-var D = u2("\u25A0", "x");
-var F = u2("\u25B2", "x");
-var f2 = u2("\u25C7", "o");
-var L2 = u2("\u250C", "T");
-var a2 = u2("\u2502", "|");
-var o = u2("\u2514", "\u2014");
-var w = u2("\u25CF", ">");
-var S2 = u2("\u25CB", " ");
-var _ = u2("\u25FB", "[\u2022]");
-var y2 = u2("\u25FC", "[+]");
-var A = u2("\u25FB", "[ ]");
-var q = u2("\u25AA", "\u2022");
-var R = u2("\u2500", "-");
-var G = u2("\u256E", "+");
-var H = u2("\u251C", "+");
-var K = u2("\u256F", "+");
-var U = u2("\u25CF", "\u2022");
-var Z = u2("\u25C6", "*");
-var z = u2("\u25B2", "!");
-var X = u2("\u25A0", "x");
-var h2 = (r) => {
-  switch (r) {
+var p2 = N2();
+var u = (r2, n) => p2 ? r2 : n;
+var W2 = u("\u25C6", "*");
+var D = u("\u25A0", "x");
+var F = u("\u25B2", "x");
+var f2 = u("\u25C7", "o");
+var L2 = u("\u250C", "T");
+var a = u("\u2502", "|");
+var o = u("\u2514", "\u2014");
+var w2 = u("\u25CF", ">");
+var S2 = u("\u25CB", " ");
+var _2 = u("\u25FB", "[\u2022]");
+var y2 = u("\u25FC", "[+]");
+var A = u("\u25FB", "[ ]");
+var q2 = u("\u25AA", "\u2022");
+var R2 = u("\u2500", "-");
+var G2 = u("\u256E", "+");
+var H2 = u("\u251C", "+");
+var K2 = u("\u256F", "+");
+var U2 = u("\u25CF", "\u2022");
+var Z2 = u("\u25C6", "*");
+var z2 = u("\u25B2", "!");
+var X2 = u("\u25A0", "x");
+var h2 = (r2) => {
+  switch (r2) {
     case "initial":
     case "active":
       return import_picocolors.default.cyan(W2);
@@ -1318,99 +1518,99 @@ var h2 = (r) => {
       return import_picocolors.default.green(f2);
   }
 };
-var Q = (r) => {
-  const n = r.active ?? "Yes", s = r.inactive ?? "No";
-  return new V({ active: n, inactive: s, initialValue: r.initialValue ?? true, render() {
-    const t = `${import_picocolors.default.gray(a2)}
-${h2(this.state)}  ${r.message}
+var Q2 = (r2) => {
+  const n = r2.active ?? "Yes", s = r2.inactive ?? "No";
+  return new sD({ active: n, inactive: s, initialValue: r2.initialValue ?? true, render() {
+    const t = `${import_picocolors.default.gray(a)}
+${h2(this.state)}  ${r2.message}
 `, i = this.value ? n : s;
     switch (this.state) {
       case "submit":
-        return `${t}${import_picocolors.default.gray(a2)}  ${import_picocolors.default.dim(i)}`;
+        return `${t}${import_picocolors.default.gray(a)}  ${import_picocolors.default.dim(i)}`;
       case "cancel":
-        return `${t}${import_picocolors.default.gray(a2)}  ${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}
-${import_picocolors.default.gray(a2)}`;
+        return `${t}${import_picocolors.default.gray(a)}  ${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}
+${import_picocolors.default.gray(a)}`;
       default:
-        return `${t}${import_picocolors.default.cyan(a2)}  ${this.value ? `${import_picocolors.default.green(w)} ${n}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(n)}`} ${import_picocolors.default.dim("/")} ${this.value ? `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(s)}` : `${import_picocolors.default.green(w)} ${s}`}
+        return `${t}${import_picocolors.default.cyan(a)}  ${this.value ? `${import_picocolors.default.green(w2)} ${n}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(n)}`} ${import_picocolors.default.dim("/")} ${this.value ? `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(s)}` : `${import_picocolors.default.green(w2)} ${s}`}
 ${import_picocolors.default.cyan(o)}
 `;
     }
   } }).prompt();
 };
-var ee = (r) => {
+var ee = (r2) => {
   const n = (s, t) => {
     const i = s.label ?? String(s.value);
-    return t === "active" ? `${import_picocolors.default.green(w)} ${i} ${s.hint ? import_picocolors.default.dim(`(${s.hint})`) : ""}` : t === "selected" ? `${import_picocolors.default.dim(i)}` : t === "cancelled" ? `${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(i)}`;
+    return t === "active" ? `${import_picocolors.default.green(w2)} ${i} ${s.hint ? import_picocolors.default.dim(`(${s.hint})`) : ""}` : t === "selected" ? `${import_picocolors.default.dim(i)}` : t === "cancelled" ? `${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(i)}`;
   };
-  return new $2({ options: r.options, initialValue: r.initialValue, render() {
-    const s = `${import_picocolors.default.gray(a2)}
-${h2(this.state)}  ${r.message}
+  return new ED({ options: r2.options, initialValue: r2.initialValue, render() {
+    const s = `${import_picocolors.default.gray(a)}
+${h2(this.state)}  ${r2.message}
 `;
     switch (this.state) {
       case "submit":
-        return `${s}${import_picocolors.default.gray(a2)}  ${n(this.options[this.cursor], "selected")}`;
+        return `${s}${import_picocolors.default.gray(a)}  ${n(this.options[this.cursor], "selected")}`;
       case "cancel":
-        return `${s}${import_picocolors.default.gray(a2)}  ${n(this.options[this.cursor], "cancelled")}
-${import_picocolors.default.gray(a2)}`;
+        return `${s}${import_picocolors.default.gray(a)}  ${n(this.options[this.cursor], "cancelled")}
+${import_picocolors.default.gray(a)}`;
       default:
-        return `${s}${import_picocolors.default.cyan(a2)}  ${this.options.map((t, i) => n(t, i === this.cursor ? "active" : "inactive")).join(`
-${import_picocolors.default.cyan(a2)}  `)}
+        return `${s}${import_picocolors.default.cyan(a)}  ${this.options.map((t, i) => n(t, i === this.cursor ? "active" : "inactive")).join(`
+${import_picocolors.default.cyan(a)}  `)}
 ${import_picocolors.default.cyan(o)}
 `;
     }
   } }).prompt();
 };
-var ae = (r = "") => {
-  process.stdout.write(`${import_picocolors.default.gray(L2)}  ${r}
+var ae = (r2 = "") => {
+  process.stdout.write(`${import_picocolors.default.gray(L2)}  ${r2}
 `);
 };
-var ce = (r = "") => {
-  process.stdout.write(`${import_picocolors.default.gray(a2)}
-${import_picocolors.default.gray(o)}  ${r}
+var ce = (r2 = "") => {
+  process.stdout.write(`${import_picocolors.default.gray(a)}
+${import_picocolors.default.gray(o)}  ${r2}
 
 `);
 };
-var g2 = { message: (r = "", { symbol: n = import_picocolors.default.gray(a2) } = {}) => {
-  const s = [`${import_picocolors.default.gray(a2)}`];
-  if (r) {
-    const [t, ...i] = r.split(`
+var g2 = { message: (r2 = "", { symbol: n = import_picocolors.default.gray(a) } = {}) => {
+  const s = [`${import_picocolors.default.gray(a)}`];
+  if (r2) {
+    const [t, ...i] = r2.split(`
 `);
-    s.push(`${n}  ${t}`, ...i.map((c2) => `${import_picocolors.default.gray(a2)}  ${c2}`));
+    s.push(`${n}  ${t}`, ...i.map((c2) => `${import_picocolors.default.gray(a)}  ${c2}`));
   }
   process.stdout.write(`${s.join(`
 `)}
 `);
-}, info: (r) => {
-  g2.message(r, { symbol: import_picocolors.default.blue(U) });
-}, success: (r) => {
-  g2.message(r, { symbol: import_picocolors.default.green(Z) });
-}, step: (r) => {
-  g2.message(r, { symbol: import_picocolors.default.green(f2) });
-}, warn: (r) => {
-  g2.message(r, { symbol: import_picocolors.default.yellow(z) });
-}, warning: (r) => {
-  g2.warn(r);
-}, error: (r) => {
-  g2.message(r, { symbol: import_picocolors.default.red(X) });
+}, info: (r2) => {
+  g2.message(r2, { symbol: import_picocolors.default.blue(U2) });
+}, success: (r2) => {
+  g2.message(r2, { symbol: import_picocolors.default.green(Z2) });
+}, step: (r2) => {
+  g2.message(r2, { symbol: import_picocolors.default.green(f2) });
+}, warn: (r2) => {
+  g2.message(r2, { symbol: import_picocolors.default.yellow(z2) });
+}, warning: (r2) => {
+  g2.warn(r2);
+}, error: (r2) => {
+  g2.message(r2, { symbol: import_picocolors.default.red(X2) });
 } };
-var C2 = p ? ["\u25D2", "\u25D0", "\u25D3", "\u25D1"] : ["\u2022", "o", "O", "0"];
+var C = p2 ? ["\u25D2", "\u25D0", "\u25D3", "\u25D1"] : ["\u2022", "o", "O", "0"];
 var le = () => {
-  let r, n;
-  const s = p ? 80 : 120;
+  let r2, n;
+  const s = p2 ? 80 : 120;
   return { start(t = "") {
-    t = t.replace(/\.?\.?\.$/, ""), r = W(), process.stdout.write(`${import_picocolors.default.gray(a2)}
+    t = t.replace(/\.?\.?\.$/, ""), r2 = aD(), process.stdout.write(`${import_picocolors.default.gray(a)}
 ${import_picocolors.default.magenta("\u25CB")}  ${t}
 `);
     let i = 0, c2 = 0;
     n = setInterval(() => {
-      let l2 = C2[i];
-      process.stdout.write(import_sisteransi2.cursor.move(-999, -1)), process.stdout.write(`${import_picocolors.default.magenta(l2)}  ${t}${Math.floor(c2) >= 1 ? ".".repeat(Math.floor(c2)).slice(0, 3) : ""}   
-`), i = i === C2.length - 1 ? 0 : i + 1, c2 = c2 === C2.length ? 0 : c2 + 0.125;
+      let l = C[i];
+      process.stdout.write(import_sisteransi2.cursor.move(-999, -1)), process.stdout.write(`${import_picocolors.default.magenta(l)}  ${t}${Math.floor(c2) >= 1 ? ".".repeat(Math.floor(c2)).slice(0, 3) : ""}   
+`), i = i === C.length - 1 ? 0 : i + 1, c2 = c2 === C.length ? 0 : c2 + 0.125;
     }, s);
   }, stop(t = "") {
-    process.stdout.write(import_sisteransi2.cursor.move(-999, -2)), process.stdout.write(import_sisteransi2.erase.down(2)), clearInterval(n), process.stdout.write(`${import_picocolors.default.gray(a2)}
+    process.stdout.write(import_sisteransi2.cursor.move(-999, -2)), process.stdout.write(import_sisteransi2.erase.down(2)), clearInterval(n), process.stdout.write(`${import_picocolors.default.gray(a)}
 ${import_picocolors.default.green(f2)}  ${t}
-`), r();
+`), r2();
   } };
 };
 
@@ -1502,12 +1702,12 @@ ${gray("\u251C" + "\u2500".repeat(len + 2) + "\u256F")}
 // packages/qwik/src/cli/utils/integrations.ts
 var integrations = null;
 async function sortIntegrationsAndReturnAsClackOptions(integrations2, { maxHintLength = 50, showHint = true } = {}) {
-  return integrations2.sort((a3, b) => {
-    if (a3.priority > b.priority)
+  return integrations2.sort((a2, b2) => {
+    if (a2.priority > b2.priority)
       return -1;
-    if (a3.priority < b.priority)
+    if (a2.priority < b2.priority)
       return 1;
-    return a3.id < b.id ? -1 : 1;
+    return a2.id < b2.id ? -1 : 1;
   }).map((i) => ({
     value: i.id,
     label: i.name,
@@ -1549,12 +1749,12 @@ async function loadIntegrations() {
         }
       })
     );
-    loadingIntegrations.sort((a3, b) => {
-      if (a3.priority > b.priority)
+    loadingIntegrations.sort((a2, b2) => {
+      if (a2.priority > b2.priority)
         return -1;
-      if (a3.priority < b.priority)
+      if (a2.priority < b2.priority)
         return 1;
-      return a3.id < b.id ? -1 : 1;
+      return a2.id < b2.id ? -1 : 1;
     });
     integrations = loadingIntegrations;
   }
@@ -1874,9 +2074,9 @@ function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath)
       const importSpecifier = ts.factory.createImportSpecifier(false, void 0, identifier);
       existingNamedImports.push(importSpecifier);
     }
-    existingNamedImports.sort((a3, b) => {
-      const aName = a3.name.escapedText.toString();
-      const bName = b.name.escapedText.toString();
+    existingNamedImports.sort((a2, b2) => {
+      const aName = a2.name.escapedText.toString();
+      const bName = b2.name.escapedText.toString();
       return aName < bName ? -1 : 1;
     });
     let defaultIdentifier = n.importClause ? n.importClause.name : void 0;
@@ -1997,22 +2197,22 @@ function updateVitConfigObj(ts, obj, updates) {
 }
 function updatePlugins(ts, obj, updates) {
   const properties = [];
-  for (const p2 of obj.properties) {
-    if (ts.isPropertyAssignment(p2)) {
-      if (p2.name && ts.isIdentifier(p2.name) && p2.name.text === "plugins") {
-        if (ts.isArrayLiteralExpression(p2.initializer)) {
+  for (const p3 of obj.properties) {
+    if (ts.isPropertyAssignment(p3)) {
+      if (p3.name && ts.isIdentifier(p3.name) && p3.name.text === "plugins") {
+        if (ts.isArrayLiteralExpression(p3.initializer)) {
           properties.push(
             ts.factory.updatePropertyAssignment(
-              p2,
-              p2.name,
-              updatePluginsArray(ts, p2.initializer, updates)
+              p3,
+              p3.name,
+              updatePluginsArray(ts, p3.initializer, updates)
             )
           );
           continue;
         }
       }
     }
-    properties.push(p2);
+    properties.push(p3);
   }
   return ts.factory.updateObjectLiteralExpression(obj, properties);
 }
@@ -2068,12 +2268,12 @@ function updateObjectLiteralExpression(ts, obj, updateObj) {
           const exp = s.expression;
           let added = false;
           const properties = [];
-          for (const p2 of obj.properties) {
-            if (p2.name && ts.isIdentifier(p2.name) && p2.name.text === propName) {
+          for (const p3 of obj.properties) {
+            if (p3.name && ts.isIdentifier(p3.name) && p3.name.text === propName) {
               properties.push(ts.factory.createPropertyAssignment(propName, exp));
               added = true;
             } else {
-              properties.push(p2);
+              properties.push(p3);
             }
           }
           if (!added) {
@@ -2090,12 +2290,12 @@ function transformSource(ts, sourceText, transformer) {
   const t = ts.transform(ts.createSourceFile("/tmp.ts", sourceText, ts.ScriptTarget.Latest), [
     transformer
   ]);
-  const p2 = ts.createPrinter({
+  const p3 = ts.createPrinter({
     removeComments: false,
     omitTrailingSemicolon: false,
     noEmitHelpers: true
   });
-  return p2.printFile(t.transformed[0]);
+  return p3.printFile(t.transformed[0]);
 }
 
 // packages/qwik/src/cli/add/update-vite-config.ts
@@ -2231,7 +2431,7 @@ async function runAddInteractive(app, id) {
       message: "What integration would you like to add?",
       options: await sortIntegrationsAndReturnAsClackOptions(integrationChoices)
     });
-    if (C(integrationAnswer)) {
+    if (eD(integrationAnswer)) {
       bye();
     }
     integration = integrations2.find((i) => i.id === integrationAnswer);
@@ -2315,7 +2515,7 @@ async function logUpdateAppResult(pkgManager, result) {
       { label: "Nope, cancel update", value: false }
     ]
   });
-  if (C(commit) || !commit) {
+  if (eD(commit) || !commit) {
     bye();
   }
 }
@@ -2340,18 +2540,18 @@ async function printAddHelp(app) {
   ae(`${pmRun} qwik ${magenta(`add`)} [integration]`);
   note(renderIntegration(adapters), "Adapters");
   note(renderIntegration(features), "Features");
-  const proceed = await Q({
+  const proceed = await Q2({
     message: "Do you want to install an integration?",
     initialValue: true
   });
-  if (C(proceed) || !proceed) {
+  if (eD(proceed) || !proceed) {
     bye();
   }
   const command = await ee({
     message: "Select an integration",
     options: await sortIntegrationsAndReturnAsClackOptions(integrations2)
   });
-  if (C(command)) {
+  if (eD(command)) {
     bye();
   }
   runAddInteractive(app, command);
@@ -2374,11 +2574,11 @@ async function runAddCommand(app) {
   }
 }
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/index.js
-var import_node_buffer = require("buffer");
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/index.js
+var import_node_buffer2 = require("buffer");
 var import_node_path8 = __toESM(require("path"), 1);
-var import_node_child_process = __toESM(require("child_process"), 1);
-var import_node_process4 = __toESM(require("process"), 1);
+var import_node_child_process3 = __toESM(require("child_process"), 1);
+var import_node_process5 = __toESM(require("process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
 
 // node_modules/.pnpm/strip-final-newline@3.0.0/node_modules/strip-final-newline/index.js
@@ -2885,7 +3085,7 @@ var findSignalByNumber = function(number, signals) {
 };
 var signalsByNumber = getSignalsByNumber();
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/error.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/error.js
 var getErrorPrefix = ({ timedOut, timeout, errorCode, signal, signalDescription, exitCode, isCanceled }) => {
   if (timedOut) {
     return `timed out after ${timeout} milliseconds`;
@@ -2955,7 +3155,7 @@ ${error.message}` : execaMessage;
   return error;
 };
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/stdio.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/stdio.js
 var aliases = ["stdin", "stdout", "stderr"];
 var hasAlias = (options) => aliases.some((alias) => options[alias] !== void 0);
 var normalizeStdio = (options) => {
@@ -2979,7 +3179,7 @@ var normalizeStdio = (options) => {
   return Array.from({ length }, (value, index) => stdio[index]);
 };
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/kill.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/kill.js
 var import_node_os3 = __toESM(require("os"), 1);
 var import_signal_exit = __toESM(require_signal_exit(), 1);
 var DEFAULT_FORCE_KILL_TIMEOUT = 1e3 * 5;
@@ -3053,15 +3253,82 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
   });
 };
 
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/pipe.js
+var import_node_fs6 = require("fs");
+var import_node_child_process = require("child_process");
+
 // node_modules/.pnpm/is-stream@3.0.0/node_modules/is-stream/index.js
 function isStream(stream) {
   return stream !== null && typeof stream === "object" && typeof stream.pipe === "function";
 }
+function isWritableStream(stream) {
+  return isStream(stream) && stream.writable !== false && typeof stream._write === "function" && typeof stream._writableState === "object";
+}
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/stream.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/pipe.js
+var isExecaChildProcess = (target) => target instanceof import_node_child_process.ChildProcess && typeof target.then === "function";
+var pipeToTarget = (spawned, streamName, target) => {
+  if (typeof target === "string") {
+    spawned[streamName].pipe((0, import_node_fs6.createWriteStream)(target));
+    return spawned;
+  }
+  if (isWritableStream(target)) {
+    spawned[streamName].pipe(target);
+    return spawned;
+  }
+  if (!isExecaChildProcess(target)) {
+    throw new TypeError("The second argument must be a string, a stream or an Execa child process.");
+  }
+  if (!isWritableStream(target.stdin)) {
+    throw new TypeError("The target child process's stdin must be available.");
+  }
+  spawned[streamName].pipe(target.stdin);
+  return target;
+};
+var addPipeMethods = (spawned) => {
+  if (spawned.stdout !== null) {
+    spawned.pipeStdout = pipeToTarget.bind(void 0, spawned, "stdout");
+  }
+  if (spawned.stderr !== null) {
+    spawned.pipeStderr = pipeToTarget.bind(void 0, spawned, "stderr");
+  }
+  if (spawned.all !== void 0) {
+    spawned.pipeAll = pipeToTarget.bind(void 0, spawned, "all");
+  }
+};
+
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/stream.js
+var import_node_fs7 = require("fs");
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
-var handleInput = (spawned, input) => {
+var validateInputOptions = (input) => {
+  if (input !== void 0) {
+    throw new TypeError("The `input` and `inputFile` options cannot be both set.");
+  }
+};
+var getInputSync = ({ input, inputFile }) => {
+  if (typeof inputFile !== "string") {
+    return input;
+  }
+  validateInputOptions(input);
+  return (0, import_node_fs7.readFileSync)(inputFile);
+};
+var handleInputSync = (options) => {
+  const input = getInputSync(options);
+  if (isStream(input)) {
+    throw new TypeError("The `input` option cannot be a stream in sync mode");
+  }
+  return input;
+};
+var getInput = ({ input, inputFile }) => {
+  if (typeof inputFile !== "string") {
+    return input;
+  }
+  validateInputOptions(input);
+  return (0, import_node_fs7.createReadStream)(inputFile);
+};
+var handleInput = (spawned, options) => {
+  const input = getInput(options);
   if (input === void 0) {
     return;
   }
@@ -3120,7 +3387,7 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
   }
 };
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/promise.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/promise.js
 var nativePromisePrototype = (async () => {
 })().constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
@@ -3132,7 +3399,6 @@ var mergePromise = (spawned, promise) => {
     const value = typeof promise === "function" ? (...args) => Reflect.apply(descriptor.value, promise(), args) : descriptor.value.bind(promise);
     Reflect.defineProperty(spawned, property, { ...descriptor, value });
   }
-  return spawned;
 };
 var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   spawned.on("exit", (exitCode, signal) => {
@@ -3148,7 +3414,9 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   }
 });
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/lib/command.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/command.js
+var import_node_buffer = require("buffer");
+var import_node_child_process2 = require("child_process");
 var normalizeArgs = (file, args = []) => {
   if (!Array.isArray(args)) {
     return [file];
@@ -3178,11 +3446,60 @@ var parseCommand = (command) => {
   }
   return tokens;
 };
+var parseExpression = (expression) => {
+  const typeOfExpression = typeof expression;
+  if (typeOfExpression === "string") {
+    return expression;
+  }
+  if (typeOfExpression === "number") {
+    return String(expression);
+  }
+  if (typeOfExpression === "object" && expression !== null && !(expression instanceof import_node_child_process2.ChildProcess) && "stdout" in expression) {
+    const typeOfStdout = typeof expression.stdout;
+    if (typeOfStdout === "string") {
+      return expression.stdout;
+    }
+    if (import_node_buffer.Buffer.isBuffer(expression.stdout)) {
+      return expression.stdout.toString();
+    }
+    throw new TypeError(`Unexpected "${typeOfStdout}" stdout in template expression`);
+  }
+  throw new TypeError(`Unexpected "${typeOfExpression}" in template expression`);
+};
+var parseTemplate = (template, index, templates, expressions) => {
+  const templateString = template ?? templates.raw[index];
+  const templateTokens = templateString.split(SPACES_REGEXP).filter(Boolean);
+  if (index === expressions.length) {
+    return templateTokens;
+  }
+  const expression = expressions[index];
+  return Array.isArray(expression) ? [...templateTokens, ...expression.map((expression2) => parseExpression(expression2))] : [...templateTokens, parseExpression(expression)];
+};
+var parseTemplates = (templates, expressions) => templates.flatMap(
+  (template, index) => parseTemplate(template, index, templates, expressions)
+);
 
-// node_modules/.pnpm/execa@7.0.0/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/verbose.js
+var import_node_util = require("util");
+var import_node_process4 = __toESM(require("process"), 1);
+var verboseDefault = (0, import_node_util.debuglog)("execa").enabled;
+var padField = (field, padding) => String(field).padStart(padding, "0");
+var getTimestamp = () => {
+  const date = new Date();
+  return `${padField(date.getHours(), 2)}:${padField(date.getMinutes(), 2)}:${padField(date.getSeconds(), 2)}.${padField(date.getMilliseconds(), 3)}`;
+};
+var logCommand = (escapedCommand, { verbose }) => {
+  if (!verbose) {
+    return;
+  }
+  import_node_process4.default.stderr.write(`[${getTimestamp()}] ${escapedCommand}
+`);
+};
+
+// node_modules/.pnpm/execa@7.1.0/node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
 var getEnv = ({ env: envOption, extendEnv, preferLocal, localDir, execPath }) => {
-  const env = extendEnv ? { ...import_node_process4.default.env, ...envOption } : envOption;
+  const env = extendEnv ? { ...import_node_process5.default.env, ...envOption } : envOption;
   if (preferLocal) {
     return npmRunPathEnv({ env, cwd: localDir, execPath });
   }
@@ -3199,24 +3516,25 @@ var handleArguments = (file, args, options = {}) => {
     stripFinalNewline: true,
     extendEnv: true,
     preferLocal: false,
-    localDir: options.cwd || import_node_process4.default.cwd(),
-    execPath: import_node_process4.default.execPath,
+    localDir: options.cwd || import_node_process5.default.cwd(),
+    execPath: import_node_process5.default.execPath,
     encoding: "utf8",
     reject: true,
     cleanup: true,
     all: false,
     windowsHide: true,
+    verbose: verboseDefault,
     ...options
   };
   options.env = getEnv(options);
   options.stdio = normalizeStdio(options);
-  if (import_node_process4.default.platform === "win32" && import_node_path8.default.basename(file, ".exe") === "cmd") {
+  if (import_node_process5.default.platform === "win32" && import_node_path8.default.basename(file, ".exe") === "cmd") {
     args.unshift("/q");
   }
   return { file, args, options, parsed };
 };
 var handleOutput = (options, value, error) => {
-  if (typeof value !== "string" && !import_node_buffer.Buffer.isBuffer(value)) {
+  if (typeof value !== "string" && !import_node_buffer2.Buffer.isBuffer(value)) {
     return error === void 0 ? void 0 : "";
   }
   if (options.stripFinalNewline) {
@@ -3228,12 +3546,13 @@ function execa(file, args, options) {
   const parsed = handleArguments(file, args, options);
   const command = joinCommand(file, args);
   const escapedCommand = getEscapedCommand(file, args);
+  logCommand(escapedCommand, parsed.options);
   validateTimeout(parsed.options);
   let spawned;
   try {
-    spawned = import_node_child_process.default.spawn(parsed.file, parsed.args, parsed.options);
+    spawned = import_node_child_process3.default.spawn(parsed.file, parsed.args, parsed.options);
   } catch (error) {
-    const dummySpawned = new import_node_child_process.default.ChildProcess();
+    const dummySpawned = new import_node_child_process3.default.ChildProcess();
     const errorPromise = Promise.reject(makeError({
       error,
       stdout: "",
@@ -3246,7 +3565,8 @@ function execa(file, args, options) {
       isCanceled: false,
       killed: false
     }));
-    return mergePromise(dummySpawned, errorPromise);
+    mergePromise(dummySpawned, errorPromise);
+    return dummySpawned;
   }
   const spawnedPromise = getSpawnedPromise(spawned);
   const timedPromise = setupTimeout(spawned, parsed.options, spawnedPromise);
@@ -3293,10 +3613,83 @@ function execa(file, args, options) {
     };
   };
   const handlePromiseOnce = onetime_default(handlePromise);
-  handleInput(spawned, parsed.options.input);
+  handleInput(spawned, parsed.options);
   spawned.all = makeAllStream(spawned, parsed.options);
-  return mergePromise(spawned, handlePromiseOnce);
+  addPipeMethods(spawned);
+  mergePromise(spawned, handlePromiseOnce);
+  return spawned;
 }
+function execaSync(file, args, options) {
+  const parsed = handleArguments(file, args, options);
+  const command = joinCommand(file, args);
+  const escapedCommand = getEscapedCommand(file, args);
+  logCommand(escapedCommand, parsed.options);
+  const input = handleInputSync(parsed.options);
+  let result;
+  try {
+    result = import_node_child_process3.default.spawnSync(parsed.file, parsed.args, { ...parsed.options, input });
+  } catch (error) {
+    throw makeError({
+      error,
+      stdout: "",
+      stderr: "",
+      all: "",
+      command,
+      escapedCommand,
+      parsed,
+      timedOut: false,
+      isCanceled: false,
+      killed: false
+    });
+  }
+  const stdout = handleOutput(parsed.options, result.stdout, result.error);
+  const stderr = handleOutput(parsed.options, result.stderr, result.error);
+  if (result.error || result.status !== 0 || result.signal !== null) {
+    const error = makeError({
+      stdout,
+      stderr,
+      error: result.error,
+      signal: result.signal,
+      exitCode: result.status,
+      command,
+      escapedCommand,
+      parsed,
+      timedOut: result.error && result.error.code === "ETIMEDOUT",
+      isCanceled: false,
+      killed: result.signal !== null
+    });
+    if (!parsed.options.reject) {
+      return error;
+    }
+    throw error;
+  }
+  return {
+    command,
+    escapedCommand,
+    exitCode: 0,
+    stdout,
+    stderr,
+    failed: false,
+    timedOut: false,
+    isCanceled: false,
+    killed: false
+  };
+}
+function create$(options) {
+  function $4(templatesOrOptions, ...expressions) {
+    if (Array.isArray(templatesOrOptions)) {
+      const [file, ...args] = parseTemplates(templatesOrOptions, expressions);
+      return execa(file, args, options);
+    }
+    return create$({ ...options, ...templatesOrOptions });
+  }
+  $4.sync = (templates, ...expressions) => {
+    const [file, ...args] = parseTemplates(templates, expressions);
+    return execaSync(file, args, options);
+  };
+  return $4;
+}
+var $3 = create$({ preferLocal: true });
 function execaCommand(command, options) {
   const [file, ...args] = parseCommand(command);
   return execa(file, args, options);
@@ -3599,11 +3992,11 @@ async function printHelp(app) {
     ).join("\n"),
     "Available commands"
   );
-  const proceed = await Q({
+  const proceed = await Q2({
     message: "Do you want to run a command?",
     initialValue: true
   });
-  if (C(proceed) || !proceed) {
+  if (eD(proceed) || !proceed) {
     bye();
   }
   const command = await ee({
@@ -3614,13 +4007,13 @@ async function printHelp(app) {
       hint: cmd.hint
     }))
   });
-  if (C(command)) {
+  if (eD(command)) {
     bye();
   }
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.21.0");
+  console.log("0.22.0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
