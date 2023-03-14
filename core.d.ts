@@ -1784,7 +1784,7 @@ export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it.
-     * @param args - Clousure arguments.
+     * @param args - Closure arguments.
      * @returns A promise of the return value of the closure.
      */
     (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
@@ -2342,7 +2342,7 @@ declare interface RenderStaticContext {
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -2980,7 +2980,7 @@ declare interface UseContext {
 }
 
 /**
- * Retrive Context value.
+ * Retrieve Context value.
  *
  * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
  * parent component needs to invoke `useContextProvider()` to assign a value.
@@ -3225,7 +3225,7 @@ export declare const useRef: <T extends Element = Element>(current?: T | undefin
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -3281,7 +3281,7 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -3781,7 +3781,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.22.0-dev20230314184019
+ * 0.22.0-dev20230314215749
  * @public
  */
 export declare const version: string;

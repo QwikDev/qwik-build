@@ -988,7 +988,7 @@ declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it.
-     * @param args - Clousure arguments.
+     * @param args - Closure arguments.
      * @returns A promise of the return value of the closure.
      */
     (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;

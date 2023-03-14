@@ -2,7 +2,7 @@ import type { JSXNode } from '../jsx-runtime';
 import { RenderResult } from '..';
 
 /**
- * CreatePlatfrom and CreateDocument
+ * CreatePlatform and CreateDocument
  * @alpha
  */
 export declare const createDOM: () => Promise<{

@@ -655,7 +655,7 @@ var convertOptions = opts => {
   return output;
 };
 
-function prioritorizeSymbolNames(manifest) {
+function prioritizeSymbolNames(manifest) {
   const symbols = manifest.symbols;
   return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
     const a = symbols[symbolNameA];
@@ -728,12 +728,12 @@ function sortBundleNames(manifest) {
 }
 
 function updateSortAndPriorities(manifest) {
-  const prioritorizedSymbolNames = prioritorizeSymbolNames(manifest);
-  const prioritorizedSymbols = {};
-  const prioritorizedMapping = {};
-  for (const symbolName of prioritorizedSymbolNames) {
-    prioritorizedSymbols[symbolName] = manifest.symbols[symbolName];
-    prioritorizedMapping[symbolName] = manifest.mapping[symbolName];
+  const prioritizedSymbolNames = prioritizeSymbolNames(manifest);
+  const prioritizedSymbols = {};
+  const prioritizedMapping = {};
+  for (const symbolName of prioritizedSymbolNames) {
+    prioritizedSymbols[symbolName] = manifest.symbols[symbolName];
+    prioritizedMapping[symbolName] = manifest.mapping[symbolName];
   }
   const sortedBundleNames = sortBundleNames(manifest);
   const sortedBundles = {};
@@ -743,16 +743,16 @@ function updateSortAndPriorities(manifest) {
     Array.isArray(bundle.imports) && bundle.imports.sort(sortAlphabetical);
     Array.isArray(bundle.dynamicImports) && bundle.dynamicImports.sort(sortAlphabetical);
     const symbols = [];
-    for (const symbolName of prioritorizedSymbolNames) {
-      bundleName === prioritorizedMapping[symbolName] && symbols.push(symbolName);
+    for (const symbolName of prioritizedSymbolNames) {
+      bundleName === prioritizedMapping[symbolName] && symbols.push(symbolName);
     }
     if (symbols.length > 0) {
       symbols.sort(sortAlphabetical);
       bundle.symbols = symbols;
     }
   }
-  manifest.symbols = prioritorizedSymbols;
-  manifest.mapping = prioritorizedMapping;
+  manifest.symbols = prioritizedSymbols;
+  manifest.mapping = prioritizedMapping;
   manifest.bundles = sortedBundles;
   return manifest;
 }

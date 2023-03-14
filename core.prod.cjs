@@ -75,7 +75,7 @@
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
     };
-    const codeToText = code => qDev ? `Code(${code}): ${[ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.\nFor more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules", "Container is already paused. Skipping", 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", "Invalid JSXNode type. It must be either a function or a string. Found:", "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", "The provided Context reference is not a valid context created by createContextId()", "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ][code] ?? ""}` : `Code(${code})`;
+    const codeToText = code => qDev ? `Code(${code}): ${[ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nFor more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules", "Container is already paused. Skipping", 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", "Invalid JSXNode type. It must be either a function or a string. Found:", "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", "The provided Context reference is not a valid context created by createContextId()", "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ][code] ?? ""}` : `Code(${code})`;
     const isSerializableObject = v => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || null === proto;
@@ -412,12 +412,12 @@
     const QObjectManagerSymbol = Symbol("proxy manager");
     const _IMMUTABLE = Symbol("IMMUTABLE");
     var _a$1;
-    const _createSignal = (value, containerState, flags, subcriptions) => {
-        const manager = containerState.$subsManager$.$createManager$(subcriptions);
+    const _createSignal = (value, containerState, flags, subscriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(subscriptions);
         return new SignalImpl(value, manager, flags);
     };
     const QObjectSignalFlags = Symbol("proxy manager");
-    const SignalUnassignedException = Symbol("unasigned signal");
+    const SignalUnassignedException = Symbol("unassigned signal");
     class SignalBase {}
     class SignalImpl extends SignalBase {
         constructor(v, manager, flags) {
@@ -780,8 +780,8 @@
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const untrack = fn => invoke(void 0, fn);
-    const trackInvokation = newInvokeContext(void 0, void 0, void 0, "qRender");
-    const trackSignal = (signal, sub) => (trackInvokation.$subscriber$ = sub, invoke(trackInvokation, (() => signal.value)));
+    const trackInvocation = newInvokeContext(void 0, void 0, void 0, "qRender");
+    const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
     };
@@ -1364,7 +1364,7 @@
             if (ctx.$watches$) {
                 for (const watch of ctx.$watches$) {
                     qDev && (watch.$flags$ & WatchFlagsIsDirty && logWarn("Serializing dirty watch. Looks like an internal error."), 
-                    isConnected(watch) || logWarn("Serializing disconneted watch. Looks like an internal error.")), 
+                    isConnected(watch) || logWarn("Serializing disconnected watch. Looks like an internal error.")), 
                     isResourceTask(watch) && collector.$resources$.push(watch.$state$), destroyWatch(watch);
                 }
             }
@@ -1457,13 +1457,13 @@
                 return null;
             }
             const flags = getProxyFlags(obj) ?? 0;
-            const convered = [];
-            flags > 0 && convered.push(flags);
+            const converted = [];
+            flags > 0 && converted.push(flags);
             for (const sub of subs) {
                 const host = sub[1];
-                0 === sub[0] && isNode$1(host) && isVirtualElement(host) && !collector.$elements$.includes(tryGetContext(host)) || convered.push(sub);
+                0 === sub[0] && isNode$1(host) && isVirtualElement(host) && !collector.$elements$.includes(tryGetContext(host)) || converted.push(sub);
             }
-            convered.length > 0 && subsMap.set(obj, convered);
+            converted.length > 0 && subsMap.set(obj, converted);
         })), objs.sort(((a, b) => (subsMap.has(a) ? 0 : 1) - (subsMap.has(b) ? 0 : 1)));
         let count = 0;
         for (const obj of objs) {
@@ -2968,7 +2968,7 @@
         }
         const newChildren = vnode.$children$;
         const staticCtx = rCtx.$static$;
-        const splittedNewChidren = (input => {
+        const splittedNewChildren = (input => {
             const output = {};
             for (const item of input) {
                 const key = getSlotName(item);
@@ -2980,7 +2980,7 @@
         })(newChildren);
         const slotMaps = getSlotMap(hostCtx);
         for (const key of Object.keys(slotMaps.slots)) {
-            if (!splittedNewChidren[key]) {
+            if (!splittedNewChildren[key]) {
                 const slotEl = slotMaps.slots[key];
                 const oldCh = getChildrenVnodes(slotEl, "root");
                 if (oldCh.length > 0) {
@@ -2991,10 +2991,10 @@
         }
         for (const key of Object.keys(slotMaps.templates)) {
             const templateEl = slotMaps.templates[key];
-            templateEl && !splittedNewChidren[key] && (slotMaps.templates[key] = void 0, removeNode(staticCtx, templateEl));
+            templateEl && !splittedNewChildren[key] && (slotMaps.templates[key] = void 0, removeNode(staticCtx, templateEl));
         }
-        return promiseAll(Object.keys(splittedNewChidren).map((slotName => {
-            const newVdom = splittedNewChidren[slotName];
+        return promiseAll(Object.keys(splittedNewChildren).map((slotName => {
+            const newVdom = splittedNewChildren[slotName];
             const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
@@ -3867,7 +3867,7 @@
         collect(obj, collector, leaks) {
             if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
                 const localManager = getProxyManager(obj.ref);
-                isTreeshakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
+                isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
             }
             return obj;
         },
@@ -3986,7 +3986,7 @@
         "~": obj => Promise.resolve(obj),
         _: obj => Promise.reject(obj)
     };
-    const isTreeshakeable = (manager, target, leaks) => {
+    const isTreeShakeable = (manager, target, leaks) => {
         if ("boolean" == typeof leaks) {
             return leaks;
         }
@@ -4193,7 +4193,7 @@
                             return;
                         }
                         const context = {
-                            ...createInvokationContext(currentCtx),
+                            ...createInvocationContext(currentCtx),
                             $qrl$: QRL
                         };
                         return emitUsedSymbol(symbol, context.$element$, start), invoke.call(this, context, fn, ...args);
@@ -4202,7 +4202,7 @@
                 }));
             };
         }
-        const createInvokationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
+        const createInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
         const invokeQRL = async function(...args) {
             const fn = invokeFn.call(this);
             return await fn(...args);

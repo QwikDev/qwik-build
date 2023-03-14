@@ -173,7 +173,7 @@ const codeToText = (code) => {
             'props are immutable',
             '<div> component can only be used at the root of a Qwik component$()',
             'Props are immutable by default.',
-            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called syncronously within the 'component$' function or another 'use' method.
+            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
 For more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules`,
             'Container is already paused. Skipping',
             'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
@@ -882,15 +882,15 @@ var _a$1;
 /**
  * @internal
  */
-const _createSignal = (value, containerState, flags, subcriptions) => {
-    const manager = containerState.$subsManager$.$createManager$(subcriptions);
+const _createSignal = (value, containerState, flags, subscriptions) => {
+    const manager = containerState.$subsManager$.$createManager$(subscriptions);
     const signal = new SignalImpl(value, manager, flags);
     return signal;
 };
 const QObjectSignalFlags = Symbol('proxy manager');
 const SIGNAL_IMMUTABLE = 1 << 0;
 const SIGNAL_UNASSIGNED = 1 << 1;
-const SignalUnassignedException = Symbol('unasigned signal');
+const SignalUnassignedException = Symbol('unassigned signal');
 class SignalBase {
 }
 class SignalImpl extends SignalBase {
@@ -1464,13 +1464,13 @@ const getWrappingContainer = (el) => {
 const untrack = (fn) => {
     return invoke(undefined, fn);
 };
-const trackInvokation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
+const trackInvocation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
 /**
  * @alpha
  */
 const trackSignal = (signal, sub) => {
-    trackInvokation.$subscriber$ = sub;
-    return invoke(trackInvokation, () => signal.value);
+    trackInvocation.$subscriber$ = sub;
+    return invoke(trackInvocation, () => signal.value);
 };
 /**
  * @internal
@@ -1874,7 +1874,7 @@ const resolveSlotProjection = (staticCtx) => {
                 }
             }
             else {
-                // If slot content cannot be relocated, it means it's content is definively removed
+                // If slot content cannot be relocated, it means it's content is definitely removed
                 // Cleanup needs to be executed
                 cleanupTree(slotEl, staticCtx, subsManager, false);
             }
@@ -2344,7 +2344,7 @@ const useContextProvider = (context, newValue) => {
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useContext instead)
 /**
- * Retrive Context value.
+ * Retrieve Context value.
  *
  * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
  * parent component needs to invoke `useContextProvider()` to assign a value.
@@ -2923,7 +2923,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                         logWarn('Serializing dirty watch. Looks like an internal error.');
                     }
                     if (!isConnected(watch)) {
-                        logWarn('Serializing disconneted watch. Looks like an internal error.');
+                        logWarn('Serializing disconnected watch. Looks like an internal error.');
                     }
                 }
                 if (isResourceTask(watch)) {
@@ -3054,9 +3054,9 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             return null;
         }
         const flags = getProxyFlags(obj) ?? 0;
-        const convered = [];
+        const converted = [];
         if (flags > 0) {
-            convered.push(flags);
+            converted.push(flags);
         }
         for (const sub of subs) {
             const host = sub[1];
@@ -3065,10 +3065,10 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                     continue;
                 }
             }
-            convered.push(sub);
+            converted.push(sub);
         }
-        if (convered.length > 0) {
-            subsMap.set(obj, convered);
+        if (converted.length > 0) {
+            subsMap.set(obj, converted);
         }
     });
     // Sort objects: the ones with subscriptions go first
@@ -5432,7 +5432,7 @@ const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
         }
         // Rendering of children of component is more complicated,
         // since the children must be projected into the rendered slots
-        // In addition, nested childen might need rerendering, if that's the case
+        // In addition, nested children might need rerendering, if that's the case
         // we need to render the nested component, and wait before projecting the content
         // since otherwise we don't know where the slots
         if (needsRender) {
@@ -5456,11 +5456,11 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
     }
     const newChildren = vnode.$children$;
     const staticCtx = rCtx.$static$;
-    const splittedNewChidren = splitChildren(newChildren);
+    const splittedNewChildren = splitChildren(newChildren);
     const slotMaps = getSlotMap(hostCtx);
     // Remove content from empty slots
     for (const key of Object.keys(slotMaps.slots)) {
-        if (!splittedNewChidren[key]) {
+        if (!splittedNewChildren[key]) {
             const slotEl = slotMaps.slots[key];
             const oldCh = getChildrenVnodes(slotEl, 'root');
             if (oldCh.length > 0) {
@@ -5476,14 +5476,14 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
     // Remove empty templates
     for (const key of Object.keys(slotMaps.templates)) {
         const templateEl = slotMaps.templates[key];
-        if (templateEl && !splittedNewChidren[key]) {
+        if (templateEl && !splittedNewChildren[key]) {
             slotMaps.templates[key] = undefined;
             removeNode(staticCtx, templateEl);
         }
     }
     // Render into slots
-    return promiseAll(Object.keys(splittedNewChidren).map((slotName) => {
-        const newVdom = splittedNewChidren[slotName];
+    return promiseAll(Object.keys(splittedNewChildren).map((slotName) => {
+        const newVdom = splittedNewChildren[slotName];
         const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
         const oldVdom = getVdom(slotCtx);
         const slotRctx = pushRenderContext(rCtx);
@@ -6697,7 +6697,7 @@ const runResource = (watch, containerState, rCtx, waitOn) => {
         }
         return false;
     };
-    // Execute mutation inside empty invokation
+    // Execute mutation inside empty invocation
     invoke(invocationContext, () => {
         resource._state = 'pending';
         resource.loading = !isServerPlatform();
@@ -6864,7 +6864,7 @@ class Task {
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -6941,7 +6941,7 @@ const useResourceQrl = (qrl, opts) => {
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -7002,7 +7002,7 @@ const useResource$ = (generatorFn, opts) => {
  * This method works like an async memoized function that runs whenever some tracked value
  * changes and returns some data.
  *
- * `useResouce` however returns immediate a `ResourceReturn` object that contains the data and a
+ * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
  *
  * The status can be one of the following:
@@ -7362,7 +7362,7 @@ const SignalWrapperSerializer = {
         collectValue(obj.ref, collector, leaks);
         if (fastWeakSerialize(obj.ref)) {
             const localManager = getProxyManager(obj.ref);
-            if (isTreeshakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
+            if (isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
                 collectValue(obj.ref[obj.prop], collector, leaks);
             }
         }
@@ -7518,7 +7518,7 @@ const OBJECT_TRANSFORMS = {
         return Promise.reject(obj);
     },
 };
-const isTreeshakeable = (manager, target, leaks) => {
+const isTreeShakeable = (manager, target, leaks) => {
     if (typeof leaks === 'boolean') {
         return leaks;
     }
@@ -7861,7 +7861,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     if (beforeFn && beforeFn() === false) {
                         return;
                     }
-                    const baseContext = createInvokationContext(currentCtx);
+                    const baseContext = createInvocationContext(currentCtx);
                     const context = {
                         ...baseContext,
                         $qrl$: QRL,
@@ -7873,7 +7873,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             });
         });
     }
-    const createInvokationContext = (invoke) => {
+    const createInvocationContext = (invoke) => {
         if (invoke == null) {
             return newInvokeContext();
         }
