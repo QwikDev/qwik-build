@@ -3184,17 +3184,23 @@ const getID = stuff => {
     return index > 0 ? strToInt(stuff.slice(index + 5)) : -1;
 };
 
-const _jsxQ = (type, mutableProps, immutableProps, children, flags, key) => {
+const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
     const processed = null == key ? null : String(key);
     const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
-    return seal(node), node;
+    return qDev && dev && (node.dev = {
+        stack: (new Error).stack,
+        ...dev
+    }), seal(node), node;
 };
 
-const _jsxC = (type, mutableProps, flags, key) => {
+const _jsxC = (type, mutableProps, flags, key, dev) => {
     const processed = null == key ? null : String(key);
     const props = mutableProps ?? EMPTY_OBJ;
     const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
-    return seal(node), node;
+    return qDev && dev && (node.dev = {
+        stack: (new Error).stack,
+        ...dev
+    }), seal(node), node;
 };
 
 const jsx = (type, props, key) => {
@@ -3226,7 +3232,7 @@ class JSXNodeImpl {
                         throw "object" === typeObj ? explanation = child?.constructor ? `it's an instance of "${child?.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`, 
                         createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, this);
                     }
-                })), isBrowser) {
+                })), isBrowser && (isFunction(type) || immutableProps)) {
                     const keys = {};
                     flatChildren.forEach((child => {
                         if (isJSXNode(child) && null != child.key) {
@@ -3266,7 +3272,7 @@ const isValidJSXChild = node => !node || node === SkipRender || !(!isString(node
 
 const Fragment = props => props.children;
 
-const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
     const processed = null == key ? null : String(key);
     const children = untrack((() => {
         const c = props.children;
@@ -3274,8 +3280,6 @@ const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
     }));
     const node = new JSXNodeImpl(type, props, null, children, 0, processed);
     return node.dev = {
-        isStatic: isStatic,
-        ctx: ctx,
         stack: (new Error).stack,
         ...opts
     }, seal(node), node;
@@ -4554,7 +4558,8 @@ const serializers = [ QRLSerializer, {
     serialize: (fn, getObj) => ((signal, getObjID) => {
         const parts = signal.$args$.map(getObjID);
         const fnBody = signal.$funcStr$;
-        return parts.join(" ") + ":" + fnBody;
+        return assertDefined(fnBody, "If qSerialize is true then fnStr must be provided."), 
+        parts.join(" ") + ":" + fnBody;
     })(fn, getObj),
     prepare: data => (data => {
         if (isServer || isServerPlatform()) {

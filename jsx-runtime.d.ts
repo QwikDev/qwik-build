@@ -305,8 +305,6 @@ declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface DevJSX {
-    ctx: any;
-    isStatic: boolean;
     fileName: string;
     lineNumber: number;
     columnNumber: number;
@@ -672,7 +670,7 @@ declare type JSXChildren = string | number | boolean | null | undefined | Functi
 /**
  * @public
  */
-export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, isStatic: boolean, opts: JsxDevOpts, ctx: any) => JSXNode<T>;
+export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: any) => JSXNode<T>;
 
 declare interface JsxDevOpts {
     fileName: string;

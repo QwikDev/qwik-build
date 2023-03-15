@@ -862,7 +862,8 @@ const _fnSignal = (fn, args, fnStr) => {
 };
 const serializeDerivedSignal = (signal, getObjID) => {
     const parts = signal.$args$.map(getObjID);
-    const fnBody = signal.$funcStr$;
+    const fnBody = qSerialize ? signal.$funcStr$ : 'null';
+    assertDefined(fnBody, 'If qSerialize is true then fnStr must be provided.');
     return parts.join(' ') + ':' + fnBody;
 };
 const parseDerivedSignal = (data) => {
@@ -4871,19 +4872,31 @@ const getID = (stuff) => {
 /**
  * @public
  */
-const _jsxQ = (type, mutableProps, immutableProps, children, flags, key) => {
+const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
     const processed = key == null ? null : String(key);
     const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
+    if (qDev && dev) {
+        node.dev = {
+            stack: new Error().stack,
+            ...dev,
+        };
+    }
     seal(node);
     return node;
 };
 /**
  * @public
  */
-const _jsxC = (type, mutableProps, flags, key) => {
+const _jsxC = (type, mutableProps, flags, key, dev) => {
     const processed = key == null ? null : String(key);
     const props = mutableProps ?? EMPTY_OBJ;
     const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
+    if (qDev && dev) {
+        node.dev = {
+            stack: new Error().stack,
+            ...dev,
+        };
+    }
     seal(node);
     return node;
 };
@@ -4944,26 +4957,28 @@ class JSXNodeImpl {
                         });
                     }
                     if (isBrowser) {
-                        const keys = {};
-                        flatChildren.forEach((child) => {
-                            if (isJSXNode(child) && child.key != null) {
-                                const key = String(child.type) + ':' + child.key;
-                                if (keys[key]) {
-                                    const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
-                                    if (err) {
-                                        if (isString(child.type)) {
-                                            logOnceWarn(err);
-                                        }
-                                        else {
-                                            logOnceWarn(err);
+                        if (isFunction(type) || immutableProps) {
+                            const keys = {};
+                            flatChildren.forEach((child) => {
+                                if (isJSXNode(child) && child.key != null) {
+                                    const key = String(child.type) + ':' + child.key;
+                                    if (keys[key]) {
+                                        const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                        if (err) {
+                                            if (isString(child.type)) {
+                                                logOnceWarn(err);
+                                            }
+                                            else {
+                                                logOnceWarn(err);
+                                            }
                                         }
                                     }
+                                    else {
+                                        keys[key] = true;
+                                    }
                                 }
-                                else {
-                                    keys[key] = true;
-                                }
-                            }
-                        });
+                            });
+                        }
                     }
                 }
                 if (!qRuntimeQrl && props) {
@@ -5060,7 +5075,7 @@ const Fragment = (props) => props.children;
 /**
  * @public
  */
-const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
+const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
     const processed = key == null ? null : String(key);
     const children = untrack(() => {
         const c = props.children;
@@ -5071,8 +5086,6 @@ const jsxDEV = (type, props, key, isStatic, opts, ctx) => {
     });
     const node = new JSXNodeImpl(type, props, null, children, 0, processed);
     node.dev = {
-        isStatic,
-        ctx,
         stack: new Error().stack,
         ...opts,
     };

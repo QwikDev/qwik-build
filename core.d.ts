@@ -772,8 +772,6 @@ declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface DevJSX {
-    ctx: any;
-    isStatic: boolean;
     fileName: string;
     lineNumber: number;
     columnNumber: number;
@@ -821,7 +819,7 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @alpha
  */
-export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr: string) => SignalDerived<any, any[]>;
+export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
 declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
@@ -1282,7 +1280,7 @@ export declare const _jsxBranch: (input?: any) => any;
 /**
  * @public
  */
-export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key?: string | number | null) => JSXNode<T>;
+export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
 /**
  * @public
@@ -1292,7 +1290,7 @@ export declare type JSXChildren = string | number | boolean | null | undefined |
 /**
  * @public
  */
-export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, isStatic: boolean, opts: JsxDevOpts, ctx: any) => JSXNode<T>;
+export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: any) => JSXNode<T>;
 
 declare interface JsxDevOpts {
     fileName: string;
@@ -1316,7 +1314,7 @@ export declare interface JSXNode<T = string | FunctionComponent> {
 /**
  * @public
  */
-export declare const _jsxQ: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key?: string | number | null) => JSXNode<T>;
+export declare const _jsxQ: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
 /**
  * @public
@@ -2537,8 +2535,8 @@ declare class SignalBase {
 declare class SignalDerived<T = any, ARGS extends any[] = any> extends SignalBase {
     $func$: (...args: ARGS) => T;
     $args$: ARGS;
-    $funcStr$: string;
-    constructor($func$: (...args: ARGS) => T, $args$: ARGS, $funcStr$: string);
+    $funcStr$?: string | undefined;
+    constructor($func$: (...args: ARGS) => T, $args$: ARGS, $funcStr$?: string | undefined);
     get value(): T;
 }
 
@@ -3781,7 +3779,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.22.0-dev20230315175703
+ * 0.22.0-dev20230315191057
  * @public
  */
 export declare const version: string;
