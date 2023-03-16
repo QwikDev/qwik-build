@@ -1958,7 +1958,6 @@ function updateViteConfig(ts, sourceText, updates) {
           statements.push(
             ts.factory.updateExportAssignment(
               s,
-              s.decorators,
               s.modifiers,
               updateDefineConfig(ts, s.expression, updates)
             )
@@ -2112,7 +2111,6 @@ function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath)
       ]);
     }
     const newNamedImport = ts.factory.createImportDeclaration(
-      void 0,
       void 0,
       ts.factory.createImportClause(false, defaultIdentifier, namedBindings),
       ts.factory.createStringLiteral(importPath)
@@ -2387,7 +2385,7 @@ async function updateApp(pkgManager, opts) {
         const errorMessage = `${bgRed(
           ` ${pkgManager} install failed `
         )}
-   You might need to run "${cyan(
+ You might need to run "${cyan(
           `${pkgManager} install`
         )}" manually inside the root of the project.`;
         g2.error(errorMessage);
@@ -2408,6 +2406,19 @@ async function updateApp(pkgManager, opts) {
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
 var import_node_path6 = require("path");
+
+// packages/qwik/src/cli/utils/log.ts
+function logNextStep(nextSteps) {
+  const outString = [];
+  if (nextSteps) {
+    outString.push(`\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
+    outString.push(``);
+    nextSteps.lines.forEach((step) => outString.push(`   ${step}`));
+  }
+  return outString.join("\n");
+}
+
+// packages/qwik/src/cli/add/run-add-interactive.ts
 async function runAddInteractive(app, id) {
   var _a;
   const pkgManager = getPackageManager();
@@ -2520,6 +2531,11 @@ async function logUpdateAppResult(pkgManager, result) {
   }
 }
 function logUpdateAppCommitResult(result) {
+  var _a;
+  const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
+  if (nextSteps) {
+    note(logNextStep(nextSteps), "Note");
+  }
   ce(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
 }
 
