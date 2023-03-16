@@ -2695,7 +2695,8 @@
         const processed = null == key ? null : String(key);
         const props = mutableProps ?? EMPTY_OBJ;
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
-        return qDev && dev && (node.dev = {
+        return "string" == typeof type && mutableProps && delete mutableProps.children, 
+        qDev && dev && (node.dev = {
             stack: (new Error).stack,
             ...dev
         }), seal(node), node;

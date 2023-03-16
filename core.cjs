@@ -4901,6 +4901,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         const processed = key == null ? null : String(key);
         const props = mutableProps ?? EMPTY_OBJ;
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
+        if (typeof type === 'string' && mutableProps) {
+            delete mutableProps.children;
+        }
         if (qDev && dev) {
             node.dev = {
                 stack: new Error().stack,
