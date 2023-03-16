@@ -1239,6 +1239,8 @@ const getContext = (el, containerState) => {
                 }
             }
             else {
+                const styleIds = el.getAttribute(QScopedStyle);
+                elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
                 const ctxMeta = meta[elementID];
                 if (ctxMeta) {
                     const seq = ctxMeta.s;
@@ -1261,8 +1263,6 @@ const getContext = (el, containerState) => {
                     // Restore sequence scoping
                     if (host) {
                         const [renderQrl, props] = host.split(' ');
-                        const styleIds = el.getAttribute(QScopedStyle);
-                        elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
                         elCtx.$flags$ = HOST_FLAG_MOUNTED;
                         if (renderQrl) {
                             elCtx.$componentQrl$ = getObject(renderQrl);

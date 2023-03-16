@@ -783,6 +783,8 @@ const getContext = (el, containerState) => {
                     return listeners;
                 })(elCtx, containerState.$containerEl$));
             } else {
+                const styleIds = el.getAttribute("q:sstyle");
+                elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null;
                 const ctxMeta = meta[elementID];
                 if (ctxMeta) {
                     const seq = ctxMeta.s;
@@ -799,9 +801,7 @@ const getContext = (el, containerState) => {
                     }
                     if (host) {
                         const [renderQrl, props] = host.split(" ");
-                        const styleIds = el.getAttribute("q:sstyle");
-                        elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null, elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
-                        elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
+                        elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
                     }
                 }
             }

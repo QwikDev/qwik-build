@@ -1249,6 +1249,8 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                     }
                 }
                 else {
+                    const styleIds = el.getAttribute(QScopedStyle);
+                    elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
                     const ctxMeta = meta[elementID];
                     if (ctxMeta) {
                         const seq = ctxMeta.s;
@@ -1271,8 +1273,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                         // Restore sequence scoping
                         if (host) {
                             const [renderQrl, props] = host.split(' ');
-                            const styleIds = el.getAttribute(QScopedStyle);
-                            elCtx.$scopeIds$ = styleIds ? styleIds.split('|') : null;
                             elCtx.$flags$ = HOST_FLAG_MOUNTED;
                             if (renderQrl) {
                                 elCtx.$componentQrl$ = getObject(renderQrl);
