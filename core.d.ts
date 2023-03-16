@@ -447,7 +447,7 @@ export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<
  * @public
  */
 export declare interface ComponentBaseProps {
-    key?: string | number;
+    key?: string | number | null | undefined;
     'q:slot'?: string;
 }
 
@@ -787,7 +787,7 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
     children?: JSXChildren;
-    key?: string | number;
+    key?: string | number | null | undefined;
 }
 
 /**
@@ -3780,7 +3780,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.22.0-dev20230316151742
+ * 0.22.0-dev20230316160358
  * @public
  */
 export declare const version: string;

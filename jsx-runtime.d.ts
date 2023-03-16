@@ -320,7 +320,7 @@ declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
     children?: JSXChildren;
-    key?: string | number;
+    key?: string | number | null | undefined;
 }
 
 declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
