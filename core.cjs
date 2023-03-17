@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.22.0
+ * @builder.io/qwik 0.22.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3538,7 +3538,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      * QWIK_VERSION
      * @public
      */
-    const version = "0.22.0";
+    const version = "0.22.1";
 
     var _a;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -4057,7 +4057,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             if (qDev && qInspector && node.dev && !(flags & IS_HEAD$1)) {
                 const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
                 if (sanitizedFileName) {
-                    openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`;
+                    openingElement += ` data-qwik-inspector="${escapeAttr(`${sanitizedFileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`)}"`;
                 }
             }
             openingElement += '>';

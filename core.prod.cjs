@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.22.0
+ * @builder.io/qwik 0.22.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2049,7 +2049,7 @@
             }
             if (1 & flags && (openingElement += " q:head"), qDev && false) {
                 const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, "/");
-                sanitizedFileName && (openingElement += ` data-qwik-inspector="${encodeURIComponent(sanitizedFileName)}:${node.dev.lineNumber}:${node.dev.columnNumber}"`);
+                sanitizedFileName && (openingElement += ` data-qwik-inspector="${escapeAttr(`${sanitizedFileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`)}"`);
             }
             if (openingElement += ">", stream.write(openingElement), emptyElements[tagName]) {
                 return;
@@ -4571,7 +4571,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.22.0",
+            "q:version": "0.22.1",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4728,7 +4728,7 @@
             throw qError(5, containerEl);
         }
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.22.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.22.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4813,7 +4813,7 @@
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
     exports.useVisibleTask$ = useVisibleTask$, exports.useVisibleTaskQrl = useVisibleTaskQrl, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.22.0", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.22.1", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

@@ -602,7 +602,7 @@ export declare interface Context<STATE extends object> extends ContextId<STATE> 
  * ```
  * @public
  */
-export declare interface ContextId<STATE extends object> {
+export declare interface ContextId<STATE> {
     /**
      * Design-time property to store type information for the context.
      */
@@ -739,7 +739,7 @@ export declare const createContext: <STATE extends object>(name: string) => Cont
  * @param name - The name of the context.
  * @public
  */
-export declare const createContextId: <STATE extends object>(name: string) => ContextId<STATE>;
+export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
 declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -3780,7 +3780,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.22.0-dev20230316160358
+ * 0.22.1-dev20230317163840
  * @public
  */
 export declare const version: string;

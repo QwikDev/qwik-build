@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.22.0
+ * @builder.io/qwik/cli 0.22.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2089,7 +2089,6 @@ function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath)
     statements[i] = ts.factory.updateImportDeclaration(
       n,
       void 0,
-      void 0,
       ts.factory.createImportClause(false, defaultIdentifier, namedBindings),
       n.moduleSpecifier,
       void 0
@@ -4029,7 +4028,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.22.0");
+  console.log("0.22.1");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
