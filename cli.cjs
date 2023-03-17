@@ -147,28 +147,6 @@ var require_picocolors = __commonJS({
   }
 });
 
-// node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js
-var require_which_pm_runs = __commonJS({
-  "node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js"(exports, module2) {
-    "use strict";
-    module2.exports = function() {
-      if (!process.env.npm_config_user_agent) {
-        return void 0;
-      }
-      return pmFromUserAgent(process.env.npm_config_user_agent);
-    };
-    function pmFromUserAgent(userAgent) {
-      const pmSpec = userAgent.split(" ")[0];
-      const separatorPos = pmSpec.lastIndexOf("/");
-      const name = pmSpec.substring(0, separatorPos);
-      return {
-        name: name === "npminstall" ? "cnpm" : name,
-        version: pmSpec.substring(separatorPos + 1)
-      };
-    }
-  }
-});
-
 // node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js
 var require_windows = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js"(exports, module2) {
@@ -663,6 +641,28 @@ var require_cross_spawn = __commonJS({
     module2.exports.sync = spawnSync;
     module2.exports._parse = parse;
     module2.exports._enoent = enoent;
+  }
+});
+
+// node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js
+var require_which_pm_runs = __commonJS({
+  "node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js"(exports, module2) {
+    "use strict";
+    module2.exports = function() {
+      if (!process.env.npm_config_user_agent) {
+        return void 0;
+      }
+      return pmFromUserAgent(process.env.npm_config_user_agent);
+    };
+    function pmFromUserAgent(userAgent) {
+      const pmSpec = userAgent.split(" ")[0];
+      const separatorPos = pmSpec.lastIndexOf("/");
+      const name = pmSpec.substring(0, separatorPos);
+      return {
+        name: name === "npminstall" ? "cnpm" : name,
+        version: pmSpec.substring(separatorPos + 1)
+      };
+    }
   }
 });
 
@@ -1615,7 +1615,37 @@ ${import_picocolors.default.green(f2)}  ${t}
 };
 
 // packages/qwik/src/cli/utils/utils.ts
+var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 var import_which_pm_runs = __toESM(require_which_pm_runs(), 1);
+function runCommand(cmd, args, cwd) {
+  let child;
+  const install = new Promise((resolve2) => {
+    try {
+      child = (0, import_cross_spawn.default)(cmd, args, {
+        cwd,
+        stdio: "ignore"
+      });
+      child.on("error", () => {
+        resolve2(false);
+      });
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve2(true);
+        } else {
+          resolve2(false);
+        }
+      });
+    } catch (e2) {
+      resolve2(false);
+    }
+  });
+  const abort = async () => {
+    if (child) {
+      child.kill("SIGINT");
+    }
+  };
+  return { abort, install };
+}
 async function readPackageJson(dir) {
   const path3 = (0, import_node_path2.join)(dir, "package.json");
   const pkgJson = JSON.parse(await import_node_fs2.default.promises.readFile(path3, "utf-8"));
@@ -1766,42 +1796,12 @@ var import_node_path5 = require("path");
 var import_node_fs5 = __toESM(require("fs"), 1);
 
 // packages/qwik/src/cli/utils/install-deps.ts
-var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function installDeps(pkgManager, dir) {
   return runCommand(pkgManager, ["install"], dir);
 }
 function runInPkg(pkgManager, args, cwd) {
   const cmd = pkgManager === "npm" ? "npx" : pkgManager;
   return runCommand(cmd, args, cwd);
-}
-function runCommand(cmd, args, cwd) {
-  let installChild;
-  const install = new Promise((resolve2) => {
-    try {
-      installChild = (0, import_cross_spawn.default)(cmd, args, {
-        cwd,
-        stdio: "ignore"
-      });
-      installChild.on("error", () => {
-        resolve2(false);
-      });
-      installChild.on("close", (code) => {
-        if (code === 0) {
-          resolve2(true);
-        } else {
-          resolve2(false);
-        }
-      });
-    } catch (e2) {
-      resolve2(false);
-    }
-  });
-  const abort = async () => {
-    if (installChild) {
-      installChild.kill("SIGINT");
-    }
-  };
-  return { abort, install };
 }
 
 // packages/qwik/src/cli/add/update-files.ts
