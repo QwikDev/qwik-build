@@ -1812,6 +1812,7 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
   await Promise.all(
     items.map(async (itemName) => {
       const destName = itemName === "gitignore" ? ".gitignore" : itemName;
+      const ext = (0, import_node_path4.extname)(destName);
       const srcChildPath = (0, import_node_path4.join)(srcDir, itemName);
       const destChildPath = (0, import_node_path4.join)(destDir, destName);
       const s = await import_node_fs4.default.promises.stat(srcChildPath);
@@ -1824,6 +1825,8 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
           await mergeReadmes(fileUpdates, srcChildPath, destChildPath);
         } else if (destName === ".gitignore") {
           await mergeGitIgnores(fileUpdates, srcChildPath, destChildPath);
+        } else if (ext === ".css") {
+          await mergeCss(fileUpdates, srcChildPath, destChildPath);
         } else {
           if (import_node_fs4.default.existsSync(destChildPath)) {
             fileUpdates.files.push({
@@ -1925,6 +1928,24 @@ async function mergeGitIgnores(fileUpdates, srcPath, destPath) {
     fileUpdates.files.push({
       path: destPath,
       content: destLines.join("\n").trim() + "\n",
+      type: "modify"
+    });
+  } catch (e2) {
+    fileUpdates.files.push({
+      path: destPath,
+      content: srcContent,
+      type: "create"
+    });
+  }
+}
+async function mergeCss(fileUpdates, srcPath, destPath) {
+  const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
+  try {
+    const destContent = await import_node_fs4.default.promises.readFile(destPath, "utf-8");
+    const mergedContent = srcContent.trim() + "\n\n" + destContent.trim() + "\n";
+    fileUpdates.files.push({
+      path: destPath,
+      content: mergedContent,
       type: "modify"
     });
   } catch (e2) {
