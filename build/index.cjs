@@ -29,7 +29,7 @@ module.exports = __toCommonJS(build_exports);
 var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && typeof HTMLElement !== "undefined" && !!window.document && String(HTMLElement).includes("[native code]"))();
 var isServer = !isBrowser;
 var isDev = /* @__PURE__ */ (() => {
-  return globalThis.qDev === true;
+  return globalThis.qDev !== false;
 })();
 return module.exports; })(typeof module === 'object' && module.exports ? module : { exports: {} });
 //# sourceMappingURL=index.cjs.map

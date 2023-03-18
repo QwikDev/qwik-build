@@ -2383,10 +2383,6 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         }
         for (const prop of Object.keys(props)) {
             let value = props[prop];
-            if ("dangerouslySetInnerHTML" === prop) {
-                htmlStr = value;
-                continue;
-            }
             if ("ref" === prop) {
                 setRef(value, elm), hasRef = true;
                 continue;
@@ -2396,8 +2392,12 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 continue;
             }
             const attrName = processPropKey(prop);
-            isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
+            if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
             value = trackSignal(value, [ 2, hostCtx.$element$, value, elm, attrName ]), useSignal = true), 
+            "dangerouslySetInnerHTML" === prop) {
+                htmlStr = value;
+                continue;
+            }
             prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
             null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
@@ -2405,17 +2405,17 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (immutable) {
             for (const prop of Object.keys(immutable)) {
                 let value = immutable[prop];
-                if ("dangerouslySetInnerHTML" === prop) {
-                    htmlStr = value;
-                    continue;
-                }
                 if (isOnProp(prop)) {
                     setEvent(elCtx.li, prop, value, void 0);
                     continue;
                 }
                 const attrName = processPropKey(prop);
-                isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
+                if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
                 value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), useSignal = true), 
+                "dangerouslySetInnerHTML" === prop) {
+                    htmlStr = value;
+                    continue;
+                }
                 prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
