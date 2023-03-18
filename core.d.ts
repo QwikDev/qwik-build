@@ -330,7 +330,7 @@ declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
     type: string;
 }
 
-declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = {
+declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event | FormData, EL> = {
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
@@ -1932,7 +1932,7 @@ declare type QwikEventMap<T> = {
     InputCapture: Event;
     Reset: Event;
     ResetCapture: Event;
-    Submit: QwikSubmitEvent<T>;
+    Submit: QwikSubmitEvent<T> | FormData;
     SubmitCapture: Event;
     Invalid: QwikInvalidEvent<T>;
     InvalidCapture: QwikInvalidEvent<T>;
@@ -3780,7 +3780,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230318172531
+ * 0.23.0-dev20230318195114
  * @public
  */
 export declare const version: string;
