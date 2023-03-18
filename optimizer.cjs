@@ -680,6 +680,7 @@ globalThis.qwikOptimizer = function(module) {
       }));
       const modulesOpts = {
         srcDir: fsOpts.srcDir,
+        rootDir: fsOpts.rootDir,
         entryStrategy: fsOpts.entryStrategy,
         minify: fsOpts.minify,
         sourceMaps: fsOpts.sourceMaps,
@@ -714,6 +715,7 @@ globalThis.qwikOptimizer = function(module) {
       scope: void 0,
       regCtxName: void 0,
       stripEventHandlers: false,
+      rootDir: void 0,
       stripExports: void 0,
       stripCtxName: void 0,
       isServer: void 0
@@ -1130,6 +1132,7 @@ globalThis.qwikOptimizer = function(module) {
         const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
         const transformOpts = {
           srcDir: srcDir,
+          rootDir: opts.rootDir,
           vendorRoots: vendorRoots,
           entryStrategy: opts.entryStrategy,
           minify: "simplify",
@@ -1287,6 +1290,7 @@ globalThis.qwikOptimizer = function(module) {
           explicitExtensions: true,
           preserveFilenames: true,
           srcDir: srcDir,
+          rootDir: opts.rootDir,
           mode: mode,
           scope: opts.scope ? opts.scope : void 0
         };
@@ -1336,6 +1340,7 @@ globalThis.qwikOptimizer = function(module) {
             explicitExtensions: true,
             preserveFilenames: true,
             srcDir: srcDir,
+            rootDir: opts.rootDir,
             mode: mode,
             scope: opts.scope ? opts.scope : void 0
           };
@@ -1793,9 +1798,7 @@ globalThis.qwikOptimizer = function(module) {
             res.end(html);
             return;
           }
-          const ssrModule = await server.ssrLoadModule(opts.input[0], {
-            fixStacktrace: false
-          });
+          const ssrModule = await server.ssrLoadModule(opts.input[0]);
           const render = ssrModule.default ?? ssrModule.render;
           if ("function" === typeof render) {
             const manifest = {

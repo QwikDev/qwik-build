@@ -548,6 +548,7 @@ export declare interface TransformModulesOptions extends TransformOptions {
  */
 export declare interface TransformOptions {
     srcDir: string;
+    rootDir?: string;
     entryStrategy?: EntryStrategy;
     minify?: MinifyMode;
     sourceMaps?: boolean;
