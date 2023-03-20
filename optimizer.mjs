@@ -2107,21 +2107,20 @@ function qwikVite(qwikViteOpts = {}) {
           }
         }
       };
-      if ("development" === buildMode) {
-        const qDevKey = "globalThis.qDev";
-        const qInspectorKey = "globalThis.qInspector";
-        const qSerializeKey = "globalThis.qSerialize";
-        const qDev = viteConfig?.define?.[qDevKey] ?? true;
-        const qInspector = viteConfig?.define?.[qInspectorKey] ?? true;
-        const qSerialize = viteConfig?.define?.[qSerializeKey] ?? true;
-        updatedViteConfig.define = {
-          [qDevKey]: qDev,
-          [qInspectorKey]: qInspector,
-          [qSerializeKey]: qSerialize
-        };
-        globalThis.qDev = qDev;
-        globalThis.qInspector = qInspector;
-      }
+      const isDevelopment = "development" === buildMode;
+      const qDevKey = "globalThis.qDev";
+      const qInspectorKey = "globalThis.qInspector";
+      const qSerializeKey = "globalThis.qSerialize";
+      const qDev = viteConfig?.define?.[qDevKey] ?? isDevelopment;
+      const qInspector = viteConfig?.define?.[qInspectorKey] ?? isDevelopment;
+      const qSerialize = viteConfig?.define?.[qSerializeKey] ?? isDevelopment;
+      updatedViteConfig.define = {
+        [qDevKey]: qDev,
+        [qInspectorKey]: qInspector,
+        [qSerializeKey]: qSerialize
+      };
+      globalThis.qDev = qDev;
+      globalThis.qInspector = qInspector;
       if ("ssr" === opts.target) {
         if ("serve" === viteCommand) {
           updatedViteConfig.ssr = {
@@ -2137,13 +2136,13 @@ function qwikVite(qwikViteOpts = {}) {
       } else if ("lib" === opts.target) {
         updatedViteConfig.build.minify = false;
       } else {
-        const qDevKey = "globalThis.qDev";
+        const qDevKey2 = "globalThis.qDev";
         const qTestKey = "globalThis.qTest";
-        const qInspectorKey = "globalThis.qInspector";
+        const qInspectorKey2 = "globalThis.qInspector";
         updatedViteConfig.define = {
-          [qDevKey]: true,
+          [qDevKey2]: true,
           [qTestKey]: true,
-          [qInspectorKey]: false
+          [qInspectorKey2]: false
         };
       }
       return updatedViteConfig;

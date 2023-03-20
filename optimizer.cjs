@@ -2117,21 +2117,20 @@ globalThis.qwikOptimizer = function(module) {
             }
           }
         };
-        if ("development" === buildMode) {
-          const qDevKey = "globalThis.qDev";
-          const qInspectorKey = "globalThis.qInspector";
-          const qSerializeKey = "globalThis.qSerialize";
-          const qDev = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qDevKey]) ?? true;
-          const qInspector = (null == (_r = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _r[qInspectorKey]) ?? true;
-          const qSerialize = (null == (_s = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _s[qSerializeKey]) ?? true;
-          updatedViteConfig.define = {
-            [qDevKey]: qDev,
-            [qInspectorKey]: qInspector,
-            [qSerializeKey]: qSerialize
-          };
-          globalThis.qDev = qDev;
-          globalThis.qInspector = qInspector;
-        }
+        const isDevelopment = "development" === buildMode;
+        const qDevKey = "globalThis.qDev";
+        const qInspectorKey = "globalThis.qInspector";
+        const qSerializeKey = "globalThis.qSerialize";
+        const qDev = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qDevKey]) ?? isDevelopment;
+        const qInspector = (null == (_r = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _r[qInspectorKey]) ?? isDevelopment;
+        const qSerialize = (null == (_s = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _s[qSerializeKey]) ?? isDevelopment;
+        updatedViteConfig.define = {
+          [qDevKey]: qDev,
+          [qInspectorKey]: qInspector,
+          [qSerializeKey]: qSerialize
+        };
+        globalThis.qDev = qDev;
+        globalThis.qInspector = qInspector;
         if ("ssr" === opts.target) {
           if ("serve" === viteCommand) {
             updatedViteConfig.ssr = {
@@ -2147,13 +2146,13 @@ globalThis.qwikOptimizer = function(module) {
         } else if ("lib" === opts.target) {
           updatedViteConfig.build.minify = false;
         } else {
-          const qDevKey = "globalThis.qDev";
+          const qDevKey2 = "globalThis.qDev";
           const qTestKey = "globalThis.qTest";
-          const qInspectorKey = "globalThis.qInspector";
+          const qInspectorKey2 = "globalThis.qInspector";
           updatedViteConfig.define = {
-            [qDevKey]: true,
+            [qDevKey2]: true,
             [qTestKey]: true,
-            [qInspectorKey]: false
+            [qInspectorKey2]: false
           };
         }
         return updatedViteConfig;
