@@ -485,6 +485,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     capture?: boolean | 'user' | 'environment' | undefined;
     checked?: boolean | undefined;
+    'bind:checked'?: Signal<boolean | undefined>;
     crossOrigin?: HTMLCrossOriginAttribute;
     disabled?: boolean | undefined;
     enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
@@ -511,6 +512,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     step?: number | string | undefined;
     type?: HTMLInputTypeAttribute | undefined;
     value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
+    'bind:value'?: Signal<string | undefined>;
     width?: number | string | undefined;
     children?: undefined;
 }
@@ -1410,6 +1412,7 @@ declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
     required?: boolean | undefined;
     size?: number | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+    'bind:value'?: Signal<string | undefined>;
 }
 
 /**
@@ -1481,6 +1484,7 @@ declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     required?: boolean | undefined;
     rows?: number | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
+    'bind:value'?: Signal<string | undefined>;
     wrap?: string | undefined;
     /** @deprecated - Use the `value` property instead */
     children?: undefined;
