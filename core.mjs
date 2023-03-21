@@ -7,6 +7,52 @@
  */
 import { isServer, isBrowser } from '@builder.io/qwik/build';
 
+// <docs markdown="../readme.md#implicit$FirstArg">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#implicit$FirstArg instead)
+/**
+ * Create a `____$(...)` convenience method from `___(...)`.
+ *
+ * It is very common for functions to take a lazy-loadable resource as a first argument. For this
+ * reason, the Qwik Optimizer automatically extracts the first argument from any function which
+ * ends in `$`.
+ *
+ * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
+ * The former is just a shorthand for the latter.
+ *
+ * For example, these function calls are equivalent:
+ *
+ * - `component$(() => {...})` is same as `component($(() => {...}))`
+ *
+ * ```tsx
+ * export function myApi(callback: QRL<() => void>): void {
+ *   // ...
+ * }
+ *
+ * export const myApi$ = implicit$FirstArg(myApi);
+ * // type of myApi$: (callback: () => void): void
+ *
+ * // can be used as:
+ * myApi$(() => console.log('callback'));
+ *
+ * // will be transpiled to:
+ * // FILE: <current file>
+ * myApi(qrl('./chunk-abc.js', 'callback'));
+ *
+ * // FILE: chunk-abc.js
+ * export const callback = () => console.log('callback');
+ * ```
+ *
+ * @param fn - a function that should have its first argument automatically `$`.
+ * @alpha
+ */
+// </docs>
+const implicit$FirstArg = (fn) => {
+    return function (first, ...rest) {
+        return fn.call(null, $(first), ...rest);
+    };
+};
+
 const qDev = globalThis.qDev !== false;
 const qInspector = globalThis.qInspector === true;
 const qSerialize = globalThis.qSerialize !== false;
@@ -1007,11 +1053,7 @@ const _wrapProp = (obj, prop) => {
     if (isSignal(immutable)) {
         return immutable;
     }
-    const value = obj[prop];
-    if (isSignal(value)) {
-        return _IMMUTABLE;
-    }
-    return value;
+    return _IMMUTABLE;
 };
 /**
  * @internal
@@ -1493,52 +1535,6 @@ const _jsxBranch = (input) => {
         elCtx.$flags$ |= HOST_FLAG_DYNAMIC;
     }
     return input;
-};
-
-// <docs markdown="../readme.md#implicit$FirstArg">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#implicit$FirstArg instead)
-/**
- * Create a `____$(...)` convenience method from `___(...)`.
- *
- * It is very common for functions to take a lazy-loadable resource as a first argument. For this
- * reason, the Qwik Optimizer automatically extracts the first argument from any function which
- * ends in `$`.
- *
- * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
- * The former is just a shorthand for the latter.
- *
- * For example, these function calls are equivalent:
- *
- * - `component$(() => {...})` is same as `component($(() => {...}))`
- *
- * ```tsx
- * export function myApi(callback: QRL<() => void>): void {
- *   // ...
- * }
- *
- * export const myApi$ = implicit$FirstArg(myApi);
- * // type of myApi$: (callback: () => void): void
- *
- * // can be used as:
- * myApi$(() => console.log('callback'));
- *
- * // will be transpiled to:
- * // FILE: <current file>
- * myApi(qrl('./chunk-abc.js', 'callback'));
- *
- * // FILE: chunk-abc.js
- * export const callback = () => console.log('callback');
- * ```
- *
- * @param fn - a function that should have its first argument automatically `$`.
- * @alpha
- */
-// </docs>
-const implicit$FirstArg = (fn) => {
-    return function (first, ...rest) {
-        return fn.call(null, $(first), ...rest);
-    };
 };
 
 const useSequentialScope = () => {
@@ -8063,6 +8059,16 @@ const $ = (expression) => {
     }
     return createQRL(null, 's' + runtimeSymbolId++, expression, null, null, null, null);
 };
+/**
+ * @alpha
+ */
+const eventQrl = (qrl) => {
+    return qrl;
+};
+/**
+ * @alpha
+ */
+const event$ = implicit$FirstArg(eventQrl);
 
 // const ELEMENTS_SKIP_KEY: JSXTagName[] = ['html', 'body', 'head'];
 // <docs markdown="../readme.md#component">
@@ -8123,6 +8129,7 @@ const componentQrl = (componentQrl) => {
     // Return a QComponent Factory function.
     function QwikComponent(props, key, flags) {
         assertQrl(componentQrl);
+        assertNumber(flags, 'The Qwik Component was not invocated correctly');
         const hash = qTest ? 'sX' : componentQrl.$hash$.slice(0, 4);
         const finalKey = hash + ':' + (key ? key : '');
         return _jsxC(Virtual, {
@@ -9123,5 +9130,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

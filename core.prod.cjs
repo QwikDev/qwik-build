@@ -13,6 +13,9 @@
         const g = "undefined" != typeof global ? global : "undefined" != typeof window ? window : "undefined" != typeof self ? self : {};
         g.globalThis = g;
     }
+    const implicit$FirstArg = fn => function(first, ...rest) {
+        return fn.call(null, $(first), ...rest);
+    };
     const qDev = false;
     const seal = obj => {
         qDev && Object.seal(obj);
@@ -507,11 +510,7 @@
             }
         }
         const immutable = obj[_IMMUTABLE]?.[prop];
-        if (isSignal(immutable)) {
-            return immutable;
-        }
-        const value = obj[prop];
-        return isSignal(value) ? _IMMUTABLE : value;
+        return isSignal(immutable) ? immutable : _IMMUTABLE;
     };
     const getOrCreateProxy = (target, containerState, flags = 0) => containerState.$proxyMap$.get(target) || (0 !== flags && setObjectFlags(target, flags), 
     createProxy(target, containerState, void 0));
@@ -782,9 +781,6 @@
     const untrack = fn => invoke(void 0, fn);
     const trackInvocation = newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
-    const implicit$FirstArg = fn => function(first, ...rest) {
-        return fn.call(null, $(first), ...rest);
-    };
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const i = iCtx.$seq$;
@@ -4264,9 +4260,11 @@
     const $ = expression => {
         throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
     };
+    const eventQrl = qrl => qrl;
+    const event$ = implicit$FirstArg(eventQrl);
     const componentQrl = componentQrl => {
         function QwikComponent(props, key, flags) {
-            assertQrl(componentQrl);
+            assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invocated correctly");
             const finalKey = componentQrl.$hash$.slice(0, 4) + ":" + (key || "");
             return _jsxC(Virtual, {
                 "q:renderFn": componentQrl,
@@ -4678,7 +4676,7 @@
         return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
     exports.createContext = name => createContextId(name), exports.createContextId = createContextId, 
-    exports.getLocale = function(defaultLocale) {
+    exports.event$ = event$, exports.eventQrl = eventQrl, exports.getLocale = function(defaultLocale) {
         if (void 0 === _locale) {
             const ctx = tryGetInvokeContext();
             if (ctx && ctx.$locale$) {

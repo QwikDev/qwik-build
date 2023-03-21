@@ -810,6 +810,16 @@ export declare interface ErrorBoundaryStore {
     error: any | undefined;
 }
 
+/**
+ * @alpha
+ */
+export declare const event$: <T>(first: T) => QRL<T>;
+
+/**
+ * @alpha
+ */
+export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
+
 declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
@@ -3784,7 +3794,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230321144558
+ * 0.23.0-dev20230321174055
  * @public
  */
 export declare const version: string;

@@ -7,6 +7,10 @@
  */
 import { isServer, isBrowser } from "@builder.io/qwik/build";
 
+const implicit$FirstArg = fn => function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+};
+
 const qDev = false;
 
 const seal = obj => {
@@ -617,11 +621,7 @@ const _wrapProp = (obj, prop) => {
         }
     }
     const immutable = obj[_IMMUTABLE]?.[prop];
-    if (isSignal(immutable)) {
-        return immutable;
-    }
-    const value = obj[prop];
-    return isSignal(value) ? _IMMUTABLE : value;
+    return isSignal(immutable) ? immutable : _IMMUTABLE;
 };
 
 const _wrapSignal = (obj, prop) => {
@@ -966,10 +966,6 @@ const _jsxBranch = input => {
         getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$).$flags$ |= 8;
     }
     return input;
-};
-
-const implicit$FirstArg = fn => function(first, ...rest) {
-    return fn.call(null, $(first), ...rest);
 };
 
 const useSequentialScope = () => {
@@ -4963,9 +4959,13 @@ const $ = expression => {
     throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
 };
 
+const eventQrl = qrl => qrl;
+
+const event$ = implicit$FirstArg(eventQrl);
+
 const componentQrl = componentQrl => {
     function QwikComponent(props, key, flags) {
-        assertQrl(componentQrl);
+        assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invocated correctly");
         const finalKey = componentQrl.$hash$.slice(0, 4) + ":" + (key || "");
         return _jsxC(Virtual, {
             "q:renderFn": componentQrl,
@@ -5316,4 +5316,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContext, createContextId, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, mutable, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useBrowserVisibleTask$, useBrowserVisibleTaskQrl, useCleanup$, useCleanupQrl, useClientEffect$, useClientEffectQrl, useClientMount$, useClientMountQrl, useComputed$, useComputedQrl, useContext, useContextProvider, useEnvData, useErrorBoundary, useId, useLexicalScope, useMount$, useMountQrl, useOn, useOnDocument, useOnWindow, useRef, useResource$, useResourceQrl, useServerData, useServerMount$, useServerMountQrl, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useUserContext, useVisibleTask$, useVisibleTaskQrl, useWatch$, useWatchQrl, version, withLocale };

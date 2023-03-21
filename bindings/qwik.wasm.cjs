@@ -457,7 +457,7 @@ function initSync(module) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('qwik_wasm_bg.wasm', (typeof document === 'undefined' ? new (require('u' + 'rl').URL)('file:' + __filename).href : (document.currentScript && document.currentScript.src || new URL('qwik.wasm.cjs', document.baseURI).href)));
+        input = new URL('qwik_wasm_bg.wasm', (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (document.currentScript && document.currentScript.src || new URL('qwik.wasm.cjs', document.baseURI).href)));
     }
     const imports = getImports();
 
