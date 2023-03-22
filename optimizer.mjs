@@ -829,7 +829,7 @@ function addBundleToManifest(path, manifest, outputBundle, bundleFileName) {
     bundleImports.length > 0 && (bundle.imports = bundleImports);
     const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
-    const modulePaths = Object.keys(outputBundle.modules);
+    const modulePaths = Object.keys(outputBundle.modules).filter((m => !m.startsWith("\0")));
     modulePaths.length > 0 && (bundle.origins = modulePaths);
     manifest.bundles[bundleFileName] = bundle;
   }
