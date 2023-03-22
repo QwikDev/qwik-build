@@ -9,7 +9,7 @@ import type { SymbolMapperFn } from './optimizer';
 /**
  * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader
  * script into HTML.
- * @alpha
+ * @public
  */
 export declare function getQwikLoaderScript(opts?: {
     events?: string[];
@@ -17,7 +17,7 @@ export declare function getQwikLoaderScript(opts?: {
 }): string;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface InOrderAuto {
     strategy: 'auto';
@@ -26,26 +26,26 @@ export declare interface InOrderAuto {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface InOrderDirect {
     strategy: 'direct';
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface InOrderDisabled {
     strategy: 'disabled';
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDirect;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface PrefetchImplementation {
     /**
@@ -84,7 +84,7 @@ export declare interface PrefetchImplementation {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface PrefetchResource {
     url: string;
@@ -92,7 +92,7 @@ export declare interface PrefetchResource {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface PrefetchStrategy {
     implementation?: PrefetchImplementation;
@@ -100,7 +100,7 @@ export declare interface PrefetchStrategy {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikLoaderOptions {
     events?: string[];
@@ -109,12 +109,12 @@ export declare interface QwikLoaderOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type Render = RenderToString | RenderToStream;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderOptions extends SerializeDocumentOptions {
     /**
@@ -149,7 +149,7 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
@@ -161,7 +161,7 @@ export declare interface RenderResult {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type RenderToStream = (opts: RenderToStreamOptions) => Promise<RenderToStreamResult>;
 
@@ -169,13 +169,13 @@ export declare type RenderToStream = (opts: RenderToStreamOptions) => Promise<Re
  * Creates a server-side `document`, renders to root node to the document,
  * then serializes the document to a string.
  *
- * @alpha
+ * @public
  *
  */
 export declare function renderToStream(rootNode: any, opts: RenderToStreamOptions): Promise<RenderToStreamResult>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderToStreamOptions extends RenderOptions {
     stream: StreamWriter;
@@ -183,7 +183,7 @@ export declare interface RenderToStreamOptions extends RenderOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderToStreamResult extends RenderResult {
     flushes: number;
@@ -196,7 +196,7 @@ export declare interface RenderToStreamResult extends RenderResult {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type RenderToString = (opts: RenderToStringOptions) => Promise<RenderToStringResult>;
 
@@ -204,19 +204,19 @@ export declare type RenderToString = (opts: RenderToStringOptions) => Promise<Re
  * Creates a server-side `document`, renders to root node to the document,
  * then serializes the document to a string.
  *
- * @alpha
+ * @public
  *
  */
 export declare function renderToString(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderToStringOptions extends RenderOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderToStringResult extends RenderResult {
     html: string;
@@ -232,12 +232,12 @@ declare interface ResolvedManifest {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest | undefined): ResolvedManifest | undefined;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SerializeDocumentOptions {
     manifest?: QwikManifest | ResolvedManifest;
@@ -246,12 +246,12 @@ export declare interface SerializeDocumentOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare function setServerPlatform(manifest: QwikManifest | ResolvedManifest | undefined): Promise<void>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface StreamingOptions {
     inOrder?: InOrderStreaming;
@@ -260,7 +260,7 @@ export declare interface StreamingOptions {
 /**
  * auto: Prefetch all possible QRLs used by the document. Default
  *
- * @alpha
+ * @public
  */
 export declare type SymbolsToPrefetch = 'auto' | ((opts: {
     manifest: QwikManifest;

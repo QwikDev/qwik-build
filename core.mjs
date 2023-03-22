@@ -44,7 +44,7 @@ import { isServer, isBrowser } from '@builder.io/qwik/build';
  * ```
  *
  * @param fn - a function that should have its first argument automatically `$`.
- * @alpha
+ * @public
  */
 // </docs>
 const implicit$FirstArg = (fn) => {
@@ -344,7 +344,7 @@ let _platform = /* @__PURE__ */ createPlatform();
  *
  * @param doc - The document of the application for which the platform is needed.
  * @param platform - The platform to use.
- * @alpha
+ * @public
  */
 // </docs>
 const setPlatform = (plt) => (_platform = plt);
@@ -361,7 +361,7 @@ const setPlatform = (plt) => (_platform = plt);
  * is associated with the application document.
  *
  * @param docOrNode - The document (or node) of the application for which the platform is needed.
- * @alpha
+ * @public
  */
 // </docs>
 const getPlatform = () => {
@@ -475,7 +475,7 @@ const announcedQRL = /*@__PURE__*/ new Set();
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @alpha
+ * @public
  */
 // </docs>
 const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset = 0) => {
@@ -901,7 +901,7 @@ const _IMMUTABLE = Symbol('IMMUTABLE');
 const _IMMUTABLE_PREFIX = '$$';
 
 /**
- * @alpha
+ * @public
  */
 const _fnSignal = (fn, args, fnStr) => {
     return new SignalDerived(fn, args, fnStr);
@@ -1408,7 +1408,7 @@ function setLocale(locale) {
 
 let _context;
 /**
- * @alpha
+ * @public
  */
 const tryGetInvokeContext = () => {
     if (!_context) {
@@ -1502,14 +1502,14 @@ const getWrappingContainer = (el) => {
     return el.closest(QContainerSelector);
 };
 /**
- * @alpha
+ * @public
  */
 const untrack = (fn) => {
     return invoke(undefined, fn);
 };
 const trackInvocation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
 /**
- * @alpha
+ * @public
  */
 const trackSignal = (signal, sub) => {
     trackInvocation.$subscriber$ = sub;
@@ -1565,7 +1565,7 @@ const useSequentialScope = () => {
 /**
  * It can be used to release resources, abort network requests, stop timers...
  *
- * @alpha
+ * @public
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useVisibleTask$()` instead.
  */
@@ -1588,7 +1588,7 @@ const useCleanupQrl = (unmountFn) => {
 /**
  * It can be used to release resources, abort network requests, stop timers...
  *
- * @alpha
+ * @public
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useVisibleTask$()` instead.
  */
@@ -1605,7 +1605,7 @@ const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @alpha
+ * @public
  */
 // </docs>
 const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
@@ -1636,7 +1636,7 @@ const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
  * });
  * ```
  *
- * @alpha
+ * @public
  */
 // </docs>
 const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
@@ -1668,7 +1668,7 @@ const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQ
  * });
  * ```
  *
- * @alpha
+ * @public
  */
 // </docs>
 const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
@@ -2260,7 +2260,7 @@ const createContextId = (name) => {
     });
 };
 /**
- * @beta
+ * @public
  * @deprecated Please use `createContextId` instead.
  */
 const createContext = (name) => {
@@ -2693,29 +2693,29 @@ const static_listeners = 1 << 0;
 const static_subtree = 1 << 1;
 
 /**
- * @alpha
+ * @public
  */
 const SkipRender = Symbol('skip render');
 /**
- * @alpha
+ * @public
  */
 const RenderOnce = (props, key) => {
     return _jsxQ(Virtual, null, null, props.children, static_subtree, key);
 };
 /**
- * @alpha
+ * @public
  */
 const SSRRaw = (() => null);
 /**
- * @alpha
+ * @public
  */
 const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
 /**
- * @alpha
+ * @public
  */
 const Virtual = ((props) => props.children);
 /**
- * @alpha
+ * @public
  */
 const SSRStreamBlock = (props) => {
     return [
@@ -2725,11 +2725,11 @@ const SSRStreamBlock = (props) => {
     ];
 };
 /**
- * @alpha
+ * @public
  */
 const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
 /**
- * @alpha
+ * @public
  */
 const SSRHint = (() => null);
 const InternalSSRStream = () => null;
@@ -4866,7 +4866,7 @@ const getID = (stuff) => {
 };
 
 /**
- * @public
+ * @internal
  */
 const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
     const processed = key == null ? null : String(key);
@@ -4881,7 +4881,7 @@ const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) =>
     return node;
 };
 /**
- * @public
+ * @internal
  */
 const _jsxC = (type, mutableProps, flags, key, dev) => {
     const processed = key == null ? null : String(key);
@@ -6428,7 +6428,7 @@ const useTaskQrl = (qrl, opts) => {
     }
 };
 /**
- * @alpha
+ * @public
  */
 const useComputedQrl = (qrl) => {
     const { get, set, iCtx, i, elCtx } = useSequentialScope();
@@ -6448,7 +6448,7 @@ const useComputedQrl = (qrl) => {
     return set(signal);
 };
 /**
- * @alpha
+ * @public
  */
 const useComputed$ = implicit$FirstArg(useComputedQrl);
 // <docs markdown="../readme.md#useTask">
@@ -6515,12 +6515,12 @@ const useComputed$ = implicit$FirstArg(useComputedQrl);
 // </docs>
 const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 const useWatch$ =  useTask$;
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 const useWatchQrl =  useTaskQrl;
@@ -6603,22 +6603,22 @@ const useVisibleTaskQrl = (qrl, opts) => {
 // </docs>
 const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 const useClientEffectQrl = useVisibleTaskQrl;
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 const useClientEffect$ = useVisibleTask$;
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 const useBrowserVisibleTask$ = useVisibleTask$;
@@ -7674,7 +7674,7 @@ const _weakSerialize = (input) => {
     return input;
 };
 /**
- * @alpha
+ * @public
  * @deprecated Remove it, not needed anymore
  */
 const mutable = (v) => {
@@ -7690,7 +7690,7 @@ const isConnected = (sub) => {
     }
 };
 /**
- * @alpha
+ * @public
  */
 const unwrapProxy = (proxy) => {
     return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
@@ -8069,13 +8069,13 @@ const $ = (expression) => {
     return createQRL(null, 's' + runtimeSymbolId++, expression, null, null, null, null);
 };
 /**
- * @alpha
+ * @public
  */
 const eventQrl = (qrl) => {
     return qrl;
 };
 /**
- * @alpha
+ * @public
  */
 const event$ = implicit$FirstArg(eventQrl);
 
@@ -8273,7 +8273,7 @@ const Slot = (props) => {
  *     possible the rendering will try to reuse existing nodes.
  * @param jsxNode - JSX to render
  * @returns an object containing a cleanup function.
- * @alpha
+ * @public
  */
 const render = async (parent, jsxNode, opts) => {
     // If input is not JSX, convert it
@@ -8461,7 +8461,7 @@ const useStore = (initialState, opts) => {
  * ```
  *
  * @deprecated Use `useSignal` instead.
- * @alpha
+ * @public
  */
 // </docs>
 const useRef = (current) => {
@@ -8469,7 +8469,7 @@ const useRef = (current) => {
 };
 
 /**
- * @alpha
+ * @public
  */
 const useId = () => {
     const { get, set, elCtx, iCtx } = useSequentialScope();
@@ -8485,19 +8485,19 @@ const useId = () => {
 };
 
 /**
- * @alpha
+ * @public
  */
 function useServerData(key, defaultValue) {
     const ctx = useInvokeContext();
     return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
 }
 /**
- * @alpha
+ * @public
  * @deprecated Please use `useServerData` instead.
  */
 const useUserContext = useServerData;
 /**
- * @alpha
+ * @public
  * @deprecated Please use `useServerData` instead.
  */
 const useEnvData = useServerData;
@@ -8918,7 +8918,7 @@ const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
  *
  * @see `useStyles`
  *
- * @alpha
+ * @public
  */
 // </docs>
 const useStylesScopedQrl = (styles) => {
@@ -8947,7 +8947,7 @@ const useStylesScopedQrl = (styles) => {
  *
  * @see `useStyles`
  *
- * @alpha
+ * @public
  */
 // </docs>
 const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
@@ -8991,7 +8991,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
 };
 
 /**
- * @alpha
+ * @public
  */
 const useSignal = (initialState) => {
     const { get, set, iCtx } = useSequentialScope();
@@ -9117,18 +9117,18 @@ const useClientMountQrl = (mountQrl) => {
 // </docs>
 const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 const useMountQrl = useTaskQrl;
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 const useMount$ =  useTask$;
 
 /**
- * @alpha
+ * @public
  */
 const useErrorBoundary = () => {
     const store = useStore({

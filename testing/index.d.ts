@@ -3,7 +3,7 @@ import { RenderResult } from '..';
 
 /**
  * CreatePlatform and CreateDocument
- * @alpha
+ * @public
  */
 export declare const createDOM: () => Promise<{
     render: (jsxElement: JSXNode) => Promise<RenderResult>;

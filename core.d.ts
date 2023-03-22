@@ -526,7 +526,7 @@ declare interface ComputedQRL {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface ContainerState {
     readonly $containerEl$: Element;
@@ -548,7 +548,7 @@ declare interface ContainerState {
 }
 
 /**
- * @beta
+ * @public
  * @deprecated Please use `ContextId` instead.
  */
 export declare interface Context<STATE extends object> extends ContextId<STATE> {
@@ -628,7 +628,7 @@ export declare interface ContextId<STATE> {
  *
  * This is a low-level API and there should not be a need for you to access this.
  *
- * @alpha
+ * @public
  */
 export declare interface CorePlatform {
     /**
@@ -684,7 +684,7 @@ export declare interface CorePlatform {
 }
 
 /**
- * @beta
+ * @public
  * @deprecated Please use `createContextId` instead.
  */
 export declare const createContext: <STATE extends object>(name: string) => ContextId<STATE>;
@@ -751,7 +751,7 @@ declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface DescriptorBase<T = any, B = undefined> {
     $qrl$: QRLInternal<T>;
@@ -804,19 +804,19 @@ declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface ErrorBoundaryStore {
     error: any | undefined;
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const event$: <T>(first: T) => QRL<T>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
 
@@ -827,7 +827,7 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
@@ -886,7 +886,7 @@ declare type GetObjID = (obj: any) => string | null;
  * is associated with the application document.
  *
  * @param docOrNode - The document (or node) of the application for which the platform is needed.
- * @alpha
+ * @public
  */
 export declare const getPlatform: () => CorePlatform;
 
@@ -1082,7 +1082,7 @@ export declare const _IMMUTABLE: unique symbol;
  * ```
  *
  * @param fn - a function that should have its first argument automatically `$`.
- * @alpha
+ * @public
  */
 export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
 
@@ -1288,7 +1288,7 @@ export { jsx as jsxs }
 export declare const _jsxBranch: (input?: any) => any;
 
 /**
- * @public
+ * @internal
  */
 export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
@@ -1322,7 +1322,7 @@ export declare interface JSXNode<T = string | FunctionComponent> {
 }
 
 /**
- * @public
+ * @internal
  */
 export declare const _jsxQ: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
@@ -1428,21 +1428,21 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
 export declare type MountFn<T> = () => ValueOrPromise<T>;
 
 /**
- * @alpha
+ * @public
  * @deprecated Remove it, not needed anymore
  */
 export declare const mutable: <T>(v: T) => T;
 
-/** @beta */
+/** @public */
 export declare type NativeAnimationEvent = AnimationEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeClipboardEvent = ClipboardEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeCompositionEvent = CompositionEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeDragEvent = DragEvent;
 
 /**
@@ -1450,28 +1450,28 @@ export declare type NativeDragEvent = DragEvent;
  */
 declare type NativeEventHandler<T extends Event = Event, EL = Element> = BivariantEventHandler<T, EL> | QRL<BivariantEventHandler<T, EL>>[];
 
-/** @beta */
+/** @public */
 export declare type NativeFocusEvent = FocusEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeKeyboardEvent = KeyboardEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeMouseEvent = MouseEvent;
 
-/** @beta */
+/** @public */
 export declare type NativePointerEvent = PointerEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeTouchEvent = TouchEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeTransitionEvent = TransitionEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeUIEvent = UIEvent;
 
-/** @beta */
+/** @public */
 export declare type NativeWheelEvent = WheelEvent;
 
 /**
@@ -1576,7 +1576,7 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface PauseContext {
     getObject: GetObject;
@@ -1817,12 +1817,12 @@ export declare interface QRL<TYPE = any> {
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
  * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @alpha
+ * @public
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[], stackOffset?: number) => QRL<T>;
 
 /**
- * @alpha
+ * @public
  */
 declare interface QRLDev {
     file: string;
@@ -1860,7 +1860,7 @@ declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikAnimationEvent<T = Element> extends SyntheticEvent<T, NativeAnimationEvent> {
     animationName: string;
@@ -1869,21 +1869,21 @@ export declare interface QwikAnimationEvent<T = Element> extends SyntheticEvent<
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikChangeEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikClipboardEvent<T = Element> extends SyntheticEvent<T, NativeClipboardEvent> {
     clipboardData: DataTransfer;
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikCompositionEvent<T = Element> extends SyntheticEvent<T, NativeCompositionEvent> {
     data: string;
@@ -1907,7 +1907,7 @@ export declare interface QwikDOMAttributes extends DOMAttributes<any> {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikDragEvent<T = Element> extends QwikMouseEvent<T, NativeDragEvent> {
     dataTransfer: DataTransfer;
@@ -2065,7 +2065,7 @@ declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> 
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, NativeFocusEvent> {
     relatedTarget: EventTarget | null;
@@ -2087,7 +2087,7 @@ export declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikInvalidEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
@@ -2109,7 +2109,7 @@ export declare namespace QwikJSX {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
     altKey: boolean;
@@ -2137,7 +2137,7 @@ declare type QwikKnownEvents<T> = {
 };
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> extends SyntheticEvent<T, E> {
     altKey: boolean;
@@ -2164,7 +2164,7 @@ export declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> exten
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, NativePointerEvent> {
     pointerId: number;
@@ -2197,13 +2197,13 @@ declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikSubmitEvent<T = Element> extends SyntheticEvent<T> {
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTouchEvent> {
     altKey: boolean;
@@ -2220,7 +2220,7 @@ export declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, N
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikTransitionEvent<T = Element> extends SyntheticEvent<T, NativeTransitionEvent> {
     elapsedTime: number;
@@ -2229,7 +2229,7 @@ export declare interface QwikTransitionEvent<T = Element> extends SyntheticEvent
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikUIEvent<T = Element> extends SyntheticEvent<T, NativeUIEvent> {
     detail: number;
@@ -2237,7 +2237,7 @@ export declare interface QwikUIEvent<T = Element> extends SyntheticEvent<T, Nati
 }
 
 /**
- * @beta
+ * @public
  */
 export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, NativeWheelEvent> {
     deltaMode: number;
@@ -2249,7 +2249,7 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
 /**
  * Type of the value returned by `useRef()`.
  *
- * @alpha
+ * @public
  */
 export declare interface Ref<T = Element> {
     current: T | undefined;
@@ -2272,12 +2272,12 @@ export declare const _regSymbol: (symbol: any, hash: string) => any;
  *     possible the rendering will try to reuse existing nodes.
  * @param jsxNode - JSX to render
  * @returns an object containing a cleanup function.
- * @alpha
+ * @public
  */
 export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
 
 /**
- * @alpha
+ * @public
  */
 declare interface RenderContext {
     readonly $static$: RenderStaticContext;
@@ -2286,7 +2286,7 @@ declare interface RenderContext {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const RenderOnce: FunctionComponent<{
     children?: any;
@@ -2294,7 +2294,7 @@ export declare const RenderOnce: FunctionComponent<{
 }>;
 
 /**
- * @alpha
+ * @public
  */
 declare interface RenderOperation {
     $operation$: (...args: any[]) => void;
@@ -2302,14 +2302,14 @@ declare interface RenderOperation {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderOptions {
     serverData?: Record<string, any>;
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderResult {
     cleanup(): void;
@@ -2321,7 +2321,7 @@ export declare interface RenderResult {
 export declare const _renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface RenderSSROptions {
     containerTagName: string;
@@ -2530,12 +2530,12 @@ export declare const _serializeData: (data: any, pureQRL?: boolean) => Promise<s
  *
  * @param doc - The document of the application for which the platform is needed.
  * @param platform - The platform to use.
- * @alpha
+ * @public
  */
 export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface Signal<T = any> {
     value: T;
@@ -2561,7 +2561,7 @@ declare interface SignalInternal<T> extends Signal<T> {
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
 /**
- * @alpha
+ * @public
  */
 export declare const SkipRender: JSXNode;
 
@@ -2579,7 +2579,7 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SnapshotListener {
     key: string;
@@ -2588,12 +2588,12 @@ export declare interface SnapshotListener {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SnapshotMetaValue {
     w?: string;
@@ -2603,7 +2603,7 @@ export declare interface SnapshotMetaValue {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SnapshotResult {
     state: SnapshotState;
@@ -2614,7 +2614,7 @@ export declare interface SnapshotResult {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SnapshotState {
     ctx: SnapshotMeta;
@@ -2635,52 +2635,52 @@ declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const SSRComment: FunctionComponent<{
     data: string;
 }>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const SSRHint: FunctionComponent<SSRHintProps>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SSRHintProps {
     dynamic?: boolean;
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const SSRRaw: FunctionComponent<{
     data: string;
 }>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const SSRStream: FunctionComponent<SSRStreamProps>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const SSRStreamBlock: FunctionComponent<{
     children?: any;
 }>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SSRStreamProps {
     children: AsyncGenerator<JSXChildren, void, any> | ((stream: StreamWriter) => Promise<void>) | (() => AsyncGenerator<JSXChildren, void, any>);
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type StreamWriter = {
     write: (chunk: string) => void;
@@ -2888,18 +2888,18 @@ declare type TransformProps<PROPS extends {}> = {
 };
 
 /**
- * @alpha
+ * @public
  */
 export declare const untrack: <T>(fn: () => T) => T;
 
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useBrowserVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
@@ -2907,7 +2907,7 @@ export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisib
 /**
  * It can be used to release resources, abort network requests, stop timers...
  *
- * @alpha
+ * @public
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useVisibleTask$()` instead.
  */
@@ -2916,20 +2916,20 @@ export declare const useCleanup$: (first: () => void) => void;
 /**
  * It can be used to release resources, abort network requests, stop timers...
  *
- * @alpha
+ * @public
  * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
  * `useVisibleTask$()` instead.
  */
 export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
 
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useClientEffect$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
- * @alpha
+ * @public
  * @deprecated - use `useVisibleTask$()` instead
  */
 export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
@@ -2975,12 +2975,12 @@ export declare const useClientMount$: <T>(first: MountFn<T>) => void;
 export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useComputed$: Computed;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useComputedQrl: ComputedQRL;
 
@@ -3089,18 +3089,18 @@ export declare const useContext: UseContext;
 export declare const useContextProvider: <STATE extends object>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /**
- * @alpha
+ * @public
  * @deprecated Please use `useServerData` instead.
  */
 export declare const useEnvData: typeof useServerData;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
 
 /**
- * @alpha
+ * @public
  */
 export declare const useId: () => string;
 
@@ -3117,13 +3117,13 @@ export declare const useId: () => string;
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
 
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 export declare const useMount$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 export declare const useMountQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions | undefined) => void;
@@ -3136,7 +3136,7 @@ export declare const useMountQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions | und
  *
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
- * @alpha
+ * @public
  */
 export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
@@ -3164,7 +3164,7 @@ export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event)
  * });
  * ```
  *
- * @alpha
+ * @public
  */
 export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
@@ -3193,7 +3193,7 @@ export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev
  * });
  * ```
  *
- * @alpha
+ * @public
  */
 export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
 
@@ -3228,7 +3228,7 @@ export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: 
  * ```
  *
  * @deprecated Use `useSignal` instead.
- * @alpha
+ * @public
  */
 export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
@@ -3345,12 +3345,12 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
- * @alpha
+ * @public
  */
 export declare function useServerData<T>(key: string): T | undefined;
 
 /**
- * @alpha
+ * @public
  */
 export declare function useServerData<T, B = T>(key: string, defaultValue: B): T | B;
 
@@ -3393,7 +3393,7 @@ export declare const useServerMount$: <T>(first: MountFn<T>) => void;
 export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface UseSignal {
     <T>(): Signal<T | undefined>;
@@ -3401,7 +3401,7 @@ export declare interface UseSignal {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const useSignal: UseSignal;
 
@@ -3548,12 +3548,12 @@ export declare const useStylesQrl: (styles: QRL<string>) => void;
  *
  * @see `useStyles`
  *
- * @alpha
+ * @public
  */
 export declare const useStylesScoped$: (first: string) => UseStylesScoped;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface UseStylesScoped {
     scopeId: string;
@@ -3577,7 +3577,7 @@ export declare interface UseStylesScoped {
  *
  * @see `useStyles`
  *
- * @alpha
+ * @public
  */
 export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScoped;
 
@@ -3713,7 +3713,7 @@ export declare interface UseTaskOptions {
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
 /**
- * @alpha
+ * @public
  * @deprecated Please use `useServerData` instead.
  */
 export declare const useUserContext: typeof useServerData;
@@ -3769,13 +3769,13 @@ export declare const useVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOption
 export declare const useVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
 
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 export declare const useWatch$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
 /**
- * @beta
+ * @public
  * @deprecated - use `useTask$()` instead
  */
 export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
@@ -3792,7 +3792,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230322181748
+ * 0.23.0-dev20230322203722
  * @public
  */
 export declare const version: string;

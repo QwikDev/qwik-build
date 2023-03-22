@@ -1,5 +1,5 @@
 /**
- * @alpha
+ * @public
  */
 export declare interface ComponentEntryStrategy {
     type: 'component';
@@ -7,12 +7,12 @@ export declare interface ComponentEntryStrategy {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface Diagnostic {
     scope: string;
@@ -25,22 +25,22 @@ export declare interface Diagnostic {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 
 /**
- * @alpha
+ * @public
  */
 declare type EmitMode = 'dev' | 'prod' | 'lib';
 
 /**
- * @alpha
+ * @public
  */
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface GlobalInjections {
     tag: string;
@@ -51,14 +51,14 @@ export declare interface GlobalInjections {
 }
 
 /**
- * @alpha
+ * @public
  */
 declare interface HoistEntryStrategy {
     type: 'hoist';
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface HookAnalysis {
     origin: string;
@@ -75,21 +75,21 @@ export declare interface HookAnalysis {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface HookEntryStrategy {
     type: 'hook';
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface InlineEntryStrategy {
     type: 'inline';
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type MinifyMode = 'simplify' | 'none';
 
@@ -98,7 +98,7 @@ declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface Optimizer {
     /**
@@ -124,7 +124,7 @@ export declare interface Optimizer {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface OptimizerOptions {
     sys?: OptimizerSystem;
@@ -132,7 +132,7 @@ export declare interface OptimizerOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface OptimizerSystem {
     cwd: () => string;
@@ -145,7 +145,7 @@ export declare interface OptimizerSystem {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface Path {
     resolve(...paths: string[]): string;
@@ -177,17 +177,17 @@ export declare interface Path {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type QwikBuildMode = 'production' | 'development';
 
 /**
- * @alpha
+ * @public
  */
 export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikBundle {
     size: number;
@@ -198,7 +198,7 @@ export declare interface QwikBundle {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikManifest {
     symbols: {
@@ -250,12 +250,12 @@ declare interface QwikPluginOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): any;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikRollupPluginOptions {
     /**
@@ -321,7 +321,7 @@ export declare interface QwikRollupPluginOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikSymbol {
     origin: string;
@@ -335,12 +335,12 @@ export declare interface QwikSymbol {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikViteDevResponse {
     _qwikEnvData?: Record<string, any>;
@@ -348,7 +348,7 @@ export declare interface QwikViteDevResponse {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikVitePlugin {
     name: 'vite-plugin-qwik';
@@ -356,7 +356,7 @@ export declare interface QwikVitePlugin {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikVitePluginApi {
     getOptimizer: () => Optimizer | null;
@@ -367,7 +367,7 @@ export declare interface QwikVitePluginApi {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface QwikVitePluginOptions {
     /**
@@ -463,7 +463,7 @@ export declare interface QwikVitePluginOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SingleEntryStrategy {
     type: 'single';
@@ -471,7 +471,7 @@ export declare interface SingleEntryStrategy {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SmartEntryStrategy {
     type: 'smart';
@@ -479,7 +479,7 @@ export declare interface SmartEntryStrategy {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface SourceLocation {
     hi: number;
@@ -491,34 +491,34 @@ export declare interface SourceLocation {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 
 /**
- * @alpha
+ * @public
  */
 export declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /**
- * @alpha
+ * @public
  */
 export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => readonly [symbol: string, chunk: string] | undefined;
 
 /**
- * @alpha
+ * @public
  */
 export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformFsOptions extends TransformOptions {
     vendorRoots: string[];
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformModule {
     path: string;
@@ -529,7 +529,7 @@ export declare interface TransformModule {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformModuleInput {
     path: string;
@@ -537,14 +537,14 @@ export declare interface TransformModuleInput {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformModulesOptions extends TransformOptions {
     input: TransformModuleInput[];
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformOptions {
     srcDir: string;
@@ -566,7 +566,7 @@ export declare interface TransformOptions {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare interface TransformOutput {
     modules: TransformModule[];
@@ -576,7 +576,7 @@ export declare interface TransformOutput {
 }
 
 /**
- * @alpha
+ * @public
  */
 export declare type TranspileOption = boolean | undefined | null;
 
