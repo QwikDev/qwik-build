@@ -2703,6 +2703,8 @@
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
         }));
+        isString(type) && "className" in props && (props.class = props.className, delete props.className, 
+        qDev && logOnceWarn("jsx: `className` is deprecated. Use `class` instead."));
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         return seal(node), node;
     };
@@ -2750,8 +2752,7 @@
                 }
                 isString(type) && ("style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
                 "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'"));
-            })), isString(type) && "className" in props && (props.class = props.className, delete props.className, 
-            qDev && logOnceWarn("jsx: `className` is deprecated. Use `class` instead."));
+            }));
         }
     }
     const printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`)).join(", ")} }`;
@@ -4708,6 +4709,8 @@
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
         }));
+        isString(type) && "className" in props && (props.class = props.className, delete props.className, 
+        qDev && logOnceWarn("jsx: `className` is deprecated. Use `class` instead."));
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         return node.dev = {
             stack: (new Error).stack,

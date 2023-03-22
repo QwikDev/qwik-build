@@ -934,8 +934,6 @@ declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-whe
  */
 export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
-    /** @deprecated - Use `class` instead */
-    className?: string | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
     contextMenu?: string | undefined;
     dir?: 'ltr' | 'rtl' | 'auto' | undefined;
@@ -3794,7 +3792,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230321212920
+ * 0.23.0-dev20230322071919
  * @public
  */
 export declare const version: string;

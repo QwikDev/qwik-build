@@ -2610,7 +2610,7 @@ async function runAddCommand(app) {
   }
 }
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
 var import_node_buffer2 = require("buffer");
 var import_node_path8 = __toESM(require("path"), 1);
 var import_node_child_process3 = __toESM(require("child_process"), 1);
@@ -2750,30 +2750,28 @@ onetime.callCount = (function_) => {
 };
 var onetime_default = onetime;
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/main.js
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/main.js
 var import_node_os2 = require("os");
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/realtime.js
-var getRealtimeSignals = function() {
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/realtime.js
+var getRealtimeSignals = () => {
   const length = SIGRTMAX - SIGRTMIN + 1;
   return Array.from({ length }, getRealtimeSignal);
 };
-var getRealtimeSignal = function(value, index) {
-  return {
-    name: `SIGRT${index + 1}`,
-    number: SIGRTMIN + index,
-    action: "terminate",
-    description: "Application-specific signal (realtime)",
-    standard: "posix"
-  };
-};
+var getRealtimeSignal = (value, index) => ({
+  name: `SIGRT${index + 1}`,
+  number: SIGRTMIN + index,
+  action: "terminate",
+  description: "Application-specific signal (realtime)",
+  standard: "posix"
+});
 var SIGRTMIN = 34;
 var SIGRTMAX = 64;
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/signals.js
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/signals.js
 var import_node_os = require("os");
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/core.js
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/core.js
 var SIGNALS = [
   {
     name: "SIGHUP",
@@ -3046,20 +3044,20 @@ var SIGNALS = [
   }
 ];
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/signals.js
-var getSignals = function() {
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/signals.js
+var getSignals = () => {
   const realtimeSignals = getRealtimeSignals();
   const signals = [...SIGNALS, ...realtimeSignals].map(normalizeSignal);
   return signals;
 };
-var normalizeSignal = function({
+var normalizeSignal = ({
   name,
   number: defaultNumber,
   description,
   action,
   forced = false,
   standard
-}) {
+}) => {
   const {
     signals: { [name]: constantSignal }
   } = import_node_os.constants;
@@ -3068,12 +3066,12 @@ var normalizeSignal = function({
   return { name, number, description, supported, action, forced, standard };
 };
 
-// node_modules/.pnpm/human-signals@4.3.0/node_modules/human-signals/build/src/main.js
-var getSignalsByName = function() {
+// node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/main.js
+var getSignalsByName = () => {
   const signals = getSignals();
   return Object.fromEntries(signals.map(getSignalByName));
 };
-var getSignalByName = function({
+var getSignalByName = ({
   name,
   number,
   description,
@@ -3081,20 +3079,15 @@ var getSignalByName = function({
   action,
   forced,
   standard
-}) {
-  return [
-    name,
-    { name, number, description, supported, action, forced, standard }
-  ];
-};
+}) => [name, { name, number, description, supported, action, forced, standard }];
 var signalsByName = getSignalsByName();
-var getSignalsByNumber = function() {
+var getSignalsByNumber = () => {
   const signals = getSignals();
   const length = SIGRTMAX + 1;
   const signalsA = Array.from({ length }, (value, number) => getSignalByNumber(number, signals));
   return Object.assign({}, ...signalsA);
 };
-var getSignalByNumber = function(number, signals) {
+var getSignalByNumber = (number, signals) => {
   const signal = findSignalByNumber(number, signals);
   if (signal === void 0) {
     return {};
@@ -3112,7 +3105,7 @@ var getSignalByNumber = function(number, signals) {
     }
   };
 };
-var findSignalByNumber = function(number, signals) {
+var findSignalByNumber = (number, signals) => {
   const signal = signals.find(({ name }) => import_node_os2.constants.signals[name] === number);
   if (signal !== void 0) {
     return signal;
@@ -3121,7 +3114,7 @@ var findSignalByNumber = function(number, signals) {
 };
 var signalsByNumber = getSignalsByNumber();
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/error.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/error.js
 var getErrorPrefix = ({ timedOut, timeout, errorCode, signal, signalDescription, exitCode, isCanceled }) => {
   if (timedOut) {
     return `timed out after ${timeout} milliseconds`;
@@ -3191,7 +3184,7 @@ ${error.message}` : execaMessage;
   return error;
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/stdio.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/stdio.js
 var aliases = ["stdin", "stdout", "stderr"];
 var hasAlias = (options) => aliases.some((alias) => options[alias] !== void 0);
 var normalizeStdio = (options) => {
@@ -3215,7 +3208,7 @@ var normalizeStdio = (options) => {
   return Array.from({ length }, (value, index) => stdio[index]);
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/kill.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/kill.js
 var import_node_os3 = __toESM(require("os"), 1);
 var import_signal_exit = __toESM(require_signal_exit(), 1);
 var DEFAULT_FORCE_KILL_TIMEOUT = 1e3 * 5;
@@ -3289,7 +3282,7 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
   });
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/pipe.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/pipe.js
 var import_node_fs6 = require("fs");
 var import_node_child_process = require("child_process");
 
@@ -3301,7 +3294,7 @@ function isWritableStream(stream) {
   return isStream(stream) && stream.writable !== false && typeof stream._write === "function" && typeof stream._writableState === "object";
 }
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/pipe.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/pipe.js
 var isExecaChildProcess = (target) => target instanceof import_node_child_process.ChildProcess && typeof target.then === "function";
 var pipeToTarget = (spawned, streamName, target) => {
   if (typeof target === "string") {
@@ -3333,7 +3326,7 @@ var addPipeMethods = (spawned) => {
   }
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/stream.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/stream.js
 var import_node_fs7 = require("fs");
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
@@ -3423,7 +3416,7 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
   }
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/promise.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/promise.js
 var nativePromisePrototype = (async () => {
 })().constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
@@ -3450,7 +3443,7 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   }
 });
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/command.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/command.js
 var import_node_buffer = require("buffer");
 var import_node_child_process2 = require("child_process");
 var normalizeArgs = (file, args = []) => {
@@ -3502,20 +3495,39 @@ var parseExpression = (expression) => {
   }
   throw new TypeError(`Unexpected "${typeOfExpression}" in template expression`);
 };
-var parseTemplate = (template, index, templates, expressions) => {
+var concatTokens = (tokens, nextTokens, isNew) => isNew || tokens.length === 0 || nextTokens.length === 0 ? [...tokens, ...nextTokens] : [
+  ...tokens.slice(0, -1),
+  `${tokens[tokens.length - 1]}${nextTokens[0]}`,
+  ...nextTokens.slice(1)
+];
+var parseTemplate = ({ templates, expressions, tokens, index, template }) => {
   const templateString = template ?? templates.raw[index];
   const templateTokens = templateString.split(SPACES_REGEXP).filter(Boolean);
+  const newTokens = concatTokens(
+    tokens,
+    templateTokens,
+    templateString.startsWith(" ")
+  );
   if (index === expressions.length) {
-    return templateTokens;
+    return newTokens;
   }
   const expression = expressions[index];
-  return Array.isArray(expression) ? [...templateTokens, ...expression.map((expression2) => parseExpression(expression2))] : [...templateTokens, parseExpression(expression)];
+  const expressionTokens = Array.isArray(expression) ? expression.map((expression2) => parseExpression(expression2)) : [parseExpression(expression)];
+  return concatTokens(
+    newTokens,
+    expressionTokens,
+    templateString.endsWith(" ")
+  );
 };
-var parseTemplates = (templates, expressions) => templates.flatMap(
-  (template, index) => parseTemplate(template, index, templates, expressions)
-);
+var parseTemplates = (templates, expressions) => {
+  let tokens = [];
+  for (const [index, template] of templates.entries()) {
+    tokens = parseTemplate({ templates, expressions, tokens, index, template });
+  }
+  return tokens;
+};
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/lib/verbose.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/verbose.js
 var import_node_util = require("util");
 var import_node_process4 = __toESM(require("process"), 1);
 var verboseDefault = (0, import_node_util.debuglog)("execa").enabled;
@@ -3532,7 +3544,7 @@ var logCommand = (escapedCommand, { verbose }) => {
 `);
 };
 
-// node_modules/.pnpm/execa@7.1.0/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
 var getEnv = ({ env: envOption, extendEnv, preferLocal, localDir, execPath }) => {
   const env = extendEnv ? { ...import_node_process5.default.env, ...envOption } : envOption;
@@ -3711,21 +3723,30 @@ function execaSync(file, args, options) {
     killed: false
   };
 }
+var normalizeScriptStdin = ({ input, inputFile, stdio }) => input === void 0 && inputFile === void 0 && stdio === void 0 ? { stdin: "inherit" } : {};
+var normalizeScriptOptions = (options = {}) => ({
+  preferLocal: true,
+  ...normalizeScriptStdin(options),
+  ...options
+});
 function create$(options) {
   function $4(templatesOrOptions, ...expressions) {
-    if (Array.isArray(templatesOrOptions)) {
-      const [file, ...args] = parseTemplates(templatesOrOptions, expressions);
-      return execa(file, args, options);
+    if (!Array.isArray(templatesOrOptions)) {
+      return create$({ ...options, ...templatesOrOptions });
     }
-    return create$({ ...options, ...templatesOrOptions });
+    const [file, ...args] = parseTemplates(templatesOrOptions, expressions);
+    return execa(file, args, normalizeScriptOptions(options));
   }
   $4.sync = (templates, ...expressions) => {
+    if (!Array.isArray(templates)) {
+      throw new TypeError("Please use $(options).sync`command` instead of $.sync(options)`command`.");
+    }
     const [file, ...args] = parseTemplates(templates, expressions);
-    return execaSync(file, args, options);
+    return execaSync(file, args, normalizeScriptOptions(options));
   };
   return $4;
 }
-var $3 = create$({ preferLocal: true });
+var $3 = create$();
 function execaCommand(command, options) {
   const [file, ...args] = parseCommand(command);
   return execa(file, args, options);

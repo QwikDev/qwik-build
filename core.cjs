@@ -4921,6 +4921,15 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
             return c;
         });
+        if (isString(type)) {
+            if ('className' in props) {
+                props['class'] = props['className'];
+                delete props['className'];
+                if (qDev) {
+                    logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
+                }
+            }
+        }
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         seal(node);
         return node;
@@ -5022,15 +5031,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     }
                 });
             }
-            if (isString(type)) {
-                if ('className' in props) {
-                    props['class'] = props['className'];
-                    delete props['className'];
-                    if (qDev) {
-                        logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
-                    }
-                }
-            }
         }
     }
     const printObjectLiteral = (obj) => {
@@ -5093,6 +5093,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             return c;
         });
+        if (isString(type)) {
+            if ('className' in props) {
+                props['class'] = props['className'];
+                delete props['className'];
+                if (qDev) {
+                    logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
+                }
+            }
+        }
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         node.dev = {
             stack: new Error().stack,

@@ -376,8 +376,6 @@ declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-whe
  */
 declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
-    /** @deprecated - Use `class` instead */
-    className?: string | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
     contextMenu?: string | undefined;
     dir?: 'ltr' | 'rtl' | 'auto' | undefined;
