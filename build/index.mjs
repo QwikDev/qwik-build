@@ -2,7 +2,7 @@
 var isBrowser = /* @__PURE__ */ (() => typeof window !== "undefined" && typeof HTMLElement !== "undefined" && !!window.document && String(HTMLElement).includes("[native code]"))();
 var isServer = !isBrowser;
 var isDev = /* @__PURE__ */ (() => {
-  return globalThis.qDev !== false;
+  return globalThis.qDev === true;
 })();
 export {
   isBrowser,
