@@ -9189,6 +9189,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports.componentQrl = componentQrl;
     exports.createContext = createContext;
     exports.createContextId = createContextId;
+    exports.createElement = h;
     exports.event$ = event$;
     exports.eventQrl = eventQrl;
     exports.getLocale = getLocale;

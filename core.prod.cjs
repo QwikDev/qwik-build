@@ -4286,6 +4286,17 @@
         }
         return dst;
     };
+    function h(type, props, ...children) {
+        const normalizedProps = {
+            children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY
+        };
+        let key;
+        let i;
+        for (i in props) {
+            "key" == i ? key = props[i] : normalizedProps[i] = props[i];
+        }
+        return jsx(type, normalizedProps, key);
+    }
     const useStore = (initialState, opts) => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {
@@ -4678,7 +4689,8 @@
         return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
     exports.createContext = name => createContextId(name), exports.createContextId = createContextId, 
-    exports.event$ = event$, exports.eventQrl = eventQrl, exports.getLocale = function(defaultLocale) {
+    exports.createElement = h, exports.event$ = event$, exports.eventQrl = eventQrl, 
+    exports.getLocale = function(defaultLocale) {
         if (void 0 === _locale) {
             const ctx = tryGetInvokeContext();
             if (ctx && ctx.$locale$) {
@@ -4690,18 +4702,8 @@
             throw new Error("Reading `locale` outside of context.");
         }
         return _locale;
-    }, exports.getPlatform = getPlatform, exports.h = function(type, props, ...children) {
-        const normalizedProps = {
-            children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY
-        };
-        let key;
-        let i;
-        for (i in props) {
-            "key" == i ? key = props[i] : normalizedProps[i] = props[i];
-        }
-        return jsx(type, normalizedProps, key);
-    }, exports.implicit$FirstArg = implicit$FirstArg, exports.inlinedQrl = inlinedQrl, 
-    exports.inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    }, exports.getPlatform = getPlatform, exports.h = h, exports.implicit$FirstArg = implicit$FirstArg, 
+    exports.inlinedQrl = inlinedQrl, exports.inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
         return qrl.dev = opts, qrl;
     }, exports.jsx = jsx, exports.jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {

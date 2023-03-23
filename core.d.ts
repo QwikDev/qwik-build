@@ -895,31 +895,33 @@ declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect | Node, 
 /**
  * @public
  */
-export declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends {} = {}>(type: TYPE, props: PROPS | null, ...children: any[]): JSXNode<TYPE>;
+declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends {} = {}>(type: TYPE, props: PROPS | null, ...children: any[]): JSXNode<TYPE>;
 
 /**
  * @public
  */
-export declare namespace h {
-    export function h(type: any): JSXNode<any>;
-    export function h(type: Node, data: any): JSXNode<any>;
-    export function h(type: any, text: string): JSXNode<any>;
-    export function h(type: any, children: Array<any>): JSXNode<any>;
-    export function h(type: any, data: any, text: string): JSXNode<any>;
-    export function h(type: any, data: any, children: Array<JSXNode<any> | undefined | null>): JSXNode<any>;
-    export function h(sel: any, data: any | null, children: JSXNode<any>): JSXNode<any>;
-    export namespace JSX {
-        export interface Element extends QwikJSX.Element {
+declare namespace h {
+    function h(type: any): JSXNode<any>;
+    function h(type: Node, data: any): JSXNode<any>;
+    function h(type: any, text: string): JSXNode<any>;
+    function h(type: any, children: Array<any>): JSXNode<any>;
+    function h(type: any, data: any, text: string): JSXNode<any>;
+    function h(type: any, data: any, children: Array<JSXNode<any> | undefined | null>): JSXNode<any>;
+    function h(sel: any, data: any | null, children: JSXNode<any>): JSXNode<any>;
+    namespace JSX {
+        interface Element extends QwikJSX.Element {
         }
-        export interface IntrinsicAttributes extends QwikJSX.IntrinsicAttributes {
+        interface IntrinsicAttributes extends QwikJSX.IntrinsicAttributes {
         }
-        export interface IntrinsicElements extends QwikJSX.IntrinsicElements {
+        interface IntrinsicElements extends QwikJSX.IntrinsicElements {
         }
-        export interface ElementChildrenAttribute {
+        interface ElementChildrenAttribute {
             children?: any;
         }
     }
 }
+export { h as createElement }
+export { h }
 
 declare interface HrHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
@@ -3792,7 +3794,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230323172459
+ * 0.23.0-dev20230323175222
  * @public
  */
 export declare const version: string;
