@@ -969,11 +969,11 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             return { value: this.value };
         }
         get value() {
+            if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
+                throw SignalUnassignedException;
+            }
             const sub = tryGetInvokeContext()?.$subscriber$;
             if (sub) {
-                if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
-                    throw SignalUnassignedException;
-                }
                 this[QObjectManagerSymbol].$addSub$(sub);
             }
             return this.untrackedValue;

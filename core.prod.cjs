@@ -439,14 +439,11 @@
             };
         }
         get value() {
-            const sub = tryGetInvokeContext()?.$subscriber$;
-            if (sub) {
-                if (2 & this[QObjectSignalFlags]) {
-                    throw SignalUnassignedException;
-                }
-                this[QObjectManagerSymbol].$addSub$(sub);
+            if (2 & this[QObjectSignalFlags]) {
+                throw SignalUnassignedException;
             }
-            return this.untrackedValue;
+            const sub = tryGetInvokeContext()?.$subscriber$;
+            return sub && this[QObjectManagerSymbol].$addSub$(sub), this.untrackedValue;
         }
         set value(v) {
             if (qDev) {
