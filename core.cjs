@@ -911,7 +911,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const _IMMUTABLE_PREFIX = '$$';
 
     /**
-     * @public
+     * @internal
      */
     const _fnSignal = (fn, args, fnStr) => {
         return new SignalDerived(fn, args, fnStr);

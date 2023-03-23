@@ -901,7 +901,7 @@ const _IMMUTABLE = Symbol('IMMUTABLE');
 const _IMMUTABLE_PREFIX = '$$';
 
 /**
- * @public
+ * @internal
  */
 const _fnSignal = (fn, args, fnStr) => {
     return new SignalDerived(fn, args, fnStr);

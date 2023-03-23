@@ -827,7 +827,7 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
- * @public
+ * @internal
  */
 export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
@@ -3794,7 +3794,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230323175222
+ * 0.23.0-dev20230323184359
  * @public
  */
 export declare const version: string;
