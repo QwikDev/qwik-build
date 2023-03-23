@@ -1947,12 +1947,10 @@ const collectProps = (elCtx, collector) => {
         const el = elCtx.$element$;
         if (subs) {
             for (const sub of subs) {
-                if (sub[1] === el) {
-                    if (0 === sub[0]) {
-                        return void collectElement(el, collector);
-                    }
-                    collectValue(props, collector, false);
+                if (0 === sub[0] && sub[1] === el) {
+                    return void collectElement(el, collector);
                 }
+                collectValue(props, collector, false);
             }
         }
     }
@@ -2377,6 +2375,25 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (assertElement(elm), qDev && props.class && props.className) {
             throw new TypeError("Can only have one of class or className");
         }
+        if (immutable) {
+            for (const prop of Object.keys(immutable)) {
+                let value = immutable[prop];
+                if (isOnProp(prop)) {
+                    setEvent(elCtx.li, prop, value, void 0);
+                    continue;
+                }
+                const attrName = processPropKey(prop);
+                if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
+                value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), useSignal = true), 
+                "dangerouslySetInnerHTML" === prop) {
+                    htmlStr = value;
+                    continue;
+                }
+                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
+                const attrValue = processPropValue(attrName, value);
+                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+            }
+        }
         for (const prop of Object.keys(props)) {
             let value = props[prop];
             if ("ref" === prop) {
@@ -2397,25 +2414,6 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
             null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
-        }
-        if (immutable) {
-            for (const prop of Object.keys(immutable)) {
-                let value = immutable[prop];
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, void 0);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-                value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), useSignal = true), 
-                "dangerouslySetInnerHTML" === prop) {
-                    htmlStr = value;
-                    continue;
-                }
-                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
-                const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
-            }
         }
         const listeners = elCtx.li;
         if (hostCtx) {
@@ -3218,6 +3216,12 @@ class JSXNodeImpl {
     constructor(type, props, immutableProps, children, flags, key = null) {
         this.type = type, this.props = props, this.immutableProps = immutableProps, this.children = children, 
         this.flags = flags, this.key = key, qDev && invoke(void 0, (() => {
+            if (props && immutableProps) {
+                const propsKeys = Object.keys(props);
+                const immutablePropsKeys = Object.keys(immutableProps);
+                const duplicateKeys = propsKeys.filter((key => immutablePropsKeys.includes(key)));
+                duplicateKeys.length > 0 && logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(", ")}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
+            }
             const isQwikC = isQwikComponent(type);
             if (!isString(type) && !isFunction(type)) {
                 throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
@@ -3671,8 +3675,8 @@ const createElm = (rCtx, vnode, flags, promises) => {
             const dev = vnode.$dev$;
             dev && directSetAttribute(elm, "data-qwik-inspector", `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
         }
-        if (props !== EMPTY_OBJ && (elCtx.$vdom$ = vnode, vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, false)), 
-        vnode.$immutableProps$ && setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true), 
+        if (vnode.$immutableProps$ && setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true), 
+        props !== EMPTY_OBJ && (elCtx.$vdom$ = vnode, vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, false)), 
         isSvg && "foreignObject" === tag && (isSvg = false, flags &= -2), currentComponent) {
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {

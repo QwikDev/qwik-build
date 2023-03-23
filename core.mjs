@@ -3262,14 +3262,12 @@ const collectProps = (elCtx, collector) => {
         const el = elCtx.$element$;
         if (subs) {
             for (const sub of subs) {
-                if (sub[1] === el) {
-                    if (sub[0] === 0) {
-                        collectElement(el, collector);
-                        return;
-                    }
-                    else {
-                        collectValue(props, collector, false);
-                    }
+                if (sub[0] === 0 && sub[1] === el) {
+                    collectElement(el, collector);
+                    return;
+                }
+                else {
+                    collectValue(props, collector, false);
                 }
             }
         }
@@ -3853,6 +3851,46 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (qDev && props.class && props.className) {
             throw new TypeError('Can only have one of class or className');
         }
+        if (immutable) {
+            for (const prop of Object.keys(immutable)) {
+                let value = immutable[prop];
+                if (isOnProp(prop)) {
+                    setEvent(elCtx.li, prop, value, undefined);
+                    continue;
+                }
+                const attrName = processPropKey(prop);
+                if (isSignal(value)) {
+                    assertDefined(hostCtx, 'Signals can not be used outside the root');
+                    value = trackSignal(value, [1, elm, value, hostCtx.$element$, attrName]);
+                    useSignal = true;
+                }
+                if (prop === 'dangerouslySetInnerHTML') {
+                    htmlStr = value;
+                    continue;
+                }
+                if (prop.startsWith(PREVENT_DEFAULT)) {
+                    addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                }
+                const attrValue = processPropValue(attrName, value);
+                if (attrValue != null) {
+                    if (attrName === 'class') {
+                        classStr = attrValue;
+                    }
+                    else if (attrName === 'value' && tagName === 'textarea') {
+                        htmlStr = escapeHtml(attrValue);
+                    }
+                    else if (isSSRUnsafeAttr(attrName)) {
+                        if (qDev) {
+                            logError('Attribute value is unsafe for SSR');
+                        }
+                    }
+                    else {
+                        openingElement +=
+                            ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
+                    }
+                }
+            }
+        }
         for (const prop of Object.keys(props)) {
             let value = props[prop];
             if (prop === 'ref') {
@@ -3893,46 +3931,6 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 else {
                     openingElement +=
                         ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
-                }
-            }
-        }
-        if (immutable) {
-            for (const prop of Object.keys(immutable)) {
-                let value = immutable[prop];
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, undefined);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                if (isSignal(value)) {
-                    assertDefined(hostCtx, 'Signals can not be used outside the root');
-                    value = trackSignal(value, [1, elm, value, hostCtx.$element$, attrName]);
-                    useSignal = true;
-                }
-                if (prop === 'dangerouslySetInnerHTML') {
-                    htmlStr = value;
-                    continue;
-                }
-                if (prop.startsWith(PREVENT_DEFAULT)) {
-                    addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
-                }
-                const attrValue = processPropValue(attrName, value);
-                if (attrValue != null) {
-                    if (attrName === 'class') {
-                        classStr = attrValue;
-                    }
-                    else if (attrName === 'value' && tagName === 'textarea') {
-                        htmlStr = escapeHtml(attrValue);
-                    }
-                    else if (isSSRUnsafeAttr(attrName)) {
-                        if (qDev) {
-                            logError('Attribute value is unsafe for SSR');
-                        }
-                    }
-                    else {
-                        openingElement +=
-                            ' ' + (value === '' ? attrName : attrName + '="' + escapeAttr(attrValue) + '"');
-                    }
                 }
             }
         }
@@ -4935,6 +4933,15 @@ class JSXNodeImpl {
         this.key = key;
         if (qDev) {
             invoke(undefined, () => {
+                if (props && immutableProps) {
+                    const propsKeys = Object.keys(props);
+                    const immutablePropsKeys = Object.keys(immutableProps);
+                    // check if there are any duplicate keys
+                    const duplicateKeys = propsKeys.filter((key) => immutablePropsKeys.includes(key));
+                    if (duplicateKeys.length > 0) {
+                        logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(', ')}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
+                    }
+                }
                 const isQwikC = isQwikComponent(type);
                 if (!isString(type) && !isFunction(type)) {
                     throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
@@ -5610,12 +5617,12 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 directSetAttribute(elm, 'data-qwik-inspector', `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
             }
         }
+        if (vnode.$immutableProps$) {
+            setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true);
+        }
         if (props !== EMPTY_OBJ) {
             elCtx.$vdom$ = vnode;
             vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, false);
-        }
-        if (vnode.$immutableProps$) {
-            setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true);
         }
         if (isSvg && tag === 'foreignObject') {
             isSvg = false;
