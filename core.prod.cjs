@@ -2288,6 +2288,7 @@
         meter: true,
         noscript: true,
         object: true,
+        option: true,
         output: true,
         picture: true,
         progress: true,

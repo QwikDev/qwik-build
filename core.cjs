@@ -4380,6 +4380,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         meter: true,
         noscript: true,
         object: true,
+        option: true,
         output: true,
         picture: true,
         progress: true,
