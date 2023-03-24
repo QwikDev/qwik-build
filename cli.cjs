@@ -2432,12 +2432,14 @@ async function updateApp(pkgManager, opts) {
 var import_node_path6 = require("path");
 
 // packages/qwik/src/cli/utils/log.ts
-function logNextStep(nextSteps) {
+function logNextStep(nextSteps, packageManager) {
   const outString = [];
   if (nextSteps) {
     outString.push(`\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
     outString.push(``);
-    nextSteps.lines.forEach((step) => outString.push(`   ${step}`));
+    nextSteps.lines.forEach(
+      (step) => outString.push(`   ${step.replace(/\bpnpm\b/g, packageManager)}`)
+    );
   }
   return outString.join("\n");
 }
@@ -2496,7 +2498,7 @@ async function runAddInteractive(app, id) {
     await runInPkg(pkgManager, postInstall.split(" "), app.rootDir);
     s.stop("Post install script complete");
   }
-  logUpdateAppCommitResult(result);
+  logUpdateAppCommitResult(result, pkgManager);
   process.exit(0);
 }
 async function logUpdateAppResult(pkgManager, result) {
@@ -2554,11 +2556,11 @@ async function logUpdateAppResult(pkgManager, result) {
     bye();
   }
 }
-function logUpdateAppCommitResult(result) {
+function logUpdateAppCommitResult(result, packageManager) {
   var _a;
   const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
   if (nextSteps) {
-    note(logNextStep(nextSteps), "Note");
+    note(logNextStep(nextSteps, packageManager), "Note");
   }
   ce(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
 }
