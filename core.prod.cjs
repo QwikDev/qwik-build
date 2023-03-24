@@ -1997,7 +1997,7 @@
                     flags |= 256;
                 } else {
                     if (256 & flags && !tableContent[tagName]) {
-                        throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>' or '<tfoot>', instead, '<${tagName}>' was rendered.`, node);
+                        throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                     }
                     flags &= -257;
                 }
@@ -2240,7 +2240,9 @@
     const tableContent = {
         tbody: true,
         thead: true,
-        tfoot: true
+        tfoot: true,
+        caption: true,
+        colgroup: true
     };
     const headContent = {
         meta: true,

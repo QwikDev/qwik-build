@@ -3963,7 +3963,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
             else {
                 if (flags & IS_TABLE && !tableContent[tagName]) {
-                    throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>' or '<tfoot>', instead, '<${tagName}>' was rendered.`, node);
+                    throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                 }
                 flags &= ~IS_TABLE;
             }
@@ -4323,6 +4323,8 @@ const tableContent = {
     tbody: true,
     thead: true,
     tfoot: true,
+    caption: true,
+    colgroup: true,
 };
 const headContent = {
     meta: true,
