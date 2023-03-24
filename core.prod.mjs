@@ -662,6 +662,13 @@ class ReadWriteProxyHandler {
     constructor($containerState$, $manager$) {
         this.$containerState$ = $containerState$, this.$manager$ = $manager$;
     }
+    deleteProperty(target, prop) {
+        if (2 & target[QObjectFlagsSymbol]) {
+            throw qError(17);
+        }
+        return "string" == typeof prop && delete target[prop] && (this.$manager$.$notifySubs$(isArray(target) ? void 0 : prop), 
+        true);
+    }
     get(target, prop) {
         if ("symbol" == typeof prop) {
             return prop === QOjectTargetSymbol ? target : prop === QObjectManagerSymbol ? this.$manager$ : target[prop];

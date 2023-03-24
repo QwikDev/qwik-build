@@ -1114,6 +1114,14 @@ class ReadWriteProxyHandler {
         this.$containerState$ = $containerState$;
         this.$manager$ = $manager$;
     }
+    deleteProperty(target, prop) {
+        if (target[QObjectFlagsSymbol] & QObjectImmutable)
+            throw qError(QError_immutableProps);
+        if (typeof prop != 'string' || !delete target[prop])
+            return false;
+        this.$manager$.$notifySubs$(isArray(target) ? undefined : prop);
+        return true;
+    }
     get(target, prop) {
         if (typeof prop === 'symbol') {
             if (prop === QOjectTargetSymbol)
