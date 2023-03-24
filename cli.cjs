@@ -1733,10 +1733,12 @@ ${gray("\u251C" + "\u2500".repeat(len + 2) + "\u256F")}
 var integrations = null;
 async function sortIntegrationsAndReturnAsClackOptions(integrations2, { maxHintLength = 50, showHint = true } = {}) {
   return integrations2.sort((a2, b2) => {
-    if (a2.priority > b2.priority)
+    if (a2.priority > b2.priority) {
       return -1;
-    if (a2.priority < b2.priority)
+    }
+    if (a2.priority < b2.priority) {
       return 1;
+    }
     return a2.id < b2.id ? -1 : 1;
   }).map((i) => ({
     value: i.id,
@@ -1780,10 +1782,12 @@ async function loadIntegrations() {
       })
     );
     loadingIntegrations.sort((a2, b2) => {
-      if (a2.priority > b2.priority)
+      if (a2.priority > b2.priority) {
         return -1;
-      if (a2.priority < b2.priority)
+      }
+      if (a2.priority < b2.priority) {
         return 1;
+      }
       return a2.id < b2.id ? -1 : 1;
     });
     integrations = loadingIntegrations;

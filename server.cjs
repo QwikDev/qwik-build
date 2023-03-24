@@ -560,7 +560,7 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, dynamic) => {
-      var _a2, _b, _c, _d, _e, _f;
+      var _a2, _b, _c, _d, _e, _f, _g;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       containsDynamic = dynamic;
@@ -573,13 +573,22 @@ async function renderToStream(rootNode, opts) {
           nonce: (_a2 = opts.serverData) == null ? void 0 : _a2.nonce
         })
       ];
+      if (snapshotResult.funcs.length > 0) {
+        children.push(
+          (0, import_qwik3.jsx)("script", {
+            "q:func": "qwik/json",
+            dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
+            nonce: (_b = opts.serverData) == null ? void 0 : _b.nonce
+          })
+        );
+      }
       if (opts.prefetchStrategy !== null) {
         const prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
         if (prefetchResources.length > 0) {
           const prefetchImpl = applyPrefetchImplementation(
             opts.prefetchStrategy,
             prefetchResources,
-            (_b = opts.serverData) == null ? void 0 : _b.nonce
+            (_c = opts.serverData) == null ? void 0 : _c.nonce
           );
           if (prefetchImpl) {
             children.push(prefetchImpl);
@@ -587,18 +596,18 @@ async function renderToStream(rootNode, opts) {
         }
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.include) ?? "auto";
+      const includeMode = ((_d = opts.qwikLoader) == null ? void 0 : _d.include) ?? "auto";
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
-          events: (_d = opts.qwikLoader) == null ? void 0 : _d.events,
+          events: (_e = opts.qwikLoader) == null ? void 0 : _e.events,
           debug: opts.debug
         });
         children.push(
           (0, import_qwik3.jsx)("script", {
             id: "qwikloader",
             dangerouslySetInnerHTML: qwikLoaderScript,
-            nonce: (_e = opts.serverData) == null ? void 0 : _e.nonce
+            nonce: (_f = opts.serverData) == null ? void 0 : _f.nonce
           })
         );
       }
@@ -611,7 +620,7 @@ async function renderToStream(rootNode, opts) {
         children.push(
           (0, import_qwik3.jsx)("script", {
             dangerouslySetInnerHTML: content,
-            nonce: (_f = opts.serverData) == null ? void 0 : _f.nonce
+            nonce: (_g = opts.serverData) == null ? void 0 : _g.nonce
           })
         );
       }
@@ -697,6 +706,9 @@ function normalizeOptions(opts) {
     }
   }
   return normalizedOpts;
+}
+function serializeFunctions(funcs) {
+  return `document.currentScript.qFuncs=[${funcs.join(",\n")}]`;
 }
 
 // packages/qwik/src/server/index.ts

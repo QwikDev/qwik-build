@@ -521,6 +521,15 @@ async function renderToStream(rootNode, opts) {
           nonce: opts.serverData?.nonce
         })
       ];
+      if (snapshotResult.funcs.length > 0) {
+        children.push(
+          jsx2("script", {
+            "q:func": "qwik/json",
+            dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
+            nonce: opts.serverData?.nonce
+          })
+        );
+      }
       if (opts.prefetchStrategy !== null) {
         const prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
         if (prefetchResources.length > 0) {
@@ -644,6 +653,9 @@ function normalizeOptions(opts) {
     }
   }
   return normalizedOpts;
+}
+function serializeFunctions(funcs) {
+  return `document.currentScript.qFuncs=[${funcs.join(",\n")}]`;
 }
 
 // packages/qwik/src/server/index.ts

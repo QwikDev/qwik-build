@@ -2546,7 +2546,7 @@ export declare interface Signal<T = any> {
 declare class SignalBase {
 }
 
-declare class SignalDerived<T = any, ARGS extends any[] = any> extends SignalBase {
+declare class SignalDerived<T = any, ARGS extends any[] = any[]> extends SignalBase {
     $func$: (...args: ARGS) => T;
     $args$: ARGS;
     $funcStr$?: string | undefined;
@@ -2609,6 +2609,7 @@ export declare interface SnapshotMetaValue {
  */
 export declare interface SnapshotResult {
     state: SnapshotState;
+    funcs: string[];
     qrls: QRL[];
     objs: any[];
     resources: ResourceReturnInternal<any>[];
@@ -3794,7 +3795,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.23.0-dev20230324093603
+ * 0.23.0-dev20230324135039
  * @public
  */
 export declare const version: string;

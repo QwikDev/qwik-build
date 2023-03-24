@@ -386,29 +386,41 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
 
     function assertDefined(value, text, ...parts) {
         if (qDev) {
-            if (value != null)
+            if (value != null) {
                 return;
+            }
             throw logErrorAndStop(text, ...parts);
         }
     }
     function assertEqual(value1, value2, text, ...parts) {
         if (qDev) {
-            if (value1 === value2)
+            if (value1 === value2) {
                 return;
+            }
             throw logErrorAndStop(text, ...parts);
         }
     }
     function assertTrue(value1, text, ...parts) {
         if (qDev) {
-            if (value1 === true)
+            if (value1 === true) {
                 return;
+            }
             throw logErrorAndStop(text, ...parts);
         }
     }
     function assertNumber(value1, text, ...parts) {
         if (qDev) {
-            if (typeof value1 === 'number')
+            if (typeof value1 === 'number') {
                 return;
+            }
+            throw logErrorAndStop(text, ...parts);
+        }
+    }
+    function assertString(value1, text, ...parts) {
+        if (qDev) {
+            if (typeof value1 === 'string') {
+                return;
+            }
             throw logErrorAndStop(text, ...parts);
         }
     }
@@ -698,6 +710,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const RenderEvent = 'qRender';
     const ELEMENT_ID = 'q:id';
     const ELEMENT_ID_PREFIX = '#';
+    const INLINE_FN_PREFIX = '@';
 
     const directSetAttribute = (el, prop, value) => {
         return el.setAttribute(prop, value);
@@ -916,23 +929,11 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const _fnSignal = (fn, args, fnStr) => {
         return new SignalDerived(fn, args, fnStr);
     };
-    const serializeDerivedSignal = (signal, getObjID) => {
-        const parts = signal.$args$.map(getObjID);
+    const serializeDerivedSignalFunc = (signal) => {
         const fnBody = qSerialize ? signal.$funcStr$ : 'null';
         assertDefined(fnBody, 'If qSerialize is true then fnStr must be provided.');
-        return parts.join(' ') + ':' + fnBody;
-    };
-    const parseDerivedSignal = (data) => {
-        if (build.isServer || isServerPlatform()) {
-            throw new Error('For security reasons. Derived signals cannot be deserialized on the server.');
-        }
-        const colonIndex = data.indexOf(':');
-        const objects = data.slice(0, colonIndex).split(' ');
-        const fnStr = data.slice(colonIndex + 1);
-        const args = objects.map((_, i) => `p${i}`);
-        args.push(`return ${fnStr}`);
-        const fn = new Function(...args);
-        return new SignalDerived(fn, objects, fnStr);
+        const args = signal.$args$.map((_, i) => `p${i}`).join(',');
+        return `(${args})=>(${fnBody})`;
     };
 
     var _a$1;
@@ -1125,19 +1126,23 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             this.$manager$ = $manager$;
         }
         deleteProperty(target, prop) {
-            if (target[QObjectFlagsSymbol] & QObjectImmutable)
+            if (target[QObjectFlagsSymbol] & QObjectImmutable) {
                 throw qError(QError_immutableProps);
-            if (typeof prop != 'string' || !delete target[prop])
+            }
+            if (typeof prop != 'string' || !delete target[prop]) {
                 return false;
+            }
             this.$manager$.$notifySubs$(isArray(target) ? undefined : prop);
             return true;
         }
         get(target, prop) {
             if (typeof prop === 'symbol') {
-                if (prop === QOjectTargetSymbol)
+                if (prop === QOjectTargetSymbol) {
                     return target;
-                if (prop === QObjectManagerSymbol)
+                }
+                if (prop === QObjectManagerSymbol) {
                     return this.$manager$;
+                }
                 return target[prop];
             }
             let subscriber;
@@ -1204,8 +1209,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             return true;
         }
         has(target, property) {
-            if (property === QOjectTargetSymbol)
+            if (property === QOjectTargetSymbol) {
                 return true;
+            }
             const hasOwnProperty = Object.prototype.hasOwnProperty;
             if (hasOwnProperty.call(target, property)) {
                 return true;
@@ -2628,15 +2634,18 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return serializeClass(obj);
     };
     const serializeClass = (obj) => {
-        if (!obj)
+        if (!obj) {
             return '';
-        if (isString(obj))
+        }
+        if (isString(obj)) {
             return obj.trim();
-        if (isArray(obj))
+        }
+        if (isArray(obj)) {
             return obj.reduce((result, o) => {
                 const classList = serializeClass(o);
                 return classList ? (result ? `${result} ${classList}` : classList) : result;
             }, '');
+        }
         return Object.entries(obj).reduce((result, [key, value]) => (value ? (result ? `${result} ${key.trim()}` : key.trim()) : result), '');
     };
     // export const serializeClass = (obj: ClassList): string => {
@@ -2660,8 +2669,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     //   return reduced.trim();
     // };
     const stringifyStyle = (obj) => {
-        if (obj == null)
+        if (obj == null) {
             return '';
+        }
         if (typeof obj == 'object') {
             if (isArray(obj)) {
                 throw qError(QError_stringifyClassOrStyle, obj, 'style');
@@ -2753,8 +2763,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const InternalSSRStream = () => null;
 
     const hashCode = (text, hash = 0) => {
-        if (text.length === 0)
+        if (text.length === 0) {
             return hash;
+        }
         for (let i = 0; i < text.length; i++) {
             const chr = text.charCodeAt(i);
             hash = (hash << 5) - hash + chr;
@@ -2843,7 +2854,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 case 'boolean':
                     return obj;
             }
-            const value = serializeValue(obj, mustGetObjId, containerState);
+            const value = serializeValue(obj, mustGetObjId, collector, containerState);
             if (value !== undefined) {
                 return value;
             }
@@ -2975,6 +2986,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                     subs: [],
                 },
                 objs: [],
+                funcs: [],
                 qrls: [],
                 resources: collector.$resources$,
                 mode: 'static',
@@ -3140,7 +3152,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 case 'boolean':
                     return obj;
             }
-            const value = serializeValue(obj, mustGetObjId, containerState);
+            const value = serializeValue(obj, mustGetObjId, collector, containerState);
             if (value !== undefined) {
                 return value;
             }
@@ -3245,6 +3257,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 subs,
             },
             objs,
+            funcs: collector.$inlinedFunctions$,
             resources: collector.$resources$,
             qrls: collector.$qrls$,
             mode: canRender ? 'render' : 'listeners',
@@ -3268,8 +3281,9 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                 return FILTER_SKIP;
             },
         });
-        while (walker.nextNode())
-            ;
+        while (walker.nextNode()) {
+            // do nothing
+        }
         return results;
     };
     const collectProps = (elCtx, collector) => {
@@ -3298,6 +3312,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             $objSet$: new Set(),
             $prefetch$: 0,
             $noSerialize$: [],
+            $inlinedFunctions$: [],
             $resources$: [],
             $elements$: [],
             $qrls$: [],
@@ -4618,7 +4633,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         const doc = getDocument(containerEl);
         const isDocElement = containerEl === doc.documentElement;
         const parentJSON = isDocElement ? doc.body : containerEl;
-        const script = getQwikJSON(parentJSON);
+        const script = getQwikJSON(parentJSON, 'type');
         if (script) {
             const data = script.firstChild.data;
             return JSON.parse(unescapeText(data) || '{}');
@@ -4667,11 +4682,14 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         const doc = getDocument(containerEl);
         const isDocElement = containerEl === doc.documentElement;
         const parentJSON = isDocElement ? doc.body : containerEl;
-        const script = getQwikJSON(parentJSON);
-        if (!script) {
-            logWarn('Skipping hydration qwik/json metadata was not found.');
-            return;
+        if (qDev) {
+            const script = getQwikJSON(parentJSON, 'type');
+            if (!script) {
+                logWarn('Skipping hydration qwik/json metadata was not found.');
+                return;
+            }
         }
+        const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
         const containerState = _getContainerState(containerEl);
         moveStyles(containerEl, containerState);
         // Collect all elements
@@ -4752,6 +4770,13 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 }
                 finalized.set(id, rawElement);
                 return rawElement;
+            }
+            else if (id.startsWith(INLINE_FN_PREFIX)) {
+                const funcId = id.slice(INLINE_FN_PREFIX.length);
+                const index = strToInt(funcId);
+                const func = inlinedFunctions[index];
+                assertDefined(func, `missing inlined function for id:`, funcId);
+                return func;
             }
             const index = strToInt(id);
             const objs = pauseState.objs;
@@ -4850,10 +4875,14 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     const unescapeText = (str) => {
         return str.replace(/\\x3C(\/?script)/g, '<$1');
     };
-    const getQwikJSON = (parentElm) => {
+    const getQwikInlinedFuncs = (parentElm) => {
+        const elm = getQwikJSON(parentElm, 'q:func');
+        return elm?.qFuncs ?? EMPTY_ARRAY;
+    };
+    const getQwikJSON = (parentElm, attribute) => {
         let child = parentElm.lastElementChild;
         while (child) {
-            if (child.tagName === 'SCRIPT' && directGetAttribute(child, 'type') === 'qwik/json') {
+            if (child.tagName === 'SCRIPT' && directGetAttribute(child, attribute) === 'qwik/json') {
                 return child;
             }
             child = child.previousElementSibling;
@@ -5885,8 +5914,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     : [2, hostCtx.$element$, newValue, elm, prop]);
             }
             if (prop === 'class') {
-                if (qDev && values.class)
+                if (qDev && values.class) {
                     throw new TypeError('Can only provide one of class or className');
+                }
                 newValue = serializeClassWithHost(newValue, hostCtx);
                 if (!newValue) {
                     continue;
@@ -7372,13 +7402,25 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
             }
         },
-        serialize: (fn, getObj) => {
-            return serializeDerivedSignal(fn, getObj);
+        serialize: (signal, getObjID, collector) => {
+            const serialized = serializeDerivedSignalFunc(signal);
+            let index = collector.$inlinedFunctions$.indexOf(serialized);
+            if (index < 0) {
+                collector.$inlinedFunctions$.push(serialized);
+                index = collector.$inlinedFunctions$.length - 1;
+            }
+            const parts = signal.$args$.map(getObjID);
+            return parts.join(' ') + ' @' + intToStr(index);
         },
         prepare: (data) => {
-            return parseDerivedSignal(data);
+            const ids = data.split(' ');
+            const args = ids.slice(0, -1);
+            const fn = ids[ids.length - 1];
+            return new SignalDerived(fn, args, fn);
         },
         fill: (fn, getObject) => {
+            assertString(fn.$func$, 'fn.$func$ should be a string');
+            fn.$func$ = getObject(fn.$func$);
             fn.$args$ = fn.$args$.map(getObject);
         },
     };
@@ -7507,12 +7549,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return false;
     };
-    const serializeValue = (obj, getObjID, containerState) => {
+    const serializeValue = (obj, getObjID, collector, containerState) => {
         for (const s of serializers) {
             if (s.test(obj)) {
                 let value = s.prefix;
                 if (s.serialize) {
-                    value += s.serialize(obj, getObjID, containerState);
+                    value += s.serialize(obj, getObjID, collector, containerState);
                 }
                 return value;
             }
@@ -7605,10 +7647,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const typeObj = typeof unwrapped;
             switch (typeObj) {
                 case 'object':
-                    if (isPromise(unwrapped))
+                    if (isPromise(unwrapped)) {
                         return value;
-                    if (isNode$1(unwrapped))
+                    }
+                    if (isNode$1(unwrapped)) {
                         return value;
+                    }
                     if (isArray(unwrapped)) {
                         let expectIndex = 0;
                         // Make sure the array has no holes
@@ -8641,8 +8685,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             lastIdx = idx;
         }
         function insertScopingSelector(idx) {
-            if (mode === pseudoGlobal || shouldNotInsertScoping())
+            if (mode === pseudoGlobal || shouldNotInsertScoping()) {
                 return;
+            }
             flush(idx);
             out.push('.', ComponentStylesPrefixContent, scopeId);
         }

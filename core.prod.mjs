@@ -1691,7 +1691,7 @@ const _serializeData = async (data, pureQRL) => {
           case "boolean":
             return obj;
         }
-        const value = serializeValue(obj, mustGetObjId, containerState);
+        const value = serializeValue(obj, mustGetObjId, collector, containerState);
         if (void 0 !== value) {
             return value;
         }
@@ -1752,6 +1752,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
                 subs: []
             },
             objs: [],
+            funcs: [],
             qrls: [],
             resources: collector.$resources$,
             mode: "static"
@@ -1862,7 +1863,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
           case "boolean":
             return obj;
         }
-        const value = serializeValue(obj, mustGetObjId, containerState);
+        const value = serializeValue(obj, mustGetObjId, collector, containerState);
         if (void 0 !== value) {
             return value;
         }
@@ -1937,6 +1938,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
             subs: subs
         },
         objs: objs,
+        funcs: collector.$inlinedFunctions$,
         resources: collector.$resources$,
         qrls: collector.$qrls$,
         mode: canRender ? "render" : "listeners"
@@ -1966,6 +1968,7 @@ const createCollector = containerState => ({
     $objSet$: new Set,
     $prefetch$: 0,
     $noSerialize$: [],
+    $inlinedFunctions$: [],
     $resources$: [],
     $elements$: [],
     $qrls$: [],
@@ -2945,7 +2948,7 @@ const resumeContainer = containerEl => {
     const pauseState = containerEl._qwikjson_ ?? (containerEl => {
         const doc = getDocument(containerEl);
         const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-        const script = getQwikJSON(parentJSON);
+        const script = getQwikJSON(parentJSON, "type");
         if (script) {
             const data = script.firstChild.data;
             return JSON.parse(unescapeText(data) || "{}");
@@ -2956,9 +2959,10 @@ const resumeContainer = containerEl => {
     }
     const doc = getDocument(containerEl);
     const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-    if (!getQwikJSON(parentJSON)) {
+    if (qDev && !getQwikJSON(parentJSON, "type")) {
         return void logWarn("Skipping hydration qwik/json metadata was not found.");
     }
+    const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
     const containerState = _getContainerState(containerEl);
     moveStyles(containerEl, containerState);
     const elements = new Map;
@@ -3010,6 +3014,12 @@ const resumeContainer = containerEl => {
             }
             return isElement$1(rawElement) ? (finalized.set(id, rawElement), getContext(rawElement, containerState), 
             rawElement) : (finalized.set(id, rawElement), rawElement);
+        }
+        if (id.startsWith("@")) {
+            const funcId = id.slice("@".length);
+            const index = strToInt(funcId);
+            const func = inlinedFunctions[index];
+            return assertDefined(func, "missing inlined function for id:", funcId), func;
         }
         const index = strToInt(id);
         const objs = pauseState.objs;
@@ -3092,10 +3102,15 @@ const moveStyles = (containerEl, containerState) => {
 
 const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
 
-const getQwikJSON = parentElm => {
+const getQwikInlinedFuncs = parentElm => {
+    const elm = getQwikJSON(parentElm, "q:func");
+    return elm?.qFuncs ?? EMPTY_ARRAY;
+};
+
+const getQwikJSON = (parentElm, attribute) => {
     let child = parentElm.lastElementChild;
     for (;child; ) {
-        if ("SCRIPT" === child.tagName && "qwik/json" === directGetAttribute(child, "type")) {
+        if ("SCRIPT" === child.tagName && "qwik/json" === directGetAttribute(child, attribute)) {
             return child;
         }
         child = child.previousElementSibling;
@@ -4567,26 +4582,31 @@ const serializers = [ QRLSerializer, {
             }
         }
     },
-    serialize: (fn, getObj) => ((signal, getObjID) => {
-        const parts = signal.$args$.map(getObjID);
-        const fnBody = signal.$funcStr$;
-        return assertDefined(fnBody, "If qSerialize is true then fnStr must be provided."), 
-        parts.join(" ") + ":" + fnBody;
-    })(fn, getObj),
-    prepare: data => (data => {
-        if (isServer || isServerPlatform()) {
-            throw new Error("For security reasons. Derived signals cannot be deserialized on the server.");
-        }
-        const colonIndex = data.indexOf(":");
-        const objects = data.slice(0, colonIndex).split(" ");
-        const fnStr = data.slice(colonIndex + 1);
-        const args = objects.map(((_, i) => `p${i}`));
-        args.push(`return ${fnStr}`);
-        const fn = new Function(...args);
-        return new SignalDerived(fn, objects, fnStr);
-    })(data),
+    serialize: (signal, getObjID, collector) => {
+        const serialized = (signal => {
+            const fnBody = signal.$funcStr$;
+            return assertDefined(fnBody, "If qSerialize is true then fnStr must be provided."), 
+            `(${signal.$args$.map(((_, i) => `p${i}`)).join(",")})=>(${fnBody})`;
+        })(signal);
+        let index = collector.$inlinedFunctions$.indexOf(serialized);
+        return index < 0 && (collector.$inlinedFunctions$.push(serialized), index = collector.$inlinedFunctions$.length - 1), 
+        signal.$args$.map(getObjID).join(" ") + " @" + intToStr(index);
+    },
+    prepare: data => {
+        const ids = data.split(" ");
+        const args = ids.slice(0, -1);
+        const fn = ids[ids.length - 1];
+        return new SignalDerived(fn, args, fn);
+    },
     fill: (fn, getObject) => {
-        fn.$args$ = fn.$args$.map(getObject);
+        !function(value1, text, ...parts) {
+            if (qDev) {
+                if ("string" == typeof value1) {
+                    return;
+                }
+                throw logErrorAndStop("fn.$func$ should be a string", ...parts);
+            }
+        }(fn.$func$), fn.$func$ = getObject(fn.$func$), fn.$args$ = fn.$args$.map(getObject);
     }
 }, {
     prefix: "",
@@ -4631,11 +4651,12 @@ const collectDeps = (obj, collector, leaks) => {
     return false;
 };
 
-const serializeValue = (obj, getObjID, containerState) => {
+const serializeValue = (obj, getObjID, collector, containerState) => {
     for (const s of serializers) {
         if (s.test(obj)) {
             let value = s.prefix;
-            return s.serialize && (value += s.serialize(obj, getObjID, containerState)), value;
+            return s.serialize && (value += s.serialize(obj, getObjID, collector, containerState)), 
+            value;
         }
     }
 };

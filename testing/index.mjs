@@ -22515,8 +22515,9 @@ var createDOM = async function() {
     },
     screen: host,
     userEvent: async function(queryOrElement, eventNameCamel) {
-      if (typeof queryOrElement === "string")
+      if (typeof queryOrElement === "string") {
         return triggerUserEvent(host, queryOrElement, eventNameCamel);
+      }
       const kebabEventName = fromCamelToKebabCase(eventNameCamel);
       const event = { type: kebabEventName };
       const attrName = "on:" + kebabEventName;
