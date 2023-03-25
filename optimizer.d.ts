@@ -422,7 +422,7 @@ export declare interface QwikVitePluginOptions {
         /**
          * The entry point for the SSR renderer. This file should export
          * a `render()` function. This entry point and `render()` export
-         * function is also used for Vite's SSR development and Nodejs
+         * function is also used for Vite's SSR development and Node.js
          * debug mode.
          * Default `src/entry.ssr.tsx`
          */
