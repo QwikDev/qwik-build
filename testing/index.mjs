@@ -22496,10 +22496,10 @@ var dispatch = async (root, attrName, ev) => {
 };
 
 // packages/qwik/src/testing/library.ts
-async function triggerUserEvent(root, selector, eventNameCamel) {
+async function triggerUserEvent(root, selector, eventNameCamel, eventPayload = {}) {
   for (const element of Array.from(root.querySelectorAll(selector))) {
     const kebabEventName = fromCamelToKebabCase(eventNameCamel);
-    const event = { type: kebabEventName };
+    const event = { type: kebabEventName, ...eventPayload };
     const attrName = "on:" + kebabEventName;
     await dispatch(element, attrName, event);
   }
@@ -22514,12 +22514,12 @@ var createDOM = async function() {
       return qwik.render(host, jsxElement);
     },
     screen: host,
-    userEvent: async function(queryOrElement, eventNameCamel) {
+    userEvent: async function(queryOrElement, eventNameCamel, eventPayload = {}) {
       if (typeof queryOrElement === "string") {
-        return triggerUserEvent(host, queryOrElement, eventNameCamel);
+        return triggerUserEvent(host, queryOrElement, eventNameCamel, eventPayload);
       }
       const kebabEventName = fromCamelToKebabCase(eventNameCamel);
-      const event = { type: kebabEventName };
+      const event = { type: kebabEventName, ...eventPayload };
       const attrName = "on:" + kebabEventName;
       await dispatch(queryOrElement, attrName, event);
       await getTestPlatform().flush();

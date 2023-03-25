@@ -8,7 +8,7 @@ import { RenderResult } from '..';
 export declare const createDOM: () => Promise<{
     render: (jsxElement: JSXNode) => Promise<RenderResult>;
     screen: HTMLElement;
-    userEvent: (queryOrElement: string | Element | null, eventNameCamel: string) => Promise<void>;
+    userEvent: (queryOrElement: string | Element | null, eventNameCamel: string, eventPayload?: any) => Promise<void>;
 }>;
 
 export { }
