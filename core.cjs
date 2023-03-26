@@ -729,7 +729,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     const _getContainerState = (containerEl) => {
         let set = containerEl[CONTAINER_STATE];
         if (!set) {
-            assertTrue(!isServerPlatform(), 'Container state can only be created lazily on the browser');
             containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
         }
         return set;
@@ -2831,6 +2830,13 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
                     suffix += '_';
                 }
             }
+            if (isObject(obj)) {
+                const target = getProxyTarget(obj);
+                if (target) {
+                    suffix += '!';
+                    obj = target;
+                }
+            }
             const key = objToId.get(obj);
             if (key === undefined) {
                 throw qError(QError_missingObjectId, obj);
@@ -4661,7 +4667,12 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
         }
         const parser = createParser(containerState, doc);
-        reviveValues(_objs, parser);
+        for (let i = 0; i < _objs.length; i++) {
+            const value = _objs[i];
+            if (isString(value)) {
+                _objs[i] = value === UNDEFINED_PREFIX ? undefined : parser.prepare(value);
+            }
+        }
         const getObject = (id) => _objs[strToInt(id)];
         for (const obj of _objs) {
             reviveNestedObjects(obj, getObject, parser);
@@ -4781,7 +4792,10 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             const index = strToInt(id);
             const objs = pauseState.objs;
             assertTrue(objs.length > index, 'resume: index is out of bounds', id);
-            const value = objs[index];
+            let value = objs[index];
+            if (isString(value)) {
+                value = value === UNDEFINED_PREFIX ? undefined : parser.prepare(value);
+            }
             let obj = value;
             for (let i = id.length - 1; i >= 0; i--) {
                 const code = id[i];
@@ -4805,18 +4819,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             meta: pauseState.ctx,
             refs: pauseState.refs,
         };
-        reviveValues(pauseState.objs, parser);
         directSetAttribute(containerEl, QContainerAttr, 'resumed');
         logDebug('Container resumed');
         emitEvent$1(containerEl, 'qresume', undefined, true);
-    };
-    const reviveValues = (objs, parser) => {
-        for (let i = 0; i < objs.length; i++) {
-            const value = objs[i];
-            if (isString(value)) {
-                objs[i] = value === UNDEFINED_PREFIX ? undefined : parser.prepare(value);
-            }
-        }
     };
     const reviveSubscriptions = (value, i, objsSubs, getObject, containerState, parser) => {
         const subs = objsSubs[i];
@@ -4926,6 +4931,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 ...dev,
             };
         }
+        validateJSXNode(node);
         seal(node);
         return node;
     };
@@ -4945,6 +4951,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 ...dev,
             };
         }
+        validateJSXNode(node);
         seal(node);
         return node;
     };
@@ -4970,6 +4977,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
         }
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
+        validateJSXNode(node);
         seal(node);
         return node;
     };
@@ -4982,105 +4990,108 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             this.children = children;
             this.flags = flags;
             this.key = key;
-            if (qDev) {
-                invoke(undefined, () => {
-                    if (props && immutableProps) {
-                        const propsKeys = Object.keys(props);
-                        const immutablePropsKeys = Object.keys(immutableProps);
-                        // check if there are any duplicate keys
-                        const duplicateKeys = propsKeys.filter((key) => immutablePropsKeys.includes(key));
-                        if (duplicateKeys.length > 0) {
-                            logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(', ')}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
-                        }
+        }
+    }
+    const validateJSXNode = (node) => {
+        const { type, props, immutableProps, children } = node;
+        if (qDev) {
+            invoke(undefined, () => {
+                if (props && immutableProps) {
+                    const propsKeys = Object.keys(props);
+                    const immutablePropsKeys = Object.keys(immutableProps);
+                    // check if there are any duplicate keys
+                    const duplicateKeys = propsKeys.filter((key) => immutablePropsKeys.includes(key));
+                    if (duplicateKeys.length > 0) {
+                        logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(', ')}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
                     }
-                    const isQwikC = isQwikComponent(type);
-                    if (!isString(type) && !isFunction(type)) {
-                        throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, this);
-                    }
-                    if (children) {
-                        const flatChildren = isArray(children) ? children.flat() : [children];
-                        if (isString(type) || isQwikC) {
-                            flatChildren.forEach((child) => {
-                                if (!isValidJSXChild(child)) {
-                                    const typeObj = typeof child;
-                                    let explanation = '';
-                                    if (typeObj === 'object') {
-                                        if (child?.constructor) {
-                                            explanation = `it's an instance of "${child?.constructor.name}".`;
-                                        }
-                                        else {
-                                            explanation = `it's a object literal: ${printObjectLiteral(child)} `;
-                                        }
-                                    }
-                                    else if (typeObj === 'function') {
-                                        explanation += `it's a function named "${child.name}".`;
+                }
+                const isQwikC = isQwikComponent(type);
+                if (!isString(type) && !isFunction(type)) {
+                    throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, node);
+                }
+                if (children) {
+                    const flatChildren = isArray(children) ? children.flat() : [children];
+                    if (isString(type) || isQwikC) {
+                        flatChildren.forEach((child) => {
+                            if (!isValidJSXChild(child)) {
+                                const typeObj = typeof child;
+                                let explanation = '';
+                                if (typeObj === 'object') {
+                                    if (child?.constructor) {
+                                        explanation = `it's an instance of "${child?.constructor.name}".`;
                                     }
                                     else {
-                                        explanation = `it's a "${typeObj}": ${String(child)}.`;
+                                        explanation = `it's a object literal: ${printObjectLiteral(child)} `;
                                     }
-                                    throw createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, this);
+                                }
+                                else if (typeObj === 'function') {
+                                    explanation += `it's a function named "${child.name}".`;
+                                }
+                                else {
+                                    explanation = `it's a "${typeObj}": ${String(child)}.`;
+                                }
+                                throw createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, node);
+                            }
+                        });
+                    }
+                    if (build.isBrowser) {
+                        if (isFunction(type) || immutableProps) {
+                            const keys = {};
+                            flatChildren.forEach((child) => {
+                                if (isJSXNode(child) && child.key != null) {
+                                    const key = String(child.type) + ':' + child.key;
+                                    if (keys[key]) {
+                                        const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
+                                        if (err) {
+                                            if (isString(child.type)) {
+                                                logOnceWarn(err);
+                                            }
+                                            else {
+                                                logOnceWarn(err);
+                                            }
+                                        }
+                                    }
+                                    else {
+                                        keys[key] = true;
+                                    }
                                 }
                             });
                         }
-                        if (build.isBrowser) {
-                            if (isFunction(type) || immutableProps) {
-                                const keys = {};
-                                flatChildren.forEach((child) => {
-                                    if (isJSXNode(child) && child.key != null) {
-                                        const key = String(child.type) + ':' + child.key;
-                                        if (keys[key]) {
-                                            const err = createJSXError(`Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop`, child);
-                                            if (err) {
-                                                if (isString(child.type)) {
-                                                    logOnceWarn(err);
-                                                }
-                                                else {
-                                                    logOnceWarn(err);
-                                                }
-                                            }
-                                        }
-                                        else {
-                                            keys[key] = true;
-                                        }
-                                    }
-                                });
+                    }
+                }
+                if (!qRuntimeQrl && props) {
+                    for (const prop of Object.keys(props)) {
+                        const value = props[prop];
+                        if (prop.endsWith('$') && value) {
+                            if (!isQrl(value) && !Array.isArray(value)) {
+                                throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
                             }
                         }
-                    }
-                    if (!qRuntimeQrl && props) {
-                        for (const prop of Object.keys(props)) {
-                            const value = props[prop];
-                            if (prop.endsWith('$') && value) {
-                                if (!isQrl(value) && !Array.isArray(value)) {
-                                    throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, this);
-                                }
-                            }
-                            if (prop !== 'children' && isQwikC && value) {
-                                verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
-                            }
+                        if (prop !== 'children' && isQwikC && value) {
+                            verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
                         }
                     }
-                    if (isString(type)) {
-                        if (type === 'style') {
-                            if (children) {
-                                logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
+                }
+                if (isString(type)) {
+                    if (type === 'style') {
+                        if (children) {
+                            logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
 In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
 
 However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
 See https://qwik.builder.io/docs/components/styles/#usestyles for more information.`);
-                            }
-                        }
-                        if (type === 'script') {
-                            if (children) {
-                                logOnceWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
-In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
-                            }
                         }
                     }
-                });
-            }
+                    if (type === 'script') {
+                        if (children) {
+                            logOnceWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
+In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
+                        }
+                    }
+                }
+            });
         }
-    }
+    };
     const printObjectLiteral = (obj) => {
         return `{ ${Object.keys(obj)
         .map((key) => `"${key}"`)
@@ -5155,6 +5166,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             stack: new Error().stack,
             ...opts,
         };
+        validateJSXNode(node);
         seal(node);
         return node;
     };
@@ -7234,6 +7246,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
 
     /**
+     * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
+     *
+     * @public
+     */
+    const Slot = (props) => {
+        return _jsxC(Virtual, {
+            [QSlotS]: '',
+        }, 0, props.name ?? '');
+    };
+
+    /**
      * 0, 8, 9, A, B, C, D
     \0: null character (U+0000 NULL) (only if the next character is not a decimal digit; else it’s an octal escape sequence)
     \b: backspace (U+0008 BACKSPACE)
@@ -7514,6 +7537,44 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
         fill: undefined,
     };
+    const JSXNodeSerializer = {
+        prefix: '\u0017',
+        test: (v) => isJSXNode(v),
+        collect: (node, collector, leaks) => {
+            collectValue(node.children, collector, leaks);
+            collectValue(node.props, collector, leaks);
+            collectValue(node.immutableProps, collector, leaks);
+            let type = node.type;
+            if (type === Slot) {
+                type = ':slot';
+            }
+            else if (type === Fragment) {
+                type = ':fragment';
+            }
+            collectValue(type, collector, leaks);
+        },
+        serialize: (node, getObjID) => {
+            let type = node.type;
+            if (type === Slot) {
+                type = ':slot';
+            }
+            else if (type === Fragment) {
+                type = ':fragment';
+            }
+            return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.children)} ${node.flags}`;
+        },
+        prepare: (data) => {
+            const [type, props, immutableProps, children, flags] = data.split(' ');
+            const node = new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10));
+            return node;
+        },
+        fill: (node, getObject) => {
+            node.type = getResolveJSXType(getObject(node.type));
+            node.props = getObject(node.props);
+            node.immutableProps = getObject(node.immutableProps);
+            node.children = getObject(node.children);
+        },
+    };
     const serializers = [
         QRLSerializer,
         SignalSerializer,
@@ -7529,7 +7590,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         DerivedSignalSerializer,
         NoFiniteNumberSerializer,
         URLSearchParamsSerializer,
-        FormDataSerializer, ///////// \u0016
+        FormDataSerializer,
+        JSXNodeSerializer, ////////// \u0017
     ];
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
     const canSerialize = (obj) => {
@@ -7622,6 +7684,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return true;
         }
         return false;
+    };
+    const getResolveJSXType = (type) => {
+        if (type === ':slot') {
+            return Slot;
+        }
+        if (type === ':fragment') {
+            return Fragment;
+        }
+        return type;
     };
 
     /**
@@ -8322,17 +8393,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return jsx(type, normalizedProps, key);
     }
-
-    /**
-     * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
-     *
-     * @public
-     */
-    const Slot = (props) => {
-        return _jsxC(Virtual, {
-            [QSlotS]: '',
-        }, 0, props.name ?? '');
-    };
 
     /**
      * Render JSX.

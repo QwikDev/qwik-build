@@ -902,7 +902,7 @@ function createRollupError(id, reportMessage) {
   return err;
 }
 
-var REG_CTX_NAME = [ "server$" ];
+var REG_CTX_NAME = [ "server" ];
 
 var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
 
