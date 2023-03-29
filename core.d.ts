@@ -317,7 +317,6 @@ declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
     nativeEvent: E;
-    currentTarget: C;
     target: T;
     bubbles: boolean;
     cancelable: boolean;
@@ -3795,7 +3794,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.24.0-dev20230329034317
+ * 0.24.0-dev20230329180505
  * @public
  */
 export declare const version: string;

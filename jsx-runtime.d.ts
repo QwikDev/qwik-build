@@ -237,7 +237,6 @@ declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
     nativeEvent: E;
-    currentTarget: C;
     target: T;
     bubbles: boolean;
     cancelable: boolean;
