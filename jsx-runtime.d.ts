@@ -249,7 +249,7 @@ declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
     type: string;
 }
 
-declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event | FormData, EL> = {
+declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = {
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
@@ -1087,7 +1087,7 @@ declare type QwikEventMap<T> = {
     InputCapture: Event;
     Reset: Event;
     ResetCapture: Event;
-    Submit: QwikSubmitEvent<T> | FormData;
+    Submit: QwikSubmitEvent<T>;
     SubmitCapture: Event;
     Invalid: QwikInvalidEvent<T>;
     InvalidCapture: QwikInvalidEvent<T>;
