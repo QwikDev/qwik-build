@@ -4537,9 +4537,7 @@ const ComponentSerializer = {
         });
     },
     prepare: (data, containerState) => {
-        const optionsIndex = data.indexOf("{");
-        const qrlString = -1 == optionsIndex ? data : data.slice(0, optionsIndex);
-        const qrl = parseQRL(qrlString, containerState.$containerEl$);
+        const qrl = parseQRL(data, containerState.$containerEl$);
         return componentQrl(qrl);
     },
     fill: (component, getObject) => {

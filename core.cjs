@@ -7402,9 +7402,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             });
         },
         prepare: (data, containerState) => {
-            const optionsIndex = data.indexOf('{');
-            const qrlString = optionsIndex == -1 ? data : data.slice(0, optionsIndex);
-            const qrl = parseQRL(qrlString, containerState.$containerEl$);
+            const qrl = parseQRL(data, containerState.$containerEl$);
             return componentQrl(qrl);
         },
         fill: (component, getObject) => {
