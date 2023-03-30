@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.25.0
+ * @builder.io/qwik 0.100.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -764,10 +764,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             return value(elm);
         }
         else if (isObject(value)) {
-            if ('current' in value) {
-                return (value.current = elm);
-            }
-            else if ('value' in value) {
+            if ('value' in value) {
                 return (value.value = elm);
             }
         }
@@ -1288,7 +1285,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         if (ctx) {
             return ctx;
         }
-        const elCtx = createContext$1(el);
+        const elCtx = createContext(el);
         const elementID = directGetAttribute(el, 'q:id');
         if (elementID) {
             const pauseCtx = containerState.$pauseCtx$;
@@ -1345,7 +1342,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         }
         return elCtx;
     };
-    const createContext$1 = (element) => {
+    const createContext = (element) => {
         const ctx = {
             $flags$: 0,
             $id$: '',
@@ -1560,63 +1557,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return input;
     };
 
-    const useSequentialScope = () => {
-        const iCtx = useInvokeContext();
-        const i = iCtx.$seq$;
-        const hostElement = iCtx.$hostElement$;
-        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-        const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
-        iCtx.$seq$++;
-        const set = (value) => {
-            if (qDev) {
-                verifySerializable(value);
-            }
-            return (seq[i] = value);
-        };
-        return {
-            get: seq[i],
-            set,
-            i,
-            iCtx,
-            elCtx,
-        };
-    };
-
-    // <docs markdown="../readme.md#useCleanup">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useCleanup instead)
-    /**
-     * It can be used to release resources, abort network requests, stop timers...
-     *
-     * @public
-     * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useVisibleTask$()` instead.
-     */
-    // </docs>
-    const useCleanupQrl = (unmountFn) => {
-        const { get, set, i, elCtx } = useSequentialScope();
-        if (!get) {
-            assertQrl(unmountFn);
-            const watch = new Task(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, undefined);
-            set(true);
-            if (!elCtx.$watches$) {
-                elCtx.$watches$ = [];
-            }
-            elCtx.$watches$.push(watch);
-        }
-    };
-    // <docs markdown="../readme.md#useCleanup">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useCleanup instead)
-    /**
-     * It can be used to release resources, abort network requests, stop timers...
-     *
-     * @public
-     * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
-     * `useVisibleTask$()` instead.
-     */
-    // </docs>
-    const useCleanup$ = /*#__PURE__*/ implicit$FirstArg(useCleanupQrl);
     // <docs markdown="../readme.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useOn instead)
@@ -1706,6 +1646,28 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
             elCtx.li.push(...eventName.map((name) => [normalizeOnProp(name), eventQrl]));
         }
         elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
+    };
+
+    const useSequentialScope = () => {
+        const iCtx = useInvokeContext();
+        const i = iCtx.$seq$;
+        const hostElement = iCtx.$hostElement$;
+        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+        const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
+        iCtx.$seq$++;
+        const set = (value) => {
+            if (qDev) {
+                verifySerializable(value);
+            }
+            return (seq[i] = value);
+        };
+        return {
+            get: seq[i],
+            set,
+            i,
+            iCtx,
+            elCtx,
+        };
     };
 
     const getDocument = (node) => {
@@ -2281,13 +2243,6 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
         return /*#__PURE__*/ Object.freeze({
             id: fromCamelToKebabCase(name),
         });
-    };
-    /**
-     * @public
-     * @deprecated Please use `createContextId` instead.
-     */
-    const createContext = (name) => {
-        return createContextId(name);
     };
     // <docs markdown="../readme.md#useContextProvider">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -3561,7 +3516,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
      * QWIK_VERSION
      * @public
      */
-    const version = "0.25.0";
+    const version = "0.100.0";
 
     var _a;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -3869,7 +3824,7 @@ For more information see: https://qwik.builder.io/docs/components/lifecycle/#use
     };
     const createSSRContext = (nodeType) => {
         const elm = new MockElement(nodeType);
-        return createContext$1(elm);
+        return createContext(elm);
     };
     const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
@@ -5621,7 +5576,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return getContext(templateEl, containerState);
         }
         const template = createTemplate(staticCtx.$doc$, slotName);
-        const elCtx = createContext$1(template);
+        const elCtx = createContext(template);
         elCtx.$parent$ = hostCtx;
         prepend(staticCtx, hostCtx.$element$, template);
         slotMaps.templates[slotName] = template;
@@ -5670,7 +5625,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             flags |= IS_IMMUTABLE;
         }
         vnode.$elm$ = elm;
-        const elCtx = createContext$1(elm);
+        const elCtx = createContext(elm);
         elCtx.$parent$ = rCtx.$cmpCtx$;
         elCtx.$slotParent$ = rCtx.$slotCtx$;
         if (!isVirtual) {
@@ -6585,16 +6540,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     // </docs>
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
-    /**
-     * @public
-     * @deprecated - use `useTask$()` instead
-     */
-    const useWatch$ =  useTask$;
-    /**
-     * @public
-     * @deprecated - use `useTask$()` instead
-     */
-    const useWatchQrl =  useTaskQrl;
     // <docs markdown="../readme.md#useBrowserVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useBrowserVisibleTask instead)
@@ -6624,7 +6569,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     // </docs>
     const useVisibleTaskQrl = (qrl, opts) => {
         const { get, set, i, iCtx, elCtx } = useSequentialScope();
-        const eagerness = opts?.strategy ?? opts?.eagerness ?? 'intersection-observer';
+        const eagerness = opts?.strategy ?? 'intersection-observer';
         if (get) {
             if (isServerPlatform()) {
                 useRunWatch(get, eagerness);
@@ -6673,26 +6618,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     // </docs>
     const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
-    /**
-     * @public
-     * @deprecated - use `useVisibleTask$()` instead
-     */
-    const useClientEffectQrl = useVisibleTaskQrl;
-    /**
-     * @public
-     * @deprecated - use `useVisibleTask$()` instead
-     */
-    const useClientEffect$ = useVisibleTask$;
-    /**
-     * @public
-     * @deprecated - use `useVisibleTask$()` instead
-     */
-    const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
-    /**
-     * @public
-     * @deprecated - use `useVisibleTask$()` instead
-     */
-    const useBrowserVisibleTask$ = useVisibleTask$;
     const isResourceTask = (watch) => {
         return (watch.$flags$ & WatchFlagsIsResource) !== 0;
     };
@@ -7815,14 +7740,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         weakSerializeSet.add(input);
         return input;
     };
-    /**
-     * @public
-     * @deprecated Remove it, not needed anymore
-     */
-    const mutable = (v) => {
-        console.warn('mutable() is deprecated, you can safely remove all usages of mutable() in your code');
-        return v;
-    };
     const isConnected = (sub) => {
         if (isSubscriberDescriptor(sub)) {
             return isConnected(sub.$el$);
@@ -8550,53 +8467,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else {
             const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const recursive = opts?.deep ?? opts?.recursive ?? false;
+            const recursive = opts?.deep ?? false;
             const flags = recursive ? QObjectRecursive : 0;
             const newStore = getOrCreateProxy(value, containerState, flags);
             set(newStore);
             return newStore;
         }
-    };
-
-    // <docs markdown="../readme.md#useRef">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useRef instead)
-    /**
-     * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
-     * to the `ref` property in JSX.
-     *
-     * ```tsx
-     * export function useRef<T = Element>(current?: T): Ref<T> {
-     *   return useStore({ current });
-     * }
-     * ```
-     *
-     * ### Example
-     *
-     * ```tsx
-     * const Cmp = component$(() => {
-     *   const input = useRef<HTMLInputElement>();
-     *
-     *   useVisibleTask$(({ track }) => {
-     *     const el = track(() => input.current)!;
-     *     el.focus();
-     *   });
-     *
-     *   return (
-     *     <div>
-     *       <input type="text" ref={input} />
-     *     </div>
-     *   );
-     * });
-     *
-     * ```
-     *
-     * @deprecated Use `useSignal` instead.
-     * @public
-     */
-    // </docs>
-    const useRef = (current) => {
-        return useStore({ current });
     };
 
     /**
@@ -8622,16 +8498,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const ctx = useInvokeContext();
         return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
-    /**
-     * @public
-     * @deprecated Please use `useServerData` instead.
-     */
-    const useUserContext = useServerData;
-    /**
-     * @public
-     * @deprecated Please use `useServerData` instead.
-     */
-    const useEnvData = useServerData;
 
     /* eslint-disable no-console */
     const STYLE_CACHE = new Map();
@@ -9136,129 +9002,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return set(signal);
     };
 
-    // <docs markdown="../readme.md#useServerMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useServerMount instead)
-    /**
-     * Deprecated API, equivalent of doing:
-     *
-     * ```tsx
-     * import { useTask$ } from '@builder.io/qwik';
-     * import { isServer } from '@builder.io/qwik/build';
-     * useTask$(() => {
-     *   if (isServer) {
-     *     // only runs on server
-     *   }
-     * });
-     * ```
-     *
-     * @see `useTask`
-     * @public
-     * @deprecated - use `useTask$()` with `isServer` instead. See
-     */
-    // </docs>
-    const useServerMountQrl = (mountQrl) => {
-        const { get, set, iCtx } = useSequentialScope();
-        if (get) {
-            return;
-        }
-        if (isServerPlatform()) {
-            assertQrl(mountQrl);
-            mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
-            waitAndRun(iCtx, mountQrl);
-        }
-        set(true);
-    };
-    // <docs markdown="../readme.md#useServerMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useServerMount instead)
-    /**
-     * Deprecated API, equivalent of doing:
-     *
-     * ```tsx
-     * import { useTask$ } from '@builder.io/qwik';
-     * import { isServer } from '@builder.io/qwik/build';
-     * useTask$(() => {
-     *   if (isServer) {
-     *     // only runs on server
-     *   }
-     * });
-     * ```
-     *
-     * @see `useTask`
-     * @public
-     * @deprecated - use `useTask$()` with `isServer` instead. See
-     */
-    // </docs>
-    const useServerMount$ = /*#__PURE__*/ implicit$FirstArg(useServerMountQrl);
-    // <docs markdown="../readme.md#useClientMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientMount instead)
-    /**
-     * Deprecated API, equivalent of doing:
-     *
-     * ```tsx
-     * import { useTask$ } from '@builder.io/qwik';
-     * import { isBrowser } from '@builder.io/qwik/build';
-     * useTask$(() => {
-     *   if (isBrowser) {
-     *     // only runs on server
-     *   }
-     * });
-     * ```
-     *
-     * @see `useTask`
-     * @public
-     * @deprecated - use `useTask$()` with `isBrowser` instead. See
-     * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
-     */
-    // </docs>
-    const useClientMountQrl = (mountQrl) => {
-        const { get, set, iCtx } = useSequentialScope();
-        if (get) {
-            return;
-        }
-        if (!isServerPlatform()) {
-            assertQrl(mountQrl);
-            mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$);
-            waitAndRun(iCtx, mountQrl);
-        }
-        set(true);
-    };
-    // <docs markdown="../readme.md#useClientMount">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useClientMount instead)
-    /**
-     * Deprecated API, equivalent of doing:
-     *
-     * ```tsx
-     * import { useTask$ } from '@builder.io/qwik';
-     * import { isBrowser } from '@builder.io/qwik/build';
-     * useTask$(() => {
-     *   if (isBrowser) {
-     *     // only runs on server
-     *   }
-     * });
-     * ```
-     *
-     * @see `useTask`
-     * @public
-     * @deprecated - use `useTask$()` with `isBrowser` instead. See
-     * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
-     */
-    // </docs>
-    const useClientMount$ = /*#__PURE__*/ implicit$FirstArg(useClientMountQrl);
-    /**
-     * @public
-     * @deprecated - use `useTask$()` instead
-     */
-    const useMountQrl = useTaskQrl;
-    /**
-     * @public
-     * @deprecated - use `useTask$()` instead
-     */
-    const useMount$ =  useTask$;
-
     /**
      * @public
      */
@@ -9302,7 +9045,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports._wrapSignal = _wrapSignal;
     exports.component$ = component$;
     exports.componentQrl = componentQrl;
-    exports.createContext = createContext;
     exports.createContextId = createContextId;
     exports.createElement = h;
     exports.event$ = event$;
@@ -9316,40 +9058,25 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports.jsx = jsx;
     exports.jsxDEV = jsxDEV;
     exports.jsxs = jsx;
-    exports.mutable = mutable;
     exports.noSerialize = noSerialize;
     exports.qrl = qrl;
     exports.qrlDEV = qrlDEV;
     exports.render = render;
     exports.setPlatform = setPlatform;
     exports.untrack = untrack;
-    exports.useBrowserVisibleTask$ = useBrowserVisibleTask$;
-    exports.useBrowserVisibleTaskQrl = useBrowserVisibleTaskQrl;
-    exports.useCleanup$ = useCleanup$;
-    exports.useCleanupQrl = useCleanupQrl;
-    exports.useClientEffect$ = useClientEffect$;
-    exports.useClientEffectQrl = useClientEffectQrl;
-    exports.useClientMount$ = useClientMount$;
-    exports.useClientMountQrl = useClientMountQrl;
     exports.useComputed$ = useComputed$;
     exports.useComputedQrl = useComputedQrl;
     exports.useContext = useContext;
     exports.useContextProvider = useContextProvider;
-    exports.useEnvData = useEnvData;
     exports.useErrorBoundary = useErrorBoundary;
     exports.useId = useId;
     exports.useLexicalScope = useLexicalScope;
-    exports.useMount$ = useMount$;
-    exports.useMountQrl = useMountQrl;
     exports.useOn = useOn;
     exports.useOnDocument = useOnDocument;
     exports.useOnWindow = useOnWindow;
-    exports.useRef = useRef;
     exports.useResource$ = useResource$;
     exports.useResourceQrl = useResourceQrl;
     exports.useServerData = useServerData;
-    exports.useServerMount$ = useServerMount$;
-    exports.useServerMountQrl = useServerMountQrl;
     exports.useSignal = useSignal;
     exports.useStore = useStore;
     exports.useStyles$ = useStyles$;
@@ -9358,11 +9085,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports.useStylesScopedQrl = useStylesScopedQrl;
     exports.useTask$ = useTask$;
     exports.useTaskQrl = useTaskQrl;
-    exports.useUserContext = useUserContext;
     exports.useVisibleTask$ = useVisibleTask$;
     exports.useVisibleTaskQrl = useVisibleTaskQrl;
-    exports.useWatch$ = useWatch$;
-    exports.useWatchQrl = useWatchQrl;
     exports.version = version;
     exports.withLocale = withLocale;
 

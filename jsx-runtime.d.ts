@@ -1310,7 +1310,7 @@ declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, Native
 declare interface QwikProps<T> extends PreventDefault<T> {
     class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
-    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void) | undefined;
+    ref?: Signal<Element | undefined> | ((el: Element) => void) | undefined;
     /**
      *
      */
@@ -1374,15 +1374,6 @@ declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, NativeWh
     deltaX: number;
     deltaY: number;
     deltaZ: number;
-}
-
-/**
- * Type of the value returned by `useRef()`.
- *
- * @public
- */
-declare interface Ref<T = Element> {
-    current: T | undefined;
 }
 
 declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {

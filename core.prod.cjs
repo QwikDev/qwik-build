@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.25.0
+ * @builder.io/qwik 0.100.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -332,13 +332,8 @@
         if (isFunction(value)) {
             return value(elm);
         }
-        if (isObject(value)) {
-            if ("current" in value) {
-                return value.current = elm;
-            }
-            if ("value" in value) {
-                return value.value = elm;
-            }
+        if (isObject(value) && "value" in value) {
+            return value.value = elm;
         }
         throw qError(32, value);
     };
@@ -629,7 +624,7 @@
         if (ctx) {
             return ctx;
         }
-        const elCtx = createContext$1(el);
+        const elCtx = createContext(el);
         const elementID = directGetAttribute(el, "q:id");
         if (elementID) {
             const pauseCtx = containerState.$pauseCtx$;
@@ -680,7 +675,7 @@
         }
         return elCtx;
     };
-    const createContext$1 = element => {
+    const createContext = element => {
         const ctx = {
             $flags$: 0,
             $id$: "",
@@ -784,6 +779,14 @@
     const untrack = fn => invoke(void 0, fn);
     const trackInvocation = newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
+    const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
+    const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
+    const _useOn = (eventName, eventQrl) => {
+        const invokeCtx = useInvokeContext();
+        const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
+        assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
+        elCtx.$flags$ |= 2;
+    };
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const i = iCtx.$seq$;
@@ -797,23 +800,6 @@
             iCtx: iCtx,
             elCtx: elCtx
         };
-    };
-    const useCleanupQrl = unmountFn => {
-        const {get: get, set: set, i: i, elCtx: elCtx} = useSequentialScope();
-        if (!get) {
-            assertQrl(unmountFn);
-            const watch = new Task(WatchFlagsIsCleanup, i, elCtx.$element$, unmountFn, void 0);
-            set(true), elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch);
-        }
-    };
-    const useCleanup$ = implicit$FirstArg(useCleanupQrl);
-    const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
-    const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
-    const _useOn = (eventName, eventQrl) => {
-        const invokeCtx = useInvokeContext();
-        const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
-        assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
-        elCtx.$flags$ |= 2;
     };
     const getDocument = node => {
         if ("undefined" != typeof document) {
@@ -1927,7 +1913,7 @@
     };
     const createSSRContext = nodeType => {
         const elm = new MockElement(nodeType);
-        return createContext$1(elm);
+        return createContext(elm);
     };
     const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const tagName = node.type;
@@ -3057,7 +3043,7 @@
             return getContext(templateEl, containerState);
         }
         const template = createTemplate(staticCtx.$doc$, slotName);
-        const elCtx = createContext$1(template);
+        const elCtx = createContext(template);
         return elCtx.$parent$ = hostCtx, ((staticCtx, parent, newChild) => {
             staticCtx.$operations$.push({
                 $operation$: directPrepend,
@@ -3093,7 +3079,7 @@
             return new VirtualElementImpl(open, close);
         })(doc) : "head" === tag ? (elm = doc.head, flags |= 2) : (elm = createElement(doc, tag, isSvg), 
         flags &= -3), 2 & vnode.$flags$ && (flags |= 4), vnode.$elm$ = elm;
-        const elCtx = createContext$1(elm);
+        const elCtx = createContext(elm);
         if (elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, isVirtual) {
             if ("q:renderFn" in props) {
                 const renderQRL = props["q:renderFn"];
@@ -3528,7 +3514,6 @@
     const WatchFlagsIsTask = 2;
     const WatchFlagsIsResource = 4;
     const WatchFlagsIsDirty = 16;
-    const WatchFlagsIsCleanup = 32;
     const useTaskQrl = (qrl, opts) => {
         const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
         if (get) {
@@ -3556,11 +3541,9 @@
     };
     const useComputed$ = implicit$FirstArg(useComputedQrl);
     const useTask$ = implicit$FirstArg(useTaskQrl);
-    const useWatch$ = useTask$;
-    const useWatchQrl = useTaskQrl;
     const useVisibleTaskQrl = (qrl, opts) => {
         const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
-        const eagerness = opts?.strategy ?? opts?.eagerness ?? "intersection-observer";
+        const eagerness = opts?.strategy ?? "intersection-observer";
         if (get) {
             return void (isServerPlatform() && useRunWatch(get, eagerness));
         }
@@ -3572,10 +3555,6 @@
         notifyWatch(watch, containerState));
     };
     const useVisibleTask$ = implicit$FirstArg(useVisibleTaskQrl);
-    const useClientEffectQrl = useVisibleTaskQrl;
-    const useClientEffect$ = useVisibleTask$;
-    const useBrowserVisibleTaskQrl = useVisibleTaskQrl;
-    const useBrowserVisibleTask$ = useVisibleTask$;
     const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
     const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, "Resource is not dirty", watch), 
     isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
@@ -3698,8 +3677,7 @@
         }
     };
     const destroyWatch = watch => {
-        watch.$flags$ & WatchFlagsIsCleanup ? (watch.$flags$ &= ~WatchFlagsIsCleanup, (0, 
-        watch.$qrl$)()) : cleanupWatch(watch);
+        32 & watch.$flags$ ? (watch.$flags$ &= -33, (0, watch.$qrl$)()) : cleanupWatch(watch);
     };
     const useRunWatch = (watch, eagerness) => {
         "visible" === eagerness || "intersection-observer" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness || "document-ready" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" !== eagerness && "document-idle" !== eagerness || useOnDocument("qidle", getWatchHandlerQrl(watch));
@@ -4361,15 +4339,10 @@
         }
         {
             const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-            const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? opts?.recursive ?? false ? 1 : 0);
+            const newStore = getOrCreateProxy(value, containerState, opts?.deep ?? false ? 1 : 0);
             return set(newStore), newStore;
         }
     };
-    function useServerData(key, defaultValue) {
-        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }
-    const useUserContext = useServerData;
-    const useEnvData = useServerData;
     const STYLE_CACHE = new Map;
     const getScopedStyles = (css, scopeId) => {
         if (qDev) {
@@ -4513,20 +4486,6 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    const useServerMountQrl = mountQrl => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-        get || (isServerPlatform() && (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-        waitAndRun(iCtx, mountQrl)), set(true));
-    };
-    const useServerMount$ = implicit$FirstArg(useServerMountQrl);
-    const useClientMountQrl = mountQrl => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
-        get || (isServerPlatform() || (assertQrl(mountQrl), mountQrl.$resolveLazy$(iCtx.$renderCtx$.$static$.$containerState$.$containerEl$), 
-        waitAndRun(iCtx, mountQrl)), set(true));
-    };
-    const useClientMount$ = implicit$FirstArg(useClientMountQrl);
-    const useMountQrl = useTaskQrl;
-    const useMount$ = useTask$;
     exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServerPlatform();
         const resource = props.value;
@@ -4637,7 +4596,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.25.0",
+            "q:version": "0.100.0",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4747,9 +4706,8 @@
         const r = _wrapProp(obj, prop);
         return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
-    exports.createContext = name => createContextId(name), exports.createContextId = createContextId, 
-    exports.createElement = h, exports.event$ = event$, exports.eventQrl = eventQrl, 
-    exports.getLocale = function(defaultLocale) {
+    exports.createContextId = createContextId, exports.createElement = h, exports.event$ = event$, 
+    exports.eventQrl = eventQrl, exports.getLocale = function(defaultLocale) {
         if (void 0 === _locale) {
             const ctx = tryGetInvokeContext();
             if (ctx && ctx.$locale$) {
@@ -4778,8 +4736,7 @@
             stack: (new Error).stack,
             ...opts
         }, validateJSXNode(node), seal(node), node;
-    }, exports.jsxs = jsx, exports.mutable = v => (console.warn("mutable() is deprecated, you can safely remove all usages of mutable() in your code"), 
-    v), exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    }, exports.jsxs = jsx, exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         return newQrl.dev = opts, newQrl;
     }, exports.render = async (parent, jsxNode, opts) => {
@@ -4791,7 +4748,7 @@
             throw qError(5, containerEl);
         }
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.25.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.100.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4821,11 +4778,7 @@
                 }(rCtx, containerEl);
             }
         };
-    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useBrowserVisibleTask$ = useBrowserVisibleTask$, 
-    exports.useBrowserVisibleTaskQrl = useBrowserVisibleTaskQrl, exports.useCleanup$ = useCleanup$, 
-    exports.useCleanupQrl = useCleanupQrl, exports.useClientEffect$ = useClientEffect$, 
-    exports.useClientEffectQrl = useClientEffectQrl, exports.useClientMount$ = useClientMount$, 
-    exports.useClientMountQrl = useClientMountQrl, exports.useComputed$ = useComputed$, 
+    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useComputed$ = useComputed$, 
     exports.useComputedQrl = useComputedQrl, exports.useContext = (context, defaultValue) => {
         const {get: get, set: set, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
         if (void 0 !== get) {
@@ -4843,8 +4796,7 @@
             return set(defaultValue);
         }
         throw qError(13, context.id);
-    }, exports.useContextProvider = useContextProvider, exports.useEnvData = useEnvData, 
-    exports.useErrorBoundary = () => {
+    }, exports.useContextProvider = useContextProvider, exports.useErrorBoundary = () => {
         const store = useStore({
             error: void 0
         });
@@ -4857,14 +4809,12 @@
         }
         const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
         return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
-    }, exports.useLexicalScope = useLexicalScope, exports.useMount$ = useMount$, exports.useMountQrl = useMountQrl, 
-    exports.useOn = useOn, exports.useOnDocument = useOnDocument, exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
-    exports.useRef = current => useStore({
-        current: current
-    }), exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
-    exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
-    exports.useServerMount$ = useServerMount$, exports.useServerMountQrl = useServerMountQrl, 
-    exports.useSignal = initialState => {
+    }, exports.useLexicalScope = useLexicalScope, exports.useOn = useOn, exports.useOnDocument = useOnDocument, 
+    exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
+    exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
+    exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
+        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+    }, exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {
             return get;
@@ -4874,10 +4824,8 @@
         return set(_createSignal(value, containerState, 0, void 0));
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
-    exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
-    exports.useVisibleTask$ = useVisibleTask$, exports.useVisibleTaskQrl = useVisibleTaskQrl, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.25.0", 
-    exports.withLocale = function(locale, fn) {
+    exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "0.100.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

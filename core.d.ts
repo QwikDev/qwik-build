@@ -547,13 +547,6 @@ declare interface ContainerState {
 }
 
 /**
- * @public
- * @deprecated Please use `ContextId` instead.
- */
-export declare interface Context<STATE extends object> extends ContextId<STATE> {
-}
-
-/**
  * ContextId is a typesafe ID for your context.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
@@ -681,12 +674,6 @@ export declare interface CorePlatform {
      */
     chunkForSymbol: (symbolName: string, chunk: string | null) => readonly [symbol: string, chunk: string] | undefined;
 }
-
-/**
- * @public
- * @deprecated Please use `createContextId` instead.
- */
-export declare const createContext: <STATE extends object>(name: string) => ContextId<STATE>;
 
 /**
  * Create a context ID to be used in your application.
@@ -1423,17 +1410,6 @@ declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-/**
- * @public
- */
-export declare type MountFn<T> = () => ValueOrPromise<T>;
-
-/**
- * @public
- * @deprecated Remove it, not needed anymore
- */
-export declare const mutable: <T>(v: T) => T;
-
 /** @public */
 export declare type NativeAnimationEvent = AnimationEvent;
 
@@ -1545,10 +1521,6 @@ export declare interface OnVisibleTaskOptions {
      * - `document-idle`: the task will first execute when the document is idle, under the hood it uses the requestIdleCallback API.
      */
     strategy?: VisibleTaskStrategy;
-    /**
-     * @deprecated Use `strategy` instead.
-     */
-    eagerness?: EagernessOptions;
 }
 
 declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2181,7 +2153,7 @@ export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T,
 declare interface QwikProps<T> extends PreventDefault<T> {
     class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
-    ref?: Ref<Element> | Signal<Element | undefined> | ((el: Element) => void) | undefined;
+    ref?: Signal<Element | undefined> | ((el: Element) => void) | undefined;
     /**
      *
      */
@@ -2245,15 +2217,6 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
     deltaX: number;
     deltaY: number;
     deltaZ: number;
-}
-
-/**
- * Type of the value returned by `useRef()`.
- *
- * @public
- */
-export declare interface Ref<T = Element> {
-    current: T | undefined;
 }
 
 /**
@@ -2861,10 +2824,6 @@ export declare interface Tracker {
      * the watch will be scheduled to run.
      */
     <T extends {}>(obj: T): T;
-    /**
-     * @deprecated Use the `track(() => store.value)` instead
-     */
-    <T extends {}, B extends keyof T>(obj: T, prop: B): T[B];
 }
 
 declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -2893,88 +2852,6 @@ declare type TransformProps<PROPS extends {}> = {
  * @public
  */
 export declare const untrack: <T>(fn: () => T) => T;
-
-/**
- * @public
- * @deprecated - use `useVisibleTask$()` instead
- */
-export declare const useBrowserVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
-
-/**
- * @public
- * @deprecated - use `useVisibleTask$()` instead
- */
-export declare const useBrowserVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
-
-/**
- * It can be used to release resources, abort network requests, stop timers...
- *
- * @public
- * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useVisibleTask$()` instead.
- */
-export declare const useCleanup$: (first: () => void) => void;
-
-/**
- * It can be used to release resources, abort network requests, stop timers...
- *
- * @public
- * @deprecated Use the cleanup() function of `useTask$()`, `useResource$()` or
- * `useVisibleTask$()` instead.
- */
-export declare const useCleanupQrl: (unmountFn: QRL<() => void>) => void;
-
-/**
- * @public
- * @deprecated - use `useVisibleTask$()` instead
- */
-export declare const useClientEffect$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
-
-/**
- * @public
- * @deprecated - use `useVisibleTask$()` instead
- */
-export declare const useClientEffectQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
-
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '.';
- * import { isBrowser } from './build';
- * useTask$(() => {
- *   if (isBrowser) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isBrowser` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
- */
-export declare const useClientMount$: <T>(first: MountFn<T>) => void;
-
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '.';
- * import { isBrowser } from './build';
- * useTask$(() => {
- *   if (isBrowser) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isBrowser` instead. See
- * https://qwik.builder.io/docs/components/lifecycle/#usemountserver
- */
-export declare const useClientMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
 
 /**
  * @public
@@ -3092,12 +2969,6 @@ export declare const useContextProvider: <STATE extends object>(context: Context
 
 /**
  * @public
- * @deprecated Please use `useServerData` instead.
- */
-export declare const useEnvData: typeof useServerData;
-
-/**
- * @public
  */
 export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
 
@@ -3117,18 +2988,6 @@ export declare const useId: () => string;
  * @internal
  */
 export declare const useLexicalScope: <VARS extends any[]>() => VARS;
-
-/**
- * @public
- * @deprecated - use `useTask$()` instead
- */
-export declare const useMount$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
-
-/**
- * @public
- * @deprecated - use `useTask$()` instead
- */
-export declare const useMountQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions | undefined) => void;
 
 /**
  * Register a listener on the current component's host element.
@@ -3198,41 +3057,6 @@ export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev
  * @public
  */
 export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
-
-/**
- * It's a very thin wrapper around `useStore()`, including the proper type signature to be passed
- * to the `ref` property in JSX.
- *
- * ```tsx
- * export function useRef<T = Element>(current?: T): Ref<T> {
- *   return useStore({ current });
- * }
- * ```
- *
- * ### Example
- *
- * ```tsx
- * const Cmp = component$(() => {
- *   const input = useRef<HTMLInputElement>();
- *
- *   useVisibleTask$(({ track }) => {
- *     const el = track(() => input.current)!;
- *     el.focus();
- *   });
- *
- *   return (
- *     <div>
- *       <input type="text" ref={input} />
- *     </div>
- *   );
- * });
- *
- * ```
- *
- * @deprecated Use `useSignal` instead.
- * @public
- */
-export declare const useRef: <T extends Element = Element>(current?: T | undefined) => Ref<T>;
 
 /**
  * This method works like an async memoized function that runs whenever some tracked value
@@ -3357,44 +3181,6 @@ export declare function useServerData<T>(key: string): T | undefined;
 export declare function useServerData<T, B = T>(key: string, defaultValue: B): T | B;
 
 /**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '.';
- * import { isServer } from './build';
- * useTask$(() => {
- *   if (isServer) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- */
-export declare const useServerMount$: <T>(first: MountFn<T>) => void;
-
-/**
- * Deprecated API, equivalent of doing:
- *
- * ```tsx
- * import { useTask$ } from '.';
- * import { isServer } from './build';
- * useTask$(() => {
- *   if (isServer) {
- *     // only runs on server
- *   }
- * });
- * ```
- *
- * @see `useTask`
- * @public
- * @deprecated - use `useTask$()` with `isServer` instead. See
- */
-export declare const useServerMountQrl: <T>(mountQrl: QRL<MountFn<T>>) => void;
-
-/**
  * @public
  */
 export declare interface UseSignal {
@@ -3482,10 +3268,6 @@ export declare interface UseStoreOptions {
      * Default is `true`.
      */
     reactive?: boolean;
-    /**
-     * @deprecated - use `deep` instead
-     */
-    recursive?: boolean;
 }
 
 /**
@@ -3715,12 +3497,6 @@ export declare interface UseTaskOptions {
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
 /**
- * @public
- * @deprecated Please use `useServerData` instead.
- */
-export declare const useUserContext: typeof useServerData;
-
-/**
  * ```tsx
  * const Timer = component$(() => {
  *   const store = useStore({
@@ -3771,18 +3547,6 @@ export declare const useVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOption
 export declare const useVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskOptions) => void;
 
 /**
- * @public
- * @deprecated - use `useTask$()` instead
- */
-export declare const useWatch$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
-
-/**
- * @public
- * @deprecated - use `useTask$()` instead
- */
-export declare const useWatchQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
-
-/**
  * Type representing a value which is either resolve or a promise.
  * @public
  */
@@ -3794,7 +3558,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.25.0-dev20230330160159
+ * 0.100.0-dev20230330193734
  * @public
  */
 export declare const version: string;

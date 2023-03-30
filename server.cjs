@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 0.25.0
+ * @builder.io/qwik/server 0.100.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -159,7 +159,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "0.25.0",
+  qwik: "0.100.0",
   qwikDom: "2.1.19"
 };
 
@@ -556,7 +556,7 @@ async function renderToStream(rootNode, opts) {
     stream,
     containerTagName,
     containerAttributes,
-    serverData: opts.serverData ?? opts.envData,
+    serverData: opts.serverData,
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, dynamic) => {
