@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.24.0
+ * @builder.io/qwik 0.25.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -4639,7 +4639,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.24.0",
+            "q:version": "0.25.0",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4793,7 +4793,7 @@
             throw qError(5, containerEl);
         }
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.24.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.25.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4878,7 +4878,7 @@
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useUserContext = useUserContext, 
     exports.useVisibleTask$ = useVisibleTask$, exports.useVisibleTaskQrl = useVisibleTaskQrl, 
-    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.24.0", 
+    exports.useWatch$ = useWatch$, exports.useWatchQrl = useWatchQrl, exports.version = "0.25.0", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
