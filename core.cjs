@@ -230,7 +230,7 @@
                 '<div> component can only be used at the root of a Qwik component$()',
                 'Props are immutable by default.',
                 `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
-For more information see: https://qwik.builder.io/docs/components/lifecycle/#use-method-rules`,
+For more information see: https://qwik.builder.io/docs/components/tasks/#use-method-rules`,
                 'Container is already paused. Skipping',
                 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
                 'When rendering directly on top of Document, the root node must be a <html>',
