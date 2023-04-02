@@ -5178,13 +5178,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         const oldCh = getVnodeChildren(oldVnode, mode);
         if (oldCh.length > 0 && ch.length > 0) {
-            return updateChildren(ctx, elm, oldCh, ch, flags);
+            return diffChildren(ctx, elm, oldCh, ch, flags);
         }
         else if (oldCh.length > 0 && ch.length === 0) {
-            return removeVnodes(ctx.$static$, oldCh, 0, oldCh.length - 1);
+            return removeChildren(ctx.$static$, oldCh, 0, oldCh.length - 1);
         }
         else if (ch.length > 0) {
-            return addVnodes(ctx, elm, null, ch, 0, ch.length - 1, flags);
+            return addChildren(ctx, elm, null, ch, 0, ch.length - 1, flags);
         }
     };
     const getVnodeChildren = (oldVnode, mode) => {
@@ -5195,7 +5195,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return oldCh;
     };
-    const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
+    const diffChildren = (ctx, parentElm, oldCh, newCh, flags) => {
         let oldStartIdx = 0;
         let newStartIdx = 0;
         let oldEndIdx = oldCh.length - 1;
@@ -5223,12 +5223,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 newEndVnode = newCh[--newEndIdx];
             }
             else if (oldStartVnode.$id$ === newStartVnode.$id$) {
-                results.push(patchVnode(ctx, oldStartVnode, newStartVnode, flags));
+                results.push(diffVnode(ctx, oldStartVnode, newStartVnode, flags));
                 oldStartVnode = oldCh[++oldStartIdx];
                 newStartVnode = newCh[++newStartIdx];
             }
             else if (oldEndVnode.$id$ === newEndVnode.$id$) {
-                results.push(patchVnode(ctx, oldEndVnode, newEndVnode, flags));
+                results.push(diffVnode(ctx, oldEndVnode, newEndVnode, flags));
                 oldEndVnode = oldCh[--oldEndIdx];
                 newEndVnode = newCh[--newEndIdx];
             }
@@ -5236,7 +5236,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
                 assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
                 // Vnode moved right
-                results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags));
+                results.push(diffVnode(ctx, oldStartVnode, newEndVnode, flags));
                 insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$);
                 oldStartVnode = oldCh[++oldStartIdx];
                 newEndVnode = newCh[--newEndIdx];
@@ -5245,7 +5245,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 assertDefined(oldStartVnode.$elm$, 'oldStartVnode $elm$ must be defined');
                 assertDefined(oldEndVnode.$elm$, 'oldEndVnode $elm$ must be defined');
                 // Vnode moved left
-                results.push(patchVnode(ctx, oldEndVnode, newStartVnode, flags));
+                results.push(diffVnode(ctx, oldEndVnode, newStartVnode, flags));
                 insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$);
                 oldEndVnode = oldCh[--oldEndIdx];
                 newStartVnode = newCh[++newStartIdx];
@@ -5269,7 +5269,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         });
                     }
                     else {
-                        results.push(patchVnode(ctx, elmToMove, newStartVnode, flags));
+                        results.push(diffVnode(ctx, elmToMove, newStartVnode, flags));
                         oldCh[idxInOld] = undefined;
                         assertDefined(elmToMove.$elm$, 'elmToMove $elm$ must be defined');
                         insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
@@ -5280,12 +5280,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         if (newStartIdx <= newEndIdx) {
             const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
-            results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
+            results.push(addChildren(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
         }
         let wait = promiseAll(results);
         if (oldStartIdx <= oldEndIdx) {
             wait = then(wait, () => {
-                removeVnodes(staticCtx, oldCh, oldStartIdx, oldEndIdx);
+                removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
             });
         }
         return wait;
@@ -5381,7 +5381,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return output;
     };
-    const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
+    const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
         assertEqual(oldVnode.$type$, newVnode.$type$, 'old and new vnodes type must be the same');
         assertEqual(oldVnode.$key$, newVnode.$key$, 'old and new vnodes key must be the same');
         assertEqual(oldVnode.$id$, newVnode.$id$, 'old and new vnodes key must be the same');
@@ -5515,7 +5515,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     if (slotCtx && slotCtx.$vdom$) {
                         slotCtx.$vdom$.$children$ = [];
                     }
-                    removeVnodes(staticCtx, oldCh, 0, oldCh.length - 1);
+                    removeChildren(staticCtx, oldCh, 0, oldCh.length - 1);
                 }
             }
         }
@@ -5547,7 +5547,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
         }));
     };
-    const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
+    const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
         const promises = [];
         for (; startIdx <= endIdx; ++startIdx) {
             const ch = vnodes[startIdx];
@@ -5557,7 +5557,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return promiseAllLazy(promises);
     };
-    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
+    const removeChildren = (staticCtx, nodes, startIdx, endIdx) => {
         for (; startIdx <= endIdx; ++startIdx) {
             const ch = nodes[startIdx];
             if (ch) {

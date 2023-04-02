@@ -2801,14 +2801,14 @@
         oldVnode.$children$ === CHILDREN_PLACEHOLDER && "HEAD" === elm.nodeName && (mode = "head", 
         flags |= 2);
         const oldCh = getVnodeChildren(oldVnode, mode);
-        return oldCh.length > 0 && ch.length > 0 ? updateChildren(ctx, elm, oldCh, ch, flags) : oldCh.length > 0 && 0 === ch.length ? removeVnodes(ctx.$static$, oldCh, 0, oldCh.length - 1) : ch.length > 0 ? addVnodes(ctx, elm, null, ch, 0, ch.length - 1, flags) : void 0;
+        return oldCh.length > 0 && ch.length > 0 ? diffChildren(ctx, elm, oldCh, ch, flags) : oldCh.length > 0 && 0 === ch.length ? removeChildren(ctx.$static$, oldCh, 0, oldCh.length - 1) : ch.length > 0 ? addChildren(ctx, elm, null, ch, 0, ch.length - 1, flags) : void 0;
     };
     const getVnodeChildren = (oldVnode, mode) => {
         const oldCh = oldVnode.$children$;
         const elm = oldVnode.$elm$;
         return oldCh === CHILDREN_PLACEHOLDER ? oldVnode.$children$ = getChildrenVnodes(elm, mode) : oldCh;
     };
-    const updateChildren = (ctx, parentElm, oldCh, newCh, flags) => {
+    const diffChildren = (ctx, parentElm, oldCh, newCh, flags) => {
         let oldStartIdx = 0;
         let newStartIdx = 0;
         let oldEndIdx = oldCh.length - 1;
@@ -2832,18 +2832,18 @@
             } else if (null == newEndVnode) {
                 newEndVnode = newCh[--newEndIdx];
             } else if (oldStartVnode.$id$ === newStartVnode.$id$) {
-                results.push(patchVnode(ctx, oldStartVnode, newStartVnode, flags)), oldStartVnode = oldCh[++oldStartIdx], 
+                results.push(diffVnode(ctx, oldStartVnode, newStartVnode, flags)), oldStartVnode = oldCh[++oldStartIdx], 
                 newStartVnode = newCh[++newStartIdx];
             } else if (oldEndVnode.$id$ === newEndVnode.$id$) {
-                results.push(patchVnode(ctx, oldEndVnode, newEndVnode, flags)), oldEndVnode = oldCh[--oldEndIdx], 
+                results.push(diffVnode(ctx, oldEndVnode, newEndVnode, flags)), oldEndVnode = oldCh[--oldEndIdx], 
                 newEndVnode = newCh[--newEndIdx];
             } else if (oldStartVnode.$key$ && oldStartVnode.$id$ === newEndVnode.$id$) {
                 assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
-                results.push(patchVnode(ctx, oldStartVnode, newEndVnode, flags)), insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$), 
+                results.push(diffVnode(ctx, oldStartVnode, newEndVnode, flags)), insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$), 
                 oldStartVnode = oldCh[++oldStartIdx], newEndVnode = newCh[--newEndIdx];
             } else if (oldEndVnode.$key$ && oldEndVnode.$id$ === newStartVnode.$id$) {
                 assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
-                results.push(patchVnode(ctx, oldEndVnode, newStartVnode, flags)), insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$), 
+                results.push(diffVnode(ctx, oldEndVnode, newStartVnode, flags)), insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$), 
                 oldEndVnode = oldCh[--oldEndIdx], newStartVnode = newCh[++newStartIdx];
             } else {
                 if (void 0 === oldKeyToIdx && (oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)), 
@@ -2856,7 +2856,7 @@
                         insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                     }));
                 } else {
-                    results.push(patchVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
+                    results.push(diffVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
                     assertDefined(elmToMove.$elm$, "elmToMove $elm$ must be defined"), insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
                 }
                 newStartVnode = newCh[++newStartIdx];
@@ -2864,11 +2864,11 @@
         }
         if (newStartIdx <= newEndIdx) {
             const before = null == newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].$elm$;
-            results.push(addVnodes(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
+            results.push(addChildren(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
         }
         let wait = promiseAll(results);
         return oldStartIdx <= oldEndIdx && (wait = then(wait, (() => {
-            removeVnodes(staticCtx, oldCh, oldStartIdx, oldEndIdx);
+            removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
         }))), wait;
     };
     const getCh = (elm, filter) => {
@@ -2920,7 +2920,7 @@
         const nodeName = node.nodeName;
         return "Q:TEMPLATE" !== nodeName && ("HEAD" !== nodeName || node.hasAttribute("q:head"));
     };
-    const patchVnode = (rCtx, oldVnode, newVnode, flags) => {
+    const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
         assertEqual(oldVnode.$type$, newVnode.$type$, "old and new vnodes type must be the same"), 
         assertEqual(oldVnode.$key$, newVnode.$key$, "old and new vnodes key must be the same"), 
         assertEqual(oldVnode.$id$, newVnode.$id$, "old and new vnodes key must be the same");
@@ -2999,7 +2999,7 @@
                 const oldCh = getChildrenVnodes(slotEl, "root");
                 if (oldCh.length > 0) {
                     const slotCtx = tryGetContext(slotEl);
-                    slotCtx && slotCtx.$vdom$ && (slotCtx.$vdom$.$children$ = []), removeVnodes(staticCtx, oldCh, 0, oldCh.length - 1);
+                    slotCtx && slotCtx.$vdom$ && (slotCtx.$vdom$.$children$ = []), removeChildren(staticCtx, oldCh, 0, oldCh.length - 1);
                 }
             }
         }
@@ -3017,7 +3017,7 @@
             return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, "root", flags);
         })));
     };
-    const addVnodes = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
+    const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
         const promises = [];
         for (;startIdx <= endIdx; ++startIdx) {
             const ch = vnodes[startIdx];
@@ -3027,7 +3027,7 @@
         }
         return promiseAllLazy(promises);
     };
-    const removeVnodes = (staticCtx, nodes, startIdx, endIdx) => {
+    const removeChildren = (staticCtx, nodes, startIdx, endIdx) => {
         for (;startIdx <= endIdx; ++startIdx) {
             const ch = nodes[startIdx];
             ch && (assertDefined(ch.$elm$, "vnode elm must be defined"), removeNode(staticCtx, ch.$elm$));
