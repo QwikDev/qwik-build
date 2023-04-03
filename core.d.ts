@@ -44,7 +44,6 @@
  * ```tsx
  *
  * import { createContextId, useContext, useContextProvider } from './use/use-context';
- * import { useRef } from './use/use-ref';
  * import { Resource, useResource$ } from './use/use-resource';
  *
  * export const greet = () => console.log('greet');
@@ -551,10 +550,10 @@ declare interface ContainerState {
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
- * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
- * for the values. Qwik needs a serializable ID for the context so that the it can track context
- * providers and consumers in a way that survives resumability.
+ * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
+ * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+ * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
+ * track context providers and consumers in a way that survives resumability.
  *
  * ### Example
  *
@@ -681,10 +680,10 @@ export declare interface CorePlatform {
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
- * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
- * for the values. Qwik needs a serializable ID for the context so that the it can track context
- * providers and consumers in a way that survives resumability.
+ * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
+ * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+ * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
+ * track context providers and consumers in a way that survives resumability.
  *
  * ### Example
  *
@@ -1730,7 +1729,7 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * Let's assume that you intend to write code such as this:
  *
- * ```typescript
+ * ```tsx
  * return <button onClick={() => (await import('./chunk-abc.js')).onClick}>
  * ```
  *
@@ -3558,7 +3557,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.100.0-dev20230402205155
+ * 0.100.0-dev20230403030229
  * @public
  */
 export declare const version: string;

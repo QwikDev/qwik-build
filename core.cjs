@@ -2193,10 +2193,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      *
      * Context is a way to pass stores to the child components without prop-drilling.
      *
-     * Use `createContextId()` to create a `ContextId`. `ContextId` is just a serializable identifier for
-     * the context. It is not the context value itself. See `useContextProvider()` and `useContext()`
-     * for the values. Qwik needs a serializable ID for the context so that the it can track context
-     * providers and consumers in a way that survives resumability.
+     * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
+     * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+     * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
+     * track context providers and consumers in a way that survives resumability.
      *
      * ### Example
      *
@@ -6540,9 +6540,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     // </docs>
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
-    // <docs markdown="../readme.md#useBrowserVisibleTask">
+    // <docs markdown="../readme.md#useVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useBrowserVisibleTask instead)
+    // (edit ../readme.md#useVisibleTask instead)
     /**
      * ```tsx
      * const Timer = component$(() => {
@@ -6590,9 +6590,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             notifyWatch(watch, containerState);
         }
     };
-    // <docs markdown="../readme.md#useBrowserVisibleTask">
+    // <docs markdown="../readme.md#useVisibleTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useBrowserVisibleTask instead)
+    // (edit ../readme.md#useVisibleTask instead)
     /**
      * ```tsx
      * const Timer = component$(() => {
@@ -8092,7 +8092,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * ```tsx
      *
      * import { createContextId, useContext, useContextProvider } from './use/use-context';
-     * import { useRef } from './use/use-ref';
      * import { Resource, useResource$ } from './use/use-resource';
      *
      * export const greet = () => console.log('greet');

@@ -950,7 +950,7 @@ declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * Let's assume that you intend to write code such as this:
  *
- * ```typescript
+ * ```tsx
  * return <button onClick={() => (await import('./chunk-abc.js')).onClick}>
  * ```
  *
