@@ -1221,6 +1221,8 @@ declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, NativeFo
  * @public
  */
 declare interface QwikIntrinsicAttributes {
+    key?: string | number | undefined | null;
+    children?: any;
 }
 
 /**

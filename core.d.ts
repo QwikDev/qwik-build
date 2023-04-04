@@ -2048,6 +2048,8 @@ export declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, N
  * @public
  */
 declare interface QwikIntrinsicAttributes {
+    key?: string | number | undefined | null;
+    children?: any;
 }
 
 /**
@@ -3557,7 +3559,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.100.0-dev20230403030229
+ * 0.100.0-dev20230404104840
  * @public
  */
 export declare const version: string;
