@@ -4970,7 +4970,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 }
                 const isQwikC = isQwikComponent(type);
                 if (!isString(type) && !isFunction(type)) {
-                    throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, node);
+                    throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
                 }
                 if (children) {
                     const flatChildren = isArray(children) ? children.flat() : [children];
@@ -4993,7 +4993,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                                 else {
                                     explanation = `it's a "${typeObj}": ${String(child)}.`;
                                 }
-                                throw createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, node);
+                                throw new Error(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`);
                             }
                         });
                     }
@@ -5030,7 +5030,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                     for (const [prop, value] of allProps) {
                         if (prop.endsWith('$') && value) {
                             if (!isQrl(value) && !Array.isArray(value)) {
-                                throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
+                                throw new Error(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`);
                             }
                         }
                         if (prop !== 'children' && isQwikC && value) {
@@ -5045,7 +5045,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                         logError(err);
                     }
                     if (allProps.some((a) => a[0] === 'children')) {
-                        throw createJSXError(`The JSX element <${type}> can not have both 'children' as a property.`, node);
+                        throw new Error(`The JSX element <${type}> can not have both 'children' as a property.`);
                     }
                     if (type === 'style') {
                         if (children) {
@@ -5144,35 +5144,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         seal(node);
         return node;
     };
-    const ONCE_JSX = new Set();
     const createJSXError = (message, node) => {
         const error = new Error(message);
         if (!node.dev) {
             return error;
         }
-        const id = node.dev.fileName;
-        const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
-        if (ONCE_JSX.has(key)) {
-            return undefined;
-        }
-        Object.assign(error, {
-            id,
-            loc: {
-                file: id,
-                column: node.dev.columnNumber,
-                line: node.dev.lineNumber,
-            },
-        });
         error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
-        ONCE_JSX.add(key);
         return error;
     };
     const filterStack = (stack, offset = 0) => {
-        return stack
-            .split('\n')
-            .slice(offset)
-            .filter((l) => !l.includes('/node_modules/@builder.io/qwik') && !l.includes('(node:'))
-            .join('\n');
+        return stack.split('\n').slice(offset).join('\n');
     };
 
     const SVG_NS = 'http://www.w3.org/2000/svg';

@@ -3251,7 +3251,7 @@ const validateJSXNode = node => {
         }
         const isQwikC = isQwikComponent(type);
         if (!isString(type) && !isFunction(type)) {
-            throw createJSXError(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`, node);
+            throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
         }
         if (children) {
             const flatChildren = isArray(children) ? children.flat() : [ children ];
@@ -3260,7 +3260,7 @@ const validateJSXNode = node => {
                     const typeObj = typeof child;
                     let explanation = "";
                     throw "object" === typeObj ? explanation = child?.constructor ? `it's an instance of "${child?.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`, 
-                    createJSXError(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`, node);
+                    new Error(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`);
                 }
             })), isBrowser && (isFunction(type) || immutableProps)) {
                 const keys = {};
@@ -3280,7 +3280,7 @@ const validateJSXNode = node => {
         const allProps = [ ...Object.entries(props), ...immutableProps ? Object.entries(immutableProps) : [] ];
         for (const [prop, value] of allProps) {
             if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-                throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
+                throw new Error(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`);
             }
             "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
         }
@@ -3291,7 +3291,7 @@ const validateJSXNode = node => {
                 logError(err);
             }
             if (allProps.some((a => "children" === a[0]))) {
-                throw createJSXError(`The JSX element <${type}> can not have both 'children' as a property.`, node);
+                throw new Error(`The JSX element <${type}> can not have both 'children' as a property.`);
             }
             "style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
             "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'");
@@ -3323,27 +3323,13 @@ const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
     }, validateJSXNode(node), seal(node), node;
 };
 
-const ONCE_JSX = new Set;
-
 const createJSXError = (message, node) => {
     const error = new Error(message);
-    if (!node.dev) {
-        return error;
-    }
-    const id = node.dev.fileName;
-    const key = `${message}${id}:${node.dev.lineNumber}:${node.dev.columnNumber}`;
-    return ONCE_JSX.has(key) ? void 0 : (Object.assign(error, {
-        id: id,
-        loc: {
-            file: id,
-            column: node.dev.columnNumber,
-            line: node.dev.lineNumber
-        }
-    }), error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, ONCE_JSX.add(key), 
-    error);
+    return node.dev ? (error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, 
+    error) : error;
 };
 
-const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:"))).join("\n");
+const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).join("\n");
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
