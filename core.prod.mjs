@@ -4822,7 +4822,7 @@ const serializeSubscription = (sub, getObjId) => {
     }
     let base = type + " " + host;
     if (0 === type) {
-        sub[2] && (base += " " + sub[2]);
+        sub[2] && (base += " " + encodeURI(sub[2]));
     } else if (type <= 2) {
         base += ` ${must(getObjId(sub[2]))} ${must(getObjId(sub[3]))} ${sub[4]}`;
     } else if (type <= 4) {
@@ -4844,7 +4844,7 @@ const parseSubscription = (sub, getObject) => {
         return;
     }
     const subscription = [ type, host ];
-    return 0 === type ? (assertTrue(parts.length <= 3, "Max 3 parts"), subscription.push(parts[2])) : type <= 2 ? (assertTrue(5 === parts.length, "Type 1 has 5"), 
+    return 0 === type ? (assertTrue(parts.length <= 3, "Max 3 parts"), subscription.push(3 === parts.length ? decodeURI(parts[parts.length - 1]) : void 0)) : type <= 2 ? (assertTrue(5 === parts.length, "Type 1 has 5"), 
     subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5])) : type <= 4 && (assertTrue(4 === parts.length, "Type 2 has 4"), 
     subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4])), subscription;
 };

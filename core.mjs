@@ -7786,7 +7786,7 @@ const serializeSubscription = (sub, getObjId) => {
     let base = type + ' ' + host;
     if (type === 0) {
         if (sub[2]) {
-            base += ' ' + sub[2];
+            base += ' ' + encodeURI(sub[2]);
         }
     }
     else if (type <= 2) {
@@ -7812,7 +7812,7 @@ const parseSubscription = (sub, getObject) => {
     const subscription = [type, host];
     if (type === 0) {
         assertTrue(parts.length <= 3, 'Max 3 parts');
-        subscription.push(parts[2]);
+        subscription.push(parts.length === 3 ? decodeURI(parts[parts.length - 1]) : undefined);
     }
     else if (type <= 2) {
         assertTrue(parts.length === 5, 'Type 1 has 5');
