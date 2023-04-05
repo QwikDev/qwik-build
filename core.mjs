@@ -1638,27 +1638,37 @@ const _useOn = (eventName, eventQrl) => {
     elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
 };
 
-const useSequentialScope = () => {
-    const iCtx = useInvokeContext();
-    const i = iCtx.$seq$;
-    const hostElement = iCtx.$hostElement$;
-    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
-    iCtx.$seq$++;
-    const set = (value) => {
-        if (qDev) {
-            verifySerializable(value);
-        }
-        return (seq[i] = value);
-    };
-    return {
-        get: seq[i],
-        set,
-        i,
-        iCtx,
-        elCtx,
-    };
+/**
+ * @public
+ */
+const SkipRender = Symbol('skip render');
+/**
+ * @public
+ */
+const SSRRaw = (() => null);
+/**
+ * @public
+ */
+const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
+/**
+ * @public
+ */
+const SSRStreamBlock = (props) => {
+    return [
+        jsx(SSRComment, { data: 'qkssr-pu' }),
+        props.children,
+        jsx(SSRComment, { data: 'qkssr-po' }),
+    ];
 };
+/**
+ * @public
+ */
+const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
+/**
+ * @public
+ */
+const SSRHint = (() => null);
+const InternalSSRStream = () => null;
 
 const getDocument = (node) => {
     if (!qDynamicPlatform) {
@@ -2173,538 +2183,6 @@ const getRootNode = (node) => {
         return node;
     }
 };
-
-// <docs markdown="../readme.md#createContextId">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#createContextId instead)
-/**
- * Create a context ID to be used in your application.
- * The name should be written with no spaces.
- *
- * Context is a way to pass stores to the child components without prop-drilling.
- *
- * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
- * identifier for the context. It is not the context value itself. See `useContextProvider()` and
- * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
- * track context providers and consumers in a way that survives resumability.
- *
- * ### Example
- *
- * ```tsx
- * // Declare the Context type.
- * interface TodosStore {
- *   items: string[];
- * }
- * // Create a Context ID (no data is saved here.)
- * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContextId<TodosStore>('Todos');
- *
- * // Example of providing context to child components.
- * export const App = component$(() => {
- *   useContextProvider(
- *     TodosContext,
- *     useStore<TodosStore>({
- *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
- *     })
- *   );
- *
- *   return <Items />;
- * });
- *
- * // Example of retrieving the context provided by a parent component.
- * export const Items = component$(() => {
- *   const todos = useContext(TodosContext);
- *   return (
- *     <ul>
- *       {todos.items.map((item) => (
- *         <li>{item}</li>
- *       ))}
- *     </ul>
- *   );
- * });
- *
- * ```
- * @param name - The name of the context.
- * @public
- */
-// </docs>
-const createContextId = (name) => {
-    assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
-    return /*#__PURE__*/ Object.freeze({
-        id: fromCamelToKebabCase(name),
-    });
-};
-// <docs markdown="../readme.md#useContextProvider">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useContextProvider instead)
-/**
- * Assign a value to a Context.
- *
- * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
- * component's function. Once assign use `useContext()` in any child component to retrieve the
- * value.
- *
- * Context is a way to pass stores to the child components without prop-drilling.
- *
- * ### Example
- *
- * ```tsx
- * // Declare the Context type.
- * interface TodosStore {
- *   items: string[];
- * }
- * // Create a Context ID (no data is saved here.)
- * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContextId<TodosStore>('Todos');
- *
- * // Example of providing context to child components.
- * export const App = component$(() => {
- *   useContextProvider(
- *     TodosContext,
- *     useStore<TodosStore>({
- *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
- *     })
- *   );
- *
- *   return <Items />;
- * });
- *
- * // Example of retrieving the context provided by a parent component.
- * export const Items = component$(() => {
- *   const todos = useContext(TodosContext);
- *   return (
- *     <ul>
- *       {todos.items.map((item) => (
- *         <li>{item}</li>
- *       ))}
- *     </ul>
- *   );
- * });
- *
- * ```
- * @param context - The context to assign a value to.
- * @param value - The value to assign to the context.
- * @public
- */
-// </docs>
-const useContextProvider = (context, newValue) => {
-    const { get, set, elCtx } = useSequentialScope();
-    if (get !== undefined) {
-        return;
-    }
-    if (qDev) {
-        validateContext(context);
-    }
-    let contexts = elCtx.$contexts$;
-    if (!contexts) {
-        elCtx.$contexts$ = contexts = new Map();
-    }
-    if (qDev) {
-        verifySerializable(newValue);
-    }
-    contexts.set(context.id, newValue);
-    set(true);
-};
-// <docs markdown="../readme.md#useContext">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#useContext instead)
-/**
- * Retrieve Context value.
- *
- * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
- * parent component needs to invoke `useContextProvider()` to assign a value.
- *
- * ### Example
- *
- * ```tsx
- * // Declare the Context type.
- * interface TodosStore {
- *   items: string[];
- * }
- * // Create a Context ID (no data is saved here.)
- * // You will use this ID to both create and retrieve the Context.
- * export const TodosContext = createContextId<TodosStore>('Todos');
- *
- * // Example of providing context to child components.
- * export const App = component$(() => {
- *   useContextProvider(
- *     TodosContext,
- *     useStore<TodosStore>({
- *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
- *     })
- *   );
- *
- *   return <Items />;
- * });
- *
- * // Example of retrieving the context provided by a parent component.
- * export const Items = component$(() => {
- *   const todos = useContext(TodosContext);
- *   return (
- *     <ul>
- *       {todos.items.map((item) => (
- *         <li>{item}</li>
- *       ))}
- *     </ul>
- *   );
- * });
- *
- * ```
- * @param context - The context to retrieve a value from.
- * @public
- */
-// </docs>
-const useContext = (context, defaultValue) => {
-    const { get, set, iCtx, elCtx } = useSequentialScope();
-    if (get !== undefined) {
-        return get;
-    }
-    if (qDev) {
-        validateContext(context);
-    }
-    const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
-    if (typeof defaultValue === 'function') {
-        return set(invoke(undefined, defaultValue, value));
-    }
-    if (value !== undefined) {
-        return set(value);
-    }
-    if (defaultValue !== undefined) {
-        return set(defaultValue);
-    }
-    throw qError(QError_notFoundContext, context.id);
-};
-const resolveContext = (context, hostCtx, containerState) => {
-    const contextID = context.id;
-    if (hostCtx) {
-        let hostElement = hostCtx.$element$;
-        let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
-        while (ctx) {
-            hostElement = ctx.$element$;
-            if (ctx.$contexts$) {
-                const found = ctx.$contexts$.get(contextID);
-                if (found) {
-                    return found;
-                }
-                if (ctx.$contexts$.get('_') === true) {
-                    break;
-                }
-            }
-            ctx = ctx.$slotParent$ ?? ctx.$parent$;
-        }
-        if (hostElement.closest) {
-            const value = queryContextFromDom(hostElement, containerState, contextID);
-            if (value !== undefined) {
-                return value;
-            }
-        }
-    }
-    return undefined;
-};
-const queryContextFromDom = (hostElement, containerState, contextId) => {
-    let element = hostElement;
-    while (element) {
-        let node = element;
-        let virtual;
-        while (node && (virtual = findVirtual(node))) {
-            const contexts = getContext(virtual, containerState)?.$contexts$;
-            if (contexts) {
-                if (contexts.has(contextId)) {
-                    return contexts.get(contextId);
-                }
-            }
-            node = virtual;
-        }
-        element = element.parentElement;
-    }
-    return undefined;
-};
-const findVirtual = (el) => {
-    let node = el;
-    let stack = 1;
-    while ((node = node.previousSibling)) {
-        if (isComment(node)) {
-            if (node.data === '/qv') {
-                stack++;
-            }
-            else if (node.data.startsWith('qv ')) {
-                stack--;
-                if (stack === 0) {
-                    return getVirtualElement(node);
-                }
-            }
-        }
-    }
-    return null;
-};
-const validateContext = (context) => {
-    if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
-        throw qError(QError_invalidContext, context);
-    }
-};
-
-const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
-const handleError = (err, hostElement, rCtx) => {
-    const elCtx = tryGetContext(hostElement);
-    if (qDev) {
-        // Clean vdom
-        if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
-            // (hostElement as any).$vdom$ = null;
-            elCtx.$vdom$ = null;
-            const errorDiv = document.createElement('errored-host');
-            if (err && err instanceof Error) {
-                errorDiv.props = { error: err };
-            }
-            errorDiv.setAttribute('q:key', '_error_');
-            errorDiv.append(...hostElement.childNodes);
-            hostElement.appendChild(errorDiv);
-        }
-        if (err && err instanceof Error) {
-            if (!('hostElement' in err)) {
-                err['hostElement'] = hostElement;
-            }
-        }
-        if (!isRecoverable(err)) {
-            throw err;
-        }
-    }
-    if (isServerPlatform()) {
-        throw err;
-    }
-    else {
-        const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
-        if (errorStore === undefined) {
-            throw err;
-        }
-        errorStore.error = err;
-    }
-};
-const isRecoverable = (err) => {
-    if (err && err instanceof Error) {
-        if ('plugin' in err) {
-            return false;
-        }
-    }
-    return true;
-};
-
-const executeComponent = (rCtx, elCtx) => {
-    elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
-    elCtx.$flags$ |= HOST_FLAG_MOUNTED;
-    elCtx.$slots$ = [];
-    elCtx.li.length = 0;
-    const hostElement = elCtx.$element$;
-    const componentQRL = elCtx.$componentQrl$;
-    const props = elCtx.$props$;
-    const newCtx = pushRenderContext(rCtx);
-    const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
-    const waitOn = (invocationContext.$waitOn$ = []);
-    assertDefined(componentQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
-    assertDefined(props, `render: host element to render must has defined props`, elCtx);
-    // Set component context
-    newCtx.$cmpCtx$ = elCtx;
-    newCtx.$slotCtx$ = null;
-    // Invoke render hook
-    invocationContext.$subscriber$ = [0, hostElement];
-    invocationContext.$renderCtx$ = rCtx;
-    // Resolve render function
-    componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-    const componentFn = componentQRL.getFn(invocationContext);
-    return safeCall(() => componentFn(props), (jsxNode) => {
-        if (waitOn.length > 0) {
-            return Promise.all(waitOn).then(() => {
-                if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-                    return executeComponent(rCtx, elCtx);
-                }
-                return {
-                    node: jsxNode,
-                    rCtx: newCtx,
-                };
-            });
-        }
-        if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-            return executeComponent(rCtx, elCtx);
-        }
-        return {
-            node: jsxNode,
-            rCtx: newCtx,
-        };
-    }, (err) => {
-        if (err === SignalUnassignedException) {
-            return Promise.all(waitOn).then(() => {
-                return executeComponent(rCtx, elCtx);
-            });
-        }
-        handleError(err, hostElement, rCtx);
-        return {
-            node: SkipRender,
-            rCtx: newCtx,
-        };
-    });
-};
-const createRenderContext = (doc, containerState) => {
-    const ctx = {
-        $static$: {
-            $doc$: doc,
-            $locale$: containerState.$serverData$.locale,
-            $containerState$: containerState,
-            $hostElements$: new Set(),
-            $operations$: [],
-            $postOperations$: [],
-            $roots$: [],
-            $addSlots$: [],
-            $rmSlots$: [],
-            $visited$: [],
-        },
-        $cmpCtx$: null,
-        $slotCtx$: null,
-    };
-    seal(ctx);
-    seal(ctx.$static$);
-    return ctx;
-};
-const pushRenderContext = (ctx) => {
-    const newCtx = {
-        $static$: ctx.$static$,
-        $cmpCtx$: ctx.$cmpCtx$,
-        $slotCtx$: ctx.$slotCtx$,
-    };
-    return newCtx;
-};
-const serializeClassWithHost = (obj, hostCtx) => {
-    if (hostCtx && hostCtx.$scopeIds$) {
-        return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
-    }
-    return serializeClass(obj);
-};
-const serializeClass = (obj) => {
-    if (!obj) {
-        return '';
-    }
-    if (isString(obj)) {
-        return obj.trim();
-    }
-    if (isArray(obj)) {
-        return obj.reduce((result, o) => {
-            const classList = serializeClass(o);
-            return classList ? (result ? `${result} ${classList}` : classList) : result;
-        }, '');
-    }
-    return Object.entries(obj).reduce((result, [key, value]) => (value ? (result ? `${result} ${key.trim()}` : key.trim()) : result), '');
-};
-// export const serializeClass = (obj: ClassList): string => {
-//   if (!obj) return '';
-//   if (isString(obj)) return obj.trim();
-//   let reduced = '';
-//   if (isArray(obj)) {
-//     for (const o of obj) {
-//       const classList = serializeClass(o);
-//       if (classList) {
-//         reduced += ' ' + classList.trim();
-//       }
-//     }
-//   } else {
-//     for (const key of Object.keys(obj)) {
-//       if (obj[key]) {
-//         reduced += ' ' + key;
-//       }
-//     }
-//   }
-//   return reduced.trim();
-// };
-const stringifyStyle = (obj) => {
-    if (obj == null) {
-        return '';
-    }
-    if (typeof obj == 'object') {
-        if (isArray(obj)) {
-            throw qError(QError_stringifyClassOrStyle, obj, 'style');
-        }
-        else {
-            const chunks = [];
-            for (const key in obj) {
-                if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                    const value = obj[key];
-                    if (value != null) {
-                        const normalizedKey = key.startsWith('--') ? key : fromCamelToKebabCase(key);
-                        chunks.push(normalizedKey + ':' + value);
-                    }
-                }
-            }
-            return chunks.join(';');
-        }
-    }
-    return String(obj);
-};
-const getNextIndex = (ctx) => {
-    return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-};
-const setQId = (rCtx, elCtx) => {
-    const id = getNextIndex(rCtx);
-    elCtx.$id$ = id;
-};
-const hasStyle = (containerState, styleId) => {
-    return containerState.$styleIds$.has(styleId);
-};
-const jsxToString = (data) => {
-    if (isSignal(data)) {
-        return jsxToString(data.value);
-    }
-    return data == null || typeof data === 'boolean' ? '' : String(data);
-};
-function isAriaAttribute(prop) {
-    return prop.startsWith('aria-');
-}
-const shouldWrapFunctional = (res, node) => {
-    if (node.key) {
-        return !isJSXNode(res) || (!isFunction(res.type) && res.key != node.key);
-    }
-    return false;
-};
-const static_listeners = 1 << 0;
-const static_subtree = 1 << 1;
-
-/**
- * @public
- */
-const SkipRender = Symbol('skip render');
-/**
- * @public
- */
-const RenderOnce = (props, key) => {
-    return _jsxQ(Virtual, null, null, props.children, static_subtree, key);
-};
-/**
- * @public
- */
-const SSRRaw = (() => null);
-/**
- * @public
- */
-const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
-/**
- * @public
- */
-const Virtual = ((props) => props.children);
-/**
- * @public
- */
-const SSRStreamBlock = (props) => {
-    return [
-        jsx(SSRComment, { data: 'qkssr-pu' }),
-        props.children,
-        jsx(SSRComment, { data: 'qkssr-po' }),
-    ];
-};
-/**
- * @public
- */
-const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
-/**
- * @public
- */
-const SSRHint = (() => null);
-const InternalSSRStream = () => null;
 
 const hashCode = (text, hash = 0) => {
     if (text.length === 0) {
@@ -3501,6 +2979,518 @@ const getTextID = (node, containerState) => {
 const isEmptyObj = (obj) => {
     return Object.keys(obj).length === 0;
 };
+
+const useSequentialScope = () => {
+    const iCtx = useInvokeContext();
+    const i = iCtx.$seq$;
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+    const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
+    iCtx.$seq$++;
+    const set = (value) => {
+        if (qDev) {
+            verifySerializable(value);
+        }
+        return (seq[i] = value);
+    };
+    return {
+        get: seq[i],
+        set,
+        i,
+        iCtx,
+        elCtx,
+    };
+};
+
+// <docs markdown="../readme.md#createContextId">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#createContextId instead)
+/**
+ * Create a context ID to be used in your application.
+ * The name should be written with no spaces.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
+ * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+ * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
+ * track context providers and consumers in a way that survives resumability.
+ *
+ * ### Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContextId<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param name - The name of the context.
+ * @public
+ */
+// </docs>
+const createContextId = (name) => {
+    assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
+    return /*#__PURE__*/ Object.freeze({
+        id: fromCamelToKebabCase(name),
+    });
+};
+// <docs markdown="../readme.md#useContextProvider">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useContextProvider instead)
+/**
+ * Assign a value to a Context.
+ *
+ * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
+ * component's function. Once assign use `useContext()` in any child component to retrieve the
+ * value.
+ *
+ * Context is a way to pass stores to the child components without prop-drilling.
+ *
+ * ### Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContextId<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to assign a value to.
+ * @param value - The value to assign to the context.
+ * @public
+ */
+// </docs>
+const useContextProvider = (context, newValue) => {
+    const { get, set, elCtx } = useSequentialScope();
+    if (get !== undefined) {
+        return;
+    }
+    if (qDev) {
+        validateContext(context);
+    }
+    let contexts = elCtx.$contexts$;
+    if (!contexts) {
+        elCtx.$contexts$ = contexts = new Map();
+    }
+    if (qDev) {
+        verifySerializable(newValue);
+    }
+    contexts.set(context.id, newValue);
+    set(true);
+};
+// <docs markdown="../readme.md#useContext">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#useContext instead)
+/**
+ * Retrieve Context value.
+ *
+ * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
+ * parent component needs to invoke `useContextProvider()` to assign a value.
+ *
+ * ### Example
+ *
+ * ```tsx
+ * // Declare the Context type.
+ * interface TodosStore {
+ *   items: string[];
+ * }
+ * // Create a Context ID (no data is saved here.)
+ * // You will use this ID to both create and retrieve the Context.
+ * export const TodosContext = createContextId<TodosStore>('Todos');
+ *
+ * // Example of providing context to child components.
+ * export const App = component$(() => {
+ *   useContextProvider(
+ *     TodosContext,
+ *     useStore<TodosStore>({
+ *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+ *     })
+ *   );
+ *
+ *   return <Items />;
+ * });
+ *
+ * // Example of retrieving the context provided by a parent component.
+ * export const Items = component$(() => {
+ *   const todos = useContext(TodosContext);
+ *   return (
+ *     <ul>
+ *       {todos.items.map((item) => (
+ *         <li>{item}</li>
+ *       ))}
+ *     </ul>
+ *   );
+ * });
+ *
+ * ```
+ * @param context - The context to retrieve a value from.
+ * @public
+ */
+// </docs>
+const useContext = (context, defaultValue) => {
+    const { get, set, iCtx, elCtx } = useSequentialScope();
+    if (get !== undefined) {
+        return get;
+    }
+    if (qDev) {
+        validateContext(context);
+    }
+    const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
+    if (typeof defaultValue === 'function') {
+        return set(invoke(undefined, defaultValue, value));
+    }
+    if (value !== undefined) {
+        return set(value);
+    }
+    if (defaultValue !== undefined) {
+        return set(defaultValue);
+    }
+    throw qError(QError_notFoundContext, context.id);
+};
+const resolveContext = (context, hostCtx, containerState) => {
+    const contextID = context.id;
+    if (hostCtx) {
+        let hostElement = hostCtx.$element$;
+        let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
+        while (ctx) {
+            hostElement = ctx.$element$;
+            if (ctx.$contexts$) {
+                const found = ctx.$contexts$.get(contextID);
+                if (found) {
+                    return found;
+                }
+                if (ctx.$contexts$.get('_') === true) {
+                    break;
+                }
+            }
+            ctx = ctx.$slotParent$ ?? ctx.$parent$;
+        }
+        if (hostElement.closest) {
+            const value = queryContextFromDom(hostElement, containerState, contextID);
+            if (value !== undefined) {
+                return value;
+            }
+        }
+    }
+    return undefined;
+};
+const queryContextFromDom = (hostElement, containerState, contextId) => {
+    let element = hostElement;
+    while (element) {
+        let node = element;
+        let virtual;
+        while (node && (virtual = findVirtual(node))) {
+            const contexts = getContext(virtual, containerState)?.$contexts$;
+            if (contexts) {
+                if (contexts.has(contextId)) {
+                    return contexts.get(contextId);
+                }
+            }
+            node = virtual;
+        }
+        element = element.parentElement;
+    }
+    return undefined;
+};
+const findVirtual = (el) => {
+    let node = el;
+    let stack = 1;
+    while ((node = node.previousSibling)) {
+        if (isComment(node)) {
+            if (node.data === '/qv') {
+                stack++;
+            }
+            else if (node.data.startsWith('qv ')) {
+                stack--;
+                if (stack === 0) {
+                    return getVirtualElement(node);
+                }
+            }
+        }
+    }
+    return null;
+};
+const validateContext = (context) => {
+    if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
+        throw qError(QError_invalidContext, context);
+    }
+};
+
+const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
+const handleError = (err, hostElement, rCtx) => {
+    const elCtx = tryGetContext(hostElement);
+    if (qDev) {
+        // Clean vdom
+        if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
+            // (hostElement as any).$vdom$ = null;
+            elCtx.$vdom$ = null;
+            const errorDiv = document.createElement('errored-host');
+            if (err && err instanceof Error) {
+                errorDiv.props = { error: err };
+            }
+            errorDiv.setAttribute('q:key', '_error_');
+            errorDiv.append(...hostElement.childNodes);
+            hostElement.appendChild(errorDiv);
+        }
+        if (err && err instanceof Error) {
+            if (!('hostElement' in err)) {
+                err['hostElement'] = hostElement;
+            }
+        }
+        if (!isRecoverable(err)) {
+            throw err;
+        }
+    }
+    if (isServerPlatform()) {
+        throw err;
+    }
+    else {
+        const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
+        if (errorStore === undefined) {
+            throw err;
+        }
+        errorStore.error = err;
+    }
+};
+const isRecoverable = (err) => {
+    if (err && err instanceof Error) {
+        if ('plugin' in err) {
+            return false;
+        }
+    }
+    return true;
+};
+
+const executeComponent = (rCtx, elCtx) => {
+    elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
+    elCtx.$flags$ |= HOST_FLAG_MOUNTED;
+    elCtx.$slots$ = [];
+    elCtx.li.length = 0;
+    const hostElement = elCtx.$element$;
+    const componentQRL = elCtx.$componentQrl$;
+    const props = elCtx.$props$;
+    const newCtx = pushRenderContext(rCtx);
+    const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
+    const waitOn = (invocationContext.$waitOn$ = []);
+    assertDefined(componentQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
+    assertDefined(props, `render: host element to render must has defined props`, elCtx);
+    // Set component context
+    newCtx.$cmpCtx$ = elCtx;
+    newCtx.$slotCtx$ = null;
+    // Invoke render hook
+    invocationContext.$subscriber$ = [0, hostElement];
+    invocationContext.$renderCtx$ = rCtx;
+    // Resolve render function
+    componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+    const componentFn = componentQRL.getFn(invocationContext);
+    return safeCall(() => componentFn(props), (jsxNode) => {
+        if (waitOn.length > 0) {
+            return Promise.all(waitOn).then(() => {
+                if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
+                    return executeComponent(rCtx, elCtx);
+                }
+                return {
+                    node: jsxNode,
+                    rCtx: newCtx,
+                };
+            });
+        }
+        if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
+            return executeComponent(rCtx, elCtx);
+        }
+        return {
+            node: jsxNode,
+            rCtx: newCtx,
+        };
+    }, (err) => {
+        if (err === SignalUnassignedException) {
+            return Promise.all(waitOn).then(() => {
+                return executeComponent(rCtx, elCtx);
+            });
+        }
+        handleError(err, hostElement, rCtx);
+        return {
+            node: SkipRender,
+            rCtx: newCtx,
+        };
+    });
+};
+const createRenderContext = (doc, containerState) => {
+    const ctx = {
+        $static$: {
+            $doc$: doc,
+            $locale$: containerState.$serverData$.locale,
+            $containerState$: containerState,
+            $hostElements$: new Set(),
+            $operations$: [],
+            $postOperations$: [],
+            $roots$: [],
+            $addSlots$: [],
+            $rmSlots$: [],
+            $visited$: [],
+        },
+        $cmpCtx$: null,
+        $slotCtx$: null,
+    };
+    seal(ctx);
+    seal(ctx.$static$);
+    return ctx;
+};
+const pushRenderContext = (ctx) => {
+    const newCtx = {
+        $static$: ctx.$static$,
+        $cmpCtx$: ctx.$cmpCtx$,
+        $slotCtx$: ctx.$slotCtx$,
+    };
+    return newCtx;
+};
+const serializeClassWithHost = (obj, hostCtx) => {
+    if (hostCtx && hostCtx.$scopeIds$) {
+        return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
+    }
+    return serializeClass(obj);
+};
+const serializeClass = (obj) => {
+    if (!obj) {
+        return '';
+    }
+    if (isString(obj)) {
+        return obj.trim();
+    }
+    if (isArray(obj)) {
+        return obj.reduce((result, o) => {
+            const classList = serializeClass(o);
+            return classList ? (result ? `${result} ${classList}` : classList) : result;
+        }, '');
+    }
+    return Object.entries(obj).reduce((result, [key, value]) => (value ? (result ? `${result} ${key.trim()}` : key.trim()) : result), '');
+};
+// export const serializeClass = (obj: ClassList): string => {
+//   if (!obj) return '';
+//   if (isString(obj)) return obj.trim();
+//   let reduced = '';
+//   if (isArray(obj)) {
+//     for (const o of obj) {
+//       const classList = serializeClass(o);
+//       if (classList) {
+//         reduced += ' ' + classList.trim();
+//       }
+//     }
+//   } else {
+//     for (const key of Object.keys(obj)) {
+//       if (obj[key]) {
+//         reduced += ' ' + key;
+//       }
+//     }
+//   }
+//   return reduced.trim();
+// };
+const stringifyStyle = (obj) => {
+    if (obj == null) {
+        return '';
+    }
+    if (typeof obj == 'object') {
+        if (isArray(obj)) {
+            throw qError(QError_stringifyClassOrStyle, obj, 'style');
+        }
+        else {
+            const chunks = [];
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    const value = obj[key];
+                    if (value != null) {
+                        const normalizedKey = key.startsWith('--') ? key : fromCamelToKebabCase(key);
+                        chunks.push(normalizedKey + ':' + value);
+                    }
+                }
+            }
+            return chunks.join(';');
+        }
+    }
+    return String(obj);
+};
+const getNextIndex = (ctx) => {
+    return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
+};
+const setQId = (rCtx, elCtx) => {
+    const id = getNextIndex(rCtx);
+    elCtx.$id$ = id;
+};
+const hasStyle = (containerState, styleId) => {
+    return containerState.$styleIds$.has(styleId);
+};
+const jsxToString = (data) => {
+    if (isSignal(data)) {
+        return jsxToString(data.value);
+    }
+    return data == null || typeof data === 'boolean' ? '' : String(data);
+};
+function isAriaAttribute(prop) {
+    return prop.startsWith('aria-');
+}
+const shouldWrapFunctional = (res, node) => {
+    if (node.key) {
+        return !isJSXNode(res) || (!isFunction(res.type) && res.key != node.key);
+    }
+    return false;
+};
+const static_listeners = 1 << 0;
+const static_subtree = 1 << 1;
 
 /**
  * QWIK_VERSION
@@ -4868,6 +4858,7 @@ const getID = (stuff) => {
  * @internal
  */
 const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
+    assertString(type, 'jsx type must be a string');
     const processed = key == null ? null : String(key);
     const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
     if (qDev && dev) {
@@ -4879,6 +4870,17 @@ const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) =>
     validateJSXNode(node);
     seal(node);
     return node;
+};
+/**
+ * @internal
+ */
+const _jsxS = (type, mutableProps, immutableProps, flags, key, dev) => {
+    let children = null;
+    if (mutableProps && 'children' in mutableProps) {
+        children = mutableProps.children;
+        delete mutableProps.children;
+    }
+    return _jsxQ(type, mutableProps, immutableProps, children, flags, key, dev);
 };
 /**
  * @internal
@@ -4937,17 +4939,27 @@ class JSXNodeImpl {
         this.key = key;
     }
 }
+/**
+ * @public
+ */
+const Virtual = ((props) => props.children);
+/**
+ * @public
+ */
+const RenderOnce = (props, key) => {
+    return new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, static_subtree, key);
+};
 const validateJSXNode = (node) => {
     const { type, props, immutableProps, children } = node;
     if (qDev) {
         invoke(undefined, () => {
-            if (props && immutableProps) {
+            if (immutableProps) {
                 const propsKeys = Object.keys(props);
                 const immutablePropsKeys = Object.keys(immutableProps);
                 // check if there are any duplicate keys
                 const duplicateKeys = propsKeys.filter((key) => immutablePropsKeys.includes(key));
                 if (duplicateKeys.length > 0) {
-                    logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(', ')}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
+                    logOnceWarn(`JSX is receiving duplicated props (${duplicateKeys.join(', ')}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
                 }
             }
             const isQwikC = isQwikComponent(type);
@@ -5004,9 +5016,12 @@ const validateJSXNode = (node) => {
                     }
                 }
             }
-            if (!qRuntimeQrl && props) {
-                for (const prop of Object.keys(props)) {
-                    const value = props[prop];
+            const allProps = [
+                ...Object.entries(props),
+                ...(immutableProps ? Object.entries(immutableProps) : []),
+            ];
+            if (!qRuntimeQrl) {
+                for (const [prop, value] of allProps) {
                     if (prop.endsWith('$') && value) {
                         if (!isQrl(value) && !Array.isArray(value)) {
                             throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
@@ -5018,6 +5033,14 @@ const validateJSXNode = (node) => {
                 }
             }
             if (isString(type)) {
+                const hasSetInnerHTML = allProps.some((a) => a[0] === 'dangerouslySetInnerHTML');
+                if (hasSetInnerHTML && children) {
+                    const err = createJSXError(`The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`, node);
+                    logError(err);
+                }
+                if (allProps.some((a) => a[0] === 'children')) {
+                    throw createJSXError(`The JSX element <${type}> can not have both 'children' as a property.`, node);
+                }
                 if (type === 'style') {
                     if (children) {
                         logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
@@ -8285,7 +8308,7 @@ function h(type, props, ...children) {
     // https://reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html
     // https://www.typescriptlang.org/tsconfig#jsxImportSource
     const normalizedProps = {
-        children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY,
+        children: arguments.length > 2 ? flattenArray(children) : undefined,
     };
     let key;
     let i;
@@ -8294,6 +8317,9 @@ function h(type, props, ...children) {
             key = props[i];
         else
             normalizedProps[i] = props[i];
+    }
+    if (typeof type === 'string' && !key && 'dangerouslySetInnerHTML' in normalizedProps) {
+        key = 'innerhtml';
     }
     return jsx(type, normalizedProps, key);
 }
@@ -9003,5 +9029,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

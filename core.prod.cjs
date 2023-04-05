@@ -171,6 +171,14 @@
             throw logErrorAndStop(text, ...parts);
         }
     }
+    function assertString(value1, text, ...parts) {
+        if (qDev) {
+            if ("string" == typeof value1) {
+                return;
+            }
+            throw logErrorAndStop(text, ...parts);
+        }
+    }
     const isPromise = value => value instanceof Promise;
     const safeCall = (call, thenFn, rejectFn) => {
         try {
@@ -787,20 +795,13 @@
         assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
         elCtx.$flags$ |= 2;
     };
-    const useSequentialScope = () => {
-        const iCtx = useInvokeContext();
-        const i = iCtx.$seq$;
-        const hostElement = iCtx.$hostElement$;
-        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-        const seq = elCtx.$seq$ ? elCtx.$seq$ : elCtx.$seq$ = [];
-        return iCtx.$seq$++, {
-            get: seq[i],
-            set: value => (qDev && verifySerializable(value), seq[i] = value),
-            i: i,
-            iCtx: iCtx,
-            elCtx: elCtx
-        };
-    };
+    const SkipRender = Symbol("skip render");
+    const SSRRaw = () => null;
+    const SSRComment = props => jsx(SSRRaw, {
+        data: `\x3c!--${props.data}--\x3e`
+    }, null);
+    const SSRHint = () => null;
+    const InternalSSRStream = () => null;
     const getDocument = node => {
         if ("undefined" != typeof document) {
             return document;
@@ -1128,205 +1129,6 @@
         throw new Error("close not found");
     };
     const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
-    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name), 
-    Object.freeze({
-        id: fromCamelToKebabCase(name)
-    }));
-    const useContextProvider = (context, newValue) => {
-        const {get: get, set: set, elCtx: elCtx} = useSequentialScope();
-        if (void 0 !== get) {
-            return;
-        }
-        qDev && validateContext(context);
-        let contexts = elCtx.$contexts$;
-        contexts || (elCtx.$contexts$ = contexts = new Map), qDev && verifySerializable(newValue), 
-        contexts.set(context.id, newValue), set(true);
-    };
-    const resolveContext = (context, hostCtx, containerState) => {
-        const contextID = context.id;
-        if (hostCtx) {
-            let hostElement = hostCtx.$element$;
-            let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
-            for (;ctx; ) {
-                if (hostElement = ctx.$element$, ctx.$contexts$) {
-                    const found = ctx.$contexts$.get(contextID);
-                    if (found) {
-                        return found;
-                    }
-                    if (true === ctx.$contexts$.get("_")) {
-                        break;
-                    }
-                }
-                ctx = ctx.$slotParent$ ?? ctx.$parent$;
-            }
-            if (hostElement.closest) {
-                const value = queryContextFromDom(hostElement, containerState, contextID);
-                if (void 0 !== value) {
-                    return value;
-                }
-            }
-        }
-    };
-    const queryContextFromDom = (hostElement, containerState, contextId) => {
-        let element = hostElement;
-        for (;element; ) {
-            let node = element;
-            let virtual;
-            for (;node && (virtual = findVirtual(node)); ) {
-                const contexts = getContext(virtual, containerState)?.$contexts$;
-                if (contexts && contexts.has(contextId)) {
-                    return contexts.get(contextId);
-                }
-                node = virtual;
-            }
-            element = element.parentElement;
-        }
-    };
-    const findVirtual = el => {
-        let node = el;
-        let stack = 1;
-        for (;node = node.previousSibling; ) {
-            if (isComment(node)) {
-                if ("/qv" === node.data) {
-                    stack++;
-                } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
-                    return getVirtualElement(node);
-                }
-            }
-        }
-        return null;
-    };
-    const validateContext = context => {
-        if (!isObject(context) || "string" != typeof context.id || 0 === context.id.length) {
-            throw qError(28, context);
-        }
-    };
-    const ERROR_CONTEXT = createContextId("qk-error");
-    const handleError = (err, hostElement, rCtx) => {
-        const elCtx = tryGetContext(hostElement);
-        if (qDev) {
-            if (!isServerPlatform() && "undefined" != typeof document && isVirtualElement(hostElement)) {
-                elCtx.$vdom$ = null;
-                const errorDiv = document.createElement("errored-host");
-                err && err instanceof Error && (errorDiv.props = {
-                    error: err
-                }), errorDiv.setAttribute("q:key", "_error_"), errorDiv.append(...hostElement.childNodes), 
-                hostElement.appendChild(errorDiv);
-            }
-            if (err && err instanceof Error && ("hostElement" in err || (err.hostElement = hostElement)), 
-            !isRecoverable(err)) {
-                throw err;
-            }
-        }
-        if (isServerPlatform()) {
-            throw err;
-        }
-        {
-            const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
-            if (void 0 === errorStore) {
-                throw err;
-            }
-            errorStore.error = err;
-        }
-    };
-    const isRecoverable = err => !(err && err instanceof Error && "plugin" in err);
-    const executeComponent = (rCtx, elCtx) => {
-        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
-        const hostElement = elCtx.$element$;
-        const componentQRL = elCtx.$componentQrl$;
-        const props = elCtx.$props$;
-        const newCtx = pushRenderContext(rCtx);
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
-        const waitOn = invocationContext.$waitOn$ = [];
-        assertDefined(componentQRL, "render: host element to render must has a $renderQrl$:", elCtx), 
-        assertDefined(props, "render: host element to render must has defined props", elCtx), 
-        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocationContext.$subscriber$ = [ 0, hostElement ], 
-        invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-        const componentFn = componentQRL.getFn(invocationContext);
-        return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: jsxNode,
-            rCtx: newCtx
-        })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
-            node: jsxNode,
-            rCtx: newCtx
-        }), (err => err === SignalUnassignedException ? Promise.all(waitOn).then((() => executeComponent(rCtx, elCtx))) : (handleError(err, hostElement, rCtx), 
-        {
-            node: SkipRender,
-            rCtx: newCtx
-        })));
-    };
-    const createRenderContext = (doc, containerState) => {
-        const ctx = {
-            $static$: {
-                $doc$: doc,
-                $locale$: containerState.$serverData$.locale,
-                $containerState$: containerState,
-                $hostElements$: new Set,
-                $operations$: [],
-                $postOperations$: [],
-                $roots$: [],
-                $addSlots$: [],
-                $rmSlots$: [],
-                $visited$: []
-            },
-            $cmpCtx$: null,
-            $slotCtx$: null
-        };
-        return seal(ctx), seal(ctx.$static$), ctx;
-    };
-    const pushRenderContext = ctx => ({
-        $static$: ctx.$static$,
-        $cmpCtx$: ctx.$cmpCtx$,
-        $slotCtx$: ctx.$slotCtx$
-    });
-    const serializeClassWithHost = (obj, hostCtx) => hostCtx && hostCtx.$scopeIds$ ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
-    const serializeClass = obj => obj ? isString(obj) ? obj.trim() : isArray(obj) ? obj.reduce(((result, o) => {
-        const classList = serializeClass(o);
-        return classList ? result ? `${result} ${classList}` : classList : result;
-    }), "") : Object.entries(obj).reduce(((result, [key, value]) => value ? result ? `${result} ${key.trim()}` : key.trim() : result), "") : "";
-    const stringifyStyle = obj => {
-        if (null == obj) {
-            return "";
-        }
-        if ("object" == typeof obj) {
-            if (isArray(obj)) {
-                throw qError(0, obj, "style");
-            }
-            {
-                const chunks = [];
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        if (null != value) {
-                            const normalizedKey = key.startsWith("--") ? key : fromCamelToKebabCase(key);
-                            chunks.push(normalizedKey + ":" + value);
-                        }
-                    }
-                }
-                return chunks.join(";");
-            }
-        }
-        return String(obj);
-    };
-    const getNextIndex = ctx => intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-    const setQId = (rCtx, elCtx) => {
-        const id = getNextIndex(rCtx);
-        elCtx.$id$ = id;
-    };
-    const jsxToString = data => isSignal(data) ? jsxToString(data.value) : null == data || "boolean" == typeof data ? "" : String(data);
-    function isAriaAttribute(prop) {
-        return prop.startsWith("aria-");
-    }
-    const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
-    const SkipRender = Symbol("skip render");
-    const RenderOnce = (props, key) => _jsxQ(Virtual, null, null, props.children, 2, key);
-    const SSRRaw = () => null;
-    const SSRComment = props => jsx(SSRRaw, {
-        data: `\x3c!--${props.data}--\x3e`
-    }, null);
-    const Virtual = props => props.children;
-    const SSRHint = () => null;
-    const InternalSSRStream = () => null;
     const hashCode = (text, hash = 0) => {
         if (0 === text.length) {
             return hash;
@@ -1755,6 +1557,210 @@
         return ctx ? ctx.$id$ : null;
     };
     const isEmptyObj = obj => 0 === Object.keys(obj).length;
+    const useSequentialScope = () => {
+        const iCtx = useInvokeContext();
+        const i = iCtx.$seq$;
+        const hostElement = iCtx.$hostElement$;
+        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+        const seq = elCtx.$seq$ ? elCtx.$seq$ : elCtx.$seq$ = [];
+        return iCtx.$seq$++, {
+            get: seq[i],
+            set: value => (qDev && verifySerializable(value), seq[i] = value),
+            i: i,
+            iCtx: iCtx,
+            elCtx: elCtx
+        };
+    };
+    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name), 
+    Object.freeze({
+        id: fromCamelToKebabCase(name)
+    }));
+    const useContextProvider = (context, newValue) => {
+        const {get: get, set: set, elCtx: elCtx} = useSequentialScope();
+        if (void 0 !== get) {
+            return;
+        }
+        qDev && validateContext(context);
+        let contexts = elCtx.$contexts$;
+        contexts || (elCtx.$contexts$ = contexts = new Map), qDev && verifySerializable(newValue), 
+        contexts.set(context.id, newValue), set(true);
+    };
+    const resolveContext = (context, hostCtx, containerState) => {
+        const contextID = context.id;
+        if (hostCtx) {
+            let hostElement = hostCtx.$element$;
+            let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
+            for (;ctx; ) {
+                if (hostElement = ctx.$element$, ctx.$contexts$) {
+                    const found = ctx.$contexts$.get(contextID);
+                    if (found) {
+                        return found;
+                    }
+                    if (true === ctx.$contexts$.get("_")) {
+                        break;
+                    }
+                }
+                ctx = ctx.$slotParent$ ?? ctx.$parent$;
+            }
+            if (hostElement.closest) {
+                const value = queryContextFromDom(hostElement, containerState, contextID);
+                if (void 0 !== value) {
+                    return value;
+                }
+            }
+        }
+    };
+    const queryContextFromDom = (hostElement, containerState, contextId) => {
+        let element = hostElement;
+        for (;element; ) {
+            let node = element;
+            let virtual;
+            for (;node && (virtual = findVirtual(node)); ) {
+                const contexts = getContext(virtual, containerState)?.$contexts$;
+                if (contexts && contexts.has(contextId)) {
+                    return contexts.get(contextId);
+                }
+                node = virtual;
+            }
+            element = element.parentElement;
+        }
+    };
+    const findVirtual = el => {
+        let node = el;
+        let stack = 1;
+        for (;node = node.previousSibling; ) {
+            if (isComment(node)) {
+                if ("/qv" === node.data) {
+                    stack++;
+                } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
+                    return getVirtualElement(node);
+                }
+            }
+        }
+        return null;
+    };
+    const validateContext = context => {
+        if (!isObject(context) || "string" != typeof context.id || 0 === context.id.length) {
+            throw qError(28, context);
+        }
+    };
+    const ERROR_CONTEXT = createContextId("qk-error");
+    const handleError = (err, hostElement, rCtx) => {
+        const elCtx = tryGetContext(hostElement);
+        if (qDev) {
+            if (!isServerPlatform() && "undefined" != typeof document && isVirtualElement(hostElement)) {
+                elCtx.$vdom$ = null;
+                const errorDiv = document.createElement("errored-host");
+                err && err instanceof Error && (errorDiv.props = {
+                    error: err
+                }), errorDiv.setAttribute("q:key", "_error_"), errorDiv.append(...hostElement.childNodes), 
+                hostElement.appendChild(errorDiv);
+            }
+            if (err && err instanceof Error && ("hostElement" in err || (err.hostElement = hostElement)), 
+            !isRecoverable(err)) {
+                throw err;
+            }
+        }
+        if (isServerPlatform()) {
+            throw err;
+        }
+        {
+            const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
+            if (void 0 === errorStore) {
+                throw err;
+            }
+            errorStore.error = err;
+        }
+    };
+    const isRecoverable = err => !(err && err instanceof Error && "plugin" in err);
+    const executeComponent = (rCtx, elCtx) => {
+        elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
+        const hostElement = elCtx.$element$;
+        const componentQRL = elCtx.$componentQrl$;
+        const props = elCtx.$props$;
+        const newCtx = pushRenderContext(rCtx);
+        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
+        const waitOn = invocationContext.$waitOn$ = [];
+        assertDefined(componentQRL, "render: host element to render must has a $renderQrl$:", elCtx), 
+        assertDefined(props, "render: host element to render must has defined props", elCtx), 
+        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocationContext.$subscriber$ = [ 0, hostElement ], 
+        invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+        const componentFn = componentQRL.getFn(invocationContext);
+        return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
+            node: jsxNode,
+            rCtx: newCtx
+        })) : 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
+            node: jsxNode,
+            rCtx: newCtx
+        }), (err => err === SignalUnassignedException ? Promise.all(waitOn).then((() => executeComponent(rCtx, elCtx))) : (handleError(err, hostElement, rCtx), 
+        {
+            node: SkipRender,
+            rCtx: newCtx
+        })));
+    };
+    const createRenderContext = (doc, containerState) => {
+        const ctx = {
+            $static$: {
+                $doc$: doc,
+                $locale$: containerState.$serverData$.locale,
+                $containerState$: containerState,
+                $hostElements$: new Set,
+                $operations$: [],
+                $postOperations$: [],
+                $roots$: [],
+                $addSlots$: [],
+                $rmSlots$: [],
+                $visited$: []
+            },
+            $cmpCtx$: null,
+            $slotCtx$: null
+        };
+        return seal(ctx), seal(ctx.$static$), ctx;
+    };
+    const pushRenderContext = ctx => ({
+        $static$: ctx.$static$,
+        $cmpCtx$: ctx.$cmpCtx$,
+        $slotCtx$: ctx.$slotCtx$
+    });
+    const serializeClassWithHost = (obj, hostCtx) => hostCtx && hostCtx.$scopeIds$ ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
+    const serializeClass = obj => obj ? isString(obj) ? obj.trim() : isArray(obj) ? obj.reduce(((result, o) => {
+        const classList = serializeClass(o);
+        return classList ? result ? `${result} ${classList}` : classList : result;
+    }), "") : Object.entries(obj).reduce(((result, [key, value]) => value ? result ? `${result} ${key.trim()}` : key.trim() : result), "") : "";
+    const stringifyStyle = obj => {
+        if (null == obj) {
+            return "";
+        }
+        if ("object" == typeof obj) {
+            if (isArray(obj)) {
+                throw qError(0, obj, "style");
+            }
+            {
+                const chunks = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        if (null != value) {
+                            const normalizedKey = key.startsWith("--") ? key : fromCamelToKebabCase(key);
+                            chunks.push(normalizedKey + ":" + value);
+                        }
+                    }
+                }
+                return chunks.join(";");
+            }
+        }
+        return String(obj);
+    };
+    const getNextIndex = ctx => intToStr(ctx.$static$.$containerState$.$elementIndex$++);
+    const setQId = (rCtx, elCtx) => {
+        const id = getNextIndex(rCtx);
+        elCtx.$id$ = id;
+    };
+    const jsxToString = data => isSignal(data) ? jsxToString(data.value) : null == data || "boolean" == typeof data ? "" : String(data);
+    function isAriaAttribute(prop) {
+        return prop.startsWith("aria-");
+    }
+    const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     var _a;
     class MockElement {
         constructor(nodeType) {
@@ -2680,6 +2686,7 @@
         return index > 0 ? strToInt(stuff.slice(index + 5)) : -1;
     };
     const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
+        assertString(type, "jsx type must be a string");
         const processed = null == key ? null : String(key);
         const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
         return qDev && dev && (node.dev = {
@@ -2715,14 +2722,16 @@
             this.flags = flags, this.key = key;
         }
     }
+    const Virtual = props => props.children;
+    const RenderOnce = (props, key) => new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, 2, key);
     const validateJSXNode = node => {
         const {type: type, props: props, immutableProps: immutableProps, children: children} = node;
         qDev && invoke(void 0, (() => {
-            if (props && immutableProps) {
+            if (immutableProps) {
                 const propsKeys = Object.keys(props);
                 const immutablePropsKeys = Object.keys(immutableProps);
                 const duplicateKeys = propsKeys.filter((key => immutablePropsKeys.includes(key)));
-                duplicateKeys.length > 0 && logOnceWarn(`JSX is receiving duplicate props (${duplicateKeys.join(", ")}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
+                duplicateKeys.length > 0 && logOnceWarn(`JSX is receiving duplicated props (${duplicateKeys.join(", ")}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
             }
             const isQwikC = isQwikComponent(type);
             if (!isString(type) && !isFunction(type)) {
@@ -2752,17 +2761,25 @@
                     }));
                 }
             }
-            if (props) {
-                for (const prop of Object.keys(props)) {
-                    const value = props[prop];
-                    if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-                        throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
-                    }
-                    "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
+            const allProps = [ ...Object.entries(props), ...immutableProps ? Object.entries(immutableProps) : [] ];
+            for (const [prop, value] of allProps) {
+                if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
+                    throw createJSXError(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`, node);
                 }
+                "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
             }
-            isString(type) && ("style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
-            "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'"));
+            if (isString(type)) {
+                const hasSetInnerHTML = allProps.some((a => "dangerouslySetInnerHTML" === a[0]));
+                if (hasSetInnerHTML && children) {
+                    const err = createJSXError(`The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`, node);
+                    logError(err);
+                }
+                if (allProps.some((a => "children" === a[0]))) {
+                    throw createJSXError(`The JSX element <${type}> can not have both 'children' as a property.`, node);
+                }
+                "style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
+                "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'");
+            }
         }));
     };
     const printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`)).join(", ")} }`;
@@ -3913,14 +3930,8 @@
             return new SignalDerived(fn, args, fn);
         },
         fill: (fn, getObject) => {
-            !function(value1, text, ...parts) {
-                if (qDev) {
-                    if ("string" == typeof value1) {
-                        return;
-                    }
-                    throw logErrorAndStop("fn.$func$ should be a string", ...parts);
-                }
-            }(fn.$func$), fn.$func$ = getObject(fn.$func$), fn.$args$ = fn.$args$.map(getObject);
+            assertString(fn.$func$, "fn.$func$ should be a string"), fn.$func$ = getObject(fn.$func$), 
+            fn.$args$ = fn.$args$.map(getObject);
         }
     }, {
         prefix: "",
@@ -4319,14 +4330,15 @@
     };
     function h(type, props, ...children) {
         const normalizedProps = {
-            children: arguments.length > 2 ? flattenArray(children) : EMPTY_ARRAY
+            children: arguments.length > 2 ? flattenArray(children) : void 0
         };
         let key;
         let i;
         for (i in props) {
             "key" == i ? key = props[i] : normalizedProps[i] = props[i];
         }
-        return jsx(type, normalizedProps, key);
+        return "string" == typeof type && !key && "dangerouslySetInnerHTML" in normalizedProps && (key = "innerhtml"), 
+        jsx(type, normalizedProps, key);
     }
     const useStore = (initialState, opts) => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
@@ -4569,7 +4581,11 @@
             getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$).$flags$ |= 8;
         }
         return input;
-    }, exports._jsxC = _jsxC, exports._jsxQ = _jsxQ, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
+    }, exports._jsxC = _jsxC, exports._jsxQ = _jsxQ, exports._jsxS = (type, mutableProps, immutableProps, flags, key, dev) => {
+        let children = null;
+        return mutableProps && "children" in mutableProps && (children = mutableProps.children, 
+        delete mutableProps.children), _jsxQ(type, mutableProps, immutableProps, children, flags, key, dev);
+    }, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
     exports._pauseFromContexts = _pauseFromContexts, exports._regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols && (globalThis.__qwik_reg_symbols = new Map), 
     globalThis.__qwik_reg_symbols.set(hash, symbol), symbol), exports._renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
