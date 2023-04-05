@@ -1022,10 +1022,10 @@ const getDocument = node => {
 };
 
 const setAttribute = (staticCtx, el, prop, value) => {
-    staticCtx ? staticCtx.$operations$.push({
+    staticCtx.$operations$.push({
         $operation$: _setAttribute,
         $args$: [ el, prop, value ]
-    }) : _setAttribute(el, prop, value);
+    });
 };
 
 const _setAttribute = (el, prop, value) => {
@@ -1038,10 +1038,10 @@ const _setAttribute = (el, prop, value) => {
 };
 
 const setProperty = (staticCtx, node, key, value) => {
-    staticCtx ? staticCtx.$operations$.push({
+    staticCtx.$operations$.push({
         $operation$: _setProperty,
         $args$: [ node, key, value ]
-    }) : _setProperty(node, key, value);
+    });
 };
 
 const _setProperty = (node, key, value) => {
@@ -3773,8 +3773,14 @@ const readDOMSlots = elCtx => {
     })(parent, 0, elCtx.$id$).map(domToVnode);
 };
 
-const checkBeforeAssign = (ctx, elm, prop, newValue) => (prop in elm && elm[prop] !== newValue && setProperty(ctx, elm, prop, newValue), 
-true);
+const checkBeforeAssign = (ctx, elm, prop, newValue) => {
+    var node, key, value;
+    return prop in elm && elm[prop] !== newValue && ("SELECT" === elm.tagName ? (node = elm, 
+    key = prop, value = newValue, ctx.$postOperations$.push({
+        $operation$: _setProperty,
+        $args$: [ node, key, value ]
+    })) : setProperty(ctx, elm, prop, newValue)), true;
+};
 
 const forceAttribute = (ctx, elm, prop, newValue) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
 true);

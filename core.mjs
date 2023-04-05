@@ -1686,15 +1686,10 @@ const getDocument = (node) => {
 };
 
 const setAttribute = (staticCtx, el, prop, value) => {
-    if (staticCtx) {
-        staticCtx.$operations$.push({
-            $operation$: _setAttribute,
-            $args$: [el, prop, value],
-        });
-    }
-    else {
-        _setAttribute(el, prop, value);
-    }
+    staticCtx.$operations$.push({
+        $operation$: _setAttribute,
+        $args$: [el, prop, value],
+    });
 };
 const _setAttribute = (el, prop, value) => {
     if (value == null || value === false) {
@@ -1706,15 +1701,16 @@ const _setAttribute = (el, prop, value) => {
     }
 };
 const setProperty = (staticCtx, node, key, value) => {
-    if (staticCtx) {
-        staticCtx.$operations$.push({
-            $operation$: _setProperty,
-            $args$: [node, key, value],
-        });
-    }
-    else {
-        _setProperty(node, key, value);
-    }
+    staticCtx.$operations$.push({
+        $operation$: _setProperty,
+        $args$: [node, key, value],
+    });
+};
+const setPropertyPost = (staticCtx, node, key, value) => {
+    staticCtx.$postOperations$.push({
+        $operation$: _setProperty,
+        $args$: [node, key, value],
+    });
 };
 const _setProperty = (node, key, value) => {
     try {
@@ -5813,7 +5809,12 @@ const handleClass = (ctx, elm, _, newValue) => {
 const checkBeforeAssign = (ctx, elm, prop, newValue) => {
     if (prop in elm) {
         if (elm[prop] !== newValue) {
-            setProperty(ctx, elm, prop, newValue);
+            if (elm.tagName === 'SELECT') {
+                setPropertyPost(ctx, elm, prop, newValue);
+            }
+            else {
+                setProperty(ctx, elm, prop, newValue);
+            }
         }
     }
     return true;
