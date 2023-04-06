@@ -2016,7 +2016,7 @@ function qwikVite(qwikViteOpts = {}) {
         });
         forceFullBuild = true;
       }
-      const shouldFindVendors = "client" === target || "serve" === viteCommand;
+      const shouldFindVendors = "lib" !== target || "serve" === viteCommand;
       const vendorRoots = shouldFindVendors ? await findQwikRoots(sys, path.join(sys.cwd(), "package.json")) : [];
       const pluginOpts = {
         target: target,
@@ -2074,6 +2074,9 @@ function qwikVite(qwikViteOpts = {}) {
       clientDevInput = qwikPlugin.normalizePath(clientDevInput);
       const vendorIds = vendorRoots.map((v => v.id));
       const updatedViteConfig = {
+        ssr: {
+          noExternal: vendorIds
+        },
         resolve: {
           dedupe: [ ...DEDUPE, ...vendorIds ],
           conditions: "production" === buildMode && "client" === target ? [ "min" ] : []
@@ -2122,11 +2125,7 @@ function qwikVite(qwikViteOpts = {}) {
       globalThis.qDev = qDev;
       globalThis.qInspector = qInspector;
       if ("ssr" === opts.target) {
-        if ("serve" === viteCommand) {
-          updatedViteConfig.ssr = {
-            noExternal: vendorIds
-          };
-        } else {
+        if ("build" === viteCommand) {
           updatedViteConfig.publicDir = false;
           updatedViteConfig.build.ssr = true;
           null == viteConfig.build?.minify && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
