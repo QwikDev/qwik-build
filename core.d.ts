@@ -508,7 +508,7 @@ declare type ComponentChildren<PROPS extends {}> = PROPS extends {
 export declare const componentQrl: <PROPS extends {}>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
 declare interface Computed {
-    <T>(qrl: ComputedFn<T>): Readonly<Signal<T>>;
+    <T>(qrl: ComputedFn<T>): ReadonlySignal<Awaited<T>>;
 }
 
 declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, SignalInternal<T>> {
@@ -520,7 +520,7 @@ declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, Si
 declare type ComputedFn<T> = () => T;
 
 declare interface ComputedQRL {
-    <T>(qrl: QRL<ComputedFn<T>>): Readonly<Signal<T>>;
+    <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<Awaited<T>>;
 }
 
 /**
@@ -2226,6 +2226,13 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
 }
 
 /**
+ * @public
+ */
+declare interface ReadonlySignal<T = any> {
+    readonly value: T;
+}
+
+/**
  * @internal
  */
 export declare const _regSymbol: (symbol: any, hash: string) => any;
@@ -3564,7 +3571,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.101.0-dev20230406130641
+ * 0.101.0-dev20230406134738
  * @public
  */
 export declare const version: string;
