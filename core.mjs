@@ -697,6 +697,8 @@ const QScopedStyle = 'q:sstyle';
 const QLocaleAttr = 'q:locale';
 const QContainerAttr = 'q:container';
 const QContainerSelector = '[q\\:container]';
+const ResourceEvent = 'qResource';
+const ComputedEvent = 'qComputed';
 const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
@@ -976,8 +978,11 @@ class SignalImpl extends SignalBase {
                 if (invokeCtx.$event$ === RenderEvent) {
                     logWarn('State mutation inside render function. Use useTask$() instead.', invokeCtx.$hostElement$);
                 }
-                if (invokeCtx.$event$ === 'ComputedEvent') {
+                else if (invokeCtx.$event$ === ComputedEvent) {
                     logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                }
+                else if (invokeCtx.$event$ === ResourceEvent) {
+                    logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
                 }
             }
         }
@@ -1177,8 +1182,16 @@ class ReadWriteProxyHandler {
         if (qDev) {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
-            if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
+            if (invokeCtx) {
+                if (invokeCtx.$event$ === RenderEvent) {
+                    logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
+                }
+                else if (invokeCtx.$event$ === ComputedEvent) {
+                    logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                }
+                else if (invokeCtx.$event$ === ResourceEvent) {
+                    logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                }
             }
         }
         const isA = isArray(target);

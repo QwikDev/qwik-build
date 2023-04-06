@@ -561,8 +561,7 @@ class SignalImpl extends SignalBase {
             }
             verifySerializable(v);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && ("qRender" === invokeCtx.$event$ && logWarn("State mutation inside render function. Use useTask$() instead.", invokeCtx.$hostElement$), 
-            "ComputedEvent" === invokeCtx.$event$ && logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
+            invokeCtx && ("qRender" === invokeCtx.$event$ ? logWarn("State mutation inside render function. Use useTask$() instead.", invokeCtx.$hostElement$) : "qComputed" === invokeCtx.$event$ ? logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$) : "qResource" === invokeCtx.$event$ && logWarn("State mutation inside useResource$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
         }
         const manager = this[QObjectManagerSymbol];
         const oldValue = this.untrackedValue;
@@ -708,7 +707,7 @@ class ReadWriteProxyHandler {
         if (qDev) {
             verifySerializable(unwrappedNewValue);
             const invokeCtx = tryGetInvokeContext();
-            invokeCtx && "qRender" === invokeCtx.$event$ && logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop);
+            invokeCtx && ("qRender" === invokeCtx.$event$ ? logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop) : "qComputed" === invokeCtx.$event$ ? logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$) : "qResource" === invokeCtx.$event$ && logWarn("State mutation inside useResource$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
         }
         return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
         true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 

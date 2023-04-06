@@ -707,6 +707,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const QLocaleAttr = 'q:locale';
     const QContainerAttr = 'q:container';
     const QContainerSelector = '[q\\:container]';
+    const ResourceEvent = 'qResource';
+    const ComputedEvent = 'qComputed';
     const RenderEvent = 'qRender';
     const ELEMENT_ID = 'q:id';
     const ELEMENT_ID_PREFIX = '#';
@@ -986,8 +988,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     if (invokeCtx.$event$ === RenderEvent) {
                         logWarn('State mutation inside render function. Use useTask$() instead.', invokeCtx.$hostElement$);
                     }
-                    if (invokeCtx.$event$ === 'ComputedEvent') {
+                    else if (invokeCtx.$event$ === ComputedEvent) {
                         logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                    }
+                    else if (invokeCtx.$event$ === ResourceEvent) {
+                        logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
                     }
                 }
             }
@@ -1187,8 +1192,16 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (qDev) {
                 verifySerializable(unwrappedNewValue);
                 const invokeCtx = tryGetInvokeContext();
-                if (invokeCtx && invokeCtx.$event$ === RenderEvent) {
-                    logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
+                if (invokeCtx) {
+                    if (invokeCtx.$event$ === RenderEvent) {
+                        logError('State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()', prop);
+                    }
+                    else if (invokeCtx.$event$ === ComputedEvent) {
+                        logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                    }
+                    else if (invokeCtx.$event$ === ResourceEvent) {
+                        logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                    }
                 }
             }
             const isA = isArray(target);
