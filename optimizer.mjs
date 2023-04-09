@@ -1622,7 +1622,7 @@ async function formatError(sys, e) {
 var findLocation = e => {
   const stack = e.stack;
   if ("string" === typeof stack) {
-    const lines = stack.split("\n").filter((l => !l.includes("/node_modules/@builder.io/qwik") && !l.includes("(node:")));
+    const lines = stack.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].replace("file:///", "/");
       if (/^\s+at/.test(line)) {
