@@ -5973,10 +5973,10 @@ const directRemoveChild = (parent, child) => {
 };
 const directInsertAfter = (parent, child, ref) => {
     if (isVirtualElement(child)) {
-        child.insertBeforeTo(parent, getRootNode(ref)?.nextSibling);
+        child.insertBeforeTo(parent, ref?.nextSibling ?? null);
     }
     else {
-        parent.insertBefore(child, getRootNode(ref)?.nextSibling);
+        parent.insertBefore(child, ref?.nextSibling ?? null);
     }
 };
 const directInsertBefore = (parent, child, ref) => {

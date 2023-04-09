@@ -3307,7 +3307,7 @@
         isVirtualElement(child) ? child.remove() : parent.removeChild(child);
     };
     const directInsertAfter = (parent, child, ref) => {
-        isVirtualElement(child) ? child.insertBeforeTo(parent, getRootNode(ref)?.nextSibling) : parent.insertBefore(child, getRootNode(ref)?.nextSibling);
+        isVirtualElement(child) ? child.insertBeforeTo(parent, ref?.nextSibling ?? null) : parent.insertBefore(child, ref?.nextSibling ?? null);
     };
     const directInsertBefore = (parent, child, ref) => {
         isVirtualElement(child) ? child.insertBeforeTo(parent, getRootNode(ref)) : parent.insertBefore(child, getRootNode(ref));
