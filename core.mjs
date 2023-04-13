@@ -7506,6 +7506,17 @@ const JSXNodeSerializer = {
         node.children = getObject(node.children);
     },
 };
+const BigIntSerializer = {
+    prefix: '\u0018',
+    test: (v) => typeof v === 'bigint',
+    serialize: (v) => {
+        return v.toString();
+    },
+    prepare: (data) => {
+        return BigInt(data);
+    },
+    fill: undefined,
+};
 const serializers = [
     QRLSerializer,
     SignalSerializer,
@@ -7522,7 +7533,8 @@ const serializers = [
     NoFiniteNumberSerializer,
     URLSearchParamsSerializer,
     FormDataSerializer,
-    JSXNodeSerializer, ////////// \u0017
+    JSXNodeSerializer,
+    BigIntSerializer, /////////// \u0018
 ];
 const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
 const canSerialize = (obj) => {

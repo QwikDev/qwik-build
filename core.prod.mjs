@@ -4643,6 +4643,12 @@ const serializers = [ QRLSerializer, {
         node.type = getResolveJSXType(getObject(node.type)), node.props = getObject(node.props), 
         node.immutableProps = getObject(node.immutableProps), node.children = getObject(node.children);
     }
+}, {
+    prefix: "",
+    test: v => "bigint" == typeof v,
+    serialize: v => v.toString(),
+    prepare: data => BigInt(data),
+    fill: void 0
 } ];
 
 const collectorSerializers = serializers.filter((a => a.collect));
