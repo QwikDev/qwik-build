@@ -1211,8 +1211,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 return true;
             }
             const oldValue = target[prop];
+            target[prop] = unwrappedNewValue;
             if (oldValue !== unwrappedNewValue) {
-                target[prop] = unwrappedNewValue;
                 this.$manager$.$notifySubs$(prop);
             }
             return true;

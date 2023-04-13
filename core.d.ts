@@ -2384,10 +2384,10 @@ export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
  * @public
  */
 export declare interface ResourceCtx<T> {
-    track: Tracker;
+    readonly track: Tracker;
     cleanup(callback: () => void): void;
     cache(policyOrMilliseconds: number | 'immutable'): void;
-    previous: T | undefined;
+    readonly previous: T | undefined;
 }
 
 declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturnInternal<T>> {
@@ -2396,7 +2396,7 @@ declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, Re
 /**
  * @public
  */
-export declare type ResourceFn<T> = (ctx: ResourceCtx<T>) => ValueOrPromise<T>;
+export declare type ResourceFn<T> = (ctx: ResourceCtx<any>) => ValueOrPromise<T>;
 
 /**
  * Options to pass to `useResource$()`
@@ -3571,7 +3571,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.101.0-dev20230413234555
+ * 0.101.0-dev20230413234943
  * @public
  */
 export declare const version: string;

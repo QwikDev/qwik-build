@@ -579,9 +579,12 @@
                 const invokeCtx = tryGetInvokeContext();
                 invokeCtx && ("qRender" === invokeCtx.$event$ ? logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop) : "qComputed" === invokeCtx.$event$ ? logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$) : "qResource" === invokeCtx.$event$ && logWarn("State mutation inside useResource$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
             }
-            return isArray(target) ? (target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), 
-            true) : (target[prop] !== unwrappedNewValue && (target[prop] = unwrappedNewValue, 
-            this.$manager$.$notifySubs$(prop)), true);
+            if (isArray(target)) {
+                return target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), true;
+            }
+            const oldValue = target[prop];
+            return target[prop] = unwrappedNewValue, oldValue !== unwrappedNewValue && this.$manager$.$notifySubs$(prop), 
+            true;
         }
         has(target, property) {
             if (property === QOjectTargetSymbol) {
