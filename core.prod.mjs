@@ -3477,6 +3477,17 @@ const isChildComponent = node => {
     return "Q:TEMPLATE" !== nodeName && ("HEAD" !== nodeName || node.hasAttribute("q:head"));
 };
 
+const splitChildren = input => {
+    const output = {};
+    for (const item of input) {
+        const key = getSlotName(item);
+        (output[key] ?? (output[key] = new ProcessedJSXNodeImpl(":virtual", {
+            "q:s": ""
+        }, null, [], 0, key))).$children$.push(item);
+    }
+    return output;
+};
+
 const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     assertEqual(oldVnode.$type$, newVnode.$type$, "old and new vnodes type must be the same"), 
     assertEqual(oldVnode.$key$, newVnode.$key$, "old and new vnodes key must be the same"), 
@@ -3540,16 +3551,7 @@ const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
     }
     const newChildren = vnode.$children$;
     const staticCtx = rCtx.$static$;
-    const splittedNewChildren = (input => {
-        const output = {};
-        for (const item of input) {
-            const key = getSlotName(item);
-            (output[key] ?? (output[key] = new ProcessedJSXNodeImpl(":virtual", {
-                "q:s": ""
-            }, null, [], 0, key))).$children$.push(item);
-        }
-        return output;
-    })(newChildren);
+    const splittedNewChildren = splitChildren(newChildren);
     const slotMaps = getSlotMap(hostCtx);
     for (const key of Object.keys(slotMaps.slots)) {
         if (!splittedNewChildren[key]) {
@@ -3675,13 +3677,17 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 1 === children.length && children[0].$type$ === SKIP_RENDER_TYPE && (children = children[0].$children$);
                 const slotMap = getSlotMap(elCtx);
                 const p = [];
-                for (const node of children) {
-                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, getSlotName(node), staticCtx.$containerState$);
+                const splittedNewChildren = splitChildren(children);
+                for (const slotName of Object.keys(splittedNewChildren)) {
+                    const newVnode = splittedNewChildren[slotName];
+                    const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, slotName, staticCtx.$containerState$);
                     const slotRctx = pushRenderContext(rCtx);
-                    slotRctx.$slotCtx$ = slotCtx;
-                    const nodeElm = createElm(slotRctx, node, flags, p);
-                    assertDefined(node.$elm$, "vnode elm must be defined"), assertEqual(nodeElm, node.$elm$, "vnode elm must be defined"), 
-                    appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                    slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotCtx.$element$;
+                    for (const node of newVnode.$children$) {
+                        const nodeElm = createElm(slotRctx, node, flags, p);
+                        assertDefined(node.$elm$, "vnode elm must be defined"), assertEqual(nodeElm, node.$elm$, "vnode elm must be defined"), 
+                        appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                    }
                 }
                 return promiseAllLazy(p);
             }));
