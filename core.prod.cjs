@@ -1681,13 +1681,13 @@
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
         const newCtx = pushRenderContext(rCtx);
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
-        const waitOn = invocationContext.$waitOn$ = [];
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
+        const waitOn = iCtx.$waitOn$ = [];
         assertDefined(componentQRL, "render: host element to render must has a $renderQrl$:", elCtx), 
         assertDefined(props, "render: host element to render must has defined props", elCtx), 
-        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, invocationContext.$subscriber$ = [ 0, hostElement ], 
-        invocationContext.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-        const componentFn = componentQRL.getFn(invocationContext);
+        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, iCtx.$subscriber$ = [ 0, hostElement ], 
+        iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+        const componentFn = componentQRL.getFn(iCtx);
         return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
             rCtx: newCtx
@@ -1840,13 +1840,13 @@
         return setComponentProps$1(rCtx, elCtx, props.props), then(executeComponent(rCtx, elCtx), (res => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, void 0);
-            invocationContext.$subscriber$ = [ 0, hostElement ], invocationContext.$renderCtx$ = newRCtx;
+            const iCtx = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, void 0);
+            iCtx.$subscriber$ = [ 0, hostElement ], iCtx.$renderCtx$ = newRCtx;
             const newSSrContext = {
                 ...ssrCtx,
                 $projectedChildren$: splitProjectedChildren(node.children, ssrCtx),
                 $projectedCtxs$: [ rCtx, ssrCtx ],
-                $invocationContext$: invocationContext
+                $invocationContext$: iCtx
             };
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
@@ -2364,14 +2364,14 @@
         then(executeComponent(rCtx, elCtx), (res => {
             const staticCtx = rCtx.$static$;
             const newCtx = res.rCtx;
-            const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
-            if (staticCtx.$hostElements$.add(hostElement), invocationContext.$subscriber$ = [ 0, hostElement ], 
-            invocationContext.$renderCtx$ = newCtx, justMounted && elCtx.$appendStyles$) {
+            const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
+            if (staticCtx.$hostElements$.add(hostElement), iCtx.$subscriber$ = [ 0, hostElement ], 
+            iCtx.$renderCtx$ = newCtx, justMounted && elCtx.$appendStyles$) {
                 for (const style of elCtx.$appendStyles$) {
                     appendHeadStyle(staticCtx, style);
                 }
             }
-            const processedJSXNode = processData(res.node, invocationContext);
+            const processedJSXNode = processData(res.node, iCtx);
             return then(processedJSXNode, (processedJSXNode => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 const oldVdom = getVdom(elCtx);
@@ -3578,9 +3578,10 @@
     const runResource = (watch, containerState, rCtx, waitOn) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const el = watch.$el$;
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, void 0, "WatchEvent");
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, void 0, "WatchEvent");
         const {$subsManager$: subsManager} = containerState;
-        const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
+        iCtx.$renderCtx$ = rCtx;
+        const watchFn = watch.$qrl$.getFn(iCtx, (() => {
             subsManager.$clearSub$(watch);
         }));
         const cleanups = [];
@@ -3591,7 +3592,7 @@
             track: (obj, prop) => {
                 if (isFunction(obj)) {
                     const ctx = newInvokeContext();
-                    return ctx.$subscriber$ = [ 0, watch ], invoke(ctx, obj);
+                    return ctx.$renderCtx$ = rCtx, ctx.$subscriber$ = [ 0, watch ], invoke(ctx, obj);
                 }
                 const manager = getProxyManager(obj);
                 return manager ? manager.$addSub$([ 0, watch ], prop) : logErrorAndStop(codeToText(26), obj), 
@@ -3613,7 +3614,7 @@
         resource.loading = false, resource._state = "resolved", resource._resolved = value, 
         resource._error = void 0, resolve(value)) : (done = true, resource.loading = false, 
         resource._state = "rejected", resource._error = value, reject(value)), true);
-        invoke(invocationContext, (() => {
+        invoke(iCtx, (() => {
             resource._state = "pending", resource.loading = !isServerPlatform(), resource.value = new Promise(((r, re) => {
                 resolve = r, reject = re;
             }));
@@ -3633,9 +3634,10 @@
     const runWatch = (watch, containerState, rCtx) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const hostElement = watch.$el$;
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "WatchEvent");
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "WatchEvent");
+        iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
-        const watchFn = watch.$qrl$.getFn(invocationContext, (() => {
+        const watchFn = watch.$qrl$.getFn(iCtx, (() => {
             subsManager.$clearSub$(watch);
         }));
         const cleanups = [];
@@ -3670,7 +3672,7 @@
         }(watch.$state$), watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const hostElement = watch.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "ComputedEvent");
-        iCtx.$subscriber$ = [ 0, watch ];
+        iCtx.$subscriber$ = [ 0, watch ], iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
         const watchFn = watch.$qrl$.getFn(iCtx, (() => {
             subsManager.$clearSub$(watch);
@@ -4835,7 +4837,8 @@
     exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
-        return useInvokeContext().$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+        const ctx = tryGetInvokeContext();
+        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }, exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {

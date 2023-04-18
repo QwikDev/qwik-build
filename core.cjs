@@ -3344,19 +3344,19 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const componentQRL = elCtx.$componentQrl$;
         const props = elCtx.$props$;
         const newCtx = pushRenderContext(rCtx);
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
-        const waitOn = (invocationContext.$waitOn$ = []);
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
+        const waitOn = (iCtx.$waitOn$ = []);
         assertDefined(componentQRL, `render: host element to render must has a $renderQrl$:`, elCtx);
         assertDefined(props, `render: host element to render must has defined props`, elCtx);
         // Set component context
         newCtx.$cmpCtx$ = elCtx;
         newCtx.$slotCtx$ = null;
         // Invoke render hook
-        invocationContext.$subscriber$ = [0, hostElement];
-        invocationContext.$renderCtx$ = rCtx;
+        iCtx.$subscriber$ = [0, hostElement];
+        iCtx.$renderCtx$ = rCtx;
         // Resolve render function
         componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-        const componentFn = componentQRL.getFn(invocationContext);
+        const componentFn = componentQRL.getFn(iCtx);
         return safeCall(() => componentFn(props), (jsxNode) => {
             if (waitOn.length > 0) {
                 return Promise.all(waitOn).then(() => {
@@ -3725,14 +3725,14 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return then(executeComponent(rCtx, elCtx), (res) => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
-            const invocationContext = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
-            invocationContext.$subscriber$ = [0, hostElement];
-            invocationContext.$renderCtx$ = newRCtx;
+            const iCtx = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
+            iCtx.$subscriber$ = [0, hostElement];
+            iCtx.$renderCtx$ = newRCtx;
             const newSSrContext = {
                 ...ssrCtx,
                 $projectedChildren$: splitProjectedChildren(node.children, ssrCtx),
                 $projectedCtxs$: [rCtx, ssrCtx],
-                $invocationContext$: invocationContext,
+                $invocationContext$: iCtx,
             };
             const extraNodes = [];
             if (elCtx.$appendStyles$) {
@@ -4462,10 +4462,10 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         return then(executeComponent(rCtx, elCtx), (res) => {
             const staticCtx = rCtx.$static$;
             const newCtx = res.rCtx;
-            const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement);
+            const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
             staticCtx.$hostElements$.add(hostElement);
-            invocationContext.$subscriber$ = [0, hostElement];
-            invocationContext.$renderCtx$ = newCtx;
+            iCtx.$subscriber$ = [0, hostElement];
+            iCtx.$renderCtx$ = newCtx;
             if (justMounted) {
                 if (elCtx.$appendStyles$) {
                     for (const style of elCtx.$appendStyles$) {
@@ -4473,7 +4473,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                     }
                 }
             }
-            const processedJSXNode = processData(res.node, invocationContext);
+            const processedJSXNode = processData(res.node, iCtx);
             return then(processedJSXNode, (processedJSXNode) => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 // const oldVdom = getVdom(hostElement);
@@ -6664,9 +6664,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const el = watch.$el$;
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'WatchEvent');
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'WatchEvent');
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.$qrl$.getFn(invocationContext, () => {
+        iCtx.$renderCtx$ = rCtx;
+        const watchFn = watch.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(watch);
         });
         const cleanups = [];
@@ -6675,6 +6676,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const track = (obj, prop) => {
             if (isFunction(obj)) {
                 const ctx = newInvokeContext();
+                ctx.$renderCtx$ = rCtx;
                 ctx.$subscriber$ = [0, watch];
                 return invoke(ctx, obj);
             }
@@ -6739,7 +6741,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return false;
         };
         // Execute mutation inside empty invocation
-        invoke(invocationContext, () => {
+        invoke(iCtx, () => {
             resource._state = 'pending';
             resource.loading = !isServerPlatform();
             resource.value = new Promise((r, re) => {
@@ -6773,9 +6775,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         watch.$flags$ &= ~WatchFlagsIsDirty;
         cleanupWatch(watch);
         const hostElement = watch.$el$;
-        const invocationContext = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'WatchEvent');
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'WatchEvent');
+        iCtx.$renderCtx$ = rCtx;
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.$qrl$.getFn(invocationContext, () => {
+        const watchFn = watch.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(watch);
         });
         const track = (obj, prop) => {
@@ -6823,6 +6826,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const hostElement = watch.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'ComputedEvent');
         iCtx.$subscriber$ = [0, watch];
+        iCtx.$renderCtx$ = rCtx;
         const { $subsManager$: subsManager } = containerState;
         const watchFn = watch.$qrl$.getFn(iCtx, () => {
             subsManager.$clearSub$(watch);
@@ -8533,8 +8537,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * @public
      */
     function useServerData(key, defaultValue) {
-        const ctx = useInvokeContext();
-        return ctx.$renderCtx$.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+        const ctx = tryGetInvokeContext();
+        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }
 
     /* eslint-disable no-console */
