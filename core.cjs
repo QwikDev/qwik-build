@@ -136,7 +136,7 @@
         debugger;
         return err;
     };
-    const _printed = /*@__PURE__*/ new Set();
+    const _printed = /*#__PURE__*/ new Set();
     const logOnceWarn = (message, ...optionalParams) => {
         if (qDev) {
             const key = 'warn' + String(message);
@@ -342,7 +342,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const base = new URL(containerEl.getAttribute('q:base') ?? baseURI, baseURI);
         return new URL(url, base);
     };
-    let _platform = /* @__PURE__ */ createPlatform();
+    let _platform = /*#__PURE__ */ createPlatform();
     // <docs markdown="./readme.md#setPlatform">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ./readme.md#setPlatform instead)
@@ -482,7 +482,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     // https://regexr.com/6a83h
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-    const announcedQRL = /*@__PURE__*/ new Set();
+    const announcedQRL = /*#__PURE__*/ new Set();
     // <docs markdown="../readme.md#qrl">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#qrl instead)
@@ -8049,7 +8049,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     }
-    const EMITTED = /*@__PURE__*/ new Set();
+    const EMITTED = /*#__PURE__*/ new Set();
     const emitUsedSymbol = (symbol, element, reqTime) => {
         if (!EMITTED.has(symbol)) {
             EMITTED.add(symbol);

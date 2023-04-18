@@ -126,7 +126,7 @@ const logErrorAndStop = (message, ...optionalParams) => {
     debugger;
     return err;
 };
-const _printed = /*@__PURE__*/ new Set();
+const _printed = /*#__PURE__*/ new Set();
 const logOnceWarn = (message, ...optionalParams) => {
     if (qDev) {
         const key = 'warn' + String(message);
@@ -332,7 +332,7 @@ const toUrl = (doc, containerEl, url) => {
     const base = new URL(containerEl.getAttribute('q:base') ?? baseURI, baseURI);
     return new URL(url, base);
 };
-let _platform = /* @__PURE__ */ createPlatform();
+let _platform = /*#__PURE__ */ createPlatform();
 // <docs markdown="./readme.md#setPlatform">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ./readme.md#setPlatform instead)
@@ -472,7 +472,7 @@ const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
 const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
 // https://regexr.com/6a83h
 const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-const announcedQRL = /*@__PURE__*/ new Set();
+const announcedQRL = /*#__PURE__*/ new Set();
 // <docs markdown="../readme.md#qrl">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#qrl instead)
@@ -8039,7 +8039,7 @@ function assertSignal(obj) {
         }
     }
 }
-const EMITTED = /*@__PURE__*/ new Set();
+const EMITTED = /*#__PURE__*/ new Set();
 const emitUsedSymbol = (symbol, element, reqTime) => {
     if (!EMITTED.has(symbol)) {
         EMITTED.add(symbol);
