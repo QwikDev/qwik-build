@@ -19,12 +19,12 @@
         "min": "./core.min.mjs",
         "development": "./core.mjs",
         "production": "./core.prod.mjs",
-        "default": "./core.prod.mjs"
+        "default": "./core.mjs"
       },
       "require": {
         "development": "./core.cjs",
         "production": "./core.prod.cjs",
-        "default": "./core.prod.cjs"
+        "default": "./core.cjs"
       }
     },
     "./cli": {
@@ -36,12 +36,12 @@
         "min": "./core.min.mjs",
         "development": "./core.mjs",
         "production": "./core.prod.mjs",
-        "default": "./core.prod.mjs"
+        "default": "./core.mjs"
       },
       "require": {
         "development": "./core.cjs",
         "production": "./core.prod.cjs",
-        "default": "./core.prod.cjs"
+        "default": "./core.cjs"
       }
     },
     "./jsx-dev-runtime": {
