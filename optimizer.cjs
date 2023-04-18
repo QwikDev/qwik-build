@@ -2087,6 +2087,7 @@ globalThis.qwikOptimizer = function(module) {
           ssr: {
             noExternal: vendorIds
           },
+          envPrefix: [ "VITE_", "PUBLIC_" ],
           resolve: {
             dedupe: [ ...DEDUPE, ...vendorIds ],
             conditions: "production" === buildMode && "client" === target ? [ "min" ] : []

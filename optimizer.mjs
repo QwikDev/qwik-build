@@ -2077,6 +2077,7 @@ function qwikVite(qwikViteOpts = {}) {
         ssr: {
           noExternal: vendorIds
         },
+        envPrefix: [ "VITE_", "PUBLIC_" ],
         resolve: {
           dedupe: [ ...DEDUPE, ...vendorIds ],
           conditions: "production" === buildMode && "client" === target ? [ "min" ] : []
