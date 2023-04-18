@@ -3245,12 +3245,6 @@ const RenderOnce = (props, key) => new JSXNodeImpl(Virtual, EMPTY_OBJ, null, pro
 const validateJSXNode = node => {
     const {type: type, props: props, immutableProps: immutableProps, children: children} = node;
     qDev && invoke(void 0, (() => {
-        if (immutableProps) {
-            const propsKeys = Object.keys(props);
-            const immutablePropsKeys = Object.keys(immutableProps);
-            const duplicateKeys = propsKeys.filter((key => immutablePropsKeys.includes(key)));
-            duplicateKeys.length > 0 && logOnceWarn(`JSX is receiving duplicated props (${duplicateKeys.join(", ")}). This is likely because you are spreading {...props}, make sure the props you are spreading are not already defined in the JSX.`);
-        }
         const isQwikC = isQwikComponent(type);
         if (!isString(type) && !isFunction(type)) {
             throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
