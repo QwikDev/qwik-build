@@ -1494,6 +1494,7 @@ globalThis.qwikOptimizer = function(module) {
   var QWIK_BUILD_ID = "@builder.io/qwik/build";
   var QWIK_JSX_RUNTIME_ID = "@builder.io/qwik/jsx-runtime";
   var QWIK_JSX_DEV_RUNTIME_ID = "@builder.io/qwik/jsx-dev-runtime";
+  var QWIK_CORE_SERVER = "@builder.io/qwik/server";
   var QWIK_CLIENT_MANIFEST_ID = "@qwik-client-manifest";
   var SRC_DIR_DEFAULT = "src";
   var CLIENT_OUT_DIR = "dist";
@@ -2085,7 +2086,7 @@ globalThis.qwikOptimizer = function(module) {
         const vendorIds = vendorRoots.map((v => v.id));
         const updatedViteConfig = {
           ssr: {
-            noExternal: vendorIds
+            noExternal: [ QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_BUILD_ID, ...vendorIds ]
           },
           envPrefix: [ "VITE_", "PUBLIC_" ],
           resolve: {
@@ -2097,7 +2098,7 @@ globalThis.qwikOptimizer = function(module) {
             jsx: "automatic"
           },
           optimizeDeps: {
-            exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
+            exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
           },
           build: {
             outDir: opts.outDir,
