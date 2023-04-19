@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.102.0
+ * @builder.io/qwik 0.103.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -600,7 +600,7 @@
                 const invokeCtx = tryGetInvokeContext();
                 invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
             }
-            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
             return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
@@ -1955,7 +1955,7 @@
                         htmlStr = value;
                         continue;
                     }
-                    prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
+                    prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
                     const attrValue = processPropValue(attrName, value);
                     null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
                 }
@@ -1977,7 +1977,7 @@
                     htmlStr = value;
                     continue;
                 }
-                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
+                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
@@ -2502,7 +2502,7 @@
         finalized.has(id) ? finalized.get(id) : computeObject(id));
         const computeObject = id => {
             if (id.startsWith("#")) {
-                const elementId = id.slice("#".length);
+                const elementId = id.slice(1);
                 const index = strToInt(elementId);
                 assertTrue(elements.has(index), "missing element for id:", elementId);
                 const rawElement = elements.get(index);
@@ -2518,7 +2518,7 @@
                 rawElement) : (finalized.set(id, rawElement), rawElement);
             }
             if (id.startsWith("@")) {
-                const funcId = id.slice("@".length);
+                const funcId = id.slice(1);
                 const index = strToInt(funcId);
                 const func = inlinedFunctions[index];
                 return assertDefined(func, "missing inlined function for id:", funcId), func;
@@ -3233,7 +3233,7 @@
             return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
         }
         const exception = PROP_HANDLER_MAP[prop];
-        exception && exception(staticCtx, elm, prop, newValue) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), staticCtx.$containerState$), 
+        exception && exception(staticCtx, elm, prop, newValue) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), staticCtx.$containerState$), 
         setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
     };
     const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) => {
@@ -4614,7 +4614,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "0.102.0",
+            "q:version": "0.103.0",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4766,7 +4766,7 @@
             throw qError(5, containerEl);
         }
         (containerEl => {
-            directSetAttribute(containerEl, "q:version", "0.102.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+            directSetAttribute(containerEl, "q:version", "0.103.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
             directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
         })(containerEl);
         const containerState = _getContainerState(containerEl);
@@ -4844,7 +4844,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "0.102.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "0.103.0", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

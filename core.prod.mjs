@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.102.0
+ * @builder.io/qwik 0.103.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -730,7 +730,7 @@ class ReadWriteProxyHandler {
             const invokeCtx = tryGetInvokeContext();
             invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
         }
-        return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+        return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
     }
     getOwnPropertyDescriptor(target, prop) {
         return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
@@ -2135,7 +2135,7 @@ function isAriaAttribute(prop) {
 
 const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
 
-const version = "0.102.0";
+const version = "0.103.0";
 
 var _a;
 
@@ -2172,7 +2172,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "0.102.0",
+        "q:version": "0.103.0",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -2388,7 +2388,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     htmlStr = value;
                     continue;
                 }
-                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
+                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
             }
@@ -2410,7 +2410,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 htmlStr = value;
                 continue;
             }
-            prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
+            prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
             null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
         }
@@ -2995,7 +2995,7 @@ const resumeContainer = containerEl => {
     finalized.has(id) ? finalized.get(id) : computeObject(id));
     const computeObject = id => {
         if (id.startsWith("#")) {
-            const elementId = id.slice("#".length);
+            const elementId = id.slice(1);
             const index = strToInt(elementId);
             assertTrue(elements.has(index), "missing element for id:", elementId);
             const rawElement = elements.get(index);
@@ -3011,7 +3011,7 @@ const resumeContainer = containerEl => {
             rawElement) : (finalized.set(id, rawElement), rawElement);
         }
         if (id.startsWith("@")) {
-            const funcId = id.slice("@".length);
+            const funcId = id.slice(1);
             const index = strToInt(funcId);
             const func = inlinedFunctions[index];
             return assertDefined(func, "missing inlined function for id:", funcId), func;
@@ -3798,7 +3798,7 @@ const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
         return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
     }
     const exception = PROP_HANDLER_MAP[prop];
-    exception && exception(staticCtx, elm, prop, newValue) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), staticCtx.$containerState$), 
+    exception && exception(staticCtx, elm, prop, newValue) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), staticCtx.$containerState$), 
     setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
 };
 
@@ -5096,7 +5096,7 @@ const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerE
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "0.102.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "0.103.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
 };
 
