@@ -896,7 +896,7 @@ globalThis.qwikOptimizer = function(module) {
       manifest.bundles[bundleFileName] = bundle;
     }
   }
-  async function createLinter(sys, rootDir) {
+  async function createLinter(sys, rootDir, tsconfigFileNames) {
     const module2 = await sys.dynamicImport("eslint");
     const options = {
       cache: true,
@@ -912,7 +912,7 @@ globalThis.qwikOptimizer = function(module) {
         parser: "@typescript-eslint/parser",
         parserOptions: {
           tsconfigRootDir: rootDir,
-          project: [ "./tsconfig.json" ],
+          project: tsconfigFileNames,
           ecmaVersion: 2021,
           sourceType: "module",
           ecmaFeatures: {
@@ -978,6 +978,7 @@ globalThis.qwikOptimizer = function(module) {
       buildMode: "development",
       debug: false,
       rootDir: null,
+      tsconfigFileNames: [ "./tsconfig.json" ],
       input: null,
       outDir: null,
       resolveQwikBuild: false,
@@ -1106,7 +1107,7 @@ globalThis.qwikOptimizer = function(module) {
       const optimizer = getOptimizer();
       if ("node" === optimizer.sys.env && "ssr" !== opts.target) {
         try {
-          linter = await createLinter(optimizer.sys, opts.rootDir);
+          linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
         } catch (err) {}
       }
       if (opts.forceFullBuild) {

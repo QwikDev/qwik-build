@@ -231,6 +231,7 @@ declare interface QwikPluginOptions {
     entryStrategy?: EntryStrategy;
     forceFullBuild?: boolean;
     rootDir?: string;
+    tsconfigFileNames?: string[];
     vendorRoots?: string[];
     manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     manifestInput?: QwikManifest | null;

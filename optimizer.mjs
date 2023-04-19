@@ -835,7 +835,7 @@ function addBundleToManifest(path, manifest, outputBundle, bundleFileName) {
   }
 }
 
-async function createLinter(sys, rootDir) {
+async function createLinter(sys, rootDir, tsconfigFileNames) {
   const module = await sys.dynamicImport("eslint");
   const options = {
     cache: true,
@@ -851,7 +851,7 @@ async function createLinter(sys, rootDir) {
       parser: "@typescript-eslint/parser",
       parserOptions: {
         tsconfigRootDir: rootDir,
-        project: [ "./tsconfig.json" ],
+        project: tsconfigFileNames,
         ecmaVersion: 2021,
         sourceType: "module",
         ecmaFeatures: {
@@ -924,6 +924,7 @@ function createPlugin(optimizerOptions = {}) {
     buildMode: "development",
     debug: false,
     rootDir: null,
+    tsconfigFileNames: [ "./tsconfig.json" ],
     input: null,
     outDir: null,
     resolveQwikBuild: false,
@@ -1051,7 +1052,7 @@ function createPlugin(optimizerOptions = {}) {
     const optimizer = getOptimizer();
     if ("node" === optimizer.sys.env && "ssr" !== opts.target) {
       try {
-        linter = await createLinter(optimizer.sys, opts.rootDir);
+        linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
       } catch (err) {}
     }
     if (opts.forceFullBuild) {
