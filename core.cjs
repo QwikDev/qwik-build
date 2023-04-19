@@ -982,7 +982,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
                     throw new Error('Cannot mutate immutable signal');
                 }
-                verifySerializable(v);
+                if (qSerialize) {
+                    verifySerializable(v);
+                }
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx) {
                     if (invokeCtx.$event$ === RenderEvent) {
@@ -1190,7 +1192,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             const recursive = (flags & QObjectRecursive) !== 0;
             const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
             if (qDev) {
-                verifySerializable(unwrappedNewValue);
+                if (qSerialize) {
+                    verifySerializable(unwrappedNewValue);
+                }
                 const invokeCtx = tryGetInvokeContext();
                 if (invokeCtx) {
                     if (invokeCtx.$event$ === RenderEvent) {
@@ -3007,7 +3011,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
         iCtx.$seq$++;
         const set = (value) => {
-            if (qDev) {
+            if (qDev && qSerialize) {
                 verifySerializable(value);
             }
             return (seq[i] = value);
@@ -3146,7 +3150,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         if (!contexts) {
             elCtx.$contexts$ = contexts = new Map();
         }
-        if (qDev) {
+        if (qDev && qSerialize) {
             verifySerializable(newValue);
         }
         contexts.set(context.id, newValue);
@@ -7929,7 +7933,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return typeof value === 'function' && typeof value.getSymbol === 'function';
     };
     const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
-        if (qDev) {
+        if (qDev && qSerialize) {
             if (captureRef) {
                 for (const item of captureRef) {
                     verifySerializable(item, 'Captured variable in the closure can not be serialized');

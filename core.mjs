@@ -972,7 +972,9 @@ class SignalImpl extends SignalBase {
             if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
                 throw new Error('Cannot mutate immutable signal');
             }
-            verifySerializable(v);
+            if (qSerialize) {
+                verifySerializable(v);
+            }
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx) {
                 if (invokeCtx.$event$ === RenderEvent) {
@@ -1180,7 +1182,9 @@ class ReadWriteProxyHandler {
         const recursive = (flags & QObjectRecursive) !== 0;
         const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
         if (qDev) {
-            verifySerializable(unwrappedNewValue);
+            if (qSerialize) {
+                verifySerializable(unwrappedNewValue);
+            }
             const invokeCtx = tryGetInvokeContext();
             if (invokeCtx) {
                 if (invokeCtx.$event$ === RenderEvent) {
@@ -2997,7 +3001,7 @@ const useSequentialScope = () => {
     const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
     iCtx.$seq$++;
     const set = (value) => {
-        if (qDev) {
+        if (qDev && qSerialize) {
             verifySerializable(value);
         }
         return (seq[i] = value);
@@ -3136,7 +3140,7 @@ const useContextProvider = (context, newValue) => {
     if (!contexts) {
         elCtx.$contexts$ = contexts = new Map();
     }
-    if (qDev) {
+    if (qDev && qSerialize) {
         verifySerializable(newValue);
     }
     contexts.set(context.id, newValue);
@@ -7919,7 +7923,7 @@ const isQrl = (value) => {
     return typeof value === 'function' && typeof value.getSymbol === 'function';
 };
 const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
-    if (qDev) {
+    if (qDev && qSerialize) {
         if (captureRef) {
             for (const item of captureRef) {
                 verifySerializable(item, 'Captured variable in the closure can not be serialized');
