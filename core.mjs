@@ -6247,8 +6247,6 @@ const renderMarked = async (containerState) => {
             await postRendering(containerState, rCtx);
             return;
         }
-        // await getPlatform().raf(() => {
-        // });
         await executeContextWithTransition(staticCtx);
         printRenderStats(staticCtx);
         return postRendering(containerState, rCtx);
