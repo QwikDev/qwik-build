@@ -4130,11 +4130,12 @@
         let base = type + " " + host;
         if (0 === type) {
             sub[2] && (base += " " + encodeURI(sub[2]));
-        } else if (type <= 2) {
-            base += ` ${must(getObjId(sub[2]))} ${must(getObjId(sub[3]))} ${sub[4]}`;
-        } else if (type <= 4) {
-            const nodeID = "string" == typeof sub[3] ? sub[3] : must(getObjId(sub[3]));
-            base += ` ${must(getObjId(sub[2]))} ${nodeID}`;
+        } else {
+            const signalID = getObjId(sub[2]);
+            if (!signalID) {
+                return;
+            }
+            type <= 2 ? base += ` ${signalID} ${must(getObjId(sub[3]))} ${sub[4]}` : type <= 4 ? base += ` ${signalID} ${"string" == typeof sub[3] ? sub[3] : must(getObjId(sub[3]))}` : assertTrue(true, "Should not get here");
         }
         return base;
     };
