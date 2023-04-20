@@ -8503,7 +8503,7 @@ const useStore = (initialState, opts) => {
     }
     else {
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const recursive = opts?.deep ?? false;
+        const recursive = opts?.deep ?? true;
         const flags = recursive ? QObjectRecursive : 0;
         const newStore = getOrCreateProxy(value, containerState, flags);
         set(newStore);
