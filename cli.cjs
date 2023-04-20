@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.103.0-dev20230420071613
+ * @builder.io/qwik/cli 0.103.0-dev20230420082406
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1099,6 +1099,18 @@ var AppCommand = class {
       this._rootPkgJson = JSON.parse((0, import_node_fs.readFileSync)(pkgJsonPath, "utf-8"));
     }
     return this._rootPkgJson;
+  }
+  getArg(name) {
+    const key = `--${name}`;
+    const matcher = new RegExp(`^${key}($|=)`);
+    const index = this.args.findIndex((arg) => matcher.test(arg));
+    if (index === -1) {
+      return;
+    }
+    if (this.args[index].includes("=")) {
+      return this.args[index].split("=")[1];
+    }
+    return this.args[index + 1];
   }
 };
 
@@ -3781,6 +3793,7 @@ async function runBuildCommand(app) {
   const runSsgScript = getScript("ssg");
   const buildTypes = getScript("build.types");
   const lint = getScript("lint");
+  const mode = app.getArg("mode");
   const scripts = [
     buildTypes,
     buildClientScript,
@@ -3824,7 +3837,8 @@ async function runBuildCommand(app) {
     });
   }
   if (buildClientScript) {
-    await execaCommand(buildClientScript, {
+    const script = attachArg(buildClientScript, "mode", mode);
+    await execaCommand(script, {
       stdio: "inherit",
       cwd: app.rootDir
     }).catch(() => {
@@ -3835,7 +3849,8 @@ async function runBuildCommand(app) {
   }
   const step2 = [];
   if (buildLibScript) {
-    const libBuild = execaCommand(buildLibScript, {
+    const script = attachArg(buildLibScript, "mode", mode);
+    const libBuild = execaCommand(script, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -3856,7 +3871,8 @@ async function runBuildCommand(app) {
     step2.push(libBuild);
   }
   if (buildPreviewScript) {
-    const previewBuild = execaCommand(buildPreviewScript, {
+    const script = attachArg(buildPreviewScript, "mode", mode);
+    const previewBuild = execaCommand(script, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -3877,7 +3893,8 @@ async function runBuildCommand(app) {
     step2.push(previewBuild);
   }
   if (buildServerScript) {
-    const serverBuild = execaCommand(buildServerScript, {
+    const script = attachArg(buildServerScript, "mode", mode);
+    const serverBuild = execaCommand(script, {
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -3979,6 +3996,12 @@ async function runBuildCommand(app) {
   }
   console.log(``);
 }
+function attachArg(command, key, value) {
+  if (value !== void 0) {
+    return `${command} --${key} ${value}`;
+  }
+  return command;
+}
 
 // packages/qwik/src/cli/run.ts
 var SPACE_TO_HINT2 = 18;
@@ -4076,7 +4099,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.103.0-dev20230420071613");
+  console.log("0.103.0-dev20230420082406");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
