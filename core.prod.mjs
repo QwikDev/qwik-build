@@ -984,10 +984,12 @@ const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQ
 const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
 
 const _useOn = (eventName, eventQrl) => {
-    const invokeCtx = useInvokeContext();
-    const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
-    assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
-    elCtx.$flags$ |= 2;
+    if (eventQrl) {
+        const invokeCtx = useInvokeContext();
+        const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
+        assertQrl(eventQrl), "string" == typeof eventName ? elCtx.li.push([ normalizeOnProp(eventName), eventQrl ]) : elCtx.li.push(...eventName.map((name => [ normalizeOnProp(name), eventQrl ]))), 
+        elCtx.$flags$ |= 2;
+    }
 };
 
 const SkipRender = Symbol("skip render");

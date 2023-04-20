@@ -3011,7 +3011,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  *
  * @public
  */
-export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * Register a listener on `document`.
@@ -3039,7 +3039,7 @@ export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event)
  *
  * @public
  */
-export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * Register a listener on `window`.
@@ -3068,7 +3068,7 @@ export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev
  *
  * @public
  */
-export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void>) => void;
+export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * This method works like an async memoized function that runs whenever some tracked value
@@ -3570,7 +3570,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.103.0-dev20230420120108
+ * 0.103.0-dev20230420130311
  * @public
  */
 export declare const version: string;

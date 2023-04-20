@@ -1653,16 +1653,18 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     // </docs>
     const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
     const _useOn = (eventName, eventQrl) => {
-        const invokeCtx = useInvokeContext();
-        const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
-        assertQrl(eventQrl);
-        if (typeof eventName === 'string') {
-            elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+        if (eventQrl) {
+            const invokeCtx = useInvokeContext();
+            const elCtx = getContext(invokeCtx.$hostElement$, invokeCtx.$renderCtx$.$static$.$containerState$);
+            assertQrl(eventQrl);
+            if (typeof eventName === 'string') {
+                elCtx.li.push([normalizeOnProp(eventName), eventQrl]);
+            }
+            else {
+                elCtx.li.push(...eventName.map((name) => [normalizeOnProp(name), eventQrl]));
+            }
+            elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
         }
-        else {
-            elCtx.li.push(...eventName.map((name) => [normalizeOnProp(name), eventQrl]));
-        }
-        elCtx.$flags$ |= HOST_FLAG_NEED_ATTACH_LISTENER;
     };
 
     /**
