@@ -5953,7 +5953,16 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
         }
     }
 };
-const executeContextWithSlots = ({ $static$: ctx }) => {
+const executeContextWithTransition = async (ctx) => {
+    // try to use `document.startViewTransition`
+    if (typeof document !== 'undefined' && document.__q_view_transition__) {
+        document.__q_view_transition__ = undefined;
+        if (typeof document.startViewTransition === 'function') {
+            await document.startViewTransition(() => executeDOMRender(ctx)).updateCallbackDone;
+            return;
+        }
+    }
+    // fallback
     executeDOMRender(ctx);
 };
 const directAppendChild = (parent, child) => {
@@ -6240,7 +6249,7 @@ const renderMarked = async (containerState) => {
         }
         // await getPlatform().raf(() => {
         // });
-        executeContextWithSlots(rCtx);
+        await executeContextWithTransition(staticCtx);
         printRenderStats(staticCtx);
         return postRendering(containerState, rCtx);
     }

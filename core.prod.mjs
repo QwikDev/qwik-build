@@ -4032,9 +4032,10 @@ const renderMarked = async containerState => {
                 } catch (e) {}
             })(staticCtx, op);
         })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(staticCtx), 
-        void await postRendering(containerState, rCtx)) : ((({$static$: ctx}) => {
-            executeDOMRender(ctx);
-        })(rCtx), printRenderStats(staticCtx), postRendering(containerState, rCtx));
+        void await postRendering(containerState, rCtx)) : (await (async ctx => {
+            "undefined" != typeof document && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
+            "function" == typeof document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).updateCallbackDone : executeDOMRender(ctx);
+        })(staticCtx), printRenderStats(staticCtx), postRendering(containerState, rCtx));
     } catch (err) {
         logError(err);
     }
