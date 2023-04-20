@@ -59,9 +59,16 @@
       }
     },
     "./build": {
-      "types": "./build/index.d.ts",
-      "import": "./build/index.mjs",
-      "require": "./build/index.cjs"
+      "import": {
+        "development": "./build/index.dev.mjs",
+        "production": "./build/index.prod.mjs",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "development": "./build/index.dev.cjs",
+        "production": "./build/index.prod.cjs",
+        "default": "./build/index.cjs"
+      }
     },
     "./loader": {
       "types": "./loader/index.d.ts",
@@ -101,8 +108,16 @@
     "build/index.cjs",
     "build/index.cjs.map",
     "build/index.d.ts",
+    "build/index.dev.cjs",
+    "build/index.dev.cjs.map",
+    "build/index.dev.mjs",
+    "build/index.dev.mjs.map",
     "build/index.mjs",
     "build/index.mjs.map",
+    "build/index.prod.cjs",
+    "build/index.prod.cjs.map",
+    "build/index.prod.mjs",
+    "build/index.prod.mjs.map",
     "build/package.json",
     "cli.cjs",
     "core.cjs",
