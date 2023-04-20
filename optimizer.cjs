@@ -981,7 +981,7 @@ globalThis.qwikOptimizer = function(module) {
       tsconfigFileNames: [ "./tsconfig.json" ],
       input: null,
       outDir: null,
-      resolveQwikBuild: false,
+      resolveQwikBuild: true,
       forceFullBuild: false,
       entryStrategy: null,
       srcDir: null,
@@ -1424,7 +1424,7 @@ globalThis.qwikOptimizer = function(module) {
       return id2;
     };
     function getQwikBuildModule(loadOpts) {
-      const isServer = "ssr" === opts.target || !!loadOpts.ssr;
+      const isServer = !!loadOpts.ssr;
       const isDev = "development" === opts.buildMode;
       return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\nexport const isDev = ${JSON.stringify(isDev)};\n`;
     }
@@ -2037,7 +2037,7 @@ globalThis.qwikOptimizer = function(module) {
           entryStrategy: qwikViteOpts.entryStrategy,
           srcDir: qwikViteOpts.srcDir,
           rootDir: viteConfig.root,
-          resolveQwikBuild: "build" === viteCommand,
+          resolveQwikBuild: true,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           forceFullBuild: forceFullBuild,
           vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
