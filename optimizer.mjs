@@ -1941,8 +1941,10 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
     res.writableEnded || res.write(`<style>${VITE_ERROR_OVERLAY_STYLES}</style>`);
     return next(err);
   }));
-  console.log(`\n❗️ ${bgMagenta("Expect significant performance loss in development.")}\n`);
-  console.log(`\n❗️ ${magenta("Disabling the browser's cache results in waterfall requests.")}'`);
+  setTimeout((() => {
+    console.log(`\n  ❗️ ${magenta("Expect significant performance loss in development.")}`);
+    console.log(`  ❗️ ${magenta("Disabling the browser's cache results in waterfall requests.")}`);
+  }), 1e3);
 }
 
 async function configurePreviewServer(middlewares, ssrOutDir, sys, path) {
