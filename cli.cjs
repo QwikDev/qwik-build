@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.103.0-dev20230421210738
+ * @builder.io/qwik/cli 0.103.0-dev20230424082917
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2202,6 +2202,10 @@ function updateDefineConfig(ts, callExp, updates) {
         );
         continue;
       }
+      if (ts.isObjectLiteralExpression(exp)) {
+        args.push(updateVitConfigObj(ts, exp, updates));
+        continue;
+      }
     }
     args.push(exp);
   }
@@ -2251,11 +2255,16 @@ function updatePlugins(ts, obj, updates) {
   return ts.factory.updateObjectLiteralExpression(obj, properties);
 }
 function updatePluginsArray(ts, arr, updates) {
+  var _a;
   const elms = [...arr.elements];
   if (updates.vitePlugins) {
     for (const vitePlugin of updates.vitePlugins) {
       const pluginExp = createPluginCall(ts, vitePlugin);
-      if (pluginExp) {
+      const pluginName = (_a = pluginExp == null ? void 0 : pluginExp.expression) == null ? void 0 : _a.escapedText;
+      const alreadyDefined = elms.some(
+        (el) => ts.isCallExpression(el) && ts.isIdentifier(el.expression) && el.expression.escapedText === pluginName
+      );
+      if (pluginExp && !alreadyDefined) {
         elms.push(pluginExp);
       }
     }
@@ -4099,7 +4108,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.103.0-dev20230421210738");
+  console.log("0.103.0-dev20230424082917");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
