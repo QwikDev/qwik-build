@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.104.0-dev20230426061918
+ * @builder.io/qwik/cli 0.104.0-dev20230426090039
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2388,7 +2388,8 @@ async function updateApp(pkgManager, opts) {
   }
   const fileUpdates = {
     files: [],
-    installedDeps: {}
+    installedDeps: {},
+    installedScripts: Object.keys(integration.pkgJson.scripts || {})
   };
   if (opts.installDeps) {
     fileUpdates.installedDeps = {
@@ -2527,8 +2528,9 @@ async function logUpdateAppResult(pkgManager, result) {
   const overwriteFiles = result.updates.files.filter((f3) => f3.type === "overwrite");
   const createFiles = result.updates.files.filter((f3) => f3.type === "create");
   const installDepNames = Object.keys(result.updates.installedDeps);
+  const installScripts = result.updates.installedScripts;
   const installDeps2 = installDepNames.length > 0;
-  if (modifyFiles.length === 0 && overwriteFiles.length === 0 && createFiles.length === 0 && !installDeps2) {
+  if (modifyFiles.length === 0 && overwriteFiles.length === 0 && createFiles.length === 0 && installScripts.length === 0 && !installDeps2) {
     panic(`No updates made`);
   }
   g2.step(`\u{1F47B} ${bgBlue(` Ready? `)} Add ${bold(magenta(result.integration.id))} to your app?`);
@@ -2566,6 +2568,15 @@ async function logUpdateAppResult(pkgManager, result) {
       ].join("\n")
     );
   }
+  if (installScripts.length > 0) {
+    const prefix = pkgManager === "npm" ? "npm run" : pkgManager;
+    g2.message(
+      [
+        `\u{1F4BE} ${cyan(`Install ${pkgManager} script${installDepNames.length > 1 ? "s" : ""}:`)}`,
+        ...installScripts.map((script) => `   - ${prefix} ${script}`)
+      ].join("\n")
+    );
+  }
   const commit = await ee({
     message: `Ready to apply the ${bold(magenta(result.integration.id))} updates to your app?`,
     options: [
@@ -2577,11 +2588,16 @@ async function logUpdateAppResult(pkgManager, result) {
     bye();
   }
 }
-function logUpdateAppCommitResult(result, packageManager) {
+function logUpdateAppCommitResult(result, pkgManager) {
   var _a;
+  if (result.updates.installedScripts.length > 0) {
+    const prefix = pkgManager === "npm" ? "npm run" : pkgManager;
+    const message = result.updates.installedScripts.map((script) => `   - ${prefix} ${green(script)}`).join("\n");
+    note(message, "New scripts added");
+  }
   const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
   if (nextSteps) {
-    note(logNextStep(nextSteps, packageManager), "Note");
+    note(logNextStep(nextSteps, pkgManager), "Note");
   }
   ce(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
 }
@@ -4108,7 +4124,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.104.0-dev20230426061918");
+  console.log("0.104.0-dev20230426090039");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
