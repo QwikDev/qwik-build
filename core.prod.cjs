@@ -17,8 +17,8 @@
         return fn.call(null, $(first), ...rest);
     };
     const qDev = !1;
-    const seal = obj => {
-        qDev && Object.seal(obj);
+    const seal = () => {
+        qDev;
     };
     const isNode$1 = value => value && "number" == typeof value.nodeType;
     const isDocument = value => 9 === value.nodeType;
@@ -34,58 +34,31 @@
     const isVirtualElement = value => 111 === value.nodeType;
     const isText = value => 3 === value.nodeType;
     const isComment = value => 8 === value.nodeType;
-    function assertQwikElement(el) {
-        if (qDev && !isQwikElement(el)) {
-            throw console.error("Not a Qwik Element, got", el), new Error("Not a Qwik Element");
-        }
+    function assertQwikElement() {
+        qDev;
     }
-    function assertElement(el) {
-        if (qDev && !isElement$1(el)) {
-            throw console.error("Not a Element, got", el), new Error("Not an Element");
-        }
+    function assertElement() {
+        qDev;
     }
-    const STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : createError(message);
-        return console.error("%cQWIK ERROR", STYLE, err.stack || err.message, ...printParams(optionalParams)), 
+        return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
         err;
     };
     const createError = message => new Error(message);
     const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
-    const _printed = new Set;
-    const logOnceWarn = (message, ...optionalParams) => {
-        if (qDev) {
-            const key = "warn" + String(message);
-            _printed.has(key) || (_printed.add(key), logWarn(message, ...optionalParams));
-        }
+    const logWarn = () => {
+        qDev;
     };
-    const logWarn = (message, ...optionalParams) => {
-        qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
+    const logDebug = () => {
+        qDev;
     };
-    const logDebug = (message, ...optionalParams) => {
-        qDev && console.debug("%cQWIK", STYLE, message, ...printParams(optionalParams));
-    };
-    const printParams = optionalParams => qDev ? optionalParams.map((p => isNode$1(p) && isElement$1(p) ? printElement(p) : p)) : optionalParams;
-    const printElement = el => {
-        const ctx = el._qc_;
-        const isServer = (() => "undefined" != typeof process && !!process.versions && !!process.versions.node)();
-        return {
-            tagName: el.tagName,
-            renderQRL: ctx?.$componentQrl$?.getSymbol(),
-            element: isServer ? void 0 : el,
-            ctx: isServer ? void 0 : ctx
-        };
-    };
+    const printParams = optionalParams => optionalParams;
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
     };
-    const codeToText = code => {
-        if (qDev) {
-            return `Code(${code}): ${[ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nFor more information see: https://qwik.builder.io/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", 'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", "Invalid JSXNode type. It must be either a function or a string. Found:", "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", "The provided Context reference is not a valid context created by createContextId()", "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ][code] ?? ""}`;
-        }
-        return `Code(${code})`;
-    };
+    const codeToText = code => `Code(${code})`;
     const isSerializableObject = v => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || null === proto;
@@ -145,50 +118,23 @@
     let _platform = createPlatform();
     const getPlatform = () => _platform;
     const isServerPlatform = () => _platform.isServer;
-    function assertDefined(value, text, ...parts) {
-        if (qDev) {
-            if (null != value) {
-                return;
-            }
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertDefined() {
+        qDev;
     }
-    function assertEqual(value1, value2, text, ...parts) {
-        if (qDev) {
-            if (value1 === value2) {
-                return;
-            }
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertEqual() {
+        qDev;
     }
-    function assertFail(text, ...parts) {
-        if (qDev) {
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertFail() {
+        qDev;
     }
-    function assertTrue(value1, text, ...parts) {
-        if (qDev) {
-            if (!0 === value1) {
-                return;
-            }
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertTrue() {
+        qDev;
     }
-    function assertNumber(value1, text, ...parts) {
-        if (qDev) {
-            if ("number" == typeof value1) {
-                return;
-            }
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertNumber() {
+        qDev;
     }
-    function assertString(value1, text, ...parts) {
-        if (qDev) {
-            if ("string" == typeof value1) {
-                return;
-            }
-            throw logErrorAndStop(text, ...parts);
-        }
+    function assertString() {
+        qDev;
     }
     const isPromise = value => value instanceof Promise;
     const safeCall = (call, thenFn, rejectFn) => {
@@ -208,7 +154,6 @@
     }));
     const EMPTY_ARRAY = [];
     const EMPTY_OBJ = {};
-    qDev && (Object.freeze(EMPTY_ARRAY), Object.freeze(EMPTY_OBJ));
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
@@ -247,7 +192,7 @@
     };
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
     const serializeQRL = (qrl, opts = {}) => {
-        assertTrue(true, "In order to serialize a QRL, qSerialize must be true"), assertQrl(qrl);
+        assertTrue(), assertQrl(qrl);
         let symbol = qrl.$symbol$;
         let chunk = qrl.$chunk$;
         const refSymbol = qrl.$refSymbol$ ?? symbol;
@@ -277,7 +222,7 @@
         return parts.join("");
     };
     const serializeQRLs = (existingQRLs, elCtx) => {
-        assertElement(elCtx.$element$);
+        assertElement();
         const opts = {
             $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
         };
@@ -304,16 +249,13 @@
         const index = array.indexOf(obj);
         return -1 === index ? (array.push(obj), array.length - 1) : index;
     };
-    const inflateQrl = (qrl, elCtx) => (assertDefined(qrl.$capture$, "invoke: qrl capture must be defined inside useLexicalScope()", qrl), 
-    qrl.$captureRef$ = qrl.$capture$.map((idx => {
+    const inflateQrl = (qrl, elCtx) => (assertDefined(), qrl.$captureRef$ = qrl.$capture$.map((idx => {
         const int = parseInt(idx, 10);
         const obj = elCtx.$refMap$[int];
-        return assertTrue(elCtx.$refMap$.length > int, "out of bounds inflate access", idx), 
-        obj;
+        return assertTrue(), obj;
     })));
     const fromCamelToKebabCase = text => text.replace(/([A-Z])/g, "-$1").toLowerCase();
     const QSlot = "q:slot";
-    const QContainerAttr = "q:container";
     const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
     const directGetAttribute = (el, prop) => el.getAttribute(prop);
     const directRemoveAttribute = (el, prop) => el.removeAttribute(prop);
@@ -342,7 +284,7 @@
             $pauseCtx$: void 0,
             $subsManager$: null
         };
-        return seal(containerState), containerState.$subsManager$ = createSubscriptionManager(containerState), 
+        return seal(), containerState.$subsManager$ = createSubscriptionManager(containerState), 
         containerState;
     };
     const setRef = (value, elm) => {
@@ -390,8 +332,7 @@
         return keys.map((eventName => [ eventName, listeners.filter((l => l[0] === eventName)).map((a => a[1])) ]));
     };
     const setEvent = (existingListeners, prop, input, containerEl) => {
-        if (assertTrue(prop.endsWith("$"), "render: event property does not end with $", prop), 
-        prop = normalizeOnProp(prop.slice(0, -1)), input) {
+        if (assertTrue(prop.endsWith("$")), prop = normalizeOnProp(prop.slice(0, -1)), input) {
             if (isArray(input)) {
                 const processed = input.flat(1 / 0).filter((q => null != q)).map((q => [ prop, ensureQrl(q, containerEl) ]));
                 existingListeners.push(...processed);
@@ -439,9 +380,7 @@
             this[QObjectSignalFlags] = flags;
         }
         valueOf() {
-            if (qDev) {
-                throw new TypeError("Cannot coerce a Signal, use `.value` instead");
-            }
+            qDev;
         }
         toString() {
             return `[Signal ${String(this.value)}]`;
@@ -459,14 +398,6 @@
             return sub && this[QObjectManagerSymbol].$addSub$(sub), this.untrackedValue;
         }
         set value(v) {
-            if (qDev) {
-                if (1 & this[QObjectSignalFlags]) {
-                    throw new Error("Cannot mutate immutable signal");
-                }
-                verifySerializable(v);
-                const invokeCtx = tryGetInvokeContext();
-                invokeCtx && ("qRender" === invokeCtx.$event$ ? logWarn("State mutation inside render function. Use useTask$() instead.", invokeCtx.$hostElement$) : "qComputed" === invokeCtx.$event$ ? logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$) : "qResource" === invokeCtx.$event$ && logWarn("State mutation inside useResource$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
-            }
             const manager = this[QObjectManagerSymbol];
             manager && this.untrackedValue !== v && (this.untrackedValue = v, manager.$notifySubs$());
         }
@@ -500,14 +431,13 @@
             return obj[prop];
         }
         if (obj instanceof SignalBase) {
-            return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
-            obj;
+            return assertEqual(), obj;
         }
         const target = getProxyTarget(obj);
         if (target) {
             const signal = target["$$" + prop];
             if (signal) {
-                return assertTrue(isSignal(signal), "$$ has to be a signal kind"), signal;
+                return assertTrue(isSignal(signal)), signal;
             }
             if (!0 !== target[_IMMUTABLE]?.[prop]) {
                 return new SignalWrapper(obj, prop);
@@ -521,9 +451,8 @@
         return proxy || (0 !== flags && setObjectFlags(target, flags), createProxy(target, containerState, void 0));
     };
     const createProxy = (target, containerState, subs) => {
-        assertEqual(unwrapProxy(target), target, "Unexpected proxy at this location", target), 
-        assertTrue(!containerState.$proxyMap$.has(target), "Proxy was already created", target), 
-        assertTrue(isObject(target), "Target must be an object"), assertTrue(isSerializableObject(target) || isArray(target), "Target must be a serializable object");
+        assertEqual(unwrapProxy(target)), assertTrue(containerState.$proxyMap$.has(target)), 
+        assertTrue(isObject(target)), assertTrue(isSerializableObject(target) || isArray(target));
         const manager = containerState.$subsManager$.$createManager$(subs);
         const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
         return containerState.$proxyMap$.set(target, proxy), proxy;
@@ -555,7 +484,7 @@
             }
             let subscriber;
             const flags = target[QObjectFlagsSymbol] ?? 0;
-            assertNumber(flags, "flags must be an number");
+            assertNumber();
             const invokeCtx = tryGetInvokeContext();
             const recursive = 0 != (1 & flags);
             let value = target[prop];
@@ -563,8 +492,7 @@
                 const hiddenSignal = target["$$" + prop];
                 const immutableMeta = target[_IMMUTABLE]?.[prop];
                 (!(prop in target) || hiddenSignal || isSignal(immutableMeta) || immutableMeta === _IMMUTABLE) && (subscriber = null), 
-                hiddenSignal && (assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal"), 
-                value = hiddenSignal.value);
+                hiddenSignal && (assertTrue(isSignal(hiddenSignal)), value = hiddenSignal.value);
             }
             if (subscriber) {
                 const isA = isArray(target);
@@ -577,16 +505,11 @@
                 return target[prop] = newValue, !0;
             }
             const flags = target[QObjectFlagsSymbol] ?? 0;
-            assertNumber(flags, "flags must be an number");
+            assertNumber();
             if (0 != (2 & flags)) {
                 throw qError(17);
             }
             const unwrappedNewValue = 0 != (1 & flags) ? unwrapProxy(newValue) : newValue;
-            if (qDev) {
-                verifySerializable(unwrappedNewValue);
-                const invokeCtx = tryGetInvokeContext();
-                invokeCtx && ("qRender" === invokeCtx.$event$ ? logError("State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()", prop) : "qComputed" === invokeCtx.$event$ ? logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$) : "qResource" === invokeCtx.$event$ && logWarn("State mutation inside useResource$() is an antipattern. Use useTask$() instead", invokeCtx.$hostElement$));
-            }
             if (isArray(target)) {
                 return target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), !0;
             }
@@ -603,13 +526,13 @@
         }
         ownKeys(target) {
             const flags = target[QObjectFlagsSymbol] ?? 0;
-            assertNumber(flags, "flags must be an number");
+            assertNumber();
             if (!(0 != (2 & flags))) {
                 let subscriber = null;
                 const invokeCtx = tryGetInvokeContext();
                 invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
             }
-            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
+            return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
         }
         getOwnPropertyDescriptor(target, prop) {
             return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
@@ -639,7 +562,7 @@
     };
     const tryGetContext = element => element._qc_;
     const getContext = (el, containerState) => {
-        assertQwikElement(el);
+        assertQwikElement();
         const ctx = tryGetContext(el);
         if (ctx) {
             return ctx;
@@ -652,7 +575,7 @@
                 const {getObject: getObject, meta: meta, refs: refs} = pauseCtx;
                 if (isElement(el)) {
                     const refMap = refs[elementID];
-                    refMap && (assertTrue(isElement(el), "el must be an actual DOM element"), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
+                    refMap && (assertTrue(isElement(el)), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
                     elCtx.li = ((elCtx, containerEl) => {
                         const attributes = elCtx.$element$.attributes;
                         const listeners = [];
@@ -715,7 +638,7 @@
             $parent$: null,
             $slotParent$: null
         };
-        return seal(ctx), element._qc_ = ctx, ctx;
+        return seal(), element._qc_ = ctx, ctx;
     };
     let _locale;
     let _context;
@@ -741,9 +664,7 @@
         if (!ctx || "qRender" !== ctx.$event$) {
             throw qError(20);
         }
-        return assertDefined(ctx.$hostElement$, "invoke: $hostElement$ must be defined", ctx), 
-        assertDefined(ctx.$waitOn$, "invoke: $waitOn$ must be defined", ctx), assertDefined(ctx.$renderCtx$, "invoke: $renderCtx$ must be defined", ctx), 
-        assertDefined(ctx.$subscriber$, "invoke: $subscriber$ must be defined", ctx), ctx;
+        return assertDefined(), assertDefined(), assertDefined(), assertDefined(), ctx;
     };
     const useBindInvokeContext = callback => {
         if (null == callback) {
@@ -773,8 +694,7 @@
     };
     const newInvokeContextFromTuple = context => {
         const element = context[0];
-        const container = element.closest("[q\\:container]");
-        const locale = container?.getAttribute("q:locale") || void 0;
+        const locale = element.closest("[q\\:container]")?.getAttribute("q:locale") || void 0;
         return locale && function(locale) {
             _locale = locale;
         }(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
@@ -793,7 +713,7 @@
             $waitOn$: void 0,
             $locale$: locale
         };
-        return seal(ctx), ctx;
+        return seal(), ctx;
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const untrack = fn => invoke(void 0, fn);
@@ -824,7 +744,7 @@
             return node;
         }
         const doc = node.ownerDocument;
-        return assertDefined(doc, "doc must be defined"), doc;
+        return assertDefined(), doc;
     };
     const setAttribute = (staticCtx, el, prop, value) => {
         staticCtx.$operations$.push({
@@ -899,7 +819,7 @@
     };
     const _removeNode = el => {
         const parent = el.parentElement;
-        parent ? directRemoveChild(parent, el) : qDev && logWarn("Trying to remove component already removed", el);
+        parent && directRemoveChild(parent, el);
     };
     const createTemplate = (doc, slotName) => {
         const template = createElement(doc, "q:template", !1);
@@ -917,7 +837,7 @@
         const subsManager = staticCtx.$containerState$.$subsManager$;
         for (const slotEl of staticCtx.$rmSlots$) {
             const key = getKey(slotEl);
-            assertDefined(key, "slots must have a key");
+            assertDefined();
             const slotChildren = getChildren(slotEl, isChildComponent);
             if (slotChildren.length > 0) {
                 const sref = slotEl.getAttribute("q:sref");
@@ -944,7 +864,7 @@
         }
         for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
-            assertDefined(key, "slots must have a key");
+            assertDefined();
             const template = Array.from(hostElm.childNodes).find((node => isSlotTemplate(node) && node.getAttribute(QSlot) === key));
             if (template) {
                 getChildren(template, isChildComponent).forEach((child => {
@@ -953,20 +873,8 @@
             }
         }
     };
-    const printRenderStats = staticCtx => {
-        if (qDev && "undefined" != typeof window && null != window.document) {
-            const byOp = {};
-            for (const op of staticCtx.$operations$) {
-                byOp[op.$operation$.name] = (byOp[op.$operation$.name] ?? 0) + 1;
-            }
-            const stats = {
-                byOp: byOp,
-                roots: staticCtx.$roots$.map((ctx => ctx.$element$)),
-                hostElements: Array.from(staticCtx.$hostElements$),
-                operations: staticCtx.$operations$.map((v => [ v.$operation$.name, ...v.$args$ ]))
-            };
-            logDebug("Render stats.", 0 === staticCtx.$operations$.length ? "No operations" : "", stats);
-        }
+    const printRenderStats = () => {
+        qDev;
     };
     const queryAllVirtualByAttribute = (el, prop, value) => {
         const walker = ((el, prop, value) => el.ownerDocument.createTreeWalker(el, 128, {
@@ -998,8 +906,8 @@
                     const index = attr.indexOf("=");
                     return index >= 0 ? [ attr.slice(0, index), unescape(attr.slice(index + 1)) ] : [ attr, "" ];
                 })));
-            })(open.data.slice(3)), assertTrue(open.data.startsWith("qv "), "comment is not a qv"), 
-            open.__virtual = this, seal(this);
+            })(open.data.slice(3)), assertTrue(open.data.startsWith("qv ")), open.__virtual = this, 
+            seal();
         }
         insertBefore(node, ref) {
             const parent = this.parentElement;
@@ -1014,8 +922,7 @@
             const parent = this.parentElement;
             if (parent) {
                 const ch = Array.from(this.childNodes);
-                assertEqual(this.$template$.childElementCount, 0, "children should be empty"), parent.removeChild(this.open), 
-                this.$template$.append(...ch), parent.removeChild(this.close);
+                assertEqual(), parent.removeChild(this.open), this.$template$.append(...ch), parent.removeChild(this.close);
             }
         }
         appendChild(node) {
@@ -1027,7 +934,7 @@
             for (const c of ch) {
                 newParent.insertBefore(c, child);
             }
-            newParent.insertBefore(this.close, child), assertEqual(this.$template$.childElementCount, 0, "children should be empty");
+            newParent.insertBefore(this.close, child), assertEqual();
         }
         appendTo(newParent) {
             this.insertBeforeTo(newParent, null);
@@ -1153,7 +1060,7 @@
             }
             node = node.nextSibling;
         }
-        assertFail("close not found");
+        assertFail();
     };
     const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
     const hashCode = (text, hash = 0) => {
@@ -1177,8 +1084,6 @@
         for (const ctx of allContexts) {
             if (ctx.$watches$) {
                 for (const watch of ctx.$watches$) {
-                    qDev && (watch.$flags$ & WatchFlagsIsDirty && logWarn("Serializing dirty watch. Looks like an internal error."), 
-                    isConnected(watch) || logWarn("Serializing disconnected watch. Looks like an internal error.")), 
                     isResourceTask(watch) && collector.$resources$.push(watch.$state$), destroyWatch(watch);
                 }
             }
@@ -1286,7 +1191,7 @@
         }
         if (collector.$noSerialize$.length > 0) {
             const undefinedID = objToId.get(void 0);
-            assertDefined(undefinedID, "undefined ID must be defined");
+            assertDefined();
             for (const obj of collector.$noSerialize$) {
                 objToId.set(obj, undefinedID);
             }
@@ -1299,7 +1204,7 @@
             }
             subs.push(value.map((s => "number" == typeof s ? `_${s}` : serializeSubscription(s, getObjId))).filter(isNotNullable));
         }
-        assertEqual(subs.length, subsMap.size, "missing subscriptions to serialize", subs, subsMap);
+        assertEqual();
         const convertedObjs = objs.map((obj => {
             if (null === obj) {
                 return null;
@@ -1351,14 +1256,14 @@
             const seq = ctx.$seq$;
             const metaValue = {};
             const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
-            if (assertDefined(elementID, "pause: can not generate ID for dom node", node), ref.length > 0) {
-                assertElement(node);
+            if (assertDefined(), ref.length > 0) {
+                assertElement();
                 const value = ref.map(mustGetObjId).join(" ");
                 value && (refs[elementID] = value);
             } else if (canRender) {
                 let add = !1;
                 if (elementCaptured) {
-                    assertDefined(renderQrl, "renderQrl must be defined");
+                    assertDefined();
                     const propsId = getObjId(props);
                     metaValue.h = mustGetObjId(renderQrl) + (propsId ? " " + propsId : ""), add = !0;
                 } else {
@@ -1384,8 +1289,6 @@
                 }
                 add && (meta[elementID] = metaValue);
             }
-        })), qDev && elementToIndex.forEach(((value, el) => {
-            value || logWarn("unconnected element", el.nodeName, "\n");
         })), {
             state: {
                 refs: refs,
@@ -1500,7 +1403,7 @@
         }
         collector.$seen$.add(manager);
         const subs = manager.$subs$;
-        assertDefined(subs, "subs must be defined");
+        assertDefined();
         for (const key of subs) {
             const type = key[0];
             if (type > 0 && collectValue(key[2], collector, !0), !0 === leaks) {
@@ -1571,7 +1474,7 @@
         var promise;
         collector.$objSet$.add(obj);
     };
-    const isContainer = el => isElement$1(el) && el.hasAttribute(QContainerAttr);
+    const isContainer = el => isElement$1(el) && el.hasAttribute("q:container");
     const hasContext = el => {
         const node = processVirtualNodes(el);
         if (isQwikElement(node)) {
@@ -1617,14 +1520,13 @@
         iCtx.$seq$++;
         return {
             get: seq[i],
-            set: value => (qDev && verifySerializable(value), seq[i] = value),
+            set: value => seq[i] = value,
             i: i,
             iCtx: iCtx,
             elCtx: elCtx
         };
     };
-    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name), 
-    Object.freeze({
+    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name)), Object.freeze({
         id: fromCamelToKebabCase(name)
     }));
     const useContextProvider = (context, newValue) => {
@@ -1632,10 +1534,9 @@
         if (void 0 !== get) {
             return;
         }
-        qDev && validateContext(context);
         let contexts = elCtx.$contexts$;
-        contexts || (elCtx.$contexts$ = contexts = new Map), qDev && verifySerializable(newValue), 
-        contexts.set(context.id, newValue), set(!0);
+        contexts || (elCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
+        set(!0);
     };
     const resolveContext = (context, hostCtx, containerState) => {
         const contextID = context.id;
@@ -1691,28 +1592,9 @@
         }
         return null;
     };
-    const validateContext = context => {
-        if (!isObject(context) || "string" != typeof context.id || 0 === context.id.length) {
-            throw qError(28, context);
-        }
-    };
     const ERROR_CONTEXT = createContextId("qk-error");
     const handleError = (err, hostElement, rCtx) => {
         const elCtx = tryGetContext(hostElement);
-        if (qDev) {
-            if (!isServerPlatform() && "undefined" != typeof document && isVirtualElement(hostElement)) {
-                elCtx.$vdom$ = null;
-                const errorDiv = document.createElement("errored-host");
-                err && err instanceof Error && (errorDiv.props = {
-                    error: err
-                }), errorDiv.setAttribute("q:key", "_error_"), errorDiv.append(...hostElement.childNodes), 
-                hostElement.appendChild(errorDiv);
-            }
-            if (err && err instanceof Error && ("hostElement" in err || (err.hostElement = hostElement)), 
-            !isRecoverable(err)) {
-                throw err;
-            }
-        }
         if (isServerPlatform()) {
             throw err;
         }
@@ -1724,7 +1606,6 @@
             errorStore.error = err;
         }
     };
-    const isRecoverable = err => !(err && err instanceof Error && "plugin" in err);
     const executeComponent = (rCtx, elCtx) => {
         elCtx.$flags$ &= -2, elCtx.$flags$ |= 4, elCtx.$slots$ = [], elCtx.li.length = 0;
         const hostElement = elCtx.$element$;
@@ -1733,10 +1614,8 @@
         const newCtx = pushRenderContext(rCtx);
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
         const waitOn = iCtx.$waitOn$ = [];
-        assertDefined(componentQRL, "render: host element to render must has a $renderQrl$:", elCtx), 
-        assertDefined(props, "render: host element to render must has defined props", elCtx), 
-        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, iCtx.$subscriber$ = [ 0, hostElement ], 
-        iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+        assertDefined(), assertDefined(), newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, 
+        iCtx.$subscriber$ = [ 0, hostElement ], iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(iCtx);
         return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => 1 & elCtx.$flags$ ? executeComponent(rCtx, elCtx) : {
             node: jsxNode,
@@ -1767,7 +1646,7 @@
             $cmpCtx$: null,
             $slotCtx$: null
         };
-        return seal(ctx), seal(ctx.$static$), ctx;
+        return seal(), seal(), ctx;
     };
     const pushRenderContext = ctx => ({
         $static$: ctx.$static$,
@@ -1816,7 +1695,7 @@
     var _a;
     class MockElement {
         constructor(nodeType) {
-            this.nodeType = nodeType, this[_a] = null, seal(this);
+            this.nodeType = nodeType, this[_a] = null, seal();
         }
     }
     _a = "_qc_";
@@ -1825,8 +1704,7 @@
         return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
             const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
             return processData$1(result, rCtx, ssrCtx, stream, 0, void 0);
-        } : void 0), qDev && ssrCtx.$static$.$headNodes$.length > 0 && logError("Missing <head>. Global styles could not be rendered. Please render a <head> element at the root of the app"), 
-        rCtx;
+        } : void 0), rCtx;
     };
     const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const props = node.props;
@@ -1837,9 +1715,9 @@
         let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
         const isSlot = "q:s" in props;
         const key = null != node.key ? String(node.key) : null;
-        if (isSlot && (assertDefined(rCtx.$cmpCtx$?.$id$, "hostId must be defined for a slot"), 
-        virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), null != key && (virtualComment += " q:key=" + key), 
-        virtualComment += "--\x3e", stream.write(virtualComment), extraNodes) {
+        if (isSlot && (assertDefined(), virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), 
+        null != key && (virtualComment += " q:key=" + key), virtualComment += "--\x3e", 
+        stream.write(virtualComment), extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
             }
@@ -1851,7 +1729,7 @@
             }
             let promise;
             if (isSlot) {
-                assertDefined(key, "key must be defined for a slot");
+                assertDefined();
                 const content = ssrCtx.$projectedChildren$?.[key];
                 if (content) {
                     const [rCtx, sCtx] = ssrCtx.$projectedCtxs$;
@@ -1995,10 +1873,7 @@
             let hasRef = !1;
             let classStr = "";
             let htmlStr = null;
-            if (assertElement(elm), qDev && props.class && props.className) {
-                throw new TypeError("Can only have one of class or className");
-            }
-            if (immutable) {
+            if (assertElement(), immutable) {
                 for (const prop in immutable) {
                     let value = immutable[prop];
                     if (isOnProp(prop)) {
@@ -2006,15 +1881,14 @@
                         continue;
                     }
                     const attrName = processPropKey(prop);
-                    if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-                    value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), useSignal = !0), 
-                    "dangerouslySetInnerHTML" === prop) {
+                    if (isSignal(value) && (assertDefined(), value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), 
+                    useSignal = !0), "dangerouslySetInnerHTML" === prop) {
                         htmlStr = value;
                         continue;
                     }
-                    prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
+                    prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                     const attrValue = processPropValue(attrName, value);
-                    null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+                    null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
                 }
             }
             for (const prop in props) {
@@ -2028,58 +1902,22 @@
                     continue;
                 }
                 const attrName = processPropKey(prop);
-                if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-                value = trackSignal(value, [ 2, hostCtx.$element$, value, elm, attrName ]), useSignal = !0), 
-                "dangerouslySetInnerHTML" === prop) {
+                if (isSignal(value) && (assertDefined(), value = trackSignal(value, [ 2, hostCtx.$element$, value, elm, attrName ]), 
+                useSignal = !0), "dangerouslySetInnerHTML" === prop) {
                     htmlStr = value;
                     continue;
                 }
-                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), rCtx.$static$.$containerState$);
+                prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) ? qDev && logError("Attribute value is unsafe for SSR") : openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"'));
+                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
             }
             const listeners = elCtx.li;
             if (hostCtx) {
-                if (qDev && "html" === tagName) {
-                    throw qError(29);
-                }
                 if (hostCtx.$scopeIds$?.length) {
                     const extra = hostCtx.$scopeIds$.join(" ");
                     classStr = classStr ? `${extra} ${classStr}` : extra;
                 }
                 2 & hostCtx.$flags$ && (listeners.push(...hostCtx.li), hostCtx.$flags$ &= -3);
-            }
-            if (qDev) {
-                if (32 & flags && !(512 & flags) && !phasingContent[tagName]) {
-                    throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n\nThis goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
-                }
-                if ("table" === tagName) {
-                    flags |= 256;
-                } else {
-                    if (256 & flags && !tableContent[tagName]) {
-                        throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
-                    }
-                    flags &= -257;
-                }
-                if ("button" === tagName) {
-                    if (128 & flags) {
-                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <button>.\n\nThis goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
-                    }
-                    flags |= 128;
-                }
-                if ("a" === tagName) {
-                    if (64 & flags) {
-                        throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is already a <a>.\n\nThis goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#interactive-content`, node);
-                    }
-                    flags |= 64;
-                }
-                if ("svg" !== tagName && "math" !== tagName || (flags |= 512), 1 & flags && !headContent[tagName]) {
-                    throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
-                }
-                if (4 & flags && !htmlContent[tagName]) {
-                    throw createJSXError(`<${tagName}> can not be rendered because it's not a valid direct children of the <html> element, only <head> and <body> are allowed.`, node);
-                }
-                startPhasingContent[tagName] && (flags |= 32);
             }
             if (isHead && (flags |= 1), invisibleElements[tagName] && (flags |= 16), textOnlyElements[tagName] && (flags |= 8), 
             classStr && (openingElement += ' class="' + escapeAttr(classStr) + '"'), listeners.length > 0) {
@@ -2171,11 +2009,10 @@
                     return walkChildren(node, rCtx, ssrCtx, stream, flags);
                 }
                 if (isSignal(node)) {
-                    const insideText = 8 & flags;
                     const hostEl = rCtx.$cmpCtx$?.$element$;
                     let value;
                     if (hostEl) {
-                        if (!insideText) {
+                        if (!(8 & flags)) {
                             const id = getNextIndex(rCtx);
                             return value = trackSignal(node, 1024 & flags ? [ 3, "#" + id, node, "#" + id ] : [ 4, hostEl, node, "#" + id ]), 
                             void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(jsxToString(value))}\x3c!----\x3e`);
@@ -2286,93 +2123,6 @@
         track: !0,
         wbr: !0
     };
-    const startPhasingContent = {
-        p: !0,
-        pre: !0
-    };
-    const htmlContent = {
-        head: !0,
-        body: !0
-    };
-    const tableContent = {
-        tbody: !0,
-        thead: !0,
-        tfoot: !0,
-        caption: !0,
-        colgroup: !0
-    };
-    const headContent = {
-        meta: !0,
-        title: !0,
-        link: !0,
-        style: !0,
-        script: !0,
-        noscript: !0,
-        template: !0,
-        base: !0
-    };
-    const phasingContent = {
-        a: !0,
-        abbr: !0,
-        area: !0,
-        audio: !0,
-        b: !0,
-        bdi: !0,
-        bdo: !0,
-        br: !0,
-        button: !0,
-        canvas: !0,
-        cite: !0,
-        code: !0,
-        command: !0,
-        data: !0,
-        datalist: !0,
-        del: !0,
-        dfn: !0,
-        em: !0,
-        embed: !0,
-        i: !0,
-        iframe: !0,
-        img: !0,
-        input: !0,
-        ins: !0,
-        itemprop: !0,
-        kbd: !0,
-        keygen: !0,
-        label: !0,
-        link: !0,
-        map: !0,
-        mark: !0,
-        math: !0,
-        meta: !0,
-        meter: !0,
-        noscript: !0,
-        object: !0,
-        option: !0,
-        output: !0,
-        picture: !0,
-        progress: !0,
-        q: !0,
-        ruby: !0,
-        s: !0,
-        samp: !0,
-        script: !0,
-        select: !0,
-        slot: !0,
-        small: !0,
-        span: !0,
-        strong: !0,
-        sub: !0,
-        sup: !0,
-        svg: !0,
-        template: !0,
-        textarea: !0,
-        time: !0,
-        u: !0,
-        var: !0,
-        video: !0,
-        wbr: !0
-    };
     const ESCAPE_HTML = /[&<>]/g;
     const ESCAPE_ATTRIBUTES = /[&"]/g;
     const escapeHtml = s => s.replace(ESCAPE_HTML, (c => {
@@ -2442,7 +2192,7 @@
             this.$type$ = $type$, this.$props$ = $props$, this.$immutableProps$ = $immutableProps$, 
             this.$children$ = $children$, this.$flags$ = $flags$, this.$key$ = $key$, this.$elm$ = null, 
             this.$text$ = "", this.$signal$ = null, this.$id$ = $type$ + ($key$ ? ":" + $key$ : ""), 
-            seal(this);
+            seal();
         }
     }
     const processNode = (node, invocationContext) => {
@@ -2493,11 +2243,11 @@
     };
     const isPrimitive = obj => isString(obj) || "number" == typeof obj;
     const resumeIfNeeded = containerEl => {
-        "paused" === directGetAttribute(containerEl, QContainerAttr) && (resumeContainer(containerEl), 
+        "paused" === directGetAttribute(containerEl, "q:container") && (resumeContainer(containerEl), 
         appendQwikDevTools(containerEl));
     };
     const resumeContainer = containerEl => {
-        if (!isElement$1(el = containerEl) || !el.hasAttribute(QContainerAttr)) {
+        if (!isElement$1(el = containerEl) || !el.hasAttribute("q:container")) {
             return void logWarn("Skipping hydration because parent element is not q:container");
         }
         var el;
@@ -2513,11 +2263,6 @@
         }
         const doc = getDocument(containerEl);
         const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-        if (qDev) {
-            if (!getQwikJSON(parentJSON, "type")) {
-                return void logWarn("Skipping hydration qwik/json metadata was not found.");
-            }
-        }
         const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
         const containerState = _getContainerState(containerEl);
         moveStyles(containerEl, containerState);
@@ -2545,22 +2290,21 @@
                 return;
             }
             const id = directGetAttribute(el, "q:id");
-            assertDefined(id, "resume: element missed q:id", el);
+            assertDefined();
             const index = strToInt(id);
             elements.set(index, el);
         }));
         const parser = createParser(containerState, doc);
         const finalized = new Map;
         const revived = new Set;
-        const getObject = id => (assertTrue("string" == typeof id && id.length > 0, "resume: id must be an non-empty string, got:", id), 
-        finalized.has(id) ? finalized.get(id) : computeObject(id));
+        const getObject = id => (assertTrue(), finalized.has(id) ? finalized.get(id) : computeObject(id));
         const computeObject = id => {
             if (id.startsWith("#")) {
                 const elementId = id.slice(1);
                 const index = strToInt(elementId);
-                assertTrue(elements.has(index), "missing element for id:", elementId);
+                assertTrue(elements.has(index));
                 const rawElement = elements.get(index);
-                if (assertDefined(rawElement, "missing element for id:", elementId), isComment(rawElement)) {
+                if (assertDefined(), isComment(rawElement)) {
                     if (!rawElement.isConnected) {
                         return void finalized.set(id, void 0);
                     }
@@ -2575,11 +2319,11 @@
                 const funcId = id.slice(1);
                 const index = strToInt(funcId);
                 const func = inlinedFunctions[index];
-                return assertDefined(func, "missing inlined function for id:", funcId), func;
+                return assertDefined(), func;
             }
             const index = strToInt(id);
             const objs = pauseState.objs;
-            assertTrue(objs.length > index, "resume: index is out of bounds", id);
+            assertTrue();
             let value = objs[index];
             isString(value) && (value = value === UNDEFINED_PREFIX ? void 0 : parser.prepare(value));
             let obj = value;
@@ -2598,8 +2342,7 @@
             getObject: getObject,
             meta: pauseState.ctx,
             refs: pauseState.refs
-        }, directSetAttribute(containerEl, QContainerAttr, "resumed"), logDebug("Container resumed"), 
-        ((el, eventName, detail, bubbles) => {
+        }, directSetAttribute(containerEl, "q:container", "resumed"), logDebug(), ((el, eventName, detail, bubbles) => {
             (build.isBrowser || "function" == typeof CustomEvent) && el && el.dispatchEvent(new CustomEvent(eventName, {
                 detail: detail,
                 bubbles: bubbles,
@@ -2646,10 +2389,7 @@
         }));
     };
     const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
-    const getQwikInlinedFuncs = parentElm => {
-        const elm = getQwikJSON(parentElm, "q:func");
-        return elm?.qFuncs ?? EMPTY_ARRAY;
-    };
+    const getQwikInlinedFuncs = parentElm => getQwikJSON(parentElm, "q:func")?.qFuncs ?? EMPTY_ARRAY;
     const getQwikJSON = (parentElm, attribute) => {
         let child = parentElm.lastElementChild;
         for (;child; ) {
@@ -2675,13 +2415,13 @@
                 const doc = getDocument(elmOrDoc);
                 const documentElement = doc.documentElement;
                 const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
-                if ("paused" === directGetAttribute(containerEl, QContainerAttr)) {
+                if ("paused" === directGetAttribute(containerEl, "q:container")) {
                     throw qError(21);
                 }
                 const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
                 const containerState = _getContainerState(containerEl);
                 const contexts = getNodesInScope(containerEl, hasContext);
-                directSetAttribute(containerEl, QContainerAttr, "paused");
+                directSetAttribute(containerEl, "q:container", "paused");
                 for (const elCtx of contexts) {
                     const elm = elCtx.$element$;
                     const listeners = elCtx.li;
@@ -2698,7 +2438,7 @@
                 }
                 const data = await _pauseFromContexts(contexts, containerState, (el => isNode$1(el) && isText(el) ? getTextID(el, containerState) : null));
                 const qwikJson = doc.createElement("script");
-                directSetAttribute(qwikJson, "type", "qwik/json"), qwikJson.textContent = escapeText(JSON.stringify(data.state, void 0, qDev ? "  " : void 0)), 
+                directSetAttribute(qwikJson, "type", "qwik/json"), qwikJson.textContent = escapeText(JSON.stringify(data.state, void 0, void 0)), 
                 parentJSON.appendChild(qwikJson);
                 const extraListeners = Array.from(containerState.$events$, (s => JSON.stringify(s)));
                 const eventsScript = doc.createElement("script");
@@ -2712,24 +2452,18 @@
         const index = stuff.indexOf("q:id=");
         return index > 0 ? strToInt(stuff.slice(index + 5)) : -1;
     };
-    const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
-        assertString(type, "jsx type must be a string");
+    const _jsxQ = (type, mutableProps, immutableProps, children, flags, key) => {
+        assertString();
         const processed = null == key ? null : String(key);
         const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
-        return qDev && dev && (node.dev = {
-            stack: (new Error).stack,
-            ...dev
-        }), validateJSXNode(node), seal(node), node;
+        return validateJSXNode(node), seal(), node;
     };
-    const _jsxC = (type, mutableProps, flags, key, dev) => {
+    const _jsxC = (type, mutableProps, flags, key) => {
         const processed = null == key ? null : String(key);
         const props = mutableProps ?? EMPTY_OBJ;
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
         return "string" == typeof type && mutableProps && delete mutableProps.children, 
-        qDev && dev && (node.dev = {
-            stack: (new Error).stack,
-            ...dev
-        }), validateJSXNode(node), seal(node), node;
+        validateJSXNode(node), seal(), node;
     };
     const jsx = (type, props, key) => {
         const processed = null == key ? null : String(key);
@@ -2737,10 +2471,9 @@
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
         }));
-        isString(type) && "className" in props && (props.class = props.className, delete props.className, 
-        qDev && logOnceWarn("jsx: `className` is deprecated. Use `class` instead."));
+        isString(type) && "className" in props && (props.class = props.className, delete props.className);
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
-        return validateJSXNode(node), seal(node), node;
+        return validateJSXNode(node), seal(), node;
     };
     const SKIP_RENDER_TYPE = ":skipRender";
     class JSXNodeImpl {
@@ -2751,75 +2484,15 @@
     }
     const Virtual = props => props.children;
     const RenderOnce = (props, key) => new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, 2, key);
-    const validateJSXNode = node => {
-        if (qDev) {
-            const {type: type, props: props, immutableProps: immutableProps, children: children} = node;
-            invoke(void 0, (() => {
-                const isQwikC = isQwikComponent(type);
-                if (!isString(type) && !isFunction(type)) {
-                    throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
-                }
-                if (children) {
-                    const flatChildren = isArray(children) ? children.flat() : [ children ];
-                    if ((isString(type) || isQwikC) && flatChildren.forEach((child => {
-                        if (!isValidJSXChild(child)) {
-                            const typeObj = typeof child;
-                            let explanation = "";
-                            throw "object" === typeObj ? explanation = child?.constructor ? `it's an instance of "${child?.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`, 
-                            new Error(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`);
-                        }
-                    })), build.isBrowser && (isFunction(type) || immutableProps)) {
-                        const keys = {};
-                        flatChildren.forEach((child => {
-                            if (isJSXNode(child) && null != child.key) {
-                                const key = String(child.type) + ":" + child.key;
-                                if (keys[key]) {
-                                    const err = createJSXError("Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop", child);
-                                    err && (isString(child.type), logOnceWarn(err));
-                                } else {
-                                    keys[key] = !0;
-                                }
-                            }
-                        }));
-                    }
-                }
-                const allProps = [ ...Object.entries(props), ...immutableProps ? Object.entries(immutableProps) : [] ];
-                for (const [prop, value] of allProps) {
-                    if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-                        throw new Error(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`);
-                    }
-                    "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
-                }
-                if (isString(type)) {
-                    const hasSetInnerHTML = allProps.some((a => "dangerouslySetInnerHTML" === a[0]));
-                    if (hasSetInnerHTML && children) {
-                        const err = createJSXError(`The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`, node);
-                        logError(err);
-                    }
-                    if (allProps.some((a => "children" === a[0]))) {
-                        throw new Error(`The JSX element <${type}> can not have both 'children' as a property.`);
-                    }
-                    "style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.builder.io/docs/components/styles/#usestyles for more information."), 
-                    "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'");
-                }
-            }));
-        }
+    const validateJSXNode = () => {
+        qDev;
     };
-    const printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`)).join(", ")} }`;
-    const isJSXNode = n => qDev ? n instanceof JSXNodeImpl || !!(isObject(n) && "key" in n && "props" in n && "type" in n) && (logWarn('Duplicate implementations of "JSXNode" found'), 
-    !0) : n instanceof JSXNodeImpl;
-    const isValidJSXChild = node => !node || (node === SkipRender || (!(!isString(node) && "number" != typeof node && "boolean" != typeof node) || (!!isJSXNode(node) || (isArray(node) ? node.every(isValidJSXChild) : isSignal(node) ? isValidJSXChild(node.value) : !!isPromise(node)))));
+    const isJSXNode = n => n instanceof JSXNodeImpl;
     const Fragment = props => props.children;
-    const createJSXError = (message, node) => {
-        const error = new Error(message);
-        return node.dev ? (error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`, 
-        error) : error;
-    };
-    const filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).join("\n");
     const SVG_NS = "http://www.w3.org/2000/svg";
     const CHILDREN_PLACEHOLDER = [];
     const smartUpdateChildren = (ctx, oldVnode, newVnode, flags) => {
-        assertQwikElement(oldVnode.$elm$);
+        assertQwikElement();
         const ch = newVnode.$children$;
         if (1 === ch.length && ch[0].$type$ === SKIP_RENDER_TYPE) {
             return;
@@ -2866,13 +2539,13 @@
                 results.push(diffVnode(ctx, oldEndVnode, newEndVnode, flags)), oldEndVnode = oldCh[--oldEndIdx], 
                 newEndVnode = newCh[--newEndIdx];
             } else if (oldStartVnode.$key$ && oldStartVnode.$id$ === newEndVnode.$id$) {
-                assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
-                results.push(diffVnode(ctx, oldStartVnode, newEndVnode, flags)), insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$), 
-                oldStartVnode = oldCh[++oldStartIdx], newEndVnode = newCh[--newEndIdx];
+                assertDefined(), assertDefined(), results.push(diffVnode(ctx, oldStartVnode, newEndVnode, flags)), 
+                insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$), oldStartVnode = oldCh[++oldStartIdx], 
+                newEndVnode = newCh[--newEndIdx];
             } else if (oldEndVnode.$key$ && oldEndVnode.$id$ === newStartVnode.$id$) {
-                assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined"), assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined"), 
-                results.push(diffVnode(ctx, oldEndVnode, newStartVnode, flags)), insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$), 
-                oldEndVnode = oldCh[--oldEndIdx], newStartVnode = newCh[++newStartIdx];
+                assertDefined(), assertDefined(), results.push(diffVnode(ctx, oldEndVnode, newStartVnode, flags)), 
+                insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$), oldEndVnode = oldCh[--oldEndIdx], 
+                newStartVnode = newCh[++newStartIdx];
             } else {
                 if (void 0 === oldKeyToIdx && (oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)), 
                 idxInOld = oldKeyToIdx[newStartVnode.$key$], void 0 === idxInOld) {
@@ -2885,7 +2558,7 @@
                     }));
                 } else {
                     results.push(diffVnode(ctx, elmToMove, newStartVnode, flags)), oldCh[idxInOld] = void 0, 
-                    assertDefined(elmToMove.$elm$, "elmToMove $elm$ must be defined"), insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
+                    assertDefined(), insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
                 }
                 newStartVnode = newCh[++newStartIdx];
             }
@@ -2917,7 +2590,7 @@
             const t = new ProcessedJSXNodeImpl(node.nodeName, EMPTY_OBJ, null, CHILDREN_PLACEHOLDER, 0, null);
             return t.$text$ = node.data, t.$elm$ = node, t;
         }
-        assertFail("Invalid node type");
+        assertFail();
     };
     const isHeadChildren = node => {
         const type = node.nodeType;
@@ -2946,21 +2619,18 @@
         return output;
     };
     const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
-        assertEqual(oldVnode.$type$, newVnode.$type$, "old and new vnodes type must be the same"), 
-        assertEqual(oldVnode.$key$, newVnode.$key$, "old and new vnodes key must be the same"), 
-        assertEqual(oldVnode.$id$, newVnode.$id$, "old and new vnodes key must be the same");
+        assertEqual(), assertEqual(), assertEqual();
         const elm = oldVnode.$elm$;
         const tag = newVnode.$type$;
         const staticCtx = rCtx.$static$;
         const currentComponent = rCtx.$cmpCtx$;
-        if (assertDefined(elm, "while patching element must be defined"), assertDefined(currentComponent, "while patching current component must be defined"), 
-        newVnode.$elm$ = elm, "#text" === tag) {
+        if (assertDefined(), assertDefined(), newVnode.$elm$ = elm, "#text" === tag) {
             rCtx.$static$.$visited$.push(elm);
             const signal = newVnode.$signal$;
             return signal && (newVnode.$text$ = jsxToString(trackSignal(signal, [ 4, currentComponent.$element$, signal, elm ]))), 
             void setProperty(staticCtx, elm, "data", newVnode.$text$);
         }
-        assertQwikElement(elm);
+        assertQwikElement();
         const props = newVnode.$props$;
         const vnodeFlags = newVnode.$flags$;
         const elCtx = getContext(elm, rCtx.$static$.$containerState$);
@@ -2974,7 +2644,7 @@
                     let newValue = props[prop];
                     "ref" !== prop ? isOnProp(prop) ? browserSetEvent(staticCtx, elCtx, prop, newValue) : (isSignal(newValue) && (newValue = trackSignal(newValue, [ 1, currentComponent.$element$, newValue, elm, prop ])), 
                     "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
-                    values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg))) : (assertElement(elm), 
+                    values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg))) : (assertElement(), 
                     setRef(newValue, elm));
                 }
             }
@@ -2983,7 +2653,7 @@
             }
             isSvg && "foreignObject" === tag && (flags &= -2);
             if (void 0 !== props[dangerouslySetInnerHTML]) {
-                return void (qDev && newVnode.$children$.length > 0 && logWarn("Node can not have children when innerHTML is set"));
+                return void 0;
             }
             if ("textarea" === tag) {
                 return;
@@ -2998,8 +2668,7 @@
             elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
             needsRender = !0), needsRender ? then(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
         }
-        return "q:s" in props ? (assertDefined(currentComponent.$slots$, "current component slots must be a defined array"), 
-        void currentComponent.$slots$.push(newVnode)) : 2 & vnodeFlags ? void 0 : smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
+        return "q:s" in props ? (assertDefined(), void currentComponent.$slots$.push(newVnode)) : 2 & vnodeFlags ? void 0 : smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
     };
     const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         if (2 & vnode.$flags$) {
@@ -3036,7 +2705,7 @@
         const promises = [];
         for (;startIdx <= endIdx; ++startIdx) {
             const ch = vnodes[startIdx];
-            assertDefined(ch, "render: node must be defined at index", startIdx, vnodes);
+            assertDefined();
             const elm = createElm(ctx, ch, flags, promises);
             insertBefore(ctx.$static$, parentElm, elm, before);
         }
@@ -3045,7 +2714,7 @@
     const removeChildren = (staticCtx, nodes, startIdx, endIdx) => {
         for (;startIdx <= endIdx; ++startIdx) {
             const ch = nodes[startIdx];
-            ch && (assertDefined(ch.$elm$, "vnode elm must be defined"), removeNode(staticCtx, ch.$elm$));
+            ch && (assertDefined(), removeNode(staticCtx, ch.$elm$));
         }
     };
     const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
@@ -3076,7 +2745,7 @@
             const signal = vnode.$signal$;
             const elm = doc.createTextNode(vnode.$text$);
             if (signal) {
-                assertDefined(currentComponent, "signals can not be used outside components");
+                assertDefined();
                 elm.data = vnode.$text$ = jsxToString(trackSignal(signal, 4 & flags ? [ 3, elm, signal, elm ] : [ 4, currentComponent.$element$, signal, elm ]));
             }
             return vnode.$elm$ = elm;
@@ -3112,11 +2781,7 @@
                         }
                     }
                 }
-                if (setQId(rCtx, elCtx), qDev) {
-                    const symbol = renderQRL.$symbol$;
-                    symbol && directSetAttribute(elm, "data-qrl", symbol);
-                }
-                elCtx.$componentQrl$ = renderQRL;
+                setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL;
                 const wait = then(renderComponent(rCtx, elCtx, flags), (() => {
                     let children = vnode.$children$;
                     if (0 === children.length) {
@@ -3133,17 +2798,14 @@
                         slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotCtx.$element$;
                         for (const node of newVnode.$children$) {
                             const nodeElm = createElm(slotRctx, node, flags, p);
-                            assertDefined(node.$elm$, "vnode elm must be defined"), assertEqual(nodeElm, node.$elm$, "vnode elm must be defined"), 
-                            appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                            assertDefined(), assertEqual(), appendChild(staticCtx, slotCtx.$element$, nodeElm);
                         }
                     }
                     return promiseAllLazy(p);
                 }));
                 return isPromise(wait) && promises.push(wait), elm;
             }
-            "q:s" in props && (assertDefined(currentComponent, "slot can only be used inside component"), 
-            assertDefined(currentComponent.$slots$, "current component slots must be a defined array"), 
-            el = elm, null !== (key = vnode.$key$) && directSetAttribute(el, "q:key", key), 
+            "q:s" in props && (assertDefined(), assertDefined(), el = elm, null !== (key = vnode.$key$) && directSetAttribute(el, "q:key", key), 
             directSetAttribute(elm, "q:sref", currentComponent.$id$), directSetAttribute(elm, "q:s", ""), 
             currentComponent.$slots$.push(vnode), staticCtx.$addSlots$.push([ elm, currentComponent.$element$ ]));
         } else {
@@ -3156,8 +2818,7 @@
                 })), 2 & currentComponent.$flags$ && (elCtx.li.push(...currentComponent.li), currentComponent.$flags$ &= -3);
             }
             if (void 0 !== props[dangerouslySetInnerHTML]) {
-                return qDev && vnode.$children$.length > 0 && logWarn("Node can not have children when innerHTML is set"), 
-                elm;
+                return elm;
             }
             isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2);
         }
@@ -3177,8 +2838,7 @@
         const slotsArray = (elCtx => {
             const slots = elCtx.$slots$;
             if (!slots) {
-                return assertDefined(elCtx.$element$.parentElement, "component should be already attached to the dom"), 
-                elCtx.$slots$ = readDOMSlots(elCtx);
+                return assertDefined(), elCtx.$slots$ = readDOMSlots(elCtx);
             }
             return slots;
         })(elCtx);
@@ -3186,7 +2846,7 @@
         const templates = {};
         const t = Array.from(elCtx.$element$.childNodes).filter(isSlotTemplate);
         for (const vnode of slotsArray) {
-            assertQwikElement(vnode.$elm$), slots[vnode.$key$ ?? ""] = vnode.$elm$;
+            assertQwikElement(), slots[vnode.$key$ ?? ""] = vnode.$elm$;
         }
         for (const elm of t) {
             templates[directGetAttribute(elm, QSlot) ?? ""] = elm;
@@ -3198,8 +2858,7 @@
     };
     const readDOMSlots = elCtx => {
         const parent = elCtx.$element$.parentElement;
-        return assertDefined(parent, "component should be already attached to the dom"), 
-        queryAllVirtualByAttribute(parent, "q:sref", elCtx.$id$).map(domToVnode);
+        return assertDefined(), queryAllVirtualByAttribute(parent, "q:sref", elCtx.$id$).map(domToVnode);
     };
     const checkBeforeAssign = (ctx, elm, newValue, prop) => (prop in elm && elm[prop] !== newValue && ("SELECT" === elm.tagName ? ctx.$postOperations$.push({
         $operation$: _setProperty,
@@ -3211,8 +2870,7 @@
     const PROP_HANDLER_MAP = {
         style: (ctx, elm, newValue) => (setProperty(ctx, elm.style, "cssText", newValue), 
         !0),
-        class: (ctx, elm, newValue) => (assertTrue(null == newValue || "string" == typeof newValue, "class newValue must be either nullish or string", newValue), 
-        elm.namespaceURI === SVG_NS ? setAttribute(ctx, elm, "class", newValue) : setProperty(ctx, elm, "className", newValue), 
+        class: (ctx, elm, newValue) => (assertTrue(), elm.namespaceURI === SVG_NS ? setAttribute(ctx, elm, "class", newValue) : setProperty(ctx, elm, "className", newValue), 
         !0),
         value: checkBeforeAssign,
         checked: checkBeforeAssign,
@@ -3230,7 +2888,7 @@
             return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
         }
         const exception = PROP_HANDLER_MAP[prop];
-        exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice(15), staticCtx.$containerState$), 
+        exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith("preventdefault:") && addQwikEvent(prop.slice("preventdefault:".length), staticCtx.$containerState$), 
         setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
     };
     const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) => {
@@ -3242,12 +2900,8 @@
                 if (isOnProp(prop)) {
                     browserSetEvent(staticCtx, elCtx, prop, newValue);
                 } else {
-                    if (isSignal(newValue) && (assertDefined(hostCtx, "Signals can only be used in components"), 
-                    newValue = trackSignal(newValue, immutable ? [ 1, elm, newValue, hostCtx.$element$, prop ] : [ 2, hostCtx.$element$, newValue, elm, prop ])), 
+                    if (isSignal(newValue) && (assertDefined(), newValue = trackSignal(newValue, immutable ? [ 1, elm, newValue, hostCtx.$element$, prop ] : [ 2, hostCtx.$element$, newValue, elm, prop ])), 
                     "class" === prop) {
-                        if (qDev && values.class) {
-                            throw new TypeError("Can only provide one of class or className");
-                        }
                         if (newValue = serializeClassWithHost(newValue, hostCtx), !newValue) {
                             continue;
                         }
@@ -3257,7 +2911,7 @@
                     values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg);
                 }
             } else {
-                assertElement(elm), setRef(newValue, elm);
+                assertElement(), setRef(newValue, elm);
             }
         }
         return values;
@@ -3269,9 +2923,9 @@
             return;
         }
         const manager = getProxyManager(props);
-        assertDefined(manager, "props have to be a proxy, but it is not", props);
+        assertDefined();
         const target = getProxyTarget(props);
-        assertDefined(target, "props have to be a proxy, but it is not", props);
+        assertDefined();
         const immutableMeta = target[_IMMUTABLE] = expectProps[_IMMUTABLE] ?? EMPTY_OBJ;
         for (const prop in expectProps) {
             if ("children" !== prop && prop !== QSlot && !immutableMeta[prop]) {
@@ -3327,12 +2981,12 @@
         const context = getInvokeContext();
         let qrl = context.$qrl$;
         if (qrl) {
-            assertQrl(qrl), assertDefined(qrl.$captureRef$, "invoke: qrl $captureRef$ must be defined inside useLexicalScope()", qrl);
+            assertQrl(qrl), assertDefined();
         } else {
             const el = context.$element$;
-            assertDefined(el, "invoke: element must be defined inside useLexicalScope()", context);
+            assertDefined();
             const container = getWrappingContainer(el);
-            assertDefined(container, "invoke: cant find parent q:container of", el), qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), 
+            assertDefined(), qrl = parseQRL(decodeURIComponent(String(context.$url$)), container), 
             assertQrl(qrl), resumeIfNeeded(container);
             const elCtx = getContext(el, _getContainerState(container));
             inflateQrl(qrl, elCtx);
@@ -3351,8 +3005,7 @@
         const server = isServerPlatform();
         server || resumeIfNeeded(containerState.$containerEl$);
         const elCtx = getContext(hostElement, containerState);
-        if (assertDefined(elCtx.$componentQrl$, "render: notified host element must have a defined $renderQrl$", elCtx), 
-        1 & elCtx.$flags$) {
+        if (assertDefined(), 1 & elCtx.$flags$) {
             return;
         }
         elCtx.$flags$ |= 1;
@@ -3400,13 +3053,10 @@
             for (const elCtx of renderingQueue) {
                 const el = elCtx.$element$;
                 if (!staticCtx.$hostElements$.has(el) && elCtx.$componentQrl$) {
-                    assertTrue(el.isConnected, "element must be connected to the dom"), staticCtx.$roots$.push(elCtx);
+                    assertTrue(), staticCtx.$roots$.push(elCtx);
                     try {
                         await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
                     } catch (err) {
-                        if (qDev) {
-                            throw err;
-                        }
                         logError(err);
                     }
                 }
@@ -3443,17 +3093,17 @@
                             {
                                 const elm = operation[3];
                                 if (!staticCtx.$visited$.includes(elm)) {
-                                    return setProperty(staticCtx, elm, "data", jsxToString(operation[2].value));
+                                    setProperty(staticCtx, elm, "data", jsxToString(operation[2].value));
                                 }
                             }
                         }
                     } catch (e) {}
                 })(staticCtx, op);
-            })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(staticCtx), 
+            })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(), 
             void await postRendering(containerState, rCtx)) : (await (async ctx => {
                 build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
                 document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).updateCallbackDone : executeDOMRender(ctx);
-            })(staticCtx), printRenderStats(staticCtx), postRendering(containerState, rCtx));
+            })(staticCtx), printRenderStats(), postRendering(containerState, rCtx));
         } catch (err) {
             logError(err);
         }
@@ -3569,8 +3219,7 @@
     };
     const useVisibleTask$ = implicit$FirstArg(useVisibleTaskQrl);
     const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
-    const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), !0, "Resource is not dirty", watch), 
-    isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
+    const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(), isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
     const runResource = (watch, containerState, rCtx, waitOn) => {
         watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, watch.$el$, void 0, "WatchEvent");
@@ -3581,7 +3230,7 @@
         }));
         const cleanups = [];
         const resource = watch.$state$;
-        assertDefined(resource, 'useResource: when running a resource, "watch.r" must be a defined.', watch);
+        assertDefined();
         const resourceTarget = unwrapProxy(resource);
         const opts = {
             track: (obj, prop) => {
@@ -3660,11 +3309,7 @@
         }));
     };
     const runComputed = (watch, containerState, rCtx) => {
-        !function(obj) {
-            if (qDev && !isSignal(obj)) {
-                throw new Error("Not a Signal");
-            }
-        }(watch.$state$), watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
+        watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
         const hostElement = watch.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "ComputedEvent");
         iCtx.$subscriber$ = [ 0, watch ], iCtx.$renderCtx$ = rCtx;
@@ -3918,8 +3563,7 @@
         $serialize$: (signal, getObjID, collector) => {
             const serialized = (signal => {
                 const fnBody = signal.$funcStr$;
-                return assertDefined(fnBody, "If qSerialize is true then fnStr must be provided."), 
-                `(${signal.$args$.map(((_, i) => `p${i}`)).join(",")})=>(${fnBody})`;
+                return assertDefined(), `(${signal.$args$.map(((_, i) => `p${i}`)).join(",")})=>(${fnBody})`;
             })(signal);
             let index = collector.$inlinedFunctions$.indexOf(serialized);
             index < 0 && (collector.$inlinedFunctions$.push(serialized), index = collector.$inlinedFunctions$.length - 1);
@@ -3932,8 +3576,7 @@
             return new SignalDerived(fn, args, fn);
         },
         $fill$: (fn, getObject) => {
-            assertString(fn.$func$, "fn.$func$ should be a string"), fn.$func$ = getObject(fn.$func$), 
-            fn.$args$ = fn.$args$.map(getObject);
+            assertString(), fn.$func$ = getObject(fn.$func$), fn.$args$ = fn.$args$.map(getObject);
         }
     }, {
         $prefix$: "",
@@ -4121,7 +3764,6 @@
     const fastSkipSerialize = obj => noSerializeSet.has(obj);
     const fastWeakSerialize = obj => weakSerializeSet.has(obj);
     const noSerialize = input => (null != input && noSerializeSet.add(input), input);
-    const isConnected = sub => isSubscriberDescriptor(sub) ? isConnected(sub.$el$) : !!tryGetContext(sub) || sub.isConnected;
     const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     const getProxyTarget = obj => obj[QOjectTargetSymbol];
     const getProxyManager = obj => obj[QObjectManagerSymbol];
@@ -4145,7 +3787,7 @@
             } else if (type <= 4) {
                 base += ` ${signalID} ${"string" == typeof sub[3] ? sub[3] : must(getObjId(sub[3]))}`;
             } else {
-                assertFail("Should not get here");
+                assertFail();
             }
         }
         return base;
@@ -4153,7 +3795,7 @@
     const parseSubscription = (sub, getObject) => {
         const parts = sub.split(" ");
         const type = parseInt(parts[0], 10);
-        assertTrue(parts.length >= 2, "At least 2 parts");
+        assertTrue();
         const host = getObject(parts[1]);
         if (!host) {
             return;
@@ -4162,8 +3804,8 @@
             return;
         }
         const subscription = [ type, host ];
-        return 0 === type ? (assertTrue(parts.length <= 3, "Max 3 parts"), subscription.push(3 === parts.length ? decodeURI(parts[parts.length - 1]) : void 0)) : type <= 2 ? (assertTrue(5 === parts.length, "Type 1 has 5"), 
-        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5])) : type <= 4 && (assertTrue(4 === parts.length, "Type 2 has 4"), 
+        return 0 === type ? (assertTrue(), subscription.push(3 === parts.length ? decodeURI(parts[parts.length - 1]) : void 0)) : type <= 2 ? (assertTrue(), 
+        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5])) : type <= 4 && (assertTrue(), 
         subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4])), subscription;
     };
     const createSubscriptionManager = containerState => {
@@ -4181,12 +3823,12 @@
                 }
             }
         };
-        return seal(manager), manager;
+        return seal(), manager;
     };
     class LocalSubscriptionManager {
         constructor($groupToManagers$, $containerState$, initialMap) {
             this.$groupToManagers$ = $groupToManagers$, this.$containerState$ = $containerState$, 
-            this.$subs$ = [], initialMap && this.$addSubs$(initialMap), seal(this);
+            this.$subs$ = [], initialMap && this.$addSubs$(initialMap), seal();
         }
         $addSubs$(subs) {
             this.$subs$.push(...subs);
@@ -4226,11 +3868,6 @@
     };
     const isQrl = value => "function" == typeof value && "function" == typeof value.getSymbol;
     const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
-        if (qDev && captureRef) {
-            for (const item of captureRef) {
-                verifySerializable(item, "Captured variable in the closure can not be serialized");
-            }
-        }
         let _containerEl;
         const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
         const resolve = async containerEl => {
@@ -4289,16 +3926,14 @@
             $captureRef$: captureRef,
             dev: null
         });
-        return seal(qrl), qrl;
+        return seal(), qrl;
     };
     const getSymbolHash = symbolName => {
         const index = symbolName.lastIndexOf("_");
         return index > -1 ? symbolName.slice(index + 1) : symbolName;
     };
-    function assertQrl(qrl) {
-        if (qDev && !isQrl(qrl)) {
-            throw new Error("Not a QRL");
-        }
+    function assertQrl() {
+        qDev;
     }
     const EMITTED = new Set;
     const emitUsedSymbol = (symbol, element, reqTime) => {
@@ -4316,17 +3951,12 @@
     };
     const now = () => isServerPlatform() ? 0 : "object" == typeof performance ? performance.now() : 0;
     let runtimeSymbolId = 0;
-    const $ = expression => {
-        if (qDev) {
-            throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
-        }
-        return createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
-    };
+    const $ = expression => createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
     const eventQrl = qrl => qrl;
     const event$ = implicit$FirstArg(eventQrl);
     const componentQrl = componentQrl => {
         function QwikComponent(props, key, flags) {
-            assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invocated correctly");
+            assertQrl(), assertNumber();
             const hash = componentQrl.$hash$.slice(0, 4);
             return _jsxC(Virtual, {
                 "q:renderFn": componentQrl,
@@ -4358,7 +3988,7 @@
         return "string" == typeof type && !key && "dangerouslySetInnerHTML" in normalizedProps && (key = "innerhtml"), 
         jsx(type, normalizedProps, key);
     }
-    const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
+    const renderRoot = async (rCtx, parent, jsxNode) => {
         const staticCtx = rCtx.$static$;
         try {
             const processedNodes = await processData(jsxNode);
@@ -4368,12 +3998,12 @@
             logError(err);
         }
         staticCtx.$operations$.push(...staticCtx.$postOperations$), executeDOMRender(staticCtx), 
-        qDev && appendQwikDevTools(containerEl), printRenderStats(staticCtx);
+        printRenderStats();
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "0.104.0"), directSetAttribute(containerEl, QContainerAttr, "resumed"), 
-        directSetAttribute(containerEl, "q:render", qDev ? "dom-dev" : "dom");
+        directSetAttribute(containerEl, "q:version", "0.104.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
@@ -4391,9 +4021,6 @@
     };
     const STYLE_CACHE = new Map;
     const getScopedStyles = (css, scopeId) => {
-        if (qDev) {
-            return scopeStylesheet(css, scopeId);
-        }
         let styleCss = STYLE_CACHE.get(scopeId);
         return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 
         styleCss;
@@ -4517,12 +4144,12 @@
     });
     const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
-        assertQrl(styleQrl);
+        assertQrl();
         const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
         if (get) {
             return get;
         }
-        const styleId = (index = i, assertQrl(qStyles = styleQrl), `${hashCode(qStyles.$hash$)}-${index}`);
+        const styleId = (qStyles = styleQrl, index = i, assertQrl(), `${hashCode(qStyles.$hash$)}-${index}`);
         var qStyles, index;
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
@@ -4532,7 +4159,7 @@
         containerState.$styleIds$.add(styleId);
         const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
         const appendStyle = styleText => {
-            assertDefined(elCtx.$appendStyles$, "appendStyles must be defined"), elCtx.$appendStyles$.push({
+            assertDefined(), elCtx.$appendStyles$.push({
                 styleId: styleId,
                 content: transform(styleText, styleId)
             });
@@ -4622,10 +4249,10 @@
             getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$).$flags$ |= 8;
         }
         return input;
-    }, exports._jsxC = _jsxC, exports._jsxQ = _jsxQ, exports._jsxS = (type, mutableProps, immutableProps, flags, key, dev) => {
+    }, exports._jsxC = _jsxC, exports._jsxQ = _jsxQ, exports._jsxS = (type, mutableProps, immutableProps, flags, key) => {
         let children = null;
         return mutableProps && "children" in mutableProps && (children = mutableProps.children, 
-        delete mutableProps.children), _jsxQ(type, mutableProps, immutableProps, children, flags, key, dev);
+        delete mutableProps.children), _jsxQ(type, mutableProps, immutableProps, children, flags, key);
     }, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
     exports._pauseFromContexts = _pauseFromContexts, exports._regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols && (globalThis.__qwik_reg_symbols = new Map), 
     globalThis.__qwik_reg_symbols.set(hash, symbol), symbol), exports._renderSSR = async (node, opts) => {
@@ -4647,8 +4274,8 @@
             $projectedCtxs$: void 0,
             $invocationContext$: void 0
         };
-        seal(ssrCtx);
-        let qRender = qDev ? "ssr-dev" : "ssr";
+        seal();
+        let qRender = "ssr";
         opts.containerAttributes["q:render"] && (qRender = `${opts.containerAttributes["q:render"]}-${qRender}`);
         const containerAttributes = {
             ...opts.containerAttributes,
@@ -4686,7 +4313,7 @@
         }
         if (collector.$noSerialize$.length > 0) {
             const undefinedID = objToId.get(void 0);
-            assertDefined(undefinedID, "undefined ID must be defined");
+            assertDefined();
             for (const obj of collector.$noSerialize$) {
                 objToId.set(obj, undefinedID);
             }
@@ -4779,13 +4406,12 @@
             const c = props.children;
             return "string" == typeof type && delete props.children, c;
         }));
-        isString(type) && "className" in props && (props.class = props.className, delete props.className, 
-        qDev && logOnceWarn("jsx: `className` is deprecated. Use `class` instead."));
+        isString(type) && "className" in props && (props.class = props.className, delete props.className);
         const node = new JSXNodeImpl(type, props, null, children, 0, processed);
         return node.dev = {
             stack: (new Error).stack,
             ...opts
-        }, validateJSXNode(node), seal(node), node;
+        }, validateJSXNode(node), seal(), node;
     }, exports.jsxs = jsx, exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         return newQrl.dev = opts, newQrl;
@@ -4793,9 +4419,6 @@
         isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
         const doc = getDocument(parent);
         const containerEl = getElement(parent);
-        if (qDev && containerEl.hasAttribute(QContainerAttr)) {
-            throw qError(5, containerEl);
-        }
         injectQContainer(containerEl);
         const containerState = _getContainerState(containerEl);
         const serverData = opts?.serverData;
@@ -4808,7 +4431,7 @@
                 cleanupTree(container = containerEl, (renderCtx = rCtx).$static$, renderCtx.$static$.$containerState$.$subsManager$, !0), 
                 (containerEl => {
                     delete containerEl[CONTAINER_STATE];
-                })(container), directRemoveAttribute(container, "q:version"), directRemoveAttribute(container, QContainerAttr), 
+                })(container), directRemoveAttribute(container, "q:version"), directRemoveAttribute(container, "q:container"), 
                 directRemoveAttribute(container, "q:render"), container.replaceChildren();
             }
         };
@@ -4818,7 +4441,6 @@
         if (void 0 !== get) {
             return get;
         }
-        qDev && validateContext(context);
         const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
         if ("function" == typeof defaultValue) {
             return set(invoke(void 0, defaultValue, value));
@@ -4847,8 +4469,7 @@
     exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
     exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
-        const ctx = tryGetInvokeContext();
-        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+        return tryGetInvokeContext()?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }, exports.useSignal = initialState => {
         const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
         if (null != get) {
