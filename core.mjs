@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.104.0
+ * @builder.io/qwik 0.105.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3513,7 +3513,7 @@ const static_subtree = 1 << 1;
  * QWIK_VERSION
  * @public
  */
-const version = "0.104.0";
+const version = "0.105.0";
 
 var _a;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -4439,7 +4439,7 @@ const normalizeInvisibleEvents = (eventName) => {
 };
 
 const emitEvent$1 = (el, eventName, detail, bubbles) => {
-    if (isBrowser || typeof CustomEvent === 'function') {
+    if (!qTest && (isBrowser || typeof CustomEvent === 'function')) {
         if (el) {
             el.dispatchEvent(new CustomEvent(eventName, {
                 detail,
@@ -5955,7 +5955,7 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
 };
 const executeContextWithTransition = async (ctx) => {
     // try to use `document.startViewTransition`
-    if (isBrowser) {
+    if (isBrowser && !qTest) {
         if (document.__q_view_transition__) {
             document.__q_view_transition__ = undefined;
             if (document.startViewTransition) {

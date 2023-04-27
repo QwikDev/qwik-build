@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 0.104.0
+ * @builder.io/qwik 0.105.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3523,7 +3523,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * QWIK_VERSION
      * @public
      */
-    const version = "0.104.0";
+    const version = "0.105.0";
 
     var _a;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -4449,7 +4449,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     };
 
     const emitEvent$1 = (el, eventName, detail, bubbles) => {
-        if (build.isBrowser || typeof CustomEvent === 'function') {
+        if (!qTest && (build.isBrowser || typeof CustomEvent === 'function')) {
             if (el) {
                 el.dispatchEvent(new CustomEvent(eventName, {
                     detail,
@@ -5965,7 +5965,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const executeContextWithTransition = async (ctx) => {
         // try to use `document.startViewTransition`
-        if (build.isBrowser) {
+        if (build.isBrowser && !qTest) {
             if (document.__q_view_transition__) {
                 document.__q_view_transition__ = undefined;
                 if (document.startViewTransition) {
