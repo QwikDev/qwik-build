@@ -2358,10 +2358,7 @@ globalThis.qwikOptimizer = function(module) {
           await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
         };
         const isNEW = true === globalThis.__qwikCityNew;
-        if (isNEW) {
-          return plugin;
-        }
-        plugin();
+        return isNEW ? plugin : plugin();
       },
       configurePreviewServer: server => async () => {
         const sys = qwikPlugin.getSys();
