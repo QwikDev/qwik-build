@@ -1599,7 +1599,7 @@ export declare interface PropFnInterface<ARGS extends any[], RET> {
 /**
  * @public
  */
-export declare type PropFunction<T extends Function> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
+export declare type PropFunction<T extends Function = (...args: any[]) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
 
 /**
  * Infers `Props` from the component.
@@ -2227,9 +2227,7 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
 /**
  * @public
  */
-declare interface ReadonlySignal<T = any> {
-    readonly value: T;
-}
+declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
 
 /**
  * @internal
@@ -3570,7 +3568,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 0.104.0-dev20230426142442
+ * 0.104.0-dev20230427130625
  * @public
  */
 export declare const version: string;

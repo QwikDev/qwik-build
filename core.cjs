@@ -79,13 +79,14 @@
         return value && typeof value.nodeType === 'number';
     };
     const isDocument = (value) => {
-        return value && value.nodeType === 9;
+        return value.nodeType === 9;
     };
     const isElement$1 = (value) => {
         return value.nodeType === 1;
     };
     const isQwikElement = (value) => {
-        return value.nodeType === 1 || value.nodeType === 111;
+        const nodeType = value.nodeType;
+        return nodeType === 1 || nodeType === 111;
     };
     const isNodeElement = (value) => {
         const nodeType = value.nodeType;
@@ -400,6 +401,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             throw logErrorAndStop(text, ...parts);
         }
     }
+    function assertFail(text, ...parts) {
+        if (qDev) {
+            throw logErrorAndStop(text, ...parts);
+        }
+    }
     function assertTrue(value1, text, ...parts) {
         if (qDev) {
             if (value1 === true) {
@@ -470,11 +476,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     // import { qDev } from './qdev';
     const EMPTY_ARRAY = [];
     const EMPTY_OBJ = {};
-    // if (qDev) {
-    Object.freeze(EMPTY_ARRAY);
-    Object.freeze(EMPTY_OBJ);
-    // Error.stackTraceLimit = 9999;
-    // }
+    if (qDev) {
+        Object.freeze(EMPTY_ARRAY);
+        Object.freeze(EMPTY_OBJ);
+    }
 
     // https://regexr.com/68v72
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
@@ -712,7 +717,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const RenderEvent = 'qRender';
     const ELEMENT_ID = 'q:id';
     const ELEMENT_ID_PREFIX = '#';
-    const INLINE_FN_PREFIX = '@';
 
     const directSetAttribute = (el, prop, value) => {
         return el.setAttribute(prop, value);
@@ -959,7 +963,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         // prevent accidental use as value
         valueOf() {
-            throw new TypeError('Cannot coerce a Signal, use `.value` instead');
+            if (qDev) {
+                throw new TypeError('Cannot coerce a Signal, use `.value` instead');
+            }
         }
         toString() {
             return `[Signal ${String(this.value)}]`;
@@ -1044,11 +1050,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         if (!isObject(obj)) {
             return obj[prop];
         }
-        if (obj instanceof SignalImpl) {
-            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
-            return obj;
-        }
-        if (obj instanceof SignalWrapper) {
+        if (obj instanceof SignalBase) {
             assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
             return obj;
         }
@@ -1812,7 +1814,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         directInsertBefore(parent, newChild, parent.firstChild);
     };
     const removeNode = (staticCtx, el) => {
-        if (el.nodeType === 1 || el.nodeType === 111) {
+        if (isQwikElement(el)) {
             const subsManager = staticCtx.$containerState$.$subsManager$;
             cleanupTree(el, staticCtx, subsManager, true);
         }
@@ -1857,7 +1859,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         for (const slotEl of staticCtx.$rmSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, 'slots must have a key');
-            const slotChildren = getChildren(slotEl, 'root');
+            const slotChildren = getChildren(slotEl, isChildComponent);
             if (slotChildren.length > 0) {
                 const sref = slotEl.getAttribute(QSlotRef);
                 const hostCtx = staticCtx.$roots$.find((r) => r.$id$ === sref);
@@ -1895,7 +1897,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 return isSlotTemplate(node) && node.getAttribute(QSlot) === key;
             });
             if (template) {
-                const children = getChildren(template, 'root');
+                const children = getChildren(template, isChildComponent);
                 children.forEach((child) => {
                     directAppendChild(slotEl, child);
                 });
@@ -1994,8 +1996,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             this.localName = VIRTUAL;
             this.nodeName = VIRTUAL;
             const doc = (this.ownerDocument = open.ownerDocument);
-            this.template = createElement(doc, 'template', false);
-            this.attributes = parseVirtualAttributes(open.data.slice(3));
+            this.$template$ = createElement(doc, 'template', false);
+            this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
             assertTrue(open.data.startsWith('qv '), 'comment is not a qv');
             open[VIRTUAL_SYMBOL] = this;
             seal(this);
@@ -2007,7 +2009,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 parent.insertBefore(node, ref2);
             }
             else {
-                this.template.insertBefore(node, ref);
+                this.$template$.insertBefore(node, ref);
             }
             return node;
         }
@@ -2016,9 +2018,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (parent) {
                 // const ch = this.childNodes;
                 const ch = Array.from(this.childNodes);
-                assertEqual(this.template.childElementCount, 0, 'children should be empty');
+                assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
                 parent.removeChild(this.open);
-                this.template.append(...ch);
+                this.$template$.append(...ch);
                 parent.removeChild(this.close);
             }
         }
@@ -2037,7 +2039,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 newParent.insertBefore(c, child);
             }
             newParent.insertBefore(this.close, child);
-            assertEqual(this.template.childElementCount, 0, 'children should be empty');
+            assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
         }
         appendTo(newParent) {
             this.insertBeforeTo(newParent, null);
@@ -2050,25 +2052,25 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 this.parentElement.removeChild(child);
             }
             else {
-                this.template.removeChild(child);
+                this.$template$.removeChild(child);
             }
         }
         getAttribute(prop) {
-            return this.attributes.get(prop) ?? null;
+            return this.$attributes$.get(prop) ?? null;
         }
         hasAttribute(prop) {
-            return this.attributes.has(prop);
+            return this.$attributes$.has(prop);
         }
         setAttribute(prop, value) {
-            this.attributes.set(prop, value);
+            this.$attributes$.set(prop, value);
             if (qSerialize) {
-                this.open.data = updateComment(this.attributes);
+                this.open.data = updateComment(this.$attributes$);
             }
         }
         removeAttribute(prop) {
-            this.attributes.delete(prop);
+            this.$attributes$.delete(prop);
             if (qSerialize) {
-                this.open.data = updateComment(this.attributes);
+                this.open.data = updateComment(this.$attributes$);
             }
         }
         matches(_) {
@@ -2086,7 +2088,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         querySelectorAll(query) {
             const result = [];
-            const ch = getChildren(this, 'elements');
+            const ch = getChildren(this, isNodeElement);
             ch.forEach((el) => {
                 if (isQwikElement(el)) {
                     if (el.matches(query)) {
@@ -2120,7 +2122,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 return first;
             }
             else {
-                return this.template.firstChild;
+                return this.$template$.firstChild;
             }
         }
         get nextSibling() {
@@ -2131,7 +2133,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         get childNodes() {
             if (!this.parentElement) {
-                return this.template.childNodes;
+                return this.$template$.childNodes;
             }
             const nodes = [];
             let node = this.open;
@@ -2195,7 +2197,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
             node = node.nextSibling;
         }
-        throw new Error('close not found');
+        assertFail('close not found');
     };
     const getRootNode = (node) => {
         if (node == null) {
@@ -2318,7 +2320,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }
                 if (isSerializableObject(obj)) {
                     const output = {};
-                    for (const key of Object.keys(obj)) {
+                    for (const key in obj) {
                         output[key] = mustGetObjId(obj[key]);
                     }
                     return output;
@@ -2616,7 +2618,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }
                 if (isSerializableObject(obj)) {
                     const output = {};
-                    for (const key of Object.keys(obj)) {
+                    for (const key in obj) {
                         const id = getObjId(obj[key]);
                         if (id !== null) {
                             output[key] = id;
@@ -2941,7 +2943,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                             }
                         }
                         else if (isSerializableObject(obj)) {
-                            for (const key of Object.keys(obj)) {
+                            for (const key in obj) {
                                 collectValue(input[key], collector, leaks);
                             }
                         }
@@ -3688,7 +3690,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const CLOSE_VIRTUAL = `<!--/qv-->`;
     const renderAttributes = (attributes) => {
         let text = '';
-        for (const prop of Object.keys(attributes)) {
+        for (const prop in attributes) {
             if (prop === 'dangerouslySetInnerHTML') {
                 continue;
             }
@@ -3701,7 +3703,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const renderVirtualAttributes = (attributes) => {
         let text = '';
-        for (const prop of Object.keys(attributes)) {
+        for (const prop in attributes) {
             if (prop === 'children') {
                 continue;
             }
@@ -3851,7 +3853,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 throw new TypeError('Can only have one of class or className');
             }
             if (immutable) {
-                for (const prop of Object.keys(immutable)) {
+                for (const prop in immutable) {
                     let value = immutable[prop];
                     if (isOnProp(prop)) {
                         setEvent(elCtx.li, prop, value, undefined);
@@ -3890,7 +3892,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     }
                 }
             }
-            for (const prop of Object.keys(props)) {
+            for (const prop in props) {
                 let value = props[prop];
                 if (prop === 'ref') {
                     setRef(value, elm);
@@ -4447,12 +4449,14 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     };
 
     const emitEvent$1 = (el, eventName, detail, bubbles) => {
-        if (el && typeof CustomEvent === 'function') {
-            el.dispatchEvent(new CustomEvent(eventName, {
-                detail,
-                bubbles: bubbles,
-                composed: bubbles,
-            }));
+        if (build.isBrowser || typeof CustomEvent === 'function') {
+            if (el) {
+                el.dispatchEvent(new CustomEvent(eventName, {
+                    detail,
+                    bubbles: bubbles,
+                    composed: bubbles,
+                }));
+            }
         }
     };
 
@@ -4484,7 +4488,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 // const oldVdom = getVdom(hostElement);
                 const oldVdom = getVdom(elCtx);
-                return then(smartUpdateChildren(newCtx, oldVdom, newVdom, 'root', flags), () => {
+                return then(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), () => {
                     // setVdom(hostElement, newVdom);
                     elCtx.$vdom$ = newVdom;
                 });
@@ -4717,8 +4721,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         };
         const computeObject = (id) => {
             // Handle elements
-            if (id.startsWith(ELEMENT_ID_PREFIX)) {
-                const elementId = id.slice(ELEMENT_ID_PREFIX.length);
+            if (id.startsWith('#')) {
+                const elementId = id.slice(1);
                 const index = strToInt(elementId);
                 assertTrue(elements.has(index), `missing element for id:`, elementId);
                 const rawElement = elements.get(index);
@@ -4742,8 +4746,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 finalized.set(id, rawElement);
                 return rawElement;
             }
-            else if (id.startsWith(INLINE_FN_PREFIX)) {
-                const funcId = id.slice(INLINE_FN_PREFIX.length);
+            else if (id.startsWith('@')) {
+                const funcId = id.slice(1);
                 const index = strToInt(funcId);
                 const func = inlinedFunctions[index];
                 assertDefined(func, `missing inlined function for id:`, funcId);
@@ -4824,7 +4828,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 }
             }
             else if (isSerializableObject(obj)) {
-                for (const key of Object.keys(obj)) {
+                for (const key in obj) {
                     obj[key] = getObject(obj[key]);
                 }
             }
@@ -4975,8 +4979,8 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         return new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, static_subtree, key);
     };
     const validateJSXNode = (node) => {
-        const { type, props, immutableProps, children } = node;
         if (qDev) {
+            const { type, props, immutableProps, children } = node;
             invoke(undefined, () => {
                 const isQwikC = isQwikComponent(type);
                 if (!isString(type) && !isFunction(type)) {
@@ -5171,7 +5175,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const IS_HEAD = 1 << 1;
     const IS_IMMUTABLE = 1 << 2;
     const CHILDREN_PLACEHOLDER = [];
-    const smartUpdateChildren = (ctx, oldVnode, newVnode, mode, flags) => {
+    const smartUpdateChildren = (ctx, oldVnode, newVnode, flags) => {
         assertQwikElement(oldVnode.$elm$);
         const ch = newVnode.$children$;
         if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
@@ -5179,14 +5183,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         const elm = oldVnode.$elm$;
         const needsDOMRead = oldVnode.$children$ === CHILDREN_PLACEHOLDER;
+        let filter = isChildComponent;
         if (needsDOMRead) {
             const isHead = elm.nodeName === 'HEAD';
             if (isHead) {
-                mode = 'head';
+                filter = isHeadChildren;
                 flags |= IS_HEAD;
             }
         }
-        const oldCh = getVnodeChildren(oldVnode, mode);
+        const oldCh = getVnodeChildren(oldVnode, filter);
         if (oldCh.length > 0 && ch.length > 0) {
             return diffChildren(ctx, elm, oldCh, ch, flags);
         }
@@ -5197,11 +5202,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return addChildren(ctx, elm, null, ch, 0, ch.length - 1, flags);
         }
     };
-    const getVnodeChildren = (oldVnode, mode) => {
+    const getVnodeChildren = (oldVnode, filter) => {
         const oldCh = oldVnode.$children$;
         const elm = oldVnode.$elm$;
         if (oldCh === CHILDREN_PLACEHOLDER) {
-            return (oldVnode.$children$ = getChildrenVnodes(elm, mode));
+            return (oldVnode.$children$ = getChildrenVnodes(elm, filter));
         }
         return oldCh;
     };
@@ -5300,7 +5305,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return wait;
     };
-    const getCh = (elm, filter) => {
+    const getChildren = (elm, filter) => {
         const end = isVirtualElement(elm) ? elm.close : null;
         const nodes = [];
         let node = elm.firstChild;
@@ -5315,22 +5320,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return nodes;
     };
-    const getChildren = (elm, mode) => {
-        // console.warn('DOM READ: getChildren()', elm);
-        switch (mode) {
-            case 'root':
-                return getCh(elm, isChildComponent);
-            case 'head':
-                return getCh(elm, isHeadChildren);
-            case 'elements':
-                return getCh(elm, isNodeElement);
-        }
-    };
-    // const getChildrenVnodes = (elm: QwikElement, mode: ChildrenMode) => {
-    //   return getChildren(elm, mode).map(getVdom);
+    // export const getChildren = (elm: QwikElement, mode: ChildrenMode): (Node | VirtualElement)[] => {
+    //   // console.warn('DOM READ: getChildren()', elm);
+    //   switch (mode) {
+    //     case 'root':
+    //       return getCh(elm, isChildComponent);
+    //     case 'head':
+    //       return getCh(elm, isHeadChildren);
+    //     case 'elements':
+    //       return getCh(elm, isNodeElement);
+    //   }
     // };
-    const getChildrenVnodes = (elm, mode) => {
-        return getChildren(elm, mode).map(getVnodeFromEl);
+    const getChildrenVnodes = (elm, filter) => {
+        return getChildren(elm, filter).map(getVnodeFromEl);
     };
     const getVnodeFromEl = (el) => {
         if (isElement$1(el)) {
@@ -5350,7 +5352,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             t.$elm$ = node;
             return t;
         }
-        throw new Error('invalid node');
+        assertFail('Invalid node type');
     };
     const isHeadChildren = (node) => {
         const type = node.nodeType;
@@ -5430,8 +5432,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
                 const values = oldVnode.$props$;
                 newVnode.$props$ = values;
-                const keys = Object.keys(props);
-                for (const prop of keys) {
+                for (const prop in props) {
                     let newValue = props[prop];
                     if (prop === 'ref') {
                         assertElement(elm);
@@ -5473,7 +5474,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (tag === 'textarea') {
                 return;
             }
-            return smartUpdateChildren(rCtx, oldVnode, newVnode, 'root', flags);
+            return smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
         }
         else if (OnRenderProp in props) {
             const cmpProps = props.props;
@@ -5504,7 +5505,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (vnodeFlags & static_subtree) {
             return;
         }
-        return smartUpdateChildren(rCtx, oldVnode, newVnode, 'root', flags);
+        return smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
     };
     const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         if (vnode.$flags$ & static_subtree) {
@@ -5515,10 +5516,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const splittedNewChildren = splitChildren(newChildren);
         const slotMaps = getSlotMap(hostCtx);
         // Remove content from empty slots
-        for (const key of Object.keys(slotMaps.slots)) {
+        for (const key in slotMaps.slots) {
             if (!splittedNewChildren[key]) {
                 const slotEl = slotMaps.slots[key];
-                const oldCh = getChildrenVnodes(slotEl, 'root');
+                const oldCh = getChildrenVnodes(slotEl, isChildComponent);
                 if (oldCh.length > 0) {
                     // getVdom(slotEl).$children$ = [];
                     const slotCtx = tryGetContext(slotEl);
@@ -5530,7 +5531,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
         // Remove empty templates
-        for (const key of Object.keys(slotMaps.templates)) {
+        for (const key in slotMaps.templates) {
             const templateEl = slotMaps.templates[key];
             if (templateEl && !splittedNewChildren[key]) {
                 slotMaps.templates[key] = undefined;
@@ -5554,7 +5555,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (index >= 0) {
                 staticCtx.$addSlots$.splice(index, 1);
             }
-            return smartUpdateChildren(slotRctx, oldVdom, newVdom, 'root', flags);
+            return smartUpdateChildren(slotRctx, oldVdom, newVdom, flags);
         }));
     };
     const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
@@ -5691,10 +5692,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             containerState.$proxyMap$.set(target, proxy);
             elCtx.$props$ = proxy;
             if (expectProps !== EMPTY_OBJ) {
-                const keys = Object.keys(expectProps);
                 const immutableMeta = (target[_IMMUTABLE] =
                     expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
-                for (const prop of keys) {
+                for (const prop in expectProps) {
                     if (prop !== 'children' && prop !== QSlot) {
                         const immutableValue = immutableMeta[prop];
                         if (isSignal(immutableValue)) {
@@ -5726,7 +5726,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 const slotMap = getSlotMap(elCtx);
                 const p = [];
                 const splittedNewChildren = splitChildren(children);
-                for (const slotName of Object.keys(splittedNewChildren)) {
+                for (const slotName in splittedNewChildren) {
                     const newVnode = splittedNewChildren[slotName];
                     const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, slotName, staticCtx.$containerState$);
                     const slotRctx = pushRenderContext(rCtx);
@@ -5799,11 +5799,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         assertDefined(parent, 'component should be already attached to the dom');
         return queryAllVirtualByAttribute(parent, QSlotRef, elCtx.$id$).map(domToVnode);
     };
-    const handleStyle = (ctx, elm, _, newValue) => {
+    const handleStyle = (ctx, elm, newValue) => {
         setProperty(ctx, elm.style, 'cssText', newValue);
         return true;
     };
-    const handleClass = (ctx, elm, _, newValue) => {
+    const handleClass = (ctx, elm, newValue) => {
         assertTrue(newValue == null || typeof newValue === 'string', 'class newValue must be either nullish or string', newValue);
         if (elm.namespaceURI === SVG_NS) {
             setAttribute(ctx, elm, 'class', newValue);
@@ -5813,7 +5813,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return true;
     };
-    const checkBeforeAssign = (ctx, elm, prop, newValue) => {
+    const checkBeforeAssign = (ctx, elm, newValue, prop) => {
         if (prop in elm) {
             if (elm[prop] !== newValue) {
                 if (elm.tagName === 'SELECT') {
@@ -5826,12 +5826,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return true;
     };
-    const forceAttribute = (ctx, elm, prop, newValue) => {
+    const forceAttribute = (ctx, elm, newValue, prop) => {
         setAttribute(ctx, elm, prop.toLowerCase(), newValue);
         return true;
     };
     const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
-    const setInnerHTML = (ctx, elm, _, newValue) => {
+    const setInnerHTML = (ctx, elm, newValue) => {
         if (dangerouslySetInnerHTML in elm) {
             setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
         }
@@ -5865,7 +5865,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         // Check if its an exception
         const exception = PROP_HANDLER_MAP[prop];
         if (exception) {
-            if (exception(staticCtx, elm, prop, newValue)) {
+            if (exception(staticCtx, elm, newValue, prop)) {
                 return;
             }
         }
@@ -5883,8 +5883,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) => {
         const values = {};
         const elm = elCtx.$element$;
-        const keys = Object.keys(newProps);
-        for (const prop of keys) {
+        for (const prop in newProps) {
             let newValue = newProps[prop];
             if (prop === 'ref') {
                 assertElement(elm);
@@ -5926,14 +5925,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (expectProps === EMPTY_OBJ) {
             return;
         }
-        const keys = Object.keys(expectProps);
         const manager = getProxyManager(props);
         assertDefined(manager, `props have to be a proxy, but it is not`, props);
         const target = getProxyTarget(props);
         assertDefined(target, `props have to be a proxy, but it is not`, props);
         const immutableMeta = (target[_IMMUTABLE] =
             expectProps[_IMMUTABLE] ?? EMPTY_OBJ);
-        for (const prop of keys) {
+        for (const prop in expectProps) {
             if (prop !== 'children' && prop !== QSlot && !immutableMeta[prop]) {
                 const value = expectProps[prop];
                 if (target[prop] !== value) {
@@ -5967,11 +5965,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const executeContextWithTransition = async (ctx) => {
         // try to use `document.startViewTransition`
-        if (typeof document !== 'undefined' && document.__q_view_transition__) {
-            document.__q_view_transition__ = undefined;
-            if (typeof document.startViewTransition === 'function') {
-                await document.startViewTransition(() => executeDOMRender(ctx)).updateCallbackDone;
-                return;
+        if (build.isBrowser) {
+            if (document.__q_view_transition__) {
+                document.__q_view_transition__ = undefined;
+                if (document.startViewTransition) {
+                    await document.startViewTransition(() => executeDOMRender(ctx)).updateCallbackDone;
+                    return;
+                }
             }
         }
         // fallback
@@ -7228,9 +7228,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     const UNDEFINED_PREFIX = '\u0001';
     const QRLSerializer = {
-        prefix: '\u0002',
-        test: (v) => isQrl(v),
-        collect: (v, collector, leaks) => {
+        $prefix$: '\u0002',
+        $test$: (v) => isQrl(v),
+        $collect$: (v, collector, leaks) => {
             if (v.$captureRef$) {
                 for (const item of v.$captureRef$) {
                     collectValue(item, collector, leaks);
@@ -7240,15 +7240,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 collector.$qrls$.push(v);
             }
         },
-        serialize: (obj, getObjId) => {
+        $serialize$: (obj, getObjId) => {
             return serializeQRL(obj, {
                 $getObjId$: getObjId,
             });
         },
-        prepare: (data, containerState) => {
+        $prepare$: (data, containerState) => {
             return parseQRL(data, containerState.$containerEl$);
         },
-        fill: (qrl, getObject) => {
+        $fill$: (qrl, getObject) => {
             if (qrl.$capture$ && qrl.$capture$.length > 0) {
                 qrl.$captureRef$ = qrl.$capture$.map(getObject);
                 qrl.$capture$ = null;
@@ -7256,17 +7256,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
     const WatchSerializer = {
-        prefix: '\u0003',
-        test: (v) => isSubscriberDescriptor(v),
-        collect: (v, collector, leaks) => {
+        $prefix$: '\u0003',
+        $test$: (v) => isSubscriberDescriptor(v),
+        $collect$: (v, collector, leaks) => {
             collectValue(v.$qrl$, collector, leaks);
             if (v.$state$) {
                 collectValue(v.$state$, collector, leaks);
             }
         },
-        serialize: (obj, getObjId) => serializeWatch(obj, getObjId),
-        prepare: (data) => parseTask(data),
-        fill: (watch, getObject) => {
+        $serialize$: (obj, getObjId) => serializeWatch(obj, getObjId),
+        $prepare$: (data) => parseTask(data),
+        $fill$: (watch, getObject) => {
             watch.$el$ = getObject(watch.$el$);
             watch.$qrl$ = getObject(watch.$qrl$);
             if (watch.$state$) {
@@ -7275,19 +7275,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
     const ResourceSerializer = {
-        prefix: '\u0004',
-        test: (v) => isResourceReturn(v),
-        collect: (obj, collector, leaks) => {
+        $prefix$: '\u0004',
+        $test$: (v) => isResourceReturn(v),
+        $collect$: (obj, collector, leaks) => {
             collectValue(obj.value, collector, leaks);
             collectValue(obj._resolved, collector, leaks);
         },
-        serialize: (obj, getObjId) => {
+        $serialize$: (obj, getObjId) => {
             return serializeResource(obj, getObjId);
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             return parseResourceReturn(data);
         },
-        fill: (resource, getObject) => {
+        $fill$: (resource, getObject) => {
             if (resource._state === 'resolved') {
                 resource._resolved = getObject(resource._resolved);
                 resource.value = Promise.resolve(resource._resolved);
@@ -7301,68 +7301,68 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
     const URLSerializer = {
-        prefix: '\u0005',
-        test: (v) => v instanceof URL,
-        serialize: (obj) => obj.href,
-        prepare: (data) => new URL(data),
-        fill: undefined,
+        $prefix$: '\u0005',
+        $test$: (v) => v instanceof URL,
+        $serialize$: (obj) => obj.href,
+        $prepare$: (data) => new URL(data),
+        $fill$: undefined,
     };
     const DateSerializer = {
-        prefix: '\u0006',
-        test: (v) => v instanceof Date,
-        serialize: (obj) => obj.toISOString(),
-        prepare: (data) => new Date(data),
-        fill: undefined,
+        $prefix$: '\u0006',
+        $test$: (v) => v instanceof Date,
+        $serialize$: (obj) => obj.toISOString(),
+        $prepare$: (data) => new Date(data),
+        $fill$: undefined,
     };
     const RegexSerializer = {
-        prefix: '\u0007',
-        test: (v) => v instanceof RegExp,
-        serialize: (obj) => `${obj.flags} ${obj.source}`,
-        prepare: (data) => {
+        $prefix$: '\u0007',
+        $test$: (v) => v instanceof RegExp,
+        $serialize$: (obj) => `${obj.flags} ${obj.source}`,
+        $prepare$: (data) => {
             const space = data.indexOf(' ');
             const source = data.slice(space + 1);
             const flags = data.slice(0, space);
             return new RegExp(source, flags);
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const ErrorSerializer = {
-        prefix: '\u000E',
-        test: (v) => v instanceof Error,
-        serialize: (obj) => {
+        $prefix$: '\u000E',
+        $test$: (v) => v instanceof Error,
+        $serialize$: (obj) => {
             return obj.message;
         },
-        prepare: (text) => {
+        $prepare$: (text) => {
             const err = new Error(text);
             err.stack = undefined;
             return err;
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const DocumentSerializer = {
-        prefix: '\u000F',
-        test: (v) => isDocument(v),
-        serialize: undefined,
-        prepare: (_, _c, doc) => {
+        $prefix$: '\u000F',
+        $test$: (v) => isDocument(v),
+        $serialize$: undefined,
+        $prepare$: (_, _c, doc) => {
             return doc;
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const SERIALIZABLE_STATE = Symbol('serializable-data');
     const ComponentSerializer = {
-        prefix: '\u0010',
-        test: (obj) => isQwikComponent(obj),
-        serialize: (obj, getObjId) => {
+        $prefix$: '\u0010',
+        $test$: (obj) => isQwikComponent(obj),
+        $serialize$: (obj, getObjId) => {
             const [qrl] = obj[SERIALIZABLE_STATE];
             return serializeQRL(qrl, {
                 $getObjId$: getObjId,
             });
         },
-        prepare: (data, containerState) => {
+        $prepare$: (data, containerState) => {
             const qrl = parseQRL(data, containerState.$containerEl$);
             return componentQrl(qrl);
         },
-        fill: (component, getObject) => {
+        $fill$: (component, getObject) => {
             const [qrl] = component[SERIALIZABLE_STATE];
             if (qrl.$capture$ && qrl.$capture$.length > 0) {
                 qrl.$captureRef$ = qrl.$capture$.map(getObject);
@@ -7371,16 +7371,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
     const DerivedSignalSerializer = {
-        prefix: '\u0011',
-        test: (obj) => obj instanceof SignalDerived,
-        collect: (obj, collector, leaks) => {
+        $prefix$: '\u0011',
+        $test$: (obj) => obj instanceof SignalDerived,
+        $collect$: (obj, collector, leaks) => {
             if (obj.$args$) {
                 for (const arg of obj.$args$) {
                     collectValue(arg, collector, leaks);
                 }
             }
         },
-        serialize: (signal, getObjID, collector) => {
+        $serialize$: (signal, getObjID, collector) => {
             const serialized = serializeDerivedSignalFunc(signal);
             let index = collector.$inlinedFunctions$.indexOf(serialized);
             if (index < 0) {
@@ -7390,45 +7390,45 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const parts = signal.$args$.map(getObjID);
             return parts.join(' ') + ' @' + intToStr(index);
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             const ids = data.split(' ');
             const args = ids.slice(0, -1);
             const fn = ids[ids.length - 1];
             return new SignalDerived(fn, args, fn);
         },
-        fill: (fn, getObject) => {
+        $fill$: (fn, getObject) => {
             assertString(fn.$func$, 'fn.$func$ should be a string');
             fn.$func$ = getObject(fn.$func$);
             fn.$args$ = fn.$args$.map(getObject);
         },
     };
     const SignalSerializer = {
-        prefix: '\u0012',
-        test: (v) => v instanceof SignalImpl,
-        collect: (obj, collector, leaks) => {
+        $prefix$: '\u0012',
+        $test$: (v) => v instanceof SignalImpl,
+        $collect$: (obj, collector, leaks) => {
             collectValue(obj.untrackedValue, collector, leaks);
             if (leaks === true) {
                 collectSubscriptions(obj[QObjectManagerSymbol], collector, leaks);
             }
             return obj;
         },
-        serialize: (obj, getObjId) => {
+        $serialize$: (obj, getObjId) => {
             return getObjId(obj.untrackedValue);
         },
-        prepare: (data, containerState) => {
+        $prepare$: (data, containerState) => {
             return new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0);
         },
-        subs: (signal, subs) => {
+        $subs$: (signal, subs) => {
             signal[QObjectManagerSymbol].$addSubs$(subs);
         },
-        fill: (signal, getObject) => {
+        $fill$: (signal, getObject) => {
             signal.untrackedValue = getObject(signal.untrackedValue);
         },
     };
     const SignalWrapperSerializer = {
-        prefix: '\u0013',
-        test: (v) => v instanceof SignalWrapper,
-        collect(obj, collector, leaks) {
+        $prefix$: '\u0013',
+        $test$: (v) => v instanceof SignalWrapper,
+        $collect$(obj, collector, leaks) {
             collectValue(obj.ref, collector, leaks);
             if (fastWeakSerialize(obj.ref)) {
                 const localManager = getProxyManager(obj.ref);
@@ -7438,39 +7438,39 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             return obj;
         },
-        serialize: (obj, getObjId) => {
+        $serialize$: (obj, getObjId) => {
             return `${getObjId(obj.ref)} ${obj.prop}`;
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             const [id, prop] = data.split(' ');
             return new SignalWrapper(id, prop);
         },
-        fill: (signal, getObject) => {
+        $fill$: (signal, getObject) => {
             signal.ref = getObject(signal.ref);
         },
     };
     const NoFiniteNumberSerializer = {
-        prefix: '\u0014',
-        test: (v) => typeof v === 'number',
-        serialize: (v) => {
+        $prefix$: '\u0014',
+        $test$: (v) => typeof v === 'number',
+        $serialize$: (v) => {
             return String(v);
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             return Number(data);
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const URLSearchParamsSerializer = {
-        prefix: '\u0015',
-        test: (v) => v instanceof URLSearchParams,
-        serialize: (obj) => obj.toString(),
-        prepare: (data) => new URLSearchParams(data),
-        fill: undefined,
+        $prefix$: '\u0015',
+        $test$: (v) => v instanceof URLSearchParams,
+        $serialize$: (obj) => obj.toString(),
+        $prepare$: (data) => new URLSearchParams(data),
+        $fill$: undefined,
     };
     const FormDataSerializer = {
-        prefix: '\u0016',
-        test: (v) => typeof FormData !== 'undefined' && v instanceof globalThis.FormData,
-        serialize: (formData) => {
+        $prefix$: '\u0016',
+        $test$: (v) => typeof FormData !== 'undefined' && v instanceof globalThis.FormData,
+        $serialize$: (formData) => {
             const array = [];
             formData.forEach((value, key) => {
                 if (typeof value === 'string') {
@@ -7482,7 +7482,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             });
             return JSON.stringify(array);
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             const array = JSON.parse(data);
             const formData = new FormData();
             for (const [key, value] of array) {
@@ -7490,12 +7490,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             return formData;
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const JSXNodeSerializer = {
-        prefix: '\u0017',
-        test: (v) => isJSXNode(v),
-        collect: (node, collector, leaks) => {
+        $prefix$: '\u0017',
+        $test$: (v) => isJSXNode(v),
+        $collect$: (node, collector, leaks) => {
             collectValue(node.children, collector, leaks);
             collectValue(node.props, collector, leaks);
             collectValue(node.immutableProps, collector, leaks);
@@ -7508,7 +7508,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             collectValue(type, collector, leaks);
         },
-        serialize: (node, getObjID) => {
+        $serialize$: (node, getObjID) => {
             let type = node.type;
             if (type === Slot) {
                 type = ':slot';
@@ -7518,12 +7518,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.children)} ${node.flags}`;
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             const [type, props, immutableProps, children, flags] = data.split(' ');
             const node = new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10));
             return node;
         },
-        fill: (node, getObject) => {
+        $fill$: (node, getObject) => {
             node.type = getResolveJSXType(getObject(node.type));
             node.props = getObject(node.props);
             node.immutableProps = getObject(node.immutableProps);
@@ -7531,15 +7531,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
     };
     const BigIntSerializer = {
-        prefix: '\u0018',
-        test: (v) => typeof v === 'bigint',
-        serialize: (v) => {
+        $prefix$: '\u0018',
+        $test$: (v) => typeof v === 'bigint',
+        $serialize$: (v) => {
             return v.toString();
         },
-        prepare: (data) => {
+        $prepare$: (data) => {
             return BigInt(data);
         },
-        fill: undefined,
+        $fill$: undefined,
     };
     const serializers = [
         QRLSerializer,
@@ -7560,10 +7560,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         JSXNodeSerializer,
         BigIntSerializer, /////////// \u0018
     ];
-    const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.collect);
+    const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.$collect$);
     const canSerialize = (obj) => {
         for (const s of serializers) {
-            if (s.test(obj)) {
+            if (s.$test$(obj)) {
                 return true;
             }
         }
@@ -7571,8 +7571,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const collectDeps = (obj, collector, leaks) => {
         for (const s of collectorSerializers) {
-            if (s.test(obj)) {
-                s.collect(obj, collector, leaks);
+            if (s.$test$(obj)) {
+                s.$collect$(obj, collector, leaks);
                 return true;
             }
         }
@@ -7580,10 +7580,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const serializeValue = (obj, getObjID, collector, containerState) => {
         for (const s of serializers) {
-            if (s.test(obj)) {
-                let value = s.prefix;
-                if (s.serialize) {
-                    value += s.serialize(obj, getObjID, collector, containerState);
+            if (s.$test$(obj)) {
+                let value = s.$prefix$;
+                if (s.$serialize$) {
+                    value += s.$serialize$(obj, getObjID, collector, containerState);
                 }
                 return value;
             }
@@ -7596,13 +7596,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return {
             prepare(data) {
                 for (const s of serializers) {
-                    const prefix = s.prefix;
+                    const prefix = s.$prefix$;
                     if (data.startsWith(prefix)) {
-                        const value = s.prepare(data.slice(prefix.length), containerState, doc);
-                        if (s.fill) {
+                        const value = s.$prepare$(data.slice(prefix.length), containerState, doc);
+                        if (s.$fill$) {
                             fillMap.set(value, s);
                         }
-                        if (s.subs) {
+                        if (s.$subs$) {
                             subsMap.set(value, s);
                         }
                         return value;
@@ -7613,7 +7613,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             subs(obj, subs) {
                 const serializer = subsMap.get(obj);
                 if (serializer) {
-                    serializer.subs(obj, subs, containerState);
+                    serializer.$subs$(obj, subs, containerState);
                     return true;
                 }
                 return false;
@@ -7621,7 +7621,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             fill(obj, getObject) {
                 const serializer = fillMap.get(obj);
                 if (serializer) {
-                    serializer.fill(obj, getObject, containerState);
+                    serializer.$fill$(obj, getObject, containerState);
                     return true;
                 }
                 return false;
@@ -7832,7 +7832,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 base += ` ${signalID} ${nodeID}`;
             }
             else {
-                assertTrue(true, 'Should not get here');
+                assertFail('Should not get here');
             }
         }
         return base;
@@ -8174,7 +8174,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     // </docs>
     const $ = (expression) => {
-        if (!qRuntimeQrl) {
+        if (!qRuntimeQrl && qDev) {
             throw new Error('Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.');
         }
         return createQRL(null, 's' + runtimeSymbolId++, expression, null, null, null, null);
@@ -8415,7 +8415,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const processedNodes = await processData(jsxNode);
             // const rootJsx = getVdom(parent);
             const rootJsx = domToVnode(parent);
-            await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 'root', 0);
+            await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);
         }
         catch (err) {
             logError(err);
