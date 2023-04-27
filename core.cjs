@@ -776,22 +776,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         throw qError(QError_invalidRefValue, value);
     };
-    const addQwikEvent = (prop, containerState) => {
-        var _a;
-        const eventName = getEventName(prop);
-        if (!qTest && !isServerPlatform()) {
-            try {
-                const qwikevents = ((_a = globalThis).qwikevents || (_a.qwikevents = []));
-                qwikevents.push(eventName);
-            }
-            catch (err) {
-                logWarn(err);
-            }
-        }
-        if (qSerialize) {
-            containerState.$events$.add(eventName);
-        }
-    };
     const SHOW_ELEMENT = 1;
     const SHOW_COMMENT$1 = 128;
     const FILTER_REJECT$1 = 2;
@@ -3780,7 +3764,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     for (const listener of groups) {
                         const eventName = normalizeInvisibleEvents(listener[0]);
                         attributes[eventName] = serializeQRLs(listener[1], placeholderCtx);
-                        addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                        registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
                     }
                     renderNodeElementSync('script', attributes, stream);
                 }
@@ -3870,7 +3854,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         continue;
                     }
                     if (prop.startsWith(PREVENT_DEFAULT)) {
-                        addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                        registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
                     }
                     const attrValue = processPropValue(attrName, value);
                     if (attrValue != null) {
@@ -3914,7 +3898,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     continue;
                 }
                 if (prop.startsWith(PREVENT_DEFAULT)) {
-                    addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                    registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
                 }
                 const attrValue = processPropValue(attrName, value);
                 if (attrValue != null) {
@@ -4022,7 +4006,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 for (const listener of groups) {
                     const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
                     openingElement += ' ' + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"';
-                    addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                    registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
                 }
             }
             if (key != null) {
@@ -4401,6 +4385,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     };
     const ESCAPE_HTML = /[&<>]/g;
     const ESCAPE_ATTRIBUTES = /[&"]/g;
+    const registerQwikEvent$1 = (prop, containerState) => {
+        containerState.$events$.add(getEventName(prop));
+    };
     const escapeHtml = (s) => {
         return s.replace(ESCAPE_HTML, (c) => {
             switch (c) {
@@ -5400,13 +5387,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const elm = oldVnode.$elm$;
         const tag = newVnode.$type$;
         const staticCtx = rCtx.$static$;
+        const containerState = staticCtx.$containerState$;
         const currentComponent = rCtx.$cmpCtx$;
         assertDefined(elm, 'while patching element must be defined');
         assertDefined(currentComponent, 'while patching current component must be defined');
         newVnode.$elm$ = elm;
         // Render text nodes
         if (tag === '#text') {
-            rCtx.$static$.$visited$.push(elm);
+            staticCtx.$visited$.push(elm);
             const signal = newVnode.$signal$;
             if (signal) {
                 newVnode.$text$ = jsxToString(trackSignal(signal, [4, currentComponent.$element$, signal, elm]));
@@ -5417,7 +5405,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         assertQwikElement(elm);
         const props = newVnode.$props$;
         const vnodeFlags = newVnode.$flags$;
-        const elCtx = getContext(elm, rCtx.$static$.$containerState$);
+        const elCtx = getContext(elm, containerState);
         if (tag !== VIRTUAL) {
             // Track SVG state
             let isSvg = (flags & IS_SVG) !== 0;
@@ -5440,7 +5428,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         continue;
                     }
                     if (isOnProp(prop)) {
-                        browserSetEvent(staticCtx, elCtx, prop, newValue);
+                        const normalized = setEvent(elCtx.li, prop, newValue, containerState.$containerEl$);
+                        addQwikEvent(staticCtx, elm, normalized);
                         continue;
                     }
                     if (isSignal(newValue)) {
@@ -5478,7 +5467,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         else if (OnRenderProp in props) {
             const cmpProps = props.props;
-            setComponentProps(elCtx, rCtx, cmpProps);
+            setComponentProps(containerState, elCtx, cmpProps);
             let needsRender = !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
             // TODO: review this corner case
             if (!needsRender && !elCtx.$componentQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
@@ -5621,6 +5610,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const isVirtual = tag === VIRTUAL;
         const props = vnode.$props$;
         const staticCtx = rCtx.$static$;
+        const containerState = staticCtx.$containerState$;
         if (isVirtual) {
             elm = newVirtualElement(doc);
         }
@@ -5669,6 +5659,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
                 }
             }
+            for (const listener of elCtx.li) {
+                addQwikEvent(staticCtx, elm, listener[0]);
+            }
             const setsInnerHTML = props[dangerouslySetInnerHTML] !== undefined;
             if (setsInnerHTML) {
                 if (qDev && vnode.$children$.length > 0) {
@@ -5684,7 +5677,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         else if (OnRenderProp in props) {
             const renderQRL = props[OnRenderProp];
             assertQrl(renderQRL);
-            const containerState = rCtx.$static$.$containerState$;
             const target = createPropsState();
             const manager = containerState.$subsManager$.$createManager$();
             const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
@@ -5875,7 +5867,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return;
         }
         if (prop.startsWith(PREVENT_DEFAULT)) {
-            addQwikEvent(prop.slice(PREVENT_DEFAULT.length), staticCtx.$containerState$);
+            registerQwikEvent(prop.slice(PREVENT_DEFAULT.length));
         }
         // Fallback to render attribute
         setAttribute(staticCtx, elm, prop, newValue);
@@ -5891,7 +5883,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 continue;
             }
             if (isOnProp(prop)) {
-                browserSetEvent(staticCtx, elCtx, prop, newValue);
+                setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
                 continue;
             }
             if (isSignal(newValue)) {
@@ -5917,10 +5909,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return values;
     };
-    const setComponentProps = (elCtx, rCtx, expectProps) => {
+    const setComponentProps = (containerState, elCtx, expectProps) => {
         let props = elCtx.$props$;
         if (!props) {
-            elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$);
+            elCtx.$props$ = props = createProxy(createPropsState(), containerState);
         }
         if (expectProps === EMPTY_OBJ) {
             return;
@@ -6020,13 +6012,24 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return map;
     };
-    const browserSetEvent = (staticCtx, elCtx, prop, input) => {
-        const containerState = staticCtx.$containerState$;
-        const normalized = setEvent(elCtx.li, prop, input, containerState.$containerEl$);
-        if (!prop.startsWith('on')) {
-            setAttribute(staticCtx, elCtx.$element$, normalized, '');
+    const addQwikEvent = (staticCtx, elm, prop) => {
+        if (!prop.startsWith('on:')) {
+            setAttribute(staticCtx, elm, prop, '');
         }
-        addQwikEvent(normalized, containerState);
+        registerQwikEvent(prop);
+    };
+    const registerQwikEvent = (prop) => {
+        var _a;
+        if (!qTest) {
+            const eventName = getEventName(prop);
+            try {
+                const qwikevents = ((_a = globalThis).qwikevents || (_a.qwikevents = []));
+                qwikevents.push(eventName);
+            }
+            catch (err) {
+                logWarn(err);
+            }
+        }
     };
 
     // <docs markdown="../readme.md#useLexicalScope">

@@ -482,19 +482,6 @@ const setRef = (value, elm) => {
     throw qError(32, value);
 };
 
-const addQwikEvent = (prop, containerState) => {
-    var _a;
-    const eventName = getEventName(prop);
-    if (!isServerPlatform()) {
-        try {
-            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
-        } catch (err) {
-            logWarn(err);
-        }
-    }
-    containerState.$events$.add(eventName);
-};
-
 const SHOW_ELEMENT = 1;
 
 const SHOW_COMMENT$1 = 128;
@@ -2553,7 +2540,7 @@ then(executeComponent(rCtx, elCtx), (res => {
             const groups = groupListeners(listeners);
             for (const listener of groups) {
                 const eventName = normalizeInvisibleEvents(listener[0]);
-                attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
             }
             renderNodeElementSync("script", attributes, stream);
         }
@@ -2628,7 +2615,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     htmlStr = value;
                     continue;
                 }
-                prop.startsWith(PREVENT_DEFAULT) && addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
             }
@@ -2650,7 +2637,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 htmlStr = value;
                 continue;
             }
-            prop.startsWith(PREVENT_DEFAULT) && addQwikEvent(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+            prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
             null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
         }
@@ -2669,7 +2656,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             for (const listener of groups) {
                 const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
                 openingElement += " " + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"', 
-                addQwikEvent(eventName, rCtx.$static$.$containerState$);
+                registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
             }
         }
         if (null != key && (openingElement += ' q:key="' + escapeAttr(key) + '"'), hasRef || useSignal || listeners.length > 0) {
@@ -2952,6 +2939,10 @@ const phasingContent = {
 const ESCAPE_HTML = /[&<>]/g;
 
 const ESCAPE_ATTRIBUTES = /[&"]/g;
+
+const registerQwikEvent$1 = (prop, containerState) => {
+    containerState.$events$.add(getEventName(prop));
+};
 
 const escapeHtml = s => s.replace(ESCAPE_HTML, (c => {
     switch (c) {
@@ -3538,10 +3529,11 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     const elm = oldVnode.$elm$;
     const tag = newVnode.$type$;
     const staticCtx = rCtx.$static$;
+    const containerState = staticCtx.$containerState$;
     const currentComponent = rCtx.$cmpCtx$;
     if (assertDefined(elm, "while patching element must be defined"), assertDefined(currentComponent, "while patching current component must be defined"), 
     newVnode.$elm$ = elm, "#text" === tag) {
-        rCtx.$static$.$visited$.push(elm);
+        staticCtx.$visited$.push(elm);
         const signal = newVnode.$signal$;
         return signal && (newVnode.$text$ = jsxToString(trackSignal(signal, [ 4, currentComponent.$element$, signal, elm ]))), 
         void setProperty(staticCtx, elm, "data", newVnode.$text$);
@@ -3549,7 +3541,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     assertQwikElement(elm);
     const props = newVnode.$props$;
     const vnodeFlags = newVnode.$flags$;
-    const elCtx = getContext(elm, rCtx.$static$.$containerState$);
+    const elCtx = getContext(elm, containerState);
     if (tag !== VIRTUAL) {
         let isSvg = 0 != (1 & flags);
         if (isSvg || "svg" !== tag || (flags |= 1, isSvg = !0), props !== EMPTY_OBJ) {
@@ -3558,10 +3550,18 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
             newVnode.$props$ = values;
             for (const prop in props) {
                 let newValue = props[prop];
-                "ref" !== prop ? isOnProp(prop) ? browserSetEvent(staticCtx, elCtx, prop, newValue) : (isSignal(newValue) && (newValue = trackSignal(newValue, [ 1, currentComponent.$element$, newValue, elm, prop ])), 
-                "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
-                values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg))) : (assertElement(elm), 
-                setRef(newValue, elm));
+                if ("ref" !== prop) {
+                    if (isOnProp(prop)) {
+                        const normalized = setEvent(elCtx.li, prop, newValue, containerState.$containerEl$);
+                        addQwikEvent(staticCtx, elm, normalized);
+                    } else {
+                        isSignal(newValue) && (newValue = trackSignal(newValue, [ 1, currentComponent.$element$, newValue, elm, prop ])), 
+                        "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
+                        values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
+                    }
+                } else {
+                    assertElement(elm), setRef(newValue, elm);
+                }
             }
         }
         if (2 & vnodeFlags) {
@@ -3578,7 +3578,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     }
     if ("q:renderFn" in props) {
         const cmpProps = props.props;
-        setComponentProps(elCtx, rCtx, cmpProps);
+        setComponentProps(containerState, elCtx, cmpProps);
         let needsRender = !!(1 & elCtx.$flags$);
         return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rCtx, elCtx), 
         elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
@@ -3674,6 +3674,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     const isVirtual = tag === VIRTUAL;
     const props = vnode.$props$;
     const staticCtx = rCtx.$static$;
+    const containerState = staticCtx.$containerState$;
     isVirtual ? elm = newVirtualElement(doc) : "head" === tag ? (elm = doc.head, flags |= 2) : (elm = createElement(doc, tag, isSvg), 
     flags &= -3), 2 & vnode.$flags$ && (flags |= 4), vnode.$elm$ = elm;
     const elCtx = createContext(elm);
@@ -3681,7 +3682,6 @@ const createElm = (rCtx, vnode, flags, promises) => {
         if ("q:renderFn" in props) {
             const renderQRL = props["q:renderFn"];
             assertQrl(renderQRL);
-            const containerState = rCtx.$static$.$containerState$;
             const target = createPropsState();
             const manager = containerState.$subsManager$.$createManager$();
             const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
@@ -3733,6 +3733,9 @@ const createElm = (rCtx, vnode, flags, promises) => {
             scopedIds && scopedIds.forEach((styleId => {
                 elm.classList.add(styleId);
             })), 2 & currentComponent.$flags$ && (elCtx.li.push(...currentComponent.li), currentComponent.$flags$ &= -3);
+        }
+        for (const listener of elCtx.li) {
+            addQwikEvent(staticCtx, elm, listener[0]);
         }
         if (void 0 !== props[dangerouslySetInnerHTML]) {
             return elm;
@@ -3825,7 +3828,7 @@ const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
         return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
     }
     const exception = PROP_HANDLER_MAP[prop];
-    exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith(PREVENT_DEFAULT) && addQwikEvent(prop.slice(PREVENT_DEFAULT.length), staticCtx.$containerState$), 
+    exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent(prop.slice(PREVENT_DEFAULT.length)), 
     setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
 };
 
@@ -3836,7 +3839,7 @@ const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) =>
         let newValue = newProps[prop];
         if ("ref" !== prop) {
             if (isOnProp(prop)) {
-                browserSetEvent(staticCtx, elCtx, prop, newValue);
+                setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
             } else {
                 if (isSignal(newValue) && (assertDefined(hostCtx, "Signals can only be used in components"), 
                 newValue = trackSignal(newValue, immutable ? [ 1, elm, newValue, hostCtx.$element$, prop ] : [ 2, hostCtx.$element$, newValue, elm, prop ])), 
@@ -3856,9 +3859,9 @@ const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) =>
     return values;
 };
 
-const setComponentProps = (elCtx, rCtx, expectProps) => {
+const setComponentProps = (containerState, elCtx, expectProps) => {
     let props = elCtx.$props$;
-    if (props || (elCtx.$props$ = props = createProxy(createPropsState(), rCtx.$static$.$containerState$)), 
+    if (props || (elCtx.$props$ = props = createProxy(createPropsState(), containerState)), 
     expectProps === EMPTY_OBJ) {
         return;
     }
@@ -3919,11 +3922,20 @@ const createKeyToOldIdx = (children, beginIdx, endIdx) => {
     return map;
 };
 
-const browserSetEvent = (staticCtx, elCtx, prop, input) => {
-    const containerState = staticCtx.$containerState$;
-    const normalized = setEvent(elCtx.li, prop, input, containerState.$containerEl$);
-    prop.startsWith("on") || setAttribute(staticCtx, elCtx.$element$, normalized, ""), 
-    addQwikEvent(normalized, containerState);
+const addQwikEvent = (staticCtx, elm, prop) => {
+    prop.startsWith("on:") || setAttribute(staticCtx, elm, prop, ""), registerQwikEvent(prop);
+};
+
+const registerQwikEvent = prop => {
+    var _a;
+    {
+        const eventName = getEventName(prop);
+        try {
+            ((_a = globalThis).qwikevents || (_a.qwikevents = [])).push(eventName);
+        } catch (err) {
+            logWarn(err);
+        }
+    }
 };
 
 const useLexicalScope = () => {
