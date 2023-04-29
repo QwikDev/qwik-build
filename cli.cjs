@@ -2457,8 +2457,6 @@ var import_node_path6 = require("path");
 function logNextStep(nextSteps, packageManager) {
   const outString = [];
   if (nextSteps) {
-    outString.push(`\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`);
-    outString.push(``);
     nextSteps.lines.forEach(
       (step) => outString.push(`   ${step.replace(/\bpnpm\b/g, packageManager)}`)
     );
@@ -2561,7 +2559,7 @@ async function logUpdateAppResult(pkgManager, result) {
   if (installDepNames) {
     g2.message(
       [
-        `\u{1F4DC} ${cyan(`New ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`)}`,
+        `\u{1F4BE} ${cyan(`Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`)}`,
         ...installDepNames.map(
           (depName) => `   - ${depName} ${result.updates.installedDeps[depName]}`
         )
@@ -2572,7 +2570,7 @@ async function logUpdateAppResult(pkgManager, result) {
     const prefix = pkgManager === "npm" ? "npm run" : pkgManager;
     g2.message(
       [
-        `\u{1F4BE} ${cyan(`Install ${pkgManager} script${installDepNames.length > 1 ? "s" : ""}:`)}`,
+        `\u{1F4DC} ${cyan(`New ${pkgManager} script${installDepNames.length > 1 ? "s" : ""}:`)}`,
         ...installScripts.map((script) => `   - ${prefix} ${script}`)
       ].join("\n")
     );
@@ -2597,7 +2595,8 @@ function logUpdateAppCommitResult(result, pkgManager) {
   }
   const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
   if (nextSteps) {
-    note(logNextStep(nextSteps, pkgManager), "Note");
+    const noteMessage = `\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`;
+    note(logNextStep(nextSteps, pkgManager), noteMessage);
   }
   ce(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
 }
