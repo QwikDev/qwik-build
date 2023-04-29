@@ -5,11 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-if (typeof global == 'undefined') {
-  const g = 'undefined' != typeof globalThis ? globalThis : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
-  g.global = g;
-}
-
 var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
   get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
 }) : x)(function(x) {
@@ -188,70 +183,6 @@ function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName)
 }
 
 // packages/qwik/src/optimizer/src/manifest.ts
-var EVENT_PRIORITY = [
-  // Click Events
-  "click",
-  "dblclick",
-  "contextmenu",
-  "auxclick",
-  // Pointer Events
-  "pointerdown",
-  "pointerup",
-  "pointermove",
-  "pointerover",
-  "pointerenter",
-  "pointerleave",
-  "pointerout",
-  "pointercancel",
-  "gotpointercapture",
-  "lostpointercapture",
-  // Touch Events
-  "touchstart",
-  "touchend",
-  "touchmove",
-  "touchcancel",
-  // Mouse Events
-  "mousedown",
-  "mouseup",
-  "mousemove",
-  "mouseenter",
-  "mouseleave",
-  "mouseover",
-  "mouseout",
-  "wheel",
-  // Gesture Events
-  "gesturestart",
-  "gesturechange",
-  "gestureend",
-  // Keyboard Events
-  "keydown",
-  "keyup",
-  "keypress",
-  // Input/Change Events
-  "input",
-  "change",
-  "search",
-  "invalid",
-  "beforeinput",
-  "select",
-  // Focus/Blur Events
-  "focusin",
-  "focusout",
-  "focus",
-  "blur",
-  // Form Events
-  "submit",
-  "reset",
-  // Scroll Events
-  "scroll"
-].map((n) => `on${n.toLowerCase()}$`);
-var FUNCTION_PRIORITY = [
-  "useTask$",
-  "useVisibleTask$",
-  "component$",
-  "useStyles$",
-  "useStylesScoped$"
-].map((n) => n.toLowerCase());
 function getValidManifest(manifest) {
   if (manifest != null && manifest.mapping != null && typeof manifest.mapping === "object" && manifest.symbols != null && typeof manifest.symbols === "object" && manifest.bundles != null && typeof manifest.bundles === "object") {
     return manifest;

@@ -11,12 +11,6 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.qwikCore = {}, global.qwikBuild));
 })(this, (function (exports, build) { 'use strict';
 
-    if (typeof globalThis == 'undefined') {
-      const g = 'undefined' != typeof global ? global : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
-      g.globalThis = g;
-    }
-
-
     // <docs markdown="../readme.md#implicit$FirstArg">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#implicit$FirstArg instead)
@@ -1530,7 +1524,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const untrack = (fn) => {
         return invoke(undefined, fn);
     };
-    const trackInvocation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
+    const trackInvocation = /*@__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
     /**
      * @public
      */

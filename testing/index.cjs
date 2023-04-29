@@ -5,11 +5,6 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
-if (typeof globalThis == 'undefined') {
-  const g = 'undefined' != typeof global ? global : 'undefined' != typeof window ? window : 'undefined' != typeof self ? self : {};
-  g.globalThis = g;
-}
-
 "use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;

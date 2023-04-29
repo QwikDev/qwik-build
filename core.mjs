@@ -1520,7 +1520,7 @@ const getWrappingContainer = (el) => {
 const untrack = (fn) => {
     return invoke(undefined, fn);
 };
-const trackInvocation = newInvokeContext(undefined, undefined, undefined, RenderEvent);
+const trackInvocation = /*@__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
 /**
  * @public
  */

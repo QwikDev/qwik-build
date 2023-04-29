@@ -9,10 +9,6 @@
     "object" == typeof exports && "undefined" != typeof module ? factory(exports, require("@builder.io/qwik/build")) : "function" == typeof define && define.amd ? define([ "exports", "@builder.io/qwik/build" ], factory) : factory((global = "undefined" != typeof globalThis ? globalThis : global || self).qwikCore = {}, global.qwikBuild);
 }(this, (function(exports, build) {
     "use strict";
-    if ("undefined" == typeof globalThis) {
-        const g = "undefined" != typeof global ? global : "undefined" != typeof window ? window : "undefined" != typeof self ? self : {};
-        g.globalThis = g;
-    }
     const implicit$FirstArg = fn => function(first, ...rest) {
         return fn.call(null, $(first), ...rest);
     };
@@ -115,7 +111,7 @@
         const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
         return new URL(url, base);
     };
-    let _platform = createPlatform();
+    let _platform = /*#__PURE__ */ createPlatform();
     const getPlatform = () => _platform;
     const isServerPlatform = () => _platform.isServer;
     function assertDefined() {
@@ -157,7 +153,7 @@
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-    const announcedQRL = new Set;
+    const announcedQRL = /*#__PURE__*/ new Set;
     const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset = 0) => {
         let chunk = null;
         let symbolFn = null;
@@ -560,7 +556,7 @@
         if (elementID) {
             const pauseCtx = containerState.$pauseCtx$;
             if (elCtx.$id$ = elementID, pauseCtx) {
-                const {getObject: getObject, meta: meta, refs: refs} = pauseCtx;
+                const {getObject, meta, refs} = pauseCtx;
                 if (isElement(el)) {
                     const refMap = refs[elementID];
                     refMap && (assertTrue(isElement(el)), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
@@ -568,7 +564,7 @@
                         const attributes = elCtx.$element$.attributes;
                         const listeners = [];
                         for (let i = 0; i < attributes.length; i++) {
-                            const {name: name, value: value} = attributes.item(i);
+                            const {name, value} = attributes.item(i);
                             if (name.startsWith("on:") || name.startsWith("on-window:") || name.startsWith("on-document:")) {
                                 const urls = value.split("\n");
                                 for (const url of urls) {
@@ -705,7 +701,7 @@
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const untrack = fn => invoke(void 0, fn);
-    const trackInvocation = newInvokeContext(void 0, void 0, void 0, "qRender");
+    const trackInvocation = /*@__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
     const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
     const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
@@ -759,9 +755,9 @@
             node[key] = null == value ? "" : value, null == value && isNode$1(node) && isElement$1(node) && node.removeAttribute(key);
         } catch (err) {
             logError(codeToText(6), {
-                node: node,
-                key: key,
-                value: value
+                node,
+                key,
+                value
             }, err);
         }
     };
@@ -1279,12 +1275,12 @@
             }
         })), {
             state: {
-                refs: refs,
+                refs,
                 ctx: meta,
                 objs: convertedObjs,
-                subs: subs
+                subs
             },
-            objs: objs,
+            objs,
             funcs: collector.$inlinedFunctions$,
             resources: collector.$resources$,
             qrls: collector.$qrls$,
@@ -1433,10 +1429,10 @@
                     if (isPromise(obj)) {
                         return void collector.$promises$.push((promise = obj, promise.then((value => (promise[PROMISE_VALUE] = {
                             resolved: !0,
-                            value: value
+                            value
                         }, value)), (value => (promise[PROMISE_VALUE] = {
                             resolved: !1,
-                            value: value
+                            value
                         }, value)))).then((value => {
                             collectValue(value, collector, leaks);
                         })));
@@ -1509,16 +1505,16 @@
         return {
             get: seq[i],
             set: value => seq[i] = value,
-            i: i,
-            iCtx: iCtx,
-            elCtx: elCtx
+            i,
+            iCtx,
+            elCtx
         };
     };
-    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name)), Object.freeze({
+    const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name)), /*#__PURE__*/ Object.freeze({
         id: fromCamelToKebabCase(name)
     }));
     const useContextProvider = (context, newValue) => {
-        const {get: get, set: set, elCtx: elCtx} = useSequentialScope();
+        const {get, set, elCtx} = useSequentialScope();
         if (void 0 !== get) {
             return;
         }
@@ -1580,7 +1576,7 @@
         }
         return null;
     };
-    const ERROR_CONTEXT = createContextId("qk-error");
+    const ERROR_CONTEXT = /*#__PURE__*/ createContextId("qk-error");
     const handleError = (err, hostElement, rCtx) => {
         const elCtx = tryGetContext(hostElement);
         if (isServerPlatform()) {
@@ -2187,7 +2183,7 @@
         }
     }
     const processNode = (node, invocationContext) => {
-        const {key: key, type: type, props: props, children: children, flags: flags, immutableProps: immutableProps} = node;
+        const {key, type, props, children, flags, immutableProps} = node;
         let textType = "";
         if (isString(type)) {
             textType = type;
@@ -2330,13 +2326,13 @@
             reviveNestedObjects(value, getObject, parser)), obj;
         };
         containerState.$elementIndex$ = 1e5, containerState.$pauseCtx$ = {
-            getObject: getObject,
+            getObject,
             meta: pauseState.ctx,
             refs: pauseState.refs
         }, directSetAttribute(containerEl, "q:container", "resumed"), logDebug(), ((el, eventName, detail, bubbles) => {
             (build.isBrowser || "function" == typeof CustomEvent) && el && el.dispatchEvent(new CustomEvent(eventName, {
-                detail: detail,
-                bubbles: bubbles,
+                detail,
+                bubbles,
                 composed: bubbles
             }));
         })(containerEl, "qresume", void 0, !0);
@@ -2855,8 +2851,8 @@
             templates[directGetAttribute(elm, QSlot) ?? ""] = elm;
         }
         return {
-            slots: slots,
-            templates: templates
+            slots,
+            templates
         };
     };
     const readDOMSlots = elCtx => {
@@ -3189,7 +3185,7 @@
     const WatchFlagsIsResource = 4;
     const WatchFlagsIsDirty = 16;
     const useTaskQrl = (qrl, opts) => {
-        const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
+        const {get, set, iCtx, i, elCtx} = useSequentialScope();
         if (get) {
             return;
         }
@@ -3201,7 +3197,7 @@
         isServerPlatform() && useRunWatch(watch, opts?.eagerness);
     };
     const useComputedQrl = qrl => {
-        const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
+        const {get, set, iCtx, i, elCtx} = useSequentialScope();
         if (get) {
             return get;
         }
@@ -3214,9 +3210,9 @@
         set(signal);
     };
     const useComputed$ = implicit$FirstArg(useComputedQrl);
-    const useTask$ = implicit$FirstArg(useTaskQrl);
+    const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
     const useVisibleTaskQrl = (qrl, opts) => {
-        const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
+        const {get, set, i, iCtx, elCtx} = useSequentialScope();
         const eagerness = opts?.strategy ?? "intersection-observer";
         if (get) {
             return void (isServerPlatform() && useRunWatch(get, eagerness));
@@ -3228,7 +3224,7 @@
         useRunWatch(watch, eagerness), isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), 
         notifyWatch(watch, containerState));
     };
-    const useVisibleTask$ = implicit$FirstArg(useVisibleTaskQrl);
+    const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
     const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
     const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(), isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
     const runResource = (watch, containerState, rCtx, waitOn) => {
@@ -3369,7 +3365,7 @@
         }
     }
     const useResourceQrl = (qrl, opts) => {
-        const {get: get, set: set, i: i, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
+        const {get, set, i, iCtx, elCtx} = useSequentialScope();
         if (null != get) {
             return get;
         }
@@ -3648,7 +3644,7 @@
         $prepare$: data => BigInt(data),
         $fill$: void 0
     } ];
-    const collectorSerializers = serializers.filter((a => a.$collect$));
+    const collectorSerializers = /*#__PURE__*/ serializers.filter((a => a.$collect$));
     const collectDeps = (obj, collector, leaks) => {
         for (const s of collectorSerializers) {
             if (s.$test$(obj)) {
@@ -3769,8 +3765,8 @@
         }
         return value;
     };
-    const noSerializeSet = new WeakSet;
-    const weakSerializeSet = new WeakSet;
+    const noSerializeSet = /*#__PURE__*/ new WeakSet;
+    const weakSerializeSet = /*#__PURE__*/ new WeakSet;
     const shouldSerialize = obj => !isObject(obj) && !isFunction(obj) || !noSerializeSet.has(obj);
     const fastSkipSerialize = obj => noSerializeSet.has(obj);
     const fastWeakSerialize = obj => weakSerializeSet.has(obj);
@@ -3925,7 +3921,7 @@
             getSymbol: () => resolvedSymbol,
             getHash: () => hash,
             getCaptured: () => captureRef,
-            resolve: resolve,
+            resolve,
             $resolveLazy$: resolveLazy,
             $setContainer$: setContainer,
             $chunk$: chunk,
@@ -3946,18 +3942,18 @@
     function assertQrl() {
         qDev;
     }
-    const EMITTED = new Set;
+    const EMITTED = /*#__PURE__*/ new Set;
     const emitUsedSymbol = (symbol, element, reqTime) => {
         EMITTED.has(symbol) || (EMITTED.add(symbol), emitEvent("qsymbol", {
-            symbol: symbol,
-            element: element,
-            reqTime: reqTime
+            symbol,
+            element,
+            reqTime
         }));
     };
     const emitEvent = (eventName, detail) => {
         isServerPlatform() || "object" != typeof document || document.dispatchEvent(new CustomEvent(eventName, {
             bubbles: !1,
-            detail: detail
+            detail
         }));
     };
     const now = () => isServerPlatform() ? 0 : "object" == typeof performance ? performance.now() : 0;
@@ -3974,7 +3970,7 @@
                 [QSlot]: props[QSlot],
                 [_IMMUTABLE]: props[_IMMUTABLE],
                 children: props.children,
-                props: props
+                props
             }, flags, hash + ":" + (key || ""));
         }
         return QwikComponent[SERIALIZABLE_STATE] = [ componentQrl ], QwikComponent;
@@ -4017,7 +4013,7 @@
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+        const {get, set, iCtx} = useSequentialScope();
         if (null != get) {
             return get;
         }
@@ -4149,14 +4145,14 @@
     const useStylesQrl = styles => {
         _useStyles(styles, (str => str), !1);
     };
-    const useStyles$ = implicit$FirstArg(useStylesQrl);
+    const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
     const useStylesScopedQrl = styles => ({
         scopeId: "⭐️" + _useStyles(styles, getScopedStyles, !0)
     });
-    const useStylesScoped$ = implicit$FirstArg(useStylesScopedQrl);
+    const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
     const _useStyles = (styleQrl, transform, scoped) => {
         assertQrl();
-        const {get: get, set: set, iCtx: iCtx, i: i, elCtx: elCtx} = useSequentialScope();
+        const {get, set, iCtx, i, elCtx} = useSequentialScope();
         if (get) {
             return get;
         }
@@ -4171,7 +4167,7 @@
         const value = styleQrl.$resolveLazy$(containerState.$containerEl$);
         const appendStyle = styleText => {
             assertDefined(), elCtx.$appendStyles$.push({
-                styleId: styleId,
+                styleId,
                 content: transform(styleText, styleId)
             });
         };
@@ -4228,7 +4224,7 @@
         if ("object" != typeof obj) {
             return null;
         }
-        const {_objs: _objs, _entry: _entry} = obj;
+        const {_objs, _entry} = obj;
         if (void 0 === _objs || void 0 === _entry) {
             return null;
         }
@@ -4448,7 +4444,7 @@
         };
     }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useComputed$ = useComputed$, 
     exports.useComputedQrl = useComputedQrl, exports.useContext = (context, defaultValue) => {
-        const {get: get, set: set, iCtx: iCtx, elCtx: elCtx} = useSequentialScope();
+        const {get, set, iCtx, elCtx} = useSequentialScope();
         if (void 0 !== get) {
             return get;
         }
@@ -4470,7 +4466,7 @@
         return useOn("error-boundary", qrl("/runtime", "error", [ store ])), useContextProvider(ERROR_CONTEXT, store), 
         store;
     }, exports.useId = () => {
-        const {get: get, set: set, elCtx: elCtx, iCtx: iCtx} = useSequentialScope();
+        const {get, set, elCtx, iCtx} = useSequentialScope();
         if (null != get) {
             return get;
         }
@@ -4482,7 +4478,7 @@
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
         return tryGetInvokeContext()?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
     }, exports.useSignal = initialState => {
-        const {get: get, set: set, iCtx: iCtx} = useSequentialScope();
+        const {get, set, iCtx} = useSequentialScope();
         if (null != get) {
             return get;
         }
