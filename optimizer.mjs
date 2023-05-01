@@ -2066,6 +2066,7 @@ function qwikVite(qwikViteOpts = {}) {
   let viteCommand = "serve";
   let manifestInput = null;
   let clientOutDir = null;
+  let clientPublicOutDir = null;
   let ssrOutDir = null;
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
@@ -2074,7 +2075,8 @@ function qwikVite(qwikViteOpts = {}) {
     getOptions: () => qwikPlugin.getOptions(),
     getManifest: () => manifestInput,
     getRootDir: () => qwikPlugin.getOptions().rootDir,
-    getClientOutDir: () => clientOutDir
+    getClientOutDir: () => clientOutDir,
+    getClientPublicOutDir: () => clientPublicOutDir
   };
   const vitePlugin = {
     name: "vite-plugin-qwik",
@@ -2158,10 +2160,12 @@ function qwikVite(qwikViteOpts = {}) {
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       manifestInput = pluginOpts.manifestInput || null;
       clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.client?.outDir || CLIENT_OUT_DIR));
+      clientPublicOutDir = viteConfig.base ? path.join(clientOutDir, viteConfig.base) : clientOutDir;
       ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, qwikViteOpts.ssr?.outDir || SSR_OUT_DIR));
       clientDevInput = "string" === typeof qwikViteOpts.client?.devInput ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
       clientDevInput = qwikPlugin.normalizePath(clientDevInput);
       const vendorIds = vendorRoots.map((v => v.id));
+      const buildOutputDir = "client" === target && viteConfig.base ? path.join(opts.outDir, viteConfig.base) : opts.outDir;
       const updatedViteConfig = {
         ssr: {
           noExternal: [ QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_BUILD_ID, ...vendorIds ]
@@ -2179,12 +2183,15 @@ function qwikVite(qwikViteOpts = {}) {
           exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
         },
         build: {
-          outDir: opts.outDir,
+          outDir: buildOutputDir,
           cssCodeSplit: false,
           rollupOptions: {
             input: opts.input,
             preserveEntrySignatures: "exports-only",
-            output: normalizeRollupOutputOptions(path, opts, viteConfig.build?.rollupOptions?.output),
+            output: {
+              ...normalizeRollupOutputOptions(path, opts, viteConfig.build?.rollupOptions?.output),
+              dir: buildOutputDir
+            },
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
                 return;

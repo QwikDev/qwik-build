@@ -365,6 +365,7 @@ export declare interface QwikVitePluginApi {
     getManifest: () => QwikManifest | null;
     getRootDir: () => string | null;
     getClientOutDir: () => string | null;
+    getClientPublicOutDir: () => string | null;
 }
 
 /**
