@@ -1549,6 +1549,17 @@ const _jsxBranch = (input) => {
     }
     return input;
 };
+/**
+ * @internal
+ */
+const _waitUntilRendered = (elm) => {
+    const containerEl = getWrappingContainer(elm);
+    if (!containerEl) {
+        return Promise.resolve();
+    }
+    const containerState = _getContainerState(containerEl);
+    return containerState.$renderPromise$ ?? Promise.resolve();
+};
 
 // <docs markdown="../readme.md#useOn">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -5951,7 +5962,7 @@ const executeContextWithTransition = async (ctx) => {
         if (document.__q_view_transition__) {
             document.__q_view_transition__ = undefined;
             if (document.startViewTransition) {
-                await document.startViewTransition(() => executeDOMRender(ctx)).updateCallbackDone;
+                await document.startViewTransition(() => executeDOMRender(ctx)).finished;
                 return;
             }
         }
@@ -9062,5 +9073,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

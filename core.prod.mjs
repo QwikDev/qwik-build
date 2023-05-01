@@ -1052,6 +1052,14 @@ const _jsxBranch = input => {
     return input;
 };
 
+const _waitUntilRendered = elm => {
+    const containerEl = getWrappingContainer(elm);
+    if (!containerEl) {
+        return Promise.resolve();
+    }
+    return _getContainerState(containerEl).$renderPromise$ ?? Promise.resolve();
+};
+
 const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
 
 const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
@@ -3894,7 +3902,7 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
 
 const executeContextWithTransition = async ctx => {
     isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-    document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).updateCallbackDone : executeDOMRender(ctx);
+    document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).finished : executeDOMRender(ctx);
 };
 
 const directAppendChild = (parent, child) => {
@@ -5448,4 +5456,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

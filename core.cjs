@@ -1553,6 +1553,17 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         return input;
     };
+    /**
+     * @internal
+     */
+    const _waitUntilRendered = (elm) => {
+        const containerEl = getWrappingContainer(elm);
+        if (!containerEl) {
+            return Promise.resolve();
+        }
+        const containerState = _getContainerState(containerEl);
+        return containerState.$renderPromise$ ?? Promise.resolve();
+    };
 
     // <docs markdown="../readme.md#useOn">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -5955,7 +5966,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (document.__q_view_transition__) {
                 document.__q_view_transition__ = undefined;
                 if (document.startViewTransition) {
-                    await document.startViewTransition(() => executeDOMRender(ctx)).updateCallbackDone;
+                    await document.startViewTransition(() => executeDOMRender(ctx)).finished;
                     return;
                 }
             }
@@ -9093,6 +9104,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports._restProps = _restProps;
     exports._serializeData = _serializeData;
     exports._verifySerializable = verifySerializable;
+    exports._waitUntilRendered = _waitUntilRendered;
     exports._weakSerialize = _weakSerialize;
     exports._wrapProp = _wrapProp;
     exports._wrapSignal = _wrapSignal;

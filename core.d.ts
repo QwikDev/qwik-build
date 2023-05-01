@@ -3618,6 +3618,11 @@ declare interface VirtualElement {
  */
 export declare type VisibleTaskStrategy = 'intersection-observer' | 'document-ready' | 'document-idle';
 
+/**
+ * @internal
+ */
+export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
+
 declare type WatchDescriptor = DescriptorBase<TaskFn>;
 
 /**

@@ -3109,7 +3109,7 @@
             })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(), 
             void await postRendering(containerState, rCtx)) : (await (async ctx => {
                 build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-                document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).updateCallbackDone : executeDOMRender(ctx);
+                document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).finished : executeDOMRender(ctx);
             })(staticCtx), printRenderStats(), postRendering(containerState, rCtx));
         } catch (err) {
             logError(err);
@@ -4385,8 +4385,14 @@
             _entry: mustGetObjId(data),
             _objs: convertedObjs
         });
-    }, exports._verifySerializable = verifySerializable, exports._weakSerialize = input => (weakSerializeSet.add(input), 
-    input), exports._wrapProp = _wrapProp, exports._wrapSignal = (obj, prop) => {
+    }, exports._verifySerializable = verifySerializable, exports._waitUntilRendered = elm => {
+        const containerEl = getWrappingContainer(elm);
+        if (!containerEl) {
+            return Promise.resolve();
+        }
+        return _getContainerState(containerEl).$renderPromise$ ?? Promise.resolve();
+    }, exports._weakSerialize = input => (weakSerializeSet.add(input), input), exports._wrapProp = _wrapProp, 
+    exports._wrapSignal = (obj, prop) => {
         const r = _wrapProp(obj, prop);
         return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
