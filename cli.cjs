@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 0.106.0
+ * @builder.io/qwik/cli 0.107.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2556,7 +2556,7 @@ async function logUpdateAppResult(pkgManager, result) {
       ].join("\n")
     );
   }
-  if (installDepNames) {
+  if (installDepNames.length > 0) {
     g2.message(
       [
         `\u{1F4BE} ${cyan(`Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`)}`,
@@ -4123,7 +4123,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("0.106.0");
+  console.log("0.107.0");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
