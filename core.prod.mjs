@@ -5094,7 +5094,7 @@ const event$ = implicit$FirstArg(eventQrl);
 
 const componentQrl = componentQrl => {
     function QwikComponent(props, key, flags) {
-        assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invocated correctly");
+        assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invoked correctly");
         const hash = componentQrl.$hash$.slice(0, 4);
         return _jsxC(Virtual, {
             "q:renderFn": componentQrl,
