@@ -1228,7 +1228,7 @@ globalThis.qwikOptimizer = function(module) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
-          code: getQwikBuildModule(loadOpts)
+          code: getQwikBuildModule(loadOpts, opts.target)
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
@@ -1418,8 +1418,8 @@ globalThis.qwikOptimizer = function(module) {
       }
       return id2;
     };
-    function getQwikBuildModule(loadOpts) {
-      const isServer = !!loadOpts.ssr;
+    function getQwikBuildModule(loadOpts, target) {
+      const isServer = !!loadOpts.ssr || "test" === target;
       const isDev = "development" === opts.buildMode;
       return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\nexport const isDev = ${JSON.stringify(isDev)};\n`;
     }
