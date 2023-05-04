@@ -5446,7 +5446,7 @@ const useSignal = initialState => {
         return get;
     }
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const value = isFunction(initialState) ? invoke(void 0, initialState) : initialState;
+    const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
     return set(_createSignal(value, containerState, 0, void 0));
 };
 

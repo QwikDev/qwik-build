@@ -4489,7 +4489,7 @@
             return get;
         }
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const value = isFunction(initialState) ? invoke(void 0, initialState) : initialState;
+        const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
         return set(_createSignal(value, containerState, 0, void 0));
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 

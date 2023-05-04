@@ -9061,7 +9061,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return get;
         }
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const value = isFunction(initialState) ? invoke(undefined, initialState) : initialState;
+        const value = isFunction(initialState) && !isQwikComponent(initialState)
+            ? invoke(undefined, initialState)
+            : initialState;
         const signal = _createSignal(value, containerState, 0, undefined);
         return set(signal);
     };
