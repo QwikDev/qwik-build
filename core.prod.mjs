@@ -49,14 +49,6 @@ const isText = value => 3 === value.nodeType;
 
 const isComment = value => 8 === value.nodeType;
 
-function assertQwikElement() {
-    qDev;
-}
-
-function assertElement() {
-    qDev;
-}
-
 const STYLE = "";
 
 const logError = (message, ...optionalParams) => {
@@ -217,6 +209,8 @@ const getPlatform = () => _platform;
 
 const isServerPlatform = () => _platform.isServer;
 
+const ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik";
+
 function assertDefined() {
     qDev;
 }
@@ -238,6 +232,14 @@ function assertNumber() {
 }
 
 function assertString() {
+    qDev;
+}
+
+function assertQwikElement() {
+    qDev;
+}
+
+function assertElement() {
     qDev;
 }
 

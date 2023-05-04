@@ -91,22 +91,6 @@ const isText = (value) => {
 const isComment = (value) => {
     return value.nodeType === 8;
 };
-function assertQwikElement(el) {
-    if (qDev) {
-        if (!isQwikElement(el)) {
-            console.error('Not a Qwik Element, got', el);
-            throw new Error('Not a Qwik Element');
-        }
-    }
-}
-function assertElement(el) {
-    if (qDev) {
-        if (!isElement$1(el)) {
-            console.error('Not a Element, got', el);
-            throw new Error('Not an Element');
-        }
-    }
-}
 
 const STYLE = qDev
     ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
@@ -375,12 +359,13 @@ const isServerPlatform = () => {
     return false;
 };
 
+const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik';
 function assertDefined(value, text, ...parts) {
     if (qDev) {
         if (value != null) {
             return;
         }
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
     }
 }
 function assertEqual(value1, value2, text, ...parts) {
@@ -388,12 +373,12 @@ function assertEqual(value1, value2, text, ...parts) {
         if (value1 === value2) {
             return;
         }
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
     }
 }
 function assertFail(text, ...parts) {
     if (qDev) {
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
     }
 }
 function assertTrue(value1, text, ...parts) {
@@ -401,7 +386,7 @@ function assertTrue(value1, text, ...parts) {
         if (value1 === true) {
             return;
         }
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
     }
 }
 function assertNumber(value1, text, ...parts) {
@@ -409,7 +394,7 @@ function assertNumber(value1, text, ...parts) {
         if (typeof value1 === 'number') {
             return;
         }
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
     }
 }
 function assertString(value1, text, ...parts) {
@@ -417,7 +402,23 @@ function assertString(value1, text, ...parts) {
         if (typeof value1 === 'string') {
             return;
         }
-        throw logErrorAndStop(text, ...parts);
+        throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+    }
+}
+function assertQwikElement(el) {
+    if (qDev) {
+        if (!isQwikElement(el)) {
+            console.error('Not a Qwik Element, got', el);
+            throw logErrorAndStop(ASSERT_DISCLAIMER + 'Not a Qwik Element');
+        }
+    }
+}
+function assertElement(el) {
+    if (qDev) {
+        if (!isElement$1(el)) {
+            console.error('Not a Element, got', el);
+            throw logErrorAndStop(ASSERT_DISCLAIMER + 'Not an Element');
+        }
     }
 }
 

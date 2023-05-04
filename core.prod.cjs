@@ -30,12 +30,6 @@
     const isVirtualElement = value => 111 === value.nodeType;
     const isText = value => 3 === value.nodeType;
     const isComment = value => 8 === value.nodeType;
-    function assertQwikElement() {
-        qDev;
-    }
-    function assertElement() {
-        qDev;
-    }
     const logError = (message, ...optionalParams) => {
         const err = message instanceof Error ? message : createError(message);
         return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
@@ -130,6 +124,12 @@
         qDev;
     }
     function assertString() {
+        qDev;
+    }
+    function assertQwikElement() {
+        qDev;
+    }
+    function assertElement() {
         qDev;
     }
     const isPromise = value => value instanceof Promise;
