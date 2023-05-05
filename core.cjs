@@ -2811,7 +2811,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }
             }
         }
-        if (dynamicCtx) {
+        if (dynamicCtx === true) {
             collectContext(elCtx, collector);
             if (elCtx.$dynamicSlots$) {
                 for (const slotCtx of elCtx.$dynamicSlots$) {

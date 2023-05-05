@@ -1939,7 +1939,7 @@ const collectElementData = (elCtx, collector, dynamicCtx) => {
             map.has(obj) && collectValue(obj, collector, dynamicCtx);
         }
     }
-    if (dynamicCtx && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {
+    if (!0 === dynamicCtx && (collectContext(elCtx, collector), elCtx.$dynamicSlots$)) {
         for (const slotCtx of elCtx.$dynamicSlots$) {
             collectContext(slotCtx, collector);
         }
