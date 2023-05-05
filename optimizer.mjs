@@ -2003,7 +2003,7 @@ var shouldSsrRender = (req, url) => {
   if (/\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html")) {
     return false;
   }
-  if (pathname.includes("__vite_ping")) {
+  if (pathname.includes("_-vite-ping")) {
     return false;
   }
   if (pathname.includes("__open-in-editor")) {

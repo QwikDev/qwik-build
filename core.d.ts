@@ -925,7 +925,7 @@ export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes
     contextMenu?: string | undefined;
     dir?: 'ltr' | 'rtl' | 'auto' | undefined;
     draggable?: boolean | undefined;
-    hidden?: boolean | undefined;
+    hidden?: boolean | 'hidden' | 'until-found' | undefined;
     id?: string | undefined;
     lang?: string | undefined;
     placeholder?: string | undefined;
