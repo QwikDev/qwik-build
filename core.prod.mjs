@@ -759,14 +759,12 @@ class ReadWriteProxyHandler {
         const invokeCtx = tryGetInvokeContext();
         const recursive = 0 != (1 & flags);
         let value = target[prop];
-        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), 0 != (2 & flags)) {
-            const hiddenSignal = target["$$" + prop];
-            const immutableMeta = target[_IMMUTABLE]?.[prop];
-            (!(prop in target) || hiddenSignal || isSignal(immutableMeta) || immutableMeta === _IMMUTABLE) && (subscriber = null), 
-            hiddenSignal && (assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal"), 
-            value = hiddenSignal.value);
-        }
-        if (subscriber) {
+        invokeCtx && (subscriber = invokeCtx.$subscriber$);
+        const hiddenSignal = target["$$" + prop];
+        const immutableMeta = target[_IMMUTABLE]?.[prop];
+        if ((!(prop in target) || hiddenSignal || isSignal(immutableMeta) || immutableMeta === _IMMUTABLE) && (subscriber = null), 
+        hiddenSignal && (assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal"), 
+        value = hiddenSignal.value), subscriber) {
             const isA = isArray(target);
             this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
         }
@@ -881,7 +879,8 @@ const getContext = (el, containerState) => {
                     }
                     if (host) {
                         const [renderQrl, props] = host.split(" ");
-                        elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), elCtx.$props$ = props ? getObject(props) : createProxy(createPropsState(), containerState);
+                        elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), props ? (elCtx.$props$ = getObject(props), 
+                        setObjectFlags(elCtx.$props$, 2)) : elCtx.$props$ = createProxy(createPropsState(), containerState);
                     }
                 }
             }
@@ -1741,7 +1740,7 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId,
         }
         const flags = getProxyFlags(obj) ?? 0;
         const converted = [];
-        flags > 0 && converted.push(flags);
+        1 & flags && converted.push(flags);
         for (const sub of subs) {
             const host = sub[1];
             0 === sub[0] && isNode$1(host) && isVirtualElement(host) && !collector.$elements$.includes(tryGetContext(host)) || converted.push(sub);
@@ -1895,7 +1894,7 @@ const collectProps = (elCtx, collector) => {
                 if (0 === sub[0] && sub[1] === el) {
                     return void collectElement(el, collector);
                 }
-                collectValue(props, collector, !1);
+                collectValue(props, collector, !1), collectSubscriptions(getProxyManager(props), collector, !1);
             }
         }
     }
@@ -1933,8 +1932,8 @@ const collectElement = (el, collector) => {
 };
 
 const collectElementData = (elCtx, collector, dynamicCtx) => {
-    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && collectValue(elCtx.$props$, collector, dynamicCtx), 
-    elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx), 
+    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && (collectValue(elCtx.$props$, collector, dynamicCtx), 
+    collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx)), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx), 
     elCtx.$seq$) {
         for (const obj of elCtx.$seq$) {
             collectValue(obj, collector, dynamicCtx);
@@ -1978,7 +1977,7 @@ const collectSubscriptions = (manager, collector, leaks) => {
     assertDefined(subs, "subs must be defined");
     for (const key of subs) {
         const type = key[0];
-        if (type > 0 && collectValue(key[2], collector, !0), !0 === leaks) {
+        if (type > 0 && collectValue(key[2], collector, leaks), !0 === leaks) {
             const host = key[1];
             isNode$1(host) && isVirtualElement(host) ? 0 === type && collectDeferElement(host, collector) : collectValue(host, collector, !0);
         }
@@ -2017,7 +2016,9 @@ const collectValue = (obj, collector, leaks) => {
                     if (seen.has(obj = target)) {
                         return;
                     }
-                    if (seen.add(obj), collectSubscriptions(getProxyManager(input), collector, leaks), 
+                    seen.add(obj);
+                    const mutable = 0 == (2 & getProxyFlags(obj));
+                    if (leaks && mutable && collectSubscriptions(getProxyManager(input), collector, leaks), 
                     fastWeakSerialize(input)) {
                         return void collector.$objSet$.add(obj);
                     }
@@ -4520,11 +4521,12 @@ const QRLSerializer = {
     }
 };
 
-const WatchSerializer = {
+const TaskSerializer = {
     $prefix$: "",
     $test$: v => isSubscriberDescriptor(v),
     $collect$: (v, collector, leaks) => {
-        collectValue(v.$qrl$, collector, leaks), v.$state$ && collectValue(v.$state$, collector, leaks);
+        collectValue(v.$qrl$, collector, leaks), v.$state$ && (collectValue(v.$state$, collector, leaks), 
+        !0 === leaks && v.$state$ instanceof SignalImpl && collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, !0));
     },
     $serialize$: (obj, getObjId) => serializeWatch(obj, getObjId),
     $prepare$: data => parseTask(data),
@@ -4652,9 +4654,11 @@ const DerivedSignalSerializer = {
 const SignalSerializer = {
     $prefix$: "",
     $test$: v => v instanceof SignalImpl,
-    $collect$: (obj, collector, leaks) => (collectValue(obj.untrackedValue, collector, leaks), 
-    !0 === leaks && collectSubscriptions(obj[QObjectManagerSymbol], collector, leaks), 
-    obj),
+    $collect$: (obj, collector, leaks) => {
+        collectValue(obj.untrackedValue, collector, leaks);
+        return !0 === leaks && 0 == (1 & obj[QObjectSignalFlags]) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
+        obj;
+    },
     $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
     $prepare$: (data, containerState) => new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0),
     $subs$: (signal, subs) => {
@@ -4753,7 +4757,7 @@ const BigIntSerializer = {
     $fill$: void 0
 };
 
-const serializers = [ QRLSerializer, SignalSerializer, SignalWrapperSerializer, WatchSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer ];
+const serializers = [ QRLSerializer, SignalSerializer, SignalWrapperSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer ];
 
 const collectorSerializers = /*#__PURE__*/ serializers.filter((a => a.$collect$));
 

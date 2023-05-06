@@ -1134,24 +1134,21 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             assertNumber(flags, 'flags must be an number');
             const invokeCtx = tryGetInvokeContext();
             const recursive = (flags & QObjectRecursive) !== 0;
-            const immutable = (flags & QObjectImmutable) !== 0;
             let value = target[prop];
             if (invokeCtx) {
                 subscriber = invokeCtx.$subscriber$;
             }
-            if (immutable) {
-                const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
-                const immutableMeta = target[_IMMUTABLE]?.[prop];
-                if (!(prop in target) ||
-                    !!hiddenSignal ||
-                    isSignal(immutableMeta) ||
-                    immutableMeta === _IMMUTABLE) {
-                    subscriber = null;
-                }
-                if (hiddenSignal) {
-                    assertTrue(isSignal(hiddenSignal), '$$ prop must be a signal');
-                    value = hiddenSignal.value;
-                }
+            const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
+            const immutableMeta = target[_IMMUTABLE]?.[prop];
+            if (!(prop in target) ||
+                !!hiddenSignal ||
+                isSignal(immutableMeta) ||
+                immutableMeta === _IMMUTABLE) {
+                subscriber = null;
+            }
+            if (hiddenSignal) {
+                assertTrue(isSignal(hiddenSignal), '$$ prop must be a signal');
+                value = hiddenSignal.value;
             }
             if (subscriber) {
                 const isA = isArray(target);
@@ -1329,6 +1326,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                             }
                             if (props) {
                                 elCtx.$props$ = getObject(props);
+                                setObjectFlags(elCtx.$props$, QObjectImmutable);
                             }
                             else {
                                 elCtx.$props$ = createProxy(createPropsState(), containerState);
@@ -2535,7 +2533,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
             const flags = getProxyFlags(obj) ?? 0;
             const converted = [];
-            if (flags > 0) {
+            if (flags & QObjectRecursive) {
                 converted.push(flags);
             }
             for (const sub of subs) {
@@ -2753,6 +2751,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     }
                     else {
                         collectValue(props, collector, false);
+                        collectSubscriptions(getProxyManager(props), collector, false);
                     }
                 }
             }
@@ -2801,6 +2800,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const collectElementData = (elCtx, collector, dynamicCtx) => {
         if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
             collectValue(elCtx.$props$, collector, dynamicCtx);
+            collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx);
         }
         if (elCtx.$componentQrl$) {
             collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
@@ -2844,6 +2844,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return str.replace(/<(\/?script)/g, '\\x3C$1');
     };
     const collectSubscriptions = (manager, collector, leaks) => {
+        // if (!leaks) {
+        //   return;
+        // }
         if (collector.$seen$.has(manager)) {
             return;
         }
@@ -2853,7 +2856,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         for (const key of subs) {
             const type = key[0];
             if (type > 0) {
-                collectValue(key[2], collector, true);
+                collectValue(key[2], collector, leaks);
             }
             if (leaks === true) {
                 const host = key[1];
@@ -2913,7 +2916,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                             return;
                         }
                         seen.add(obj);
-                        collectSubscriptions(getProxyManager(input), collector, leaks);
+                        const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
+                        if (leaks && mutable) {
+                            collectSubscriptions(getProxyManager(input), collector, leaks);
+                        }
                         if (fastWeakSerialize(input)) {
                             collector.$objSet$.add(obj);
                             return;
@@ -7291,13 +7297,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         },
     };
-    const WatchSerializer = {
+    const TaskSerializer = {
         $prefix$: '\u0003',
         $test$: (v) => isSubscriberDescriptor(v),
         $collect$: (v, collector, leaks) => {
             collectValue(v.$qrl$, collector, leaks);
             if (v.$state$) {
                 collectValue(v.$state$, collector, leaks);
+                if (leaks === true && v.$state$ instanceof SignalImpl) {
+                    collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, true);
+                }
             }
         },
         $serialize$: (obj, getObjId) => serializeWatch(obj, getObjId),
@@ -7443,8 +7452,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         $test$: (v) => v instanceof SignalImpl,
         $collect$: (obj, collector, leaks) => {
             collectValue(obj.untrackedValue, collector, leaks);
-            if (leaks === true) {
-                collectSubscriptions(obj[QObjectManagerSymbol], collector, leaks);
+            const mutable = (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) === 0;
+            if (leaks === true && mutable) {
+                collectSubscriptions(obj[QObjectManagerSymbol], collector, true);
             }
             return obj;
         },
@@ -7581,7 +7591,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         QRLSerializer,
         SignalSerializer,
         SignalWrapperSerializer,
-        WatchSerializer,
+        TaskSerializer,
         ResourceSerializer,
         URLSerializer,
         DateSerializer,
