@@ -439,11 +439,11 @@ async function renderToStream(rootNode, opts) {
     serverData: opts.serverData,
     base: buildBase,
     beforeContent,
-    beforeClose: async (contexts, containerState, dynamic) => {
+    beforeClose: async (contexts, containerState, dynamic, textNodes) => {
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       containsDynamic = dynamic;
-      snapshotResult = await _pauseFromContexts(contexts, containerState);
+      snapshotResult = await _pauseFromContexts(contexts, containerState, void 0, textNodes);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, isDev ? "  " : void 0);
       const children = [
         jsx2("script", {

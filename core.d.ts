@@ -1564,7 +1564,7 @@ declare interface PauseContext {
 /**
  * @internal
  */
-export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID) => Promise<SnapshotResult>;
+export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
 
 declare type PreventDefault<T> = {
     [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
@@ -2305,7 +2305,7 @@ export declare interface RenderSSROptions {
     serverData?: Record<string, any>;
     url?: string;
     beforeContent?: JSXNode<string>[];
-    beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean) => Promise<JSXNode>;
+    beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean, textNodes: Map<string, string>) => Promise<JSXNode>;
 }
 
 declare interface RenderStaticContext {

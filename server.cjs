@@ -483,12 +483,12 @@ async function renderToStream(rootNode, opts) {
     serverData: opts.serverData,
     base: buildBase,
     beforeContent,
-    beforeClose: async (contexts, containerState, dynamic) => {
+    beforeClose: async (contexts, containerState, dynamic, textNodes) => {
       var _a2, _b, _c, _d, _e, _f, _g;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       containsDynamic = dynamic;
-      snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState);
+      snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState, void 0, textNodes);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
       const children = [
         (0, import_qwik3.jsx)("script", {

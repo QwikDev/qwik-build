@@ -2379,8 +2379,11 @@ const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
 /**
  * @internal
  */
-const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
+const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
     const collector = createCollector(containerState);
+    textNodes?.forEach((_, key) => {
+        collector.$seen$.add(key);
+    });
     let hasListeners = false;
     // TODO: optimize
     for (const ctx of allContexts) {
@@ -2502,6 +2505,10 @@ const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId)
         const id = objToId.get(obj);
         if (id) {
             return id + suffix;
+        }
+        const textId = textNodes?.get(obj);
+        if (textId) {
+            return '*' + textId;
         }
         if (fallbackGetObjId) {
             return fallbackGetObjId(obj);
@@ -2935,6 +2942,11 @@ const collectValue = (obj, collector, leaks) => {
                     }
                 }
                 break;
+            }
+            case 'string': {
+                if (collector.$seen$.has(obj)) {
+                    return;
+                }
             }
         }
     }
@@ -3551,6 +3563,7 @@ const _renderSSR = async (node, opts) => {
             $dynamic$: false,
             $headNodes$: root === 'html' ? headNodes : [],
             $locale$: opts.serverData?.locale,
+            $textNodes$: new Map(),
         },
         $projectedChildren$: undefined,
         $projectedCtxs$: undefined,
@@ -3586,7 +3599,7 @@ const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) =>
     const beforeClose = opts.beforeClose;
     await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
         ? (stream) => {
-            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
+            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
             return processData$1(result, rCtx, ssrCtx, stream, 0, undefined);
         }
         : undefined);
@@ -4120,7 +4133,9 @@ const processData$1 = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     ? [3, ('#' + id), node, ('#' + id)]
                     : [4, hostEl, node, ('#' + id)];
                 value = trackSignal(node, subs);
-                stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
+                const str = jsxToString(value);
+                ssrCtx.$static$.$textNodes$.set(str, id);
+                stream.write(`<!--t=${id}-->${escapeHtml(str)}<!---->`);
                 return;
             }
             else {
@@ -4658,6 +4673,7 @@ const resumeContainer = (containerEl) => {
     moveStyles(containerEl, containerState);
     // Collect all elements
     const elements = new Map();
+    const text = new Map();
     let node = null;
     let container = 0;
     // Collect all virtual elements
@@ -4674,7 +4690,9 @@ const resumeContainer = (containerEl) => {
             else if (data.startsWith('t=')) {
                 const id = data.slice(2);
                 const index = strToInt(id);
-                elements.set(index, getTextNode(node));
+                const textNode = getTextNode(node);
+                elements.set(index, textNode);
+                text.set(index, textNode.data);
             }
         }
         if (data === 'cq') {
@@ -4741,6 +4759,15 @@ const resumeContainer = (containerEl) => {
             const func = inlinedFunctions[index];
             assertDefined(func, `missing inlined function for id:`, funcId);
             return func;
+        }
+        else if (id.startsWith('*')) {
+            const elementId = id.slice(1);
+            const index = strToInt(elementId);
+            assertTrue(elements.has(index), `missing element for id:`, elementId);
+            const str = text.get(index);
+            assertDefined(str, `missing element for id:`, elementId);
+            finalized.set(id, str);
+            return str;
         }
         const index = strToInt(id);
         const objs = pauseState.objs;

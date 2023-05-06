@@ -2383,8 +2383,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * @internal
      */
-    const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
+    const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
         const collector = createCollector(containerState);
+        textNodes?.forEach((_, key) => {
+            collector.$seen$.add(key);
+        });
         let hasListeners = false;
         // TODO: optimize
         for (const ctx of allContexts) {
@@ -2506,6 +2509,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             const id = objToId.get(obj);
             if (id) {
                 return id + suffix;
+            }
+            const textId = textNodes?.get(obj);
+            if (textId) {
+                return '*' + textId;
             }
             if (fallbackGetObjId) {
                 return fallbackGetObjId(obj);
@@ -2939,6 +2946,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         }
                     }
                     break;
+                }
+                case 'string': {
+                    if (collector.$seen$.has(obj)) {
+                        return;
+                    }
                 }
             }
         }
@@ -3555,6 +3567,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 $dynamic$: false,
                 $headNodes$: root === 'html' ? headNodes : [],
                 $locale$: opts.serverData?.locale,
+                $textNodes$: new Map(),
             },
             $projectedChildren$: undefined,
             $projectedCtxs$: undefined,
@@ -3590,7 +3603,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const beforeClose = opts.beforeClose;
         await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
             ? (stream) => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
                 return processData$1(result, rCtx, ssrCtx, stream, 0, undefined);
             }
             : undefined);
@@ -4124,7 +4137,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                         ? [3, ('#' + id), node, ('#' + id)]
                         : [4, hostEl, node, ('#' + id)];
                     value = trackSignal(node, subs);
-                    stream.write(`<!--t=${id}-->${escapeHtml(jsxToString(value))}<!---->`);
+                    const str = jsxToString(value);
+                    ssrCtx.$static$.$textNodes$.set(str, id);
+                    stream.write(`<!--t=${id}-->${escapeHtml(str)}<!---->`);
                     return;
                 }
                 else {
@@ -4662,6 +4677,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         moveStyles(containerEl, containerState);
         // Collect all elements
         const elements = new Map();
+        const text = new Map();
         let node = null;
         let container = 0;
         // Collect all virtual elements
@@ -4678,7 +4694,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 else if (data.startsWith('t=')) {
                     const id = data.slice(2);
                     const index = strToInt(id);
-                    elements.set(index, getTextNode(node));
+                    const textNode = getTextNode(node);
+                    elements.set(index, textNode);
+                    text.set(index, textNode.data);
                 }
             }
             if (data === 'cq') {
@@ -4745,6 +4763,15 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 const func = inlinedFunctions[index];
                 assertDefined(func, `missing inlined function for id:`, funcId);
                 return func;
+            }
+            else if (id.startsWith('*')) {
+                const elementId = id.slice(1);
+                const index = strToInt(elementId);
+                assertTrue(elements.has(index), `missing element for id:`, elementId);
+                const str = text.get(index);
+                assertDefined(str, `missing element for id:`, elementId);
+                finalized.set(id, str);
+                return str;
             }
             const index = strToInt(id);
             const objs = pauseState.objs;

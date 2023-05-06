@@ -1062,8 +1062,11 @@
             return value;
         }
     };
-    const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId) => {
+    const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
         const collector = createCollector(containerState);
+        textNodes?.forEach(((_, key) => {
+            collector.$seen$.add(key);
+        }));
         let hasListeners = !1;
         for (const ctx of allContexts) {
             if (ctx.$watches$) {
@@ -1145,7 +1148,11 @@
                 }
             }
             const id = objToId.get(obj);
-            return id ? id + suffix : fallbackGetObjId ? fallbackGetObjId(obj) : null;
+            if (id) {
+                return id + suffix;
+            }
+            const textId = textNodes?.get(obj);
+            return textId ? "*" + textId : fallbackGetObjId ? fallbackGetObjId(obj) : null;
         };
         const mustGetObjId = obj => {
             const key = getObjId(obj);
@@ -1453,6 +1460,11 @@
                     }
                     break;
                 }
+
+              case "string":
+                if (collector.$seen$.has(obj)) {
+                    return;
+                }
             }
         }
         var promise;
@@ -1686,7 +1698,7 @@
     const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
         const beforeClose = opts.beforeClose;
         return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
-            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$);
+            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
             return processData$1(result, rCtx, ssrCtx, stream, 0, void 0);
         } : void 0), rCtx;
     };
@@ -1998,8 +2010,9 @@
                     if (hostEl) {
                         if (!(8 & flags)) {
                             const id = getNextIndex(rCtx);
-                            return value = trackSignal(node, 1024 & flags ? [ 3, "#" + id, node, "#" + id ] : [ 4, hostEl, node, "#" + id ]), 
-                            void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(jsxToString(value))}\x3c!----\x3e`);
+                            value = trackSignal(node, 1024 & flags ? [ 3, "#" + id, node, "#" + id ] : [ 4, hostEl, node, "#" + id ]);
+                            const str = jsxToString(value);
+                            return ssrCtx.$static$.$textNodes$.set(str, id), void stream.write(`\x3c!--t=${id}--\x3e${escapeHtml(str)}\x3c!----\x3e`);
                         }
                         value = invoke(ssrCtx.$invocationContext$, (() => node.value));
                     }
@@ -2254,6 +2267,7 @@
         const containerState = _getContainerState(containerEl);
         moveStyles(containerEl, containerState);
         const elements = new Map;
+        const text = new Map;
         let node = null;
         let container = 0;
         const elementWalker = doc.createTreeWalker(containerEl, 128);
@@ -2266,7 +2280,8 @@
                 } else if (data.startsWith("t=")) {
                     const id = data.slice(2);
                     const index = strToInt(id);
-                    elements.set(index, getTextNode(node));
+                    const textNode = getTextNode(node);
+                    elements.set(index, textNode), text.set(index, textNode.data);
                 }
             }
             "cq" === data ? container++ : "/cq" === data && container--;
@@ -2307,6 +2322,13 @@
                 const index = strToInt(funcId);
                 const func = inlinedFunctions[index];
                 return assertDefined(), func;
+            }
+            if (id.startsWith("*")) {
+                const elementId = id.slice(1);
+                const index = strToInt(elementId);
+                assertTrue(elements.has(index));
+                const str = text.get(index);
+                return assertDefined(), finalized.set(id, str), str;
             }
             const index = strToInt(id);
             const objs = pauseState.objs;
@@ -4275,7 +4297,8 @@
                 $contexts$: [],
                 $dynamic$: !1,
                 $headNodes$: "html" === root ? headNodes : [],
-                $locale$: opts.serverData?.locale
+                $locale$: opts.serverData?.locale,
+                $textNodes$: new Map
             },
             $projectedChildren$: void 0,
             $projectedCtxs$: void 0,
