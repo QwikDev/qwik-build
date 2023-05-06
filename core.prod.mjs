@@ -1034,7 +1034,7 @@ const getWrappingContainer = el => el.closest("[q\\:container]");
 
 const untrack = fn => invoke(void 0, fn);
 
-const trackInvocation = /*@__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
+const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
 
 const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
 
@@ -5234,7 +5234,7 @@ function useServerData(key, defaultValue) {
     return tryGetInvokeContext()?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
 }
 
-const STYLE_CACHE = new Map;
+const STYLE_CACHE = /*#__PURE__*/ new Map;
 
 const getScopedStyles = (css, scopeId) => {
     let styleCss = STYLE_CACHE.get(scopeId);

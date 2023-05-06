@@ -1519,7 +1519,7 @@ const getWrappingContainer = (el) => {
 const untrack = (fn) => {
     return invoke(undefined, fn);
 };
-const trackInvocation = /*@__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
+const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
 /**
  * @public
  */
@@ -8597,7 +8597,7 @@ function useServerData(key, defaultValue) {
 }
 
 /* eslint-disable no-console */
-const STYLE_CACHE = new Map();
+const STYLE_CACHE = /*#__PURE__*/ new Map();
 const getScopedStyles = (css, scopeId) => {
     if (qDev) {
         return scopeStylesheet(css, scopeId);

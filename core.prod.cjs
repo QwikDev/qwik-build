@@ -701,7 +701,7 @@
     };
     const getWrappingContainer = el => el.closest("[q\\:container]");
     const untrack = fn => invoke(void 0, fn);
-    const trackInvocation = /*@__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
+    const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
     const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
     const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
@@ -4053,7 +4053,7 @@
             return set(newStore), newStore;
         }
     };
-    const STYLE_CACHE = new Map;
+    const STYLE_CACHE = /*#__PURE__*/ new Map;
     const getScopedStyles = (css, scopeId) => {
         let styleCss = STYLE_CACHE.get(scopeId);
         return styleCss || STYLE_CACHE.set(scopeId, styleCss = scopeStylesheet(css, scopeId)), 

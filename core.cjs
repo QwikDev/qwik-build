@@ -1523,7 +1523,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const untrack = (fn) => {
         return invoke(undefined, fn);
     };
-    const trackInvocation = /*@__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
+    const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
     /**
      * @public
      */
@@ -8601,7 +8601,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     }
 
     /* eslint-disable no-console */
-    const STYLE_CACHE = new Map();
+    const STYLE_CACHE = /*#__PURE__*/ new Map();
     const getScopedStyles = (css, scopeId) => {
         if (qDev) {
             return scopeStylesheet(css, scopeId);
