@@ -421,7 +421,7 @@ declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
  *
  * @public
  */
-export declare const component$: <PROPS extends {}>(onMount: OnRenderFn<PROPS>) => Component<PROPS>;
+export declare const component$: <PROPS = unknown, ARG extends {} = PROPS extends {} ? PropFunctionProps<PROPS> : {}>(onMount: OnRenderFn<ARG>) => Component<PROPS extends {} ? PROPS : ARG>;
 
 /**
  * Type representing the Qwik component.
@@ -1511,7 +1511,7 @@ declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXNode<any> | null;
+export declare type OnRenderFn<PROPS extends {}> = (props: PROPS) => JSXNode<any> | null;
 
 /**
  * @public
@@ -1600,6 +1600,13 @@ export declare interface PropFnInterface<ARGS extends any[], RET> {
  * @public
  */
 export declare type PropFunction<T extends Function = (...args: any[]) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
+
+/**
+ * @public
+ */
+export declare type PropFunctionProps<PROPS extends {}> = {
+    [K in keyof PROPS]: NonNullable<PROPS[K]> extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : PROPS[K];
+};
 
 /**
  * Infers `Props` from the component.
