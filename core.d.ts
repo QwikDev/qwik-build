@@ -306,7 +306,7 @@ declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 
 declare type B = [type: 1 | 2, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
 
-declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
+declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;

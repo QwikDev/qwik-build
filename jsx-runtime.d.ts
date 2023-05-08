@@ -227,7 +227,7 @@ declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'b
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
-declare type BaseClassList = string | undefined | null | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
+declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
 declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
     href?: string | undefined;
