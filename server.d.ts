@@ -1,9 +1,9 @@
 /// <reference path="./server-modules.d.ts" />
 
 import type { QwikManifest } from './optimizer';
+import type { ResolvedManifest } from './optimizer';
 import type { SnapshotResult } from '.';
 import type { StreamWriter } from '.';
-import type { SymbolMapper } from './optimizer';
 import type { SymbolMapperFn } from './optimizer';
 
 /**
@@ -15,6 +15,17 @@ export declare function getQwikLoaderScript(opts?: {
     events?: string[];
     debug?: boolean;
 }): string;
+
+/**
+ * @public
+ */
+declare interface GlobalInjections {
+    tag: string;
+    attributes?: {
+        [key: string]: string;
+    };
+    location: 'head' | 'body';
+}
 
 /**
  * @public
@@ -102,10 +113,63 @@ export declare interface PrefetchStrategy {
 /**
  * @public
  */
+declare interface QwikBundle {
+    size: number;
+    symbols?: string[];
+    imports?: string[];
+    dynamicImports?: string[];
+    origins?: string[];
+}
+
+/**
+ * @public
+ */
 export declare interface QwikLoaderOptions {
     events?: string[];
     include?: 'always' | 'never' | 'auto';
     position?: 'top' | 'bottom';
+}
+
+/**
+ * @public
+ */
+declare interface QwikManifest_2 {
+    symbols: {
+        [symbolName: string]: QwikSymbol;
+    };
+    mapping: {
+        [symbolName: string]: string;
+    };
+    bundles: {
+        [fileName: string]: QwikBundle;
+    };
+    injections?: GlobalInjections[];
+    version: string;
+    options?: {
+        target?: string;
+        buildMode?: string;
+        forceFullBuild?: boolean;
+        entryStrategy?: {
+            [key: string]: any;
+        };
+    };
+    platform?: {
+        [name: string]: string;
+    };
+}
+
+/**
+ * @public
+ */
+declare interface QwikSymbol {
+    origin: string;
+    displayName: string;
+    hash: string;
+    canonicalFilename: string;
+    ctxKind: 'function' | 'event';
+    ctxName: string;
+    captures: boolean;
+    parent: string | null;
 }
 
 /**
@@ -222,15 +286,18 @@ export declare interface RenderToStringResult extends RenderResult {
     };
 }
 
-declare interface ResolvedManifest {
+/**
+ * @public
+ */
+declare interface ResolvedManifest_2 {
     mapper: SymbolMapper;
-    manifest: QwikManifest;
+    manifest: QwikManifest_2;
 }
 
 /**
  * @public
  */
-export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest | undefined): ResolvedManifest | undefined;
+export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest_2 | undefined): ResolvedManifest_2 | undefined;
 
 /**
  * @public
@@ -252,6 +319,11 @@ export declare function setServerPlatform(manifest: QwikManifest | ResolvedManif
 export declare interface StreamingOptions {
     inOrder?: InOrderStreaming;
 }
+
+/**
+ * @public
+ */
+declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /**
  * auto: Prefetch all possible QRLs used by the document. Default

@@ -278,6 +278,9 @@ declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     width?: number | string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type ClassList = BaseClassList | BaseClassList[];
 
 declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {

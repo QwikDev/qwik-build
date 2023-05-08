@@ -467,6 +467,14 @@ export declare interface QwikVitePluginOptions {
 /**
  * @public
  */
+export declare interface ResolvedManifest {
+    mapper: SymbolMapper;
+    manifest: QwikManifest;
+}
+
+/**
+ * @public
+ */
 export declare interface SingleEntryStrategy {
     type: 'single';
     manual?: Record<string, string>;
