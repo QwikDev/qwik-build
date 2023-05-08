@@ -49,14 +49,6 @@
         return logErrorAndStop(text, ...parts);
     };
     const codeToText = code => `Code(${code})`;
-    const isSerializableObject = v => {
-        const proto = Object.getPrototypeOf(v);
-        return proto === Object.prototype || null === proto;
-    };
-    const isObject = v => v && "object" == typeof v;
-    const isArray = v => Array.isArray(v);
-    const isString = v => "string" == typeof v;
-    const isFunction = v => "function" == typeof v;
     const createPlatform = () => ({
         isServer: build.isServer,
         importSymbol(containerEl, url, symbolName) {
@@ -76,7 +68,7 @@
             const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
             const urlCopy = new URL(urlDoc);
             urlCopy.hash = "", urlCopy.search = "";
-            return import(urlCopy.href).then((mod => findSymbol(mod, symbolName)));
+            return import(urlCopy.href).then((mod => mod[symbolName]));
         },
         raf: fn => new Promise((resolve => {
             requestAnimationFrame((() => {
@@ -90,16 +82,6 @@
         })),
         chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
     });
-    const findSymbol = (module, symbol) => {
-        if (symbol in module) {
-            return module[symbol];
-        }
-        for (const v of Object.values(module)) {
-            if (isObject(v) && symbol in v) {
-                return v[symbol];
-            }
-        }
-    };
     const toUrl = (doc, containerEl, url) => {
         const baseURI = doc.baseURI;
         const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
@@ -132,6 +114,14 @@
     function assertElement() {
         qDev;
     }
+    const isSerializableObject = v => {
+        const proto = Object.getPrototypeOf(v);
+        return proto === Object.prototype || null === proto;
+    };
+    const isObject = v => v && "object" == typeof v;
+    const isArray = v => Array.isArray(v);
+    const isString = v => "string" == typeof v;
+    const isFunction = v => "function" == typeof v;
     const isPromise = value => value instanceof Promise;
     const safeCall = (call, thenFn, rejectFn) => {
         try {

@@ -137,19 +137,6 @@ const qError = (code, ...parts) => {
 
 const codeToText = code => `Code(${code})`;
 
-const isSerializableObject = v => {
-    const proto = Object.getPrototypeOf(v);
-    return proto === Object.prototype || null === proto;
-};
-
-const isObject = v => v && "object" == typeof v;
-
-const isArray = v => Array.isArray(v);
-
-const isString = v => "string" == typeof v;
-
-const isFunction = v => "function" == typeof v;
-
 const createPlatform = () => ({
     isServer,
     importSymbol(containerEl, url, symbolName) {
@@ -169,7 +156,7 @@ const createPlatform = () => ({
         const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
         const urlCopy = new URL(urlDoc);
         urlCopy.hash = "", urlCopy.search = "";
-        return import(urlCopy.href).then((mod => findSymbol(mod, symbolName)));
+        return import(urlCopy.href).then((mod => mod[symbolName]));
     },
     raf: fn => new Promise((resolve => {
         requestAnimationFrame((() => {
@@ -183,17 +170,6 @@ const createPlatform = () => ({
     })),
     chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
 });
-
-const findSymbol = (module, symbol) => {
-    if (symbol in module) {
-        return module[symbol];
-    }
-    for (const v of Object.values(module)) {
-        if (isObject(v) && symbol in v) {
-            return v[symbol];
-        }
-    }
-};
 
 const toUrl = (doc, containerEl, url) => {
     const baseURI = doc.baseURI;
@@ -242,6 +218,19 @@ function assertQwikElement() {
 function assertElement() {
     qDev;
 }
+
+const isSerializableObject = v => {
+    const proto = Object.getPrototypeOf(v);
+    return proto === Object.prototype || null === proto;
+};
+
+const isObject = v => v && "object" == typeof v;
+
+const isArray = v => Array.isArray(v);
+
+const isString = v => "string" == typeof v;
+
+const isFunction = v => "function" == typeof v;
 
 const isPromise = value => value instanceof Promise;
 

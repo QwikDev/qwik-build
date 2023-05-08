@@ -226,26 +226,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     }
 };
 
-/**
- * @private
- */
-const isSerializableObject = (v) => {
-    const proto = Object.getPrototypeOf(v);
-    return proto === Object.prototype || proto === null;
-};
-const isObject = (v) => {
-    return v && typeof v === 'object';
-};
-const isArray = (v) => {
-    return Array.isArray(v);
-};
-const isString = (v) => {
-    return typeof v === 'string';
-};
-const isFunction = (v) => {
-    return typeof v === 'function';
-};
-
 const createPlatform = () => {
     return {
         isServer,
@@ -269,7 +249,7 @@ const createPlatform = () => {
             urlCopy.search = '';
             const importURL = urlCopy.href;
             return import(/* @vite-ignore */ importURL).then((mod) => {
-                return findSymbol(mod, symbolName);
+                return mod[symbolName];
             });
         },
         raf: (fn) => {
@@ -290,16 +270,6 @@ const createPlatform = () => {
             return [symbolName, chunk ?? '_'];
         },
     };
-};
-const findSymbol = (module, symbol) => {
-    if (symbol in module) {
-        return module[symbol];
-    }
-    for (const v of Object.values(module)) {
-        if (isObject(v) && symbol in v) {
-            return v[symbol];
-        }
-    }
 };
 /**
  * Convert relative base URI and relative URL into a fully qualified URL.
@@ -421,6 +391,26 @@ function assertElement(el) {
         }
     }
 }
+
+/**
+ * @private
+ */
+const isSerializableObject = (v) => {
+    const proto = Object.getPrototypeOf(v);
+    return proto === Object.prototype || proto === null;
+};
+const isObject = (v) => {
+    return v && typeof v === 'object';
+};
+const isArray = (v) => {
+    return Array.isArray(v);
+};
+const isString = (v) => {
+    return typeof v === 'string';
+};
+const isFunction = (v) => {
+    return typeof v === 'function';
+};
 
 const isPromise = (value) => {
     return value instanceof Promise;

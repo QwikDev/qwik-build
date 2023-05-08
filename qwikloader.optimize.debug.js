@@ -43,7 +43,7 @@
                     const reqTime = performance.now();
                     const module = import(url.href.split("#")[0]);
                     resolveContainer(container);
-                    const handler = findSymbol(await module, symbolName);
+                    const handler = (await module)[symbolName];
                     const previousCtx = doc.__q_context__;
                     if (element.isConnected) {
                         try {
@@ -63,16 +63,6 @@
         };
         const emitEvent = (eventName, detail) => {
             doc.dispatchEvent(createEvent(eventName, detail));
-        };
-        const findSymbol = (module, symbol) => {
-            if (symbol in module) {
-                return module[symbol];
-            }
-            for (const v of Object.values(module)) {
-                if ("object" == typeof v && v && symbol in v) {
-                    return v[symbol];
-                }
-            }
         };
         const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));
         const processDocumentEvent = async ev => {
