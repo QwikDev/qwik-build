@@ -475,7 +475,6 @@ async function renderToStream(rootNode, opts) {
   const renderSymbols = [];
   let renderTime = 0;
   let snapshotTime = 0;
-  let containsDynamic = false;
   await (0, import_qwik3._renderSSR)(rootNode, {
     stream,
     containerTagName,
@@ -483,11 +482,10 @@ async function renderToStream(rootNode, opts) {
     serverData: opts.serverData,
     base: buildBase,
     beforeContent,
-    beforeClose: async (contexts, containerState, dynamic, textNodes) => {
+    beforeClose: async (contexts, containerState, _dynamic, textNodes) => {
       var _a2, _b, _c, _d, _e, _f, _g;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
-      containsDynamic = dynamic;
       snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState, void 0, textNodes);
       const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
       const children = [
@@ -557,7 +555,7 @@ async function renderToStream(rootNode, opts) {
     stream.write("<!--/cq-->");
   }
   flush();
-  const isDynamic = containsDynamic || snapshotResult.resources.some((r) => r._cache !== Infinity);
+  const isDynamic = snapshotResult.resources.some((r) => r._cache !== Infinity);
   const result = {
     prefetchResources: void 0,
     snapshotResult,
