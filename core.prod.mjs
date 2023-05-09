@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.0.0
+ * @builder.io/qwik 1.1.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2341,7 +2341,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.0.0";
+const version = "1.1.0";
 
 var _a;
 
@@ -2402,7 +2402,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "1.0.0",
+        "q:version": "1.1.0",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -5206,7 +5206,7 @@ const renderRoot = async (rCtx, parent, jsxNode) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.0.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.1.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 

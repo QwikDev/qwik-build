@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.0.0
+ * @builder.io/qwik 1.1.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3533,7 +3533,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  * QWIK_VERSION
  * @public
  */
-const version = "1.0.0";
+const version = "1.1.0";
 
 var _a;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
