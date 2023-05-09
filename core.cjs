@@ -1675,7 +1675,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
     /**
      * @public
-     * @deprecated - It has no effect
      */
     const SSRHint = (() => null);
     const InternalSSRStream = () => null;
@@ -1911,10 +1910,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const parseVirtualAttributes = (str) => {
         if (!str) {
-            return {};
+            return new Map();
         }
         const attributes = str.split(' ');
-        return Object.fromEntries(attributes.map((attr) => {
+        return new Map(attributes.map((attr) => {
             const index = attr.indexOf('=');
             if (index >= 0) {
                 return [attr.slice(0, index), unescape(attr.slice(index + 1))];
@@ -1926,7 +1925,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const serializeVirtualAttributes = (map) => {
         const attributes = [];
-        Object.entries(map).forEach(([key, value]) => {
+        map.forEach((value, key) => {
             if (!value) {
                 attributes.push(`${key}`);
             }
@@ -1996,7 +1995,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             const parent = this.parentElement;
             if (parent) {
                 // const ch = this.childNodes;
-                const ch = this.childNodes;
+                const ch = Array.from(this.childNodes);
                 assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
                 parent.removeChild(this.open);
                 this.$template$.append(...ch);
@@ -2008,7 +2007,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         insertBeforeTo(newParent, child) {
             // const ch = this.childNodes;
-            const ch = this.childNodes;
+            const ch = Array.from(this.childNodes);
             // TODO
             // if (this.parentElement) {
             //   console.warn('already attached');
@@ -2035,19 +2034,19 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
         }
         getAttribute(prop) {
-            return this.$attributes$[prop] ?? null;
+            return this.$attributes$.get(prop) ?? null;
         }
         hasAttribute(prop) {
-            return prop in this.$attributes$;
+            return this.$attributes$.has(prop);
         }
         setAttribute(prop, value) {
-            this.$attributes$[prop] = value;
+            this.$attributes$.set(prop, value);
             if (qSerialize) {
                 this.open.data = updateComment(this.$attributes$);
             }
         }
         removeAttribute(prop) {
-            delete this.$attributes$[prop];
+            this.$attributes$.delete(prop);
             if (qSerialize) {
                 this.open.data = updateComment(this.$attributes$);
             }
@@ -2092,20 +2091,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
             return null;
         }
-        get innerHTML() {
-            return '';
-        }
-        set innerHTML(html) {
-            const parent = this.parentElement;
-            if (parent) {
-                this.childNodes.forEach((a) => this.removeChild(a));
-                this.$template$.innerHTML = html;
-                parent.insertBefore(this.$template$.content, this.close);
-            }
-            else {
-                this.$template$.innerHTML = html;
-            }
-        }
         get firstChild() {
             if (this.parentElement) {
                 const first = this.open.nextSibling;
@@ -2126,7 +2111,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         get childNodes() {
             if (!this.parentElement) {
-                return Array.from(this.$template$.childNodes);
+                return this.$template$.childNodes;
             }
             const nodes = [];
             let node = this.open;
@@ -3531,7 +3516,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const static_listeners = 1 << 0;
     const static_subtree = 1 << 1;
-    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 
     /**
      * QWIK_VERSION
@@ -3576,6 +3560,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const ssrCtx = {
             $static$: {
                 $contexts$: [],
+                $dynamic$: false,
                 $headNodes$: root === 'html' ? headNodes : [],
                 $locale$: opts.serverData?.locale,
                 $textNodes$: new Map(),
@@ -3614,7 +3599,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const beforeClose = opts.beforeClose;
         await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
             ? (stream) => {
-                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, false, ssrCtx.$static$.$textNodes$);
+                const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
                 return processData$1(result, rCtx, ssrCtx, stream, 0, undefined);
             }
             : undefined);
@@ -3668,12 +3653,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         virtualComment += '-->';
         stream.write(virtualComment);
-        const html = node.props[dangerouslySetInnerHTML];
-        if (html) {
-            stream.write(html);
-            stream.write(CLOSE_VIRTUAL);
-            return;
-        }
         if (extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
@@ -3711,7 +3690,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const renderAttributes = (attributes) => {
         let text = '';
         for (const prop in attributes) {
-            if (prop === dangerouslySetInnerHTML) {
+            if (prop === 'dangerouslySetInnerHTML') {
                 continue;
             }
             const value = attributes[prop];
@@ -3724,7 +3703,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const renderVirtualAttributes = (attributes) => {
         let text = '';
         for (const prop in attributes) {
-            if (prop === 'children' || prop === dangerouslySetInnerHTML) {
+            if (prop === 'children') {
                 continue;
             }
             const value = attributes[prop];
@@ -3741,7 +3720,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             return;
         }
         // Render innerHTML
-        const innerHTML = attributes[dangerouslySetInnerHTML];
+        const innerHTML = attributes.dangerouslySetInnerHTML;
         if (innerHTML != null) {
             stream.write(innerHTML);
         }
@@ -3769,8 +3748,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 for (const style of elCtx.$appendStyles$) {
                     array.push(jsx('style', {
                         [QStyle]: style.styleId,
-                        [dangerouslySetInnerHTML]: style.content,
                         hidden: '',
+                        dangerouslySetInnerHTML: style.content,
                     }));
                 }
             }
@@ -3885,7 +3864,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         value = trackSignal(value, [1, elm, value, hostCtx.$element$, attrName]);
                         useSignal = true;
                     }
-                    if (prop === dangerouslySetInnerHTML) {
+                    if (prop === 'dangerouslySetInnerHTML') {
                         htmlStr = value;
                         continue;
                     }
@@ -3929,7 +3908,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     value = trackSignal(value, [2, hostCtx.$element$, value, elm, attrName]);
                     useSignal = true;
                 }
-                if (prop === dangerouslySetInnerHTML) {
+                if (prop === 'dangerouslySetInnerHTML') {
                     htmlStr = value;
                     continue;
                 }
@@ -4119,6 +4098,10 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         if (tagName === InternalSSRStream) {
             return renderGenerator(node, rCtx, ssrCtx, stream, flags);
+        }
+        if (tagName === SSRHint && node.props.dynamic === true) {
+            ssrCtx.$static$.$dynamic$ = true;
+            return;
         }
         const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
         if (!shouldWrapFunctional(res, node)) {
@@ -5164,10 +5147,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     /**
      * @public
      */
-    const HTMLFragment = (props) => jsx(Virtual, props);
-    /**
-     * @public
-     */
     const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
         const processed = key == null ? null : String(key);
         const children = untrack(() => {
@@ -5216,7 +5195,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         assertQwikElement(oldVnode.$elm$);
         const ch = newVnode.$children$;
         if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
-            newVnode.$children$ = oldVnode.$children$;
             return;
         }
         const elm = oldVnode.$elm$;
@@ -5542,10 +5520,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             currentComponent.$slots$.push(newVnode);
             return;
         }
-        else if (dangerouslySetInnerHTML in props) {
-            setProperty(staticCtx, elm, 'innerHTML', props[dangerouslySetInnerHTML]);
-            return;
-        }
         if (vnodeFlags & static_subtree) {
             return;
         }
@@ -5754,6 +5728,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
             }
             setQId(rCtx, elCtx);
+            if (qDev && !qTest) {
+                const symbol = renderQRL.$symbol$;
+                if (symbol) {
+                    directSetAttribute(elm, 'data-qrl', symbol);
+                }
+            }
             // Run mount hook
             elCtx.$componentQrl$ = renderQRL;
             const wait = then(renderComponent(rCtx, elCtx, flags), () => {
@@ -5796,10 +5776,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             directSetAttribute(elm, QSlotS, '');
             currentComponent.$slots$.push(vnode);
             staticCtx.$addSlots$.push([elm, currentComponent.$element$]);
-        }
-        else if (dangerouslySetInnerHTML in props) {
-            setProperty(staticCtx, elm, 'innerHTML', props[dangerouslySetInnerHTML]);
-            return elm;
         }
         let children = vnode.$children$;
         if (children.length === 0) {
@@ -5875,8 +5851,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         setAttribute(ctx, elm, prop.toLowerCase(), newValue);
         return true;
     };
+    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
     const setInnerHTML = (ctx, elm, newValue) => {
-        setProperty(ctx, elm, 'innerHTML', newValue);
+        if (dangerouslySetInnerHTML in elm) {
+            setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
+        }
+        else if ('innerHTML' in elm) {
+            setProperty(ctx, elm, 'innerHTML', newValue);
+        }
         return true;
     };
     const noop = () => {
@@ -5892,8 +5874,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         form: forceAttribute,
         tabIndex: forceAttribute,
         download: forceAttribute,
-        innerHTML: noop,
         [dangerouslySetInnerHTML]: setInnerHTML,
+        innerHTML: noop,
     };
     const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
         // aria attribute value should be rendered as string
@@ -9127,7 +9109,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
 
     exports.$ = $;
     exports.Fragment = Fragment;
-    exports.HTMLFragment = HTMLFragment;
     exports.RenderOnce = RenderOnce;
     exports.Resource = Resource;
     exports.SSRComment = SSRComment;

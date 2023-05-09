@@ -708,6 +708,7 @@
     const SSRComment = props => jsx(SSRRaw, {
         data: `\x3c!--${props.data}--\x3e`
     }, null);
+    const SSRHint = () => null;
     const InternalSSRStream = () => null;
     const getDocument = node => {
         if ("undefined" != typeof document) {
@@ -872,10 +873,10 @@
             const doc = this.ownerDocument = open.ownerDocument;
             this.$template$ = createElement(doc, "template", !1), this.$attributes$ = (str => {
                 if (!str) {
-                    return {};
+                    return new Map;
                 }
                 const attributes = str.split(" ");
-                return Object.fromEntries(attributes.map((attr => {
+                return new Map(attributes.map((attr => {
                     const index = attr.indexOf("=");
                     return index >= 0 ? [ attr.slice(0, index), unescape(attr.slice(index + 1)) ] : [ attr, "" ];
                 })));
@@ -894,7 +895,7 @@
         remove() {
             const parent = this.parentElement;
             if (parent) {
-                const ch = this.childNodes;
+                const ch = Array.from(this.childNodes);
                 assertEqual(), parent.removeChild(this.open), this.$template$.append(...ch), parent.removeChild(this.close);
             }
         }
@@ -902,7 +903,7 @@
             return this.insertBefore(node, null);
         }
         insertBeforeTo(newParent, child) {
-            const ch = this.childNodes;
+            const ch = Array.from(this.childNodes);
             newParent.insertBefore(this.open, child);
             for (const c of ch) {
                 newParent.insertBefore(c, child);
@@ -919,16 +920,16 @@
             this.parentElement ? this.parentElement.removeChild(child) : this.$template$.removeChild(child);
         }
         getAttribute(prop) {
-            return this.$attributes$[prop] ?? null;
+            return this.$attributes$.get(prop) ?? null;
         }
         hasAttribute(prop) {
-            return prop in this.$attributes$;
+            return this.$attributes$.has(prop);
         }
         setAttribute(prop, value) {
-            this.$attributes$[prop] = value, this.open.data = updateComment(this.$attributes$);
+            this.$attributes$.set(prop, value), this.open.data = updateComment(this.$attributes$);
         }
         removeAttribute(prop) {
-            delete this.$attributes$[prop], this.open.data = updateComment(this.$attributes$);
+            this.$attributes$.delete(prop), this.open.data = updateComment(this.$attributes$);
         }
         matches(_) {
             return !1;
@@ -960,14 +961,6 @@
             }
             return null;
         }
-        get innerHTML() {
-            return "";
-        }
-        set innerHTML(html) {
-            const parent = this.parentElement;
-            parent ? (this.childNodes.forEach((a => this.removeChild(a))), this.$template$.innerHTML = html, 
-            parent.insertBefore(this.$template$.content, this.close)) : this.$template$.innerHTML = html;
-        }
         get firstChild() {
             if (this.parentElement) {
                 const first = this.open.nextSibling;
@@ -983,7 +976,7 @@
         }
         get childNodes() {
             if (!this.parentElement) {
-                return Array.from(this.$template$.childNodes);
+                return this.$template$.childNodes;
             }
             const nodes = [];
             let node = this.open;
@@ -1001,7 +994,7 @@
     }
     const updateComment = attributes => `qv ${(map => {
         const attributes = [];
-        return Object.entries(map).forEach((([key, value]) => {
+        return map.forEach(((value, key) => {
             attributes.push(value ? `${key}=${escape(value)}` : `${key}`);
         })), attributes.join(" ");
     })(attributes)}`;
@@ -1697,7 +1690,7 @@
     const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
         const beforeClose = opts.beforeClose;
         return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
-            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, !1, ssrCtx.$static$.$textNodes$);
+            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
             return processData$1(result, rCtx, ssrCtx, stream, 0, void 0);
         } : void 0), rCtx;
     };
@@ -1710,14 +1703,9 @@
         let virtualComment = "\x3c!--qv" + renderVirtualAttributes(props);
         const isSlot = "q:s" in props;
         const key = null != node.key ? String(node.key) : null;
-        isSlot && (assertDefined(), virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), 
+        if (isSlot && (assertDefined(), virtualComment += " q:sref=" + rCtx.$cmpCtx$.$id$), 
         null != key && (virtualComment += " q:key=" + key), virtualComment += "--\x3e", 
-        stream.write(virtualComment);
-        const html = node.props.dangerouslySetInnerHTML;
-        if (html) {
-            return stream.write(html), void stream.write(CLOSE_VIRTUAL);
-        }
-        if (extraNodes) {
+        stream.write(virtualComment), extraNodes) {
             for (const node of extraNodes) {
                 renderNodeElementSync(node.type, node.props, stream);
             }
@@ -1746,7 +1734,7 @@
     const renderVirtualAttributes = attributes => {
         let text = "";
         for (const prop in attributes) {
-            if ("children" === prop || "dangerouslySetInnerHTML" === prop) {
+            if ("children" === prop) {
                 continue;
             }
             const value = attributes[prop];
@@ -1790,8 +1778,8 @@
             for (const style of elCtx.$appendStyles$) {
                 array.push(jsx("style", {
                     "q:style": style.styleId,
-                    dangerouslySetInnerHTML: style.content,
-                    hidden: ""
+                    hidden: "",
+                    dangerouslySetInnerHTML: style.content
                 }));
             }
         }
@@ -1990,6 +1978,9 @@
                     await processData$1(chunk, rCtx, ssrCtx, stream, flags, void 0), stream.write("\x3c!--qkssr-f--\x3e");
                 }
             })(node, rCtx, ssrCtx, stream, flags);
+        }
+        if (tagName === SSRHint && !0 === node.props.dynamic) {
+            return void (ssrCtx.$static$.$dynamic$ = !0);
         }
         const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
         return shouldWrapFunctional(res, node) ? renderNode(jsx(Virtual, {
@@ -2505,7 +2496,7 @@
         assertQwikElement();
         const ch = newVnode.$children$;
         if (1 === ch.length && ch[0].$type$ === SKIP_RENDER_TYPE) {
-            return void (newVnode.$children$ = oldVnode.$children$);
+            return;
         }
         const elm = oldVnode.$elm$;
         let filter = isChildComponent;
@@ -2671,7 +2662,7 @@
                 return;
             }
             isSvg && "foreignObject" === tag && (flags &= -2);
-            if (void 0 !== props.dangerouslySetInnerHTML) {
+            if (void 0 !== props[dangerouslySetInnerHTML]) {
                 return void 0;
             }
             if ("textarea" === tag) {
@@ -2687,14 +2678,7 @@
             elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
             needsRender = !0), needsRender ? then(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
         }
-        if ("q:s" in props) {
-            return assertDefined(), void currentComponent.$slots$.push(newVnode);
-        }
-        if ("dangerouslySetInnerHTML" in props) {
-            setProperty(staticCtx, elm, "innerHTML", props.dangerouslySetInnerHTML);
-        } else if (!(2 & vnodeFlags)) {
-            return smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
-        }
+        return "q:s" in props ? (assertDefined(), void currentComponent.$slots$.push(newVnode)) : 2 & vnodeFlags ? void 0 : smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
     };
     const renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
         if (2 & vnode.$flags$) {
@@ -2831,14 +2815,9 @@
                 }));
                 return isPromise(wait) && promises.push(wait), elm;
             }
-            if ("q:s" in props) {
-                assertDefined(), assertDefined(), el = elm, null !== (key = vnode.$key$) && directSetAttribute(el, "q:key", key), 
-                directSetAttribute(elm, "q:sref", currentComponent.$id$), directSetAttribute(elm, "q:s", ""), 
-                currentComponent.$slots$.push(vnode), staticCtx.$addSlots$.push([ elm, currentComponent.$element$ ]);
-            } else if ("dangerouslySetInnerHTML" in props) {
-                return setProperty(staticCtx, elm, "innerHTML", props.dangerouslySetInnerHTML), 
-                elm;
-            }
+            "q:s" in props && (assertDefined(), assertDefined(), el = elm, null !== (key = vnode.$key$) && directSetAttribute(el, "q:key", key), 
+            directSetAttribute(elm, "q:sref", currentComponent.$id$), directSetAttribute(elm, "q:s", ""), 
+            currentComponent.$slots$.push(vnode), staticCtx.$addSlots$.push([ elm, currentComponent.$element$ ]));
         } else {
             if (vnode.$immutableProps$ && setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, !0), 
             props !== EMPTY_OBJ && (elCtx.$vdom$ = vnode, vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, !1)), 
@@ -2851,7 +2830,7 @@
             for (const listener of elCtx.li) {
                 addQwikEvent(staticCtx, elm, listener[0]);
             }
-            if (void 0 !== props.dangerouslySetInnerHTML) {
+            if (void 0 !== props[dangerouslySetInnerHTML]) {
                 return elm;
             }
             isSvg && "foreignObject" === tag && (isSvg = !1, flags &= -2);
@@ -2900,6 +2879,7 @@
     }) : setProperty(ctx, elm, prop, newValue)), !0);
     const forceAttribute = (ctx, elm, newValue, prop) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
     !0);
+    const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
     const PROP_HANDLER_MAP = {
         style: (ctx, elm, newValue) => (setProperty(ctx, elm.style, "cssText", newValue), 
         !0),
@@ -2912,9 +2892,9 @@
         form: forceAttribute,
         tabIndex: forceAttribute,
         download: forceAttribute,
-        innerHTML: () => !0,
-        dangerouslySetInnerHTML: (ctx, elm, newValue) => (setProperty(ctx, elm, "innerHTML", newValue), 
-        !0)
+        [dangerouslySetInnerHTML]: (ctx, elm, newValue) => (dangerouslySetInnerHTML in elm ? setProperty(ctx, elm, dangerouslySetInnerHTML, newValue) : "innerHTML" in elm && setProperty(ctx, elm, "innerHTML", newValue), 
+        !0),
+        innerHTML: () => !0
     };
     const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
         if (isAriaAttribute(prop)) {
@@ -4211,8 +4191,7 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
-    exports.RenderOnce = RenderOnce, exports.Resource = props => {
+    exports.$ = $, exports.Fragment = Fragment, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServerPlatform();
         const resource = props.value;
         let promise;
@@ -4249,7 +4228,7 @@
         return jsx(Fragment, {
             children: promise.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected))
         });
-    }, exports.SSRComment = SSRComment, exports.SSRHint = () => null, exports.SSRRaw = SSRRaw, 
+    }, exports.SSRComment = SSRComment, exports.SSRHint = SSRHint, exports.SSRRaw = SSRRaw, 
     exports.SSRStream = (props, key) => jsx(RenderOnce, {
         children: jsx(InternalSSRStream, props)
     }, key), exports.SSRStreamBlock = props => [ jsx(SSRComment, {
@@ -4311,6 +4290,7 @@
         const ssrCtx = {
             $static$: {
                 $contexts$: [],
+                $dynamic$: !1,
                 $headNodes$: "html" === root ? headNodes : [],
                 $locale$: opts.serverData?.locale,
                 $textNodes$: new Map

@@ -974,13 +974,6 @@ export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes
 
 declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
 
-/**
- * @public
- */
-export declare const HTMLFragment: FunctionComponent<{
-    dangerouslySetInnerHTML: string;
-}>;
-
 declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
@@ -2635,7 +2628,6 @@ export declare const SSRComment: FunctionComponent<{
 
 /**
  * @public
- * @deprecated - It has no effect
  */
 export declare const SSRHint: FunctionComponent<SSRHintProps>;
 
@@ -3629,7 +3621,6 @@ declare interface VirtualElement {
     readonly nodeName: string;
     readonly isConnected: boolean;
     readonly parentElement: Element | null;
-    innerHTML: string;
 }
 
 /**
