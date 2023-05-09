@@ -1671,6 +1671,7 @@ const SSRStreamBlock = (props) => {
 const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
 /**
  * @public
+ * @deprecated - It has no effect
  */
 const SSRHint = (() => null);
 const InternalSSRStream = () => null;
@@ -1906,10 +1907,10 @@ const newVirtualElement = (doc) => {
 };
 const parseVirtualAttributes = (str) => {
     if (!str) {
-        return new Map();
+        return {};
     }
     const attributes = str.split(' ');
-    return new Map(attributes.map((attr) => {
+    return Object.fromEntries(attributes.map((attr) => {
         const index = attr.indexOf('=');
         if (index >= 0) {
             return [attr.slice(0, index), unescape(attr.slice(index + 1))];
@@ -1921,7 +1922,7 @@ const parseVirtualAttributes = (str) => {
 };
 const serializeVirtualAttributes = (map) => {
     const attributes = [];
-    map.forEach((value, key) => {
+    Object.entries(map).forEach(([key, value]) => {
         if (!value) {
             attributes.push(`${key}`);
         }
@@ -1991,7 +1992,7 @@ class VirtualElementImpl {
         const parent = this.parentElement;
         if (parent) {
             // const ch = this.childNodes;
-            const ch = Array.from(this.childNodes);
+            const ch = this.childNodes;
             assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
             parent.removeChild(this.open);
             this.$template$.append(...ch);
@@ -2003,7 +2004,7 @@ class VirtualElementImpl {
     }
     insertBeforeTo(newParent, child) {
         // const ch = this.childNodes;
-        const ch = Array.from(this.childNodes);
+        const ch = this.childNodes;
         // TODO
         // if (this.parentElement) {
         //   console.warn('already attached');
@@ -2030,19 +2031,19 @@ class VirtualElementImpl {
         }
     }
     getAttribute(prop) {
-        return this.$attributes$.get(prop) ?? null;
+        return this.$attributes$[prop] ?? null;
     }
     hasAttribute(prop) {
-        return this.$attributes$.has(prop);
+        return prop in this.$attributes$;
     }
     setAttribute(prop, value) {
-        this.$attributes$.set(prop, value);
+        this.$attributes$[prop] = value;
         if (qSerialize) {
             this.open.data = updateComment(this.$attributes$);
         }
     }
     removeAttribute(prop) {
-        this.$attributes$.delete(prop);
+        delete this.$attributes$[prop];
         if (qSerialize) {
             this.open.data = updateComment(this.$attributes$);
         }
@@ -2087,6 +2088,20 @@ class VirtualElementImpl {
         }
         return null;
     }
+    get innerHTML() {
+        return '';
+    }
+    set innerHTML(html) {
+        const parent = this.parentElement;
+        if (parent) {
+            this.childNodes.forEach((a) => this.removeChild(a));
+            this.$template$.innerHTML = html;
+            parent.insertBefore(this.$template$.content, this.close);
+        }
+        else {
+            this.$template$.innerHTML = html;
+        }
+    }
     get firstChild() {
         if (this.parentElement) {
             const first = this.open.nextSibling;
@@ -2107,7 +2122,7 @@ class VirtualElementImpl {
     }
     get childNodes() {
         if (!this.parentElement) {
-            return this.$template$.childNodes;
+            return Array.from(this.$template$.childNodes);
         }
         const nodes = [];
         let node = this.open;
@@ -3512,6 +3527,7 @@ const shouldWrapFunctional = (res, node) => {
 };
 const static_listeners = 1 << 0;
 const static_subtree = 1 << 1;
+const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 
 /**
  * QWIK_VERSION
@@ -3556,7 +3572,6 @@ const _renderSSR = async (node, opts) => {
     const ssrCtx = {
         $static$: {
             $contexts$: [],
-            $dynamic$: false,
             $headNodes$: root === 'html' ? headNodes : [],
             $locale$: opts.serverData?.locale,
             $textNodes$: new Map(),
@@ -3595,7 +3610,7 @@ const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) =>
     const beforeClose = opts.beforeClose;
     await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose
         ? (stream) => {
-            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, ssrCtx.$static$.$dynamic$, ssrCtx.$static$.$textNodes$);
+            const result = beforeClose(ssrCtx.$static$.$contexts$, containerState, false, ssrCtx.$static$.$textNodes$);
             return processData$1(result, rCtx, ssrCtx, stream, 0, undefined);
         }
         : undefined);
@@ -3649,6 +3664,12 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
     }
     virtualComment += '-->';
     stream.write(virtualComment);
+    const html = node.props[dangerouslySetInnerHTML];
+    if (html) {
+        stream.write(html);
+        stream.write(CLOSE_VIRTUAL);
+        return;
+    }
     if (extraNodes) {
         for (const node of extraNodes) {
             renderNodeElementSync(node.type, node.props, stream);
@@ -3686,7 +3707,7 @@ const CLOSE_VIRTUAL = `<!--/qv-->`;
 const renderAttributes = (attributes) => {
     let text = '';
     for (const prop in attributes) {
-        if (prop === 'dangerouslySetInnerHTML') {
+        if (prop === dangerouslySetInnerHTML) {
             continue;
         }
         const value = attributes[prop];
@@ -3699,7 +3720,7 @@ const renderAttributes = (attributes) => {
 const renderVirtualAttributes = (attributes) => {
     let text = '';
     for (const prop in attributes) {
-        if (prop === 'children') {
+        if (prop === 'children' || prop === dangerouslySetInnerHTML) {
             continue;
         }
         const value = attributes[prop];
@@ -3716,7 +3737,7 @@ const renderNodeElementSync = (tagName, attributes, stream) => {
         return;
     }
     // Render innerHTML
-    const innerHTML = attributes.dangerouslySetInnerHTML;
+    const innerHTML = attributes[dangerouslySetInnerHTML];
     if (innerHTML != null) {
         stream.write(innerHTML);
     }
@@ -3744,8 +3765,8 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             for (const style of elCtx.$appendStyles$) {
                 array.push(jsx('style', {
                     [QStyle]: style.styleId,
+                    [dangerouslySetInnerHTML]: style.content,
                     hidden: '',
-                    dangerouslySetInnerHTML: style.content,
                 }));
             }
         }
@@ -3860,7 +3881,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     value = trackSignal(value, [1, elm, value, hostCtx.$element$, attrName]);
                     useSignal = true;
                 }
-                if (prop === 'dangerouslySetInnerHTML') {
+                if (prop === dangerouslySetInnerHTML) {
                     htmlStr = value;
                     continue;
                 }
@@ -3904,7 +3925,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 value = trackSignal(value, [2, hostCtx.$element$, value, elm, attrName]);
                 useSignal = true;
             }
-            if (prop === 'dangerouslySetInnerHTML') {
+            if (prop === dangerouslySetInnerHTML) {
                 htmlStr = value;
                 continue;
             }
@@ -4094,10 +4115,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     }
     if (tagName === InternalSSRStream) {
         return renderGenerator(node, rCtx, ssrCtx, stream, flags);
-    }
-    if (tagName === SSRHint && node.props.dynamic === true) {
-        ssrCtx.$static$.$dynamic$ = true;
-        return;
     }
     const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
     if (!shouldWrapFunctional(res, node)) {
@@ -5143,6 +5160,10 @@ const Fragment = (props) => props.children;
 /**
  * @public
  */
+const HTMLFragment = (props) => jsx(Virtual, props);
+/**
+ * @public
+ */
 const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
     const processed = key == null ? null : String(key);
     const children = untrack(() => {
@@ -5191,6 +5212,7 @@ const smartUpdateChildren = (ctx, oldVnode, newVnode, flags) => {
     assertQwikElement(oldVnode.$elm$);
     const ch = newVnode.$children$;
     if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
+        newVnode.$children$ = oldVnode.$children$;
         return;
     }
     const elm = oldVnode.$elm$;
@@ -5516,6 +5538,10 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
         currentComponent.$slots$.push(newVnode);
         return;
     }
+    else if (dangerouslySetInnerHTML in props) {
+        setProperty(staticCtx, elm, 'innerHTML', props[dangerouslySetInnerHTML]);
+        return;
+    }
     if (vnodeFlags & static_subtree) {
         return;
     }
@@ -5724,12 +5750,6 @@ const createElm = (rCtx, vnode, flags, promises) => {
             }
         }
         setQId(rCtx, elCtx);
-        if (qDev && !qTest) {
-            const symbol = renderQRL.$symbol$;
-            if (symbol) {
-                directSetAttribute(elm, 'data-qrl', symbol);
-            }
-        }
         // Run mount hook
         elCtx.$componentQrl$ = renderQRL;
         const wait = then(renderComponent(rCtx, elCtx, flags), () => {
@@ -5772,6 +5792,10 @@ const createElm = (rCtx, vnode, flags, promises) => {
         directSetAttribute(elm, QSlotS, '');
         currentComponent.$slots$.push(vnode);
         staticCtx.$addSlots$.push([elm, currentComponent.$element$]);
+    }
+    else if (dangerouslySetInnerHTML in props) {
+        setProperty(staticCtx, elm, 'innerHTML', props[dangerouslySetInnerHTML]);
+        return elm;
     }
     let children = vnode.$children$;
     if (children.length === 0) {
@@ -5847,14 +5871,8 @@ const forceAttribute = (ctx, elm, newValue, prop) => {
     setAttribute(ctx, elm, prop.toLowerCase(), newValue);
     return true;
 };
-const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 const setInnerHTML = (ctx, elm, newValue) => {
-    if (dangerouslySetInnerHTML in elm) {
-        setProperty(ctx, elm, dangerouslySetInnerHTML, newValue);
-    }
-    else if ('innerHTML' in elm) {
-        setProperty(ctx, elm, 'innerHTML', newValue);
-    }
+    setProperty(ctx, elm, 'innerHTML', newValue);
     return true;
 };
 const noop = () => {
@@ -5870,8 +5888,8 @@ const PROP_HANDLER_MAP = {
     form: forceAttribute,
     tabIndex: forceAttribute,
     download: forceAttribute,
-    [dangerouslySetInnerHTML]: setInnerHTML,
     innerHTML: noop,
+    [dangerouslySetInnerHTML]: setInnerHTML,
 };
 const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
     // aria attribute value should be rendered as string
@@ -9103,5 +9121,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map
