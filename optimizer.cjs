@@ -1200,16 +1200,13 @@ globalThis.qwikOptimizer = function(module) {
           moduleSideEffects: false
         };
       }
-      if (!id2.startsWith(".") && !id2.startsWith("/")) {
-        return;
-      }
+      const path = getPath();
       if (importer) {
-        if (!id2.startsWith(".") && !id2.startsWith("/")) {
+        if (!id2.startsWith(".") && !path.isAbsolute(id2)) {
           return;
         }
         const parsedId = parseId(id2);
         let importeePathId = normalizePath(parsedId.pathId);
-        const path = getPath();
         const ext = path.extname(importeePathId);
         if (RESOLVE_EXTS[ext]) {
           importer = normalizePath(importer);
@@ -1225,10 +1222,9 @@ globalThis.qwikOptimizer = function(module) {
             };
           }
         }
-      } else if (id2.startsWith("/")) {
+      } else if (path.isAbsolute(id2)) {
         const parsedId = parseId(id2);
         const importeePathId = normalizePath(parsedId.pathId);
-        const path = getPath();
         const ext = path.extname(importeePathId);
         if (RESOLVE_EXTS[ext]) {
           log(`resolveId("${importeePathId}", "${importer}")`);
