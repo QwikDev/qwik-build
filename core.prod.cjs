@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.0
+ * @builder.io/qwik 1.1.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -680,12 +680,11 @@
             $element$: element,
             $event$: event,
             $url$: url,
+            $locale$: locale,
             $qrl$: void 0,
-            $props$: void 0,
             $renderCtx$: void 0,
             $subscriber$: void 0,
-            $waitOn$: void 0,
-            $locale$: locale
+            $waitOn$: void 0
         };
         return seal(), ctx;
     };
@@ -3940,7 +3939,8 @@
                             ...createInvocationContext(currentCtx),
                             $qrl$: QRL
                         };
-                        return emitUsedSymbol(symbol, context.$element$, start), invoke.call(this, context, fn, ...args);
+                        return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
+                        invoke.call(this, context, fn, ...args);
                     }
                     throw qError(10);
                 }));
@@ -3948,7 +3948,7 @@
         }
         const createInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
         const invokeQRL = async function(...args) {
-            const fn = invokeFn.call(this);
+            const fn = invokeFn.call(this, tryGetInvokeContext());
             return await fn(...args);
         };
         const resolvedSymbol = refSymbol ?? symbol;
@@ -4046,7 +4046,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.1.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.1.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4288,6 +4288,11 @@
         if (iCtx) {
             return iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(void 0);
         }
+    }, exports._getContextEvent = () => {
+        const iCtx = tryGetInvokeContext();
+        if (iCtx) {
+            return iCtx.$event$;
+        }
     }, exports._hW = _hW, exports._jsxBranch = input => {
         const iCtx = tryGetInvokeContext();
         if (iCtx && iCtx.$hostElement$ && iCtx.$renderCtx$) {
@@ -4325,7 +4330,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "1.1.0",
+            "q:version": "1.1.1",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4532,7 +4537,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.1.0", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.1.1", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

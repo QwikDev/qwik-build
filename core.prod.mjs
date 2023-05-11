@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.0
+ * @builder.io/qwik 1.1.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1009,12 +1009,11 @@ const newInvokeContext = (locale, hostElement, element, event, url) => {
         $element$: element,
         $event$: event,
         $url$: url,
+        $locale$: locale,
         $qrl$: void 0,
-        $props$: void 0,
         $renderCtx$: void 0,
         $subscriber$: void 0,
-        $waitOn$: void 0,
-        $locale$: locale
+        $waitOn$: void 0
     };
     return seal(), ctx;
 };
@@ -1031,6 +1030,13 @@ const _getContextElement = () => {
     const iCtx = tryGetInvokeContext();
     if (iCtx) {
         return iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(void 0);
+    }
+};
+
+const _getContextEvent = () => {
+    const iCtx = tryGetInvokeContext();
+    if (iCtx) {
+        return iCtx.$event$;
     }
 };
 
@@ -2341,7 +2347,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.1.0";
+const version = "1.1.1";
 
 var _a;
 
@@ -2402,7 +2408,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "1.1.0",
+        "q:version": "1.1.1",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -5060,7 +5066,8 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         ...createInvocationContext(currentCtx),
                         $qrl$: QRL
                     };
-                    return emitUsedSymbol(symbol, context.$element$, start), invoke.call(this, context, fn, ...args);
+                    return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
+                    invoke.call(this, context, fn, ...args);
                 }
                 throw qError(10);
             }));
@@ -5068,7 +5075,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     }
     const createInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
     const invokeQRL = async function(...args) {
-        const fn = invokeFn.call(this);
+        const fn = invokeFn.call(this, tryGetInvokeContext());
         return await fn(...args);
     };
     const resolvedSymbol = refSymbol ?? symbol;
@@ -5206,7 +5213,7 @@ const renderRoot = async (rCtx, parent, jsxNode) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.1.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.1.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -5497,4 +5504,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

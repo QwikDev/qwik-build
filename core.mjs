@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.0
+ * @builder.io/qwik 1.1.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1490,12 +1490,11 @@ const newInvokeContext = (locale, hostElement, element, event, url) => {
         $element$: element,
         $event$: event,
         $url$: url,
+        $locale$: locale,
         $qrl$: undefined,
-        $props$: undefined,
         $renderCtx$: undefined,
         $subscriber$: undefined,
         $waitOn$: undefined,
-        $locale$: locale,
     };
     seal(ctx);
     return ctx;
@@ -1524,6 +1523,15 @@ const _getContextElement = () => {
     const iCtx = tryGetInvokeContext();
     if (iCtx) {
         return (iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(undefined));
+    }
+};
+/**
+ * @internal
+ */
+const _getContextEvent = () => {
+    const iCtx = tryGetInvokeContext();
+    if (iCtx) {
+        return iCtx.$event$;
     }
 };
 /**
@@ -3533,7 +3541,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  * QWIK_VERSION
  * @public
  */
-const version = "1.1.0";
+const version = "1.1.1";
 
 var _a;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -8049,6 +8057,9 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         ...baseContext,
                         $qrl$: QRL,
                     };
+                    if (context.$event$ === undefined) {
+                        context.$event$ = this;
+                    }
                     emitUsedSymbol(symbol, context.$element$, start);
                     return invoke.call(this, context, fn, ...args);
                 }
@@ -8068,7 +8079,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
     };
     const invokeQRL = async function (...args) {
-        const fn = invokeFn.call(this);
+        const fn = invokeFn.call(this, tryGetInvokeContext());
         const result = await fn(...args);
         return result;
     };
@@ -9121,5 +9132,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

@@ -851,6 +851,11 @@ export declare interface FunctionComponent<P = Record<string, any>> {
 export declare const _getContextElement: () => unknown;
 
 /**
+ * @internal
+ */
+export declare const _getContextEvent: () => unknown;
+
+/**
  * Retrieve the current lang.
  *
  * If no current lang and there is no `defaultLang` the function throws an error.
@@ -3586,7 +3591,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.1.0
+ * 1.1.1
  * @public
  */
 export declare const version: string;

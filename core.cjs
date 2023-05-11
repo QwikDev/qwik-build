@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.0
+ * @builder.io/qwik 1.1.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1494,12 +1494,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             $element$: element,
             $event$: event,
             $url$: url,
+            $locale$: locale,
             $qrl$: undefined,
-            $props$: undefined,
             $renderCtx$: undefined,
             $subscriber$: undefined,
             $waitOn$: undefined,
-            $locale$: locale,
         };
         seal(ctx);
         return ctx;
@@ -1528,6 +1527,15 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const iCtx = tryGetInvokeContext();
         if (iCtx) {
             return (iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(undefined));
+        }
+    };
+    /**
+     * @internal
+     */
+    const _getContextEvent = () => {
+        const iCtx = tryGetInvokeContext();
+        if (iCtx) {
+            return iCtx.$event$;
         }
     };
     /**
@@ -3537,7 +3545,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * QWIK_VERSION
      * @public
      */
-    const version = "1.1.0";
+    const version = "1.1.1";
 
     var _a;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
@@ -8053,6 +8061,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                             ...baseContext,
                             $qrl$: QRL,
                         };
+                        if (context.$event$ === undefined) {
+                            context.$event$ = this;
+                        }
                         emitUsedSymbol(symbol, context.$element$, start);
                         return invoke.call(this, context, fn, ...args);
                     }
@@ -8072,7 +8083,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         };
         const invokeQRL = async function (...args) {
-            const fn = invokeFn.call(this);
+            const fn = invokeFn.call(this, tryGetInvokeContext());
             const result = await fn(...args);
             return result;
         };
@@ -9141,6 +9152,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     exports._deserializeData = _deserializeData;
     exports._fnSignal = _fnSignal;
     exports._getContextElement = _getContextElement;
+    exports._getContextEvent = _getContextEvent;
     exports._hW = _hW;
     exports._jsxBranch = _jsxBranch;
     exports._jsxC = _jsxC;
