@@ -456,18 +456,16 @@
             if ("symbol" == typeof prop) {
                 return prop === QOjectTargetSymbol ? target : prop === QObjectManagerSymbol ? this.$manager$ : target[prop];
             }
-            let subscriber;
             const flags = target[QObjectFlagsSymbol] ?? 0;
             assertNumber();
             const invokeCtx = tryGetInvokeContext();
             const recursive = 0 != (1 & flags);
-            let value = target[prop];
-            invokeCtx && (subscriber = invokeCtx.$subscriber$);
             const hiddenSignal = target["$$" + prop];
-            const immutableMeta = target[_IMMUTABLE]?.[prop];
-            if ((!(prop in target) || hiddenSignal || isSignal(immutableMeta) || immutableMeta === _IMMUTABLE) && (subscriber = null), 
-            hiddenSignal && (assertTrue(isSignal(hiddenSignal)), value = hiddenSignal.value), 
-            subscriber) {
+            let subscriber;
+            let value = target[prop];
+            if (invokeCtx && (subscriber = invokeCtx.$subscriber$), !(0 != (2 & flags)) || prop in target && !immutableValue(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
+            hiddenSignal && (assertTrue(isSignal(hiddenSignal)), value = hiddenSignal.value, 
+            subscriber = null), subscriber) {
                 const isA = isArray(target);
                 this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
             }
@@ -514,6 +512,7 @@
             };
         }
     }
+    const immutableValue = value => value === _IMMUTABLE || isSignal(value);
     const wrap = (value, containerState) => {
         if (isObject(value)) {
             if (Object.isFrozen(value)) {
