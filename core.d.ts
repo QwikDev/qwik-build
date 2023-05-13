@@ -1614,13 +1614,13 @@ export declare interface PropFnInterface<ARGS extends any[], RET> {
 /**
  * @public
  */
-export declare type PropFunction<T extends Function = (...args: any[]) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : never;
+export declare type PropFunction<T extends Function = (...args: any[]) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : never;
 
 /**
  * @public
  */
 export declare type PropFunctionProps<PROPS extends {}> = {
-    [K in keyof PROPS]: NonNullable<PROPS[K]> extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, RET> : PROPS[K];
+    [K in keyof PROPS]: NonNullable<PROPS[K]> extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : PROPS[K];
 };
 
 /**
@@ -2871,7 +2871,7 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 /**
  * @public
  */
-declare type TransformProp<T> = T extends PropFnInterface<infer ARGS, infer RET> ? (...args: ARGS) => ValueOrPromise<RET> : T;
+declare type TransformProp<T> = NonNullable<T> extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => ValueOrPromise<Awaited<RET>> : T;
 
 /**
  * Transform the component PROPS.
@@ -3591,7 +3591,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.1.1
+ * 1.1.2
  * @public
  */
 export declare const version: string;
