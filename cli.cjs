@@ -1637,7 +1637,18 @@ function runCommand(cmd, args, cwd) {
         cwd,
         stdio: "ignore"
       });
-      child.on("error", () => {
+      child.on("error", (e2) => {
+        if (e2) {
+          if (e2.message) {
+            g2.error(red(String(e2.message)) + `
+
+`);
+          } else {
+            g2.error(red(String(e2)) + `
+
+`);
+          }
+        }
         resolve2(false);
       });
       child.on("close", (code) => {
