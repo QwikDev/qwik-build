@@ -789,7 +789,7 @@ class ReadWriteProxyHandler {
             const invokeCtx = tryGetInvokeContext();
             invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
         }
-        return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice("$$".length) : a));
+        return isArray(target) ? Reflect.ownKeys(target) : Reflect.ownKeys(target).map((a => "string" == typeof a && a.startsWith("$$") ? a.slice(2) : a));
     }
     getOwnPropertyDescriptor(target, prop) {
         return isArray(target) || "symbol" == typeof prop ? Object.getOwnPropertyDescriptor(target, prop) : {
@@ -998,7 +998,8 @@ const waitAndRun = (ctx, callback) => {
 
 const newInvokeContextFromTuple = context => {
     const element = context[0];
-    const locale = element.closest("[q\\:container]")?.getAttribute("q:locale") || void 0;
+    const container = element.closest("[q\\:container]");
+    const locale = container?.getAttribute("q:locale") || void 0;
     return locale && setLocale(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
 };
 
@@ -2648,7 +2649,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     htmlStr = value;
                     continue;
                 }
-                prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+                prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
                 const attrValue = processPropValue(attrName, value);
                 null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
             }
@@ -2670,7 +2671,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 htmlStr = value;
                 continue;
             }
-            prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(PREVENT_DEFAULT.length), rCtx.$static$.$containerState$);
+            prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
             const attrValue = processPropValue(attrName, value);
             null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
         }
@@ -2750,10 +2751,11 @@ const processData$1 = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 return walkChildren(node, rCtx, ssrCtx, stream, flags);
             }
             if (isSignal(node)) {
+                const insideText = 8 & flags;
                 const hostEl = rCtx.$cmpCtx$?.$element$;
                 let value;
                 if (hostEl) {
-                    if (!(8 & flags)) {
+                    if (!insideText) {
                         const id = getNextIndex(rCtx);
                         value = trackSignal(node, 1024 & flags ? [ 3, "#" + id, node, "#" + id ] : [ 4, hostEl, node, "#" + id ]);
                         const str = jsxToString(value);
@@ -3301,7 +3303,10 @@ const moveStyles = (containerEl, containerState) => {
 
 const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
 
-const getQwikInlinedFuncs = parentElm => getQwikJSON(parentElm, "q:func")?.qFuncs ?? EMPTY_ARRAY;
+const getQwikInlinedFuncs = parentElm => {
+    const elm = getQwikJSON(parentElm, "q:func");
+    return elm?.qFuncs ?? EMPTY_ARRAY;
+};
 
 const getQwikJSON = (parentElm, attribute) => {
     let child = parentElm.lastElementChild;
@@ -3880,7 +3885,7 @@ const smartSetProperty = (staticCtx, elm, prop, newValue, isSvg) => {
         return void setAttribute(staticCtx, elm, prop, null != newValue ? String(newValue) : newValue);
     }
     const exception = PROP_HANDLER_MAP[prop];
-    exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent(prop.slice(PREVENT_DEFAULT.length)), 
+    exception && exception(staticCtx, elm, newValue, prop) || (isSvg || !(prop in elm) ? (prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent(prop.slice(15)), 
     setAttribute(staticCtx, elm, prop, newValue)) : setProperty(staticCtx, elm, prop, newValue));
 };
 
@@ -5249,7 +5254,8 @@ const useId = () => {
 };
 
 function useServerData(key, defaultValue) {
-    return tryGetInvokeContext()?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+    const ctx = tryGetInvokeContext();
+    return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
 }
 
 const STYLE_CACHE = /*#__PURE__*/ new Map;
