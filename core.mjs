@@ -329,7 +329,7 @@ const isServerPlatform = () => {
     return false;
 };
 
-const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik';
+const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik: ';
 function assertDefined(value, text, ...parts) {
     if (qDev) {
         if (value != null) {

@@ -333,7 +333,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return false;
     };
 
-    const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik';
+    const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik: ';
     function assertDefined(value, text, ...parts) {
         if (qDev) {
             if (value != null) {

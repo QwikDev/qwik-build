@@ -185,7 +185,7 @@ const getPlatform = () => _platform;
 
 const isServerPlatform = () => _platform.isServer;
 
-const ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik";
+const ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
 
 function assertDefined() {
     qDev;
