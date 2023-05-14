@@ -865,9 +865,9 @@
     const escape = s => s.replace(/ /g, "+");
     const unescape = s => s.replace(/\+/g, " ");
     class VirtualElementImpl {
-        constructor(open, close) {
-            this.open = open, this.close = close, this._qc_ = null, this.nodeType = 111, this.localName = ":virtual", 
-            this.nodeName = ":virtual";
+        constructor(open, close, isSvg) {
+            this.open = open, this.close = close, this.isSvg = isSvg, this._qc_ = null, this.nodeType = 111, 
+            this.localName = ":virtual", this.nodeName = ":virtual";
             const doc = this.ownerDocument = open.ownerDocument;
             this.$template$ = createElement(doc, "template", !1), this.$attributes$ = (str => {
                 if (!str) {
@@ -1023,7 +1023,7 @@
         }
         if (open.data.startsWith("qv ")) {
             const close = findClose(open);
-            return new VirtualElementImpl(open, close);
+            return new VirtualElementImpl(open, close, open.parentElement?.namespaceURI === SVG_NS);
         }
         return null;
     };
@@ -2312,7 +2312,7 @@
                         return void finalized.set(id, void 0);
                     }
                     const close = findClose(rawElement);
-                    const virtual = new VirtualElementImpl(rawElement, close);
+                    const virtual = new VirtualElementImpl(rawElement, close, rawElement.parentElement?.namespaceURI === SVG_NS);
                     return finalized.set(id, virtual), getContext(virtual, containerState), virtual;
                 }
                 return isElement$1(rawElement) ? (finalized.set(id, rawElement), getContext(rawElement, containerState), 
@@ -2725,9 +2725,12 @@
             const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
-            slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotCtx.$element$;
-            const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotCtx.$element$));
-            return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, flags);
+            const slotEl = slotCtx.$element$;
+            slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVdom, newVdom.$elm$ = slotEl;
+            let newFlags = -2 & flags;
+            slotEl.isSvg && (newFlags |= 1);
+            const index = staticCtx.$addSlots$.findIndex((slot => slot[0] === slotEl));
+            return index >= 0 && staticCtx.$addSlots$.splice(index, 1), smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
         })));
     };
     const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
@@ -2786,11 +2789,11 @@
         const props = vnode.$props$;
         const staticCtx = rCtx.$static$;
         const containerState = staticCtx.$containerState$;
-        isVirtual ? elm = (doc => {
+        isVirtual ? elm = ((doc, isSvg) => {
             const open = doc.createComment("qv ");
             const close = doc.createComment("/qv");
-            return new VirtualElementImpl(open, close);
-        })(doc) : "head" === tag ? (elm = doc.head, flags |= 2) : (elm = createElement(doc, tag, isSvg), 
+            return new VirtualElementImpl(open, close, isSvg);
+        })(doc, isSvg) : "head" === tag ? (elm = doc.head, flags |= 2) : (elm = createElement(doc, tag, isSvg), 
         flags &= -3), 2 & vnode.$flags$ && (flags |= 4), vnode.$elm$ = elm;
         const elCtx = createContext(elm);
         if (elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, isVirtual) {
@@ -2824,10 +2827,13 @@
                         const newVnode = splittedNewChildren[slotName];
                         const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, slotName, staticCtx.$containerState$);
                         const slotRctx = pushRenderContext(rCtx);
-                        slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotCtx.$element$;
+                        const slotEl = slotCtx.$element$;
+                        slotRctx.$slotCtx$ = slotCtx, slotCtx.$vdom$ = newVnode, newVnode.$elm$ = slotEl;
+                        let newFlags = -2 & flags;
+                        slotEl.isSvg && (newFlags |= 1);
                         for (const node of newVnode.$children$) {
-                            const nodeElm = createElm(slotRctx, node, flags, p);
-                            assertDefined(), assertEqual(), appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                            const nodeElm = createElm(slotRctx, node, newFlags, p);
+                            assertDefined(), assertEqual(), appendChild(staticCtx, slotEl, nodeElm);
                         }
                     }
                     return promiseAllLazy(p);

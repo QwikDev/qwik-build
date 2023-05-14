@@ -1377,6 +1377,32 @@ declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type Listener = [eventName: string, qrl: QRLInternal];
 
+/**
+ * Allows creating a union type by combining primitive types and literal types
+ * without sacrificing auto-completion in IDEs for the literal type part of the union.
+ *
+ * This type is a workaround for Microsoft/TypeScript#29729.
+ * It will be removed as soon as it's not needed anymore.
+ *
+ * Example:
+ *
+ * ```
+ * // Before
+ * type Pet = 'dog' | 'cat' | string;
+ *
+ * const pet: Pet = '';
+ * // Start typing in your TypeScript-enabled IDE.
+ * // You **will not** get auto-completion for `dog` and `cat` literals.
+ *
+ * // After
+ * type Pet2 = LiteralUnion<'dog' | 'cat', string>;
+ *
+ * const pet: Pet2 = '';
+ * // You **will** get auto-completion for `dog` and `cat` literals.
+ * ```
+ */
+declare type LiteralUnion<LiteralType, BaseType extends Primitive> = LiteralType | (BaseType & Record<never, never>);
+
 declare class LocalSubscriptionManager {
     private $groupToManagers$;
     private $containerState$;
@@ -1568,6 +1594,13 @@ declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 /**
+ * The PascalCaseEventLiteralType combines the QwikKeysEvents type and string type
+ * using the LiteralUnion utility type, allowing autocompletion for event names while
+ * retaining support for custom event names as strings.
+ */
+declare type PascalCaseEventLiteralType = LiteralUnion<QwikKeysEvents, string>;
+
+/**
  * @public
  */
 declare interface PauseContext {
@@ -1584,6 +1617,11 @@ export declare const _pauseFromContexts: (allContexts: QContext[], containerStat
 declare type PreventDefault<T> = {
     [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
+
+/**
+ * Matches any primitive value.
+ */
+declare type Primitive = null | undefined | string | number | boolean | symbol | bigint;
 
 declare interface ProcessedJSXNode {
     $type$: string;
@@ -2138,6 +2176,8 @@ export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T
     shiftKey: boolean;
     which: number;
 }
+
+declare type QwikKeysEvents = Lowercase<keyof QwikEventMap<any>>;
 
 declare type QwikKnownEvents<T> = {
     [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K], T>>;
@@ -3039,7 +3079,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  *
  * @public
  */
-export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
+export declare const useOn: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * Register a listener on `document`.
@@ -3067,7 +3107,7 @@ export declare const useOn: (event: string | string[], eventQrl: QRL<(ev: Event)
  *
  * @public
  */
-export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
+export declare const useOnDocument: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * Register a listener on `window`.
@@ -3096,7 +3136,7 @@ export declare const useOnDocument: (event: string | string[], eventQrl: QRL<(ev
  *
  * @public
  */
-export declare const useOnWindow: (event: string | string[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
+export declare const useOnWindow: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
  * This method works like an async memoized function that runs whenever some tracked value
@@ -3615,6 +3655,7 @@ declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 declare interface VirtualElement {
     readonly open: Comment;
     readonly close: Comment;
+    readonly isSvg: boolean;
     readonly insertBefore: <T extends Node>(node: T, child: Node | null) => T;
     readonly appendChild: <T extends Node>(node: T) => T;
     readonly insertBeforeTo: (newParent: QwikElement, child: Node | null) => void;

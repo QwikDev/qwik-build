@@ -1913,10 +1913,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
 
     const VIRTUAL_SYMBOL = '__virtual';
-    const newVirtualElement = (doc) => {
+    const newVirtualElement = (doc, isSvg) => {
         const open = doc.createComment('qv ');
         const close = doc.createComment('/qv');
-        return new VirtualElementImpl(open, close);
+        return new VirtualElementImpl(open, close, isSvg);
     };
     const parseVirtualAttributes = (str) => {
         if (!str) {
@@ -1976,9 +1976,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const VIRTUAL = ':virtual';
     class VirtualElementImpl {
-        constructor(open, close) {
+        constructor(open, close, isSvg) {
             this.open = open;
             this.close = close;
+            this.isSvg = isSvg;
             this._qc_ = null;
             this.nodeType = 111;
             this.localName = VIRTUAL;
@@ -2178,7 +2179,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         if (open.data.startsWith('qv ')) {
             const close = findClose(open);
-            return new VirtualElementImpl(open, close);
+            return new VirtualElementImpl(open, close, open.parentElement?.namespaceURI === SVG_NS);
         }
         return null;
     };
@@ -4766,7 +4767,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                         return undefined;
                     }
                     const close = findClose(rawElement);
-                    const virtual = new VirtualElementImpl(rawElement, close);
+                    const virtual = new VirtualElementImpl(rawElement, close, rawElement.parentElement?.namespaceURI === SVG_NS);
                     finalized.set(id, virtual);
                     getContext(virtual, containerState);
                     return virtual;
@@ -5597,18 +5598,23 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const slotCtx = getSlotCtx(staticCtx, slotMaps, hostCtx, slotName, rCtx.$static$.$containerState$);
             const oldVdom = getVdom(slotCtx);
             const slotRctx = pushRenderContext(rCtx);
+            const slotEl = slotCtx.$element$;
             slotRctx.$slotCtx$ = slotCtx;
             slotCtx.$vdom$ = newVdom;
-            newVdom.$elm$ = slotCtx.$element$;
+            newVdom.$elm$ = slotEl;
+            let newFlags = flags & ~IS_SVG;
+            if (slotEl.isSvg) {
+                newFlags |= IS_SVG;
+            }
             // const oldVdom = getVdom(slotCtx.$element$);
             // const slotRctx = pushRenderContext(rCtx);
             // slotRctx.$slotCtx$ = slotCtx;
             // setVdom(slotCtx.$element$, newVdom);
-            const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotCtx.$element$);
+            const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotEl);
             if (index >= 0) {
                 staticCtx.$addSlots$.splice(index, 1);
             }
-            return smartUpdateChildren(slotRctx, oldVdom, newVdom, flags);
+            return smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
         }));
     };
     const addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
@@ -5676,7 +5682,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const staticCtx = rCtx.$static$;
         const containerState = staticCtx.$containerState$;
         if (isVirtual) {
-            elm = newVirtualElement(doc);
+            elm = newVirtualElement(doc, isSvg);
         }
         else if (tag === 'head') {
             elm = doc.head;
@@ -5780,14 +5786,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     const newVnode = splittedNewChildren[slotName];
                     const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, slotName, staticCtx.$containerState$);
                     const slotRctx = pushRenderContext(rCtx);
+                    const slotEl = slotCtx.$element$;
                     slotRctx.$slotCtx$ = slotCtx;
                     slotCtx.$vdom$ = newVnode;
-                    newVnode.$elm$ = slotCtx.$element$;
+                    newVnode.$elm$ = slotEl;
+                    let newFlags = flags & ~IS_SVG;
+                    if (slotEl.isSvg) {
+                        newFlags |= IS_SVG;
+                    }
                     for (const node of newVnode.$children$) {
-                        const nodeElm = createElm(slotRctx, node, flags, p);
+                        const nodeElm = createElm(slotRctx, node, newFlags, p);
                         assertDefined(node.$elm$, 'vnode elm must be defined');
                         assertEqual(nodeElm, node.$elm$, 'vnode elm must be defined');
-                        appendChild(staticCtx, slotCtx.$element$, nodeElm);
+                        appendChild(staticCtx, slotEl, nodeElm);
                     }
                 }
                 return promiseAllLazy(p);
