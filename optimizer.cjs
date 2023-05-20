@@ -2054,6 +2054,7 @@ globalThis.qwikOptimizer = function(module) {
     let viteCommand = "serve";
     let manifestInput = null;
     let clientOutDir = null;
+    let basePathname = "/";
     let clientPublicOutDir = null;
     let ssrOutDir = null;
     const injections = [];
@@ -2232,6 +2233,9 @@ globalThis.qwikOptimizer = function(module) {
         }
         return updatedViteConfig;
       },
+      configResolved(config) {
+        basePathname = config.base;
+      },
       async buildStart() {
         const resolver = this.resolve.bind(this);
         await qwikPlugin.validateSource(resolver);
@@ -2287,27 +2291,32 @@ globalThis.qwikOptimizer = function(module) {
             const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
             for (const fileName in rollupBundle) {
               const b = rollupBundle[fileName];
-              "chunk" === b.type ? outputAnalyzer.addBundle({
-                fileName: fileName,
-                modules: b.modules,
-                imports: b.imports,
-                dynamicImports: b.dynamicImports,
-                size: b.code.length
-              }) : [ ".css", ".scss", ".sass", ".less" ].some((ext => fileName.endsWith(ext))) && ("string" === typeof b.source && b.source.length < 2e4 ? injections.push({
-                tag: "style",
-                location: "head",
-                attributes: {
-                  "data-src": `/${fileName}`,
-                  dangerouslySetInnerHTML: b.source
-                }
-              }) : injections.push({
-                tag: "link",
-                location: "head",
-                attributes: {
-                  rel: "stylesheet",
-                  href: `/${fileName}`
-                }
-              }));
+              if ("chunk" === b.type) {
+                outputAnalyzer.addBundle({
+                  fileName: fileName,
+                  modules: b.modules,
+                  imports: b.imports,
+                  dynamicImports: b.dynamicImports,
+                  size: b.code.length
+                });
+              } else if ([ ".css", ".scss", ".sass", ".less" ].some((ext => fileName.endsWith(ext)))) {
+                const baseFilename = basePathname + fileName;
+                "string" === typeof b.source && b.source.length < 2e4 ? injections.push({
+                  tag: "style",
+                  location: "head",
+                  attributes: {
+                    "data-src": baseFilename,
+                    dangerouslySetInnerHTML: b.source
+                  }
+                }) : injections.push({
+                  tag: "link",
+                  location: "head",
+                  attributes: {
+                    rel: "stylesheet",
+                    href: baseFilename
+                  }
+                });
+              }
             }
             for (const i of injections) {
               outputAnalyzer.addInjection(i);
