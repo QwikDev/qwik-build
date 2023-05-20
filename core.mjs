@@ -462,216 +462,19 @@ if (qDev) {
     Object.freeze(EMPTY_OBJ);
 }
 
-// https://regexr.com/68v72
-const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
-// https://regexr.com/690ds
-const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
-// https://regexr.com/6a83h
-const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
-const announcedQRL = /*#__PURE__*/ new Set();
-// <docs markdown="../readme.md#qrl">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#qrl instead)
-/**
- * Used by Qwik Optimizer to point to lazy-loaded resources.
- *
- * This function should be used by the Qwik Optimizer only. The function should not be directly
- * referred to in the source code of the application.
- *
- * @see `QRL`, `$(...)`
- *
- * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
- * @param symbol - Symbol to lazy load
- * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
- * @public
- */
-// </docs>
-const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset = 0) => {
-    let chunk = null;
-    let symbolFn = null;
-    if (isFunction(chunkOrFn)) {
-        symbolFn = chunkOrFn;
-        if (qSerialize) {
-            let match;
-            const srcCode = String(chunkOrFn);
-            if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
-                chunk = match[2];
-            }
-            else if ((match = srcCode.match(EXTRACT_SELF_IMPORT))) {
-                const ref = 'QWIK-SELF';
-                const frames = new Error(ref).stack.split('\n');
-                const start = frames.findIndex((f) => f.includes(ref));
-                const frame = frames[start + 2 + stackOffset];
-                match = frame.match(EXTRACT_FILE_NAME);
-                if (!match) {
-                    chunk = 'main';
-                }
-                else {
-                    chunk = match[1];
-                }
-            }
-            else {
-                throw qError(QError_dynamicImportFailed, srcCode);
-            }
-        }
+const getDocument = (node) => {
+    if (!qDynamicPlatform) {
+        return document;
     }
-    else if (isString(chunkOrFn)) {
-        chunk = chunkOrFn;
+    if (typeof document !== 'undefined') {
+        return document;
     }
-    else {
-        throw qError(QError_unknownTypeArgument, chunkOrFn);
+    if (node.nodeType === 9) {
+        return node;
     }
-    if (announcedQRL.has(symbol)) {
-        // Emit event
-        announcedQRL.add(symbol);
-        emitEvent('qprefetch', {
-            symbols: [getSymbolHash(symbol)],
-        });
-    }
-    // Unwrap subscribers
-    return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
-};
-/**
- * @internal
- */
-const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
-    // Unwrap subscribers
-    return createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
-};
-/**
- * @internal
- */
-const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
-    return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
-};
-/**
- * @internal
- */
-const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
-    const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
-    newQrl.dev = opts;
-    return newQrl;
-};
-/**
- * @internal
- */
-const inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
-    const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
-    qrl.dev = opts;
-    return qrl;
-};
-const serializeQRL = (qrl, opts = {}) => {
-    assertTrue(qSerialize, 'In order to serialize a QRL, qSerialize must be true');
-    assertQrl(qrl);
-    let symbol = qrl.$symbol$;
-    let chunk = qrl.$chunk$;
-    const refSymbol = qrl.$refSymbol$ ?? symbol;
-    const platform = getPlatform();
-    if (platform) {
-        const result = platform.chunkForSymbol(refSymbol, chunk);
-        if (result) {
-            chunk = result[1];
-            if (!qrl.$refSymbol$) {
-                symbol = result[0];
-            }
-        }
-    }
-    if (qRuntimeQrl && !chunk) {
-        chunk = '/runtimeQRL';
-        symbol = '_';
-    }
-    if (!chunk) {
-        throw qError(QError_qrlMissingChunk, qrl.$symbol$);
-    }
-    if (chunk.startsWith('./')) {
-        chunk = chunk.slice(2);
-    }
-    const parts = [chunk, '#', symbol];
-    const capture = qrl.$capture$;
-    const captureRef = qrl.$captureRef$;
-    if (captureRef && captureRef.length) {
-        if (opts.$getObjId$) {
-            const capture = captureRef.map(opts.$getObjId$);
-            parts.push(`[${capture.join(' ')}]`);
-        }
-        else if (opts.$addRefMap$) {
-            const capture = captureRef.map(opts.$addRefMap$);
-            parts.push(`[${capture.join(' ')}]`);
-        }
-    }
-    else if (capture && capture.length > 0) {
-        parts.push(`[${capture.join(' ')}]`);
-    }
-    return parts.join('');
-};
-const serializeQRLs = (existingQRLs, elCtx) => {
-    assertElement(elCtx.$element$);
-    const opts = {
-        $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
-    };
-    return existingQRLs.map((qrl) => serializeQRL(qrl, opts)).join('\n');
-};
-/**
- * `./chunk#symbol[captures]
- */
-const parseQRL = (qrl, containerEl) => {
-    const endIdx = qrl.length;
-    const hashIdx = indexOf(qrl, 0, '#');
-    const captureIdx = indexOf(qrl, hashIdx, '[');
-    const chunkEndIdx = Math.min(hashIdx, captureIdx);
-    const chunk = qrl.substring(0, chunkEndIdx);
-    const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-    const symbolEndIdx = captureIdx;
-    const symbol = symbolStartIdx == symbolEndIdx ? 'default' : qrl.substring(symbolStartIdx, symbolEndIdx);
-    const captureStartIdx = captureIdx;
-    const captureEndIdx = endIdx;
-    const capture = captureStartIdx === captureEndIdx
-        ? EMPTY_ARRAY
-        : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(' ');
-    const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
-    if (containerEl) {
-        iQrl.$setContainer$(containerEl);
-    }
-    return iQrl;
-};
-const indexOf = (text, startIdx, char) => {
-    const endIdx = text.length;
-    const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-    return charIdx == -1 ? endIdx : charIdx;
-};
-const addToArray = (array, obj) => {
-    const index = array.indexOf(obj);
-    if (index === -1) {
-        array.push(obj);
-        return array.length - 1;
-    }
-    return index;
-};
-const inflateQrl = (qrl, elCtx) => {
-    assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()', qrl);
-    return (qrl.$captureRef$ = qrl.$capture$.map((idx) => {
-        const int = parseInt(idx, 10);
-        const obj = elCtx.$refMap$[int];
-        assertTrue(elCtx.$refMap$.length > int, 'out of bounds inflate access', idx);
-        return obj;
-    }));
-};
-/**
- * @internal
- */
-const _regSymbol = (symbol, hash) => {
-    if (typeof globalThis.__qwik_reg_symbols === 'undefined') {
-        globalThis.__qwik_reg_symbols = new Map();
-    }
-    globalThis.__qwik_reg_symbols.set(hash, symbol);
-    return symbol;
-};
-
-const fromCamelToKebabCase = (text) => {
-    return text.replace(/([A-Z])/g, '-$1').toLowerCase();
-};
-const fromKebabToCamelCase = (text) => {
-    return text.replace(/-./g, (x) => x[1].toUpperCase());
+    const doc = node.ownerDocument;
+    assertDefined(doc, 'doc must be defined');
+    return doc;
 };
 
 /**
@@ -698,6 +501,13 @@ const ComputedEvent = 'qComputed';
 const RenderEvent = 'qRender';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
+
+const fromCamelToKebabCase = (text) => {
+    return text.replace(/([A-Z])/g, '-$1').toLowerCase();
+};
+const fromKebabToCamelCase = (text) => {
+    return text.replace(/-./g, (x) => x[1].toUpperCase());
+};
 
 const directSetAttribute = (el, prop, value) => {
     return el.setAttribute(prop, value);
@@ -899,7 +709,10 @@ const _fnSignal = (fn, args, fnStr) => {
 const serializeDerivedSignalFunc = (signal) => {
     const fnBody = qSerialize ? signal.$funcStr$ : 'null';
     assertDefined(fnBody, 'If qSerialize is true then fnStr must be provided.');
-    const args = signal.$args$.map((_, i) => `p${i}`).join(',');
+    let args = '';
+    for (let i = 0; i < signal.$args$.length; i++) {
+        args += `p${i},`;
+    }
     return `(${args})=>(${fnBody})`;
 };
 
@@ -1685,19 +1498,26 @@ const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStr
 const SSRHint = (() => null);
 const InternalSSRStream = () => null;
 
-const getDocument = (node) => {
-    if (!qDynamicPlatform) {
-        return document;
-    }
-    if (typeof document !== 'undefined') {
-        return document;
-    }
-    if (node.nodeType === 9) {
-        return node;
-    }
-    const doc = node.ownerDocument;
-    assertDefined(doc, 'doc must be defined');
-    return doc;
+const useSequentialScope = () => {
+    const iCtx = useInvokeContext();
+    const i = iCtx.$seq$;
+    const hostElement = iCtx.$hostElement$;
+    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+    const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
+    iCtx.$seq$++;
+    const set = (value) => {
+        if (qDev && qSerialize) {
+            verifySerializable(value);
+        }
+        return (seq[i] = value);
+    };
+    return {
+        get: seq[i],
+        set,
+        i,
+        iCtx,
+        elCtx,
+    };
 };
 
 const setAttribute = (staticCtx, el, prop, value) => {
@@ -2210,844 +2030,6 @@ const getRootNode = (node) => {
     }
 };
 
-const hashCode = (text, hash = 0) => {
-    if (text.length === 0) {
-        return hash;
-    }
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-};
-
-const styleKey = (qStyles, index) => {
-    assertQrl(qStyles);
-    return `${hashCode(qStyles.$hash$)}-${index}`;
-};
-const styleContent = (styleId) => {
-    return ComponentStylesPrefixContent + styleId;
-};
-const serializeSStyle = (scopeIds) => {
-    const value = scopeIds.join('|');
-    if (value.length > 0) {
-        return value;
-    }
-    return undefined;
-};
-
-/**
- * @internal
- */
-const _serializeData = async (data, pureQRL) => {
-    const containerState = {};
-    const collector = createCollector(containerState);
-    collectValue(data, collector, false);
-    // Wait for remaining promises
-    let promises;
-    while ((promises = collector.$promises$).length > 0) {
-        collector.$promises$ = [];
-        await Promise.all(promises);
-    }
-    const objs = Array.from(collector.$objSet$.keys());
-    let count = 0;
-    const objToId = new Map();
-    for (const obj of objs) {
-        objToId.set(obj, intToStr(count));
-        count++;
-    }
-    if (collector.$noSerialize$.length > 0) {
-        const undefinedID = objToId.get(undefined);
-        assertDefined(undefinedID, 'undefined ID must be defined');
-        for (const obj of collector.$noSerialize$) {
-            objToId.set(obj, undefinedID);
-        }
-    }
-    const mustGetObjId = (obj) => {
-        let suffix = '';
-        if (isPromise(obj)) {
-            const promiseValue = getPromiseValue(obj);
-            if (!promiseValue) {
-                throw qError(QError_missingObjectId, obj);
-            }
-            obj = promiseValue.value;
-            if (promiseValue.resolved) {
-                suffix += '~';
-            }
-            else {
-                suffix += '_';
-            }
-        }
-        if (isObject(obj)) {
-            const target = getProxyTarget(obj);
-            if (target) {
-                suffix += '!';
-                obj = target;
-            }
-        }
-        const key = objToId.get(obj);
-        if (key === undefined) {
-            throw qError(QError_missingObjectId, obj);
-        }
-        return key + suffix;
-    };
-    const convertedObjs = objs.map((obj) => {
-        if (obj === null) {
-            return null;
-        }
-        const typeObj = typeof obj;
-        switch (typeObj) {
-            case 'undefined':
-                return UNDEFINED_PREFIX;
-            case 'number':
-                if (!Number.isFinite(obj)) {
-                    break;
-                }
-                return obj;
-            case 'string':
-            case 'boolean':
-                return obj;
-        }
-        const value = serializeValue(obj, mustGetObjId, collector, containerState);
-        if (value !== undefined) {
-            return value;
-        }
-        if (typeObj === 'object') {
-            if (isArray(obj)) {
-                return obj.map(mustGetObjId);
-            }
-            if (isSerializableObject(obj)) {
-                const output = {};
-                for (const key in obj) {
-                    output[key] = mustGetObjId(obj[key]);
-                }
-                return output;
-            }
-        }
-        throw qError(QError_verifySerializable, obj);
-    });
-    return JSON.stringify({
-        _entry: mustGetObjId(data),
-        _objs: convertedObjs,
-    });
-};
-// <docs markdown="../readme.md#pauseContainer">
-// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-// (edit ../readme.md#pauseContainer instead)
-/**
- */
-// </docs>
-const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
-    const doc = getDocument(elmOrDoc);
-    const documentElement = doc.documentElement;
-    const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
-    if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
-        throw qError(QError_containerAlreadyPaused);
-    }
-    const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
-    const containerState = _getContainerState(containerEl);
-    const contexts = getNodesInScope(containerEl, hasContext);
-    // Set container to paused
-    directSetAttribute(containerEl, QContainerAttr, 'paused');
-    // Update elements with context
-    for (const elCtx of contexts) {
-        const elm = elCtx.$element$;
-        const listeners = elCtx.li;
-        if (elCtx.$scopeIds$) {
-            const value = serializeSStyle(elCtx.$scopeIds$);
-            if (value) {
-                elm.setAttribute(QScopedStyle, value);
-            }
-        }
-        if (elCtx.$id$) {
-            elm.setAttribute(ELEMENT_ID, elCtx.$id$);
-        }
-        if (isElement$1(elm) && listeners.length > 0) {
-            const groups = groupListeners(listeners);
-            for (const listener of groups) {
-                elm.setAttribute(listener[0], serializeQRLs(listener[1], elCtx));
-            }
-        }
-    }
-    // Serialize data
-    const data = await _pauseFromContexts(contexts, containerState, (el) => {
-        if (isNode$1(el) && isText(el)) {
-            return getTextID(el, containerState);
-        }
-        return null;
-    });
-    // Emit Qwik JSON
-    const qwikJson = doc.createElement('script');
-    directSetAttribute(qwikJson, 'type', 'qwik/json');
-    qwikJson.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
-    parentJSON.appendChild(qwikJson);
-    // Emit event registration
-    const extraListeners = Array.from(containerState.$events$, (s) => JSON.stringify(s));
-    const eventsScript = doc.createElement('script');
-    eventsScript.textContent = `window.qwikevents||=[];window.qwikevents.push(${extraListeners.join(', ')})`;
-    parentJSON.appendChild(eventsScript);
-    return data;
-};
-/**
- * @internal
- */
-const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
-    const collector = createCollector(containerState);
-    textNodes?.forEach((_, key) => {
-        collector.$seen$.add(key);
-    });
-    let hasListeners = false;
-    // TODO: optimize
-    for (const ctx of allContexts) {
-        if (ctx.$watches$) {
-            for (const watch of ctx.$watches$) {
-                if (qDev) {
-                    if (watch.$flags$ & WatchFlagsIsDirty) {
-                        logWarn('Serializing dirty watch. Looks like an internal error.');
-                    }
-                    if (!isConnected(watch)) {
-                        logWarn('Serializing disconnected watch. Looks like an internal error.');
-                    }
-                }
-                if (isResourceTask(watch)) {
-                    collector.$resources$.push(watch.$state$);
-                }
-                destroyWatch(watch);
-            }
-        }
-    }
-    for (const ctx of allContexts) {
-        const el = ctx.$element$;
-        const ctxListeners = ctx.li;
-        for (const listener of ctxListeners) {
-            if (isElement$1(el)) {
-                const qrl = listener[1];
-                const captured = qrl.$captureRef$;
-                if (captured) {
-                    for (const obj of captured) {
-                        collectValue(obj, collector, true);
-                    }
-                }
-                collector.$qrls$.push(qrl);
-                hasListeners = true;
-            }
-        }
-    }
-    // No listeners implies static page
-    if (!hasListeners) {
-        return {
-            state: {
-                refs: {},
-                ctx: {},
-                objs: [],
-                subs: [],
-            },
-            objs: [],
-            funcs: [],
-            qrls: [],
-            resources: collector.$resources$,
-            mode: 'static',
-        };
-    }
-    // Wait for remaining promises
-    let promises;
-    while ((promises = collector.$promises$).length > 0) {
-        collector.$promises$ = [];
-        await Promise.all(promises);
-    }
-    // If at this point any component can render, we need to capture Context and Props
-    const canRender = collector.$elements$.length > 0;
-    if (canRender) {
-        for (const elCtx of collector.$deferElements$) {
-            collectElementData(elCtx, collector, elCtx.$element$);
-        }
-        for (const ctx of allContexts) {
-            collectProps(ctx, collector);
-        }
-    }
-    // Wait for remaining promises
-    while ((promises = collector.$promises$).length > 0) {
-        collector.$promises$ = [];
-        await Promise.all(promises);
-    }
-    // Convert objSet to array
-    const elementToIndex = new Map();
-    const objs = Array.from(collector.$objSet$.keys());
-    const objToId = new Map();
-    const getElementID = (el) => {
-        let id = elementToIndex.get(el);
-        if (id === undefined) {
-            id = getQId(el);
-            if (!id) {
-                console.warn('Missing ID', el);
-            }
-            elementToIndex.set(el, id);
-        }
-        return id;
-    };
-    const getObjId = (obj) => {
-        let suffix = '';
-        if (isPromise(obj)) {
-            const promiseValue = getPromiseValue(obj);
-            if (!promiseValue) {
-                return null;
-            }
-            obj = promiseValue.value;
-            if (promiseValue.resolved) {
-                suffix += '~';
-            }
-            else {
-                suffix += '_';
-            }
-        }
-        if (isObject(obj)) {
-            const target = getProxyTarget(obj);
-            if (target) {
-                suffix += '!';
-                obj = target;
-            }
-            else if (isQwikElement(obj)) {
-                const elID = getElementID(obj);
-                if (elID) {
-                    return ELEMENT_ID_PREFIX + elID + suffix;
-                }
-                return null;
-            }
-        }
-        const id = objToId.get(obj);
-        if (id) {
-            return id + suffix;
-        }
-        const textId = textNodes?.get(obj);
-        if (textId) {
-            return '*' + textId;
-        }
-        if (fallbackGetObjId) {
-            return fallbackGetObjId(obj);
-        }
-        return null;
-    };
-    const mustGetObjId = (obj) => {
-        const key = getObjId(obj);
-        if (key === null) {
-            throw qError(QError_missingObjectId, obj);
-        }
-        return key;
-    };
-    // Compute subscriptions
-    const subsMap = new Map();
-    objs.forEach((obj) => {
-        const subs = getManager(obj, containerState)?.$subs$;
-        if (!subs) {
-            return null;
-        }
-        const flags = getProxyFlags(obj) ?? 0;
-        const converted = [];
-        if (flags & QObjectRecursive) {
-            converted.push(flags);
-        }
-        for (const sub of subs) {
-            const host = sub[1];
-            if (sub[0] === 0 && isNode$1(host) && isVirtualElement(host)) {
-                if (!collector.$elements$.includes(tryGetContext(host))) {
-                    continue;
-                }
-            }
-            converted.push(sub);
-        }
-        if (converted.length > 0) {
-            subsMap.set(obj, converted);
-        }
-    });
-    // Sort objects: the ones with subscriptions go first
-    objs.sort((a, b) => {
-        const isProxyA = subsMap.has(a) ? 0 : 1;
-        const isProxyB = subsMap.has(b) ? 0 : 1;
-        return isProxyA - isProxyB;
-    });
-    // Generate object ID by using a monotonic counter
-    let count = 0;
-    for (const obj of objs) {
-        objToId.set(obj, intToStr(count));
-        count++;
-    }
-    if (collector.$noSerialize$.length > 0) {
-        const undefinedID = objToId.get(undefined);
-        assertDefined(undefinedID, 'undefined ID must be defined');
-        for (const obj of collector.$noSerialize$) {
-            objToId.set(obj, undefinedID);
-        }
-    }
-    // Serialize object subscriptions
-    const subs = [];
-    for (const obj of objs) {
-        const value = subsMap.get(obj);
-        if (value == null) {
-            break;
-        }
-        subs.push(value
-            .map((s) => {
-            if (typeof s === 'number') {
-                return `_${s}`;
-            }
-            return serializeSubscription(s, getObjId);
-        })
-            .filter(isNotNullable));
-    }
-    assertEqual(subs.length, subsMap.size, 'missing subscriptions to serialize', subs, subsMap);
-    // Serialize objects
-    const convertedObjs = objs.map((obj) => {
-        if (obj === null) {
-            return null;
-        }
-        const typeObj = typeof obj;
-        switch (typeObj) {
-            case 'undefined':
-                return UNDEFINED_PREFIX;
-            case 'number':
-                if (!Number.isFinite(obj)) {
-                    break;
-                }
-                return obj;
-            case 'string':
-            case 'boolean':
-                return obj;
-        }
-        const value = serializeValue(obj, mustGetObjId, collector, containerState);
-        if (value !== undefined) {
-            return value;
-        }
-        if (typeObj === 'object') {
-            if (isArray(obj)) {
-                return obj.map(mustGetObjId);
-            }
-            if (isSerializableObject(obj)) {
-                const output = {};
-                for (const key in obj) {
-                    const id = getObjId(obj[key]);
-                    if (id !== null) {
-                        output[key] = id;
-                    }
-                }
-                return output;
-            }
-        }
-        throw qError(QError_verifySerializable, obj);
-    });
-    const meta = {};
-    const refs = {};
-    // Write back to the dom
-    allContexts.forEach((ctx) => {
-        const node = ctx.$element$;
-        const elementID = ctx.$id$;
-        const ref = ctx.$refMap$;
-        const props = ctx.$props$;
-        const contexts = ctx.$contexts$;
-        const watches = ctx.$watches$;
-        const renderQrl = ctx.$componentQrl$;
-        const seq = ctx.$seq$;
-        const metaValue = {};
-        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
-        assertDefined(elementID, `pause: can not generate ID for dom node`, node);
-        if (ref.length > 0) {
-            assertElement(node);
-            const value = ref.map(mustGetObjId).join(' ');
-            if (value) {
-                refs[elementID] = value;
-            }
-        }
-        else if (canRender) {
-            let add = false;
-            if (elementCaptured) {
-                assertDefined(renderQrl, 'renderQrl must be defined');
-                const propsId = getObjId(props);
-                metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
-                add = true;
-            }
-            else {
-                const propsId = getObjId(props);
-                if (propsId) {
-                    metaValue.h = ' ' + propsId;
-                    add = true;
-                }
-            }
-            if (watches && watches.length > 0) {
-                const value = watches.map(getObjId).filter(isNotNullable).join(' ');
-                if (value) {
-                    metaValue.w = value;
-                    add = true;
-                }
-            }
-            if (elementCaptured && seq && seq.length > 0) {
-                const value = seq.map(mustGetObjId).join(' ');
-                metaValue.s = value;
-                add = true;
-            }
-            if (contexts) {
-                const serializedContexts = [];
-                contexts.forEach((value, key) => {
-                    const id = getObjId(value);
-                    if (id) {
-                        serializedContexts.push(`${key}=${id}`);
-                    }
-                });
-                const value = serializedContexts.join(' ');
-                if (value) {
-                    metaValue.c = value;
-                    add = true;
-                }
-            }
-            if (add) {
-                meta[elementID] = metaValue;
-            }
-        }
-    });
-    // Sanity check of serialized element
-    if (qDev) {
-        elementToIndex.forEach((value, el) => {
-            if (!value) {
-                logWarn('unconnected element', el.nodeName, '\n');
-            }
-        });
-    }
-    return {
-        state: {
-            refs,
-            ctx: meta,
-            objs: convertedObjs,
-            subs,
-        },
-        objs,
-        funcs: collector.$inlinedFunctions$,
-        resources: collector.$resources$,
-        qrls: collector.$qrls$,
-        mode: canRender ? 'render' : 'listeners',
-    };
-};
-const getNodesInScope = (parent, predicate) => {
-    const results = [];
-    const v = predicate(parent);
-    if (v !== undefined) {
-        results.push(v);
-    }
-    const walker = parent.ownerDocument.createTreeWalker(parent, SHOW_ELEMENT | SHOW_COMMENT$1, {
-        acceptNode(node) {
-            if (isContainer(node)) {
-                return FILTER_REJECT$1;
-            }
-            const v = predicate(node);
-            if (v !== undefined) {
-                results.push(v);
-            }
-            return FILTER_SKIP;
-        },
-    });
-    while (walker.nextNode()) {
-        // do nothing
-    }
-    return results;
-};
-const collectProps = (elCtx, collector) => {
-    const parentCtx = elCtx.$parent$;
-    const props = elCtx.$props$;
-    if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
-        const subs = getProxyManager(props)?.$subs$;
-        const el = elCtx.$element$;
-        if (subs) {
-            for (const sub of subs) {
-                if (sub[0] === 0 && sub[1] === el) {
-                    collectElement(el, collector);
-                    return;
-                }
-                else {
-                    collectValue(props, collector, false);
-                    collectSubscriptions(getProxyManager(props), collector, false);
-                }
-            }
-        }
-    }
-};
-const createCollector = (containerState) => {
-    return {
-        $containerState$: containerState,
-        $seen$: new Set(),
-        $objSet$: new Set(),
-        $prefetch$: 0,
-        $noSerialize$: [],
-        $inlinedFunctions$: [],
-        $resources$: [],
-        $elements$: [],
-        $qrls$: [],
-        $deferElements$: [],
-        $promises$: [],
-    };
-};
-const collectDeferElement = (el, collector) => {
-    const ctx = tryGetContext(el);
-    if (collector.$elements$.includes(ctx)) {
-        return;
-    }
-    collector.$elements$.push(ctx);
-    collector.$prefetch$++;
-    if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
-        collectElementData(ctx, collector, true);
-    }
-    else {
-        collector.$deferElements$.push(ctx);
-    }
-    collector.$prefetch$--;
-};
-const collectElement = (el, collector) => {
-    const ctx = tryGetContext(el);
-    if (ctx) {
-        if (collector.$elements$.includes(ctx)) {
-            return;
-        }
-        collector.$elements$.push(ctx);
-        collectElementData(ctx, collector, el);
-    }
-};
-const collectElementData = (elCtx, collector, dynamicCtx) => {
-    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
-        collectValue(elCtx.$props$, collector, dynamicCtx);
-        collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx);
-    }
-    if (elCtx.$componentQrl$) {
-        collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
-    }
-    if (elCtx.$seq$) {
-        for (const obj of elCtx.$seq$) {
-            collectValue(obj, collector, dynamicCtx);
-        }
-    }
-    if (elCtx.$watches$) {
-        const map = collector.$containerState$.$subsManager$.$groupToManagers$;
-        for (const obj of elCtx.$watches$) {
-            if (map.has(obj)) {
-                collectValue(obj, collector, dynamicCtx);
-            }
-        }
-    }
-    if (dynamicCtx === true) {
-        collectContext(elCtx, collector);
-        if (elCtx.$dynamicSlots$) {
-            for (const slotCtx of elCtx.$dynamicSlots$) {
-                collectContext(slotCtx, collector);
-            }
-        }
-    }
-};
-const collectContext = (elCtx, collector) => {
-    while (elCtx) {
-        if (elCtx.$contexts$) {
-            for (const obj of elCtx.$contexts$.values()) {
-                collectValue(obj, collector, true);
-            }
-            if (elCtx.$contexts$.get('_') === true) {
-                break;
-            }
-        }
-        elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
-    }
-};
-const escapeText = (str) => {
-    return str.replace(/<(\/?script)/g, '\\x3C$1');
-};
-const collectSubscriptions = (manager, collector, leaks) => {
-    // if (!leaks) {
-    //   return;
-    // }
-    if (collector.$seen$.has(manager)) {
-        return;
-    }
-    collector.$seen$.add(manager);
-    const subs = manager.$subs$;
-    assertDefined(subs, 'subs must be defined');
-    for (const key of subs) {
-        const type = key[0];
-        if (type > 0) {
-            collectValue(key[2], collector, leaks);
-        }
-        if (leaks === true) {
-            const host = key[1];
-            if (isNode$1(host) && isVirtualElement(host)) {
-                if (type === 0) {
-                    collectDeferElement(host, collector);
-                }
-            }
-            else {
-                collectValue(host, collector, true);
-            }
-        }
-    }
-};
-const PROMISE_VALUE = Symbol();
-const resolvePromise = (promise) => {
-    return promise.then((value) => {
-        const v = {
-            resolved: true,
-            value,
-        };
-        promise[PROMISE_VALUE] = v;
-        return value;
-    }, (value) => {
-        const v = {
-            resolved: false,
-            value,
-        };
-        promise[PROMISE_VALUE] = v;
-        return value;
-    });
-};
-const getPromiseValue = (promise) => {
-    return promise[PROMISE_VALUE];
-};
-const collectValue = (obj, collector, leaks) => {
-    if (obj !== null) {
-        const objType = typeof obj;
-        switch (objType) {
-            case 'function':
-            case 'object': {
-                const seen = collector.$seen$;
-                if (seen.has(obj)) {
-                    return;
-                }
-                seen.add(obj);
-                if (fastSkipSerialize(obj)) {
-                    collector.$objSet$.add(undefined);
-                    collector.$noSerialize$.push(obj);
-                    return;
-                }
-                const input = obj;
-                const target = getProxyTarget(obj);
-                if (target) {
-                    obj = target;
-                    if (seen.has(obj)) {
-                        return;
-                    }
-                    seen.add(obj);
-                    const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
-                    if (leaks && mutable) {
-                        collectSubscriptions(getProxyManager(input), collector, leaks);
-                    }
-                    if (fastWeakSerialize(input)) {
-                        collector.$objSet$.add(obj);
-                        return;
-                    }
-                }
-                const collected = collectDeps(obj, collector, leaks);
-                if (collected) {
-                    collector.$objSet$.add(obj);
-                    return;
-                }
-                if (isPromise(obj)) {
-                    collector.$promises$.push(resolvePromise(obj).then((value) => {
-                        collectValue(value, collector, leaks);
-                    }));
-                    return;
-                }
-                if (objType === 'object') {
-                    if (isNode$1(obj)) {
-                        return;
-                    }
-                    if (isArray(obj)) {
-                        for (let i = 0; i < obj.length; i++) {
-                            collectValue(input[i], collector, leaks);
-                        }
-                    }
-                    else if (isSerializableObject(obj)) {
-                        for (const key in obj) {
-                            collectValue(input[key], collector, leaks);
-                        }
-                    }
-                }
-                break;
-            }
-            case 'string': {
-                if (collector.$seen$.has(obj)) {
-                    return;
-                }
-            }
-        }
-    }
-    collector.$objSet$.add(obj);
-};
-const isContainer = (el) => {
-    return isElement$1(el) && el.hasAttribute(QContainerAttr);
-};
-const hasContext = (el) => {
-    const node = processVirtualNodes(el);
-    if (isQwikElement(node)) {
-        const ctx = tryGetContext(node);
-        if (ctx && ctx.$id$) {
-            return ctx;
-        }
-    }
-    return undefined;
-};
-const getManager = (obj, containerState) => {
-    if (!isObject(obj)) {
-        return undefined;
-    }
-    if (obj instanceof SignalImpl) {
-        return getProxyManager(obj);
-    }
-    const proxy = containerState.$proxyMap$.get(obj);
-    if (proxy) {
-        return getProxyManager(proxy);
-    }
-    return undefined;
-};
-const getQId = (el) => {
-    const ctx = tryGetContext(el);
-    if (ctx) {
-        return ctx.$id$;
-    }
-    return null;
-};
-const getTextID = (node, containerState) => {
-    const prev = node.previousSibling;
-    if (prev && isComment(prev)) {
-        if (prev.data.startsWith('t=')) {
-            return ELEMENT_ID_PREFIX + prev.data.slice(2);
-        }
-    }
-    const doc = node.ownerDocument;
-    const id = intToStr(containerState.$elementIndex$++);
-    const open = doc.createComment(`t=${id}`);
-    const close = doc.createComment('');
-    const parent = node.parentElement;
-    parent.insertBefore(open, node);
-    parent.insertBefore(close, node.nextSibling);
-    return ELEMENT_ID_PREFIX + id;
-};
-const isEmptyObj = (obj) => {
-    return Object.keys(obj).length === 0;
-};
-
-const useSequentialScope = () => {
-    const iCtx = useInvokeContext();
-    const i = iCtx.$seq$;
-    const hostElement = iCtx.$hostElement$;
-    const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-    const seq = elCtx.$seq$ ? elCtx.$seq$ : (elCtx.$seq$ = []);
-    iCtx.$seq$++;
-    const set = (value) => {
-        if (qDev && qSerialize) {
-            verifySerializable(value);
-        }
-        return (seq[i] = value);
-    };
-    return {
-        get: seq[i],
-        set,
-        i,
-        iCtx,
-        elCtx,
-    };
-};
-
 // <docs markdown="../readme.md#createContextId">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#createContextId instead)
@@ -3545,6 +2527,33 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  */
 const version = "1.1.4";
 
+const hashCode = (text, hash = 0) => {
+    if (text.length === 0) {
+        return hash;
+    }
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Number(Math.abs(hash)).toString(36);
+};
+
+const styleKey = (qStyles, index) => {
+    assertQrl(qStyles);
+    return `${hashCode(qStyles.$hash$)}-${index}`;
+};
+const styleContent = (styleId) => {
+    return ComponentStylesPrefixContent + styleId;
+};
+const serializeSStyle = (scopeIds) => {
+    const value = scopeIds.join('|');
+    if (value.length > 0) {
+        return value;
+    }
+    return undefined;
+};
+
 var _a;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
 const IS_HEAD$1 = 1 << 0;
@@ -3602,17 +2611,16 @@ const _renderSSR = async (node, opts) => {
         'q:render': qRender,
         'q:base': opts.base,
         'q:locale': opts.serverData?.locale,
-        children: root === 'html' ? [node] : [headNodes, node],
     };
+    const children = root === 'html' ? [node] : [headNodes, node];
     if (root !== 'html') {
         containerAttributes.class =
             'qc📦' + (containerAttributes.class ? ' ' + containerAttributes.class : '');
     }
-    containerState.$serverData$ = {
-        url: opts.url,
-        ...opts.serverData,
-    };
-    node = jsx(root, containerAttributes);
+    if (opts.serverData) {
+        containerState.$serverData$ = opts.serverData;
+    }
+    node = _jsxQ(root, null, containerAttributes, children, 3, null);
     containerState.$hostsRendering$ = new Set();
     await Promise.resolve().then(() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts));
 };
@@ -3763,7 +2771,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
         iCtx.$subscriber$ = [0, hostElement];
         iCtx.$renderCtx$ = newRCtx;
         const newSSrContext = {
-            ...ssrCtx,
+            $static$: ssrCtx.$static$,
             $projectedChildren$: splitProjectedChildren(node.children, ssrCtx),
             $projectedCtxs$: [rCtx, ssrCtx],
             $invocationContext$: iCtx,
@@ -3773,20 +2781,20 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
             const isHTML = !!(flags & IS_HTML);
             const array = isHTML ? ssrCtx.$static$.$headNodes$ : extraNodes;
             for (const style of elCtx.$appendStyles$) {
-                array.push(jsx('style', {
+                array.push(_jsxQ('style', {
                     [QStyle]: style.styleId,
                     [dangerouslySetInnerHTML]: style.content,
                     hidden: '',
-                }));
+                }, null, null, 0, null));
             }
         }
         const newID = getNextIndex(rCtx);
         const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : undefined;
-        const processedNode = jsx(node.type, {
+        const processedNode = _jsxC(node.type, {
             [QScopedStyle]: scopeId,
             [ELEMENT_ID]: newID,
             children: res.node,
-        }, node.key);
+        }, 0, node.key);
         elCtx.$id$ = newID;
         ssrCtx.$static$.$contexts$.push(elCtx);
         return renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream) => {
@@ -3825,12 +2833,11 @@ const renderQTemplates = (rCtx, ssrContext, stream) => {
         const nodes = Object.keys(projectedChildren).map((slotName) => {
             const value = projectedChildren[slotName];
             if (value) {
-                return jsx('q:template', {
+                return _jsxQ('q:template', {
                     [QSlot]: slotName,
                     hidden: '',
                     'aria-hidden': 'true',
-                    children: value,
-                });
+                }, null, value, 0, null);
             }
         });
         return processData$1(nodes, rCtx, ssrContext, stream, 0, undefined);
@@ -3980,7 +2987,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         // Reset HOST flags
         if (qDev) {
             if (flags & IS_PHASING && !(flags & IS_PHRASING_CONTAINER)) {
-                if (!phasingContent[tagName]) {
+                if (!(tagName in phasingContent)) {
                     throw createJSXError(`<${tagName}> can not be rendered because one of its ancestor is a <p> or a <pre>.\n
 This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html#phrasing-content-2`, node);
                 }
@@ -3989,7 +2996,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 flags |= IS_TABLE;
             }
             else {
-                if (flags & IS_TABLE && !tableContent[tagName]) {
+                if (flags & IS_TABLE && !(tagName in tableContent)) {
                     throw createJSXError(`The <table> element requires that its direct children to be '<tbody>', '<thead>', '<tfoot>' or '<caption>' instead, '<${tagName}>' was rendered.`, node);
                 }
                 flags &= ~IS_TABLE;
@@ -4017,26 +3024,26 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 flags |= IS_PHRASING_CONTAINER;
             }
             if (flags & IS_HEAD$1) {
-                if (!headContent[tagName]) {
+                if (!(tagName in headContent)) {
                     throw createJSXError(`<${tagName}> can not be rendered because it's not a valid children of the <head> element. https://html.spec.whatwg.org/multipage/dom.html#metadata-content`, node);
                 }
             }
             if (flags & IS_HTML) {
-                if (!htmlContent[tagName]) {
+                if (!(tagName in htmlContent)) {
                     throw createJSXError(`<${tagName}> can not be rendered because it's not a valid direct children of the <html> element, only <head> and <body> are allowed.`, node);
                 }
             }
-            if (startPhasingContent[tagName]) {
+            if (tagName in startPhasingContent) {
                 flags |= IS_PHASING;
             }
         }
         if (isHead) {
             flags |= IS_HEAD$1;
         }
-        if (invisibleElements[tagName]) {
+        if (tagName in invisibleElements) {
             flags |= IS_INVISIBLE;
         }
-        if (textOnlyElements[tagName]) {
+        if (tagName in textOnlyElements) {
             flags |= IS_TEXT;
         }
         if (classStr) {
@@ -4073,7 +3080,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         openingElement += '>';
         stream.write(openingElement);
-        if (emptyElements[tagName]) {
+        if (tagName in emptyElements) {
             return;
         }
         if (htmlStr != null) {
@@ -4130,7 +3137,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     if (!shouldWrapFunctional(res, node)) {
         return processData$1(res, rCtx, ssrCtx, stream, flags, beforeClose);
     }
-    return renderNode(jsx(Virtual, { children: res }, node.key), rCtx, ssrCtx, stream, flags, beforeClose);
+    return renderNode(_jsxC(Virtual, { children: res }, 0, node.key), rCtx, ssrCtx, stream, flags, beforeClose);
 };
 const processData$1 = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     if (node == null || typeof node === 'boolean') {
@@ -4184,10 +3191,11 @@ const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
     if (!isArray(children)) {
         return processData$1(children, rCtx, ssrContext, stream, flags);
     }
-    if (children.length === 1) {
+    const len = children.length;
+    if (len === 1) {
         return processData$1(children[0], rCtx, ssrContext, stream, flags);
     }
-    if (children.length === 0) {
+    if (len === 0) {
         return;
     }
     let currentIndex = 0;
@@ -6972,6 +5980,1011 @@ class Task {
     }
 }
 
+/**
+ * @internal
+ */
+const _serializeData = async (data, pureQRL) => {
+    const containerState = {};
+    const collector = createCollector(containerState);
+    collectValue(data, collector, false);
+    // Wait for remaining promises
+    let promises;
+    while ((promises = collector.$promises$).length > 0) {
+        collector.$promises$ = [];
+        await Promise.all(promises);
+    }
+    const objs = Array.from(collector.$objSet$.keys());
+    let count = 0;
+    const objToId = new Map();
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count));
+        count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(undefined);
+        assertDefined(undefinedID, 'undefined ID must be defined');
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    const mustGetObjId = (obj) => {
+        let suffix = '';
+        if (isPromise(obj)) {
+            const promiseValue = getPromiseValue(obj);
+            if (!promiseValue) {
+                throw qError(QError_missingObjectId, obj);
+            }
+            obj = promiseValue.value;
+            if (promiseValue.resolved) {
+                suffix += '~';
+            }
+            else {
+                suffix += '_';
+            }
+        }
+        if (isObject(obj)) {
+            const target = getProxyTarget(obj);
+            if (target) {
+                suffix += '!';
+                obj = target;
+            }
+        }
+        const key = objToId.get(obj);
+        if (key === undefined) {
+            throw qError(QError_missingObjectId, obj);
+        }
+        return key + suffix;
+    };
+    const convertedObjs = objs.map((obj) => {
+        if (obj === null) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+            case 'undefined':
+                return UNDEFINED_PREFIX;
+            case 'number':
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+            case 'string':
+            case 'boolean':
+                return obj;
+        }
+        const value = serializeValue(obj, mustGetObjId, collector, containerState);
+        if (value !== undefined) {
+            return value;
+        }
+        if (typeObj === 'object') {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key in obj) {
+                    output[key] = mustGetObjId(obj[key]);
+                }
+                return output;
+            }
+        }
+        throw qError(QError_verifySerializable, obj);
+    });
+    return JSON.stringify({
+        _entry: mustGetObjId(data),
+        _objs: convertedObjs,
+    });
+};
+// <docs markdown="../readme.md#pauseContainer">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#pauseContainer instead)
+/**
+ */
+// </docs>
+const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
+    const doc = getDocument(elmOrDoc);
+    const documentElement = doc.documentElement;
+    const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
+    if (directGetAttribute(containerEl, QContainerAttr) === 'paused') {
+        throw qError(QError_containerAlreadyPaused);
+    }
+    const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
+    const containerState = _getContainerState(containerEl);
+    const contexts = getNodesInScope(containerEl, hasContext);
+    // Set container to paused
+    directSetAttribute(containerEl, QContainerAttr, 'paused');
+    // Update elements with context
+    for (const elCtx of contexts) {
+        const elm = elCtx.$element$;
+        const listeners = elCtx.li;
+        if (elCtx.$scopeIds$) {
+            const value = serializeSStyle(elCtx.$scopeIds$);
+            if (value) {
+                elm.setAttribute(QScopedStyle, value);
+            }
+        }
+        if (elCtx.$id$) {
+            elm.setAttribute(ELEMENT_ID, elCtx.$id$);
+        }
+        if (isElement$1(elm) && listeners.length > 0) {
+            const groups = groupListeners(listeners);
+            for (const listener of groups) {
+                elm.setAttribute(listener[0], serializeQRLs(listener[1], elCtx));
+            }
+        }
+    }
+    // Serialize data
+    const data = await _pauseFromContexts(contexts, containerState, (el) => {
+        if (isNode$1(el) && isText(el)) {
+            return getTextID(el, containerState);
+        }
+        return null;
+    });
+    // Emit Qwik JSON
+    const qwikJson = doc.createElement('script');
+    directSetAttribute(qwikJson, 'type', 'qwik/json');
+    qwikJson.textContent = escapeText(JSON.stringify(data.state, undefined, qDev ? '  ' : undefined));
+    parentJSON.appendChild(qwikJson);
+    // Emit event registration
+    const extraListeners = Array.from(containerState.$events$, (s) => JSON.stringify(s));
+    const eventsScript = doc.createElement('script');
+    eventsScript.textContent = `window.qwikevents||=[];window.qwikevents.push(${extraListeners.join(', ')})`;
+    parentJSON.appendChild(eventsScript);
+    return data;
+};
+/**
+ * @internal
+ */
+const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
+    const collector = createCollector(containerState);
+    textNodes?.forEach((_, key) => {
+        collector.$seen$.add(key);
+    });
+    let hasListeners = false;
+    // TODO: optimize
+    for (const ctx of allContexts) {
+        if (ctx.$watches$) {
+            for (const watch of ctx.$watches$) {
+                if (qDev) {
+                    if (watch.$flags$ & WatchFlagsIsDirty) {
+                        logWarn('Serializing dirty watch. Looks like an internal error.');
+                    }
+                    if (!isConnected(watch)) {
+                        logWarn('Serializing disconnected watch. Looks like an internal error.');
+                    }
+                }
+                if (isResourceTask(watch)) {
+                    collector.$resources$.push(watch.$state$);
+                }
+                destroyWatch(watch);
+            }
+        }
+    }
+    for (const ctx of allContexts) {
+        const el = ctx.$element$;
+        const ctxListeners = ctx.li;
+        for (const listener of ctxListeners) {
+            if (isElement$1(el)) {
+                const qrl = listener[1];
+                const captured = qrl.$captureRef$;
+                if (captured) {
+                    for (const obj of captured) {
+                        collectValue(obj, collector, true);
+                    }
+                }
+                collector.$qrls$.push(qrl);
+                hasListeners = true;
+            }
+        }
+    }
+    // No listeners implies static page
+    if (!hasListeners) {
+        return {
+            state: {
+                refs: {},
+                ctx: {},
+                objs: [],
+                subs: [],
+            },
+            objs: [],
+            funcs: [],
+            qrls: [],
+            resources: collector.$resources$,
+            mode: 'static',
+        };
+    }
+    // Wait for remaining promises
+    let promises;
+    while ((promises = collector.$promises$).length > 0) {
+        collector.$promises$ = [];
+        await Promise.all(promises);
+    }
+    // If at this point any component can render, we need to capture Context and Props
+    const canRender = collector.$elements$.length > 0;
+    if (canRender) {
+        for (const elCtx of collector.$deferElements$) {
+            collectElementData(elCtx, collector, elCtx.$element$);
+        }
+        for (const ctx of allContexts) {
+            collectProps(ctx, collector);
+        }
+    }
+    // Wait for remaining promises
+    while ((promises = collector.$promises$).length > 0) {
+        collector.$promises$ = [];
+        await Promise.all(promises);
+    }
+    // Convert objSet to array
+    const elementToIndex = new Map();
+    const objs = Array.from(collector.$objSet$.keys());
+    const objToId = new Map();
+    const getElementID = (el) => {
+        let id = elementToIndex.get(el);
+        if (id === undefined) {
+            id = getQId(el);
+            if (!id) {
+                console.warn('Missing ID', el);
+            }
+            elementToIndex.set(el, id);
+        }
+        return id;
+    };
+    const getObjId = (obj) => {
+        let suffix = '';
+        if (isPromise(obj)) {
+            const promiseValue = getPromiseValue(obj);
+            if (!promiseValue) {
+                return null;
+            }
+            obj = promiseValue.value;
+            if (promiseValue.resolved) {
+                suffix += '~';
+            }
+            else {
+                suffix += '_';
+            }
+        }
+        if (isObject(obj)) {
+            const target = getProxyTarget(obj);
+            if (target) {
+                suffix += '!';
+                obj = target;
+            }
+            else if (isQwikElement(obj)) {
+                const elID = getElementID(obj);
+                if (elID) {
+                    return ELEMENT_ID_PREFIX + elID + suffix;
+                }
+                return null;
+            }
+        }
+        const id = objToId.get(obj);
+        if (id) {
+            return id + suffix;
+        }
+        const textId = textNodes?.get(obj);
+        if (textId) {
+            return '*' + textId;
+        }
+        if (fallbackGetObjId) {
+            return fallbackGetObjId(obj);
+        }
+        return null;
+    };
+    const mustGetObjId = (obj) => {
+        const key = getObjId(obj);
+        if (key === null) {
+            throw qError(QError_missingObjectId, obj);
+        }
+        return key;
+    };
+    // Compute subscriptions
+    const subsMap = new Map();
+    for (const obj of objs) {
+        const subs = getManager(obj, containerState)?.$subs$;
+        if (!subs) {
+            continue;
+        }
+        const flags = getProxyFlags(obj) ?? 0;
+        const converted = [];
+        if (flags & QObjectRecursive) {
+            converted.push(flags);
+        }
+        for (const sub of subs) {
+            const host = sub[1];
+            if (sub[0] === 0 && isNode$1(host) && isVirtualElement(host)) {
+                if (!collector.$elements$.includes(tryGetContext(host))) {
+                    continue;
+                }
+            }
+            converted.push(sub);
+        }
+        if (converted.length > 0) {
+            subsMap.set(obj, converted);
+        }
+    }
+    // Sort objects: the ones with subscriptions go first
+    objs.sort((a, b) => {
+        const isProxyA = subsMap.has(a) ? 0 : 1;
+        const isProxyB = subsMap.has(b) ? 0 : 1;
+        return isProxyA - isProxyB;
+    });
+    // Generate object ID by using a monotonic counter
+    let count = 0;
+    for (const obj of objs) {
+        objToId.set(obj, intToStr(count));
+        count++;
+    }
+    if (collector.$noSerialize$.length > 0) {
+        const undefinedID = objToId.get(undefined);
+        assertDefined(undefinedID, 'undefined ID must be defined');
+        for (const obj of collector.$noSerialize$) {
+            objToId.set(obj, undefinedID);
+        }
+    }
+    // Serialize object subscriptions
+    const subs = [];
+    for (const obj of objs) {
+        const value = subsMap.get(obj);
+        if (value == null) {
+            break;
+        }
+        subs.push(value
+            .map((s) => {
+            if (typeof s === 'number') {
+                return `_${s}`;
+            }
+            return serializeSubscription(s, getObjId);
+        })
+            .filter(isNotNullable));
+    }
+    assertEqual(subs.length, subsMap.size, 'missing subscriptions to serialize', subs, subsMap);
+    // Serialize objects
+    const convertedObjs = objs.map((obj) => {
+        if (obj === null) {
+            return null;
+        }
+        const typeObj = typeof obj;
+        switch (typeObj) {
+            case 'undefined':
+                return UNDEFINED_PREFIX;
+            case 'number':
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+            case 'string':
+            case 'boolean':
+                return obj;
+        }
+        const value = serializeValue(obj, mustGetObjId, collector, containerState);
+        if (value !== undefined) {
+            return value;
+        }
+        if (typeObj === 'object') {
+            if (isArray(obj)) {
+                return obj.map(mustGetObjId);
+            }
+            if (isSerializableObject(obj)) {
+                const output = {};
+                for (const key in obj) {
+                    const id = getObjId(obj[key]);
+                    if (id !== null) {
+                        output[key] = id;
+                    }
+                }
+                return output;
+            }
+        }
+        throw qError(QError_verifySerializable, obj);
+    });
+    const meta = {};
+    const refs = {};
+    // Write back to the dom
+    for (const ctx of allContexts) {
+        const node = ctx.$element$;
+        const elementID = ctx.$id$;
+        const ref = ctx.$refMap$;
+        const props = ctx.$props$;
+        const contexts = ctx.$contexts$;
+        const watches = ctx.$watches$;
+        const renderQrl = ctx.$componentQrl$;
+        const seq = ctx.$seq$;
+        const metaValue = {};
+        const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
+        assertDefined(elementID, `pause: can not generate ID for dom node`, node);
+        if (ref.length > 0) {
+            assertElement(node);
+            const value = mapJoin(ref, mustGetObjId, ' ');
+            if (value) {
+                refs[elementID] = value;
+            }
+        }
+        else if (canRender) {
+            let add = false;
+            if (elementCaptured) {
+                assertDefined(renderQrl, 'renderQrl must be defined');
+                const propsId = getObjId(props);
+                metaValue.h = mustGetObjId(renderQrl) + (propsId ? ' ' + propsId : '');
+                add = true;
+            }
+            else {
+                const propsId = getObjId(props);
+                if (propsId) {
+                    metaValue.h = ' ' + propsId;
+                    add = true;
+                }
+            }
+            if (watches && watches.length > 0) {
+                const value = mapJoin(watches, getObjId, ' ');
+                if (value) {
+                    metaValue.w = value;
+                    add = true;
+                }
+            }
+            if (elementCaptured && seq && seq.length > 0) {
+                const value = mapJoin(seq, mustGetObjId, ' ');
+                metaValue.s = value;
+                add = true;
+            }
+            if (contexts) {
+                const serializedContexts = [];
+                contexts.forEach((value, key) => {
+                    const id = getObjId(value);
+                    if (id) {
+                        serializedContexts.push(`${key}=${id}`);
+                    }
+                });
+                const value = serializedContexts.join(' ');
+                if (value) {
+                    metaValue.c = value;
+                    add = true;
+                }
+            }
+            if (add) {
+                meta[elementID] = metaValue;
+            }
+        }
+    }
+    // Sanity check of serialized element
+    if (qDev) {
+        elementToIndex.forEach((value, el) => {
+            if (!value) {
+                logWarn('unconnected element', el.nodeName, '\n');
+            }
+        });
+    }
+    return {
+        state: {
+            refs,
+            ctx: meta,
+            objs: convertedObjs,
+            subs,
+        },
+        objs,
+        funcs: collector.$inlinedFunctions$,
+        resources: collector.$resources$,
+        qrls: collector.$qrls$,
+        mode: canRender ? 'render' : 'listeners',
+    };
+};
+const mapJoin = (objects, getObjectId, sep) => {
+    let output = '';
+    for (const obj of objects) {
+        const id = getObjectId(obj);
+        if (id !== null) {
+            if (output !== '') {
+                output += sep;
+            }
+            output += id;
+        }
+    }
+    return output;
+};
+const getNodesInScope = (parent, predicate) => {
+    const results = [];
+    const v = predicate(parent);
+    if (v !== undefined) {
+        results.push(v);
+    }
+    const walker = parent.ownerDocument.createTreeWalker(parent, SHOW_ELEMENT | SHOW_COMMENT$1, {
+        acceptNode(node) {
+            if (isContainer(node)) {
+                return FILTER_REJECT$1;
+            }
+            const v = predicate(node);
+            if (v !== undefined) {
+                results.push(v);
+            }
+            return FILTER_SKIP;
+        },
+    });
+    while (walker.nextNode()) {
+        // do nothing
+    }
+    return results;
+};
+const collectProps = (elCtx, collector) => {
+    const parentCtx = elCtx.$parent$;
+    const props = elCtx.$props$;
+    if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
+        const subs = getProxyManager(props)?.$subs$;
+        const el = elCtx.$element$;
+        if (subs) {
+            for (const sub of subs) {
+                if (sub[0] === 0 && sub[1] === el) {
+                    collectElement(el, collector);
+                    return;
+                }
+                else {
+                    collectValue(props, collector, false);
+                    collectSubscriptions(getProxyManager(props), collector, false);
+                }
+            }
+        }
+    }
+};
+const createCollector = (containerState) => {
+    return {
+        $containerState$: containerState,
+        $seen$: new Set(),
+        $objSet$: new Set(),
+        $prefetch$: 0,
+        $noSerialize$: [],
+        $inlinedFunctions$: [],
+        $resources$: [],
+        $elements$: [],
+        $qrls$: [],
+        $deferElements$: [],
+        $promises$: [],
+    };
+};
+const collectDeferElement = (el, collector) => {
+    const ctx = tryGetContext(el);
+    if (collector.$elements$.includes(ctx)) {
+        return;
+    }
+    collector.$elements$.push(ctx);
+    collector.$prefetch$++;
+    if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
+        collectElementData(ctx, collector, true);
+    }
+    else {
+        collector.$deferElements$.push(ctx);
+    }
+    collector.$prefetch$--;
+};
+const collectElement = (el, collector) => {
+    const ctx = tryGetContext(el);
+    if (ctx) {
+        if (collector.$elements$.includes(ctx)) {
+            return;
+        }
+        collector.$elements$.push(ctx);
+        collectElementData(ctx, collector, el);
+    }
+};
+const collectElementData = (elCtx, collector, dynamicCtx) => {
+    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
+        collectValue(elCtx.$props$, collector, dynamicCtx);
+        collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx);
+    }
+    if (elCtx.$componentQrl$) {
+        collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
+    }
+    if (elCtx.$seq$) {
+        for (const obj of elCtx.$seq$) {
+            collectValue(obj, collector, dynamicCtx);
+        }
+    }
+    if (elCtx.$watches$) {
+        const map = collector.$containerState$.$subsManager$.$groupToManagers$;
+        for (const obj of elCtx.$watches$) {
+            if (map.has(obj)) {
+                collectValue(obj, collector, dynamicCtx);
+            }
+        }
+    }
+    if (dynamicCtx === true) {
+        collectContext(elCtx, collector);
+        if (elCtx.$dynamicSlots$) {
+            for (const slotCtx of elCtx.$dynamicSlots$) {
+                collectContext(slotCtx, collector);
+            }
+        }
+    }
+};
+const collectContext = (elCtx, collector) => {
+    while (elCtx) {
+        if (elCtx.$contexts$) {
+            for (const obj of elCtx.$contexts$.values()) {
+                collectValue(obj, collector, true);
+            }
+            if (elCtx.$contexts$.get('_') === true) {
+                break;
+            }
+        }
+        elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
+    }
+};
+const escapeText = (str) => {
+    return str.replace(/<(\/?script)/g, '\\x3C$1');
+};
+const collectSubscriptions = (manager, collector, leaks) => {
+    // if (!leaks) {
+    //   return;
+    // }
+    if (collector.$seen$.has(manager)) {
+        return;
+    }
+    collector.$seen$.add(manager);
+    const subs = manager.$subs$;
+    assertDefined(subs, 'subs must be defined');
+    for (const key of subs) {
+        const type = key[0];
+        if (type > 0) {
+            collectValue(key[2], collector, leaks);
+        }
+        if (leaks === true) {
+            const host = key[1];
+            if (isNode$1(host) && isVirtualElement(host)) {
+                if (type === 0) {
+                    collectDeferElement(host, collector);
+                }
+            }
+            else {
+                collectValue(host, collector, true);
+            }
+        }
+    }
+};
+const PROMISE_VALUE = Symbol();
+const resolvePromise = (promise) => {
+    return promise.then((value) => {
+        const v = {
+            resolved: true,
+            value,
+        };
+        promise[PROMISE_VALUE] = v;
+        return value;
+    }, (value) => {
+        const v = {
+            resolved: false,
+            value,
+        };
+        promise[PROMISE_VALUE] = v;
+        return value;
+    });
+};
+const getPromiseValue = (promise) => {
+    return promise[PROMISE_VALUE];
+};
+const collectValue = (obj, collector, leaks) => {
+    if (obj !== null) {
+        const objType = typeof obj;
+        switch (objType) {
+            case 'function':
+            case 'object': {
+                const seen = collector.$seen$;
+                if (seen.has(obj)) {
+                    return;
+                }
+                seen.add(obj);
+                if (fastSkipSerialize(obj)) {
+                    collector.$objSet$.add(undefined);
+                    collector.$noSerialize$.push(obj);
+                    return;
+                }
+                const input = obj;
+                const target = getProxyTarget(obj);
+                if (target) {
+                    obj = target;
+                    if (seen.has(obj)) {
+                        return;
+                    }
+                    seen.add(obj);
+                    const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
+                    if (leaks && mutable) {
+                        collectSubscriptions(getProxyManager(input), collector, leaks);
+                    }
+                    if (fastWeakSerialize(input)) {
+                        collector.$objSet$.add(obj);
+                        return;
+                    }
+                }
+                const collected = collectDeps(obj, collector, leaks);
+                if (collected) {
+                    collector.$objSet$.add(obj);
+                    return;
+                }
+                if (isPromise(obj)) {
+                    collector.$promises$.push(resolvePromise(obj).then((value) => {
+                        collectValue(value, collector, leaks);
+                    }));
+                    return;
+                }
+                if (objType === 'object') {
+                    if (isNode$1(obj)) {
+                        return;
+                    }
+                    if (isArray(obj)) {
+                        for (let i = 0; i < obj.length; i++) {
+                            collectValue(input[i], collector, leaks);
+                        }
+                    }
+                    else if (isSerializableObject(obj)) {
+                        for (const key in obj) {
+                            collectValue(input[key], collector, leaks);
+                        }
+                    }
+                }
+                break;
+            }
+            case 'string': {
+                if (collector.$seen$.has(obj)) {
+                    return;
+                }
+            }
+        }
+    }
+    collector.$objSet$.add(obj);
+};
+const isContainer = (el) => {
+    return isElement$1(el) && el.hasAttribute(QContainerAttr);
+};
+const hasContext = (el) => {
+    const node = processVirtualNodes(el);
+    if (isQwikElement(node)) {
+        const ctx = tryGetContext(node);
+        if (ctx && ctx.$id$) {
+            return ctx;
+        }
+    }
+    return undefined;
+};
+const getManager = (obj, containerState) => {
+    if (!isObject(obj)) {
+        return undefined;
+    }
+    if (obj instanceof SignalImpl) {
+        return getProxyManager(obj);
+    }
+    const proxy = containerState.$proxyMap$.get(obj);
+    if (proxy) {
+        return getProxyManager(proxy);
+    }
+    return undefined;
+};
+const getQId = (el) => {
+    const ctx = tryGetContext(el);
+    if (ctx) {
+        return ctx.$id$;
+    }
+    return null;
+};
+const getTextID = (node, containerState) => {
+    const prev = node.previousSibling;
+    if (prev && isComment(prev)) {
+        if (prev.data.startsWith('t=')) {
+            return ELEMENT_ID_PREFIX + prev.data.slice(2);
+        }
+    }
+    const doc = node.ownerDocument;
+    const id = intToStr(containerState.$elementIndex$++);
+    const open = doc.createComment(`t=${id}`);
+    const close = doc.createComment('');
+    const parent = node.parentElement;
+    parent.insertBefore(open, node);
+    parent.insertBefore(close, node.nextSibling);
+    return ELEMENT_ID_PREFIX + id;
+};
+const isEmptyObj = (obj) => {
+    return Object.keys(obj).length === 0;
+};
+
+// https://regexr.com/68v72
+const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
+// https://regexr.com/690ds
+const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
+// https://regexr.com/6a83h
+const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
+const announcedQRL = /*#__PURE__*/ new Set();
+// <docs markdown="../readme.md#qrl">
+// !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+// (edit ../readme.md#qrl instead)
+/**
+ * Used by Qwik Optimizer to point to lazy-loaded resources.
+ *
+ * This function should be used by the Qwik Optimizer only. The function should not be directly
+ * referred to in the source code of the application.
+ *
+ * @see `QRL`, `$(...)`
+ *
+ * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
+ * @param symbol - Symbol to lazy load
+ * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
+ * @public
+ */
+// </docs>
+const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset = 0) => {
+    let chunk = null;
+    let symbolFn = null;
+    if (isFunction(chunkOrFn)) {
+        symbolFn = chunkOrFn;
+        if (qSerialize) {
+            let match;
+            const srcCode = String(chunkOrFn);
+            if ((match = srcCode.match(EXTRACT_IMPORT_PATH)) && match[2]) {
+                chunk = match[2];
+            }
+            else if ((match = srcCode.match(EXTRACT_SELF_IMPORT))) {
+                const ref = 'QWIK-SELF';
+                const frames = new Error(ref).stack.split('\n');
+                const start = frames.findIndex((f) => f.includes(ref));
+                const frame = frames[start + 2 + stackOffset];
+                match = frame.match(EXTRACT_FILE_NAME);
+                if (!match) {
+                    chunk = 'main';
+                }
+                else {
+                    chunk = match[1];
+                }
+            }
+            else {
+                throw qError(QError_dynamicImportFailed, srcCode);
+            }
+        }
+    }
+    else if (isString(chunkOrFn)) {
+        chunk = chunkOrFn;
+    }
+    else {
+        throw qError(QError_unknownTypeArgument, chunkOrFn);
+    }
+    if (announcedQRL.has(symbol)) {
+        // Emit event
+        announcedQRL.add(symbol);
+        emitEvent('qprefetch', {
+            symbols: [getSymbolHash(symbol)],
+        });
+    }
+    // Unwrap subscribers
+    return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
+};
+/**
+ * @internal
+ */
+const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
+    // Unwrap subscribers
+    return createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
+};
+/**
+ * @internal
+ */
+const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
+    return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
+};
+/**
+ * @internal
+ */
+const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
+    newQrl.dev = opts;
+    return newQrl;
+};
+/**
+ * @internal
+ */
+const inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
+    qrl.dev = opts;
+    return qrl;
+};
+const serializeQRL = (qrl, opts = {}) => {
+    assertTrue(qSerialize, 'In order to serialize a QRL, qSerialize must be true');
+    assertQrl(qrl);
+    let symbol = qrl.$symbol$;
+    let chunk = qrl.$chunk$;
+    const refSymbol = qrl.$refSymbol$ ?? symbol;
+    const platform = getPlatform();
+    if (platform) {
+        const result = platform.chunkForSymbol(refSymbol, chunk);
+        if (result) {
+            chunk = result[1];
+            if (!qrl.$refSymbol$) {
+                symbol = result[0];
+            }
+        }
+    }
+    if (qRuntimeQrl && !chunk) {
+        chunk = '/runtimeQRL';
+        symbol = '_';
+    }
+    if (!chunk) {
+        throw qError(QError_qrlMissingChunk, qrl.$symbol$);
+    }
+    if (chunk.startsWith('./')) {
+        chunk = chunk.slice(2);
+    }
+    let output = `${chunk}#${symbol}`;
+    const capture = qrl.$capture$;
+    const captureRef = qrl.$captureRef$;
+    if (captureRef && captureRef.length) {
+        if (opts.$getObjId$) {
+            output += `[${mapJoin(captureRef, opts.$getObjId$, ' ')}]`;
+        }
+        else if (opts.$addRefMap$) {
+            output += `[${mapJoin(captureRef, opts.$addRefMap$, ' ')}]`;
+        }
+    }
+    else if (capture && capture.length > 0) {
+        output += `[${capture.join(' ')}]`;
+    }
+    return output;
+};
+const serializeQRLs = (existingQRLs, elCtx) => {
+    assertElement(elCtx.$element$);
+    const opts = {
+        $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
+    };
+    return mapJoin(existingQRLs, (qrl) => serializeQRL(qrl, opts), '\n');
+};
+/**
+ * `./chunk#symbol[captures]
+ */
+const parseQRL = (qrl, containerEl) => {
+    const endIdx = qrl.length;
+    const hashIdx = indexOf(qrl, 0, '#');
+    const captureIdx = indexOf(qrl, hashIdx, '[');
+    const chunkEndIdx = Math.min(hashIdx, captureIdx);
+    const chunk = qrl.substring(0, chunkEndIdx);
+    const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+    const symbolEndIdx = captureIdx;
+    const symbol = symbolStartIdx == symbolEndIdx ? 'default' : qrl.substring(symbolStartIdx, symbolEndIdx);
+    const captureStartIdx = captureIdx;
+    const captureEndIdx = endIdx;
+    const capture = captureStartIdx === captureEndIdx
+        ? EMPTY_ARRAY
+        : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(' ');
+    const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
+    if (containerEl) {
+        iQrl.$setContainer$(containerEl);
+    }
+    return iQrl;
+};
+const indexOf = (text, startIdx, char) => {
+    const endIdx = text.length;
+    const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+    return charIdx == -1 ? endIdx : charIdx;
+};
+const addToArray = (array, obj) => {
+    const index = array.indexOf(obj);
+    if (index === -1) {
+        array.push(obj);
+        return String(array.length - 1);
+    }
+    return String(index);
+};
+const inflateQrl = (qrl, elCtx) => {
+    assertDefined(qrl.$capture$, 'invoke: qrl capture must be defined inside useLexicalScope()', qrl);
+    return (qrl.$captureRef$ = qrl.$capture$.map((idx) => {
+        const int = parseInt(idx, 10);
+        const obj = elCtx.$refMap$[int];
+        assertTrue(elCtx.$refMap$.length > int, 'out of bounds inflate access', idx);
+        return obj;
+    }));
+};
+/**
+ * @internal
+ */
+const _regSymbol = (symbol, hash) => {
+    if (typeof globalThis.__qwik_reg_symbols === 'undefined') {
+        globalThis.__qwik_reg_symbols = new Map();
+    }
+    globalThis.__qwik_reg_symbols.set(hash, symbol);
+    return symbol;
+};
+
 // <docs markdown="../readme.md#useResource">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useResource instead)
@@ -7456,8 +7469,7 @@ const DerivedSignalSerializer = {
             collector.$inlinedFunctions$.push(serialized);
             index = collector.$inlinedFunctions$.length - 1;
         }
-        const parts = signal.$args$.map(getObjID);
-        return parts.join(' ') + ' @' + intToStr(index);
+        return mapJoin(signal.$args$, getObjID, ' ') + ' @' + intToStr(index);
     },
     $prepare$: (data) => {
         const ids = data.split(' ');
@@ -7621,14 +7633,14 @@ const serializers = [
     DateSerializer,
     RegexSerializer,
     ErrorSerializer,
-    DocumentSerializer,
-    ComponentSerializer,
     DerivedSignalSerializer,
-    NoFiniteNumberSerializer,
-    URLSearchParamsSerializer,
     FormDataSerializer,
+    URLSearchParamsSerializer,
+    ComponentSerializer,
+    NoFiniteNumberSerializer,
     JSXNodeSerializer,
-    BigIntSerializer, /////////// \u0018
+    BigIntSerializer,
+    DocumentSerializer, ///////// \u000F
 ];
 const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.$collect$);
 const canSerialize = (obj) => {

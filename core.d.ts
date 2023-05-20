@@ -2372,7 +2372,6 @@ export declare interface RenderSSROptions {
     stream: StreamWriter;
     base?: string;
     serverData?: Record<string, any>;
-    url?: string;
     beforeContent?: JSXNode<string>[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean, textNodes: Map<string, string>) => Promise<JSXNode>;
 }

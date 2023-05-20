@@ -138,6 +138,9 @@ function createTimer() {
 }
 function getBuildBase(opts) {
   let base = opts.base;
+  if (typeof opts.base === "function") {
+    base = opts.base(opts);
+  }
   if (typeof base === "string") {
     if (!base.endsWith("/")) {
       base += "/";
@@ -377,12 +380,13 @@ var PrefetchImplementationDefault = {
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
   var _a;
-  opts = normalizeOptions(opts);
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
   let networkFlushes = 0;
   let firstFlushTime = 0;
+  let buffer = "";
+  let snapshotResult;
   const inOrderStreaming = ((_a = opts.streaming) == null ? void 0 : _a.inOrder) ?? {
     strategy: "auto",
     maximunInitialChunk: 5e4,
@@ -390,9 +394,10 @@ async function renderToStream(rootNode, opts) {
   };
   const containerTagName = opts.containerTagName ?? "html";
   const containerAttributes = opts.containerAttributes ?? {};
-  let buffer = "";
   const nativeStream = stream;
   const firstFlushTimer = createTimer();
+  const buildBase = getBuildBase(opts);
+  const resolvedManifest = resolveManifest(opts.manifest);
   function flush() {
     if (buffer) {
       nativeStream.write(buffer);
@@ -405,8 +410,9 @@ async function renderToStream(rootNode, opts) {
     }
   }
   function enqueue(chunk) {
-    bufferSize += chunk.length;
-    totalSize += chunk.length;
+    const len = chunk.length;
+    bufferSize += len;
+    totalSize += len;
     buffer += chunk;
   }
   switch (inOrderStreaming.strategy) {
@@ -465,10 +471,7 @@ async function renderToStream(rootNode, opts) {
       `Missing client manifest, loading symbols in the client might 404. Please ensure the client build has run and generated the manifest for the server build.`
     );
   }
-  const buildBase = getBuildBase(opts);
-  const resolvedManifest = resolveManifest(opts.manifest);
   await setServerPlatform(opts, resolvedManifest);
-  let snapshotResult;
   const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
   const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? {})) : void 0;
   const renderTimer = createTimer();
@@ -575,16 +578,28 @@ async function renderToStream(rootNode, opts) {
 async function renderToString(rootNode, opts = {}) {
   const chunks = [];
   const stream = {
-    write: (chunk) => {
+    write(chunk) {
       chunks.push(chunk);
     }
   };
   const result = await renderToStream(rootNode, {
-    ...opts,
+    base: opts.base,
+    containerAttributes: opts.containerAttributes,
+    containerTagName: opts.containerTagName,
+    locale: opts.locale,
+    manifest: opts.manifest,
+    symbolMapper: opts.symbolMapper,
+    qwikLoader: opts.qwikLoader,
+    serverData: opts.serverData,
+    prefetchStrategy: opts.prefetchStrategy,
     stream
   });
   return {
-    ...result,
+    isStatic: result.isStatic,
+    prefetchResources: result.prefetchResources,
+    timing: result.timing,
+    manifest: result.manifest,
+    snapshotResult: result.snapshotResult,
     html: chunks.join("")
   };
 }
@@ -619,15 +634,6 @@ function collectRenderSymbols(renderSymbols, elements) {
       renderSymbols.push(symbol);
     }
   }
-}
-function normalizeOptions(opts) {
-  const normalizedOpts = { ...opts };
-  if (opts) {
-    if (typeof opts.base === "function") {
-      normalizedOpts.base = opts.base(normalizedOpts);
-    }
-  }
-  return normalizedOpts;
 }
 function serializeFunctions(funcs) {
   return `document.currentScript.qFuncs=[${funcs.join(",\n")}]`;
