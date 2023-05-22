@@ -5166,7 +5166,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     }
                     const prop = operation[4];
                     const isSVG = elm.namespaceURI === SVG_NS;
-                    let value = operation[2].value;
+                    staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
+                    let value = trackSignal(operation[2], operation);
                     if (prop === 'class') {
                         value = serializeClassWithHost(value, tryGetContext(hostElm));
                     }
@@ -5185,11 +5186,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     const elm = operation[3];
                     if (!staticCtx.$visited$.includes(elm)) {
                         // assertTrue(elm.isConnected, 'text node must be connected to the dom');
-                        const value = operation[2].value;
-                        // const vdom = getVdom(elm);
-                        // if (vdom.$text$ === value) {
-                        //   return;
-                        // }
+                        staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
+                        const value = trackSignal(operation[2], operation);
                         return setProperty(staticCtx, elm, 'data', jsxToString(value));
                     }
                 }
@@ -7966,6 +7964,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     managers.length = 0;
                 }
             },
+            $clearSignal$: (signal) => {
+                const managers = groupToManagers.get(signal[1]);
+                if (managers) {
+                    for (const manager of managers) {
+                        manager.$unsubEntry$(signal);
+                    }
+                }
+            },
         };
         seal(manager);
         return manager;
@@ -8002,6 +8008,15 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 if (found) {
                     subs.splice(i, 1);
                     i--;
+                }
+            }
+        }
+        $unsubEntry$(entry) {
+            const subs = this.$subs$;
+            for (let i = 0; i < subs.length; i++) {
+                if (subs[i] === entry) {
+                    subs.splice(i, 1);
+                    return;
                 }
             }
         }

@@ -1411,6 +1411,7 @@ declare class LocalSubscriptionManager {
     $addSubs$(subs: Subscriptions[]): void;
     $addToGroup$(group: SubscriberHost | SubscriberEffect | Node, manager: LocalSubscriptionManager): void;
     $unsubGroup$(group: SubscriberEffect | SubscriberHost | Node): void;
+    $unsubEntry$(entry: Subscriptions): void;
     $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
 }
@@ -2772,6 +2773,7 @@ declare interface SubscriptionManager {
     $groupToManagers$: GroupToManagersMap;
     $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
     $clearSub$: (sub: SubscriberEffect | SubscriberHost | Node) => void;
+    $clearSignal$: (sub: SubscriberSignal) => void;
 }
 
 declare type Subscriptions = A | SubscriberSignal;
