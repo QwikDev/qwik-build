@@ -544,6 +544,7 @@ declare interface ContainerState {
     $serverData$: Record<string, any>;
     $elementIndex$: number;
     $pauseCtx$: PauseContext | undefined;
+    $styleMoved$: boolean;
     readonly $styleIds$: Set<string>;
     readonly $events$: Set<string>;
 }

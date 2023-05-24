@@ -538,6 +538,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const containerState = {
             $containerEl$: containerEl,
             $elementIndex$: 0,
+            $styleMoved$: false,
             $proxyMap$: new WeakMap(),
             $opsNext$: new Set(),
             $watchNext$: new Set(),
@@ -2503,9 +2504,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const id = getNextIndex(rCtx);
         elCtx.$id$ = id;
     };
-    const hasStyle = (containerState, styleId) => {
-        return containerState.$styleIds$.has(styleId);
-    };
     const jsxToString = (data) => {
         if (isSignal(data)) {
             return jsxToString(data.value);
@@ -3705,7 +3703,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
         const containerState = _getContainerState(containerEl);
-        moveStyles(containerEl, containerState);
         // Collect all elements
         const elements = new Map();
         const text = new Map();
@@ -3884,13 +3881,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 }
             }
         }
-    };
-    const moveStyles = (containerEl, containerState) => {
-        const head = containerEl.ownerDocument.head;
-        containerEl.querySelectorAll('style[q\\:style]').forEach((el) => {
-            containerState.$styleIds$.add(directGetAttribute(el, QStyle));
-            head.appendChild(el);
-        });
     };
     const unescapeText = (str) => {
         return str.replace(/\\x3C(\/?script)/g, '<$1');
@@ -4434,6 +4424,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         if (nodeName === 'HEAD') {
             return node.hasAttribute('q:head');
+        }
+        if (nodeName === 'STYLE') {
+            return !node.hasAttribute(QStyle);
         }
         return true;
     };
@@ -5289,7 +5282,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
     };
     const renderMarked = async (containerState) => {
-        const doc = getDocument(containerState.$containerEl$);
+        const containerEl = containerState.$containerEl$;
+        const doc = getDocument(containerEl);
         try {
             const rCtx = createRenderContext(doc, containerState);
             const staticCtx = rCtx.$static$;
@@ -5304,6 +5298,14 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             containerState.$opsNext$.clear();
             const renderingQueue = Array.from(hostsRendering);
             sortNodes(renderingQueue);
+            if (!containerState.$styleMoved$ && renderingQueue.length > 0) {
+                containerState.$styleMoved$ = true;
+                const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+                parentJSON.querySelectorAll('style[q\\:style]').forEach((el) => {
+                    containerState.$styleIds$.add(directGetAttribute(el, QStyle));
+                    appendChild(staticCtx, doc.head, el);
+                });
+            }
             for (const elCtx of renderingQueue) {
                 const el = elCtx.$element$;
                 if (!staticCtx.$hostElements$.has(el)) {
@@ -8505,6 +8507,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         const rCtx = createRenderContext(doc, containerState);
         containerState.$hostsRendering$ = new Set();
+        containerState.$styleMoved$ = true;
         await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl);
         await postRendering(containerState, rCtx);
         return {
@@ -9126,7 +9129,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (scoped) {
             elCtx.$scopeIds$.push(styleContent(styleId));
         }
-        if (hasStyle(containerState, styleId)) {
+        if (containerState.$styleIds$.has(styleId)) {
             return styleId;
         }
         containerState.$styleIds$.add(styleId);

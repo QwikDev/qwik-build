@@ -165,6 +165,7 @@
         const containerState = {
             $containerEl$: containerEl,
             $elementIndex$: 0,
+            $styleMoved$: !1,
             $proxyMap$: new WeakMap,
             $opsNext$: new Set,
             $watchNext$: new Set,
@@ -1718,7 +1719,6 @@
         const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
         const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
         const containerState = _getContainerState(containerEl);
-        moveStyles(containerEl, containerState);
         const elements = new Map;
         const text = new Map;
         let node = null;
@@ -1843,12 +1843,6 @@
                 }
             }
         }
-    };
-    const moveStyles = (containerEl, containerState) => {
-        const head = containerEl.ownerDocument.head;
-        containerEl.querySelectorAll("style[q\\:style]").forEach((el => {
-            containerState.$styleIds$.add(directGetAttribute(el, "q:style")), head.appendChild(el);
-        }));
     };
     const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
     const getQwikInlinedFuncs = parentElm => {
@@ -2038,7 +2032,7 @@
             return !1;
         }
         const nodeName = node.nodeName;
-        return "Q:TEMPLATE" !== nodeName && ("HEAD" !== nodeName || node.hasAttribute("q:head"));
+        return "Q:TEMPLATE" !== nodeName && ("HEAD" === nodeName ? node.hasAttribute("q:head") : "STYLE" !== nodeName || !node.hasAttribute("q:style"));
     };
     const splitChildren = input => {
         const output = {};
@@ -2506,7 +2500,8 @@
         notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
     };
     const renderMarked = async containerState => {
-        const doc = getDocument(containerState.$containerEl$);
+        const containerEl = containerState.$containerEl$;
+        const doc = getDocument(containerEl);
         try {
             const rCtx = createRenderContext(doc, containerState);
             const staticCtx = rCtx.$static$;
@@ -2518,7 +2513,12 @@
             const signalOperations = Array.from(containerState.$opsNext$);
             containerState.$opsNext$.clear();
             const renderingQueue = Array.from(hostsRendering);
-            sortNodes(renderingQueue);
+            if (sortNodes(renderingQueue), !containerState.$styleMoved$ && renderingQueue.length > 0) {
+                containerState.$styleMoved$ = !0;
+                (containerEl === doc.documentElement ? doc.body : containerEl).querySelectorAll("style[q\\:style]").forEach((el => {
+                    containerState.$styleIds$.add(directGetAttribute(el, "q:style")), appendChild(staticCtx, doc.head, el);
+                }));
+            }
             for (const elCtx of renderingQueue) {
                 const el = elCtx.$element$;
                 if (!staticCtx.$hostElements$.has(el) && elCtx.$componentQrl$) {
@@ -4232,7 +4232,7 @@
         var qStyles, index;
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
-        scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), ((containerState, styleId) => containerState.$styleIds$.has(styleId))(containerState, styleId)) {
+        scoped && elCtx.$scopeIds$.push((styleId => "⭐️" + styleId)(styleId)), containerState.$styleIds$.has(styleId)) {
             return styleId;
         }
         containerState.$styleIds$.add(styleId);
@@ -4512,7 +4512,8 @@
         const serverData = opts?.serverData;
         serverData && Object.assign(containerState.$serverData$, serverData);
         const rCtx = createRenderContext(doc, containerState);
-        return containerState.$hostsRendering$ = new Set, await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
+        return containerState.$hostsRendering$ = new Set, containerState.$styleMoved$ = !0, 
+        await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
         await postRendering(containerState, rCtx), {
             cleanup() {
                 var renderCtx, container;

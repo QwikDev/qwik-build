@@ -534,6 +534,7 @@ const createContainerState = (containerEl, base) => {
     const containerState = {
         $containerEl$: containerEl,
         $elementIndex$: 0,
+        $styleMoved$: false,
         $proxyMap$: new WeakMap(),
         $opsNext$: new Set(),
         $watchNext$: new Set(),
@@ -2499,9 +2500,6 @@ const setQId = (rCtx, elCtx) => {
     const id = getNextIndex(rCtx);
     elCtx.$id$ = id;
 };
-const hasStyle = (containerState, styleId) => {
-    return containerState.$styleIds$.has(styleId);
-};
 const jsxToString = (data) => {
     if (isSignal(data)) {
         return jsxToString(data.value);
@@ -3701,7 +3699,6 @@ const resumeContainer = (containerEl) => {
     }
     const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
     const containerState = _getContainerState(containerEl);
-    moveStyles(containerEl, containerState);
     // Collect all elements
     const elements = new Map();
     const text = new Map();
@@ -3880,13 +3877,6 @@ const reviveNestedObjects = (obj, getObject, parser) => {
             }
         }
     }
-};
-const moveStyles = (containerEl, containerState) => {
-    const head = containerEl.ownerDocument.head;
-    containerEl.querySelectorAll('style[q\\:style]').forEach((el) => {
-        containerState.$styleIds$.add(directGetAttribute(el, QStyle));
-        head.appendChild(el);
-    });
 };
 const unescapeText = (str) => {
     return str.replace(/\\x3C(\/?script)/g, '<$1');
@@ -4430,6 +4420,9 @@ const isChildComponent = (node) => {
     }
     if (nodeName === 'HEAD') {
         return node.hasAttribute('q:head');
+    }
+    if (nodeName === 'STYLE') {
+        return !node.hasAttribute(QStyle);
     }
     return true;
 };
@@ -5285,7 +5278,8 @@ const _hW = () => {
     notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
 };
 const renderMarked = async (containerState) => {
-    const doc = getDocument(containerState.$containerEl$);
+    const containerEl = containerState.$containerEl$;
+    const doc = getDocument(containerEl);
     try {
         const rCtx = createRenderContext(doc, containerState);
         const staticCtx = rCtx.$static$;
@@ -5300,6 +5294,14 @@ const renderMarked = async (containerState) => {
         containerState.$opsNext$.clear();
         const renderingQueue = Array.from(hostsRendering);
         sortNodes(renderingQueue);
+        if (!containerState.$styleMoved$ && renderingQueue.length > 0) {
+            containerState.$styleMoved$ = true;
+            const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
+            parentJSON.querySelectorAll('style[q\\:style]').forEach((el) => {
+                containerState.$styleIds$.add(directGetAttribute(el, QStyle));
+                appendChild(staticCtx, doc.head, el);
+            });
+        }
         for (const elCtx of renderingQueue) {
             const el = elCtx.$element$;
             if (!staticCtx.$hostElements$.has(el)) {
@@ -8501,6 +8503,7 @@ const render = async (parent, jsxNode, opts) => {
     }
     const rCtx = createRenderContext(doc, containerState);
     containerState.$hostsRendering$ = new Set();
+    containerState.$styleMoved$ = true;
     await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl);
     await postRendering(containerState, rCtx);
     return {
@@ -9122,7 +9125,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
     if (scoped) {
         elCtx.$scopeIds$.push(styleContent(styleId));
     }
-    if (hasStyle(containerState, styleId)) {
+    if (containerState.$styleIds$.has(styleId)) {
         return styleId;
     }
     containerState.$styleIds$.add(styleId);
