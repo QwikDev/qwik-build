@@ -936,7 +936,7 @@ class ReadWriteProxyHandler {
         const immutable = (flags & QObjectImmutable) !== 0;
         const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
         let subscriber;
-        let value = target[prop];
+        let value;
         if (invokeCtx) {
             subscriber = invokeCtx.$subscriber$;
         }
@@ -947,6 +947,9 @@ class ReadWriteProxyHandler {
             assertTrue(isSignal(hiddenSignal), '$$ prop must be a signal');
             value = hiddenSignal.value;
             subscriber = null;
+        }
+        else {
+            value = target[prop];
         }
         if (subscriber) {
             const isA = isArray(target);
@@ -1126,8 +1129,10 @@ const getContext = (el, containerState) => {
                             elCtx.$componentQrl$ = getObject(renderQrl);
                         }
                         if (props) {
-                            elCtx.$props$ = getObject(props);
-                            setObjectFlags(elCtx.$props$, QObjectImmutable);
+                            const propsObj = getObject(props);
+                            elCtx.$props$ = propsObj;
+                            setObjectFlags(propsObj, QObjectImmutable);
+                            propsObj[_IMMUTABLE] = getImmutableFromProps(propsObj);
                         }
                         else {
                             elCtx.$props$ = createProxy(createPropsState(), containerState);
@@ -1138,6 +1143,16 @@ const getContext = (el, containerState) => {
         }
     }
     return elCtx;
+};
+const getImmutableFromProps = (props) => {
+    const immutable = {};
+    const target = getProxyTarget(props);
+    for (const key in target) {
+        if (key.startsWith(_IMMUTABLE_PREFIX)) {
+            immutable[key.slice(_IMMUTABLE_PREFIX.length)] = target[key];
+        }
+    }
+    return immutable;
 };
 const createContext = (element) => {
     const ctx = {

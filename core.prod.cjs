@@ -373,10 +373,10 @@
             const recursive = 0 != (1 & flags);
             const hiddenSignal = target["$$" + prop];
             let subscriber;
-            let value = target[prop];
+            let value;
             if (invokeCtx && (subscriber = invokeCtx.$subscriber$), !(0 != (2 & flags)) || prop in target && !immutableValue(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
-            hiddenSignal && (assertTrue(isSignal(hiddenSignal)), value = hiddenSignal.value, 
-            subscriber = null), subscriber) {
+            hiddenSignal ? (assertTrue(isSignal(hiddenSignal)), value = hiddenSignal.value, 
+            subscriber = null) : value = target[prop], subscriber) {
                 const isA = isArray(target);
                 this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
             }
@@ -493,14 +493,27 @@
                         }
                         if (host) {
                             const [renderQrl, props] = host.split(" ");
-                            elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), props ? (elCtx.$props$ = getObject(props), 
-                            setObjectFlags(elCtx.$props$, 2)) : elCtx.$props$ = createProxy(createPropsState(), containerState);
+                            if (elCtx.$flags$ = 4, renderQrl && (elCtx.$componentQrl$ = getObject(renderQrl)), 
+                            props) {
+                                const propsObj = getObject(props);
+                                elCtx.$props$ = propsObj, setObjectFlags(propsObj, 2), propsObj[_IMMUTABLE] = getImmutableFromProps(propsObj);
+                            } else {
+                                elCtx.$props$ = createProxy(createPropsState(), containerState);
+                            }
                         }
                     }
                 }
             }
         }
         return elCtx;
+    };
+    const getImmutableFromProps = props => {
+        const immutable = {};
+        const target = getProxyTarget(props);
+        for (const key in target) {
+            key.startsWith("$$") && (immutable[key.slice(2)] = target[key]);
+        }
+        return immutable;
     };
     const createContext = element => {
         const ctx = {
