@@ -1358,7 +1358,7 @@
             for (const prop in props) {
                 let value = props[prop];
                 if ("ref" === prop) {
-                    setRef(value, elm), hasRef = !0;
+                    void 0 !== value && (setRef(value, elm), hasRef = !0);
                     continue;
                 }
                 if (isOnProp(prop)) {
@@ -2092,7 +2092,7 @@
                             values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
                         }
                     } else {
-                        assertElement(), setRef(newValue, elm);
+                        assertElement(), void 0 !== newValue && setRef(newValue, elm);
                     }
                 }
             }
@@ -2379,7 +2379,7 @@
                     values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg);
                 }
             } else {
-                assertElement(), setRef(newValue, elm);
+                assertElement(), void 0 !== newValue && setRef(newValue, elm);
             }
         }
         return values;

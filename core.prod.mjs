@@ -1949,7 +1949,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         for (const prop in props) {
             let value = props[prop];
             if ("ref" === prop) {
-                setRef(value, elm), hasRef = !0;
+                void 0 !== value && (setRef(value, elm), hasRef = !0);
                 continue;
             }
             if (isOnProp(prop)) {
@@ -2893,7 +2893,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
                         values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
                     }
                 } else {
-                    assertElement(elm), setRef(newValue, elm);
+                    assertElement(elm), void 0 !== newValue && setRef(newValue, elm);
                 }
             }
         }
@@ -3202,7 +3202,7 @@ const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) =>
                 values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg);
             }
         } else {
-            assertElement(elm), setRef(newValue, elm);
+            assertElement(elm), void 0 !== newValue && setRef(newValue, elm);
         }
     }
     return values;

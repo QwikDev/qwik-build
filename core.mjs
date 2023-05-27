@@ -2941,8 +2941,10 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         for (const prop in props) {
             let value = props[prop];
             if (prop === 'ref') {
-                setRef(value, elm);
-                hasRef = true;
+                if (value !== undefined) {
+                    setRef(value, elm);
+                    hasRef = true;
+                }
                 continue;
             }
             if (isOnProp(prop)) {
@@ -4497,7 +4499,9 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
                 let newValue = props[prop];
                 if (prop === 'ref') {
                     assertElement(elm);
-                    setRef(newValue, elm);
+                    if (newValue !== undefined) {
+                        setRef(newValue, elm);
+                    }
                     continue;
                 }
                 if (isOnProp(prop)) {
@@ -4958,7 +4962,9 @@ const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) =>
         let newValue = newProps[prop];
         if (prop === 'ref') {
             assertElement(elm);
-            setRef(newValue, elm);
+            if (newValue !== undefined) {
+                setRef(newValue, elm);
+            }
             continue;
         }
         if (isOnProp(prop)) {
