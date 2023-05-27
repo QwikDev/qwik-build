@@ -745,7 +745,7 @@
                 if (hostCtx) {
                     const hostElm = hostCtx.$element$;
                     if (hostElm.isConnected) {
-                        if (Array.from(hostElm.childNodes).some((node => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key))) {
+                        if (getChildren(hostElm, isSlotTemplate).some((node => directGetAttribute(node, QSlot) === key))) {
                             cleanupTree(slotEl, staticCtx, subsManager, !1);
                         } else {
                             const template = createTemplate(staticCtx.$doc$, key);
@@ -765,12 +765,10 @@
         for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
             assertDefined();
-            const template = Array.from(hostElm.childNodes).find((node => isSlotTemplate(node) && node.getAttribute(QSlot) === key));
-            if (template) {
-                getChildren(template, isChildComponent).forEach((child => {
-                    directAppendChild(slotEl, child);
-                })), template.remove();
-            }
+            const template = getChildren(hostElm, isSlotTemplate).find((node => node.getAttribute(QSlot) === key));
+            template && (getChildren(template, isChildComponent).forEach((child => {
+                directAppendChild(slotEl, child);
+            })), template.remove());
         }
     };
     const printRenderStats = () => {
@@ -1285,11 +1283,11 @@
                 }
                 renderNodeElementSync("script", attributes, stream);
             }
-            return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, stream);
+            return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
         }));
     })));
-    const renderQTemplates = (rCtx, ssrContext, stream) => {
-        const projectedChildren = ssrContext.$projectedChildren$;
+    const renderQTemplates = (rCtx, ssrCtx, parentSSRCtx, stream) => {
+        const projectedChildren = ssrCtx.$projectedChildren$;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map((slotName => {
                 const value = projectedChildren[slotName];
@@ -1301,7 +1299,7 @@
                     }, null, value, 0, null);
                 }
             }));
-            return processData$1(nodes, rCtx, ssrContext, stream, 0, void 0);
+            return processData$1(nodes, rCtx, parentSSRCtx, stream, 0, void 0);
         }
     };
     const splitProjectedChildren = (children, ssrCtx) => {

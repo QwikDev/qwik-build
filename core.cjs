@@ -1690,7 +1690,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 if (hostCtx) {
                     const hostElm = hostCtx.$element$;
                     if (hostElm.isConnected) {
-                        const hasTemplate = Array.from(hostElm.childNodes).some((node) => isSlotTemplate(node) && directGetAttribute(node, QSlot) === key);
+                        const hasTemplate = getChildren(hostElm, isSlotTemplate).some((node) => directGetAttribute(node, QSlot) === key);
                         if (!hasTemplate) {
                             const template = createTemplate(staticCtx.$doc$, key);
                             for (const child of slotChildren) {
@@ -1717,12 +1717,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
             const key = getKey(slotEl);
             assertDefined(key, 'slots must have a key');
-            const template = Array.from(hostElm.childNodes).find((node) => {
-                return isSlotTemplate(node) && node.getAttribute(QSlot) === key;
+            const template = getChildren(hostElm, isSlotTemplate).find((node) => {
+                return node.getAttribute(QSlot) === key;
             });
             if (template) {
-                const children = getChildren(template, isChildComponent);
-                children.forEach((child) => {
+                getChildren(template, isChildComponent).forEach((child) => {
                     directAppendChild(slotEl, child);
                 });
                 template.remove();
@@ -2836,19 +2835,20 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     renderNodeElementSync('script', attributes, stream);
                 }
                 if (beforeClose) {
-                    return then(renderQTemplates(rCtx, newSSrContext, stream), () => beforeClose(stream));
+                    return then(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), () => beforeClose(stream));
                 }
                 else {
-                    return renderQTemplates(rCtx, newSSrContext, stream);
+                    return renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
                 }
             });
         });
     };
-    const renderQTemplates = (rCtx, ssrContext, stream) => {
-        const projectedChildren = ssrContext.$projectedChildren$;
+    const renderQTemplates = (rCtx, ssrCtx, parentSSRCtx, stream) => {
+        const projectedChildren = ssrCtx.$projectedChildren$;
         if (projectedChildren) {
             const nodes = Object.keys(projectedChildren).map((slotName) => {
                 const value = projectedChildren[slotName];
+                // projectedChildren[slotName] = undefined;
                 if (value) {
                     return _jsxQ('q:template', {
                         [QSlot]: slotName,
@@ -2857,7 +2857,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     }, null, value, 0, null);
                 }
             });
-            return processData$1(nodes, rCtx, ssrContext, stream, 0, undefined);
+            return processData$1(nodes, rCtx, parentSSRCtx, stream, 0, undefined);
         }
     };
     const splitProjectedChildren = (children, ssrCtx) => {
