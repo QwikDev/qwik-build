@@ -304,7 +304,14 @@ export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'articl
 declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
 }
 
-declare type B = [type: 1 | 2, host: SubscriberHost, signal: Signal, elm: QwikElement, prop: string];
+declare type B = [
+type: 1 | 2,
+host: SubscriberHost,
+signal: Signal,
+elm: QwikElement,
+prop: string,
+key: string | undefined
+];
 
 declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
@@ -352,7 +359,13 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare type C = [type: 3 | 4, host: SubscriberHost | Text, signal: Signal, elm: Node | QwikElement];
+declare type C = [
+type: 3 | 4,
+host: SubscriberHost | Text,
+signal: Signal,
+elm: Node | QwikElement,
+key: string | undefined
+];
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
     height?: number | string | undefined;
@@ -1412,7 +1425,7 @@ declare class LocalSubscriptionManager {
     $addSubs$(subs: Subscriptions[]): void;
     $addToGroup$(group: SubscriberHost | SubscriberEffect | Node, manager: LocalSubscriptionManager): void;
     $unsubGroup$(group: SubscriberEffect | SubscriberHost | Node): void;
-    $unsubEntry$(entry: Subscriptions): void;
+    $unsubEntry$(entry: SubscriberSignal): void;
     $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
 }

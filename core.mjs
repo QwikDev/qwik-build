@@ -5177,7 +5177,7 @@ const executeSignalOperation = (staticCtx, operation) => {
                 const prop = operation[4];
                 const isSVG = elm.namespaceURI === SVG_NS;
                 staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
-                let value = trackSignal(operation[2], operation);
+                let value = trackSignal(operation[2], operation.slice(0, -1));
                 if (prop === 'class') {
                     value = serializeClassWithHost(value, tryGetContext(hostElm));
                 }
@@ -5197,7 +5197,7 @@ const executeSignalOperation = (staticCtx, operation) => {
                 if (!staticCtx.$visited$.includes(elm)) {
                     // assertTrue(elm.isConnected, 'text node must be connected to the dom');
                     staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
-                    const value = trackSignal(operation[2], operation);
+                    const value = trackSignal(operation[2], operation.slice(0, -1));
                     return setProperty(staticCtx, elm, 'data', jsxToString(value));
                 }
             }
@@ -7917,10 +7917,9 @@ const serializeSubscription = (sub, getObjId) => {
         return undefined;
     }
     let base = type + ' ' + host;
+    let key;
     if (type === 0) {
-        if (sub[2]) {
-            base += ' ' + encodeURI(sub[2]);
-        }
+        key = sub[2];
     }
     else {
         const signalID = getObjId(sub[2]);
@@ -7928,15 +7927,20 @@ const serializeSubscription = (sub, getObjId) => {
             return undefined;
         }
         if (type <= 2) {
+            key = sub[5];
             base += ` ${signalID} ${must(getObjId(sub[3]))} ${sub[4]}`;
         }
         else if (type <= 4) {
+            key = sub[4];
             const nodeID = typeof sub[3] === 'string' ? sub[3] : must(getObjId(sub[3]));
             base += ` ${signalID} ${nodeID}`;
         }
         else {
             assertFail('Should not get here');
         }
+    }
+    if (key) {
+        base += ` ${encodeURI(key)}`;
     }
     return base;
 };
@@ -7954,17 +7958,23 @@ const parseSubscription = (sub, getObject) => {
     const subscription = [type, host];
     if (type === 0) {
         assertTrue(parts.length <= 3, 'Max 3 parts');
-        subscription.push(parts.length === 3 ? decodeURI(parts[parts.length - 1]) : undefined);
+        subscription.push(safeDecode(parts[2]));
     }
     else if (type <= 2) {
-        assertTrue(parts.length === 5, 'Type 1 has 5');
-        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], parts[5]);
+        assertTrue(parts.length === 5 || parts.length === 6, 'Type 1 has 5');
+        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4], safeDecode(parts[5]));
     }
     else if (type <= 4) {
-        assertTrue(parts.length === 4, 'Type 2 has 4');
-        subscription.push(getObject(parts[2]), getObject(parts[3]), parts[4]);
+        assertTrue(parts.length === 4 || parts.length === 5, 'Type 2 has 4');
+        subscription.push(getObject(parts[2]), getObject(parts[3]), safeDecode(parts[4]));
     }
     return subscription;
+};
+const safeDecode = (str) => {
+    if (str !== undefined) {
+        return decodeURI(str);
+    }
+    return undefined;
 };
 const createSubscriptionManager = (containerState) => {
     const groupToManagers = new Map();
@@ -8031,11 +8041,31 @@ class LocalSubscriptionManager {
         }
     }
     $unsubEntry$(entry) {
+        const [type, group, signal, elm] = entry;
         const subs = this.$subs$;
-        for (let i = 0; i < subs.length; i++) {
-            if (subs[i] === entry) {
-                subs.splice(i, 1);
-                return;
+        if (type === 1 || type === 2) {
+            const prop = entry[4];
+            for (let i = 0; i < subs.length; i++) {
+                const sub = subs[i];
+                const match = sub[0] === type &&
+                    sub[1] === group &&
+                    sub[2] === signal &&
+                    sub[3] === elm &&
+                    sub[4] === prop;
+                if (match) {
+                    subs.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+        else if (type === 3 || type === 4) {
+            for (let i = 0; i < subs.length; i++) {
+                const sub = subs[i];
+                const match = sub[0] === type && sub[1] === group && sub[2] === signal && sub[3] === elm;
+                if (match) {
+                    subs.splice(i, 1);
+                    i--;
+                }
             }
         }
     }
