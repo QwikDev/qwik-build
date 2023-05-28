@@ -99,7 +99,8 @@
             }
         };
         const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {
-            capture: capture
+            capture: capture,
+            passive: !1
         });
         const push = eventNames => {
             for (const eventName of eventNames) {
