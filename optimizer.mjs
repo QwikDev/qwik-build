@@ -2078,6 +2078,8 @@ var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized) => {\n    
 
 var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID ];
 
+var CSS_EXTENSIONS = [ ".css", ".scss", ".sass" ];
+
 function qwikVite(qwikViteOpts = {}) {
   let isClientDevOnly = false;
   let clientDevInput;
@@ -2428,14 +2430,16 @@ function qwikVite(qwikViteOpts = {}) {
       qwikPlugin.log("handleHotUpdate()", ctx);
       for (const mod of ctx.modules) {
         const deps = mod.info?.meta?.qwikdeps;
-        if (deps) {
+        if (deps && deps.length > 0) {
           for (const dep of deps) {
             const mod2 = ctx.server.moduleGraph.getModuleById(dep);
             mod2 && ctx.server.moduleGraph.invalidateModule(mod2);
           }
+        } else {
+          "js" === mod.type && Array.from(mod.importers).every((m => "css" === m.type || CSS_EXTENSIONS.some((ext => m.file?.endsWith(ext))))) && ctx.server.moduleGraph.invalidateAll();
         }
       }
-      if ([ ".css", ".scss", ".sass" ].some((ext => ctx.file.endsWith(ext)))) {
+      if (CSS_EXTENSIONS.some((ext => ctx.file.endsWith(ext)))) {
         qwikPlugin.log("handleHotUpdate()", "force css reload");
         ctx.server.ws.send({
           type: "full-reload"
