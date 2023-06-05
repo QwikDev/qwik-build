@@ -274,8 +274,8 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
-    width?: number | string | undefined;
+    height?: Numberish | undefined;
+    width?: Numberish | undefined;
 }
 
 /**
@@ -289,7 +289,7 @@ declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -326,10 +326,10 @@ declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
 }
 
 declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     src?: string | undefined;
     type?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -445,7 +445,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allowTransparency?: boolean | undefined;
     /** @deprecated Deprecated */
     frameBorder?: number | string | undefined;
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     loading?: 'eager' | 'lazy' | undefined;
     /** @deprecated Deprecated */
     marginHeight?: number | undefined;
@@ -459,7 +459,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     seamless?: boolean | undefined;
     src?: string | undefined;
     srcDoc?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -467,14 +467,20 @@ declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     decoding?: 'async' | 'auto' | 'sync' | undefined;
-    height?: number | string | undefined;
+    /**
+     * Intrinsic height of the image in pixels.
+     */
+    height?: Numberish | undefined;
     loading?: 'eager' | 'lazy' | undefined;
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
     sizes?: string | undefined;
     src?: string | undefined;
     srcSet?: string | undefined;
     useMap?: string | undefined;
-    width?: number | string | undefined;
+    /**
+     * Intrinsic width of the image in pixels.
+     */
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -495,7 +501,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     formMethod?: string | undefined;
     formNoValidate?: boolean | undefined;
     formTarget?: string | undefined;
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     list?: string | undefined;
     max?: number | string | undefined;
     maxLength?: number | undefined;
@@ -513,7 +519,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: HTMLInputTypeAttribute | undefined;
     value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
     'bind:value'?: Signal<string | undefined>;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -811,15 +817,17 @@ declare type NativeUIEvent = UIEvent;
 /** @public */
 declare type NativeWheelEvent = WheelEvent;
 
+declare type Numberish = number | `${number}`;
+
 declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
     form?: string | undefined;
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     name?: string | undefined;
     type?: string | undefined;
     useMap?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     wmode?: string | undefined;
 }
 
@@ -1447,13 +1455,13 @@ declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     media?: string | undefined;
     sizes?: string | undefined;
     src?: string | undefined;
     srcSet?: string | undefined;
     type?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     children?: undefined;
 }
 
@@ -1472,7 +1480,7 @@ declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
     summary?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
 }
 
 declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1482,8 +1490,8 @@ declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
     rowSpan?: number | undefined;
     scope?: string | undefined;
     abbr?: string | undefined;
-    height?: number | string | undefined;
-    width?: number | string | undefined;
+    height?: Numberish | undefined;
+    width?: Numberish | undefined;
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
@@ -1536,10 +1544,10 @@ declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    height?: number | string | undefined;
+    height?: Numberish | undefined;
     playsInline?: boolean | undefined;
     poster?: string | undefined;
-    width?: number | string | undefined;
+    width?: Numberish | undefined;
     disablePictureInPicture?: boolean | undefined;
     disableRemotePlayback?: boolean | undefined;
 }
