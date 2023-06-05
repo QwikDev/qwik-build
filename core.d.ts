@@ -322,7 +322,7 @@ declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface BaseSyntheticEvent<E = object, C = any, T = any> {
-    nativeEvent: E;
+    nativeEvent: E | undefined;
     target: T;
     bubbles: boolean;
     cancelable: boolean;
@@ -2190,6 +2190,7 @@ export declare namespace QwikJSX {
  * @public
  */
 export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
+    isComposing: boolean;
     altKey: boolean;
     charCode: number;
     ctrlKey: boolean;
@@ -2851,6 +2852,7 @@ declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     cols?: number | undefined;
     dirName?: string | undefined;
     disabled?: boolean | undefined;
+    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
     form?: string | undefined;
     maxLength?: number | undefined;
     minLength?: number | undefined;
