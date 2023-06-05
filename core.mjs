@@ -6533,9 +6533,11 @@ const collectProps = (elCtx, collector) => {
         const el = elCtx.$element$;
         if (subs) {
             for (const sub of subs) {
-                if (sub[0] === 0 && sub[1] === el) {
-                    collectElement(el, collector);
-                    return;
+                if (sub[0] === 0) {
+                    if (sub[1] !== el) {
+                        collectSubscriptions(getProxyManager(props), collector, false);
+                    }
+                    collectElement(sub[1], collector);
                 }
                 else {
                     collectValue(props, collector, false);
