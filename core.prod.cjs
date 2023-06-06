@@ -3582,41 +3582,7 @@
             qrl.$capture$ = null);
         }
     };
-    const serializers = [ QRLSerializer, {
-        $prefix$: "",
-        $test$: v => v instanceof SignalImpl,
-        $collect$: (obj, collector, leaks) => {
-            collectValue(obj.untrackedValue, collector, leaks);
-            return !0 === leaks && 0 == (1 & obj[QObjectSignalFlags]) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
-            obj;
-        },
-        $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
-        $prepare$: (data, containerState) => new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0),
-        $subs$: (signal, subs) => {
-            signal[QObjectManagerSymbol].$addSubs$(subs);
-        },
-        $fill$: (signal, getObject) => {
-            signal.untrackedValue = getObject(signal.untrackedValue);
-        }
-    }, {
-        $prefix$: "",
-        $test$: v => v instanceof SignalWrapper,
-        $collect$(obj, collector, leaks) {
-            if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
-                const localManager = getProxyManager(obj.ref);
-                isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
-            }
-            return obj;
-        },
-        $serialize$: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
-        $prepare$: data => {
-            const [id, prop] = data.split(" ");
-            return new SignalWrapper(id, prop);
-        },
-        $fill$: (signal, getObject) => {
-            signal.ref = getObject(signal.ref);
-        }
-    }, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, {
+    const DerivedSignalSerializer = {
         $prefix$: "",
         $test$: obj => obj instanceof SignalDerived,
         $collect$: (obj, collector, leaks) => {
@@ -3649,7 +3615,58 @@
         $fill$: (fn, getObject) => {
             assertString(), fn.$func$ = getObject(fn.$func$), fn.$args$ = fn.$args$.map(getObject);
         }
-    }, {
+    };
+    const SignalSerializer = {
+        $prefix$: "",
+        $test$: v => v instanceof SignalImpl,
+        $collect$: (obj, collector, leaks) => {
+            collectValue(obj.untrackedValue, collector, leaks);
+            return !0 === leaks && 0 == (1 & obj[QObjectSignalFlags]) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
+            obj;
+        },
+        $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
+        $prepare$: (data, containerState) => new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0),
+        $subs$: (signal, subs) => {
+            signal[QObjectManagerSymbol].$addSubs$(subs);
+        },
+        $fill$: (signal, getObject) => {
+            signal.untrackedValue = getObject(signal.untrackedValue);
+        }
+    };
+    const SignalWrapperSerializer = {
+        $prefix$: "",
+        $test$: v => v instanceof SignalWrapper,
+        $collect$(obj, collector, leaks) {
+            if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
+                const localManager = getProxyManager(obj.ref);
+                isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
+            }
+            return obj;
+        },
+        $serialize$: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
+        $prepare$: data => {
+            const [id, prop] = data.split(" ");
+            return new SignalWrapper(id, prop);
+        },
+        $fill$: (signal, getObject) => {
+            signal.ref = getObject(signal.ref);
+        }
+    };
+    const NoFiniteNumberSerializer = {
+        $prefix$: "",
+        $test$: v => "number" == typeof v,
+        $serialize$: v => String(v),
+        $prepare$: data => Number(data),
+        $fill$: void 0
+    };
+    const URLSearchParamsSerializer = {
+        $prefix$: "",
+        $test$: v => v instanceof URLSearchParams,
+        $serialize$: obj => obj.toString(),
+        $prepare$: data => new URLSearchParams(data),
+        $fill$: void 0
+    };
+    const FormDataSerializer = {
         $prefix$: "",
         $test$: v => "undefined" != typeof FormData && v instanceof globalThis.FormData,
         $serialize$: formData => {
@@ -3667,19 +3684,8 @@
             return formData;
         },
         $fill$: void 0
-    }, {
-        $prefix$: "",
-        $test$: v => v instanceof URLSearchParams,
-        $serialize$: obj => obj.toString(),
-        $prepare$: data => new URLSearchParams(data),
-        $fill$: void 0
-    }, ComponentSerializer, {
-        $prefix$: "",
-        $test$: v => "number" == typeof v,
-        $serialize$: v => String(v),
-        $prepare$: data => Number(data),
-        $fill$: void 0
-    }, {
+    };
+    const JSXNodeSerializer = {
         $prefix$: "",
         $test$: v => isJSXNode(v),
         $collect$: (node, collector, leaks) => {
@@ -3701,12 +3707,60 @@
             node.type = getResolveJSXType(getObject(node.type)), node.props = getObject(node.props), 
             node.immutableProps = getObject(node.immutableProps), node.children = getObject(node.children);
         }
-    }, {
+    };
+    const BigIntSerializer = {
         $prefix$: "",
         $test$: v => "bigint" == typeof v,
         $serialize$: v => v.toString(),
         $prepare$: data => BigInt(data),
         $fill$: void 0
+    };
+    const DATA = Symbol();
+    const serializers = [ QRLSerializer, SignalSerializer, SignalWrapperSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DerivedSignalSerializer, FormDataSerializer, URLSearchParamsSerializer, ComponentSerializer, NoFiniteNumberSerializer, JSXNodeSerializer, BigIntSerializer, {
+        $prefix$: "",
+        $test$: v => v instanceof Set,
+        $collect$: (set, collector, leaks) => {
+            set.forEach((value => collectValue(value, collector, leaks)));
+        },
+        $serialize$: (v, getObjID) => Array.from(v).map(getObjID).join(" "),
+        $prepare$: data => {
+            const set = new Set;
+            return set[DATA] = data, set;
+        },
+        $fill$: (set, getObject) => {
+            const data = set[DATA];
+            set[DATA] = void 0, assertString();
+            for (const id of data.split(" ")) {
+                set.add(getObject(id));
+            }
+        }
+    }, {
+        $prefix$: "",
+        $test$: v => v instanceof Map,
+        $collect$: (map, collector, leaks) => {
+            map.forEach(((value, key) => {
+                collectValue(value, collector, leaks), collectValue(key, collector, leaks);
+            }));
+        },
+        $serialize$: (map, getObjID) => {
+            const result = [];
+            return map.forEach(((value, key) => {
+                result.push(getObjID(key) + " " + getObjID(value));
+            })), result.join(" ");
+        },
+        $prepare$: data => {
+            const set = new Map;
+            return set[DATA] = data, set;
+        },
+        $fill$: (set, getObject) => {
+            const data = set[DATA];
+            set[DATA] = void 0, assertString();
+            const items = data.split(" ");
+            assertTrue();
+            for (let i = 0; i < items.length; i += 2) {
+                set.set(getObject(items[i]), getObject(items[i + 1]));
+            }
+        }
     }, DocumentSerializer ];
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a => a.$collect$));
     const collectDeps = (obj, collector, leaks) => {

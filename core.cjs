@@ -7650,6 +7650,62 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         },
         $fill$: undefined,
     };
+    const DATA = Symbol();
+    const SetSerializer = {
+        $prefix$: '\u0019',
+        $test$: (v) => v instanceof Set,
+        $collect$: (set, collector, leaks) => {
+            set.forEach((value) => collectValue(value, collector, leaks));
+        },
+        $serialize$: (v, getObjID) => {
+            return Array.from(v).map(getObjID).join(' ');
+        },
+        $prepare$: (data) => {
+            const set = new Set();
+            set[DATA] = data;
+            return set;
+        },
+        $fill$: (set, getObject) => {
+            const data = set[DATA];
+            set[DATA] = undefined;
+            assertString(data, 'SetSerializer should be defined');
+            for (const id of data.split(' ')) {
+                set.add(getObject(id));
+            }
+        },
+    };
+    const MapSerializer = {
+        $prefix$: '\u001a',
+        $test$: (v) => v instanceof Map,
+        $collect$: (map, collector, leaks) => {
+            map.forEach((value, key) => {
+                collectValue(value, collector, leaks);
+                collectValue(key, collector, leaks);
+            });
+        },
+        $serialize$: (map, getObjID) => {
+            const result = [];
+            map.forEach((value, key) => {
+                result.push(getObjID(key) + ' ' + getObjID(value));
+            });
+            return result.join(' ');
+        },
+        $prepare$: (data) => {
+            const set = new Map();
+            set[DATA] = data;
+            return set;
+        },
+        $fill$: (set, getObject) => {
+            const data = set[DATA];
+            set[DATA] = undefined;
+            assertString(data, 'SetSerializer should be defined');
+            const items = data.split(' ');
+            assertTrue(items.length % 2 === 0, 'MapSerializer should have even number of items');
+            for (let i = 0; i < items.length; i += 2) {
+                set.set(getObject(items[i]), getObject(items[i + 1]));
+            }
+        },
+    };
     const serializers = [
         QRLSerializer,
         SignalSerializer,
@@ -7667,6 +7723,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         NoFiniteNumberSerializer,
         JSXNodeSerializer,
         BigIntSerializer,
+        SetSerializer,
+        MapSerializer,
         DocumentSerializer, ///////// \u000F
     ];
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.$collect$);
