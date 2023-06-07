@@ -1678,8 +1678,17 @@
             textType = ":virtual";
         }
         let convertedChildren = EMPTY_ARRAY;
-        return null != children ? then(processData(children, invocationContext), (result => (void 0 !== result && (convertedChildren = isArray(result) ? result : [ result ]), 
-        new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key)))) : new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+        if (null != children) {
+            return then(processData(children, invocationContext), (result => {
+                void 0 !== result && (convertedChildren = isArray(result) ? result : [ result ]);
+                const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+                return vnode;
+            }));
+        }
+        {
+            const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+            return vnode;
+        }
     };
     const wrapJSX = (element, input) => {
         const children = void 0 === input ? EMPTY_ARRAY : isArray(input) ? input : [ input ];

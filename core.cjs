@@ -3567,6 +3567,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             this.$text$ = '';
             this.$signal$ = null;
             this.$id$ = $type$ + ($key$ ? ':' + $key$ : '');
+            if (qDev && qInspector) {
+                this.$dev$ = undefined;
+            }
             seal(this);
         }
     }
@@ -3595,11 +3598,19 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 if (result !== undefined) {
                     convertedChildren = isArray(result) ? result : [result];
                 }
-                return new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+                const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+                if (qDev && qInspector) {
+                    vnode.$dev$ = node.dev;
+                }
+                return vnode;
             });
         }
         else {
-            return new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+            const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
+            if (qDev && qInspector) {
+                vnode.$dev$ = node.dev;
+            }
+            return vnode;
         }
     };
     const wrapJSX = (element, input) => {
@@ -4723,7 +4734,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (qDev && qInspector) {
                 const dev = vnode.$dev$;
                 if (dev) {
-                    directSetAttribute(elm, 'data-qwik-inspector', `${encodeURIComponent(dev.fileName)}:${dev.lineNumber}:${dev.columnNumber}`);
+                    directSetAttribute(elm, 'data-qwik-inspector', `${dev.fileName}:${dev.lineNumber}:${dev.columnNumber}`);
                 }
             }
             if (vnode.$immutableProps$) {
