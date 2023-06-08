@@ -5,6 +5,774 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
  */
+var __create = Object.create;
+
+var __defProp = Object.defineProperty;
+
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+
+var __getOwnPropNames = Object.getOwnPropertyNames;
+
+var __getProtoOf = Object.getPrototypeOf;
+
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+
+var __commonJS = (cb, mod) => function() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = {
+    exports: {}
+  }).exports, mod), mod.exports;
+};
+
+var __copyProps = (to, from, except, desc) => {
+  if (from && "object" === typeof from || "function" === typeof from) {
+    for (let key of __getOwnPropNames(from)) {
+      __hasOwnProp.call(to, key) || key === except || __defProp(to, key, {
+        get: () => from[key],
+        enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable
+      });
+    }
+  }
+  return to;
+};
+
+var __toESM = (mod, isNodeMode, target) => (target = null != mod ? __create(__getProtoOf(mod)) : {}, 
+__copyProps(!isNodeMode && mod && mod.__esModule ? target : __defProp(target, "default", {
+  value: mod,
+  enumerable: true
+}), mod));
+
+var require_bmp = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/bmp.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.BMP = void 0;
+    exports.BMP = {
+      validate: buffer => "BM" === buffer.toString("ascii", 0, 2),
+      calculate: buffer => ({
+        height: Math.abs(buffer.readInt32LE(22)),
+        width: buffer.readUInt32LE(18)
+      })
+    };
+  }
+});
+
+var require_ico = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/ico.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.ICO = void 0;
+    var TYPE_ICON = 1;
+    var SIZE_HEADER = 6;
+    var SIZE_IMAGE_ENTRY = 16;
+    function getSizeFromOffset(buffer, offset) {
+      const value = buffer.readUInt8(offset);
+      return 0 === value ? 256 : value;
+    }
+    function getImageSize(buffer, imageIndex) {
+      const offset = SIZE_HEADER + imageIndex * SIZE_IMAGE_ENTRY;
+      return {
+        height: getSizeFromOffset(buffer, offset + 1),
+        width: getSizeFromOffset(buffer, offset)
+      };
+    }
+    exports.ICO = {
+      validate(buffer) {
+        const reserved = buffer.readUInt16LE(0);
+        const imageCount = buffer.readUInt16LE(4);
+        if (0 !== reserved || 0 === imageCount) {
+          return false;
+        }
+        const imageType = buffer.readUInt16LE(2);
+        return imageType === TYPE_ICON;
+      },
+      calculate(buffer) {
+        const nbImages = buffer.readUInt16LE(4);
+        const imageSize = getImageSize(buffer, 0);
+        if (1 === nbImages) {
+          return imageSize;
+        }
+        const imgs = [ imageSize ];
+        for (let imageIndex = 1; imageIndex < nbImages; imageIndex += 1) {
+          imgs.push(getImageSize(buffer, imageIndex));
+        }
+        const result = {
+          height: imageSize.height,
+          images: imgs,
+          width: imageSize.width
+        };
+        return result;
+      }
+    };
+  }
+});
+
+var require_cur = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/cur.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.CUR = void 0;
+    var ico_12 = require_ico();
+    var TYPE_CURSOR = 2;
+    exports.CUR = {
+      validate(buffer) {
+        const reserved = buffer.readUInt16LE(0);
+        const imageCount = buffer.readUInt16LE(4);
+        if (0 !== reserved || 0 === imageCount) {
+          return false;
+        }
+        const imageType = buffer.readUInt16LE(2);
+        return imageType === TYPE_CURSOR;
+      },
+      calculate: buffer => ico_12.ICO.calculate(buffer)
+    };
+  }
+});
+
+var require_dds = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/dds.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.DDS = void 0;
+    exports.DDS = {
+      validate: buffer => 542327876 === buffer.readUInt32LE(0),
+      calculate: buffer => ({
+        height: buffer.readUInt32LE(12),
+        width: buffer.readUInt32LE(16)
+      })
+    };
+  }
+});
+
+var require_gif = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/gif.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.GIF = void 0;
+    var gifRegexp = /^GIF8[79]a/;
+    exports.GIF = {
+      validate(buffer) {
+        const signature = buffer.toString("ascii", 0, 6);
+        return gifRegexp.test(signature);
+      },
+      calculate: buffer => ({
+        height: buffer.readUInt16LE(8),
+        width: buffer.readUInt16LE(6)
+      })
+    };
+  }
+});
+
+var require_icns = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/icns.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.ICNS = void 0;
+    var SIZE_HEADER = 8;
+    var FILE_LENGTH_OFFSET = 4;
+    var ENTRY_LENGTH_OFFSET = 4;
+    var ICON_TYPE_SIZE = {
+      ICON: 32,
+      "ICN#": 32,
+      "icm#": 16,
+      icm4: 16,
+      icm8: 16,
+      "ics#": 16,
+      ics4: 16,
+      ics8: 16,
+      is32: 16,
+      s8mk: 16,
+      icp4: 16,
+      icl4: 32,
+      icl8: 32,
+      il32: 32,
+      l8mk: 32,
+      icp5: 32,
+      ic11: 32,
+      ich4: 48,
+      ich8: 48,
+      ih32: 48,
+      h8mk: 48,
+      icp6: 64,
+      ic12: 32,
+      it32: 128,
+      t8mk: 128,
+      ic07: 128,
+      ic08: 256,
+      ic13: 256,
+      ic09: 512,
+      ic14: 512,
+      ic10: 1024
+    };
+    function readImageHeader(buffer, imageOffset) {
+      const imageLengthOffset = imageOffset + ENTRY_LENGTH_OFFSET;
+      return [ buffer.toString("ascii", imageOffset, imageLengthOffset), buffer.readUInt32BE(imageLengthOffset) ];
+    }
+    function getImageSize(type) {
+      const size = ICON_TYPE_SIZE[type];
+      return {
+        width: size,
+        height: size,
+        type: type
+      };
+    }
+    exports.ICNS = {
+      validate: buffer => "icns" === buffer.toString("ascii", 0, 4),
+      calculate(buffer) {
+        const bufferLength = buffer.length;
+        const fileLength = buffer.readUInt32BE(FILE_LENGTH_OFFSET);
+        let imageOffset = SIZE_HEADER;
+        let imageHeader = readImageHeader(buffer, imageOffset);
+        let imageSize = getImageSize(imageHeader[0]);
+        imageOffset += imageHeader[1];
+        if (imageOffset === fileLength) {
+          return imageSize;
+        }
+        const result = {
+          height: imageSize.height,
+          images: [ imageSize ],
+          width: imageSize.width
+        };
+        while (imageOffset < fileLength && imageOffset < bufferLength) {
+          imageHeader = readImageHeader(buffer, imageOffset);
+          imageSize = getImageSize(imageHeader[0]);
+          imageOffset += imageHeader[1];
+          result.images.push(imageSize);
+        }
+        return result;
+      }
+    };
+  }
+});
+
+var require_j2c = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/j2c.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.J2C = void 0;
+    exports.J2C = {
+      validate: buffer => "ff4fff51" === buffer.toString("hex", 0, 4),
+      calculate: buffer => ({
+        height: buffer.readUInt32BE(12),
+        width: buffer.readUInt32BE(8)
+      })
+    };
+  }
+});
+
+var require_jp2 = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/jp2.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.JP2 = void 0;
+    var BoxTypes = {
+      ftyp: "66747970",
+      ihdr: "69686472",
+      jp2h: "6a703268",
+      jp__: "6a502020",
+      rreq: "72726571",
+      xml_: "786d6c20"
+    };
+    var calculateRREQLength = box => {
+      const unit = box.readUInt8(0);
+      let offset = 1 + 2 * unit;
+      const numStdFlags = box.readUInt16BE(offset);
+      const flagsLength = numStdFlags * (2 + unit);
+      offset = offset + 2 + flagsLength;
+      const numVendorFeatures = box.readUInt16BE(offset);
+      const featuresLength = numVendorFeatures * (16 + unit);
+      return offset + 2 + featuresLength;
+    };
+    var parseIHDR = box => ({
+      height: box.readUInt32BE(4),
+      width: box.readUInt32BE(8)
+    });
+    exports.JP2 = {
+      validate(buffer) {
+        const signature = buffer.toString("hex", 4, 8);
+        const signatureLength = buffer.readUInt32BE(0);
+        if (signature !== BoxTypes.jp__ || signatureLength < 1) {
+          return false;
+        }
+        const ftypeBoxStart = signatureLength + 4;
+        const ftypBoxLength = buffer.readUInt32BE(signatureLength);
+        const ftypBox = buffer.slice(ftypeBoxStart, ftypeBoxStart + ftypBoxLength);
+        return ftypBox.toString("hex", 0, 4) === BoxTypes.ftyp;
+      },
+      calculate(buffer) {
+        const signatureLength = buffer.readUInt32BE(0);
+        const ftypBoxLength = buffer.readUInt16BE(signatureLength + 2);
+        let offset = signatureLength + 4 + ftypBoxLength;
+        const nextBoxType = buffer.toString("hex", offset, offset + 4);
+        switch (nextBoxType) {
+         case BoxTypes.rreq:
+          const MAGIC = 4;
+          offset = offset + 4 + MAGIC + calculateRREQLength(buffer.slice(offset + 4));
+          return parseIHDR(buffer.slice(offset + 8, offset + 24));
+
+         case BoxTypes.jp2h:
+          return parseIHDR(buffer.slice(offset + 8, offset + 24));
+
+         default:
+          throw new TypeError("Unsupported header found: " + buffer.toString("ascii", offset, offset + 4));
+        }
+      }
+    };
+  }
+});
+
+var require_readUInt = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/readUInt.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.readUInt = void 0;
+    function readUInt(buffer, bits, offset, isBigEndian) {
+      offset = offset || 0;
+      const endian = isBigEndian ? "BE" : "LE";
+      const methodName = "readUInt" + bits + endian;
+      return buffer[methodName].call(buffer, offset);
+    }
+    exports.readUInt = readUInt;
+  }
+});
+
+var require_jpg = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/jpg.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.JPG = void 0;
+    var readUInt_1 = require_readUInt();
+    var EXIF_MARKER = "45786966";
+    var APP1_DATA_SIZE_BYTES = 2;
+    var EXIF_HEADER_BYTES = 6;
+    var TIFF_BYTE_ALIGN_BYTES = 2;
+    var BIG_ENDIAN_BYTE_ALIGN = "4d4d";
+    var LITTLE_ENDIAN_BYTE_ALIGN = "4949";
+    var IDF_ENTRY_BYTES = 12;
+    var NUM_DIRECTORY_ENTRIES_BYTES = 2;
+    function isEXIF(buffer) {
+      return buffer.toString("hex", 2, 6) === EXIF_MARKER;
+    }
+    function extractSize(buffer, index) {
+      return {
+        height: buffer.readUInt16BE(index),
+        width: buffer.readUInt16BE(index + 2)
+      };
+    }
+    function extractOrientation(exifBlock, isBigEndian) {
+      const idfOffset = 8;
+      const offset = EXIF_HEADER_BYTES + idfOffset;
+      const idfDirectoryEntries = (0, readUInt_1.readUInt)(exifBlock, 16, offset, isBigEndian);
+      for (let directoryEntryNumber = 0; directoryEntryNumber < idfDirectoryEntries; directoryEntryNumber++) {
+        const start = offset + NUM_DIRECTORY_ENTRIES_BYTES + directoryEntryNumber * IDF_ENTRY_BYTES;
+        const end = start + IDF_ENTRY_BYTES;
+        if (start > exifBlock.length) {
+          return;
+        }
+        const block = exifBlock.slice(start, end);
+        const tagNumber = (0, readUInt_1.readUInt)(block, 16, 0, isBigEndian);
+        if (274 === tagNumber) {
+          const dataFormat = (0, readUInt_1.readUInt)(block, 16, 2, isBigEndian);
+          if (3 !== dataFormat) {
+            return;
+          }
+          const numberOfComponents = (0, readUInt_1.readUInt)(block, 32, 4, isBigEndian);
+          if (1 !== numberOfComponents) {
+            return;
+          }
+          return (0, readUInt_1.readUInt)(block, 16, 8, isBigEndian);
+        }
+      }
+    }
+    function validateExifBlock(buffer, index) {
+      const exifBlock = buffer.slice(APP1_DATA_SIZE_BYTES, index);
+      const byteAlign = exifBlock.toString("hex", EXIF_HEADER_BYTES, EXIF_HEADER_BYTES + TIFF_BYTE_ALIGN_BYTES);
+      const isBigEndian = byteAlign === BIG_ENDIAN_BYTE_ALIGN;
+      const isLittleEndian = byteAlign === LITTLE_ENDIAN_BYTE_ALIGN;
+      if (isBigEndian || isLittleEndian) {
+        return extractOrientation(exifBlock, isBigEndian);
+      }
+    }
+    function validateBuffer(buffer, index) {
+      if (index > buffer.length) {
+        throw new TypeError("Corrupt JPG, exceeded buffer limits");
+      }
+      if (255 !== buffer[index]) {
+        throw new TypeError("Invalid JPG, marker table corrupted");
+      }
+    }
+    exports.JPG = {
+      validate(buffer) {
+        const SOIMarker = buffer.toString("hex", 0, 2);
+        return "ffd8" === SOIMarker;
+      },
+      calculate(buffer) {
+        buffer = buffer.slice(4);
+        let orientation;
+        let next;
+        while (buffer.length) {
+          const i = buffer.readUInt16BE(0);
+          isEXIF(buffer) && (orientation = validateExifBlock(buffer, i));
+          validateBuffer(buffer, i);
+          next = buffer[i + 1];
+          if (192 === next || 193 === next || 194 === next) {
+            const size = extractSize(buffer, i + 5);
+            if (!orientation) {
+              return size;
+            }
+            return {
+              height: size.height,
+              orientation: orientation,
+              width: size.width
+            };
+          }
+          buffer = buffer.slice(i + 2);
+        }
+        throw new TypeError("Invalid JPG, no size found");
+      }
+    };
+  }
+});
+
+var require_ktx = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/ktx.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.KTX = void 0;
+    var SIGNATURE = "KTX 11";
+    exports.KTX = {
+      validate: buffer => SIGNATURE === buffer.toString("ascii", 1, 7),
+      calculate: buffer => ({
+        height: buffer.readUInt32LE(40),
+        width: buffer.readUInt32LE(36)
+      })
+    };
+  }
+});
+
+var require_png = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/png.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.PNG = void 0;
+    var pngSignature = "PNG\r\n\n";
+    var pngImageHeaderChunkName = "IHDR";
+    var pngFriedChunkName = "CgBI";
+    exports.PNG = {
+      validate(buffer) {
+        if (pngSignature === buffer.toString("ascii", 1, 8)) {
+          let chunkName = buffer.toString("ascii", 12, 16);
+          chunkName === pngFriedChunkName && (chunkName = buffer.toString("ascii", 28, 32));
+          if (chunkName !== pngImageHeaderChunkName) {
+            throw new TypeError("Invalid PNG");
+          }
+          return true;
+        }
+        return false;
+      },
+      calculate(buffer) {
+        if (buffer.toString("ascii", 12, 16) === pngFriedChunkName) {
+          return {
+            height: buffer.readUInt32BE(36),
+            width: buffer.readUInt32BE(32)
+          };
+        }
+        return {
+          height: buffer.readUInt32BE(20),
+          width: buffer.readUInt32BE(16)
+        };
+      }
+    };
+  }
+});
+
+var require_pnm = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/pnm.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.PNM = void 0;
+    var PNMTypes = {
+      P1: "pbm/ascii",
+      P2: "pgm/ascii",
+      P3: "ppm/ascii",
+      P4: "pbm",
+      P5: "pgm",
+      P6: "ppm",
+      P7: "pam",
+      PF: "pfm"
+    };
+    var Signatures = Object.keys(PNMTypes);
+    var handlers = {
+      default: lines => {
+        let dimensions = [];
+        while (lines.length > 0) {
+          const line = lines.shift();
+          if ("#" === line[0]) {
+            continue;
+          }
+          dimensions = line.split(" ");
+          break;
+        }
+        if (2 === dimensions.length) {
+          return {
+            height: parseInt(dimensions[1], 10),
+            width: parseInt(dimensions[0], 10)
+          };
+        }
+        throw new TypeError("Invalid PNM");
+      },
+      pam: lines => {
+        const size = {};
+        while (lines.length > 0) {
+          const line = lines.shift();
+          if (line.length > 16 || line.charCodeAt(0) > 128) {
+            continue;
+          }
+          const [key, value] = line.split(" ");
+          key && value && (size[key.toLowerCase()] = parseInt(value, 10));
+          if (size.height && size.width) {
+            break;
+          }
+        }
+        if (size.height && size.width) {
+          return {
+            height: size.height,
+            width: size.width
+          };
+        }
+        throw new TypeError("Invalid PAM");
+      }
+    };
+    exports.PNM = {
+      validate(buffer) {
+        const signature = buffer.toString("ascii", 0, 2);
+        return Signatures.includes(signature);
+      },
+      calculate(buffer) {
+        const signature = buffer.toString("ascii", 0, 2);
+        const type = PNMTypes[signature];
+        const lines = buffer.toString("ascii", 3).split(/[\r\n]+/);
+        const handler = handlers[type] || handlers.default;
+        return handler(lines);
+      }
+    };
+  }
+});
+
+var require_psd = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/psd.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.PSD = void 0;
+    exports.PSD = {
+      validate: buffer => "8BPS" === buffer.toString("ascii", 0, 4),
+      calculate: buffer => ({
+        height: buffer.readUInt32BE(14),
+        width: buffer.readUInt32BE(18)
+      })
+    };
+  }
+});
+
+var require_svg = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/svg.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.SVG = void 0;
+    var svgReg = /<svg\s([^>"']|"[^"]*"|'[^']*')*>/;
+    var extractorRegExps = {
+      height: /\sheight=(['"])([^%]+?)\1/,
+      root: svgReg,
+      viewbox: /\sviewBox=(['"])(.+?)\1/i,
+      width: /\swidth=(['"])([^%]+?)\1/
+    };
+    var INCH_CM = 2.54;
+    var units = {
+      in: 96,
+      cm: 96 / INCH_CM,
+      em: 16,
+      ex: 8,
+      m: 96 / INCH_CM * 100,
+      mm: 96 / INCH_CM / 10,
+      pc: 96 / 72 / 12,
+      pt: 96 / 72,
+      px: 1
+    };
+    var unitsReg = new RegExp(`^([0-9.]+(?:e\\d+)?)(${Object.keys(units).join("|")})?$`);
+    function parseLength(len) {
+      const m = unitsReg.exec(len);
+      if (!m) {
+        return;
+      }
+      return Math.round(Number(m[1]) * (units[m[2]] || 1));
+    }
+    function parseViewbox(viewbox) {
+      const bounds = viewbox.split(" ");
+      return {
+        height: parseLength(bounds[3]),
+        width: parseLength(bounds[2])
+      };
+    }
+    function parseAttributes(root) {
+      const width = root.match(extractorRegExps.width);
+      const height = root.match(extractorRegExps.height);
+      const viewbox = root.match(extractorRegExps.viewbox);
+      return {
+        height: height && parseLength(height[2]),
+        viewbox: viewbox && parseViewbox(viewbox[2]),
+        width: width && parseLength(width[2])
+      };
+    }
+    function calculateByDimensions(attrs) {
+      return {
+        height: attrs.height,
+        width: attrs.width
+      };
+    }
+    function calculateByViewbox(attrs, viewbox) {
+      const ratio = viewbox.width / viewbox.height;
+      if (attrs.width) {
+        return {
+          height: Math.floor(attrs.width / ratio),
+          width: attrs.width
+        };
+      }
+      if (attrs.height) {
+        return {
+          height: attrs.height,
+          width: Math.floor(attrs.height * ratio)
+        };
+      }
+      return {
+        height: viewbox.height,
+        width: viewbox.width
+      };
+    }
+    exports.SVG = {
+      validate(buffer) {
+        const str = String(buffer);
+        return svgReg.test(str);
+      },
+      calculate(buffer) {
+        const root = buffer.toString("utf8").match(extractorRegExps.root);
+        if (root) {
+          const attrs = parseAttributes(root[0]);
+          if (attrs.width && attrs.height) {
+            return calculateByDimensions(attrs);
+          }
+          if (attrs.viewbox) {
+            return calculateByViewbox(attrs, attrs.viewbox);
+          }
+        }
+        throw new TypeError("Invalid SVG");
+      }
+    };
+  }
+});
+
+var require_tga = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/tga.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.TGA = void 0;
+    exports.TGA = {
+      validate: buffer => 0 === buffer.readUInt16LE(0) && 0 === buffer.readUInt16LE(4),
+      calculate: buffer => ({
+        height: buffer.readUInt16LE(14),
+        width: buffer.readUInt16LE(12)
+      })
+    };
+  }
+});
+
+var require_webp = __commonJS({
+  "node_modules/.pnpm/image-size@1.0.2/node_modules/image-size/dist/types/webp.js"(exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.WEBP = void 0;
+    function calculateExtended(buffer) {
+      return {
+        height: 1 + buffer.readUIntLE(7, 3),
+        width: 1 + buffer.readUIntLE(4, 3)
+      };
+    }
+    function calculateLossless(buffer) {
+      return {
+        height: 1 + ((15 & buffer[4]) << 10 | buffer[3] << 2 | (192 & buffer[2]) >> 6),
+        width: 1 + ((63 & buffer[2]) << 8 | buffer[1])
+      };
+    }
+    function calculateLossy(buffer) {
+      return {
+        height: 16383 & buffer.readInt16LE(8),
+        width: 16383 & buffer.readInt16LE(6)
+      };
+    }
+    exports.WEBP = {
+      validate(buffer) {
+        const riffHeader = "RIFF" === buffer.toString("ascii", 0, 4);
+        const webpHeader = "WEBP" === buffer.toString("ascii", 8, 12);
+        const vp8Header = "VP8" === buffer.toString("ascii", 12, 15);
+        return riffHeader && webpHeader && vp8Header;
+      },
+      calculate(buffer) {
+        const chunkHeader = buffer.toString("ascii", 12, 16);
+        buffer = buffer.slice(20, 30);
+        if ("VP8X" === chunkHeader) {
+          const extendedHeader = buffer[0];
+          const validStart = 0 === (192 & extendedHeader);
+          const validEnd = 0 === (1 & extendedHeader);
+          if (validStart && validEnd) {
+            return calculateExtended(buffer);
+          }
+          throw new TypeError("Invalid WebP");
+        }
+        if ("VP8 " === chunkHeader && 47 !== buffer[0]) {
+          return calculateLossy(buffer);
+        }
+        const signature = buffer.toString("hex", 3, 6);
+        if ("VP8L" === chunkHeader && "9d012a" !== signature) {
+          return calculateLossless(buffer);
+        }
+        throw new TypeError("Invalid WebP");
+      }
+    };
+  }
+});
+
 function createPath(opts = {}) {
   function assertPath(path) {
     if ("string" !== typeof path) {
@@ -2078,7 +2846,95 @@ var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=window,s=
 
 var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized) => {\n        const win = window;\n        const events =  new Set;\n        const querySelectorAll = query => doc.querySelectorAll(query);\n        const broadcast = (infix, ev, type = ev.type) => {\n            querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));\n        };\n        const getAttribute = (el, name) => el.getAttribute(name);\n        const resolveContainer = containerEl => {\n            if (void 0 === containerEl._qwikjson_) {\n                let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;\n                while (script) {\n                    if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {\n                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\\\x3C(\\/?script)/g, "<$1"));\n                        break;\n                    }\n                    script = script.previousElementSibling;\n                }\n            }\n        };\n        const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n            detail: detail\n        });\n        const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n            const attrName = "on" + onPrefix + ":" + eventName;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const ctx = element._qc_;\n            const qrls = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));\n            if (qrls && qrls.length > 0) {\n                for (const q of qrls) {\n                    await q[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);\n                }\n                return;\n            }\n            const attrValue = getAttribute(element, attrName);\n            if (attrValue) {\n                const container = element.closest("[q\\\\:container]");\n                const base = new URL(getAttribute(container, "q:base"), doc.baseURI);\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = new URL(qrl, base);\n                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n                    const reqTime = performance.now();\n                    const module = import(url.href.split("#")[0]);\n                    resolveContainer(container);\n                    const handler = (await module)[symbolName];\n                    const previousCtx = doc.__q_context__;\n                    if (element.isConnected) {\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            emitEvent("qsymbol", {\n                                symbol: symbolName,\n                                element: element,\n                                reqTime: reqTime\n                            });\n                            await handler(ev, element);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                        }\n                    }\n                }\n            }\n        };\n        const emitEvent = (eventName, detail) => {\n            doc.dispatchEvent(createEvent(eventName, detail));\n        };\n        const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n        const processDocumentEvent = async ev => {\n            let type = camelToKebab(ev.type);\n            let element = ev.target;\n            broadcast("-document", ev, type);\n            while (element && element.getAttribute) {\n                await dispatch(element, "", ev, type);\n                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev, camelToKebab(ev.type));\n        };\n        const processReadyStateChange = () => {\n            var _a;\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                emitEvent("qinit");\n                (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));\n                if (events.has("qvisible")) {\n                    const results = querySelectorAll("[on\\\\:qvisible]");\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {\n            capture: capture,\n            passive: !1\n        });\n        const push = eventNames => {\n            for (const eventName of eventNames) {\n                if (!events.has(eventName)) {\n                    addEventListener(doc, eventName, processDocumentEvent, !0);\n                    addEventListener(win, eventName, processWindowEvent);\n                    events.add(eventName);\n                }\n            }\n        };\n        if (!doc.qR) {\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && push(qwikevents);\n            win.qwikevents = {\n                push: (...e) => push(e)\n            };\n            addEventListener(doc, "readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
 
-import imageSize from "image-size";
+var import_bmp = __toESM(require_bmp(), 1);
+
+var import_cur = __toESM(require_cur(), 1);
+
+var import_dds = __toESM(require_dds(), 1);
+
+var import_gif = __toESM(require_gif(), 1);
+
+var import_icns = __toESM(require_icns(), 1);
+
+var import_ico = __toESM(require_ico(), 1);
+
+var import_j2c = __toESM(require_j2c(), 1);
+
+var import_jp2 = __toESM(require_jp2(), 1);
+
+var import_jpg = __toESM(require_jpg(), 1);
+
+var import_ktx = __toESM(require_ktx(), 1);
+
+var import_png = __toESM(require_png(), 1);
+
+var import_pnm = __toESM(require_pnm(), 1);
+
+var import_psd = __toESM(require_psd(), 1);
+
+var import_svg = __toESM(require_svg(), 1);
+
+var import_tga = __toESM(require_tga(), 1);
+
+var import_webp = __toESM(require_webp(), 1);
+
+var firstBytes = {
+  56: "psd",
+  66: "bmp",
+  68: "dds",
+  71: "gif",
+  73: "tiff",
+  77: "tiff",
+  82: "webp",
+  105: "icns",
+  137: "png",
+  255: "jpg"
+};
+
+var types = {
+  bmp: import_bmp.default.BMP,
+  cur: import_cur.default.CUR,
+  dds: import_dds.default.DDS,
+  gif: import_gif.default.GIF,
+  icns: import_icns.default.ICNS,
+  ico: import_ico.default.ICO,
+  j2c: import_j2c.default.J2C,
+  jp2: import_jp2.default.JP2,
+  jpg: import_jpg.default.JPG,
+  ktx: import_ktx.default.KTX,
+  png: import_png.default.PNG,
+  pnm: import_pnm.default.PNM,
+  psd: import_psd.default.PSD,
+  svg: import_svg.default.SVG,
+  tga: import_tga.default.TGA,
+  webp: import_webp.default.WEBP
+};
+
+var keys = Object.keys(types);
+
+function detector(buffer) {
+  const byte = buffer[0];
+  if (byte in firstBytes) {
+    const type = firstBytes[byte];
+    if (type && types[type].validate(buffer)) {
+      return type;
+    }
+  }
+  const finder = key => types[key].validate(buffer);
+  return keys.find(finder);
+}
+
+function lookup(buffer) {
+  const type = detector(buffer);
+  if ("undefined" !== typeof type && type in types) {
+    const size = types[type].calculate(buffer);
+    if (void 0 !== size) {
+      size.type = type;
+      return size;
+    }
+  }
+  throw new TypeError("unsupported file type: " + type);
+}
 
 async function getInfoForSrc(src) {
   try {
@@ -2088,7 +2944,7 @@ async function getInfoForSrc(src) {
       return;
     }
     const buffer = await res.arrayBuffer();
-    const size = imageSize(Buffer.from(buffer));
+    const size = lookup(Buffer.from(buffer));
     if (size) {
       return {
         width: size.width,
