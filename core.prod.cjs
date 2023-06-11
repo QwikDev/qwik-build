@@ -2643,12 +2643,12 @@
         const watchPromises = [];
         const containerEl = containerState.$containerEl$;
         containerState.$watchNext$.forEach((watch => {
-            watchPred(watch, !1) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
+            watchPred(watch, !1) && (watch.$el$.isConnected && watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
             containerState.$watchNext$.delete(watch));
         }));
         do {
             if (containerState.$watchStaging$.forEach((watch => {
-                watchPred(watch, !0) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch);
+                watch.$el$.isConnected && (watchPred(watch, !0) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch));
             })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
                 const watches = await Promise.all(watchPromises);
                 sortWatches(watches);

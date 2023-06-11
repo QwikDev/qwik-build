@@ -5466,18 +5466,22 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const containerEl = containerState.$containerEl$;
         containerState.$watchNext$.forEach((watch) => {
             if (watchPred(watch, false)) {
-                watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+                if (watch.$el$.isConnected) {
+                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+                }
                 containerState.$watchNext$.delete(watch);
             }
         });
         do {
             // Run staging effected
             containerState.$watchStaging$.forEach((watch) => {
-                if (watchPred(watch, true)) {
-                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
-                }
-                else {
-                    containerState.$watchNext$.add(watch);
+                if (watch.$el$.isConnected) {
+                    if (watchPred(watch, true)) {
+                        watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+                    }
+                    else {
+                        containerState.$watchNext$.add(watch);
+                    }
                 }
             });
             containerState.$watchStaging$.clear();
