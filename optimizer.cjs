@@ -3225,7 +3225,8 @@ globalThis.qwikOptimizer = function(module) {
               try {
                 const bundleFileName = sys.path.basename(bundeName);
                 const ext = sys.path.extname(bundleFileName);
-                if (bundleFileName.startsWith("entry.") && !bundleFileName.includes("preview") && (".mjs" === ext || ".cjs" === ext)) {
+                const isEntryFile = bundleFileName.startsWith("entry.") || bundleFileName.startsWith("entry_");
+                if (isEntryFile && !bundleFileName.includes("preview") && (".mjs" === ext || ".cjs" === ext)) {
                   const extlessName = sys.path.basename(bundleFileName, ext);
                   const js = `${extlessName}.js`;
                   const moduleName = extlessName + ext;
