@@ -958,11 +958,22 @@ const _waitUntilRendered = elm => {
     return _getContainerState(containerEl).$renderPromise$ ?? Promise.resolve();
 };
 
-const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
+const useOn = (event, eventQrl) => {
+    _useOn(createEventName(event, void 0), eventQrl);
+};
 
-const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
+const useOnDocument = (event, eventQrl) => {
+    _useOn(createEventName(event, "document"), eventQrl);
+};
 
-const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
+const useOnWindow = (event, eventQrl) => {
+    _useOn(createEventName(event, "window"), eventQrl);
+};
+
+const createEventName = (event, eventType) => {
+    const formattedEventType = void 0 !== eventType ? eventType + ":" : "";
+    return Array.isArray(event) ? event.map((e => `${formattedEventType}on-${e}`)) : `${formattedEventType}on-${event}`;
+};
 
 const _useOn = (eventName, eventQrl) => {
     if (eventQrl) {

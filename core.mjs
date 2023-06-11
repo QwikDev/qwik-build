@@ -1402,7 +1402,9 @@ const _waitUntilRendered = (elm) => {
  * @public
  */
 // </docs>
-const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
+const useOn = (event, eventQrl) => {
+    _useOn(createEventName(event, undefined), eventQrl);
+};
 // <docs markdown="../readme.md#useOnDocument">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useOnDocument instead)
@@ -1433,7 +1435,9 @@ const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
  * @public
  */
 // </docs>
-const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
+const useOnDocument = (event, eventQrl) => {
+    _useOn(createEventName(event, 'document'), eventQrl);
+};
 // <docs markdown="../readme.md#useOnWindow">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useOnWindow instead)
@@ -1465,7 +1469,16 @@ const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQ
  * @public
  */
 // </docs>
-const useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl);
+const useOnWindow = (event, eventQrl) => {
+    _useOn(createEventName(event, 'window'), eventQrl);
+};
+const createEventName = (event, eventType) => {
+    const formattedEventType = eventType !== undefined ? eventType + ':' : '';
+    const res = Array.isArray(event)
+        ? event.map((e) => `${formattedEventType}on-${e}`)
+        : `${formattedEventType}on-${event}`;
+    return res;
+};
 const _useOn = (eventName, eventQrl) => {
     if (eventQrl) {
         const invokeCtx = useInvokeContext();

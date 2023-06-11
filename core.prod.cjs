@@ -616,8 +616,16 @@
     const untrack = fn => invoke(void 0, fn);
     const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
     const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
-    const useOn = (event, eventQrl) => _useOn(`on-${event}`, eventQrl);
-    const useOnDocument = (event, eventQrl) => _useOn(`document:on-${event}`, eventQrl);
+    const useOn = (event, eventQrl) => {
+        _useOn(createEventName(event, void 0), eventQrl);
+    };
+    const useOnDocument = (event, eventQrl) => {
+        _useOn(createEventName(event, "document"), eventQrl);
+    };
+    const createEventName = (event, eventType) => {
+        const formattedEventType = void 0 !== eventType ? eventType + ":" : "";
+        return Array.isArray(event) ? event.map((e => `${formattedEventType}on-${e}`)) : `${formattedEventType}on-${event}`;
+    };
     const _useOn = (eventName, eventQrl) => {
         if (eventQrl) {
             const invokeCtx = useInvokeContext();
@@ -4645,8 +4653,9 @@
         const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
         return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
     }, exports.useLexicalScope = useLexicalScope, exports.useOn = useOn, exports.useOnDocument = useOnDocument, 
-    exports.useOnWindow = (event, eventQrl) => _useOn(`window:on-${event}`, eventQrl), 
-    exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
+    exports.useOnWindow = (event, eventQrl) => {
+        _useOn(createEventName(event, "window"), eventQrl);
+    }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
         const ctx = tryGetInvokeContext();
         return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
