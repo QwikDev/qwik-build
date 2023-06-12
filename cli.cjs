@@ -152,7 +152,7 @@ var require_windows = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs6 = require("fs");
+    var fs8 = require("fs");
     function checkPathExt(path3, options) {
       var pathext = options.pathExt !== void 0 ? options.pathExt : process.env.PATHEXT;
       if (!pathext) {
@@ -177,12 +177,12 @@ var require_windows = __commonJS({
       return checkPathExt(path3, options);
     }
     function isexe(path3, options, cb) {
-      fs6.stat(path3, function(er, stat) {
+      fs8.stat(path3, function(er, stat) {
         cb(er, er ? false : checkStat(stat, path3, options));
       });
     }
     function sync(path3, options) {
-      return checkStat(fs6.statSync(path3), path3, options);
+      return checkStat(fs8.statSync(path3), path3, options);
     }
   }
 });
@@ -192,14 +192,14 @@ var require_mode = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/mode.js"(exports, module2) {
     module2.exports = isexe;
     isexe.sync = sync;
-    var fs6 = require("fs");
+    var fs8 = require("fs");
     function isexe(path3, options, cb) {
-      fs6.stat(path3, function(er, stat) {
+      fs8.stat(path3, function(er, stat) {
         cb(er, er ? false : checkStat(stat, options));
       });
     }
     function sync(path3, options) {
-      return checkStat(fs6.statSync(path3), options);
+      return checkStat(fs8.statSync(path3), options);
     }
     function checkStat(stat, options) {
       return stat.isFile() && checkMode(stat, options);
@@ -223,7 +223,7 @@ var require_mode = __commonJS({
 // node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js
 var require_isexe = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/index.js"(exports, module2) {
-    var fs6 = require("fs");
+    var fs8 = require("fs");
     var core;
     if (process.platform === "win32" || global.TESTING_WINDOWS) {
       core = require_windows();
@@ -487,16 +487,16 @@ var require_shebang_command = __commonJS({
 var require_readShebang = __commonJS({
   "node_modules/.pnpm/cross-spawn@7.0.3/node_modules/cross-spawn/lib/util/readShebang.js"(exports, module2) {
     "use strict";
-    var fs6 = require("fs");
+    var fs8 = require("fs");
     var shebangCommand = require_shebang_command();
     function readShebang(command) {
       const size = 150;
       const buffer = Buffer.alloc(size);
       let fd;
       try {
-        fd = fs6.openSync(command, "r");
-        fs6.readSync(fd, buffer, 0, size, 0);
-        fs6.closeSync(fd);
+        fd = fs8.openSync(command, "r");
+        fs8.readSync(fd, buffer, 0, size, 0);
+        fs8.closeSync(fd);
       } catch (e2) {
       }
       return shebangCommand(buffer.toString());
@@ -1128,6 +1128,7 @@ var import_node_process = require("process");
 var f = __toESM(require("readline"), 1);
 var import_node_readline = __toESM(require("readline"), 1);
 var import_node_tty = require("tty");
+var import_picocolors = __toESM(require_picocolors(), 1);
 function z({ onlyFirst: t = false } = {}) {
   const u2 = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"].join("|");
   return new RegExp(u2, t ? void 0 : "g");
@@ -1469,6 +1470,23 @@ var ED = class extends h {
     this.value = this._value.value;
   }
 };
+var oD = class extends h {
+  constructor(u2) {
+    super(u2), this.valueWithCursor = "", this.on("finalize", () => {
+      this.value || (this.value = u2.defaultValue), this.valueWithCursor = this.value;
+    }), this.on("value", () => {
+      if (this.cursor >= this.value.length)
+        this.valueWithCursor = `${this.value}${import_picocolors.default.inverse(import_picocolors.default.hidden("_"))}`;
+      else {
+        const F2 = this.value.slice(0, this.cursor), e2 = this.value.slice(this.cursor);
+        this.valueWithCursor = `${F2}${import_picocolors.default.inverse(e2[0])}${e2.slice(1)}`;
+      }
+    });
+  }
+  get cursor() {
+    return this._cursor;
+  }
+};
 function aD({ input: t = import_node_process.stdin, output: u2 = import_node_process.stdout, overwrite: F2 = true, hideCursor: e2 = true } = {}) {
   const s = f.createInterface({ input: t, output: u2, prompt: "", tabSize: 1 });
   f.emitKeypressEvents(t, s), t.isTTY && t.setRawMode(true);
@@ -1489,7 +1507,7 @@ function aD({ input: t = import_node_process.stdin, output: u2 = import_node_pro
 
 // node_modules/.pnpm/@clack+prompts@0.6.3/node_modules/@clack/prompts/dist/index.mjs
 var import_node_process2 = __toESM(require("process"), 1);
-var import_picocolors = __toESM(require_picocolors(), 1);
+var import_picocolors2 = __toESM(require_picocolors(), 1);
 var import_sisteransi2 = __toESM(require_src(), 1);
 function N2() {
   return import_node_process2.default.platform !== "win32" ? import_node_process2.default.env.TERM !== "linux" : Boolean(import_node_process2.default.env.CI) || Boolean(import_node_process2.default.env.WT_SESSION) || Boolean(import_node_process2.default.env.TERMINUS_SUBLIME) || import_node_process2.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process2.default.env.TERM_PROGRAM === "Terminus-Sublime" || import_node_process2.default.env.TERM_PROGRAM === "vscode" || import_node_process2.default.env.TERM === "xterm-256color" || import_node_process2.default.env.TERM === "alacritty" || import_node_process2.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
@@ -1521,30 +1539,52 @@ var h2 = (r2) => {
   switch (r2) {
     case "initial":
     case "active":
-      return import_picocolors.default.cyan(W2);
+      return import_picocolors2.default.cyan(W2);
     case "cancel":
-      return import_picocolors.default.red(D);
+      return import_picocolors2.default.red(D);
     case "error":
-      return import_picocolors.default.yellow(F);
+      return import_picocolors2.default.yellow(F);
     case "submit":
-      return import_picocolors.default.green(f2);
+      return import_picocolors2.default.green(f2);
   }
 };
+var J2 = (r2) => new oD({ validate: r2.validate, placeholder: r2.placeholder, defaultValue: r2.defaultValue, initialValue: r2.initialValue, render() {
+  var _a;
+  const n = `${import_picocolors2.default.gray(a)}
+${h2(this.state)}  ${r2.message}
+`, s = r2.placeholder ? import_picocolors2.default.inverse(r2.placeholder[0]) + import_picocolors2.default.dim(r2.placeholder.slice(1)) : import_picocolors2.default.inverse(import_picocolors2.default.hidden("_")), t = this.value ? this.valueWithCursor : s;
+  switch (this.state) {
+    case "error":
+      return `${n.trim()}
+${import_picocolors2.default.yellow(a)}  ${t}
+${import_picocolors2.default.yellow(o)}  ${import_picocolors2.default.yellow(this.error)}
+`;
+    case "submit":
+      return `${n}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.dim(this.value || r2.placeholder)}`;
+    case "cancel":
+      return `${n}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(this.value ?? ""))}${((_a = this.value) == null ? void 0 : _a.trim()) ? `
+` + import_picocolors2.default.gray(a) : ""}`;
+    default:
+      return `${n}${import_picocolors2.default.cyan(a)}  ${t}
+${import_picocolors2.default.cyan(o)}
+`;
+  }
+} }).prompt();
 var Q2 = (r2) => {
   const n = r2.active ?? "Yes", s = r2.inactive ?? "No";
   return new sD({ active: n, inactive: s, initialValue: r2.initialValue ?? true, render() {
-    const t = `${import_picocolors.default.gray(a)}
+    const t = `${import_picocolors2.default.gray(a)}
 ${h2(this.state)}  ${r2.message}
 `, i = this.value ? n : s;
     switch (this.state) {
       case "submit":
-        return `${t}${import_picocolors.default.gray(a)}  ${import_picocolors.default.dim(i)}`;
+        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.dim(i)}`;
       case "cancel":
-        return `${t}${import_picocolors.default.gray(a)}  ${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}
-${import_picocolors.default.gray(a)}`;
+        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(i))}
+${import_picocolors2.default.gray(a)}`;
       default:
-        return `${t}${import_picocolors.default.cyan(a)}  ${this.value ? `${import_picocolors.default.green(w2)} ${n}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(n)}`} ${import_picocolors.default.dim("/")} ${this.value ? `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(s)}` : `${import_picocolors.default.green(w2)} ${s}`}
-${import_picocolors.default.cyan(o)}
+        return `${t}${import_picocolors2.default.cyan(a)}  ${this.value ? `${import_picocolors2.default.green(w2)} ${n}` : `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(n)}`} ${import_picocolors2.default.dim("/")} ${this.value ? `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(s)}` : `${import_picocolors2.default.green(w2)} ${s}`}
+${import_picocolors2.default.cyan(o)}
 `;
     }
   } }).prompt();
@@ -1552,76 +1592,76 @@ ${import_picocolors.default.cyan(o)}
 var ee = (r2) => {
   const n = (s, t) => {
     const i = s.label ?? String(s.value);
-    return t === "active" ? `${import_picocolors.default.green(w2)} ${i} ${s.hint ? import_picocolors.default.dim(`(${s.hint})`) : ""}` : t === "selected" ? `${import_picocolors.default.dim(i)}` : t === "cancelled" ? `${import_picocolors.default.strikethrough(import_picocolors.default.dim(i))}` : `${import_picocolors.default.dim(S2)} ${import_picocolors.default.dim(i)}`;
+    return t === "active" ? `${import_picocolors2.default.green(w2)} ${i} ${s.hint ? import_picocolors2.default.dim(`(${s.hint})`) : ""}` : t === "selected" ? `${import_picocolors2.default.dim(i)}` : t === "cancelled" ? `${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(i))}` : `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(i)}`;
   };
   return new ED({ options: r2.options, initialValue: r2.initialValue, render() {
-    const s = `${import_picocolors.default.gray(a)}
+    const s = `${import_picocolors2.default.gray(a)}
 ${h2(this.state)}  ${r2.message}
 `;
     switch (this.state) {
       case "submit":
-        return `${s}${import_picocolors.default.gray(a)}  ${n(this.options[this.cursor], "selected")}`;
+        return `${s}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "selected")}`;
       case "cancel":
-        return `${s}${import_picocolors.default.gray(a)}  ${n(this.options[this.cursor], "cancelled")}
-${import_picocolors.default.gray(a)}`;
+        return `${s}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "cancelled")}
+${import_picocolors2.default.gray(a)}`;
       default:
-        return `${s}${import_picocolors.default.cyan(a)}  ${this.options.map((t, i) => n(t, i === this.cursor ? "active" : "inactive")).join(`
-${import_picocolors.default.cyan(a)}  `)}
-${import_picocolors.default.cyan(o)}
+        return `${s}${import_picocolors2.default.cyan(a)}  ${this.options.map((t, i) => n(t, i === this.cursor ? "active" : "inactive")).join(`
+${import_picocolors2.default.cyan(a)}  `)}
+${import_picocolors2.default.cyan(o)}
 `;
     }
   } }).prompt();
 };
 var ae = (r2 = "") => {
-  process.stdout.write(`${import_picocolors.default.gray(L2)}  ${r2}
+  process.stdout.write(`${import_picocolors2.default.gray(L2)}  ${r2}
 `);
 };
 var ce = (r2 = "") => {
-  process.stdout.write(`${import_picocolors.default.gray(a)}
-${import_picocolors.default.gray(o)}  ${r2}
+  process.stdout.write(`${import_picocolors2.default.gray(a)}
+${import_picocolors2.default.gray(o)}  ${r2}
 
 `);
 };
-var g2 = { message: (r2 = "", { symbol: n = import_picocolors.default.gray(a) } = {}) => {
-  const s = [`${import_picocolors.default.gray(a)}`];
+var g2 = { message: (r2 = "", { symbol: n = import_picocolors2.default.gray(a) } = {}) => {
+  const s = [`${import_picocolors2.default.gray(a)}`];
   if (r2) {
     const [t, ...i] = r2.split(`
 `);
-    s.push(`${n}  ${t}`, ...i.map((c2) => `${import_picocolors.default.gray(a)}  ${c2}`));
+    s.push(`${n}  ${t}`, ...i.map((c2) => `${import_picocolors2.default.gray(a)}  ${c2}`));
   }
   process.stdout.write(`${s.join(`
 `)}
 `);
 }, info: (r2) => {
-  g2.message(r2, { symbol: import_picocolors.default.blue(U2) });
+  g2.message(r2, { symbol: import_picocolors2.default.blue(U2) });
 }, success: (r2) => {
-  g2.message(r2, { symbol: import_picocolors.default.green(Z2) });
+  g2.message(r2, { symbol: import_picocolors2.default.green(Z2) });
 }, step: (r2) => {
-  g2.message(r2, { symbol: import_picocolors.default.green(f2) });
+  g2.message(r2, { symbol: import_picocolors2.default.green(f2) });
 }, warn: (r2) => {
-  g2.message(r2, { symbol: import_picocolors.default.yellow(z2) });
+  g2.message(r2, { symbol: import_picocolors2.default.yellow(z2) });
 }, warning: (r2) => {
   g2.warn(r2);
 }, error: (r2) => {
-  g2.message(r2, { symbol: import_picocolors.default.red(X2) });
+  g2.message(r2, { symbol: import_picocolors2.default.red(X2) });
 } };
 var C = p2 ? ["\u25D2", "\u25D0", "\u25D3", "\u25D1"] : ["\u2022", "o", "O", "0"];
 var le = () => {
   let r2, n;
   const s = p2 ? 80 : 120;
   return { start(t = "") {
-    t = t.replace(/\.?\.?\.$/, ""), r2 = aD(), process.stdout.write(`${import_picocolors.default.gray(a)}
-${import_picocolors.default.magenta("\u25CB")}  ${t}
+    t = t.replace(/\.?\.?\.$/, ""), r2 = aD(), process.stdout.write(`${import_picocolors2.default.gray(a)}
+${import_picocolors2.default.magenta("\u25CB")}  ${t}
 `);
     let i = 0, c2 = 0;
     n = setInterval(() => {
-      let l = C[i];
-      process.stdout.write(import_sisteransi2.cursor.move(-999, -1)), process.stdout.write(`${import_picocolors.default.magenta(l)}  ${t}${Math.floor(c2) >= 1 ? ".".repeat(Math.floor(c2)).slice(0, 3) : ""}   
+      let l2 = C[i];
+      process.stdout.write(import_sisteransi2.cursor.move(-999, -1)), process.stdout.write(`${import_picocolors2.default.magenta(l2)}  ${t}${Math.floor(c2) >= 1 ? ".".repeat(Math.floor(c2)).slice(0, 3) : ""}   
 `), i = i === C.length - 1 ? 0 : i + 1, c2 = c2 === C.length ? 0 : c2 + 0.125;
     }, s);
   }, stop(t = "") {
-    process.stdout.write(import_sisteransi2.cursor.move(-999, -2)), process.stdout.write(import_sisteransi2.erase.down(2)), clearInterval(n), process.stdout.write(`${import_picocolors.default.gray(a)}
-${import_picocolors.default.green(f2)}  ${t}
+    process.stdout.write(import_sisteransi2.cursor.move(-999, -2)), process.stdout.write(import_sisteransi2.erase.down(2)), clearInterval(n), process.stdout.write(`${import_picocolors2.default.gray(a)}
+${import_picocolors2.default.green(f2)}  ${t}
 `), r2();
   } };
 };
@@ -1722,6 +1762,25 @@ function printHeader() {
     `),
     "\n"
   );
+}
+async function getFilesDeep(root) {
+  const files = [];
+  async function getFiles(directory) {
+    if (!import_node_fs2.default.existsSync(directory)) {
+      return;
+    }
+    const filesInDirectory = await import_node_fs2.default.promises.readdir(directory);
+    for (const file of filesInDirectory) {
+      const absolute = (0, import_node_path2.join)(directory, file);
+      if (import_node_fs2.default.statSync(absolute).isDirectory()) {
+        await getFiles(absolute);
+      } else {
+        files.push(absolute);
+      }
+    }
+  }
+  await getFiles(root);
+  return files;
 }
 function ansiRegex() {
   const pattern = [
@@ -2663,9 +2722,223 @@ async function runAddCommand(app) {
   }
 }
 
+// packages/qwik/src/cli/new/run-new-command.ts
+var import_node_fs7 = __toESM(require("fs"), 1);
+var import_path2 = require("path");
+
+// packages/qwik/src/cli/utils/templates.ts
+var import_node_fs6 = __toESM(require("fs"), 1);
+var import_node_path7 = require("path");
+var templates = null;
+async function loadTemplates() {
+  if (!templates) {
+    const allTemplates = [];
+    const templatesDir = (0, import_node_path7.join)(__dirname, "templates");
+    const templatesDirNames = await import_node_fs6.default.promises.readdir(templatesDir);
+    await Promise.all(
+      templatesDirNames.map(async (templatesDirName) => {
+        const dir = (0, import_node_path7.join)(templatesDir, templatesDirName);
+        const files = await readTemplates(dir);
+        const template = { id: templatesDirName, ...files };
+        allTemplates.push(template);
+      })
+    );
+    allTemplates.sort((a2, b2) => {
+      if (a2.id === "qwik") {
+        return -1;
+      } else if (b2.id === "qwik") {
+        return 1;
+      }
+      return a2.id > b2.id ? 1 : -1;
+    });
+    templates = allTemplates;
+  }
+  return templates;
+}
+async function readTemplates(rootDir) {
+  const componentDir = (0, import_node_path7.join)(rootDir, "component");
+  const routeDir = (0, import_node_path7.join)(rootDir, "route");
+  const component = await getFilesDeep(componentDir);
+  const route = await getFilesDeep(routeDir);
+  return {
+    component: component.map((c2) => parseTemplatePath(c2, "component")),
+    route: route.map((r2) => parseTemplatePath(r2, "route"))
+  };
+}
+function parseTemplatePath(path3, type) {
+  const parts = path3.split(`/${type}/`);
+  return {
+    absolute: path3,
+    relative: parts[1]
+  };
+}
+
+// packages/qwik/src/cli/new/utils.ts
+var POSSIBLE_TYPES = ["component", "route"];
+
+// packages/qwik/src/cli/new/print-new-help.ts
+async function printNewHelp() {
+  const pmRun = pmRunCmd();
+  const templates2 = await loadTemplates();
+  const outString = [];
+  outString.push(`${cyan("Interactive")}`);
+  outString.push(`  ${pmRun} qwik ${magenta(`new --[template] ...`)}`);
+  outString.push(``);
+  outString.push(`${cyan("Complete command")}`);
+  outString.push(`  ${pmRun} qwik ${magenta(`new [type] [name] --[template] ...`)}`);
+  outString.push(``);
+  outString.push(`${cyan("Available types")}`);
+  for (const t of POSSIBLE_TYPES) {
+    outString.push(`  ${t}`);
+  }
+  outString.push(``);
+  outString.push(`${cyan("Available templates")}`);
+  for (const t of templates2) {
+    let postfix = "";
+    if (t.id === "qwik") {
+      postfix = " (default)";
+    }
+    outString.push(`  ${t.id}${gray(postfix)}`);
+  }
+  note(outString.join("\n"), "Available commands");
+}
+
+// packages/qwik/src/cli/new/run-new-command.ts
+var SLUG_KEY = "[slug]";
+var NAME_KEY = "[name]";
+async function runNewCommand(app) {
+  try {
+    if (app.args.length > 1 && app.args[1] === "help") {
+      ae(`\u{1F52D}  ${bgMagenta(" Qwik Help ")}`);
+      await printNewHelp();
+      bye();
+    } else {
+      ae(`\u2728  ${bgMagenta(" Create a new Qwik component or route ")}`);
+    }
+    const args = app.args.filter((a2) => !a2.startsWith("--"));
+    let typeArg = args[1];
+    let nameArg = args.slice(2).join(" ");
+    const templateArg = app.args.filter((a2) => a2.startsWith("--")).map((a2) => a2.substring(2)).join("");
+    if (!typeArg) {
+      typeArg = await selectType();
+    }
+    if (!POSSIBLE_TYPES.includes(typeArg)) {
+      throw new Error(`Invalid type: ${typeArg}`);
+    }
+    if (!nameArg) {
+      nameArg = await selectName(typeArg);
+    }
+    const { name, slug } = parseInputName(nameArg);
+    const writers = [];
+    let template;
+    if (!templateArg) {
+      template = await selectTemplate(typeArg);
+    } else {
+      const allTemplates = await loadTemplates();
+      const templates2 = allTemplates.filter(
+        (i) => i.id === templateArg && i[typeArg] && i[typeArg].length
+      );
+      if (!templates2.length) {
+        g2.error(`Template "${templateArg}" not found`);
+        bye();
+      }
+      template = templates2[0][typeArg][0];
+    }
+    const outDir = (0, import_path2.join)(app.rootDir, "src", `${typeArg}s`);
+    writers.push(writeToFile(name, slug, template, outDir));
+    await Promise.all(writers);
+    g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+  } catch (e2) {
+    g2.error(String(e2));
+    await printNewHelp();
+  }
+  bye();
+}
+async function selectType() {
+  const typeAnswer = await ee({
+    message: "What would you like to create?",
+    options: [
+      { value: "component", label: "Component" },
+      { value: "route", label: "Route" }
+    ]
+  });
+  if (eD(typeAnswer)) {
+    bye();
+  }
+  return typeAnswer;
+}
+async function selectName(type) {
+  const nameAnswer = await J2({
+    message: `Name your ${type}`
+  });
+  if (eD(nameAnswer)) {
+    bye();
+  }
+  return nameAnswer;
+}
+async function selectTemplate(typeArg) {
+  const allTemplates = await loadTemplates();
+  const templates2 = allTemplates.filter((i) => i[typeArg] && i[typeArg].length);
+  const templateAnswer = await ee({
+    message: "Which template would you like to use?",
+    options: templates2.map((t) => ({ value: t[typeArg][0], label: t.id }))
+  });
+  if (eD(templateAnswer)) {
+    bye();
+  }
+  return templateAnswer;
+}
+async function writeToFile(name, slug, template, outDir) {
+  const relativeDirMatches = template.relative.match(/.+?(?=(\/[^/]+$))/);
+  const relativeDir = relativeDirMatches ? relativeDirMatches[0] : void 0;
+  const fileDir = inject((0, import_path2.join)(outDir, relativeDir ?? ""), [[SLUG_KEY, slug]]);
+  const outFile = (0, import_path2.join)(outDir, template.relative);
+  const fileOutput = inject(outFile, [
+    [SLUG_KEY, slug],
+    [".template", ""]
+  ]);
+  if (import_node_fs7.default.existsSync(fileOutput)) {
+    const filename = fileOutput.split("/").pop();
+    throw new Error(`"${filename}" already exists in "${fileDir}"`);
+  }
+  const text = await import_node_fs7.default.promises.readFile(template.absolute, { encoding: "utf-8" });
+  const templateOut = inject(text, [
+    [SLUG_KEY, slug],
+    [NAME_KEY, name]
+  ]);
+  await import_node_fs7.default.promises.mkdir(fileDir, { recursive: true });
+  await import_node_fs7.default.promises.writeFile(fileOutput, templateOut, { encoding: "utf-8" });
+}
+function inject(raw, vars) {
+  let output = raw;
+  for (const v2 of vars) {
+    output = replaceAll(output, v2[0], v2[1]);
+  }
+  return output;
+}
+function parseInputName(input) {
+  const parts = input.split(/[-_\s]/g);
+  return {
+    slug: toSlug(parts),
+    name: toPascal(parts)
+  };
+}
+function toSlug(list) {
+  return list.join("-").toLowerCase();
+}
+function toPascal(list) {
+  return list.map((p3) => p3[0].toUpperCase() + p3.substring(1).toLowerCase()).join("");
+}
+function escapeRegExp(val) {
+  return val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function replaceAll(val, find, replace) {
+  return val.replace(new RegExp(escapeRegExp(find), "g"), replace);
+}
+
 // node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
 var import_node_buffer2 = require("buffer");
-var import_node_path8 = __toESM(require("path"), 1);
+var import_node_path9 = __toESM(require("path"), 1);
 var import_node_child_process3 = __toESM(require("child_process"), 1);
 var import_node_process5 = __toESM(require("process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
@@ -2685,7 +2958,7 @@ function stripFinalNewline(input) {
 
 // node_modules/.pnpm/npm-run-path@5.1.0/node_modules/npm-run-path/index.js
 var import_node_process3 = __toESM(require("process"), 1);
-var import_node_path7 = __toESM(require("path"), 1);
+var import_node_path8 = __toESM(require("path"), 1);
 var import_node_url = __toESM(require("url"), 1);
 
 // node_modules/.pnpm/path-key@4.0.0/node_modules/path-key/index.js
@@ -2709,15 +2982,15 @@ function npmRunPath(options = {}) {
   } = options;
   let previous;
   const cwdString = cwd instanceof URL ? import_node_url.default.fileURLToPath(cwd) : cwd;
-  let cwdPath = import_node_path7.default.resolve(cwdString);
+  let cwdPath = import_node_path8.default.resolve(cwdString);
   const result = [];
   while (previous !== cwdPath) {
-    result.push(import_node_path7.default.join(cwdPath, "node_modules/.bin"));
+    result.push(import_node_path8.default.join(cwdPath, "node_modules/.bin"));
     previous = cwdPath;
-    cwdPath = import_node_path7.default.resolve(cwdPath, "..");
+    cwdPath = import_node_path8.default.resolve(cwdPath, "..");
   }
-  result.push(import_node_path7.default.resolve(cwdString, execPath, ".."));
-  return [...result, path_].join(import_node_path7.default.delimiter);
+  result.push(import_node_path8.default.resolve(cwdString, execPath, ".."));
+  return [...result, path_].join(import_node_path8.default.delimiter);
 }
 function npmRunPathEnv({ env = import_node_process3.default.env, ...options } = {}) {
   env = { ...env };
@@ -3336,7 +3609,7 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
 };
 
 // node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/pipe.js
-var import_node_fs6 = require("fs");
+var import_node_fs8 = require("fs");
 var import_node_child_process = require("child_process");
 
 // node_modules/.pnpm/is-stream@3.0.0/node_modules/is-stream/index.js
@@ -3351,7 +3624,7 @@ function isWritableStream(stream) {
 var isExecaChildProcess = (target) => target instanceof import_node_child_process.ChildProcess && typeof target.then === "function";
 var pipeToTarget = (spawned, streamName, target) => {
   if (typeof target === "string") {
-    spawned[streamName].pipe((0, import_node_fs6.createWriteStream)(target));
+    spawned[streamName].pipe((0, import_node_fs8.createWriteStream)(target));
     return spawned;
   }
   if (isWritableStream(target)) {
@@ -3380,7 +3653,7 @@ var addPipeMethods = (spawned) => {
 };
 
 // node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/stream.js
-var import_node_fs7 = require("fs");
+var import_node_fs9 = require("fs");
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
 var validateInputOptions = (input) => {
@@ -3393,7 +3666,7 @@ var getInputSync = ({ input, inputFile }) => {
     return input;
   }
   validateInputOptions(input);
-  return (0, import_node_fs7.readFileSync)(inputFile);
+  return (0, import_node_fs9.readFileSync)(inputFile);
 };
 var handleInputSync = (options) => {
   const input = getInputSync(options);
@@ -3407,7 +3680,7 @@ var getInput = ({ input, inputFile }) => {
     return input;
   }
   validateInputOptions(input);
-  return (0, import_node_fs7.createReadStream)(inputFile);
+  return (0, import_node_fs9.createReadStream)(inputFile);
 };
 var handleInput = (spawned, options) => {
   const input = getInput(options);
@@ -3553,8 +3826,8 @@ var concatTokens = (tokens, nextTokens, isNew) => isNew || tokens.length === 0 |
   `${tokens[tokens.length - 1]}${nextTokens[0]}`,
   ...nextTokens.slice(1)
 ];
-var parseTemplate = ({ templates, expressions, tokens, index, template }) => {
-  const templateString = template ?? templates.raw[index];
+var parseTemplate = ({ templates: templates2, expressions, tokens, index, template }) => {
+  const templateString = template ?? templates2.raw[index];
   const templateTokens = templateString.split(SPACES_REGEXP).filter(Boolean);
   const newTokens = concatTokens(
     tokens,
@@ -3572,10 +3845,10 @@ var parseTemplate = ({ templates, expressions, tokens, index, template }) => {
     templateString.endsWith(" ")
   );
 };
-var parseTemplates = (templates, expressions) => {
+var parseTemplates = (templates2, expressions) => {
   let tokens = [];
-  for (const [index, template] of templates.entries()) {
-    tokens = parseTemplate({ templates, expressions, tokens, index, template });
+  for (const [index, template] of templates2.entries()) {
+    tokens = parseTemplate({ templates: templates2, expressions, tokens, index, template });
   }
   return tokens;
 };
@@ -3629,7 +3902,7 @@ var handleArguments = (file, args, options = {}) => {
   };
   options.env = getEnv(options);
   options.stdio = normalizeStdio(options);
-  if (import_node_process5.default.platform === "win32" && import_node_path8.default.basename(file, ".exe") === "cmd") {
+  if (import_node_process5.default.platform === "win32" && import_node_path9.default.basename(file, ".exe") === "cmd") {
     args.unshift("/q");
   }
   return { file, args, options, parsed };
@@ -3790,11 +4063,11 @@ function create$(options) {
     const [file, ...args] = parseTemplates(templatesOrOptions, expressions);
     return execa(file, args, normalizeScriptOptions(options));
   }
-  $4.sync = (templates, ...expressions) => {
-    if (!Array.isArray(templates)) {
+  $4.sync = (templates2, ...expressions) => {
+    if (!Array.isArray(templates2)) {
       throw new TypeError("Please use $(options).sync`command` instead of $.sync(options)`command`.");
     }
-    const [file, ...args] = parseTemplates(templates, expressions);
+    const [file, ...args] = parseTemplates(templates2, expressions);
     return execaSync(file, args, normalizeScriptOptions(options));
   };
   return $4;
@@ -4063,6 +4336,13 @@ var COMMANDS = [
     showInHelp: true
   },
   {
+    value: "new",
+    label: "new",
+    hint: "Create a new component or route",
+    run: (app) => runNewCommand(app),
+    showInHelp: true
+  },
+  {
     value: "help",
     label: "help",
     hint: "Show this help",
@@ -4092,9 +4372,25 @@ async function runCli() {
   }
 }
 async function runCommand2(app) {
-  for (const value of COMMANDS) {
-    if (value.value === app.task && typeof value.run === "function") {
-      await value.run(app);
+  switch (app.task) {
+    case "add": {
+      await runAddCommand(app);
+      return;
+    }
+    case "build": {
+      await runBuildCommand(app);
+      return;
+    }
+    case "help": {
+      printHelp(app);
+      return;
+    }
+    case "new": {
+      await runNewCommand(app);
+      return;
+    }
+    case "version": {
+      printVersion();
       return;
     }
   }
