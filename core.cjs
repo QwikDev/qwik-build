@@ -1620,10 +1620,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         staticCtx.$containerState$.$styleIds$.add(styleTask.styleId);
         staticCtx.$postOperations$.push({
             $operation$: _appendHeadStyle,
-            $args$: [staticCtx.$containerState$.$containerEl$, styleTask],
+            $args$: [staticCtx.$containerState$, styleTask],
         });
     };
-    const _appendHeadStyle = (containerEl, styleTask) => {
+    const _appendHeadStyle = (containerState, styleTask) => {
+        const containerEl = containerState.$containerEl$;
         const doc = getDocument(containerEl);
         const isDoc = doc.documentElement === containerEl;
         const headEl = doc.head;
