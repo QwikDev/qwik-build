@@ -3421,7 +3421,7 @@ const renderMarked = async containerState => {
         const rCtx = createRenderContext(doc, containerState);
         const staticCtx = rCtx.$static$;
         const hostsRendering = containerState.$hostsRendering$ = new Set(containerState.$hostsNext$);
-        containerState.$hostsNext$.clear(), await executeWatchesBefore(containerState, rCtx), 
+        containerState.$hostsNext$.clear(), await executeTasksBefore(containerState, rCtx), 
         containerState.$hostsStaging$.forEach((host => {
             hostsRendering.add(host);
         })), containerState.$hostsStaging$.clear();
@@ -3463,7 +3463,7 @@ const getFlags = el => {
 
 const postRendering = async (containerState, rCtx) => {
     const hostElements = rCtx.$static$.$hostElements$;
-    await executeWatchesAfter(containerState, rCtx, ((watch, stage) => 0 != (watch.$flags$ & WatchFlagsIsVisibleTask) && (!stage || hostElements.has(watch.$el$)))), 
+    await executeTasksAfter(containerState, rCtx, ((watch, stage) => 0 != (watch.$flags$ & WatchFlagsIsVisibleTask) && (!stage || hostElements.has(watch.$el$)))), 
     containerState.$hostsStaging$.forEach((el => {
         containerState.$hostsNext$.add(el);
     })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
@@ -3471,7 +3471,7 @@ const postRendering = async (containerState, rCtx) => {
     containerState.$hostsNext$.size + containerState.$watchNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
 };
 
-const executeWatchesBefore = async (containerState, rCtx) => {
+const executeTasksBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
     const resourcesPromises = [];
     const watchPromises = [];
@@ -3487,17 +3487,17 @@ const executeWatchesBefore = async (containerState, rCtx) => {
             isWatch(watch) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : isResourceWatch(watch) ? resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch);
         })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
             const watches = await Promise.all(watchPromises);
-            sortWatches(watches), await Promise.all(watches.map((watch => runSubscriber(watch, containerState, rCtx)))), 
+            sortTasks(watches), await Promise.all(watches.map((watch => runSubscriber(watch, containerState, rCtx)))), 
             watchPromises.length = 0;
         }
     } while (containerState.$watchStaging$.size > 0);
     if (resourcesPromises.length > 0) {
         const resources = await Promise.all(resourcesPromises);
-        sortWatches(resources), resources.forEach((watch => runSubscriber(watch, containerState, rCtx)));
+        sortTasks(resources), resources.forEach((watch => runSubscriber(watch, containerState, rCtx)));
     }
 };
 
-const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
+const executeTasksAfter = async (containerState, rCtx, watchPred) => {
     const watchPromises = [];
     const containerEl = containerState.$containerEl$;
     containerState.$watchNext$.forEach((watch => {
@@ -3509,9 +3509,9 @@ const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
             watch.$el$.isConnected && (watchPred(watch, !0) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch));
         })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
             const watches = await Promise.all(watchPromises);
-            sortWatches(watches);
+            sortTasks(watches);
             for (const watch of watches) {
-                await runSubscriber(watch, containerState, rCtx);
+                runSubscriber(watch, containerState, rCtx);
             }
             watchPromises.length = 0;
         }
@@ -3522,7 +3522,7 @@ const sortNodes = elements => {
     elements.sort(((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1));
 };
 
-const sortWatches = watches => {
+const sortTasks = watches => {
     watches.sort(((a, b) => a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
 };
 

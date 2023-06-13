@@ -5331,7 +5331,7 @@ const renderMarked = async (containerState) => {
         const staticCtx = rCtx.$static$;
         const hostsRendering = (containerState.$hostsRendering$ = new Set(containerState.$hostsNext$));
         containerState.$hostsNext$.clear();
-        await executeWatchesBefore(containerState, rCtx);
+        await executeTasksBefore(containerState, rCtx);
         containerState.$hostsStaging$.forEach((host) => {
             hostsRendering.add(host);
         });
@@ -5401,7 +5401,7 @@ const getFlags = (el) => {
 };
 const postRendering = async (containerState, rCtx) => {
     const hostElements = rCtx.$static$.$hostElements$;
-    await executeWatchesAfter(containerState, rCtx, (watch, stage) => {
+    await executeTasksAfter(containerState, rCtx, (watch, stage) => {
         if ((watch.$flags$ & WatchFlagsIsVisibleTask) === 0) {
             return false;
         }
@@ -5425,7 +5425,7 @@ const postRendering = async (containerState, rCtx) => {
         containerState.$renderPromise$ = renderMarked(containerState);
     }
 };
-const executeWatchesBefore = async (containerState, rCtx) => {
+const executeTasksBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
     const resourcesPromises = [];
     const watchPromises = [];
@@ -5458,7 +5458,7 @@ const executeWatchesBefore = async (containerState, rCtx) => {
         // Wait for all promises
         if (watchPromises.length > 0) {
             const watches = await Promise.all(watchPromises);
-            sortWatches(watches);
+            sortTasks(watches);
             await Promise.all(watches.map((watch) => {
                 return runSubscriber(watch, containerState, rCtx);
             }));
@@ -5467,11 +5467,11 @@ const executeWatchesBefore = async (containerState, rCtx) => {
     } while (containerState.$watchStaging$.size > 0);
     if (resourcesPromises.length > 0) {
         const resources = await Promise.all(resourcesPromises);
-        sortWatches(resources);
+        sortTasks(resources);
         resources.forEach((watch) => runSubscriber(watch, containerState, rCtx));
     }
 };
-const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
+const executeTasksAfter = async (containerState, rCtx, watchPred) => {
     const watchPromises = [];
     const containerEl = containerState.$containerEl$;
     containerState.$watchNext$.forEach((watch) => {
@@ -5498,9 +5498,9 @@ const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
         // Wait for all promises
         if (watchPromises.length > 0) {
             const watches = await Promise.all(watchPromises);
-            sortWatches(watches);
+            sortTasks(watches);
             for (const watch of watches) {
-                await runSubscriber(watch, containerState, rCtx);
+                runSubscriber(watch, containerState, rCtx);
             }
             watchPromises.length = 0;
         }
@@ -5509,7 +5509,7 @@ const executeWatchesAfter = async (containerState, rCtx, watchPred) => {
 const sortNodes = (elements) => {
     elements.sort((a, b) => a.$element$.compareDocumentPosition(getRootNode(b.$element$)) & 2 ? 1 : -1);
 };
-const sortWatches = (watches) => {
+const sortTasks = (watches) => {
     watches.sort((a, b) => {
         if (a.$el$ === b.$el$) {
             return a.$index$ < b.$index$ ? -1 : 1;
