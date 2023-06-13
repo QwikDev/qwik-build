@@ -2773,24 +2773,28 @@ function parseTemplatePath(path3, type) {
   };
 }
 
-// packages/qwik/src/cli/new/utils.ts
-var POSSIBLE_TYPES = ["component", "route"];
-
 // packages/qwik/src/cli/new/print-new-help.ts
 async function printNewHelp() {
   const pmRun = pmRunCmd();
   const templates2 = await loadTemplates();
   const outString = [];
   outString.push(`${cyan("Interactive")}`);
-  outString.push(`  ${pmRun} qwik ${magenta(`new --[template] ...`)}`);
+  outString.push(`  ${pmRun} qwik ${magenta(`new`)}`);
   outString.push(``);
   outString.push(`${cyan("Complete command")}`);
-  outString.push(`  ${pmRun} qwik ${magenta(`new [type] [name] --[template] ...`)}`);
-  outString.push(``);
-  outString.push(`${cyan("Available types")}`);
-  for (const t of POSSIBLE_TYPES) {
-    outString.push(`  ${t}`);
-  }
+  outString.push(
+    `  ${pmRun} qwik ${magenta(`new my-button`)}: ${dim(
+      "Create a new component in src/components/my-button"
+    )}`
+  );
+  outString.push(
+    `  ${pmRun} qwik ${magenta(`new nested/my-button`)}: ${dim(
+      "Create a new component in src/components/nested/my-button"
+    )}`
+  );
+  outString.push(
+    `  ${pmRun} qwik ${magenta(`new /about`)}: ${dim("Create a new route for /about")}`
+  );
   outString.push(``);
   outString.push(`${cyan("Available templates")}`);
   for (const t of templates2) {
@@ -2802,6 +2806,9 @@ async function printNewHelp() {
   }
   note(outString.join("\n"), "Available commands");
 }
+
+// packages/qwik/src/cli/new/utils.ts
+var POSSIBLE_TYPES = ["component", "route"];
 
 // packages/qwik/src/cli/new/run-new-command.ts
 var SLUG_KEY = "[slug]";
@@ -2816,9 +2823,21 @@ async function runNewCommand(app) {
       ae(`\u2728  ${bgMagenta(" Create a new Qwik component or route ")}`);
     }
     const args = app.args.filter((a2) => !a2.startsWith("--"));
-    let typeArg = args[1];
-    let nameArg = args.slice(2).join(" ");
-    const templateArg = app.args.filter((a2) => a2.startsWith("--")).map((a2) => a2.substring(2)).join("");
+    const mainInput = args.slice(1).join(" ");
+    let typeArg = void 0;
+    let nameArg;
+    let outDir;
+    if (mainInput && mainInput.startsWith("/")) {
+      typeArg = "route";
+      nameArg = mainInput;
+    } else if (mainInput) {
+      typeArg = "component";
+      nameArg = mainInput;
+    }
+    let templateArg = app.args.filter((a2) => a2.startsWith("--")).map((a2) => a2.substring(2)).join("");
+    if (!templateArg && mainInput) {
+      templateArg = "qwik";
+    }
     if (!typeArg) {
       typeArg = await selectType();
     }
@@ -2829,7 +2848,6 @@ async function runNewCommand(app) {
       nameArg = await selectName(typeArg);
     }
     const { name, slug } = parseInputName(nameArg);
-    const writers = [];
     let template;
     if (!templateArg) {
       template = await selectTemplate(typeArg);
@@ -2844,10 +2862,14 @@ async function runNewCommand(app) {
       }
       template = templates2[0][typeArg][0];
     }
-    const outDir = (0, import_path2.join)(app.rootDir, "src", `${typeArg}s`);
-    writers.push(writeToFile(name, slug, template, outDir));
-    await Promise.all(writers);
+    if (typeArg === "route") {
+      outDir = (0, import_path2.join)(app.rootDir, "src", `routes`, mainInput);
+    } else {
+      outDir = (0, import_path2.join)(app.rootDir, "src", `components`, nameArg);
+    }
+    const fileOutput = await writeToFile(name, slug, template, outDir);
     g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+    g2.message(`Emitted in ${dim(fileOutput)}`);
   } catch (e2) {
     g2.error(String(e2));
     await printNewHelp();
@@ -2889,9 +2911,6 @@ async function selectTemplate(typeArg) {
   return templateAnswer;
 }
 async function writeToFile(name, slug, template, outDir) {
-  const relativeDirMatches = template.relative.match(/.+?(?=(\/[^/]+$))/);
-  const relativeDir = relativeDirMatches ? relativeDirMatches[0] : void 0;
-  const fileDir = inject((0, import_path2.join)(outDir, relativeDir ?? ""), [[SLUG_KEY, slug]]);
   const outFile = (0, import_path2.join)(outDir, template.relative);
   const fileOutput = inject(outFile, [
     [SLUG_KEY, slug],
@@ -2899,20 +2918,21 @@ async function writeToFile(name, slug, template, outDir) {
   ]);
   if (import_node_fs7.default.existsSync(fileOutput)) {
     const filename = fileOutput.split("/").pop();
-    throw new Error(`"${filename}" already exists in "${fileDir}"`);
+    throw new Error(`"${filename}" already exists in "${outDir}"`);
   }
   const text = await import_node_fs7.default.promises.readFile(template.absolute, { encoding: "utf-8" });
   const templateOut = inject(text, [
     [SLUG_KEY, slug],
     [NAME_KEY, name]
   ]);
-  await import_node_fs7.default.promises.mkdir(fileDir, { recursive: true });
+  await import_node_fs7.default.promises.mkdir(outDir, { recursive: true });
   await import_node_fs7.default.promises.writeFile(fileOutput, templateOut, { encoding: "utf-8" });
+  return fileOutput;
 }
 function inject(raw, vars) {
   let output = raw;
   for (const v2 of vars) {
-    output = replaceAll(output, v2[0], v2[1]);
+    output = output.replaceAll(v2[0], v2[1]);
   }
   return output;
 }
@@ -2928,12 +2948,6 @@ function toSlug(list) {
 }
 function toPascal(list) {
   return list.map((p3) => p3[0].toUpperCase() + p3.substring(1).toLowerCase()).join("");
-}
-function escapeRegExp(val) {
-  return val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-function replaceAll(val, find, replace) {
-  return val.replace(new RegExp(escapeRegExp(find), "g"), replace);
 }
 
 // node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
