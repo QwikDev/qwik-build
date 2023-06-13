@@ -1889,7 +1889,7 @@ globalThis.qwikOptimizer = function(module) {
           id: id2
         };
       }
-      if (opts.resolveQwikBuild && id2 === QWIK_BUILD_ID) {
+      if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
         log("resolveId()", "Resolved", QWIK_BUILD_ID);
         return {
           id: normalizePath(getPath().resolve(opts.rootDir, QWIK_BUILD_ID)),
@@ -1994,7 +1994,7 @@ globalThis.qwikOptimizer = function(module) {
       const {pathId: pathId} = parseId(id2);
       const {ext: ext, dir: dir, base: base} = path.parse(pathId);
       if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
-        const strip = "client" === opts.target || "ssr" === opts.target;
+        const strip = "lib" !== opts.target;
         const normalizedID = normalizePath(pathId);
         log("transform()", "Transforming", pathId);
         let filePath = base;
