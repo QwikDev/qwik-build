@@ -1994,7 +1994,7 @@ globalThis.qwikOptimizer = function(module) {
       const {pathId: pathId} = parseId(id2);
       const {ext: ext, dir: dir, base: base} = path.parse(pathId);
       if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
-        const strip = "lib" !== opts.target;
+        const strip = "client" === opts.target || "ssr" === opts.target;
         const normalizedID = normalizePath(pathId);
         log("transform()", "Transforming", pathId);
         let filePath = base;
@@ -2020,19 +2020,18 @@ globalThis.qwikOptimizer = function(module) {
           scope: opts.scope ? opts.scope : void 0
         };
         const isSSR = !!ssrOpts.ssr;
+        isSSR && (transformOpts.entryStrategy = {
+          type: "hoist"
+        });
+        transformOpts.isServer = isSSR;
         if (strip) {
           if (isSSR) {
             transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
             transformOpts.stripEventHandlers = true;
-            transformOpts.entryStrategy = {
-              type: "hoist"
-            };
             transformOpts.regCtxName = REG_CTX_NAME;
-            transformOpts.isServer = true;
           } else {
             transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
             transformOpts.stripExports = SERVER_STRIP_EXPORTS;
-            transformOpts.isServer = false;
           }
         }
         const newOutput = optimizer.transformModulesSync(transformOpts);
