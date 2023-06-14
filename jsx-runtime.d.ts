@@ -274,8 +274,8 @@ declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
 }
 
 declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: Numberish | undefined;
-    width?: Numberish | undefined;
+    height?: Size | undefined;
+    width?: Size | undefined;
 }
 
 /**
@@ -289,7 +289,7 @@ declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
     span?: number | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     children?: undefined;
 }
 
@@ -326,10 +326,10 @@ declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
 }
 
 declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     src?: string | undefined;
     type?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     children?: undefined;
 }
 
@@ -445,7 +445,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     allowTransparency?: boolean | undefined;
     /** @deprecated Deprecated */
     frameBorder?: number | string | undefined;
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     loading?: 'eager' | 'lazy' | undefined;
     /** @deprecated Deprecated */
     marginHeight?: number | undefined;
@@ -459,7 +459,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     seamless?: boolean | undefined;
     src?: string | undefined;
     srcDoc?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     children?: undefined;
 }
 
@@ -501,7 +501,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     formMethod?: string | undefined;
     formNoValidate?: boolean | undefined;
     formTarget?: string | undefined;
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     list?: string | undefined;
     max?: number | string | undefined;
     maxLength?: number | undefined;
@@ -519,7 +519,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: HTMLInputTypeAttribute | undefined;
     value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
     'bind:value'?: Signal<string | undefined>;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     children?: undefined;
 }
 
@@ -823,11 +823,11 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
     form?: string | undefined;
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     name?: string | undefined;
     type?: string | undefined;
     useMap?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     wmode?: string | undefined;
 }
 
@@ -1450,18 +1450,20 @@ declare interface Signal<T = any> {
 
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
+declare type Size = number | string;
+
 declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
 declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     media?: string | undefined;
     sizes?: string | undefined;
     src?: string | undefined;
     srcSet?: string | undefined;
     type?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     children?: undefined;
 }
 
@@ -1480,7 +1482,7 @@ declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
     summary?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
 }
 
 declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1490,8 +1492,8 @@ declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
     rowSpan?: number | undefined;
     scope?: string | undefined;
     abbr?: string | undefined;
-    height?: Numberish | undefined;
-    width?: Numberish | undefined;
+    height?: Size | undefined;
+    width?: Size | undefined;
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
