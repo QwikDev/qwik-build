@@ -362,7 +362,7 @@ export declare const Fragment: FunctionComponent<{
  * @public
  */
 export declare interface FunctionComponent<P = Record<string, any>> {
-    (props: P, key: string | null, flags: number): JSXNode | null;
+    (props: P, key: string | null, flags: number, dev?: DevJSX): JSXNode | null;
 }
 
 declare interface HrHTMLAttributes<T> extends HTMLAttributes<T> {

@@ -1462,7 +1462,7 @@
                 }
             })(node, rCtx, ssrCtx, stream, flags);
         }
-        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
+        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags, node.dev);
         return shouldWrapFunctional(res, node) ? renderNode(_jsxC(Virtual, {
             children: res
         }, 0, node.key), rCtx, ssrCtx, stream, flags, beforeClose) : processData$1(res, rCtx, ssrCtx, stream, flags, beforeClose);
@@ -1677,7 +1677,7 @@
         } else {
             if (type !== Virtual) {
                 if (isFunction(type)) {
-                    const res = invoke(invocationContext, type, props, key, flags);
+                    const res = invoke(invocationContext, type, props, key, flags, node.dev);
                     return shouldWrapFunctional(res, node) ? processNode(_jsxC(Virtual, {
                         children: res
                     }, 0, key), invocationContext) : processData(res, invocationContext);

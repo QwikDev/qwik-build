@@ -3166,7 +3166,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         if (tagName === InternalSSRStream) {
             return renderGenerator(node, rCtx, ssrCtx, stream, flags);
         }
-        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags);
+        const res = invoke(ssrCtx.$invocationContext$, tagName, node.props, node.key, node.flags, node.dev);
         if (!shouldWrapFunctional(res, node)) {
             return processData$1(res, rCtx, ssrCtx, stream, flags, beforeClose);
         }
@@ -3597,7 +3597,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             textType = VIRTUAL;
         }
         else if (isFunction(type)) {
-            const res = invoke(invocationContext, type, props, key, flags);
+            const res = invoke(invocationContext, type, props, key, flags, node.dev);
             if (!shouldWrapFunctional(res, node)) {
                 return processData(res, invocationContext);
             }
