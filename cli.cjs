@@ -2781,7 +2781,12 @@ async function printNewHelp() {
   outString.push(`${cyan("Interactive")}`);
   outString.push(`  ${pmRun} qwik ${magenta(`new`)}`);
   outString.push(``);
-  outString.push(`${cyan("Complete command")}`);
+  outString.push(`${cyan("New route")}`);
+  outString.push(
+    `  ${pmRun} qwik ${magenta(`new /about`)}: ${dim("Create a new route for /about")}`
+  );
+  outString.push(``);
+  outString.push(`${cyan("New component")}`);
   outString.push(
     `  ${pmRun} qwik ${magenta(`new my-button`)}: ${dim(
       "Create a new component in src/components/my-button"
@@ -2791,9 +2796,6 @@ async function printNewHelp() {
     `  ${pmRun} qwik ${magenta(`new nested/my-button`)}: ${dim(
       "Create a new component in src/components/nested/my-button"
     )}`
-  );
-  outString.push(
-    `  ${pmRun} qwik ${magenta(`new /about`)}: ${dim("Create a new route for /about")}`
   );
   outString.push(``);
   outString.push(`${cyan("Available templates")}`);
@@ -2863,7 +2865,7 @@ async function runNewCommand(app) {
       template = templates2[0][typeArg][0];
     }
     if (typeArg === "route") {
-      outDir = (0, import_path2.join)(app.rootDir, "src", `routes`, mainInput);
+      outDir = (0, import_path2.join)(app.rootDir, "src", `routes`, nameArg);
     } else {
       outDir = (0, import_path2.join)(app.rootDir, "src", `components`, nameArg);
     }
@@ -2890,17 +2892,38 @@ async function selectType() {
   return typeAnswer;
 }
 async function selectName(type) {
+  const message = type === "route" ? "New route path" : "Name your component";
+  const placeholder = type === "route" ? "/product/[id]" : "my-component";
   const nameAnswer = await J2({
-    message: `Name your ${type}`
+    message,
+    placeholder,
+    validate: (v2) => {
+      if (v2.length < 1) {
+        return "Value can not be empty";
+      }
+    }
   });
   if (eD(nameAnswer)) {
     bye();
+  }
+  if (typeof nameAnswer !== "string") {
+    bye();
+  }
+  if (type === "route" && !nameAnswer.startsWith("/")) {
+    return `/${nameAnswer}`;
   }
   return nameAnswer;
 }
 async function selectTemplate(typeArg) {
   const allTemplates = await loadTemplates();
   const templates2 = allTemplates.filter((i) => i[typeArg] && i[typeArg].length);
+  if (!templates2.length) {
+    g2.error(`No templates found for type "${typeArg}"`);
+    bye();
+  }
+  if (templates2.length === 1) {
+    return templates2[0][typeArg][0];
+  }
   const templateAnswer = await ee({
     message: "Which template would you like to use?",
     options: templates2.map((t) => ({ value: t[typeArg][0], label: t.id }))
