@@ -3260,9 +3260,15 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
     }
 };
 
-const executeContextWithTransition = async ctx => {
+const restoreScroll = () => {
+    document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
+};
+
+const executeContextWithScrollAndTransition = async ctx => {
     isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-    document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).finished : executeDOMRender(ctx);
+    document.startViewTransition) ? await document.startViewTransition((() => {
+        executeDOMRender(ctx), restoreScroll();
+    })).finished : (executeDOMRender(ctx), isBrowser && restoreScroll());
 };
 
 const directAppendChild = (parent, child) => {
@@ -3448,7 +3454,7 @@ const renderMarked = async containerState => {
         return signalOperations.forEach((op => {
             executeSignalOperation(staticCtx, op);
         })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(), 
-        void await postRendering(containerState, rCtx)) : (await executeContextWithTransition(staticCtx), 
+        void await postRendering(containerState, rCtx)) : (await executeContextWithScrollAndTransition(staticCtx), 
         printRenderStats(), postRendering(containerState, rCtx));
     } catch (err) {
         logError(err);

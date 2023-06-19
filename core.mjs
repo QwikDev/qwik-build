@@ -5065,19 +5065,31 @@ const cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
         }
     }
 };
-const executeContextWithTransition = async (ctx) => {
+const restoreScroll = () => {
+    if (document.__q_scroll_restore__) {
+        document.__q_scroll_restore__();
+        document.__q_scroll_restore__ = undefined;
+    }
+};
+const executeContextWithScrollAndTransition = async (ctx) => {
     // try to use `document.startViewTransition`
     if (isBrowser && !qTest) {
         if (document.__q_view_transition__) {
             document.__q_view_transition__ = undefined;
             if (document.startViewTransition) {
-                await document.startViewTransition(() => executeDOMRender(ctx)).finished;
+                await document.startViewTransition(() => {
+                    executeDOMRender(ctx);
+                    restoreScroll();
+                }).finished;
                 return;
             }
         }
     }
     // fallback
     executeDOMRender(ctx);
+    if (isBrowser) {
+        restoreScroll();
+    }
 };
 const directAppendChild = (parent, child) => {
     if (isVirtualElement(child)) {
@@ -5379,7 +5391,7 @@ const renderMarked = async (containerState) => {
             await postRendering(containerState, rCtx);
             return;
         }
-        await executeContextWithTransition(staticCtx);
+        await executeContextWithScrollAndTransition(staticCtx);
         printRenderStats(staticCtx);
         return postRendering(containerState, rCtx);
     }

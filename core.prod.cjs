@@ -2435,6 +2435,9 @@
             node = node.nextSibling, node !== end); ) {}
         }
     };
+    const restoreScroll = () => {
+        document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
+    };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);
     };
@@ -2603,7 +2606,9 @@
             })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(), 
             void await postRendering(containerState, rCtx)) : (await (async ctx => {
                 build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-                document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).finished : executeDOMRender(ctx);
+                document.startViewTransition) ? await document.startViewTransition((() => {
+                    executeDOMRender(ctx), restoreScroll();
+                })).finished : (executeDOMRender(ctx), build.isBrowser && restoreScroll());
             })(staticCtx), printRenderStats(), postRendering(containerState, rCtx));
         } catch (err) {
             logError(err);
