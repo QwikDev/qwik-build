@@ -196,7 +196,7 @@ function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
   const prefetchResources = [];
   const qrls = snapshotResult == null ? void 0 : snapshotResult.qrls;
   const { mapper, manifest } = resolvedManifest;
-  const urls = /* @__PURE__ */ new Set();
+  const urls = /* @__PURE__ */ new Map();
   if (Array.isArray(qrls)) {
     for (const obj of qrls) {
       const qrlSymbolName = obj.getHash();
@@ -210,15 +210,15 @@ function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
 }
 function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
   const url = buildBase + bundleFileName;
-  if (!urls.has(url)) {
-    urls.add(url);
+  let prefetchResource = urls.get(url);
+  if (!prefetchResource) {
+    prefetchResource = {
+      url,
+      imports: []
+    };
+    urls.set(url, prefetchResource);
     const bundle = manifest.bundles[bundleFileName];
     if (bundle) {
-      const prefetchResource = {
-        url,
-        imports: []
-      };
-      prefetchResources.push(prefetchResource);
       if (Array.isArray(bundle.imports)) {
         for (const importedFilename of bundle.imports) {
           addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
@@ -226,6 +226,7 @@ function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName)
       }
     }
   }
+  prefetchResources.push(prefetchResource);
 }
 
 // packages/qwik/src/optimizer/src/manifest.ts
@@ -271,6 +272,32 @@ function flattenPrefetchResources(prefetchResources) {
   addPrefetchResource(prefetchResources);
   return urls;
 }
+function getMostReferenced(prefetchResources) {
+  const common = /* @__PURE__ */ new Map();
+  let total = 0;
+  const addPrefetchResource = (prefetchResources2, visited2) => {
+    if (Array.isArray(prefetchResources2)) {
+      for (const prefetchResource of prefetchResources2) {
+        const count = common.get(prefetchResource.url) || 0;
+        common.set(prefetchResource.url, count + 1);
+        total++;
+        if (!visited2.has(prefetchResource.url)) {
+          visited2.add(prefetchResource.url);
+          addPrefetchResource(prefetchResource.imports, visited2);
+        }
+      }
+    }
+  };
+  const visited = /* @__PURE__ */ new Set();
+  for (const resource of prefetchResources) {
+    visited.clear();
+    addPrefetchResource(resource.imports, visited);
+  }
+  const threshold = total / common.size * 2;
+  const urls = Array.from(common.entries());
+  urls.sort((a, b) => b[1] - a[1]);
+  return urls.slice(0, 5).filter((e) => e[1] > threshold).map((e) => e[0]);
+}
 
 // packages/qwik/src/server/prefetch-implementation.ts
 function applyPrefetchImplementation(prefetchStrategy, prefetchResources, nonce) {
@@ -293,9 +320,18 @@ function applyPrefetchImplementation(prefetchStrategy, prefetchResources, nonce)
   return null;
 }
 function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
+  const mostReferenced = getMostReferenced(prefetchResources);
+  for (const url of mostReferenced) {
+    prefetchNodes.push(
+      (0, import_qwik2.jsx)("link", {
+        rel: "modulepreload",
+        href: url,
+        nonce
+      })
+    );
+  }
   prefetchNodes.push(
     (0, import_qwik2.jsx)("script", {
-      type: "module",
       dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources),
       nonce
     })
@@ -490,35 +526,36 @@ async function renderToStream(rootNode, opts) {
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState, void 0, textNodes);
-      const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
-      const children = [
-        (0, import_qwik3.jsx)("script", {
-          type: "qwik/json",
-          dangerouslySetInnerHTML: escapeText(jsonData),
-          nonce: (_a2 = opts.serverData) == null ? void 0 : _a2.nonce
-        })
-      ];
-      if (snapshotResult.funcs.length > 0) {
-        children.push(
-          (0, import_qwik3.jsx)("script", {
-            "q:func": "qwik/json",
-            dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
-            nonce: (_b = opts.serverData) == null ? void 0 : _b.nonce
-          })
-        );
-      }
+      const children = [];
       if (opts.prefetchStrategy !== null) {
         const prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
         if (prefetchResources.length > 0) {
           const prefetchImpl = applyPrefetchImplementation(
             opts.prefetchStrategy,
             prefetchResources,
-            (_c = opts.serverData) == null ? void 0 : _c.nonce
+            (_a2 = opts.serverData) == null ? void 0 : _a2.nonce
           );
           if (prefetchImpl) {
             children.push(prefetchImpl);
           }
         }
+      }
+      const jsonData = JSON.stringify(snapshotResult.state, void 0, import_build.isDev ? "  " : void 0);
+      children.push(
+        (0, import_qwik3.jsx)("script", {
+          type: "qwik/json",
+          dangerouslySetInnerHTML: escapeText(jsonData),
+          nonce: (_b = opts.serverData) == null ? void 0 : _b.nonce
+        })
+      );
+      if (snapshotResult.funcs.length > 0) {
+        children.push(
+          (0, import_qwik3.jsx)("script", {
+            "q:func": "qwik/json",
+            dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
+            nonce: (_c = opts.serverData) == null ? void 0 : _c.nonce
+          })
+        );
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
       const includeMode = ((_d = opts.qwikLoader) == null ? void 0 : _d.include) ?? "auto";
