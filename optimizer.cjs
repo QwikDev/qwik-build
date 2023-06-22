@@ -1556,7 +1556,6 @@ globalThis.qwikOptimizer = function(module) {
       options: {
         target: opts.target,
         buildMode: opts.buildMode,
-        forceFullBuild: opts.forceFullBuild,
         entryStrategy: opts.entryStrategy
       }
     };
@@ -1677,6 +1676,7 @@ globalThis.qwikOptimizer = function(module) {
     const ssrTransformedOutputs = new Map;
     let internalOptimizer = null;
     let linter;
+    const hookManifest = {};
     let diagnosticsCallback = () => {};
     const opts = {
       target: "client",
@@ -1687,7 +1687,6 @@ globalThis.qwikOptimizer = function(module) {
       input: null,
       outDir: null,
       resolveQwikBuild: true,
-      forceFullBuild: false,
       entryStrategy: null,
       srcDir: null,
       srcInputs: null,
@@ -1751,15 +1750,6 @@ globalThis.qwikOptimizer = function(module) {
       } else {
         opts.srcDir = srcDir;
       }
-      "boolean" === typeof updatedOpts.forceFullBuild ? opts.forceFullBuild = updatedOpts.forceFullBuild : opts.forceFullBuild = "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type && "hoist" !== opts.entryStrategy.type || !!updatedOpts.srcInputs;
-      if (false === opts.forceFullBuild && "hook" !== opts.entryStrategy.type && "inline" !== opts.entryStrategy.type && "hoist" !== opts.entryStrategy.type) {
-        console.error(`forceFullBuild cannot be false with entryStrategy ${opts.entryStrategy.type}`);
-        opts.forceFullBuild = true;
-      }
-      if (false === opts.forceFullBuild && !!updatedOpts.srcInputs) {
-        console.error('forceFullBuild reassigned to "true" since "srcInputs" have been provided');
-        opts.forceFullBuild = true;
-      }
       Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
         i.path = normalizePath(path.resolve(opts.rootDir, i.path));
       })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
@@ -1808,14 +1798,15 @@ globalThis.qwikOptimizer = function(module) {
     };
     const buildStart = async ctx => {
       var _a;
-      log("buildStart()", opts.buildMode, opts.forceFullBuild ? "full build" : "isolated build", opts.scope);
+      log("buildStart()", opts.buildMode, opts.scope);
       const optimizer = getOptimizer();
       if ("node" === optimizer.sys.env && "ssr" !== opts.target) {
         try {
           linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
         } catch (err) {}
       }
-      if (opts.forceFullBuild) {
+      const generatePreManifest = ![ "hoist", "hook", "inline" ].includes(opts.entryStrategy.type);
+      if (generatePreManifest) {
         const path = getPath();
         let srcDir = "/";
         if ("string" === typeof opts.srcDir) {
@@ -1865,7 +1856,7 @@ globalThis.qwikOptimizer = function(module) {
           log("buildStart() add transformedOutput", key, null == (_a = output.hook) ? void 0 : _a.displayName);
           transformedOutputs.set(key, [ output, key ]);
           ssrTransformedOutputs.set(key, [ output, key ]);
-          output.isEntry && ctx.emitFile({
+          output.hook ? hookManifest[output.hook.hash] = key : output.isEntry && ctx.emitFile({
             id: key,
             type: "chunk"
           });
@@ -1986,9 +1977,6 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const transform = async function(ctx, code, id2, ssrOpts = {}) {
-      if (opts.forceFullBuild) {
-        return null;
-      }
       const optimizer = getOptimizer();
       const path = getPath();
       const {pathId: pathId} = parseId(id2);
@@ -2001,13 +1989,14 @@ globalThis.qwikOptimizer = function(module) {
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
         const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
-        const mode = "development" === opts.buildMode ? "dev" : "prod";
+        const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
+        const entryStrategy = opts.entryStrategy;
         const transformOpts = {
           input: [ {
             code: code,
             path: filePath
           } ],
-          entryStrategy: opts.entryStrategy,
+          entryStrategy: entryStrategy,
           minify: "simplify",
           sourceMaps: "development" === opts.buildMode,
           transpileTs: true,
@@ -2245,7 +2234,6 @@ globalThis.qwikOptimizer = function(module) {
           target: qwikRollupOpts.target,
           buildMode: qwikRollupOpts.buildMode,
           debug: qwikRollupOpts.debug,
-          forceFullBuild: qwikRollupOpts.forceFullBuild ?? true,
           entryStrategy: qwikRollupOpts.entryStrategy,
           rootDir: qwikRollupOpts.rootDir,
           srcDir: qwikRollupOpts.srcDir,
@@ -3002,20 +2990,13 @@ globalThis.qwikOptimizer = function(module) {
         target = (null == (_a = viteConfig.build) ? void 0 : _a.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "test" === viteEnv.mode ? "test" : "client";
         let buildMode;
         buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteCommand && "client" === target ? "production" : "development";
-        let forceFullBuild = true;
-        if ("serve" === viteCommand) {
-          qwikViteOpts.entryStrategy = {
-            type: "hook"
-          };
-          forceFullBuild = false;
-        } else {
-          "ssr" === target ? qwikViteOpts.entryStrategy = {
-            type: "hoist"
-          } : "lib" === target && (qwikViteOpts.entryStrategy = {
-            type: "inline"
-          });
-          forceFullBuild = true;
-        }
+        "serve" === viteCommand ? qwikViteOpts.entryStrategy = {
+          type: "hook"
+        } : "ssr" === target ? qwikViteOpts.entryStrategy = {
+          type: "hoist"
+        } : "lib" === target && (qwikViteOpts.entryStrategy = {
+          type: "inline"
+        });
         const shouldFindVendors = "lib" !== target || "serve" === viteCommand;
         const vendorRoots = shouldFindVendors ? await findQwikRoots(sys, path.join(sys.cwd(), "package.json")) : [];
         const pluginOpts = {
@@ -3027,7 +3008,6 @@ globalThis.qwikOptimizer = function(module) {
           rootDir: viteConfig.root,
           resolveQwikBuild: true,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
-          forceFullBuild: forceFullBuild,
           vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
           outDir: null == (_b = viteConfig.build) ? void 0 : _b.outDir,
           devTools: qwikViteOpts.devTools

@@ -79,6 +79,7 @@ export declare interface HookAnalysis {
  */
 export declare interface HookEntryStrategy {
     type: 'hook';
+    manual?: Record<string, string>;
 }
 
 /**
@@ -215,7 +216,6 @@ export declare interface QwikManifest {
     options?: {
         target?: string;
         buildMode?: string;
-        forceFullBuild?: boolean;
         entryStrategy?: {
             [key: string]: any;
         };
@@ -229,7 +229,6 @@ declare interface QwikPluginOptions {
     buildMode?: QwikBuildMode;
     debug?: boolean;
     entryStrategy?: EntryStrategy;
-    forceFullBuild?: boolean;
     rootDir?: string;
     tsconfigFileNames?: string[];
     vendorRoots?: string[];
@@ -280,7 +279,6 @@ export declare interface QwikRollupPluginOptions {
      * Default `{ type: "smart" }`)
      */
     entryStrategy?: EntryStrategy;
-    forceFullBuild?: boolean;
     /**
      * The source directory to find all the Qwik components. Since Qwik
      * does not have a single input, the `srcDir` is used to recursively

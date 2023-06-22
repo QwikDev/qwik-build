@@ -148,7 +148,6 @@ declare interface QwikManifest_2 {
     options?: {
         target?: string;
         buildMode?: string;
-        forceFullBuild?: boolean;
         entryStrategy?: {
             [key: string]: any;
         };
