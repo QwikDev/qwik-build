@@ -546,8 +546,8 @@ declare interface ContainerState {
     readonly $containerEl$: Element;
     readonly $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
-    readonly $watchNext$: Set<SubscriberEffect>;
-    readonly $watchStaging$: Set<SubscriberEffect>;
+    readonly $taskNext$: Set<SubscriberEffect>;
+    readonly $taskStaging$: Set<SubscriberEffect>;
     readonly $opsNext$: Set<SubscriberSignal>;
     readonly $hostsNext$: Set<QContext>;
     readonly $hostsStaging$: Set<QContext>;
@@ -1712,7 +1712,7 @@ declare interface QContext {
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
     li: Listener[];
     $seq$: any[] | null;
-    $watches$: SubscriberEffect[] | null;
+    $tasks$: SubscriberEffect[] | null;
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
@@ -2805,7 +2805,7 @@ signal: Signal,
 elm: Node | string | QwikElement
 ];
 
-declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
+declare type SubscriberEffect = TaskDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
 
 declare type SubscriberHost = QwikElement;
 
@@ -2837,6 +2837,8 @@ export declare interface TaskCtx {
     track: Tracker;
     cleanup(callback: () => void): void;
 }
+
+declare type TaskDescriptor = DescriptorBase<TaskFn>;
 
 /**
  * @public
@@ -2945,7 +2947,7 @@ export declare interface Tracker {
     <T>(ctx: () => T): T;
     /**
      * Used to track the whole object. If any property of the passed store changes,
-     * the watch will be scheduled to run.
+     * the task will be scheduled to run.
      */
     <T extends {}>(obj: T): T;
 }
@@ -3517,13 +3519,13 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  *     debounced: 0,
  *   });
  *
- *   // Double count watch
+ *   // Double count task
  *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
- *   // Debouncer watch
+ *   // Debouncer task
  *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
@@ -3544,7 +3546,7 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  * });
  * ```
  *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
 export declare const useTask$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
@@ -3588,13 +3590,13 @@ export declare interface UseTaskOptions {
  *     debounced: 0,
  *   });
  *
- *   // Double count watch
+ *   // Double count task
  *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
- *   // Debouncer watch
+ *   // Debouncer task
  *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
@@ -3615,7 +3617,7 @@ export declare interface UseTaskOptions {
  * });
  * ```
  *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
@@ -3738,8 +3740,6 @@ export declare type VisibleTaskStrategy = 'intersection-observer' | 'document-re
  * @internal
  */
 export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
-
-declare type WatchDescriptor = DescriptorBase<TaskFn>;
 
 /**
  * @internal
