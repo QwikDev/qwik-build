@@ -80,7 +80,7 @@ declare interface AbstractView {
     document: Document;
 }
 
-declare interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
     hrefLang?: string | undefined;
@@ -92,7 +92,7 @@ declare interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
 }
 
-declare interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
     download?: any;
@@ -301,7 +301,7 @@ export declare interface AriaAttributes {
  */
 export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-declare interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {
+declare interface AudioHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
 }
 
 declare type B = [
@@ -315,7 +315,7 @@ key: string | undefined
 
 declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
-declare interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
     children?: undefined;
@@ -339,13 +339,13 @@ declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = 
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
-declare interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
 declare type Booleanish = boolean | `${boolean}`;
 
-declare interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
     form?: string | undefined;
@@ -367,7 +367,7 @@ elm: Node | QwikElement,
 key: string | undefined
 ];
 
-declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     width?: Size | undefined;
 }
@@ -377,11 +377,11 @@ declare interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare type ClassList = BaseClassList | BaseClassList[];
 
-declare interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
 }
 
-declare interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: Size | undefined;
     children?: undefined;
@@ -546,8 +546,8 @@ declare interface ContainerState {
     readonly $containerEl$: Element;
     readonly $proxyMap$: ObjToProxyMap;
     $subsManager$: SubscriptionManager;
-    readonly $watchNext$: Set<SubscriberEffect>;
-    readonly $watchStaging$: Set<SubscriberEffect>;
+    readonly $taskNext$: Set<SubscriberEffect>;
+    readonly $taskStaging$: Set<SubscriberEffect>;
     readonly $opsNext$: Set<SubscriberSignal>;
     readonly $hostsNext$: Set<QContext>;
     readonly $hostsStaging$: Set<QContext>;
@@ -743,11 +743,11 @@ export declare interface CorePlatform {
  */
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
-declare interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare interface DelHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
@@ -769,7 +769,7 @@ declare interface DescriptorBase<T = any, B = undefined> {
  */
 export declare const _deserializeData: (data: string, element?: unknown) => any;
 
-declare interface DetailsHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
@@ -780,14 +780,14 @@ declare interface DevJSX {
     stack?: string;
 }
 
-declare interface DialogHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
 /**
  * @public
  */
-export declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
+export declare interface DOMAttributes<T extends Element> extends QwikProps<T>, QwikEvents<T> {
     children?: JSXChildren;
     key?: string | number | null | undefined;
 }
@@ -797,7 +797,7 @@ export declare interface DOMAttributes<T> extends QwikProps<T>, QwikEvents<T> {
  */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
-declare interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     src?: string | undefined;
     type?: string | undefined;
@@ -822,7 +822,7 @@ export declare const event$: <T>(first: T) => QRL<T>;
  */
 export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
 
-declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
@@ -833,7 +833,7 @@ declare interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
  */
 export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
-declare interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
     autoComplete?: 'on' | 'off' | Omit<'on' | 'off', string> | undefined;
@@ -930,7 +930,7 @@ declare namespace h {
 export { h as createElement }
 export { h }
 
-declare interface HrHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
@@ -941,7 +941,7 @@ declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-whe
 /**
  * @public
  */
-export declare interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+export declare interface HTMLAttributes<T extends Element> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
     contextMenu?: string | undefined;
@@ -1000,7 +1000,7 @@ export declare const HTMLFragment: FunctionComponent<{
     dangerouslySetInnerHTML: string;
 }>;
 
-declare interface HtmlHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
@@ -1020,7 +1020,7 @@ declare interface HTMLWebViewElement extends HTMLElement {
  */
 export declare const _hW: () => void;
 
-declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allow?: string | undefined;
     allowFullScreen?: boolean | undefined;
     allowTransparency?: boolean | undefined;
@@ -1044,7 +1044,7 @@ declare interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     decoding?: 'async' | 'auto' | 'sync' | undefined;
@@ -1118,7 +1118,7 @@ export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScope
  */
 export declare const inlinedQrlDEV: <T = any>(symbol: T, symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
-declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
@@ -1157,7 +1157,7 @@ declare interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
@@ -1358,7 +1358,7 @@ export declare const _jsxS: <T extends string>(type: T, mutableProps: (T extends
  */
 export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
-declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     challenge?: string | undefined;
     disabled?: boolean | undefined;
@@ -1369,16 +1369,16 @@ declare interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
 }
 
-declare interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     as?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     href?: string | undefined;
@@ -1436,11 +1436,11 @@ declare class LocalSubscriptionManager {
     $notifySubs$(key?: string | undefined): void;
 }
 
-declare interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
-declare interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoPlay?: boolean | undefined;
     controls?: boolean | undefined;
     controlsList?: string | undefined;
@@ -1453,11 +1453,11 @@ declare interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
     src?: string | undefined;
 }
 
-declare interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     charSet?: string | undefined;
     content?: string | undefined;
     httpEquiv?: string | undefined;
@@ -1466,7 +1466,7 @@ declare interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     high?: number | undefined;
     low?: number | undefined;
@@ -1552,7 +1552,7 @@ export declare const noSerialize: <T extends object | undefined>(input: T) => No
 
 declare type Numberish = number | `${number}`;
 
-declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
     form?: string | undefined;
@@ -1566,7 +1566,7 @@ declare interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
 
 declare type ObjToProxyMap = WeakMap<any, any>;
 
-declare interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
@@ -1591,12 +1591,12 @@ export declare interface OnVisibleTaskOptions {
     strategy?: VisibleTaskStrategy;
 }
 
-declare interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
 }
 
-declare interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
     selected?: boolean | undefined;
@@ -1604,13 +1604,13 @@ declare interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: string;
 }
 
-declare interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
     name?: string | undefined;
 }
 
-declare interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
     children?: undefined;
@@ -1637,7 +1637,7 @@ declare interface PauseContext {
  */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
 
-declare type PreventDefault<T> = {
+declare type PreventDefault<T extends Element> = {
     [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
@@ -1660,7 +1660,7 @@ declare interface ProcessedJSXNode {
     $dev$?: DevJSX;
 }
 
-declare interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
@@ -1712,7 +1712,7 @@ declare interface QContext {
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
     li: Listener[];
     $seq$: any[] | null;
-    $watches$: SubscriberEffect[] | null;
+    $tasks$: SubscriberEffect[] | null;
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
@@ -1922,7 +1922,7 @@ declare interface QRLInternalMethods<TYPE> {
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 
-declare interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
@@ -1960,17 +1960,17 @@ declare interface QwikCustomEvents<El> {
     [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event, El>> | SingleOrArray<Function> | SingleOrArray<undefined>;
 }
 
-declare interface QwikCustomHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface QwikCustomHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     [key: string]: any;
 }
 
-declare interface QwikCustomHTMLElement extends HTMLElement {
+declare interface QwikCustomHTMLElement extends Element {
 }
 
 /**
  * @public
  */
-export declare interface QwikDOMAttributes extends DOMAttributes<any> {
+export declare interface QwikDOMAttributes extends DOMAttributes<Element> {
 }
 
 /**
@@ -2168,7 +2168,6 @@ declare interface QwikIntrinsicAttributes {
  * @public
  */
 export declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
-    script: QwikScriptHTMLAttributes<HTMLScriptElement>;
     [key: string]: QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
 }
 
@@ -2266,23 +2265,14 @@ export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T,
     isPrimary: boolean;
 }
 
-declare interface QwikProps<T> extends PreventDefault<T> {
+declare interface QwikProps<T extends Element> extends PreventDefault<T> {
     class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
-    ref?: Signal<Element | undefined> | ((el: Element) => void) | undefined;
+    ref?: Ref<T> | undefined;
     /**
-     *
+     * Corresponding slot name used to project the element into.
      */
     'q:slot'?: string;
-    /**
-     * URL against which relative QRLs should be resolved to.
-     */
-    'q:version'?: string;
-    'q:container'?: '';
-}
-
-declare interface QwikScriptHTMLAttributes<T> extends ScriptHTMLAttributes<T> {
-    events?: string[];
 }
 
 /**
@@ -2339,6 +2329,15 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
  * @public
  */
 declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
+
+/**
+ * @public
+ */
+declare type Ref<T extends Element = Element> = Signal<Element | undefined> | RefFnInterface;
+
+declare interface RefFnInterface {
+    (el: Element): void;
+}
 
 /**
  * @internal
@@ -2574,7 +2573,7 @@ declare interface ResourceReturnInternal<T> {
  */
 export declare const _restProps: (props: Record<string, any>, omit: string[]) => Record<string, any>;
 
-declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
     charSet?: string | undefined;
@@ -2588,7 +2587,7 @@ declare interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -2660,7 +2659,7 @@ export declare const Slot: FunctionComponent<{
     name?: string;
 }>;
 
-declare interface SlotHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
@@ -2710,7 +2709,7 @@ export declare interface SnapshotState {
     subs: any[];
 }
 
-declare interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     media?: string | undefined;
     sizes?: string | undefined;
@@ -2779,7 +2778,7 @@ declare interface StyleAppend {
     content: string | null;
 }
 
-declare interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     media?: string | undefined;
     nonce?: string | undefined;
     scoped?: boolean | undefined;
@@ -2806,7 +2805,7 @@ signal: Signal,
 elm: Node | string | QwikElement
 ];
 
-declare type SubscriberEffect = WatchDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
+declare type SubscriberEffect = TaskDescriptor | ResourceDescriptor<any> | ComputedDescriptor<any>;
 
 declare type SubscriberHost = QwikElement;
 
@@ -2824,7 +2823,7 @@ declare type Subscriptions = A | SubscriberSignal;
 declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
 }
 
-declare interface TableHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
     summary?: string | undefined;
@@ -2839,12 +2838,14 @@ export declare interface TaskCtx {
     cleanup(callback: () => void): void;
 }
 
+declare type TaskDescriptor = DescriptorBase<TaskFn>;
+
 /**
  * @public
  */
 export declare type TaskFn = (ctx: TaskCtx) => ValueOrPromise<void | (() => void)>;
 
-declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
     headers?: string | undefined;
@@ -2856,7 +2857,7 @@ declare interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
-declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     cols?: number | undefined;
@@ -2878,7 +2879,7 @@ declare interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
     headers?: string | undefined;
@@ -2887,11 +2888,11 @@ declare interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
     abbr?: string | undefined;
 }
 
-declare interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
-declare interface TitleHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: string;
 }
 
@@ -2946,12 +2947,12 @@ export declare interface Tracker {
     <T>(ctx: () => T): T;
     /**
      * Used to track the whole object. If any property of the passed store changes,
-     * the watch will be scheduled to run.
+     * the task will be scheduled to run.
      */
     <T extends {}>(obj: T): T;
 }
 
-declare interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
     label?: string | undefined;
@@ -3518,13 +3519,13 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  *     debounced: 0,
  *   });
  *
- *   // Double count watch
+ *   // Double count task
  *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
- *   // Debouncer watch
+ *   // Debouncer task
  *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
@@ -3545,7 +3546,7 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  * });
  * ```
  *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
 export declare const useTask$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
@@ -3589,13 +3590,13 @@ export declare interface UseTaskOptions {
  *     debounced: 0,
  *   });
  *
- *   // Double count watch
+ *   // Double count task
  *   useTask$(({ track }) => {
  *     const count = track(() => store.count);
  *     store.doubleCount = 2 * count;
  *   });
  *
- *   // Debouncer watch
+ *   // Debouncer task
  *   useTask$(({ track }) => {
  *     const doubleCount = track(() => store.doubleCount);
  *     const timer = setTimeout(() => {
@@ -3616,7 +3617,7 @@ export declare interface UseTaskOptions {
  * });
  * ```
  *
- * @param watch - Function which should be re-executed when changes to the inputs are detected
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  */
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
@@ -3683,12 +3684,12 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.1.5-dev20230620194537
+ * 1.1.5
  * @public
  */
 export declare const version: string;
 
-declare interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
+declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
     height?: Numberish | undefined;
     playsInline?: boolean | undefined;
     poster?: string | undefined;
@@ -3740,14 +3741,12 @@ export declare type VisibleTaskStrategy = 'intersection-observer' | 'document-re
  */
 export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
 
-declare type WatchDescriptor = DescriptorBase<TaskFn>;
-
 /**
  * @internal
  */
 export declare const _weakSerialize: <T extends Record<string, any>>(input: T) => Partial<T>;
 
-declare interface WebViewHTMLAttributes<T> extends HTMLAttributes<T> {
+declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
     allowpopups?: boolean | undefined;
     autoFocus?: boolean | undefined;

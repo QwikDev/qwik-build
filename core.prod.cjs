@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.5-dev20230620194537
+ * @builder.io/qwik 1.1.5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -168,8 +168,8 @@
             $styleMoved$: !1,
             $proxyMap$: new WeakMap,
             $opsNext$: new Set,
-            $watchNext$: new Set,
-            $watchStaging$: new Set,
+            $taskNext$: new Set,
+            $taskStaging$: new Set,
             $hostsNext$: new Set,
             $hostsStaging$: new Set,
             $styleIds$: new Set,
@@ -301,7 +301,7 @@
             super(), this.ref = ref, this.prop = prop;
         }
         get [QObjectManagerSymbol]() {
-            return getProxyManager(this.ref);
+            return getSubscriptionManager(this.ref);
         }
         get value() {
             return this.ref[this.prop];
@@ -482,8 +482,8 @@
                         const seq = ctxMeta.s;
                         const host = ctxMeta.h;
                         const contexts = ctxMeta.c;
-                        const watches = ctxMeta.w;
-                        if (seq && (elCtx.$seq$ = seq.split(" ").map(getObject)), watches && (elCtx.$watches$ = watches.split(" ").map(getObject)), 
+                        const tasks = ctxMeta.w;
+                        if (seq && (elCtx.$seq$ = seq.split(" ").map(getObject)), tasks && (elCtx.$tasks$ = tasks.split(" ").map(getObject)), 
                         contexts) {
                             elCtx.$contexts$ = new Map;
                             for (const part of contexts.split(" ")) {
@@ -522,7 +522,7 @@
             $element$: element,
             $refMap$: [],
             li: [],
-            $watches$: null,
+            $tasks$: null,
             $seq$: null,
             $slots$: null,
             $scopeIds$: null,
@@ -1144,7 +1144,6 @@
         return prop.startsWith("aria-");
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
-    const version = "1.1.5-dev20230620194537";
     const hashCode = (text, hash = 0) => {
         if (0 === text.length) {
             return hash;
@@ -1857,7 +1856,7 @@
             }
             if (flag > 0 && setObjectFlags(value, flag), !parser.subs(value, converted)) {
                 const proxy = containerState.$proxyMap$.get(value);
-                proxy ? getProxyManager(proxy).$addSubs$(converted) : createProxy(value, containerState, converted);
+                proxy ? getSubscriptionManager(proxy).$addSubs$(converted) : createProxy(value, containerState, converted);
             }
         }
     };
@@ -2407,7 +2406,7 @@
         expectProps === EMPTY_OBJ) {
             return;
         }
-        const manager = getProxyManager(props);
+        const manager = getSubscriptionManager(props);
         assertDefined();
         const target = getProxyTarget(props);
         assertDefined();
@@ -2426,15 +2425,18 @@
             }
             const ctx = tryGetContext(elm);
             ctx && ((elCtx, subsManager) => {
-                elCtx.$watches$?.forEach((watch => {
-                    subsManager.$clearSub$(watch), destroyWatch(watch);
-                })), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$watches$ = null;
+                elCtx.$tasks$?.forEach((task => {
+                    subsManager.$clearSub$(task), destroyTask(task);
+                })), elCtx.$componentQrl$ = null, elCtx.$seq$ = null, elCtx.$tasks$ = null;
             })(ctx, subsManager);
             const end = isVirtualElement(elm) ? elm.close : null;
             let node = elm.firstChild;
             for (;(node = processVirtualNodes(node)) && (cleanupTree(node, staticCtx, subsManager, !0), 
             node = node.nextSibling, node !== end); ) {}
         }
+    };
+    const restoreScroll = () => {
+        document.__q_scroll_restore__ && (document.__q_scroll_restore__(), document.__q_scroll_restore__ = void 0);
     };
     const directAppendChild = (parent, child) => {
         isVirtualElement(child) ? child.appendTo(parent) : parent.appendChild(child);
@@ -2489,7 +2491,7 @@
     const notifyChange = (subAction, containerState) => {
         if (0 === subAction[0]) {
             const host = subAction[1];
-            isSubscriberDescriptor(host) ? notifyWatch(host, containerState) : notifyRender(host, containerState);
+            isSubscriberDescriptor(host) ? notifyTask(host, containerState) : notifyRender(host, containerState);
         } else {
             notifySignalOperation(subAction, containerState);
         }
@@ -2515,19 +2517,19 @@
         const activeRendering = void 0 !== containerState.$hostsRendering$;
         containerState.$opsNext$.add(op), activeRendering || scheduleFrame(containerState);
     };
-    const notifyWatch = (watch, containerState) => {
-        if (watch.$flags$ & WatchFlagsIsDirty) {
+    const notifyTask = (task, containerState) => {
+        if (task.$flags$ & TaskFlagsIsDirty) {
             return;
         }
-        watch.$flags$ |= WatchFlagsIsDirty;
-        void 0 !== containerState.$hostsRendering$ ? containerState.$watchStaging$.add(watch) : (containerState.$watchNext$.add(watch), 
+        task.$flags$ |= TaskFlagsIsDirty;
+        void 0 !== containerState.$hostsRendering$ ? containerState.$taskStaging$.add(task) : (containerState.$taskNext$.add(task), 
         scheduleFrame(containerState));
     };
     const scheduleFrame = containerState => (void 0 === containerState.$renderPromise$ && (containerState.$renderPromise$ = getPlatform().nextTick((() => renderMarked(containerState)))), 
     containerState.$renderPromise$);
     const _hW = () => {
-        const [watch] = useLexicalScope();
-        notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
+        const [task] = useLexicalScope();
+        notifyTask(task, _getContainerState(getWrappingContainer(task.$el$)));
     };
     const renderMarked = async containerState => {
         const containerEl = containerState.$containerEl$;
@@ -2604,7 +2606,9 @@
             })), staticCtx.$operations$.push(...staticCtx.$postOperations$), 0 === staticCtx.$operations$.length ? (printRenderStats(), 
             void await postRendering(containerState, rCtx)) : (await (async ctx => {
                 build.isBrowser && document.__q_view_transition__ && (document.__q_view_transition__ = void 0, 
-                document.startViewTransition) ? await document.startViewTransition((() => executeDOMRender(ctx))).finished : executeDOMRender(ctx);
+                document.startViewTransition) ? await document.startViewTransition((() => {
+                    executeDOMRender(ctx), restoreScroll();
+                })).finished : (executeDOMRender(ctx), build.isBrowser && restoreScroll());
             })(staticCtx), printRenderStats(), postRendering(containerState, rCtx));
         } catch (err) {
             logError(err);
@@ -2617,68 +2621,68 @@
     };
     const postRendering = async (containerState, rCtx) => {
         const hostElements = rCtx.$static$.$hostElements$;
-        await executeTasksAfter(containerState, rCtx, ((watch, stage) => 0 != (watch.$flags$ & WatchFlagsIsVisibleTask) && (!stage || hostElements.has(watch.$el$)))), 
+        await executeTasksAfter(containerState, rCtx, ((task, stage) => 0 != (task.$flags$ & TaskFlagsIsVisibleTask) && (!stage || hostElements.has(task.$el$)))), 
         containerState.$hostsStaging$.forEach((el => {
             containerState.$hostsNext$.add(el);
         })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
         containerState.$renderPromise$ = void 0;
-        containerState.$hostsNext$.size + containerState.$watchNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
+        containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
     };
     const executeTasksBefore = async (containerState, rCtx) => {
         const containerEl = containerState.$containerEl$;
         const resourcesPromises = [];
-        const watchPromises = [];
-        const isWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsTask);
-        const isResourceWatch = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
-        containerState.$watchNext$.forEach((watch => {
-            isWatch(watch) && (watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
-            containerState.$watchNext$.delete(watch)), isResourceWatch(watch) && (resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
-            containerState.$watchNext$.delete(watch));
+        const taskPromises = [];
+        const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
+        const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
+        containerState.$taskNext$.forEach((task => {
+            isTask(task) && (taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+            containerState.$taskNext$.delete(task)), isResourceTask(task) && (resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+            containerState.$taskNext$.delete(task));
         }));
         do {
-            if (containerState.$watchStaging$.forEach((watch => {
-                isWatch(watch) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : isResourceWatch(watch) ? resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch);
-            })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
-                const watches = await Promise.all(watchPromises);
-                sortTasks(watches), await Promise.all(watches.map((watch => runSubscriber(watch, containerState, rCtx)))), 
-                watchPromises.length = 0;
+            if (containerState.$taskStaging$.forEach((task => {
+                isTask(task) ? taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask(task) ? resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
+            })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
+                const tasks = await Promise.all(taskPromises);
+                sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
+                taskPromises.length = 0;
             }
-        } while (containerState.$watchStaging$.size > 0);
+        } while (containerState.$taskStaging$.size > 0);
         if (resourcesPromises.length > 0) {
             const resources = await Promise.all(resourcesPromises);
-            sortTasks(resources), resources.forEach((watch => runSubscriber(watch, containerState, rCtx)));
+            sortTasks(resources), resources.forEach((task => runSubscriber(task, containerState, rCtx)));
         }
     };
-    const executeTasksAfter = async (containerState, rCtx, watchPred) => {
-        const watchPromises = [];
+    const executeTasksAfter = async (containerState, rCtx, taskPred) => {
+        const taskPromises = [];
         const containerEl = containerState.$containerEl$;
-        containerState.$watchNext$.forEach((watch => {
-            watchPred(watch, !1) && (watch.$el$.isConnected && watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))), 
-            containerState.$watchNext$.delete(watch));
+        containerState.$taskNext$.forEach((task => {
+            taskPred(task, !1) && (task.$el$.isConnected && taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+            containerState.$taskNext$.delete(task));
         }));
         do {
-            if (containerState.$watchStaging$.forEach((watch => {
-                watch.$el$.isConnected && (watchPred(watch, !0) ? watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), (() => watch))) : containerState.$watchNext$.add(watch));
-            })), containerState.$watchStaging$.clear(), watchPromises.length > 0) {
-                const watches = await Promise.all(watchPromises);
-                sortTasks(watches);
-                for (const watch of watches) {
-                    runSubscriber(watch, containerState, rCtx);
+            if (containerState.$taskStaging$.forEach((task => {
+                task.$el$.isConnected && (taskPred(task, !0) ? taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task));
+            })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
+                const tasks = await Promise.all(taskPromises);
+                sortTasks(tasks);
+                for (const task of tasks) {
+                    runSubscriber(task, containerState, rCtx);
                 }
-                watchPromises.length = 0;
+                taskPromises.length = 0;
             }
-        } while (containerState.$watchStaging$.size > 0);
+        } while (containerState.$taskStaging$.size > 0);
     };
     const sortNodes = elements => {
         elements.sort(((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1));
     };
-    const sortTasks = watches => {
-        watches.sort(((a, b) => a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
+    const sortTasks = tasks => {
+        tasks.sort(((a, b) => a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
     };
-    const WatchFlagsIsVisibleTask = 1;
-    const WatchFlagsIsTask = 2;
-    const WatchFlagsIsResource = 4;
-    const WatchFlagsIsDirty = 16;
+    const TaskFlagsIsVisibleTask = 1;
+    const TaskFlagsIsTask = 2;
+    const TaskFlagsIsResource = 4;
+    const TaskFlagsIsDirty = 16;
     const useTaskQrl = (qrl, opts) => {
         const {get, set, iCtx, i, elCtx} = useSequentialScope();
         if (get) {
@@ -2686,10 +2690,10 @@
         }
         assertQrl(qrl);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask, i, elCtx.$element$, qrl, void 0);
-        set(!0), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
-        elCtx.$watches$.push(watch), waitAndRun(iCtx, (() => runWatch(watch, containerState, iCtx.$renderCtx$))), 
-        isServerPlatform() && useRunWatch(watch, opts?.eagerness);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask, i, elCtx.$element$, qrl, void 0);
+        set(!0), qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
+        elCtx.$tasks$.push(task), waitAndRun(iCtx, (() => runTask(task, containerState, iCtx.$renderCtx$))), 
+        isServerPlatform() && useRunTask(task, opts?.eagerness);
     };
     const useComputedQrl = qrl => {
         const {get, set, iCtx, i, elCtx} = useSequentialScope();
@@ -2699,9 +2703,9 @@
         assertQrl(qrl);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const signal = _createSignal(void 0, containerState, 3, void 0);
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask | 8, i, elCtx.$element$, qrl, signal);
-        return qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$watches$ || (elCtx.$watches$ = []), 
-        elCtx.$watches$.push(watch), waitAndRun(iCtx, (() => runComputed(watch, containerState, iCtx.$renderCtx$))), 
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | 8, i, elCtx.$element$, qrl, signal);
+        return qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
+        elCtx.$tasks$.push(task), waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$))), 
         set(signal);
     };
     const useComputed$ = implicit$FirstArg(useComputedQrl);
@@ -2710,38 +2714,37 @@
         const {get, set, i, iCtx, elCtx} = useSequentialScope();
         const eagerness = opts?.strategy ?? "intersection-observer";
         if (get) {
-            return void (isServerPlatform() && useRunWatch(get, eagerness));
+            return void (isServerPlatform() && useRunTask(get, eagerness));
         }
         assertQrl(qrl);
-        const watch = new Task(WatchFlagsIsVisibleTask, i, elCtx.$element$, qrl, void 0);
+        const task = new Task(TaskFlagsIsVisibleTask, i, elCtx.$element$, qrl, void 0);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        elCtx.$watches$ || (elCtx.$watches$ = []), elCtx.$watches$.push(watch), set(watch), 
-        useRunWatch(watch, eagerness), isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), 
-        notifyWatch(watch, containerState));
+        elCtx.$tasks$ || (elCtx.$tasks$ = []), elCtx.$tasks$.push(task), set(task), useRunTask(task, eagerness), 
+        isServerPlatform() || (qrl.$resolveLazy$(containerState.$containerEl$), notifyTask(task, containerState));
     };
     const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
-    const isResourceTask = watch => 0 != (watch.$flags$ & WatchFlagsIsResource);
-    const runSubscriber = async (watch, containerState, rCtx) => (assertEqual(), isResourceTask(watch) ? runResource(watch, containerState, rCtx) : (watch => 0 != (8 & watch.$flags$))(watch) ? runComputed(watch, containerState, rCtx) : runWatch(watch, containerState, rCtx));
-    const runResource = (watch, containerState, rCtx, waitOn) => {
-        watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
-        const iCtx = newInvokeContext(rCtx.$static$.$locale$, watch.$el$, void 0, "WatchEvent");
+    const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
+    const runSubscriber = async (task, containerState, rCtx) => (assertEqual(), isResourceTask(task) ? runResource(task, containerState, rCtx) : (task => 0 != (8 & task.$flags$))(task) ? runComputed(task, containerState, rCtx) : runTask(task, containerState, rCtx));
+    const runResource = (task, containerState, rCtx, waitOn) => {
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "TaskEvent");
         const {$subsManager$: subsManager} = containerState;
         iCtx.$renderCtx$ = rCtx;
-        const watchFn = watch.$qrl$.getFn(iCtx, (() => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+            subsManager.$clearSub$(task);
         }));
         const cleanups = [];
-        const resource = watch.$state$;
+        const resource = task.$state$;
         assertDefined();
         const resourceTarget = unwrapProxy(resource);
         const opts = {
             track: (obj, prop) => {
                 if (isFunction(obj)) {
                     const ctx = newInvokeContext();
-                    return ctx.$renderCtx$ = rCtx, ctx.$subscriber$ = [ 0, watch ], invoke(ctx, obj);
+                    return ctx.$renderCtx$ = rCtx, ctx.$subscriber$ = [ 0, task ], invoke(ctx, obj);
                 }
-                const manager = getProxyManager(obj);
-                return manager ? manager.$addSub$([ 0, watch ], prop) : logErrorAndStop(codeToText(26), obj), 
+                const manager = getSubscriptionManager(obj);
+                return manager ? manager.$addSub$([ 0, task ], prop) : logErrorAndStop(codeToText(26), obj), 
                 prop ? obj[prop] : isSignal(obj) ? obj.value : obj;
             },
             cleanup(callback) {
@@ -2764,72 +2767,72 @@
             resource._state = "pending", resource.loading = !isServerPlatform(), resource.value = new Promise(((r, re) => {
                 resolve = r, reject = re;
             }));
-        })), watch.$destroy$ = noSerialize((() => {
+        })), task.$destroy$ = noSerialize((() => {
             done = !0, cleanups.forEach((fn => fn()));
         }));
-        const promise = safeCall((() => then(waitOn, (() => watchFn(opts)))), (value => {
+        const promise = safeCall((() => then(waitOn, (() => taskFn(opts)))), (value => {
             setState(!0, value);
         }), (reason => {
             setState(!1, reason);
         }));
         const timeout = resourceTarget._timeout;
         return timeout > 0 ? Promise.race([ promise, delay(timeout).then((() => {
-            setState(!1, new Error("timeout")) && cleanupWatch(watch);
+            setState(!1, new Error("timeout")) && cleanupTask(task);
         })) ]) : promise;
     };
-    const runWatch = (watch, containerState, rCtx) => {
-        watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
-        const hostElement = watch.$el$;
-        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "WatchEvent");
+    const runTask = (task, containerState, rCtx) => {
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        const hostElement = task.$el$;
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "TaskEvent");
         iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
-        const watchFn = watch.$qrl$.getFn(iCtx, (() => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+            subsManager.$clearSub$(task);
         }));
         const cleanups = [];
-        watch.$destroy$ = noSerialize((() => {
+        task.$destroy$ = noSerialize((() => {
             cleanups.forEach((fn => fn()));
         }));
         const opts = {
             track: (obj, prop) => {
                 if (isFunction(obj)) {
                     const ctx = newInvokeContext();
-                    return ctx.$subscriber$ = [ 0, watch ], invoke(ctx, obj);
+                    return ctx.$subscriber$ = [ 0, task ], invoke(ctx, obj);
                 }
-                const manager = getProxyManager(obj);
-                return manager ? manager.$addSub$([ 0, watch ], prop) : logErrorAndStop(codeToText(26), obj), 
+                const manager = getSubscriptionManager(obj);
+                return manager ? manager.$addSub$([ 0, task ], prop) : logErrorAndStop(codeToText(26), obj), 
                 prop ? obj[prop] : obj;
             },
             cleanup(callback) {
                 cleanups.push(callback);
             }
         };
-        return safeCall((() => watchFn(opts)), (returnValue => {
+        return safeCall((() => taskFn(opts)), (returnValue => {
             isFunction(returnValue) && cleanups.push(returnValue);
         }), (reason => {
             handleError(reason, hostElement, rCtx);
         }));
     };
-    const runComputed = (watch, containerState, rCtx) => {
-        watch.$flags$ &= ~WatchFlagsIsDirty, cleanupWatch(watch);
-        const hostElement = watch.$el$;
+    const runComputed = (task, containerState, rCtx) => {
+        task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
+        const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "ComputedEvent");
-        iCtx.$subscriber$ = [ 0, watch ], iCtx.$renderCtx$ = rCtx;
+        iCtx.$subscriber$ = [ 0, task ], iCtx.$renderCtx$ = rCtx;
         const {$subsManager$: subsManager} = containerState;
-        const watchFn = watch.$qrl$.getFn(iCtx, (() => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, (() => {
+            subsManager.$clearSub$(task);
         }));
-        return safeCall(watchFn, (returnValue => untrack((() => {
-            const signal = watch.$state$;
+        return safeCall(taskFn, (returnValue => untrack((() => {
+            const signal = task.$state$;
             signal[QObjectSignalFlags] &= -3, signal.untrackedValue = returnValue, signal[QObjectManagerSymbol].$notifySubs$();
         }))), (reason => {
             handleError(reason, hostElement, rCtx);
         }));
     };
-    const cleanupWatch = watch => {
-        const destroy = watch.$destroy$;
+    const cleanupTask = task => {
+        const destroy = task.$destroy$;
         if (destroy) {
-            watch.$destroy$ = void 0;
+            task.$destroy$ = void 0;
             try {
                 destroy();
             } catch (err) {
@@ -2837,20 +2840,20 @@
             }
         }
     };
-    const destroyWatch = watch => {
-        if (32 & watch.$flags$) {
-            watch.$flags$ &= -33;
-            (0, watch.$qrl$)();
+    const destroyTask = task => {
+        if (32 & task.$flags$) {
+            task.$flags$ &= -33;
+            (0, task.$qrl$)();
         } else {
-            cleanupWatch(watch);
+            cleanupTask(task);
         }
     };
-    const useRunWatch = (watch, eagerness) => {
-        "visible" === eagerness || "intersection-observer" === eagerness ? useOn("qvisible", getWatchHandlerQrl(watch)) : "load" === eagerness || "document-ready" === eagerness ? useOnDocument("qinit", getWatchHandlerQrl(watch)) : "idle" !== eagerness && "document-idle" !== eagerness || useOnDocument("qidle", getWatchHandlerQrl(watch));
+    const useRunTask = (task, eagerness) => {
+        "visible" === eagerness || "intersection-observer" === eagerness ? useOn("qvisible", getTaskHandlerQrl(task)) : "load" === eagerness || "document-ready" === eagerness ? useOnDocument("qinit", getTaskHandlerQrl(task)) : "idle" !== eagerness && "document-idle" !== eagerness || useOnDocument("qidle", getTaskHandlerQrl(task));
     };
-    const getWatchHandlerQrl = watch => {
-        const watchQrl = watch.$qrl$;
-        return createQRL(watchQrl.$chunk$, "_hW", _hW, null, null, [ watch ], watchQrl.$symbol$);
+    const getTaskHandlerQrl = task => {
+        const taskQrl = task.$qrl$;
+        return createQRL(taskQrl.$chunk$, "_hW", _hW, null, null, [ task ], taskQrl.$symbol$);
     };
     const isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Task;
     class Task {
@@ -2900,9 +2903,9 @@
         }));
         let hasListeners = !1;
         for (const ctx of allContexts) {
-            if (ctx.$watches$) {
-                for (const watch of ctx.$watches$) {
-                    isResourceTask(watch) && collector.$resources$.push(watch.$state$), destroyWatch(watch);
+            if (ctx.$tasks$) {
+                for (const task of ctx.$tasks$) {
+                    isResourceTask(task) && collector.$resources$.push(task.$state$), destroyTask(task);
                 }
             }
         }
@@ -3074,7 +3077,7 @@
             const ref = ctx.$refMap$;
             const props = ctx.$props$;
             const contexts = ctx.$contexts$;
-            const watches = ctx.$watches$;
+            const tasks = ctx.$tasks$;
             const renderQrl = ctx.$componentQrl$;
             const seq = ctx.$seq$;
             const metaValue = {};
@@ -3093,8 +3096,8 @@
                     const propsId = getObjId(props);
                     propsId && (metaValue.h = " " + propsId, add = !0);
                 }
-                if (watches && watches.length > 0) {
-                    const value = mapJoin(watches, getObjId, " ");
+                if (tasks && tasks.length > 0) {
+                    const value = mapJoin(tasks, getObjId, " ");
                     value && (metaValue.w = value, add = !0);
                 }
                 if (elementCaptured && seq && seq.length > 0) {
@@ -3155,12 +3158,12 @@
         const parentCtx = elCtx.$parent$;
         const props = elCtx.$props$;
         if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
-            const subs = getProxyManager(props)?.$subs$;
+            const subs = getSubscriptionManager(props)?.$subs$;
             const el = elCtx.$element$;
             if (subs) {
                 for (const sub of subs) {
-                    0 === sub[0] ? (sub[1] !== el && collectSubscriptions(getProxyManager(props), collector, !1), 
-                    collectElement(sub[1], collector)) : (collectValue(props, collector, !1), collectSubscriptions(getProxyManager(props), collector, !1));
+                    0 === sub[0] ? (sub[1] !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
+                    collectElement(sub[1], collector)) : (collectValue(props, collector, !1), collectSubscriptions(getSubscriptionManager(props), collector, !1));
                 }
             }
         }
@@ -3195,15 +3198,16 @@
     };
     const collectElementData = (elCtx, collector, dynamicCtx) => {
         if (elCtx.$props$ && !isEmptyObj(elCtx.$props$) && (collectValue(elCtx.$props$, collector, dynamicCtx), 
-        collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx)), elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx), 
+        collectSubscriptions(getSubscriptionManager(elCtx.$props$), collector, dynamicCtx)), 
+        elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx), 
         elCtx.$seq$) {
             for (const obj of elCtx.$seq$) {
                 collectValue(obj, collector, dynamicCtx);
             }
         }
-        if (elCtx.$watches$) {
+        if (elCtx.$tasks$) {
             const map = collector.$containerState$.$subsManager$.$groupToManagers$;
-            for (const obj of elCtx.$watches$) {
+            for (const obj of elCtx.$tasks$) {
                 map.has(obj) && collectValue(obj, collector, dynamicCtx);
             }
         }
@@ -3266,7 +3270,7 @@
                         }
                         seen.add(obj);
                         const mutable = 0 == (2 & getProxyFlags(obj));
-                        if (leaks && mutable && collectSubscriptions(getProxyManager(input), collector, leaks), 
+                        if (leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks), 
                         fastWeakSerialize(input)) {
                             return void collector.$objSet$.add(obj);
                         }
@@ -3326,10 +3330,10 @@
             return;
         }
         if (obj instanceof SignalImpl) {
-            return getProxyManager(obj);
+            return getSubscriptionManager(obj);
         }
         const proxy = containerState.$proxyMap$.get(obj);
-        return proxy ? getProxyManager(proxy) : void 0;
+        return proxy ? getSubscriptionManager(proxy) : void 0;
     };
     const getQId = el => {
         const ctx = tryGetContext(el);
@@ -3447,10 +3451,10 @@
         assertQrl(qrl);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const resource = createResourceReturn(containerState, opts);
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsResource, i, elCtx.$element$, qrl, resource);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsResource, i, elCtx.$element$, qrl, resource);
         const previousWait = Promise.all(iCtx.$waitOn$.slice());
-        return runResource(watch, containerState, iCtx.$renderCtx$, previousWait), elCtx.$watches$ || (elCtx.$watches$ = []), 
-        elCtx.$watches$.push(watch), set(resource), resource;
+        return runResource(task, containerState, iCtx.$renderCtx$, previousWait), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
+        elCtx.$tasks$.push(task), set(resource), resource;
     };
     const _createResourceReturn = opts => ({
         __brand: "resource",
@@ -3499,16 +3503,16 @@
             collectValue(v.$qrl$, collector, leaks), v.$state$ && (collectValue(v.$state$, collector, leaks), 
             !0 === leaks && v.$state$ instanceof SignalImpl && collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, !0));
         },
-        $serialize$: (obj, getObjId) => ((watch, getObjId) => {
-            let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
-            return watch.$state$ && (value += ` ${getObjId(watch.$state$)}`), value;
+        $serialize$: (obj, getObjId) => ((task, getObjId) => {
+            let value = `${intToStr(task.$flags$)} ${intToStr(task.$index$)} ${getObjId(task.$qrl$)} ${getObjId(task.$el$)}`;
+            return task.$state$ && (value += ` ${getObjId(task.$state$)}`), value;
         })(obj, getObjId),
         $prepare$: data => (data => {
             const [flags, index, qrl, el, resource] = data.split(" ");
             return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
         })(data),
-        $fill$: (watch, getObject) => {
-            watch.$el$ = getObject(watch.$el$), watch.$qrl$ = getObject(watch.$qrl$), watch.$state$ && (watch.$state$ = getObject(watch.$state$));
+        $fill$: (task, getObject) => {
+            task.$el$ = getObject(task.$el$), task.$qrl$ = getObject(task.$qrl$), task.$state$ && (task.$state$ = getObject(task.$state$));
         }
     };
     const ResourceSerializer = {
@@ -3657,7 +3661,7 @@
         $test$: v => v instanceof SignalWrapper,
         $collect$(obj, collector, leaks) {
             if (collectValue(obj.ref, collector, leaks), fastWeakSerialize(obj.ref)) {
-                const localManager = getProxyManager(obj.ref);
+                const localManager = getSubscriptionManager(obj.ref);
                 isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
             }
             return obj;
@@ -3910,7 +3914,7 @@
     const noSerialize = input => (null != input && noSerializeSet.add(input), input);
     const unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     const getProxyTarget = obj => obj[QOjectTargetSymbol];
-    const getProxyManager = obj => obj[QObjectManagerSymbol];
+    const getSubscriptionManager = obj => obj[QObjectManagerSymbol];
     const getProxyFlags = obj => obj[QObjectFlagsSymbol];
     const serializeSubscription = (sub, getObjId) => {
         const type = sub[0];
@@ -4071,7 +4075,7 @@
                             return;
                         }
                         const context = {
-                            ...createInvocationContext(currentCtx),
+                            ...createOrReuseInvocationContext(currentCtx),
                             $qrl$: QRL
                         };
                         return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
@@ -4081,7 +4085,7 @@
                 }));
             };
         }
-        const createInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
+        const createOrReuseInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
         const invokeQRL = async function(...args) {
             const fn = invokeFn.call(this, tryGetInvokeContext());
             return await fn(...args);
@@ -4181,7 +4185,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", version ?? "dev"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.1.5"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4465,7 +4469,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": version ?? "dev",
+            "q:version": "1.1.5",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale
@@ -4672,7 +4676,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = version, exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.1.5", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

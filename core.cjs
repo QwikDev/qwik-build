@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.1.5-dev20230620194537
+ * @builder.io/qwik 1.1.5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -541,8 +541,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             $styleMoved$: false,
             $proxyMap$: new WeakMap(),
             $opsNext$: new Set(),
-            $watchNext$: new Set(),
-            $watchStaging$: new Set(),
+            $taskNext$: new Set(),
+            $taskStaging$: new Set(),
             $hostsNext$: new Set(),
             $hostsStaging$: new Set(),
             $styleIds$: new Set(),
@@ -814,7 +814,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             this.prop = prop;
         }
         get [QObjectManagerSymbol]() {
-            return getProxyManager(this.ref);
+            return getSubscriptionManager(this.ref);
         }
         get value() {
             return this.ref[this.prop];
@@ -1111,12 +1111,12 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         const seq = ctxMeta.s;
                         const host = ctxMeta.h;
                         const contexts = ctxMeta.c;
-                        const watches = ctxMeta.w;
+                        const tasks = ctxMeta.w;
                         if (seq) {
                             elCtx.$seq$ = seq.split(' ').map(getObject);
                         }
-                        if (watches) {
-                            elCtx.$watches$ = watches.split(' ').map(getObject);
+                        if (tasks) {
+                            elCtx.$tasks$ = tasks.split(' ').map(getObject);
                         }
                         if (contexts) {
                             elCtx.$contexts$ = new Map();
@@ -1165,7 +1165,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             $element$: element,
             $refMap$: [],
             li: [],
-            $watches$: null,
+            $tasks$: null,
             $seq$: null,
             $slots$: null,
             $scopeIds$: null,
@@ -1183,13 +1183,13 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return ctx;
     };
     const cleanupContext = (elCtx, subsManager) => {
-        elCtx.$watches$?.forEach((watch) => {
-            subsManager.$clearSub$(watch);
-            destroyWatch(watch);
+        elCtx.$tasks$?.forEach((task) => {
+            subsManager.$clearSub$(task);
+            destroyTask(task);
         });
         elCtx.$componentQrl$ = null;
         elCtx.$seq$ = null;
-        elCtx.$watches$ = null;
+        elCtx.$tasks$ = null;
     };
 
     let _locale = undefined;
@@ -2555,7 +2555,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * QWIK_VERSION
      * @public
      */
-    const version = "1.1.5-dev20230620194537";
+    const version = "1.1.5";
 
     const hashCode = (text, hash = 0) => {
         if (text.length === 0) {
@@ -3899,7 +3899,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             if (!parser.subs(value, converted)) {
                 const proxy = containerState.$proxyMap$.get(value);
                 if (proxy) {
-                    getProxyManager(proxy).$addSubs$(converted);
+                    getSubscriptionManager(proxy).$addSubs$(converted);
                 }
                 else {
                     createProxy(value, containerState, converted);
@@ -5031,7 +5031,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (expectProps === EMPTY_OBJ) {
             return;
         }
-        const manager = getProxyManager(props);
+        const manager = getSubscriptionManager(props);
         assertDefined(manager, `props have to be a proxy, but it is not`, props);
         const target = getProxyTarget(props);
         assertDefined(target, `props have to be a proxy, but it is not`, props);
@@ -5069,19 +5069,31 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     };
-    const executeContextWithTransition = async (ctx) => {
+    const restoreScroll = () => {
+        if (document.__q_scroll_restore__) {
+            document.__q_scroll_restore__();
+            document.__q_scroll_restore__ = undefined;
+        }
+    };
+    const executeContextWithScrollAndTransition = async (ctx) => {
         // try to use `document.startViewTransition`
         if (build.isBrowser && !qTest) {
             if (document.__q_view_transition__) {
                 document.__q_view_transition__ = undefined;
                 if (document.startViewTransition) {
-                    await document.startViewTransition(() => executeDOMRender(ctx)).finished;
+                    await document.startViewTransition(() => {
+                        executeDOMRender(ctx);
+                        restoreScroll();
+                    }).finished;
                     return;
                 }
             }
         }
         // fallback
         executeDOMRender(ctx);
+        if (build.isBrowser) {
+            restoreScroll();
+        }
     };
     const directAppendChild = (parent, child) => {
         if (isVirtualElement(child)) {
@@ -5241,7 +5253,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (subAction[0] === 0) {
             const host = subAction[1];
             if (isSubscriberDescriptor(host)) {
-                notifyWatch(host, containerState);
+                notifyTask(host, containerState);
             }
             else {
                 notifyRender(host, containerState);
@@ -5296,17 +5308,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             scheduleFrame(containerState);
         }
     };
-    const notifyWatch = (watch, containerState) => {
-        if (watch.$flags$ & WatchFlagsIsDirty) {
+    const notifyTask = (task, containerState) => {
+        if (task.$flags$ & TaskFlagsIsDirty) {
             return;
         }
-        watch.$flags$ |= WatchFlagsIsDirty;
+        task.$flags$ |= TaskFlagsIsDirty;
         const activeRendering = containerState.$hostsRendering$ !== undefined;
         if (activeRendering) {
-            containerState.$watchStaging$.add(watch);
+            containerState.$taskStaging$.add(task);
         }
         else {
-            containerState.$watchNext$.add(watch);
+            containerState.$taskNext$.add(task);
             scheduleFrame(containerState);
         }
     };
@@ -5324,8 +5336,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *
      */
     const _hW = () => {
-        const [watch] = useLexicalScope();
-        notifyWatch(watch, _getContainerState(getWrappingContainer(watch.$el$)));
+        const [task] = useLexicalScope();
+        notifyTask(task, _getContainerState(getWrappingContainer(task.$el$)));
     };
     const renderMarked = async (containerState) => {
         const containerEl = containerState.$containerEl$;
@@ -5383,7 +5395,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 await postRendering(containerState, rCtx);
                 return;
             }
-            await executeContextWithTransition(staticCtx);
+            await executeContextWithScrollAndTransition(staticCtx);
             printRenderStats(staticCtx);
             return postRendering(containerState, rCtx);
         }
@@ -5405,12 +5417,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const postRendering = async (containerState, rCtx) => {
         const hostElements = rCtx.$static$.$hostElements$;
-        await executeTasksAfter(containerState, rCtx, (watch, stage) => {
-            if ((watch.$flags$ & WatchFlagsIsVisibleTask) === 0) {
+        await executeTasksAfter(containerState, rCtx, (task, stage) => {
+            if ((task.$flags$ & TaskFlagsIsVisibleTask) === 0) {
                 return false;
             }
             if (stage) {
-                return hostElements.has(watch.$el$);
+                return hostElements.has(task.$el$);
             }
             return true;
         });
@@ -5422,7 +5434,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         containerState.$hostsRendering$ = undefined;
         containerState.$renderPromise$ = undefined;
         const pending = containerState.$hostsNext$.size +
-            containerState.$watchNext$.size +
+            containerState.$taskNext$.size +
             containerState.$opsNext$.size;
         if (pending > 0) {
             // Immediately render again
@@ -5432,89 +5444,89 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const executeTasksBefore = async (containerState, rCtx) => {
         const containerEl = containerState.$containerEl$;
         const resourcesPromises = [];
-        const watchPromises = [];
-        const isWatch = (watch) => (watch.$flags$ & WatchFlagsIsTask) !== 0;
-        const isResourceWatch = (watch) => (watch.$flags$ & WatchFlagsIsResource) !== 0;
-        containerState.$watchNext$.forEach((watch) => {
-            if (isWatch(watch)) {
-                watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
-                containerState.$watchNext$.delete(watch);
+        const taskPromises = [];
+        const isTask = (task) => (task.$flags$ & TaskFlagsIsTask) !== 0;
+        const isResourceTask = (task) => (task.$flags$ & TaskFlagsIsResource) !== 0;
+        containerState.$taskNext$.forEach((task) => {
+            if (isTask(task)) {
+                taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                containerState.$taskNext$.delete(task);
             }
-            if (isResourceWatch(watch)) {
-                resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
-                containerState.$watchNext$.delete(watch);
+            if (isResourceTask(task)) {
+                resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                containerState.$taskNext$.delete(task);
             }
         });
         do {
             // Run staging effected
-            containerState.$watchStaging$.forEach((watch) => {
-                if (isWatch(watch)) {
-                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+            containerState.$taskStaging$.forEach((task) => {
+                if (isTask(task)) {
+                    taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
-                else if (isResourceWatch(watch)) {
-                    resourcesPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+                else if (isResourceTask(task)) {
+                    resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
                 else {
-                    containerState.$watchNext$.add(watch);
+                    containerState.$taskNext$.add(task);
                 }
             });
-            containerState.$watchStaging$.clear();
+            containerState.$taskStaging$.clear();
             // Wait for all promises
-            if (watchPromises.length > 0) {
-                const watches = await Promise.all(watchPromises);
-                sortTasks(watches);
-                await Promise.all(watches.map((watch) => {
-                    return runSubscriber(watch, containerState, rCtx);
+            if (taskPromises.length > 0) {
+                const tasks = await Promise.all(taskPromises);
+                sortTasks(tasks);
+                await Promise.all(tasks.map((task) => {
+                    return runSubscriber(task, containerState, rCtx);
                 }));
-                watchPromises.length = 0;
+                taskPromises.length = 0;
             }
-        } while (containerState.$watchStaging$.size > 0);
+        } while (containerState.$taskStaging$.size > 0);
         if (resourcesPromises.length > 0) {
             const resources = await Promise.all(resourcesPromises);
             sortTasks(resources);
-            resources.forEach((watch) => runSubscriber(watch, containerState, rCtx));
+            resources.forEach((task) => runSubscriber(task, containerState, rCtx));
         }
     };
-    const executeTasksAfter = async (containerState, rCtx, watchPred) => {
-        const watchPromises = [];
+    const executeTasksAfter = async (containerState, rCtx, taskPred) => {
+        const taskPromises = [];
         const containerEl = containerState.$containerEl$;
-        containerState.$watchNext$.forEach((watch) => {
-            if (watchPred(watch, false)) {
-                if (watch.$el$.isConnected) {
-                    watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+        containerState.$taskNext$.forEach((task) => {
+            if (taskPred(task, false)) {
+                if (task.$el$.isConnected) {
+                    taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
-                containerState.$watchNext$.delete(watch);
+                containerState.$taskNext$.delete(task);
             }
         });
         do {
             // Run staging effected
-            containerState.$watchStaging$.forEach((watch) => {
-                if (watch.$el$.isConnected) {
-                    if (watchPred(watch, true)) {
-                        watchPromises.push(then(watch.$qrl$.$resolveLazy$(containerEl), () => watch));
+            containerState.$taskStaging$.forEach((task) => {
+                if (task.$el$.isConnected) {
+                    if (taskPred(task, true)) {
+                        taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
                     }
                     else {
-                        containerState.$watchNext$.add(watch);
+                        containerState.$taskNext$.add(task);
                     }
                 }
             });
-            containerState.$watchStaging$.clear();
+            containerState.$taskStaging$.clear();
             // Wait for all promises
-            if (watchPromises.length > 0) {
-                const watches = await Promise.all(watchPromises);
-                sortTasks(watches);
-                for (const watch of watches) {
-                    runSubscriber(watch, containerState, rCtx);
+            if (taskPromises.length > 0) {
+                const tasks = await Promise.all(taskPromises);
+                sortTasks(tasks);
+                for (const task of tasks) {
+                    runSubscriber(task, containerState, rCtx);
                 }
-                watchPromises.length = 0;
+                taskPromises.length = 0;
             }
-        } while (containerState.$watchStaging$.size > 0);
+        } while (containerState.$taskStaging$.size > 0);
     };
     const sortNodes = (elements) => {
         elements.sort((a, b) => a.$element$.compareDocumentPosition(getRootNode(b.$element$)) & 2 ? 1 : -1);
     };
-    const sortTasks = (watches) => {
-        watches.sort((a, b) => {
+    const sortTasks = (tasks) => {
+        tasks.sort((a, b) => {
             if (a.$el$ === b.$el$) {
                 return a.$index$ < b.$index$ ? -1 : 1;
             }
@@ -5522,12 +5534,12 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         });
     };
 
-    const WatchFlagsIsVisibleTask = 1 << 0;
-    const WatchFlagsIsTask = 1 << 1;
-    const WatchFlagsIsResource = 1 << 2;
-    const WatchFlagsIsComputed = 1 << 3;
-    const WatchFlagsIsDirty = 1 << 4;
-    const WatchFlagsIsCleanup = 1 << 5;
+    const TaskFlagsIsVisibleTask = 1 << 0;
+    const TaskFlagsIsTask = 1 << 1;
+    const TaskFlagsIsResource = 1 << 2;
+    const TaskFlagsIsComputed = 1 << 3;
+    const TaskFlagsIsDirty = 1 << 4;
+    const TaskFlagsIsCleanup = 1 << 5;
     // <docs markdown="../readme.md#useTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useTask instead)
@@ -5559,13 +5571,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     debounced: 0,
      *   });
      *
-     *   // Double count watch
+     *   // Double count task
      *   useTask$(({ track }) => {
      *     const count = track(() => store.count);
      *     store.doubleCount = 2 * count;
      *   });
      *
-     *   // Debouncer watch
+     *   // Debouncer task
      *   useTask$(({ track }) => {
      *     const doubleCount = track(() => store.doubleCount);
      *     const timer = setTimeout(() => {
@@ -5586,7 +5598,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * });
      * ```
      *
-     * @param watch - Function which should be re-executed when changes to the inputs are detected
+     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
      */
     // </docs>
@@ -5597,16 +5609,16 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         assertQrl(qrl);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask, i, elCtx.$element$, qrl, undefined);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask, i, elCtx.$element$, qrl, undefined);
         set(true);
         qrl.$resolveLazy$(containerState.$containerEl$);
-        if (!elCtx.$watches$) {
-            elCtx.$watches$ = [];
+        if (!elCtx.$tasks$) {
+            elCtx.$tasks$ = [];
         }
-        elCtx.$watches$.push(watch);
-        waitAndRun(iCtx, () => runWatch(watch, containerState, iCtx.$renderCtx$));
+        elCtx.$tasks$.push(task);
+        waitAndRun(iCtx, () => runTask(task, containerState, iCtx.$renderCtx$));
         if (isServerPlatform()) {
-            useRunWatch(watch, opts?.eagerness);
+            useRunTask(task, opts?.eagerness);
         }
     };
     /**
@@ -5620,13 +5632,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         assertQrl(qrl);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const signal = _createSignal(undefined, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, undefined);
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsTask | WatchFlagsIsComputed, i, elCtx.$element$, qrl, signal);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | TaskFlagsIsComputed, i, elCtx.$element$, qrl, signal);
         qrl.$resolveLazy$(containerState.$containerEl$);
-        if (!elCtx.$watches$) {
-            elCtx.$watches$ = [];
+        if (!elCtx.$tasks$) {
+            elCtx.$tasks$ = [];
         }
-        elCtx.$watches$.push(watch);
-        waitAndRun(iCtx, () => runComputed(watch, containerState, iCtx.$renderCtx$));
+        elCtx.$tasks$.push(task);
+        waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
         return set(signal);
     };
     /**
@@ -5664,13 +5676,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *     debounced: 0,
      *   });
      *
-     *   // Double count watch
+     *   // Double count task
      *   useTask$(({ track }) => {
      *     const count = track(() => store.count);
      *     store.doubleCount = 2 * count;
      *   });
      *
-     *   // Debouncer watch
+     *   // Debouncer task
      *   useTask$(({ track }) => {
      *     const doubleCount = track(() => store.doubleCount);
      *     const timer = setTimeout(() => {
@@ -5691,7 +5703,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * });
      * ```
      *
-     * @param watch - Function which should be re-executed when changes to the inputs are detected
+     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
      */
     // </docs>
@@ -5728,22 +5740,22 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const eagerness = opts?.strategy ?? 'intersection-observer';
         if (get) {
             if (isServerPlatform()) {
-                useRunWatch(get, eagerness);
+                useRunTask(get, eagerness);
             }
             return;
         }
         assertQrl(qrl);
-        const watch = new Task(WatchFlagsIsVisibleTask, i, elCtx.$element$, qrl, undefined);
+        const task = new Task(TaskFlagsIsVisibleTask, i, elCtx.$element$, qrl, undefined);
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        if (!elCtx.$watches$) {
-            elCtx.$watches$ = [];
+        if (!elCtx.$tasks$) {
+            elCtx.$tasks$ = [];
         }
-        elCtx.$watches$.push(watch);
-        set(watch);
-        useRunWatch(watch, eagerness);
+        elCtx.$tasks$.push(task);
+        set(task);
+        useRunTask(task, eagerness);
         if (!isServerPlatform()) {
             qrl.$resolveLazy$(containerState.$containerEl$);
-            notifyWatch(watch, containerState);
+            notifyTask(task, containerState);
         }
     };
     // <docs markdown="../readme.md#useVisibleTask">
@@ -5774,47 +5786,47 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      */
     // </docs>
     const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
-    const isResourceTask = (watch) => {
-        return (watch.$flags$ & WatchFlagsIsResource) !== 0;
+    const isResourceTask = (task) => {
+        return (task.$flags$ & TaskFlagsIsResource) !== 0;
     };
-    const isComputedTask = (watch) => {
-        return (watch.$flags$ & WatchFlagsIsComputed) !== 0;
+    const isComputedTask = (task) => {
+        return (task.$flags$ & TaskFlagsIsComputed) !== 0;
     };
-    const runSubscriber = async (watch, containerState, rCtx) => {
-        assertEqual(!!(watch.$flags$ & WatchFlagsIsDirty), true, 'Resource is not dirty', watch);
-        if (isResourceTask(watch)) {
-            return runResource(watch, containerState, rCtx);
+    const runSubscriber = async (task, containerState, rCtx) => {
+        assertEqual(!!(task.$flags$ & TaskFlagsIsDirty), true, 'Resource is not dirty', task);
+        if (isResourceTask(task)) {
+            return runResource(task, containerState, rCtx);
         }
-        else if (isComputedTask(watch)) {
-            return runComputed(watch, containerState, rCtx);
+        else if (isComputedTask(task)) {
+            return runComputed(task, containerState, rCtx);
         }
         else {
-            return runWatch(watch, containerState, rCtx);
+            return runTask(task, containerState, rCtx);
         }
     };
-    const runResource = (watch, containerState, rCtx, waitOn) => {
-        watch.$flags$ &= ~WatchFlagsIsDirty;
-        cleanupWatch(watch);
-        const el = watch.$el$;
-        const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'WatchEvent');
+    const runResource = (task, containerState, rCtx, waitOn) => {
+        task.$flags$ &= ~TaskFlagsIsDirty;
+        cleanupTask(task);
+        const el = task.$el$;
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'TaskEvent');
         const { $subsManager$: subsManager } = containerState;
         iCtx.$renderCtx$ = rCtx;
-        const watchFn = watch.$qrl$.getFn(iCtx, () => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
+            subsManager.$clearSub$(task);
         });
         const cleanups = [];
-        const resource = watch.$state$;
-        assertDefined(resource, 'useResource: when running a resource, "watch.r" must be a defined.', watch);
+        const resource = task.$state$;
+        assertDefined(resource, 'useResource: when running a resource, "task.r" must be a defined.', task);
         const track = (obj, prop) => {
             if (isFunction(obj)) {
                 const ctx = newInvokeContext();
                 ctx.$renderCtx$ = rCtx;
-                ctx.$subscriber$ = [0, watch];
+                ctx.$subscriber$ = [0, task];
                 return invoke(ctx, obj);
             }
-            const manager = getProxyManager(obj);
+            const manager = getSubscriptionManager(obj);
             if (manager) {
-                manager.$addSub$([0, watch], prop);
+                manager.$addSub$([0, task], prop);
             }
             else {
                 logErrorAndStop(codeToText(QError_trackUseStore), obj);
@@ -5881,11 +5893,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 reject = re;
             });
         });
-        watch.$destroy$ = noSerialize(() => {
+        task.$destroy$ = noSerialize(() => {
             done = true;
             cleanups.forEach((fn) => fn());
         });
-        const promise = safeCall(() => then(waitOn, () => watchFn(opts)), (value) => {
+        const promise = safeCall(() => then(waitOn, () => taskFn(opts)), (value) => {
             setState(true, value);
         }, (reason) => {
             setState(false, reason);
@@ -5896,32 +5908,32 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 promise,
                 delay(timeout).then(() => {
                     if (setState(false, new Error('timeout'))) {
-                        cleanupWatch(watch);
+                        cleanupTask(task);
                     }
                 }),
             ]);
         }
         return promise;
     };
-    const runWatch = (watch, containerState, rCtx) => {
-        watch.$flags$ &= ~WatchFlagsIsDirty;
-        cleanupWatch(watch);
-        const hostElement = watch.$el$;
-        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'WatchEvent');
+    const runTask = (task, containerState, rCtx) => {
+        task.$flags$ &= ~TaskFlagsIsDirty;
+        cleanupTask(task);
+        const hostElement = task.$el$;
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'TaskEvent');
         iCtx.$renderCtx$ = rCtx;
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.$qrl$.getFn(iCtx, () => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
+            subsManager.$clearSub$(task);
         });
         const track = (obj, prop) => {
             if (isFunction(obj)) {
                 const ctx = newInvokeContext();
-                ctx.$subscriber$ = [0, watch];
+                ctx.$subscriber$ = [0, task];
                 return invoke(ctx, obj);
             }
-            const manager = getProxyManager(obj);
+            const manager = getSubscriptionManager(obj);
             if (manager) {
-                manager.$addSub$([0, watch], prop);
+                manager.$addSub$([0, task], prop);
             }
             else {
                 logErrorAndStop(codeToText(QError_trackUseStore), obj);
@@ -5934,7 +5946,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         };
         const cleanups = [];
-        watch.$destroy$ = noSerialize(() => {
+        task.$destroy$ = noSerialize(() => {
             cleanups.forEach((fn) => fn());
         });
         const opts = {
@@ -5943,7 +5955,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 cleanups.push(callback);
             },
         };
-        return safeCall(() => watchFn(opts), (returnValue) => {
+        return safeCall(() => taskFn(opts), (returnValue) => {
             if (isFunction(returnValue)) {
                 cleanups.push(returnValue);
             }
@@ -5951,20 +5963,20 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             handleError(reason, hostElement, rCtx);
         });
     };
-    const runComputed = (watch, containerState, rCtx) => {
-        assertSignal(watch.$state$);
-        watch.$flags$ &= ~WatchFlagsIsDirty;
-        cleanupWatch(watch);
-        const hostElement = watch.$el$;
+    const runComputed = (task, containerState, rCtx) => {
+        assertSignal(task.$state$);
+        task.$flags$ &= ~TaskFlagsIsDirty;
+        cleanupTask(task);
+        const hostElement = task.$el$;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'ComputedEvent');
-        iCtx.$subscriber$ = [0, watch];
+        iCtx.$subscriber$ = [0, task];
         iCtx.$renderCtx$ = rCtx;
         const { $subsManager$: subsManager } = containerState;
-        const watchFn = watch.$qrl$.getFn(iCtx, () => {
-            subsManager.$clearSub$(watch);
+        const taskFn = task.$qrl$.getFn(iCtx, () => {
+            subsManager.$clearSub$(task);
         });
-        return safeCall(watchFn, (returnValue) => untrack(() => {
-            const signal = watch.$state$;
+        return safeCall(taskFn, (returnValue) => untrack(() => {
+            const signal = task.$state$;
             signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
             signal.untrackedValue = returnValue;
             signal[QObjectManagerSymbol].$notifySubs$();
@@ -5972,10 +5984,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             handleError(reason, hostElement, rCtx);
         });
     };
-    const cleanupWatch = (watch) => {
-        const destroy = watch.$destroy$;
+    const cleanupTask = (task) => {
+        const destroy = task.$destroy$;
         if (destroy) {
-            watch.$destroy$ = undefined;
+            task.$destroy$ = undefined;
             try {
                 destroy();
             }
@@ -5984,39 +5996,39 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
         }
     };
-    const destroyWatch = (watch) => {
-        if (watch.$flags$ & WatchFlagsIsCleanup) {
-            watch.$flags$ &= ~WatchFlagsIsCleanup;
-            const cleanup = watch.$qrl$;
+    const destroyTask = (task) => {
+        if (task.$flags$ & TaskFlagsIsCleanup) {
+            task.$flags$ &= ~TaskFlagsIsCleanup;
+            const cleanup = task.$qrl$;
             cleanup();
         }
         else {
-            cleanupWatch(watch);
+            cleanupTask(task);
         }
     };
-    const useRunWatch = (watch, eagerness) => {
+    const useRunTask = (task, eagerness) => {
         if (eagerness === 'visible' || eagerness === 'intersection-observer') {
-            useOn('qvisible', getWatchHandlerQrl(watch));
+            useOn('qvisible', getTaskHandlerQrl(task));
         }
         else if (eagerness === 'load' || eagerness === 'document-ready') {
-            useOnDocument('qinit', getWatchHandlerQrl(watch));
+            useOnDocument('qinit', getTaskHandlerQrl(task));
         }
         else if (eagerness === 'idle' || eagerness === 'document-idle') {
-            useOnDocument('qidle', getWatchHandlerQrl(watch));
+            useOnDocument('qidle', getTaskHandlerQrl(task));
         }
     };
-    const getWatchHandlerQrl = (watch) => {
-        const watchQrl = watch.$qrl$;
-        const watchHandler = createQRL(watchQrl.$chunk$, '_hW', _hW, null, null, [watch], watchQrl.$symbol$);
-        return watchHandler;
+    const getTaskHandlerQrl = (task) => {
+        const taskQrl = task.$qrl$;
+        const taskHandler = createQRL(taskQrl.$chunk$, '_hW', _hW, null, null, [task], taskQrl.$symbol$);
+        return taskHandler;
     };
     const isSubscriberDescriptor = (obj) => {
         return isObject(obj) && obj instanceof Task;
     };
-    const serializeWatch = (watch, getObjId) => {
-        let value = `${intToStr(watch.$flags$)} ${intToStr(watch.$index$)} ${getObjId(watch.$qrl$)} ${getObjId(watch.$el$)}`;
-        if (watch.$state$) {
-            value += ` ${getObjId(watch.$state$)}`;
+    const serializeTask = (task, getObjId) => {
+        let value = `${intToStr(task.$flags$)} ${intToStr(task.$index$)} ${getObjId(task.$qrl$)} ${getObjId(task.$el$)}`;
+        if (task.$state$) {
+            value += ` ${getObjId(task.$state$)}`;
         }
         return value;
     };
@@ -6197,20 +6209,20 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         let hasListeners = false;
         // TODO: optimize
         for (const ctx of allContexts) {
-            if (ctx.$watches$) {
-                for (const watch of ctx.$watches$) {
+            if (ctx.$tasks$) {
+                for (const task of ctx.$tasks$) {
                     if (qDev) {
-                        if (watch.$flags$ & WatchFlagsIsDirty) {
-                            logWarn('Serializing dirty watch. Looks like an internal error.');
+                        if (task.$flags$ & TaskFlagsIsDirty) {
+                            logWarn('Serializing dirty task. Looks like an internal error.');
                         }
-                        if (!isConnected(watch)) {
-                            logWarn('Serializing disconnected watch. Looks like an internal error.');
+                        if (!isConnected(task)) {
+                            logWarn('Serializing disconnected task. Looks like an internal error.');
                         }
                     }
-                    if (isResourceTask(watch)) {
-                        collector.$resources$.push(watch.$state$);
+                    if (isResourceTask(task)) {
+                        collector.$resources$.push(task.$state$);
                     }
-                    destroyWatch(watch);
+                    destroyTask(task);
                 }
             }
         }
@@ -6441,7 +6453,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const ref = ctx.$refMap$;
             const props = ctx.$props$;
             const contexts = ctx.$contexts$;
-            const watches = ctx.$watches$;
+            const tasks = ctx.$tasks$;
             const renderQrl = ctx.$componentQrl$;
             const seq = ctx.$seq$;
             const metaValue = {};
@@ -6469,8 +6481,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         add = true;
                     }
                 }
-                if (watches && watches.length > 0) {
-                    const value = mapJoin(watches, getObjId, ' ');
+                if (tasks && tasks.length > 0) {
+                    const value = mapJoin(tasks, getObjId, ' ');
                     if (value) {
                         metaValue.w = value;
                         add = true;
@@ -6562,19 +6574,19 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const parentCtx = elCtx.$parent$;
         const props = elCtx.$props$;
         if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
-            const subs = getProxyManager(props)?.$subs$;
+            const subs = getSubscriptionManager(props)?.$subs$;
             const el = elCtx.$element$;
             if (subs) {
                 for (const sub of subs) {
                     if (sub[0] === 0) {
                         if (sub[1] !== el) {
-                            collectSubscriptions(getProxyManager(props), collector, false);
+                            collectSubscriptions(getSubscriptionManager(props), collector, false);
                         }
                         collectElement(sub[1], collector);
                     }
                     else {
                         collectValue(props, collector, false);
-                        collectSubscriptions(getProxyManager(props), collector, false);
+                        collectSubscriptions(getSubscriptionManager(props), collector, false);
                     }
                 }
             }
@@ -6623,7 +6635,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const collectElementData = (elCtx, collector, dynamicCtx) => {
         if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
             collectValue(elCtx.$props$, collector, dynamicCtx);
-            collectSubscriptions(getProxyManager(elCtx.$props$), collector, dynamicCtx);
+            collectSubscriptions(getSubscriptionManager(elCtx.$props$), collector, dynamicCtx);
         }
         if (elCtx.$componentQrl$) {
             collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
@@ -6633,9 +6645,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 collectValue(obj, collector, dynamicCtx);
             }
         }
-        if (elCtx.$watches$) {
+        if (elCtx.$tasks$) {
             const map = collector.$containerState$.$subsManager$.$groupToManagers$;
-            for (const obj of elCtx.$watches$) {
+            for (const obj of elCtx.$tasks$) {
                 if (map.has(obj)) {
                     collectValue(obj, collector, dynamicCtx);
                 }
@@ -6741,7 +6753,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         seen.add(obj);
                         const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
                         if (leaks && mutable) {
-                            collectSubscriptions(getProxyManager(input), collector, leaks);
+                            collectSubscriptions(getSubscriptionManager(input), collector, leaks);
                         }
                         if (fastWeakSerialize(input)) {
                             collector.$objSet$.add(obj);
@@ -6803,11 +6815,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return undefined;
         }
         if (obj instanceof SignalImpl) {
-            return getProxyManager(obj);
+            return getSubscriptionManager(obj);
         }
         const proxy = containerState.$proxyMap$.get(obj);
         if (proxy) {
-            return getProxyManager(proxy);
+            return getSubscriptionManager(proxy);
         }
         return undefined;
     };
@@ -7108,13 +7120,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
         const resource = createResourceReturn(containerState, opts);
         const el = elCtx.$element$;
-        const watch = new Task(WatchFlagsIsDirty | WatchFlagsIsResource, i, el, qrl, resource);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsResource, i, el, qrl, resource);
         const previousWait = Promise.all(iCtx.$waitOn$.slice());
-        runResource(watch, containerState, iCtx.$renderCtx$, previousWait);
-        if (!elCtx.$watches$) {
-            elCtx.$watches$ = [];
+        runResource(task, containerState, iCtx.$renderCtx$, previousWait);
+        if (!elCtx.$tasks$) {
+            elCtx.$tasks$ = [];
         }
-        elCtx.$watches$.push(watch);
+        elCtx.$tasks$.push(task);
         set(resource);
         return resource;
     };
@@ -7402,13 +7414,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
             }
         },
-        $serialize$: (obj, getObjId) => serializeWatch(obj, getObjId),
+        $serialize$: (obj, getObjId) => serializeTask(obj, getObjId),
         $prepare$: (data) => parseTask(data),
-        $fill$: (watch, getObject) => {
-            watch.$el$ = getObject(watch.$el$);
-            watch.$qrl$ = getObject(watch.$qrl$);
-            if (watch.$state$) {
-                watch.$state$ = getObject(watch.$state$);
+        $fill$: (task, getObject) => {
+            task.$el$ = getObject(task.$el$);
+            task.$qrl$ = getObject(task.$qrl$);
+            if (task.$state$) {
+                task.$state$ = getObject(task.$state$);
             }
         },
     };
@@ -7569,7 +7581,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         $collect$(obj, collector, leaks) {
             collectValue(obj.ref, collector, leaks);
             if (fastWeakSerialize(obj.ref)) {
-                const localManager = getProxyManager(obj.ref);
+                const localManager = getSubscriptionManager(obj.ref);
                 if (isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
                     collectValue(obj.ref[obj.prop], collector, leaks);
                 }
@@ -7997,7 +8009,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const getProxyTarget = (obj) => {
         return obj[QOjectTargetSymbol];
     };
-    const getProxyManager = (obj) => {
+    const getSubscriptionManager = (obj) => {
         return obj[QObjectManagerSymbol];
     };
     const getProxyFlags = (obj) => {
@@ -8237,7 +8249,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                         if (beforeFn && beforeFn() === false) {
                             return;
                         }
-                        const baseContext = createInvocationContext(currentCtx);
+                        const baseContext = createOrReuseInvocationContext(currentCtx);
                         const context = {
                             ...baseContext,
                             $qrl$: QRL,
@@ -8252,7 +8264,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 });
             });
         }
-        const createInvocationContext = (invoke) => {
+        const createOrReuseInvocationContext = (invoke) => {
             if (invoke == null) {
                 return newInvokeContext();
             }
