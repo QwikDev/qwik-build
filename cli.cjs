@@ -1909,15 +1909,15 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
           await mergePackageJsons(fileUpdates, srcChildPath, destChildPath);
         } else if (destName === "README.md") {
           await mergeReadmes(fileUpdates, srcChildPath, destChildPath);
-        } else if (destName === ".gitignore") {
-          await mergeGitIgnores(fileUpdates, srcChildPath, destChildPath);
+        } else if (destName === ".gitignore" || destName === ".prettierignore" || destName === ".eslintignore") {
+          await mergeIgnoresFile(fileUpdates, srcChildPath, destChildPath);
         } else if (ext === ".css") {
           await mergeCss(fileUpdates, srcChildPath, destChildPath);
         } else {
           if (import_node_fs4.default.existsSync(destChildPath)) {
             fileUpdates.files.push({
               path: destChildPath,
-              content: await import_node_fs4.default.promises.readFile(srcChildPath, "utf-8"),
+              content: await import_node_fs4.default.promises.readFile(srcChildPath),
               type: "overwrite"
             });
           } else {
@@ -1997,7 +1997,7 @@ async function mergeReadmes(fileUpdates, srcPath, destPath) {
     type
   });
 }
-async function mergeGitIgnores(fileUpdates, srcPath, destPath) {
+async function mergeIgnoresFile(fileUpdates, srcPath, destPath) {
   const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   try {
     const destContent = await import_node_fs4.default.promises.readFile(destPath, "utf-8");
@@ -4151,6 +4151,8 @@ async function runBuildCommand(app) {
   const buildTypes = getScript("build.types");
   const lint = getScript("lint");
   const mode = app.getArg("mode");
+  const prebuildScripts = Object.keys(pkgJsonScripts).filter((s) => s.startsWith("prebuild.")).map(getScript).filter(isString);
+  const postbuildScripts = Object.keys(pkgJsonScripts).filter((s) => s.startsWith("postbuild.")).map(getScript).filter(isString);
   const scripts = [
     buildTypes,
     buildClientScript,
@@ -4159,7 +4161,7 @@ async function runBuildCommand(app) {
     buildServerScript,
     buildStaticScript,
     lint
-  ].filter((s) => typeof s === "string" && s.trim().length > 0);
+  ].filter(isString);
   if (!isLibraryBuild && !buildClientScript) {
     console.log(pkgJsonScripts);
     throw new Error(`"build.client" script not found in package.json`);
@@ -4170,11 +4172,31 @@ async function runBuildCommand(app) {
     );
   }
   console.log(``);
+  for (const script of prebuildScripts) {
+    console.log(dim(script));
+  }
   for (const script of scripts) {
+    console.log(dim(script));
+  }
+  for (const script of postbuildScripts) {
     console.log(dim(script));
   }
   console.log(``);
   let typecheck = null;
+  for (const script of prebuildScripts) {
+    try {
+      await execaCommand(script, {
+        cwd: app.rootDir,
+        stdout: "inherit",
+        env: {
+          FORCE_COLOR: "true"
+        }
+      });
+    } catch (e2) {
+      console.error(script, "failed");
+      process.exit(1);
+    }
+  }
   if (buildTypes) {
     let copyScript = buildTypes;
     if (!copyScript.includes("--pretty")) {
@@ -4351,6 +4373,20 @@ async function runBuildCommand(app) {
       }
     });
   }
+  for (const script of postbuildScripts) {
+    try {
+      await execaCommand(script, {
+        cwd: app.rootDir,
+        stdout: "inherit",
+        env: {
+          FORCE_COLOR: "true"
+        }
+      });
+    } catch (e2) {
+      console.error(script, "failed");
+      process.exit(1);
+    }
+  }
   console.log(``);
 }
 function attachArg(command, key, value) {
@@ -4358,6 +4394,9 @@ function attachArg(command, key, value) {
     return `${command} --${key} ${value}`;
   }
   return command;
+}
+function isString(s) {
+  return typeof s === "string" && s.trim().length > 0;
 }
 
 // packages/qwik/src/cli/run.ts
