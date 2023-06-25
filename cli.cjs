@@ -1907,6 +1907,8 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
       } else if (s.isFile()) {
         if (destName === "package.json") {
           await mergePackageJsons(fileUpdates, srcChildPath, destChildPath);
+        } else if (destName === "settings.json") {
+          await mergeJsons(fileUpdates, srcChildPath, destChildPath);
         } else if (destName === "README.md") {
           await mergeReadmes(fileUpdates, srcChildPath, destChildPath);
         } else if (destName === ".gitignore" || destName === ".prettierignore" || destName === ".eslintignore") {
@@ -1950,6 +1952,25 @@ async function mergePackageJsons(fileUpdates, srcPath, destPath) {
     fileUpdates.files.push({
       path: destPath,
       content: JSON.stringify(destPkgJson, null, 2) + "\n",
+      type: "modify"
+    });
+  } catch (e2) {
+    fileUpdates.files.push({
+      path: destPath,
+      content: srcContent,
+      type: "create"
+    });
+  }
+}
+async function mergeJsons(fileUpdates, srcPath, destPath) {
+  const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
+  const srcPkgJson = JSON.parse(srcContent);
+  try {
+    const destPkgJson = JSON.parse(await import_node_fs4.default.promises.readFile(destPath, "utf-8"));
+    Object.assign(srcPkgJson, destPkgJson);
+    fileUpdates.files.push({
+      path: destPath,
+      content: JSON.stringify(srcPkgJson, null, 2) + "\n",
       type: "modify"
     });
   } catch (e2) {
