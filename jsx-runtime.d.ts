@@ -1,3 +1,5 @@
+import * as CSS_2 from 'csstype';
+
 declare interface AbstractView {
     styleMedia: StyleMedia;
     document: Document;
@@ -293,6 +295,21 @@ declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T>
     children?: undefined;
 }
 
+/**
+ * @public
+ */
+declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2.PropertiesHyphen<string | number> {
+    /**
+     * The index signature was removed to enable closed typing for style
+     * using CSSType. You're able to use type assertion or module augmentation
+     * to add properties or an index signature of your own.
+     *
+     * For examples and more information, visit:
+     * https://github.com/frenic/csstype#what-should-i-do-when-i-get-type-errors
+     */
+    [v: `--${string}`]: string | number | undefined;
+}
+
 declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
@@ -388,7 +405,7 @@ declare interface HTMLAttributes<T extends Element> extends AriaAttributes, DOMA
     placeholder?: string | undefined;
     slot?: string | undefined;
     spellcheck?: boolean | undefined;
-    style?: Record<string, string | number | undefined> | string | undefined;
+    style?: CSSProperties | string | undefined;
     tabIndex?: number | undefined;
     title?: string | undefined;
     translate?: 'yes' | 'no' | undefined;
