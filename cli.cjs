@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.2.0
+ * @builder.io/qwik/cli 1.2.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1937,9 +1937,9 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
 async function mergePackageJsons(fileUpdates, srcPath, destPath) {
   var _a;
   const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
-  const srcPkgJson = JSON.parse(srcContent);
-  const props = ["scripts", "dependencies", "devDependencies"];
   try {
+    const srcPkgJson = JSON.parse(srcContent);
+    const props = ["scripts", "dependencies", "devDependencies"];
     const destPkgJson = JSON.parse(await import_node_fs4.default.promises.readFile(destPath, "utf-8"));
     props.forEach((prop) => {
       mergePackageJsonSort(srcPkgJson, destPkgJson, prop);
@@ -1964,8 +1964,8 @@ async function mergePackageJsons(fileUpdates, srcPath, destPath) {
 }
 async function mergeJsons(fileUpdates, srcPath, destPath) {
   const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
-  const srcPkgJson = JSON.parse(srcContent);
   try {
+    const srcPkgJson = JSON.parse(srcContent);
     const destPkgJson = JSON.parse(await import_node_fs4.default.promises.readFile(destPath, "utf-8"));
     Object.assign(srcPkgJson, destPkgJson);
     fileUpdates.files.push({
@@ -2750,7 +2750,6 @@ async function runAddCommand(app) {
   } catch (e2) {
     console.error(`\u274C ${red(String(e2))}
 `);
-    await printAddHelp(app);
     process.exit(1);
   }
 }
@@ -4539,7 +4538,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("1.2.0");
+  console.log("1.2.1");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
