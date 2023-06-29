@@ -134,6 +134,7 @@ export declare interface QwikLoaderOptions {
  * @public
  */
 declare interface QwikManifest_2 {
+    manifestHash: string;
     symbols: {
         [symbolName: string]: QwikSymbol;
     };

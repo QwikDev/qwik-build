@@ -1548,6 +1548,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   function generateManifestFromBundles(path, hooks, injections, outputBundles, opts) {
     const manifest = {
+      manifestHash: "",
       symbols: {},
       mapping: {},
       bundles: {},
@@ -1664,6 +1665,14 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
+  var hashCode = (text, hash = 0) => {
+    for (let i = 0; i < text.length; i++) {
+      const chr = text.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0;
+    }
+    return Number(Math.abs(hash)).toString(36);
+  };
   var REG_CTX_NAME = [ "server" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
@@ -2104,6 +2113,7 @@ globalThis.qwikOptimizer = function(module) {
             return normalizePath(relPath);
           })).sort());
         }
+        manifest.manifestHash = hashCode(JSON.stringify(manifest));
         return manifest;
       };
       return {
@@ -2567,6 +2577,7 @@ globalThis.qwikOptimizer = function(module) {
           const render = ssrModule.default ?? ssrModule.render;
           if ("function" === typeof render) {
             const manifest = {
+              manifestHash: "",
               symbols: {},
               mapping: {},
               bundles: {},

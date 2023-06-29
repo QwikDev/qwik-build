@@ -202,6 +202,7 @@ export declare interface QwikBundle {
  * @public
  */
 export declare interface QwikManifest {
+    manifestHash: string;
     symbols: {
         [symbolName: string]: QwikSymbol;
     };

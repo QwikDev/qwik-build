@@ -544,7 +544,8 @@ async function renderToStream(rootNode, opts) {
       collectRenderSymbols(renderSymbols, contexts);
       snapshotTime = snapshotTimer();
       return jsx2(Fragment2, { children });
-    }
+    },
+    manifestHash: resolvedManifest?.manifest.manifestHash || "dev"
   });
   if (containerTagName !== "html") {
     stream.write("<!--/cq-->");

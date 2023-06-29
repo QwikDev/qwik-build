@@ -1548,6 +1548,7 @@ function getValidManifest(manifest) {
 
 function generateManifestFromBundles(path, hooks, injections, outputBundles, opts) {
   const manifest = {
+    manifestHash: "",
     symbols: {},
     mapping: {},
     bundles: {},
@@ -1668,6 +1669,15 @@ function createRollupError(id, reportMessage) {
   });
   return err;
 }
+
+var hashCode = (text, hash = 0) => {
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0;
+  }
+  return Number(Math.abs(hash)).toString(36);
+};
 
 var REG_CTX_NAME = [ "server" ];
 
@@ -2112,6 +2122,7 @@ function createPlugin(optimizerOptions = {}) {
           return normalizePath(relPath);
         })).sort());
       }
+      manifest.manifestHash = hashCode(JSON.stringify(manifest));
       return manifest;
     };
     return {
@@ -2641,6 +2652,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
         const render = ssrModule.default ?? ssrModule.render;
         if ("function" === typeof render) {
           const manifest = {
+            manifestHash: "",
             symbols: {},
             mapping: {},
             bundles: {},

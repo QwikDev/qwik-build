@@ -589,7 +589,8 @@ async function renderToStream(rootNode, opts) {
       collectRenderSymbols(renderSymbols, contexts);
       snapshotTime = snapshotTimer();
       return (0, import_qwik3.jsx)(import_qwik3.Fragment, { children });
-    }
+    },
+    manifestHash: (resolvedManifest == null ? void 0 : resolvedManifest.manifest.manifestHash) || "dev"
   });
   if (containerTagName !== "html") {
     stream.write("<!--/cq-->");

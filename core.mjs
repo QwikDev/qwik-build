@@ -2554,9 +2554,6 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 const version = "1.2.2";
 
 const hashCode = (text, hash = 0) => {
-    if (text.length === 0) {
-        return hash;
-    }
     for (let i = 0; i < text.length; i++) {
         const chr = text.charCodeAt(i);
         hash = (hash << 5) - hash + chr;
@@ -2646,6 +2643,7 @@ const _renderSSR = async (node, opts) => {
         'q:render': qRender,
         'q:base': opts.base,
         'q:locale': opts.serverData?.locale,
+        'q:manifest-hash': opts.manifestHash,
     };
     const children = root === 'html' ? [node] : [headNodes, node];
     if (root !== 'html') {

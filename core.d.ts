@@ -2432,6 +2432,7 @@ export declare interface RenderSSROptions {
     serverData?: Record<string, any>;
     beforeContent?: JSXNode<string>[];
     beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean, textNodes: Map<string, string>) => Promise<JSXNode>;
+    manifestHash: string;
 }
 
 declare interface RenderStaticContext {
