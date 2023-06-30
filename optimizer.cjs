@@ -1986,6 +1986,14 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const transform = async function(ctx, code, id2, ssrOpts = {}) {
+      if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
+        return;
+      }
+      const isSSR = !!ssrOpts.ssr;
+      const currentOutputs = isSSR ? ssrTransformedOutputs : transformedOutputs;
+      if (currentOutputs.has(id2)) {
+        return;
+      }
       const optimizer = getOptimizer();
       const path = getPath();
       const {pathId: pathId} = parseId(id2);
@@ -2017,7 +2025,6 @@ globalThis.qwikOptimizer = function(module) {
           mode: mode,
           scope: opts.scope ? opts.scope : void 0
         };
-        const isSSR = !!ssrOpts.ssr;
         isSSR && (transformOpts.entryStrategy = {
           type: "hoist"
         });
@@ -2044,7 +2051,7 @@ globalThis.qwikOptimizer = function(module) {
         for (const mod of newOutput.modules) {
           if (mod.isEntry) {
             const key = normalizePath(path.join(srcDir, mod.path));
-            isSSR ? ssrTransformedOutputs.set(key, [ mod, id2 ]) : transformedOutputs.set(key, [ mod, id2 ]);
+            currentOutputs.set(key, [ mod, id2 ]);
             deps.add(key);
           }
         }
