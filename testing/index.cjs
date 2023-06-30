@@ -3274,7 +3274,17 @@ var require_Element = __commonJS({
         get: function() {
           return this.serialize();
         },
-        set: utils.nyi
+        set: function(v) {
+          var parser = this.ownerDocument.implementation.mozHTMLParser(
+            this.ownerDocument._address,
+            this
+          );
+          parser.parse(v === null ? "" : String(v), true);
+          var target = this;
+          while (target.hasChildNodes())
+            target.removeChild(target.firstChild);
+          target.appendChild(parser._asDocumentFragment());
+        }
       },
       outerHTML: {
         get: function() {
