@@ -1875,7 +1875,7 @@ globalThis.qwikOptimizer = function(module) {
         ssrResults.set("@buildStart", result);
       }
     };
-    const resolveId = async (_ctx, id2, importer, resolveIdOpts) => {
+    const resolveId = async (_ctx, id2, importer, ssrOpts) => {
       log("resolveId()", "Start", id2, importer);
       if (id2.startsWith("\0")) {
         return;
@@ -1911,6 +1911,7 @@ globalThis.qwikOptimizer = function(module) {
         };
       }
       const path = getPath();
+      const isSSR = (null == ssrOpts ? void 0 : ssrOpts.ssr) ?? "ssr" === opts.target;
       if (importer) {
         if (!id2.startsWith(".") && !path.isAbsolute(id2)) {
           return;
@@ -1924,7 +1925,7 @@ globalThis.qwikOptimizer = function(module) {
           const parsedImporterId = parseId(importer);
           const dir = path.dirname(parsedImporterId.pathId);
           importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(path.join(dir, importeePathId)) : normalizePath(path.resolve(dir, importeePathId));
-          const transformedOutput = (null == resolveIdOpts ? void 0 : resolveIdOpts.ssr) ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
+          const transformedOutput = isSSR ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
           if (transformedOutput) {
             log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
@@ -1938,7 +1939,7 @@ globalThis.qwikOptimizer = function(module) {
         const ext = path.extname(importeePathId);
         if (RESOLVE_EXTS[ext]) {
           log(`resolveId("${importeePathId}", "${importer}")`);
-          const transformedOutput = (null == resolveIdOpts ? void 0 : resolveIdOpts.ssr) ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
+          const transformedOutput = isSSR ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
           if (transformedOutput) {
             log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
@@ -1949,28 +1950,29 @@ globalThis.qwikOptimizer = function(module) {
       }
       return null;
     };
-    const load = async (_ctx, id2, loadOpts = {}) => {
+    const load = async (_ctx, id2, ssrOpts = {}) => {
       if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
         return;
       }
+      const isSSR = (null == ssrOpts ? void 0 : ssrOpts.ssr) ?? "ssr" === opts.target;
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
         log("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
-          code: getQwikBuildModule(loadOpts, opts.target)
+          code: getQwikBuildModule(isSSR, opts.target)
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
         log("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
-          code: await getQwikServerManifestModule(loadOpts)
+          code: await getQwikServerManifestModule(isSSR)
         };
       }
       const parsedId = parseId(id2);
       const path = getPath();
       id2 = normalizePath(parsedId.pathId);
-      const transformedModule = (null == loadOpts ? void 0 : loadOpts.ssr) ? ssrTransformedOutputs.get(id2) : transformedOutputs.get(id2);
+      const transformedModule = isSSR ? ssrTransformedOutputs.get(id2) : transformedOutputs.get(id2);
       if (transformedModule) {
         log("load()", "Found", id2);
         let code = transformedModule[0].code;
@@ -1989,7 +1991,7 @@ globalThis.qwikOptimizer = function(module) {
       if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
         return;
       }
-      const isSSR = !!ssrOpts.ssr;
+      const isSSR = ssrOpts.ssr ?? "ssr" === opts.target;
       const currentOutputs = isSSR ? ssrTransformedOutputs : transformedOutputs;
       if (currentOutputs.has(id2)) {
         return;
@@ -2152,14 +2154,13 @@ globalThis.qwikOptimizer = function(module) {
       }
       return id2;
     };
-    function getQwikBuildModule(loadOpts, target) {
-      const isServer = !!loadOpts.ssr || "test" === target;
+    function getQwikBuildModule(isSSR, target) {
+      const isServer = isSSR || "test" === target;
       const isDev = "development" === opts.buildMode;
       return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\nexport const isDev = ${JSON.stringify(isDev)};\n`;
     }
-    async function getQwikServerManifestModule(loadOpts) {
-      const isServer = "ssr" === opts.target || !!loadOpts.ssr;
-      const manifest = isServer ? opts.manifestInput : null;
+    async function getQwikServerManifestModule(isSSR) {
+      const manifest = isSSR ? opts.manifestInput : null;
       return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
     }
     return {
