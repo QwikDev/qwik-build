@@ -3090,6 +3090,10 @@ function toPascalCase(string) {
 
 var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID ];
 
+var STYLING = [ ".css", ".scss", ".sass", ".less" ];
+
+var FONTS = [ ".woff", ".woff2", ".ttf" ];
+
 var CSS_EXTENSIONS = [ ".css", ".scss", ".sass" ];
 
 function qwikVite(qwikViteOpts = {}) {
@@ -3338,23 +3342,37 @@ function qwikVite(qwikViteOpts = {}) {
                 dynamicImports: b.dynamicImports,
                 size: b.code.length
               });
-            } else if ([ ".css", ".scss", ".sass", ".less" ].some((ext => fileName.endsWith(ext)))) {
+            } else {
               const baseFilename = basePathname + fileName;
-              "string" === typeof b.source && b.source.length < 2e4 ? injections.push({
-                tag: "style",
-                location: "head",
-                attributes: {
-                  "data-src": baseFilename,
-                  dangerouslySetInnerHTML: b.source
-                }
-              }) : injections.push({
-                tag: "link",
-                location: "head",
-                attributes: {
-                  rel: "stylesheet",
-                  href: baseFilename
-                }
-              });
+              if (STYLING.some((ext => fileName.endsWith(ext)))) {
+                "string" === typeof b.source && b.source.length < 2e4 ? injections.push({
+                  tag: "style",
+                  location: "head",
+                  attributes: {
+                    "data-src": baseFilename,
+                    dangerouslySetInnerHTML: b.source
+                  }
+                }) : injections.push({
+                  tag: "link",
+                  location: "head",
+                  attributes: {
+                    rel: "stylesheet",
+                    href: baseFilename
+                  }
+                });
+              } else {
+                const selectedFont = FONTS.find((ext => fileName.endsWith(ext)));
+                selectedFont && injections.unshift({
+                  tag: "link",
+                  location: "head",
+                  attributes: {
+                    rel: "preload",
+                    href: baseFilename,
+                    as: "font",
+                    type: `font/${selectedFont.slice(1)}`
+                  }
+                });
+              }
             }
           }
           for (const i of injections) {
