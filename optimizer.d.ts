@@ -72,6 +72,7 @@ export declare interface HookAnalysis {
     ctxKind: 'event' | 'function';
     ctxName: string;
     captures: boolean;
+    loc: [number, number];
 }
 
 /**
@@ -334,6 +335,7 @@ export declare interface QwikSymbol {
     ctxName: string;
     captures: boolean;
     parent: string | null;
+    loc: [number, number];
 }
 
 /**

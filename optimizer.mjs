@@ -1575,7 +1575,8 @@ function generateManifestFromBundles(path, hooks, injections, outputBundles, opt
         ctxKind: hook.ctxKind,
         ctxName: hook.ctxName,
         captures: hook.captures,
-        parent: hook.parent
+        parent: hook.parent,
+        loc: hook.loc
       };
       addBundleToManifest(path, manifest, outputBundle, bundleFileName);
     }

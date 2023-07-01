@@ -170,6 +170,7 @@ declare interface QwikSymbol {
     ctxName: string;
     captures: boolean;
     parent: string | null;
+    loc: [number, number];
 }
 
 /**
