@@ -226,6 +226,10 @@ export declare interface QwikManifest {
     };
 }
 
+declare interface QwikPluginDevTools {
+    clickToSource?: string[] | false;
+}
+
 declare interface QwikPluginOptions {
     buildMode?: QwikBuildMode;
     debug?: boolean;
@@ -245,9 +249,7 @@ declare interface QwikPluginOptions {
     resolveQwikBuild?: boolean;
     target?: QwikBuildTarget;
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
-    devTools?: {
-        clickToSource?: string[] | false;
-    };
+    devTools?: QwikPluginDevTools;
 }
 
 /**
