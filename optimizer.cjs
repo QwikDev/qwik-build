@@ -3254,7 +3254,8 @@ globalThis.qwikOptimizer = function(module) {
                       rel: "preload",
                       href: baseFilename,
                       as: "font",
-                      type: `font/${selectedFont.slice(1)}`
+                      type: `font/${selectedFont.slice(1)}`,
+                      crossorigin: ""
                     }
                   });
                 }
