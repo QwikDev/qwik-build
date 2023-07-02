@@ -2603,7 +2603,7 @@ globalThis.qwikOptimizer = function(module) {
                 const hook = null == (_b = null == (_a = v.info) ? void 0 : _a.meta) ? void 0 : _b.hook;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
-                hook && (manifest.mapping[hook.name] = url2);
+                hook && (manifest.mapping[hook.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
                 if ("" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext)))) {
                   added.add(url2);
@@ -2746,6 +2746,13 @@ globalThis.qwikOptimizer = function(module) {
     }
     return true;
   };
+  function relativeURL(url, base) {
+    if (url.startsWith(base)) {
+      url = url.slice(base.length);
+      url.startsWith("/") || (url = "/" + url);
+    }
+    return url;
+  }
   var DEV_QWIK_INSPECTOR = (opts, srcDir) => {
     const qwikdevtools = {
       hotKeys: opts.clickToSource ?? [],

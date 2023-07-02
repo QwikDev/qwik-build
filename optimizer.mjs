@@ -2677,7 +2677,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
               const hook = v.info?.meta?.hook;
               let url2 = v.url;
               v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
-              hook && (manifest.mapping[hook.name] = url2);
+              hook && (manifest.mapping[hook.name] = relativeURL(url2, opts.rootDir));
               const {pathId: pathId, query: query} = parseId(v.url);
               if ("" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext)))) {
                 added.add(url2);
@@ -2828,6 +2828,14 @@ var shouldSsrRender = (req, url) => {
   }
   return true;
 };
+
+function relativeURL(url, base) {
+  if (url.startsWith(base)) {
+    url = url.slice(base.length);
+    url.startsWith("/") || (url = "/" + url);
+  }
+  return url;
+}
 
 var DEV_QWIK_INSPECTOR = (opts, srcDir) => {
   const qwikdevtools = {
