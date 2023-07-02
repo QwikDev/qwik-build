@@ -2037,11 +2037,14 @@ function createPlugin(optimizerOptions = {}) {
         mode: mode,
         scope: opts.scope ? opts.scope : void 0
       };
-      isSSR && (transformOpts.entryStrategy = {
-        type: "hoist"
-      });
-      transformOpts.isServer = isSSR;
+      if (isSSR) {
+        transformOpts.isServer = isSSR;
+        transformOpts.entryStrategy = {
+          type: "hoist"
+        };
+      }
       if (strip) {
+        transformOpts.isServer = isSSR;
         if (isSSR) {
           transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
           transformOpts.stripEventHandlers = true;
