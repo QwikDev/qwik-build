@@ -2755,8 +2755,8 @@ globalThis.qwikOptimizer = function(module) {
   function getOrigin(req) {
     const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;
     const headers = req.headers;
-    const protocol = PROTOCOL_HEADER && headers[PROTOCOL_HEADER] || (req.socket.encrypted || req.connection.encrypted ? "https" : "http");
-    const host = HOST_HEADER && headers[HOST_HEADER] || headers[":authority"] || headers.host;
+    const protocol = PROTOCOL_HEADER && headers[PROTOCOL_HEADER.toLowerCase()] || (req.socket.encrypted || req.connection.encrypted ? "https" : "http");
+    const host = HOST_HEADER && headers[HOST_HEADER.toLowerCase()] || headers[":authority"] || headers.host;
     return `${protocol}://${host}`;
   }
   async function configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput) {
