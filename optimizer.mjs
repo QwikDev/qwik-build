@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.2.3
+ * @builder.io/qwik/optimizer 1.2.4
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1199,7 +1199,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.2.3"
+  qwik: "1.2.4"
 };
 
 async function getSystem() {
@@ -2396,6 +2396,246 @@ function createRollupError2(id, diagnostic) {
   return err;
 }
 
+var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=window,s=new Set,i=t=>e.querySelectorAll(t),a=(e,t,n=t.type)=>{i("[on"+e+"\\\\:"+n+"]").forEach((o=>f(o,e,t,n)))},r=(e,t)=>e.getAttribute(t),l=t=>{if(void 0===t._qwikjson_){let n=(t===e.documentElement?e.body:t).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===r(n,"type")){t._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/g,"<$1"));break}n=n.previousElementSibling}}},c=(e,t)=>new CustomEvent(e,{detail:t}),f=async(t,o,s,i=s.type)=>{const a="on"+o+":"+i;t.hasAttribute("preventdefault:"+i)&&s.preventDefault();const c=t._qc_,f=null==c?void 0:c.li.filter((e=>e[0]===a));if(f&&f.length>0){for(const e of f)await e[1].getFn([t,s],(()=>t.isConnected))(s,t);return}const b=r(t,a);if(b){const o=t.closest("[q\\\\:container]"),i=new URL(r(o,"q:base"),e.baseURI);for(const a of b.split("\\n")){const r=new URL(a,i),c=r.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",f=performance.now(),b=import(r.href.split("#")[0]);l(o);const p=(await b)[c],u=e[n];if(t.isConnected)try{e[n]=[t,s,r],d("qsymbol",{symbol:c,element:t,reqTime:f}),await p(s,t)}finally{e[n]=u}}}},d=(t,n)=>{e.dispatchEvent(c(t,n))},b=e=>e.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),p=async e=>{let t=b(e.type),n=e.target;for(a("-document",e,t);n&&n.getAttribute;)await f(n,"",e,t),n=e.bubbles&&!0!==e.cancelBubble?n.parentElement:null},u=e=>{a("-window",e,b(e.type))},w=()=>{var n;const a=e.readyState;if(!t&&("interactive"==a||"complete"==a)&&(t=1,d("qinit"),(null!=(n=o.requestIdleCallback)?n:o.setTimeout).bind(o)((()=>d("qidle"))),s.has("qvisible"))){const e=i("[on\\\\:qvisible]"),t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),f(n.target,"",c("qvisible",n)))}));e.forEach((e=>t.observe(e)))}},q=(e,t,n,o=!1)=>e.addEventListener(t,n,{capture:o,passive:!1}),v=t=>{for(const n of t)s.has(n)||(q(e,n,p,!0),q(o,n,u),s.add(n))};if(!e.qR){const t=o.qwikevents;Array.isArray(t)&&v(t),o.qwikevents={push:(...e)=>v(e)},q(e,"readystatechange",w),w()}})(document);';
+
+var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized) => {\n        const win = window;\n        const events =  new Set;\n        const querySelectorAll = query => doc.querySelectorAll(query);\n        const broadcast = (infix, ev, type = ev.type) => {\n            querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));\n        };\n        const getAttribute = (el, name) => el.getAttribute(name);\n        const resolveContainer = containerEl => {\n            if (void 0 === containerEl._qwikjson_) {\n                let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;\n                while (script) {\n                    if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {\n                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\\\x3C(\\/?script)/g, "<$1"));\n                        break;\n                    }\n                    script = script.previousElementSibling;\n                }\n            }\n        };\n        const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n            detail: detail\n        });\n        const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n            const attrName = "on" + onPrefix + ":" + eventName;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const ctx = element._qc_;\n            const qrls = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));\n            if (qrls && qrls.length > 0) {\n                for (const q of qrls) {\n                    await q[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);\n                }\n                return;\n            }\n            const attrValue = getAttribute(element, attrName);\n            if (attrValue) {\n                const container = element.closest("[q\\\\:container]");\n                const base = new URL(getAttribute(container, "q:base"), doc.baseURI);\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = new URL(qrl, base);\n                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n                    const reqTime = performance.now();\n                    const module = import(url.href.split("#")[0]);\n                    resolveContainer(container);\n                    const handler = (await module)[symbolName];\n                    const previousCtx = doc.__q_context__;\n                    if (element.isConnected) {\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            emitEvent("qsymbol", {\n                                symbol: symbolName,\n                                element: element,\n                                reqTime: reqTime\n                            });\n                            await handler(ev, element);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                        }\n                    }\n                }\n            }\n        };\n        const emitEvent = (eventName, detail) => {\n            doc.dispatchEvent(createEvent(eventName, detail));\n        };\n        const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n        const processDocumentEvent = async ev => {\n            let type = camelToKebab(ev.type);\n            let element = ev.target;\n            broadcast("-document", ev, type);\n            while (element && element.getAttribute) {\n                await dispatch(element, "", ev, type);\n                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev, camelToKebab(ev.type));\n        };\n        const processReadyStateChange = () => {\n            var _a;\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                emitEvent("qinit");\n                (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));\n                if (events.has("qvisible")) {\n                    const results = querySelectorAll("[on\\\\:qvisible]");\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {\n            capture: capture,\n            passive: !1\n        });\n        const push = eventNames => {\n            for (const eventName of eventNames) {\n                if (!events.has(eventName)) {\n                    addEventListener(doc, eventName, processDocumentEvent, !0);\n                    addEventListener(win, eventName, processWindowEvent);\n                    events.add(eventName);\n                }\n            }\n        };\n        if (!doc.qR) {\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && push(qwikevents);\n            win.qwikevents = {\n                push: (...e) => push(e)\n            };\n            addEventListener(doc, "readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
+
+var import_bmp = __toESM(require_bmp(), 1);
+
+var import_cur = __toESM(require_cur(), 1);
+
+var import_dds = __toESM(require_dds(), 1);
+
+var import_gif = __toESM(require_gif(), 1);
+
+var import_icns = __toESM(require_icns(), 1);
+
+var import_ico = __toESM(require_ico(), 1);
+
+var import_j2c = __toESM(require_j2c(), 1);
+
+var import_jp2 = __toESM(require_jp2(), 1);
+
+var import_jpg = __toESM(require_jpg(), 1);
+
+var import_ktx = __toESM(require_ktx(), 1);
+
+var import_png = __toESM(require_png(), 1);
+
+var import_pnm = __toESM(require_pnm(), 1);
+
+var import_psd = __toESM(require_psd(), 1);
+
+var import_svg = __toESM(require_svg(), 1);
+
+var import_tga = __toESM(require_tga(), 1);
+
+var import_webp = __toESM(require_webp(), 1);
+
+var firstBytes = {
+  56: "psd",
+  66: "bmp",
+  68: "dds",
+  71: "gif",
+  73: "tiff",
+  77: "tiff",
+  82: "webp",
+  105: "icns",
+  137: "png",
+  255: "jpg"
+};
+
+var types = {
+  bmp: import_bmp.default.BMP,
+  cur: import_cur.default.CUR,
+  dds: import_dds.default.DDS,
+  gif: import_gif.default.GIF,
+  icns: import_icns.default.ICNS,
+  ico: import_ico.default.ICO,
+  j2c: import_j2c.default.J2C,
+  jp2: import_jp2.default.JP2,
+  jpg: import_jpg.default.JPG,
+  ktx: import_ktx.default.KTX,
+  png: import_png.default.PNG,
+  pnm: import_pnm.default.PNM,
+  psd: import_psd.default.PSD,
+  svg: import_svg.default.SVG,
+  tga: import_tga.default.TGA,
+  webp: import_webp.default.WEBP
+};
+
+var keys = Object.keys(types);
+
+function detector(buffer) {
+  const byte = buffer[0];
+  if (byte in firstBytes) {
+    const type = firstBytes[byte];
+    if (type && types[type].validate(buffer)) {
+      return type;
+    }
+  }
+  const finder = key => types[key].validate(buffer);
+  return keys.find(finder);
+}
+
+function lookup(buffer) {
+  const type = detector(buffer);
+  if ("undefined" !== typeof type && type in types) {
+    const size = types[type].calculate(buffer);
+    if (void 0 !== size) {
+      size.type = type;
+      return size;
+    }
+  }
+  throw new TypeError("unsupported file type: " + type);
+}
+
+async function getInfoForSrc(src) {
+  try {
+    const res = await fetch(src);
+    if (!res.ok) {
+      console.error("can not fetch", src);
+      return;
+    }
+    const buffer = await res.arrayBuffer();
+    const size = lookup(Buffer.from(buffer));
+    if (size) {
+      return {
+        width: size.width,
+        height: size.height,
+        type: size.type,
+        size: buffer.byteLength
+      };
+    }
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+}
+
+var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
+  const fs = await sys.dynamicImport("node:fs");
+  const path = await sys.dynamicImport("node:path");
+  const url = new URL(req.url, "http://localhost:3000/");
+  if ("GET" === req.method && "/__image_info" === url.pathname) {
+    const imageURL = url.searchParams.get("url");
+    res.setHeader("content-type", "application/json");
+    if (imageURL) {
+      const info = await getInfoForSrc(imageURL);
+      res.setHeader("cache-control", "public, max-age=31536000, immutable");
+      info ? res.write(JSON.stringify(info)) : res.statusCode = 500;
+    } else {
+      res.statusCode = 500;
+      const info = {
+        message: "error"
+      };
+      res.write(JSON.stringify(info));
+    }
+    res.end();
+    return;
+  }
+  if ("POST" === req.method && "/__image_fix" === url.pathname) {
+    try {
+      const loc = url.searchParams.get("loc");
+      const width = url.searchParams.get("width");
+      const height = url.searchParams.get("height");
+      const src = url.searchParams.get("src");
+      const currentHref = url.searchParams.get("currentHref");
+      const locParts = loc.split(":");
+      const column = parseInt(locParts[locParts.length - 1], 10) - 1;
+      let line = parseInt(locParts[locParts.length - 2], 10) - 1;
+      const filePath = path.resolve(srcDir, locParts.slice(0, locParts.length - 2).join(":"));
+      const extension = path.extname(filePath);
+      const buffer = fs.readFileSync(filePath);
+      let text = buffer.toString("utf-8");
+      let offset = 0;
+      for (;offset < text.length; offset++) {
+        if (0 === line) {
+          offset += column;
+          break;
+        }
+        if ("\n" === text[offset]) {
+          line--;
+          continue;
+        }
+      }
+      if ("<img" !== text.slice(offset, offset + 4)) {
+        console.error("Could not apply auto fix, because it was not possible to find the original <img> tag");
+        res.statusCode = 500;
+        return;
+      }
+      const end = text.indexOf(">", offset) + 1;
+      if (end < offset) {
+        console.error("Could not apply auto fix, because it was not possible to find the original <img> tag");
+        res.statusCode = 500;
+        return;
+      }
+      const extensionSupportsImport = [ ".ts", ".tsx", ".js", ".jsx", ".mdx" ].includes(extension);
+      let imgTag = text.slice(offset, end);
+      if (src && currentHref && extensionSupportsImport) {
+        const urlSrc = new URL(src);
+        const urlCurrent = new URL(currentHref);
+        if (urlSrc.origin === urlCurrent.origin) {
+          const publicImagePath = path.join(rootDir, "public", urlSrc.pathname);
+          const rootImagePath = path.join(rootDir, urlSrc.pathname);
+          let relativeLocation;
+          if (fs.existsSync(publicImagePath)) {
+            const mediaSrc = path.join(srcDir, "media", path.dirname(urlSrc.pathname));
+            await fs.promises.mkdir(mediaSrc, {
+              recursive: true
+            });
+            await fs.promises.copyFile(publicImagePath, path.join(srcDir, "media", urlSrc.pathname));
+            relativeLocation = "~/media" + urlSrc.pathname;
+          } else {
+            if (!fs.existsSync(rootImagePath)) {
+              return;
+            }
+            relativeLocation = urlSrc.pathname.replace("/src/", "~/");
+          }
+          const importIdent = imgImportName(urlSrc.pathname);
+          const importSrc = `${relativeLocation}?jsx`;
+          imgTag = imgTag.replace(/^<img/, `<${importIdent}`);
+          imgTag = imgTag.replace(/\bwidth=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
+          imgTag = imgTag.replace(/\bheight=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
+          imgTag = imgTag.replace(/\bsrc=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
+          let insertImport = 0;
+          if (".mdx" === extension && text.startsWith("---")) {
+            insertImport = text.indexOf("---", 4) + 3;
+            if (-1 === insertImport) {
+              return;
+            }
+          }
+          const newImport = `\nimport ${importIdent} from '${importSrc}';`;
+          text = `${text.slice(0, insertImport)}${newImport}${text.slice(insertImport, offset)}${imgTag}${text.slice(end)}`;
+          fs.writeFileSync(filePath, text);
+          return;
+        }
+      }
+      imgTag = imgTag.replace(/\bwidth=(({[^}]*})|('[^']*')|("[^"]*"))/, `width="${width}"`);
+      imgTag = imgTag.replace(/\bheight=(({[^}]*})|('[^']*')|("[^"]*"))/, `height="${height}"`);
+      imgTag.includes("height=") || (imgTag = imgTag.replace(/<img/, `<img height="${height}"`));
+      imgTag.includes("width=") || (imgTag = imgTag.replace(/<img/, `<img width="${width}"`));
+      text = text.slice(0, offset) + imgTag + text.slice(end);
+      fs.writeFileSync(filePath, text);
+    } catch (e) {
+      console.error("Error auto fixing image", e, url);
+    }
+  } else {
+    next();
+  }
+};
+
+function imgImportName(value) {
+  const dot = value.lastIndexOf(".");
+  const slash = value.lastIndexOf("/");
+  value = value.substring(slash + 1, dot);
+  return `Img${toPascalCase(value)}`;
+}
+
+function toPascalCase(string) {
+  return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), (($1, $2, $3) => `${$2.toUpperCase() + $3}`)).replace(new RegExp(/\w/), (s => s.toUpperCase()));
+}
+
 var FORCE_COLOR;
 
 var NODE_DISABLE_COLORS;
@@ -2609,7 +2849,7 @@ var image_size_runtime_default = "<style>\n  [data-qwik-cls] {\n    outline: 2px
 
 var click_to_component_default = "<style>\n  #qwik-inspector-overlay {\n    position: fixed;\n    background: rgba(24, 182, 246, 0.27);\n    pointer-events: none;\n    box-sizing: border-box;\n    border: 2px solid rgba(172, 126, 244, 0.46);\n    border-radius: 4px;\n    contain: strict;\n    cursor: pointer;\n    z-index: 999999;\n  }\n  #qwik-inspector-info-popup {\n    position: fixed;\n    bottom: 10px;\n    right: 10px;\n    font-family: monospace;\n    background: #000000c2;\n    color: white;\n    padding: 10px 20px;\n    border-radius: 8px;\n    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 34%), 0 8px 10px -6px rgb(0 0 0 / 24%);\n    backdrop-filter: blur(4px);\n    -webkit-animation: fadeOut 0.3s 3s ease-in-out forwards;\n    animation: fadeOut 0.3s 3s ease-in-out forwards;\n    z-index: 999999;\n    contain: layout;\n  }\n  #qwik-inspector-info-popup p {\n    margin: 0px;\n  }\n  @-webkit-keyframes fadeOut {\n    0% {\n      opacity: 1;\n    }\n    100% {\n      opacity: 0;\n    }\n  }\n\n  @keyframes fadeOut {\n    0% {\n      opacity: 1;\n    }\n    100% {\n      opacity: 0;\n      visibility: hidden;\n    }\n  }\n</style>\n<div id=\"qwik-inspector-info-popup\" aria-hidden=\"true\">Click-to-Source</div>\n<script>\n  (function () {\n    const inspectAttribute = 'data-qwik-inspector';\n    const hotKeys = globalThis.qwikdevtools.hotKeys;\n    const srcDir = globalThis.qwikdevtools.srcDir;\n    document.querySelector(\n      '#qwik-inspector-info-popup'\n    ).textContent = `Click-to-Source: ${hotKeys.join(' + ')}`;\n    console.debug(\n      '%c🔍 Qwik Click-To-Source',\n      'background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      `Hold-press the '${hotKeys.join(' + ')}' key${\n        (hotKeys.length > 1 && 's') || ''\n      } and click a component to jump directly to the source code in your IDE!`\n    );\n    window.__qwik_inspector_state = {\n      pressedKeys: new Set(),\n    };\n    const origin = 'http://local.local';\n    const body = document.body;\n    const overlay = document.createElement('div');\n    overlay.id = 'qwik-inspector-overlay';\n    overlay.setAttribute('aria-hidden', 'true');\n    body.appendChild(overlay);\n\n    function findContainer(el) {\n      if (el && el instanceof Element) {\n        return el.closest(`[${inspectAttribute}]`);\n      }\n      return null;\n    }\n\n    document.addEventListener(\n      'keydown',\n      (event) => {\n        window.__qwik_inspector_state.pressedKeys.add(event.code);\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'keyup',\n      (event) => {\n        window.__qwik_inspector_state.pressedKeys.delete(event.code);\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'mouseover',\n      (event) => {\n        const target = findContainer(event.target);\n        if (target) {\n          window.__qwik_inspector_state.hoveredElement = target;\n        } else {\n          window.__qwik_inspector_state.hoveredElement = undefined;\n        }\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'click',\n      (event) => {\n        if (isActive()) {\n          window.__qwik_inspector_state.pressedKeys.clear();\n          const target = findContainer(event.target);\n          if (target) {\n            event.preventDefault();\n            const inspectUrl = target.getAttribute(inspectAttribute);\n            body.style.setProperty('cursor', 'progress');\n            qwikOpenInEditor(inspectUrl);\n          }\n        }\n      },\n      { capture: true }\n    );\n\n    globalThis.qwikOpenInEditor = function (path) {\n      const resolvedURL = new URL(path, srcDir);\n      if (resolvedURL.origin === origin) {\n        const params = new URLSearchParams();\n        params.set('file', resolvedURL.pathname);\n        fetch('/__open-in-editor?' + params.toString());\n      } else {\n        location.href = resolvedURL.href;\n      }\n    };\n    document.addEventListener(\n      'contextmenu',\n      (event) => {\n        if (isActive()) {\n          window.__qwik_inspector_state.pressedKeys.clear();\n          const target = findContainer(event.target);\n          if (target) {\n            event.preventDefault();\n          }\n        }\n      },\n      { capture: true }\n    );\n\n    function updateOverlay() {\n      const hoverElement = window.__qwik_inspector_state.hoveredElement;\n      if (hoverElement && isActive()) {\n        const rect = hoverElement.getBoundingClientRect();\n        overlay.style.setProperty('height', rect.height + 'px');\n        overlay.style.setProperty('width', rect.width + 'px');\n        overlay.style.setProperty('top', rect.top + 'px');\n        overlay.style.setProperty('left', rect.left + 'px');\n        overlay.style.setProperty('visibility', 'visible');\n        body.style.setProperty('cursor', 'pointer');\n      } else {\n        overlay.style.setProperty('height', '0px');\n        overlay.style.setProperty('width', '0px');\n        overlay.style.setProperty('visibility', 'hidden');\n        body.style.removeProperty('cursor');\n      }\n    }\n\n    function checkKeysArePressed() {\n      const activeKeys = Array.from(window.__qwik_inspector_state.pressedKeys).map((key) =>\n        key ? key.replace(/(Left|Right)$/g, '') : undefined\n      );\n      return hotKeys.every((key) => activeKeys.includes(key));\n    }\n\n    function isActive() {\n      return checkKeysArePressed();\n    }\n    window.addEventListener('resize', updateOverlay);\n    document.addEventListener('scroll', updateOverlay);\n  })();\n<\/script>\n";
 
-var perf_warning_default = "<script>\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug(\n      '%c⭐️ Qwik Dev SSR Mode',\n      'background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      \"App is running in SSR development mode!\\\\n - Additional JS is loaded by Vite for debugging and live reloading\\\\n - Rendering performance might not be optimal\\\\n - Delayed interactivity because prefetching is disabled\\\\n - Vite dev bundles do not represent production output\\\\n\\\\nProduction build can be tested running 'npm run preview'\"\n    );\n  }\n<\/script>\n";
+var perf_warning_default = "<script>\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug(\n      '%c⭐️ Qwik Dev SSR Mode',\n      'background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      \"App is running in SSR development mode!\\n - Additional JS is loaded by Vite for debugging and live reloading\\n - Rendering performance might not be optimal\\n - Delayed interactivity because prefetching is disabled\\n - Vite dev bundles do not represent production output\\n\\nProduction build can be tested running 'npm run preview'\"\n    );\n  }\n<\/script>\n";
 
 var error_host_default = "<script>\n  document.addEventListener('qerror', (ev) => {\n    const ErrorOverlay = customElements.get('vite-error-overlay');\n    if (!ErrorOverlay) {\n      return;\n    }\n    const err = ev.detail.error;\n    const overlay = new ErrorOverlay(err);\n    document.body.appendChild(overlay);\n  });\n<\/script>\n<script>\n  /**\n   * Usage:\n   *\n   *  <errored-host></errored-host>\n   *\n   */\n  class ErroredHost extends HTMLElement {\n    get _root() {\n      return this.shadowRoot || this;\n    }\n\n    constructor() {\n      super();\n      const self = this;\n\n      this.state = {};\n      if (!this.props) {\n        this.props = {};\n      }\n\n      this.componentProps = ['children', 'error'];\n\n      // used to keep track of all nodes created by show/for\n      this.nodesToDestroy = [];\n      // batch updates\n      this.pendingUpdate = false;\n\n      this.attachShadow({ mode: 'open' });\n    }\n\n    destroyAnyNodes() {\n      // destroy current view template refs before rendering again\n      this.nodesToDestroy.forEach((el) => el.remove());\n      this.nodesToDestroy = [];\n    }\n\n    connectedCallback() {\n      this.getAttributeNames().forEach((attr) => {\n        const jsVar = attr.replace(/-/g, '');\n        const regexp = new RegExp(jsVar, 'i');\n        this.componentProps.forEach((prop) => {\n          if (regexp.test(prop)) {\n            const attrValue = this.getAttribute(attr);\n            if (this.props[prop] !== attrValue) {\n              this.props[prop] = attrValue;\n            }\n          }\n        });\n      });\n\n      this._root.innerHTML = `\n\n        <template data-el=\"show-errored-host\">\n        <div class=\"error\">\n          <template data-el=\"div-errored-host-2\">\n            \x3c!-- String(props.error) --\x3e\n          </template>\n        </div>\n        </template>\n\n        <div class=\"arrow\">👇 Uncaught error happened here 👇\n          <span class=\"dev-tools\">DevTools: Cmd+Alt+I</span>\n        </div>\n        <div class=\"div\">\n          <slot></slot>\n        </div>\n\n        <style>\n          .error {\n            border-radius: 5px 5px 0px 0;\n            background: black;\n            color: white;\n            font-family: monospace;\n            font-size: 12px;\n            margin: 0;\n            padding: 10px;\n          }\n          .arrow {\n            background: #f47e81;\n            color: black;\n            font-size: 14px;\n            padding: 10px;\n            text-align: center;\n            font-family: sans-serif;\n          }\n          .dev-tools {\n            background: red;\n            padding: 2px 5px;\n            border-radius: 3px;\n            font-weight: 800;\n          }\n          .div {\n            outline: 5px solid red;\n            border-radius: 10px;\n          }\n        </style>`;\n      this.pendingUpdate = true;\n\n      this.render();\n      this.onMount();\n      this.pendingUpdate = false;\n      this.update();\n    }\n\n    showContent(el) {\n      // https://developer.mozilla.org/en-US/docs/Web/API/HTMLTemplateElement/content\n      // grabs the content of a node that is between <template> tags\n      // iterates through child nodes to register all content including text elements\n      // attaches the content after the template\n\n      const elementFragment = el.content.cloneNode(true);\n      const children = Array.from(elementFragment.childNodes);\n      children.forEach((child) => {\n        if (el?.scope) {\n          child.scope = el.scope;\n        }\n        if (el?.context) {\n          child.context = el.context;\n        }\n        this.nodesToDestroy.push(child);\n      });\n      el.after(elementFragment);\n    }\n\n    onMount() {}\n\n    onUpdate() {}\n\n    update() {\n      if (this.pendingUpdate === true) {\n        return;\n      }\n      this.pendingUpdate = true;\n      this.render();\n      this.onUpdate();\n      this.pendingUpdate = false;\n    }\n\n    render() {\n      // re-rendering needs to ensure that all nodes generated by for/show are refreshed\n      this.destroyAnyNodes();\n      this.updateBindings();\n    }\n\n    updateBindings() {\n      this._root.querySelectorAll(\"[data-el='show-errored-host']\").forEach((el) => {\n        const whenCondition = this.props.error;\n        if (whenCondition) {\n          this.showContent(el);\n        }\n      });\n\n      this._root.querySelectorAll(\"[data-el='div-errored-host-2']\").forEach((el) => {\n        this.renderTextNode(el, String(this.props.error));\n      });\n    }\n\n    // Helper to render content\n    renderTextNode(el, text) {\n      const textNode = document.createTextNode(text);\n      if (el?.scope) {\n        textNode.scope = el.scope;\n      }\n      if (el?.context) {\n        textNode.context = el.context;\n      }\n      el.after(textNode);\n      this.nodesToDestroy.push(el.nextSibling);\n    }\n  }\n\n  customElements.define('errored-host', ErroredHost);\n<\/script>\n";
 
@@ -2860,246 +3100,6 @@ var getSymbolHash = symbolName => {
   }
   return symbolName;
 };
-
-var QWIK_LOADER_DEFAULT_MINIFIED = '((e,t)=>{const n="__q_context__",o=window,s=new Set,i=t=>e.querySelectorAll(t),a=(e,t,n=t.type)=>{i("[on"+e+"\\\\:"+n+"]").forEach((o=>f(o,e,t,n)))},r=(e,t)=>e.getAttribute(t),l=t=>{if(void 0===t._qwikjson_){let n=(t===e.documentElement?e.body:t).lastElementChild;for(;n;){if("SCRIPT"===n.tagName&&"qwik/json"===r(n,"type")){t._qwikjson_=JSON.parse(n.textContent.replace(/\\\\x3C(\\/?script)/g,"<$1"));break}n=n.previousElementSibling}}},c=(e,t)=>new CustomEvent(e,{detail:t}),f=async(t,o,s,i=s.type)=>{const a="on"+o+":"+i;t.hasAttribute("preventdefault:"+i)&&s.preventDefault();const c=t._qc_,f=null==c?void 0:c.li.filter((e=>e[0]===a));if(f&&f.length>0){for(const e of f)await e[1].getFn([t,s],(()=>t.isConnected))(s,t);return}const b=r(t,a);if(b){const o=t.closest("[q\\\\:container]"),i=new URL(r(o,"q:base"),e.baseURI);for(const a of b.split("\\n")){const r=new URL(a,i),c=r.hash.replace(/^#?([^?[|]*).*$/,"$1")||"default",f=performance.now(),b=import(r.href.split("#")[0]);l(o);const p=(await b)[c],u=e[n];if(t.isConnected)try{e[n]=[t,s,r],d("qsymbol",{symbol:c,element:t,reqTime:f}),await p(s,t)}finally{e[n]=u}}}},d=(t,n)=>{e.dispatchEvent(c(t,n))},b=e=>e.replace(/([A-Z])/g,(e=>"-"+e.toLowerCase())),p=async e=>{let t=b(e.type),n=e.target;for(a("-document",e,t);n&&n.getAttribute;)await f(n,"",e,t),n=e.bubbles&&!0!==e.cancelBubble?n.parentElement:null},u=e=>{a("-window",e,b(e.type))},w=()=>{var n;const a=e.readyState;if(!t&&("interactive"==a||"complete"==a)&&(t=1,d("qinit"),(null!=(n=o.requestIdleCallback)?n:o.setTimeout).bind(o)((()=>d("qidle"))),s.has("qvisible"))){const e=i("[on\\\\:qvisible]"),t=new IntersectionObserver((e=>{for(const n of e)n.isIntersecting&&(t.unobserve(n.target),f(n.target,"",c("qvisible",n)))}));e.forEach((e=>t.observe(e)))}},q=(e,t,n,o=!1)=>e.addEventListener(t,n,{capture:o,passive:!1}),v=t=>{for(const n of t)s.has(n)||(q(e,n,p,!0),q(o,n,u),s.add(n))};if(!e.qR){const t=o.qwikevents;Array.isArray(t)&&v(t),o.qwikevents={push:(...e)=>v(e)},q(e,"readystatechange",w),w()}})(document);';
-
-var QWIK_LOADER_DEFAULT_DEBUG = '(() => {\n    ((doc, hasInitialized) => {\n        const win = window;\n        const events =  new Set;\n        const querySelectorAll = query => doc.querySelectorAll(query);\n        const broadcast = (infix, ev, type = ev.type) => {\n            querySelectorAll("[on" + infix + "\\\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));\n        };\n        const getAttribute = (el, name) => el.getAttribute(name);\n        const resolveContainer = containerEl => {\n            if (void 0 === containerEl._qwikjson_) {\n                let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;\n                while (script) {\n                    if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {\n                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\\\x3C(\\/?script)/g, "<$1"));\n                        break;\n                    }\n                    script = script.previousElementSibling;\n                }\n            }\n        };\n        const createEvent = (eventName, detail) => new CustomEvent(eventName, {\n            detail: detail\n        });\n        const dispatch = async (element, onPrefix, ev, eventName = ev.type) => {\n            const attrName = "on" + onPrefix + ":" + eventName;\n            element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();\n            const ctx = element._qc_;\n            const qrls = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));\n            if (qrls && qrls.length > 0) {\n                for (const q of qrls) {\n                    await q[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);\n                }\n                return;\n            }\n            const attrValue = getAttribute(element, attrName);\n            if (attrValue) {\n                const container = element.closest("[q\\\\:container]");\n                const base = new URL(getAttribute(container, "q:base"), doc.baseURI);\n                for (const qrl of attrValue.split("\\n")) {\n                    const url = new URL(qrl, base);\n                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";\n                    const reqTime = performance.now();\n                    const module = import(url.href.split("#")[0]);\n                    resolveContainer(container);\n                    const handler = (await module)[symbolName];\n                    const previousCtx = doc.__q_context__;\n                    if (element.isConnected) {\n                        try {\n                            doc.__q_context__ = [ element, ev, url ];\n                            emitEvent("qsymbol", {\n                                symbol: symbolName,\n                                element: element,\n                                reqTime: reqTime\n                            });\n                            await handler(ev, element);\n                        } finally {\n                            doc.__q_context__ = previousCtx;\n                        }\n                    }\n                }\n            }\n        };\n        const emitEvent = (eventName, detail) => {\n            doc.dispatchEvent(createEvent(eventName, detail));\n        };\n        const camelToKebab = str => str.replace(/([A-Z])/g, (a => "-" + a.toLowerCase()));\n        const processDocumentEvent = async ev => {\n            let type = camelToKebab(ev.type);\n            let element = ev.target;\n            broadcast("-document", ev, type);\n            while (element && element.getAttribute) {\n                await dispatch(element, "", ev, type);\n                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;\n            }\n        };\n        const processWindowEvent = ev => {\n            broadcast("-window", ev, camelToKebab(ev.type));\n        };\n        const processReadyStateChange = () => {\n            var _a;\n            const readyState = doc.readyState;\n            if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {\n                hasInitialized = 1;\n                emitEvent("qinit");\n                (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));\n                if (events.has("qvisible")) {\n                    const results = querySelectorAll("[on\\\\:qvisible]");\n                    const observer = new IntersectionObserver((entries => {\n                        for (const entry of entries) {\n                            if (entry.isIntersecting) {\n                                observer.unobserve(entry.target);\n                                dispatch(entry.target, "", createEvent("qvisible", entry));\n                            }\n                        }\n                    }));\n                    results.forEach((el => observer.observe(el)));\n                }\n            }\n        };\n        const addEventListener = (el, eventName, handler, capture = !1) => el.addEventListener(eventName, handler, {\n            capture: capture,\n            passive: !1\n        });\n        const push = eventNames => {\n            for (const eventName of eventNames) {\n                if (!events.has(eventName)) {\n                    addEventListener(doc, eventName, processDocumentEvent, !0);\n                    addEventListener(win, eventName, processWindowEvent);\n                    events.add(eventName);\n                }\n            }\n        };\n        if (!doc.qR) {\n            const qwikevents = win.qwikevents;\n            Array.isArray(qwikevents) && push(qwikevents);\n            win.qwikevents = {\n                push: (...e) => push(e)\n            };\n            addEventListener(doc, "readystatechange", processReadyStateChange);\n            processReadyStateChange();\n        }\n    })(document);\n})();';
-
-var import_bmp = __toESM(require_bmp(), 1);
-
-var import_cur = __toESM(require_cur(), 1);
-
-var import_dds = __toESM(require_dds(), 1);
-
-var import_gif = __toESM(require_gif(), 1);
-
-var import_icns = __toESM(require_icns(), 1);
-
-var import_ico = __toESM(require_ico(), 1);
-
-var import_j2c = __toESM(require_j2c(), 1);
-
-var import_jp2 = __toESM(require_jp2(), 1);
-
-var import_jpg = __toESM(require_jpg(), 1);
-
-var import_ktx = __toESM(require_ktx(), 1);
-
-var import_png = __toESM(require_png(), 1);
-
-var import_pnm = __toESM(require_pnm(), 1);
-
-var import_psd = __toESM(require_psd(), 1);
-
-var import_svg = __toESM(require_svg(), 1);
-
-var import_tga = __toESM(require_tga(), 1);
-
-var import_webp = __toESM(require_webp(), 1);
-
-var firstBytes = {
-  56: "psd",
-  66: "bmp",
-  68: "dds",
-  71: "gif",
-  73: "tiff",
-  77: "tiff",
-  82: "webp",
-  105: "icns",
-  137: "png",
-  255: "jpg"
-};
-
-var types = {
-  bmp: import_bmp.default.BMP,
-  cur: import_cur.default.CUR,
-  dds: import_dds.default.DDS,
-  gif: import_gif.default.GIF,
-  icns: import_icns.default.ICNS,
-  ico: import_ico.default.ICO,
-  j2c: import_j2c.default.J2C,
-  jp2: import_jp2.default.JP2,
-  jpg: import_jpg.default.JPG,
-  ktx: import_ktx.default.KTX,
-  png: import_png.default.PNG,
-  pnm: import_pnm.default.PNM,
-  psd: import_psd.default.PSD,
-  svg: import_svg.default.SVG,
-  tga: import_tga.default.TGA,
-  webp: import_webp.default.WEBP
-};
-
-var keys = Object.keys(types);
-
-function detector(buffer) {
-  const byte = buffer[0];
-  if (byte in firstBytes) {
-    const type = firstBytes[byte];
-    if (type && types[type].validate(buffer)) {
-      return type;
-    }
-  }
-  const finder = key => types[key].validate(buffer);
-  return keys.find(finder);
-}
-
-function lookup(buffer) {
-  const type = detector(buffer);
-  if ("undefined" !== typeof type && type in types) {
-    const size = types[type].calculate(buffer);
-    if (void 0 !== size) {
-      size.type = type;
-      return size;
-    }
-  }
-  throw new TypeError("unsupported file type: " + type);
-}
-
-async function getInfoForSrc(src) {
-  try {
-    const res = await fetch(src);
-    if (!res.ok) {
-      console.error("can not fetch", src);
-      return;
-    }
-    const buffer = await res.arrayBuffer();
-    const size = lookup(Buffer.from(buffer));
-    if (size) {
-      return {
-        width: size.width,
-        height: size.height,
-        type: size.type,
-        size: buffer.byteLength
-      };
-    }
-  } catch (err) {
-    console.error(err);
-    return;
-  }
-}
-
-var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
-  const fs = await sys.dynamicImport("node:fs");
-  const path = await sys.dynamicImport("node:path");
-  const url = new URL(req.url, "http://localhost:3000/");
-  if ("GET" === req.method && "/__image_info" === url.pathname) {
-    const imageURL = url.searchParams.get("url");
-    res.setHeader("content-type", "application/json");
-    if (imageURL) {
-      const info = await getInfoForSrc(imageURL);
-      res.setHeader("cache-control", "public, max-age=31536000, immutable");
-      info ? res.write(JSON.stringify(info)) : res.statusCode = 500;
-    } else {
-      res.statusCode = 500;
-      const info = {
-        message: "error"
-      };
-      res.write(JSON.stringify(info));
-    }
-    res.end();
-    return;
-  }
-  if ("POST" === req.method && "/__image_fix" === url.pathname) {
-    try {
-      const loc = url.searchParams.get("loc");
-      const width = url.searchParams.get("width");
-      const height = url.searchParams.get("height");
-      const src = url.searchParams.get("src");
-      const currentHref = url.searchParams.get("currentHref");
-      const locParts = loc.split(":");
-      const column = parseInt(locParts[locParts.length - 1], 10) - 1;
-      let line = parseInt(locParts[locParts.length - 2], 10) - 1;
-      const filePath = path.resolve(srcDir, locParts.slice(0, locParts.length - 2).join(":"));
-      const extension = path.extname(filePath);
-      const buffer = fs.readFileSync(filePath);
-      let text = buffer.toString("utf-8");
-      let offset = 0;
-      for (;offset < text.length; offset++) {
-        if (0 === line) {
-          offset += column;
-          break;
-        }
-        if ("\n" === text[offset]) {
-          line--;
-          continue;
-        }
-      }
-      if ("<img" !== text.slice(offset, offset + 4)) {
-        console.error("Could not apply auto fix, because it was not possible to find the original <img> tag");
-        res.statusCode = 500;
-        return;
-      }
-      const end = text.indexOf(">", offset) + 1;
-      if (end < offset) {
-        console.error("Could not apply auto fix, because it was not possible to find the original <img> tag");
-        res.statusCode = 500;
-        return;
-      }
-      const extensionSupportsImport = [ ".ts", ".tsx", ".js", ".jsx", ".mdx" ].includes(extension);
-      let imgTag = text.slice(offset, end);
-      if (src && currentHref && extensionSupportsImport) {
-        const urlSrc = new URL(src);
-        const urlCurrent = new URL(currentHref);
-        if (urlSrc.origin === urlCurrent.origin) {
-          const publicImagePath = path.join(rootDir, "public", urlSrc.pathname);
-          const rootImagePath = path.join(rootDir, urlSrc.pathname);
-          let relativeLocation;
-          if (fs.existsSync(publicImagePath)) {
-            const mediaSrc = path.join(srcDir, "media", path.dirname(urlSrc.pathname));
-            await fs.promises.mkdir(mediaSrc, {
-              recursive: true
-            });
-            await fs.promises.copyFile(publicImagePath, path.join(srcDir, "media", urlSrc.pathname));
-            relativeLocation = "~/media" + urlSrc.pathname;
-          } else {
-            if (!fs.existsSync(rootImagePath)) {
-              return;
-            }
-            relativeLocation = urlSrc.pathname.replace("/src/", "~/");
-          }
-          const importIdent = imgImportName(urlSrc.pathname);
-          const importSrc = `${relativeLocation}?jsx`;
-          imgTag = imgTag.replace(/^<img/, `<${importIdent}`);
-          imgTag = imgTag.replace(/\bwidth=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
-          imgTag = imgTag.replace(/\bheight=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
-          imgTag = imgTag.replace(/\bsrc=(({[^}]*})|('[^']*')|("[^"]*"))\s*/, "");
-          let insertImport = 0;
-          if (".mdx" === extension && text.startsWith("---")) {
-            insertImport = text.indexOf("---", 4) + 3;
-            if (-1 === insertImport) {
-              return;
-            }
-          }
-          const newImport = `\nimport ${importIdent} from '${importSrc}';`;
-          text = `${text.slice(0, insertImport)}${newImport}${text.slice(insertImport, offset)}${imgTag}${text.slice(end)}`;
-          fs.writeFileSync(filePath, text);
-          return;
-        }
-      }
-      imgTag = imgTag.replace(/\bwidth=(({[^}]*})|('[^']*')|("[^"]*"))/, `width="${width}"`);
-      imgTag = imgTag.replace(/\bheight=(({[^}]*})|('[^']*')|("[^"]*"))/, `height="${height}"`);
-      imgTag.includes("height=") || (imgTag = imgTag.replace(/<img/, `<img height="${height}"`));
-      imgTag.includes("width=") || (imgTag = imgTag.replace(/<img/, `<img width="${width}"`));
-      text = text.slice(0, offset) + imgTag + text.slice(end);
-      fs.writeFileSync(filePath, text);
-    } catch (e) {
-      console.error("Error auto fixing image", e, url);
-    }
-  } else {
-    next();
-  }
-};
-
-function imgImportName(value) {
-  const dot = value.lastIndexOf(".");
-  const slash = value.lastIndexOf("/");
-  value = value.substring(slash + 1, dot);
-  return `Img${toPascalCase(value)}`;
-}
-
-function toPascalCase(string) {
-  return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), (($1, $2, $3) => `${$2.toUpperCase() + $3}`)).replace(new RegExp(/\w/), (s => s.toUpperCase()));
-}
 
 var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID ];
 
@@ -3500,7 +3500,7 @@ function updateEntryDev(code) {
 
 function getViteDevModule(opts) {
   const qwikLoader = JSON.stringify(opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED);
-  return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    const parent = document.head ?? document.body ?? document.documentElement;\n    parent.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Client Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\\n - No portion of the application is pre-rendered on the server\\n - All of the application is running eagerly in the browser\\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
+  return `// Qwik Vite Dev Module\nimport { render as qwikRender } from '@builder.io/qwik';\n\nexport async function render(document, rootNode, opts) {\n\n  await qwikRender(document, rootNode, opts);\n\n  let qwikLoader = document.getElementById('qwikloader');\n  if (!qwikLoader) {\n    qwikLoader = document.createElement('script');\n    qwikLoader.id = 'qwikloader';\n    qwikLoader.innerHTML = ${qwikLoader};\n    const parent = document.head ?? document.body ?? document.documentElement;\n    parent.appendChild(qwikLoader);\n  }\n\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug("%c⭐️ Qwik Client Mode","background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;","Do not use this mode in production!\n - No portion of the application is pre-rendered on the server\n - All of the application is running eagerly in the browser\n - Optimizer/Serialization/Deserialization code is not exercised!");\n  }\n}`;
 }
 
 var findQwikRoots = async (sys, packageJsonPath) => {
