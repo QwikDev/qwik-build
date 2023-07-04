@@ -232,6 +232,7 @@ declare interface QwikPluginDevTools {
 }
 
 declare interface QwikPluginOptions {
+    csr?: boolean;
     buildMode?: QwikBuildMode;
     debug?: boolean;
     entryStrategy?: EntryStrategy;
@@ -262,6 +263,7 @@ export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): an
  * @public
  */
 export declare interface QwikRollupPluginOptions {
+    csr?: boolean;
     /**
      * Build `production` or `development`.
      * Default `development`
@@ -371,10 +373,7 @@ export declare interface QwikVitePluginApi {
     getClientPublicOutDir: () => string | null;
 }
 
-/**
- * @public
- */
-export declare interface QwikVitePluginOptions {
+declare interface QwikVitePluginCommonOptions {
     /**
      * Prints verbose Qwik plugin debug logs.
      * Default `false`
@@ -398,6 +397,52 @@ export declare interface QwikVitePluginOptions {
      * Default `[]`
      */
     vendorRoots?: string[];
+    /**
+     * Options for the Qwik optimizer.
+     * Default `undefined`
+     */
+    optimizerOptions?: OptimizerOptions;
+    /**
+     * Hook that's called after the build and provides all of the transformed
+     * modules that were used before bundling.
+     */
+    transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
+    devTools?: {
+        /**
+         * Press-hold the defined keys to enable qwik dev inspector.
+         * By default the behavior is activated by pressing the left or right `Alt` key.
+         * If set to `false`, qwik dev inspector will be disabled.
+         * Valid values are `KeyboardEvent.code` values.
+         * Please note that the 'Left' and 'Right' suffixes are ignored.
+         */
+        clickToSource: string[] | false;
+    };
+}
+
+declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
+    /**
+     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
+     */
+    csr: true;
+}
+
+declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
+    /**
+     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
+     */
+    csr: true;
+}
+
+/**
+ * @public
+ */
+export declare type QwikVitePluginOptions = QwikVitePluginCSROptions | QwikVitePluginSSROptions;
+
+declare interface QwikVitePluginSSROptions extends QwikVitePluginCommonOptions {
+    /**
+     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
+     */
+    csr?: false | undefined;
     client?: {
         /**
          * The entry point for the client builds. This would be
@@ -444,26 +489,6 @@ export declare interface QwikVitePluginOptions {
          * Default `undefined`
          */
         manifestInput?: QwikManifest;
-    };
-    /**
-     * Options for the Qwik optimizer.
-     * Default `undefined`
-     */
-    optimizerOptions?: OptimizerOptions;
-    /**
-     * Hook that's called after the build and provides all of the transformed
-     * modules that were used before bundling.
-     */
-    transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
-    devTools?: {
-        /**
-         * Press-hold the defined keys to enable qwik dev inspector.
-         * By default the behavior is activated by pressing the left or right `Alt` key.
-         * If set to `false`, qwik dev inspector will be disabled.
-         * Valid values are `KeyboardEvent.code` values.
-         * Please note that the 'Left' and 'Right' suffixes are ignored.
-         */
-        clickToSource: string[] | false;
     };
 }
 
