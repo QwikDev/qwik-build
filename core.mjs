@@ -5232,7 +5232,7 @@ const executeSignalOperation = (staticCtx, operation) => {
                     value = stringifyStyle(value);
                 }
                 const vdom = getVdom(elCtx);
-                if (vdom.$props$[prop] === value) {
+                if (prop in vdom.$props$ && vdom.$props$[prop] === value) {
                     return;
                 }
                 vdom.$props$[prop] = value;

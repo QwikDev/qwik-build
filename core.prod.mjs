@@ -3348,7 +3348,7 @@ const executeSignalOperation = (staticCtx, operation) => {
                 let value = trackSignal(operation[2], operation.slice(0, -1));
                 "class" === prop ? value = serializeClassWithHost(value, tryGetContext(hostElm)) : "style" === prop && (value = stringifyStyle(value));
                 const vdom = getVdom(elCtx);
-                if (vdom.$props$[prop] === value) {
+                if (prop in vdom.$props$ && vdom.$props$[prop] === value) {
                     return;
                 }
                 return vdom.$props$[prop] = value, smartSetProperty(staticCtx, elm, prop, value, isSVG);
