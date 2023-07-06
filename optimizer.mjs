@@ -1250,7 +1250,7 @@ var getPlatformInputFiles = async sys => {
         } else {
           flatted.push(dir);
         }
-        return flatted.filter((a => extensions[sys.path.extname(a)]));
+        return flatted.filter((a => sys.path.extname(a).toLowerCase() in extensions));
       };
       const filePaths = await getChildFilePaths(rootDir);
       const inputs = (await Promise.all(filePaths.map((async filePath => {
@@ -1932,8 +1932,8 @@ function createPlugin(optimizerOptions = {}) {
       }
       const parsedId = parseId(id2);
       let importeePathId = normalizePath(parsedId.pathId);
-      const ext = path.extname(importeePathId);
-      if (RESOLVE_EXTS[ext]) {
+      const ext = path.extname(importeePathId).toLowerCase();
+      if (ext in RESOLVE_EXTS) {
         importer = normalizePath(importer);
         log(`resolveId("${importeePathId}", "${importer}")`);
         const parsedImporterId = parseId(importer);
@@ -1950,8 +1950,8 @@ function createPlugin(optimizerOptions = {}) {
     } else if (path.isAbsolute(id2)) {
       const parsedId = parseId(id2);
       const importeePathId = normalizePath(parsedId.pathId);
-      const ext = path.extname(importeePathId);
-      if (RESOLVE_EXTS[ext]) {
+      const ext = path.extname(importeePathId).toLowerCase();
+      if (ext in RESOLVE_EXTS) {
         log(`resolveId("${importeePathId}", "${importer}")`);
         const transformedOutput = isSSR ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
         if (transformedOutput) {
@@ -2013,8 +2013,11 @@ function createPlugin(optimizerOptions = {}) {
     const optimizer = getOptimizer();
     const path = getPath();
     const {pathId: pathId} = parseId(id2);
-    const {ext: ext, dir: dir, base: base} = path.parse(pathId);
-    if (TRANSFORM_EXTS[ext] || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
+    const parsedPathId = path.parse(pathId);
+    const dir = parsedPathId.dir;
+    const base = parsedPathId.base;
+    const ext = parsedPathId.ext.toLowerCase();
+    if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
       const strip = "client" === opts.target || "ssr" === opts.target;
       const normalizedID = normalizePath(pathId);
       log("transform()", "Transforming", pathId);
@@ -2547,7 +2550,7 @@ var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
       const column = parseInt(locParts[locParts.length - 1], 10) - 1;
       let line = parseInt(locParts[locParts.length - 2], 10) - 1;
       const filePath = path.resolve(srcDir, locParts.slice(0, locParts.length - 2).join(":"));
-      const extension = path.extname(filePath);
+      const extension = path.extname(filePath).toLowerCase();
       const buffer = fs.readFileSync(filePath);
       let text = buffer.toString("utf-8");
       let offset = 0;
