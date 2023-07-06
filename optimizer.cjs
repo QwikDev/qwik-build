@@ -2342,16 +2342,13 @@ globalThis.qwikOptimizer = function(module) {
   function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
     const outputOpts = {};
     rollupOutputOpts && !Array.isArray(rollupOutputOpts) && Object.assign(outputOpts, rollupOutputOpts);
-    if ("ssr" === opts.target) {
-      "production" === opts.buildMode && (outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]"));
-    } else if ("client" === opts.target) {
+    outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]");
+    if ("client" === opts.target) {
       if ("production" === opts.buildMode) {
         outputOpts.entryFileNames || (outputOpts.entryFileNames = "build/q-[hash].js");
-        outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]");
         outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "build/q-[hash].js");
       } else {
         outputOpts.entryFileNames || (outputOpts.entryFileNames = "build/[name].js");
-        outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/[name].[ext]");
         outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "build/[name].js");
       }
     }

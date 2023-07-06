@@ -3184,7 +3184,7 @@ function getRandomJoke() {
 async function runJokeCommand() {
   const [setup, punchline] = getRandomJoke();
   note(magenta(`${setup.trim()}
-${punchline.trim()}`), "\u{1F921}");
+${punchline.trim()}`), "\u{1F648}");
 }
 
 // node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
