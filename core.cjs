@@ -6919,7 +6919,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         else {
             throw qError(QError_unknownTypeArgument, chunkOrFn);
         }
-        if (announcedQRL.has(symbol)) {
+        if (!announcedQRL.has(symbol)) {
             // Emit event
             announcedQRL.add(symbol);
             emitEvent('qprefetch', {

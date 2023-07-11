@@ -4389,7 +4389,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset =
         }
         chunk = chunkOrFn;
     }
-    return announcedQRL.has(symbol) && (announcedQRL.add(symbol), emitEvent("qprefetch", {
+    return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
         symbols: [ getSymbolHash(symbol) ]
     })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
 };
