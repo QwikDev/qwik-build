@@ -3382,7 +3382,7 @@
             }
             chunk = chunkOrFn;
         }
-        return announcedQRL.has(symbol) && (announcedQRL.add(symbol), emitEvent("qprefetch", {
+        return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
             symbols: [ getSymbolHash(symbol) ]
         })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     };

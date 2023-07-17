@@ -6915,7 +6915,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset =
     else {
         throw qError(QError_unknownTypeArgument, chunkOrFn);
     }
-    if (announcedQRL.has(symbol)) {
+    if (!announcedQRL.has(symbol)) {
         // Emit event
         announcedQRL.add(symbol);
         emitEvent('qprefetch', {
