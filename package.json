@@ -188,21 +188,19 @@
     "url": "https://github.com/BuilderIO/qwik.git",
     "directory": "packages/qwik"
   },
-  "bugs": {
-    "url": "https://github.com/BuilderIO/qwik/issues"
-  },
+  "bugs": "https://github.com/BuilderIO/qwik/issues",
   "keywords": [
-    "ssr",
-    "server-side-render",
-    "prerender",
-    "ssg",
-    "static-site-generator",
-    "static-site",
-    "generator",
-    "website",
-    "webapp",
+    "Builder.io",
     "framework",
-    "Builder.io"
+    "generator",
+    "prerender",
+    "server-side-render",
+    "ssg",
+    "ssr",
+    "static-site",
+    "static-site-generator",
+    "webapp",
+    "website"
   ],
   "engines": {
     "node": ">=16.8.0 <18.0.0 || >=18.11"
