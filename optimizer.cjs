@@ -1814,7 +1814,7 @@ globalThis.qwikOptimizer = function(module) {
       var _a;
       log("buildStart()", opts.buildMode, opts.scope);
       const optimizer = getOptimizer();
-      if ("node" === optimizer.sys.env && "ssr" !== opts.target) {
+      if ("node" === optimizer.sys.env && "ssr" === opts.target) {
         try {
           linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
         } catch (err) {}
