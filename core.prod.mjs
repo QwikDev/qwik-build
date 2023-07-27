@@ -4136,9 +4136,10 @@ const collectProps = (elCtx, collector) => {
         const subs = getSubscriptionManager(props)?.$subs$;
         const el = elCtx.$element$;
         if (subs) {
-            for (const sub of subs) {
-                0 === sub[0] ? (sub[1] !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
-                collectElement(sub[1], collector)) : (collectValue(props, collector, !1), collectSubscriptions(getSubscriptionManager(props), collector, !1));
+            for (const [type, host] of subs) {
+                0 === type ? (host !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
+                isNode$1(host) ? collectElement(host, collector) : collectValue(host, collector, !0)) : (collectValue(props, collector, !1), 
+                collectSubscriptions(getSubscriptionManager(props), collector, !1));
             }
         }
     }

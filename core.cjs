@@ -6587,12 +6587,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const subs = getSubscriptionManager(props)?.$subs$;
             const el = elCtx.$element$;
             if (subs) {
-                for (const sub of subs) {
-                    if (sub[0] === 0) {
-                        if (sub[1] !== el) {
+                for (const [type, host] of subs) {
+                    if (type === 0) {
+                        if (host !== el) {
                             collectSubscriptions(getSubscriptionManager(props), collector, false);
                         }
-                        collectElement(sub[1], collector);
+                        if (isNode$1(host)) {
+                            collectElement(host, collector);
+                        }
+                        else {
+                            collectValue(host, collector, true);
+                        }
                     }
                     else {
                         collectValue(props, collector, false);
