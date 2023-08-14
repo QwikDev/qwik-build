@@ -829,7 +829,11 @@
             const parent = this.parentElement;
             if (parent) {
                 const ch = this.childNodes;
-                assertEqual(), parent.removeChild(this.open), this.$template$.append(...ch), parent.removeChild(this.close);
+                assertEqual(), parent.removeChild(this.open);
+                for (let i = 0; i < ch.length; i++) {
+                    this.$template$.appendChild(ch[i]);
+                }
+                parent.removeChild(this.close);
             }
         }
         appendChild(node) {

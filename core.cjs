@@ -1854,11 +1854,12 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         remove() {
             const parent = this.parentElement;
             if (parent) {
-                // const ch = this.childNodes;
                 const ch = this.childNodes;
                 assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
                 parent.removeChild(this.open);
-                this.$template$.append(...ch);
+                for (let i = 0; i < ch.length; i++) {
+                    this.$template$.appendChild(ch[i]);
+                }
                 parent.removeChild(this.close);
             }
         }
