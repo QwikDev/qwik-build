@@ -1640,6 +1640,9 @@ globalThis.qwikOptimizer = function(module) {
           });
           report.forEach((file => {
             for (const message of file.messages) {
+              if (null != message.ruleId && !message.ruleId.startsWith("qwik/")) {
+                continue;
+              }
               const err = createRollupError(file.filePath, message);
               ctx.warn(err);
             }
