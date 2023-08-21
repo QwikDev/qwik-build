@@ -2345,7 +2345,7 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
 /**
  * @public
  */
-declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
+export declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
 
 /**
  * @public
