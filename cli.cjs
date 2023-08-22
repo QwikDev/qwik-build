@@ -2790,11 +2790,17 @@ async function loadTemplates() {
 async function readTemplates(rootDir) {
   const componentDir = (0, import_node_path7.join)(rootDir, "component");
   const routeDir = (0, import_node_path7.join)(rootDir, "route");
+  const markdownDir = (0, import_node_path7.join)(rootDir, "markdown");
+  const mdxDir = (0, import_node_path7.join)(rootDir, "mdx");
   const component = await getFilesDeep(componentDir);
   const route = await getFilesDeep(routeDir);
+  const markdown = await getFilesDeep(markdownDir);
+  const mdx = await getFilesDeep(mdxDir);
   return {
     component: component.map((c2) => parseTemplatePath(c2, "component")),
-    route: route.map((r2) => parseTemplatePath(r2, "route"))
+    route: route.map((r2) => parseTemplatePath(r2, "route")),
+    markdown: markdown.map((m2) => parseTemplatePath(m2, "markdown")),
+    mdx: mdx.map((m2) => parseTemplatePath(m2, "mdx"))
   };
 }
 function parseTemplatePath(path3, type) {
@@ -2842,11 +2848,13 @@ async function printNewHelp() {
 }
 
 // packages/qwik/src/cli/new/utils.ts
-var POSSIBLE_TYPES = ["component", "route"];
+var POSSIBLE_TYPES = ["component", "route", "markdown", "mdx"];
 
 // packages/qwik/src/cli/new/run-new-command.ts
 var SLUG_KEY = "[slug]";
 var NAME_KEY = "[name]";
+var MARKDOWN_SUFFIX = ".md";
+var MDX_SUFFIX = ".mdx";
 async function runNewCommand(app) {
   try {
     if (app.args.length > 1 && app.args[1] === "help") {
@@ -2862,8 +2870,16 @@ async function runNewCommand(app) {
     let nameArg;
     let outDir;
     if (mainInput && mainInput.startsWith("/")) {
-      typeArg = "route";
-      nameArg = mainInput;
+      if (mainInput.endsWith(MARKDOWN_SUFFIX)) {
+        typeArg = "markdown";
+        nameArg = mainInput.replace(MARKDOWN_SUFFIX, "");
+      } else if (mainInput.endsWith(MDX_SUFFIX)) {
+        typeArg = "mdx";
+        nameArg = mainInput.replace(MDX_SUFFIX, "");
+      } else {
+        typeArg = "route";
+        nameArg = mainInput;
+      }
     } else if (mainInput) {
       typeArg = "component";
       nameArg = mainInput;
@@ -2896,13 +2912,17 @@ async function runNewCommand(app) {
       }
       template = templates2[0][typeArg][0];
     }
-    if (typeArg === "route") {
+    if (typeArg === "route" || typeArg === "markdown" || typeArg === "mdx") {
       outDir = (0, import_path2.join)(app.rootDir, "src", `routes`, nameArg);
     } else {
       outDir = (0, import_path2.join)(app.rootDir, "src", `components`, nameArg);
     }
     const fileOutput = await writeToFile(name, slug, template, outDir);
-    g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+    if (typeArg === "markdown") {
+      g2.success(`${green(`Markdown route "${name}" created!`)}`);
+    } else {
+      g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+    }
     g2.message(`Emitted in ${dim(fileOutput)}`);
   } catch (e2) {
     g2.error(String(e2));
@@ -2915,7 +2935,9 @@ async function selectType() {
     message: "What would you like to create?",
     options: [
       { value: "component", label: "Component" },
-      { value: "route", label: "Route" }
+      { value: "route", label: "Route" },
+      { value: "markdown", label: "Route (Markdown)" },
+      { value: "mdx", label: "Route (MDX)" }
     ]
   });
   if (eD(typeAnswer)) {
@@ -2924,8 +2946,20 @@ async function selectType() {
   return typeAnswer;
 }
 async function selectName(type) {
-  const message = type === "route" ? "New route path" : "Name your component";
-  const placeholder = type === "route" ? "/product/[id]" : "my-component";
+  const messages = {
+    route: "New route path",
+    markdown: "New Markdown route path",
+    mdx: "New MDX route path",
+    component: "Name your component"
+  };
+  const message = messages[type];
+  const placeholders = {
+    route: "/product/[id]",
+    markdown: "/some/page" + MARKDOWN_SUFFIX,
+    mdx: "/some/page" + MDX_SUFFIX,
+    component: "my-component"
+  };
+  const placeholder = placeholders[type];
   const nameAnswer = await J2({
     message,
     placeholder,
@@ -2944,7 +2978,13 @@ async function selectName(type) {
   if (type === "route" && !nameAnswer.startsWith("/")) {
     return `/${nameAnswer}`;
   }
-  return nameAnswer;
+  if (type === "markdown" && !nameAnswer.startsWith("/")) {
+    return `/${nameAnswer.replace(MARKDOWN_SUFFIX, "")}`;
+  }
+  if (type === "mdx" && !nameAnswer.startsWith("/")) {
+    return `/${nameAnswer.replace(MDX_SUFFIX, "")}`;
+  }
+  return nameAnswer.replace(MARKDOWN_SUFFIX, "");
 }
 async function selectTemplate(typeArg) {
   const allTemplates = await loadTemplates();
