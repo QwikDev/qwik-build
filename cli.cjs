@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.2.7
+ * @builder.io/qwik/cli 1.2.8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3045,7 +3045,7 @@ function toPascal(list) {
   return list.map((p3) => p3[0].toUpperCase() + p3.substring(1).toLowerCase()).join("");
 }
 
-// packages/create-qwik/jokes.json
+// packages/create-qwik/src/helpers/jokes.json
 var jokes_default = [
   ["Dad, can you put my shoes on?", "I don't think they'll fit me."],
   ["What do ghosts call their true love?", "Their ghoul-friend"],
@@ -3214,7 +3214,7 @@ var jokes_default = [
   ["Knock knock. \n Who's there? \n Hatch. \n Hatch who?", "Bless you!"]
 ];
 
-// packages/create-qwik/jokes.ts
+// packages/create-qwik/src/helpers/jokes.ts
 function getRandomJoke() {
   const index = Math.floor(Math.random() * jokes_default.length);
   return jokes_default[index];
@@ -4775,7 +4775,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("1.2.7");
+  console.log("1.2.8");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
