@@ -3155,6 +3155,15 @@ function qwikVite(qwikViteOpts = {}) {
       viteCommand = viteEnv.command;
       isClientDevOnly = "serve" === viteCommand && "ssr" !== viteEnv.mode;
       qwikPlugin.log(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
+      if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
+        const fs = await sys.dynamicImport("node:fs");
+        try {
+          const INSIGHTS_Q_MANIFEST_FILENAME = "./dist/q-insights.json";
+          const entryStrategy = JSON.parse(await fs.promises.readFile(INSIGHTS_Q_MANIFEST_FILENAME, "utf-8"));
+          entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
+          await fs.promises.unlink(INSIGHTS_Q_MANIFEST_FILENAME);
+        } catch (e) {}
+      }
       "serve" === viteCommand ? qwikViteOpts.entryStrategy = {
         type: "hook"
       } : "ssr" === target ? qwikViteOpts.entryStrategy = {
