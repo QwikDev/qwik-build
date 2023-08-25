@@ -1774,6 +1774,7 @@ function createPlugin(optimizerOptions = {}) {
     } else {
       opts.srcDir = srcDir;
     }
+    Array.isArray(updatedOpts.tsconfigFileNames) && updatedOpts.tsconfigFileNames.length > 0 && (opts.tsconfigFileNames = updatedOpts.tsconfigFileNames);
     Array.isArray(opts.srcInputs) ? opts.srcInputs.forEach((i => {
       i.path = normalizePath(path.resolve(opts.rootDir, i.path));
     })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
@@ -3181,6 +3182,7 @@ function qwikVite(qwikViteOpts = {}) {
         entryStrategy: qwikViteOpts.entryStrategy,
         srcDir: qwikViteOpts.srcDir,
         rootDir: viteConfig.root,
+        tsconfigFileNames: qwikViteOpts.tsconfigFileNames,
         resolveQwikBuild: true,
         transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
         vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],

@@ -393,6 +393,11 @@ declare interface QwikVitePluginCommonOptions {
      */
     srcDir?: string;
     /**
+     * List of tsconfig.json files to use for ESLint warnings during development.
+     * Default `['tsconfig.json']`
+     */
+    tsconfigFileNames?: string[];
+    /**
      * List of directories to recursively search for Qwik components or Vendors.
      * Default `[]`
      */
