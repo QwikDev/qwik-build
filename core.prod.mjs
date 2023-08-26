@@ -51,15 +51,13 @@ const isComment = value => 8 === value.nodeType;
 
 const STYLE = "";
 
-const logError = (message, ...optionalParams) => {
-    const err = message instanceof Error ? message : createError(message);
-    return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
-    err;
+const logError = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+
+const throwErrorAndStop = (message, ...optionalParams) => {
+    throw createAndLogError(!1, message, ...optionalParams);
 };
 
-const createError = message => new Error(message);
-
-const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
+const logErrorAndStop = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
 
 const _printed = /*#__PURE__*/ new Set;
 
@@ -88,6 +86,14 @@ const printElement = el => {
         element: isServer ? void 0 : el,
         ctx: isServer ? void 0 : ctx
     };
+};
+
+const createAndLogError = (asyncThrow, message, ...optionalParams) => {
+    const err = message instanceof Error ? message : new Error(message);
+    return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
+    asyncThrow && setTimeout((() => {
+        throw err;
+    }), 0), err;
 };
 
 const QError_stringifyClassOrStyle = 0;
@@ -5007,7 +5013,7 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
             const fnName = value.name;
             message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
         }
-        throw console.error("Trying to serialize", value), createError(message);
+        console.error("Trying to serialize", value), throwErrorAndStop(message);
     }
     return value;
 };
