@@ -6772,10 +6772,11 @@ const collectValue = (obj, collector, leaks) => {
                 const target = getProxyTarget(obj);
                 if (target) {
                     obj = target;
-                    if (seen.has(obj)) {
-                        return;
-                    }
-                    seen.add(obj);
+                    // NOTE: You may be tempted to add the `target` to the `seen` set,
+                    // but that would not work as it is possible for the `target` object
+                    // to already be in `seen` set if it was passed in directly, so
+                    // we can't short circuit and need to do the work.
+                    // Issue: https://github.com/BuilderIO/qwik/issues/5001
                     const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
                     if (leaks && mutable) {
                         collectSubscriptions(getSubscriptionManager(input), collector, leaks);

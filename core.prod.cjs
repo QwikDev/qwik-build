@@ -3272,11 +3272,7 @@
                     const input = obj;
                     const target = getProxyTarget(obj);
                     if (target) {
-                        if (seen.has(obj = target)) {
-                            return;
-                        }
-                        seen.add(obj);
-                        const mutable = 0 == (2 & getProxyFlags(obj));
+                        const mutable = 0 == (2 & getProxyFlags(obj = target));
                         if (leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks), 
                         fastWeakSerialize(input)) {
                             return void collector.$objSet$.add(obj);
