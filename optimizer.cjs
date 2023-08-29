@@ -3041,11 +3041,11 @@ globalThis.qwikOptimizer = function(module) {
         if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
           const fs = await sys.dynamicImport("node:fs");
           try {
-            const INSIGHTS_Q_MANIFEST_FILENAME = "./dist/q-insights.json";
-            if (fs.existsSync(INSIGHTS_Q_MANIFEST_FILENAME)) {
-              const entryStrategy = JSON.parse(await fs.promises.readFile(INSIGHTS_Q_MANIFEST_FILENAME, "utf-8"));
+            const path2 = sys.path.join(process.cwd(), "dist", "q-insights.json");
+            if (fs.existsSync(path2)) {
+              const entryStrategy = JSON.parse(await fs.promises.readFile(path2, "utf-8"));
               entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-              await fs.promises.unlink(INSIGHTS_Q_MANIFEST_FILENAME);
+              await fs.promises.unlink(path2);
             }
           } catch (e) {}
         }
