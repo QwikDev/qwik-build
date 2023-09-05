@@ -1721,7 +1721,8 @@ function createPlugin(optimizerOptions = {}) {
     scope: null,
     devTools: {
       clickToSource: [ "Alt" ]
-    }
+    },
+    inlineStylesUpToBytes: null
   };
   const init2 = async () => {
     internalOptimizer || (internalOptimizer = await createOptimizer(optimizerOptions));
@@ -1797,6 +1798,8 @@ function createPlugin(optimizerOptions = {}) {
     "boolean" === typeof updatedOpts.resolveQwikBuild && (opts.resolveQwikBuild = updatedOpts.resolveQwikBuild);
     "object" === typeof updatedOpts.devTools && "clickToSource" in updatedOpts.devTools && (opts.devTools.clickToSource = updatedOpts.devTools.clickToSource);
     opts.csr = !!updatedOpts.csr;
+    opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
+    ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
     return {
       ...opts
     };
@@ -2302,7 +2305,8 @@ function qwikRollup(qwikRollupOpts = {}) {
         resolveQwikBuild: true,
         manifestOutput: qwikRollupOpts.manifestOutput,
         manifestInput: qwikRollupOpts.manifestInput,
-        transformedModuleOutput: qwikRollupOpts.transformedModuleOutput
+        transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
+        inlineStylesUpToBytes: qwikRollupOpts.optimizerOptions?.inlineStylesUpToBytes
       };
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       inputOpts.input || (inputOpts.input = opts.input);
@@ -3387,7 +3391,7 @@ function qwikVite(qwikViteOpts = {}) {
             } else {
               const baseFilename = basePathname + fileName;
               if (STYLING.some((ext => fileName.endsWith(ext)))) {
-                "string" === typeof b.source && b.source.length < 2e4 ? injections.push({
+                "string" === typeof b.source && b.source.length < opts.inlineStylesUpToBytes ? injections.push({
                   tag: "style",
                   location: "head",
                   attributes: {

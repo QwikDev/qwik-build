@@ -1711,7 +1711,8 @@ globalThis.qwikOptimizer = function(module) {
       scope: null,
       devTools: {
         clickToSource: [ "Alt" ]
-      }
+      },
+      inlineStylesUpToBytes: null
     };
     const init2 = async () => {
       internalOptimizer || (internalOptimizer = await createOptimizer(optimizerOptions));
@@ -1787,6 +1788,8 @@ globalThis.qwikOptimizer = function(module) {
       "boolean" === typeof updatedOpts.resolveQwikBuild && (opts.resolveQwikBuild = updatedOpts.resolveQwikBuild);
       "object" === typeof updatedOpts.devTools && "clickToSource" in updatedOpts.devTools && (opts.devTools.clickToSource = updatedOpts.devTools.clickToSource);
       opts.csr = !!updatedOpts.csr;
+      opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
+      ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
       return {
         ...opts
       };
@@ -2256,6 +2259,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async options(inputOpts) {
+        var _a;
         await qwikPlugin.init();
         inputOpts.onwarn = (warning, warn) => {
           if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -2276,7 +2280,8 @@ globalThis.qwikOptimizer = function(module) {
           resolveQwikBuild: true,
           manifestOutput: qwikRollupOpts.manifestOutput,
           manifestInput: qwikRollupOpts.manifestInput,
-          transformedModuleOutput: qwikRollupOpts.transformedModuleOutput
+          transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
+          inlineStylesUpToBytes: null == (_a = qwikRollupOpts.optimizerOptions) ? void 0 : _a.inlineStylesUpToBytes
         };
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
         inputOpts.input || (inputOpts.input = opts.input);
@@ -3270,7 +3275,7 @@ globalThis.qwikOptimizer = function(module) {
               } else {
                 const baseFilename = basePathname + fileName;
                 if (STYLING.some((ext => fileName.endsWith(ext)))) {
-                  "string" === typeof b.source && b.source.length < 2e4 ? injections.push({
+                  "string" === typeof b.source && b.source.length < opts.inlineStylesUpToBytes ? injections.push({
                     tag: "style",
                     location: "head",
                     attributes: {

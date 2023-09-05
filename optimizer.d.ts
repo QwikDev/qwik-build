@@ -131,6 +131,7 @@ export declare interface Optimizer {
 export declare interface OptimizerOptions {
     sys?: OptimizerSystem;
     binding?: any;
+    inlineStylesUpToBytes?: number;
 }
 
 /**
@@ -252,6 +253,12 @@ declare interface QwikPluginOptions {
     target?: QwikBuildTarget;
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
     devTools?: QwikPluginDevTools;
+    /**
+     * Inline styles up to a certain size (in bytes) instead of using a separate file.
+     *
+     * Default: 20kb (20,000bytes)
+     */
+    inlineStylesUpToBytes?: number;
 }
 
 /**
