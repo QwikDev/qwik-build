@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.2.6
+ * @builder.io/qwik/cli 1.2.10
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -706,11 +706,11 @@ var require_signals = __commonJS({
 // node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js
 var require_signal_exit = __commonJS({
   "node_modules/.pnpm/signal-exit@3.0.7/node_modules/signal-exit/index.js"(exports, module2) {
-    var process5 = global.process;
-    var processOk = function(process6) {
-      return process6 && typeof process6 === "object" && typeof process6.removeListener === "function" && typeof process6.emit === "function" && typeof process6.reallyExit === "function" && typeof process6.listeners === "function" && typeof process6.kill === "function" && typeof process6.pid === "number" && typeof process6.on === "function";
+    var process6 = global.process;
+    var processOk = function(process7) {
+      return process7 && typeof process7 === "object" && typeof process7.removeListener === "function" && typeof process7.emit === "function" && typeof process7.reallyExit === "function" && typeof process7.listeners === "function" && typeof process7.kill === "function" && typeof process7.pid === "number" && typeof process7.on === "function";
     };
-    if (!processOk(process5)) {
+    if (!processOk(process6)) {
       module2.exports = function() {
         return function() {
         };
@@ -718,15 +718,15 @@ var require_signal_exit = __commonJS({
     } else {
       assert = require("assert");
       signals = require_signals();
-      isWin = /^win/i.test(process5.platform);
+      isWin = /^win/i.test(process6.platform);
       EE = require("events");
       if (typeof EE !== "function") {
         EE = EE.EventEmitter;
       }
-      if (process5.__signal_exit_emitter__) {
-        emitter = process5.__signal_exit_emitter__;
+      if (process6.__signal_exit_emitter__) {
+        emitter = process6.__signal_exit_emitter__;
       } else {
-        emitter = process5.__signal_exit_emitter__ = new EE();
+        emitter = process6.__signal_exit_emitter__ = new EE();
         emitter.count = 0;
         emitter.emitted = {};
       }
@@ -763,12 +763,12 @@ var require_signal_exit = __commonJS({
         loaded = false;
         signals.forEach(function(sig) {
           try {
-            process5.removeListener(sig, sigListeners[sig]);
+            process6.removeListener(sig, sigListeners[sig]);
           } catch (er) {
           }
         });
-        process5.emit = originalProcessEmit;
-        process5.reallyExit = originalProcessReallyExit;
+        process6.emit = originalProcessEmit;
+        process6.reallyExit = originalProcessReallyExit;
         emitter.count -= 1;
       };
       module2.exports.unload = unload;
@@ -785,7 +785,7 @@ var require_signal_exit = __commonJS({
           if (!processOk(global.process)) {
             return;
           }
-          var listeners = process5.listeners(sig);
+          var listeners = process6.listeners(sig);
           if (listeners.length === emitter.count) {
             unload();
             emit("exit", null, sig);
@@ -793,7 +793,7 @@ var require_signal_exit = __commonJS({
             if (isWin && sig === "SIGHUP") {
               sig = "SIGINT";
             }
-            process5.kill(process5.pid, sig);
+            process6.kill(process6.pid, sig);
           }
         };
       });
@@ -809,36 +809,36 @@ var require_signal_exit = __commonJS({
         emitter.count += 1;
         signals = signals.filter(function(sig) {
           try {
-            process5.on(sig, sigListeners[sig]);
+            process6.on(sig, sigListeners[sig]);
             return true;
           } catch (er) {
             return false;
           }
         });
-        process5.emit = processEmit;
-        process5.reallyExit = processReallyExit;
+        process6.emit = processEmit;
+        process6.reallyExit = processReallyExit;
       };
       module2.exports.load = load;
-      originalProcessReallyExit = process5.reallyExit;
+      originalProcessReallyExit = process6.reallyExit;
       processReallyExit = function processReallyExit2(code) {
         if (!processOk(global.process)) {
           return;
         }
-        process5.exitCode = code || /* istanbul ignore next */
+        process6.exitCode = code || /* istanbul ignore next */
         0;
-        emit("exit", process5.exitCode, null);
-        emit("afterexit", process5.exitCode, null);
-        originalProcessReallyExit.call(process5, process5.exitCode);
+        emit("exit", process6.exitCode, null);
+        emit("afterexit", process6.exitCode, null);
+        originalProcessReallyExit.call(process6, process6.exitCode);
       };
-      originalProcessEmit = process5.emit;
+      originalProcessEmit = process6.emit;
       processEmit = function processEmit2(ev, arg) {
         if (ev === "exit" && processOk(global.process)) {
           if (arg !== void 0) {
-            process5.exitCode = arg;
+            process6.exitCode = arg;
           }
           var ret = originalProcessEmit.apply(this, arguments);
-          emit("exit", process5.exitCode, null);
-          emit("afterexit", process5.exitCode, null);
+          emit("exit", process6.exitCode, null);
+          emit("afterexit", process6.exitCode, null);
           return ret;
         } else {
           return originalProcessEmit.apply(this, arguments);
@@ -2464,7 +2464,7 @@ async function updateViteConfigs(fileUpdates, integration, rootDir) {
           if (opts) {
             prettierOpts = { ...opts, ...prettierOpts };
           }
-          updatedContent = prettier.format(updatedContent, prettierOpts);
+          updatedContent = await prettier.format(updatedContent, prettierOpts);
           updatedContent = updatedContent.replace(`export default`, `
 export default`);
         } catch (e2) {
@@ -2790,11 +2790,17 @@ async function loadTemplates() {
 async function readTemplates(rootDir) {
   const componentDir = (0, import_node_path7.join)(rootDir, "component");
   const routeDir = (0, import_node_path7.join)(rootDir, "route");
+  const markdownDir = (0, import_node_path7.join)(rootDir, "markdown");
+  const mdxDir = (0, import_node_path7.join)(rootDir, "mdx");
   const component = await getFilesDeep(componentDir);
   const route = await getFilesDeep(routeDir);
+  const markdown = await getFilesDeep(markdownDir);
+  const mdx = await getFilesDeep(mdxDir);
   return {
     component: component.map((c2) => parseTemplatePath(c2, "component")),
-    route: route.map((r2) => parseTemplatePath(r2, "route"))
+    route: route.map((r2) => parseTemplatePath(r2, "route")),
+    markdown: markdown.map((m2) => parseTemplatePath(m2, "markdown")),
+    mdx: mdx.map((m2) => parseTemplatePath(m2, "mdx"))
   };
 }
 function parseTemplatePath(path3, type) {
@@ -2842,11 +2848,13 @@ async function printNewHelp() {
 }
 
 // packages/qwik/src/cli/new/utils.ts
-var POSSIBLE_TYPES = ["component", "route"];
+var POSSIBLE_TYPES = ["component", "route", "markdown", "mdx"];
 
 // packages/qwik/src/cli/new/run-new-command.ts
 var SLUG_KEY = "[slug]";
 var NAME_KEY = "[name]";
+var MARKDOWN_SUFFIX = ".md";
+var MDX_SUFFIX = ".mdx";
 async function runNewCommand(app) {
   try {
     if (app.args.length > 1 && app.args[1] === "help") {
@@ -2862,8 +2870,16 @@ async function runNewCommand(app) {
     let nameArg;
     let outDir;
     if (mainInput && mainInput.startsWith("/")) {
-      typeArg = "route";
-      nameArg = mainInput;
+      if (mainInput.endsWith(MARKDOWN_SUFFIX)) {
+        typeArg = "markdown";
+        nameArg = mainInput.replace(MARKDOWN_SUFFIX, "");
+      } else if (mainInput.endsWith(MDX_SUFFIX)) {
+        typeArg = "mdx";
+        nameArg = mainInput.replace(MDX_SUFFIX, "");
+      } else {
+        typeArg = "route";
+        nameArg = mainInput;
+      }
     } else if (mainInput) {
       typeArg = "component";
       nameArg = mainInput;
@@ -2896,13 +2912,17 @@ async function runNewCommand(app) {
       }
       template = templates2[0][typeArg][0];
     }
-    if (typeArg === "route") {
+    if (typeArg === "route" || typeArg === "markdown" || typeArg === "mdx") {
       outDir = (0, import_path2.join)(app.rootDir, "src", `routes`, nameArg);
     } else {
       outDir = (0, import_path2.join)(app.rootDir, "src", `components`, nameArg);
     }
     const fileOutput = await writeToFile(name, slug, template, outDir);
-    g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+    if (typeArg === "markdown") {
+      g2.success(`${green(`Markdown route "${name}" created!`)}`);
+    } else {
+      g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+    }
     g2.message(`Emitted in ${dim(fileOutput)}`);
   } catch (e2) {
     g2.error(String(e2));
@@ -2915,7 +2935,9 @@ async function selectType() {
     message: "What would you like to create?",
     options: [
       { value: "component", label: "Component" },
-      { value: "route", label: "Route" }
+      { value: "route", label: "Route" },
+      { value: "markdown", label: "Route (Markdown)" },
+      { value: "mdx", label: "Route (MDX)" }
     ]
   });
   if (eD(typeAnswer)) {
@@ -2924,8 +2946,20 @@ async function selectType() {
   return typeAnswer;
 }
 async function selectName(type) {
-  const message = type === "route" ? "New route path" : "Name your component";
-  const placeholder = type === "route" ? "/product/[id]" : "my-component";
+  const messages = {
+    route: "New route path",
+    markdown: "New Markdown route path",
+    mdx: "New MDX route path",
+    component: "Name your component"
+  };
+  const message = messages[type];
+  const placeholders = {
+    route: "/product/[id]",
+    markdown: "/some/page" + MARKDOWN_SUFFIX,
+    mdx: "/some/page" + MDX_SUFFIX,
+    component: "my-component"
+  };
+  const placeholder = placeholders[type];
   const nameAnswer = await J2({
     message,
     placeholder,
@@ -2944,7 +2978,13 @@ async function selectName(type) {
   if (type === "route" && !nameAnswer.startsWith("/")) {
     return `/${nameAnswer}`;
   }
-  return nameAnswer;
+  if (type === "markdown" && !nameAnswer.startsWith("/")) {
+    return `/${nameAnswer.replace(MARKDOWN_SUFFIX, "")}`;
+  }
+  if (type === "mdx" && !nameAnswer.startsWith("/")) {
+    return `/${nameAnswer.replace(MDX_SUFFIX, "")}`;
+  }
+  return nameAnswer.replace(MARKDOWN_SUFFIX, "");
 }
 async function selectTemplate(typeArg) {
   const allTemplates = await loadTemplates();
@@ -3005,7 +3045,7 @@ function toPascal(list) {
   return list.map((p3) => p3[0].toUpperCase() + p3.substring(1).toLowerCase()).join("");
 }
 
-// packages/create-qwik/jokes.json
+// packages/create-qwik/src/helpers/jokes.json
 var jokes_default = [
   ["Dad, can you put my shoes on?", "I don't think they'll fit me."],
   ["What do ghosts call their true love?", "Their ghoul-friend"],
@@ -3174,7 +3214,7 @@ var jokes_default = [
   ["Knock knock. \n Who's there? \n Hatch. \n Hatch who?", "Bless you!"]
 ];
 
-// packages/create-qwik/jokes.ts
+// packages/create-qwik/src/helpers/jokes.ts
 function getRandomJoke() {
   const index = Math.floor(Math.random() * jokes_default.length);
   return jokes_default[index];
@@ -3187,11 +3227,11 @@ async function runJokeCommand() {
 ${punchline.trim()}`), "\u{1F648}");
 }
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/index.js
 var import_node_buffer2 = require("buffer");
 var import_node_path9 = __toESM(require("path"), 1);
 var import_node_child_process3 = __toESM(require("child_process"), 1);
-var import_node_process5 = __toESM(require("process"), 1);
+var import_node_process6 = __toESM(require("process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
 
 // node_modules/.pnpm/strip-final-newline@3.0.0/node_modules/strip-final-newline/index.js
@@ -3326,6 +3366,9 @@ onetime.callCount = (function_) => {
   return calledFunctions.get(function_);
 };
 var onetime_default = onetime;
+
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/error.js
+var import_node_process4 = __toESM(require("process"), 1);
 
 // node_modules/.pnpm/human-signals@4.3.1/node_modules/human-signals/build/src/main.js
 var import_node_os2 = require("os");
@@ -3691,7 +3734,7 @@ var findSignalByNumber = (number, signals) => {
 };
 var signalsByNumber = getSignalsByNumber();
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/error.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/error.js
 var getErrorPrefix = ({ timedOut, timeout, errorCode, signal, signalDescription, exitCode, isCanceled }) => {
   if (timedOut) {
     return `timed out after ${timeout} milliseconds`;
@@ -3722,7 +3765,7 @@ var makeError = ({
   timedOut,
   isCanceled,
   killed,
-  parsed: { options: { timeout } }
+  parsed: { options: { timeout, cwd = import_node_process4.default.cwd() } }
 }) => {
   exitCode = exitCode === null ? void 0 : exitCode;
   signal = signal === null ? void 0 : signal;
@@ -3748,6 +3791,7 @@ ${error.message}` : execaMessage;
   error.signalDescription = signalDescription;
   error.stdout = stdout;
   error.stderr = stderr;
+  error.cwd = cwd;
   if (all !== void 0) {
     error.all = all;
   }
@@ -3761,7 +3805,7 @@ ${error.message}` : execaMessage;
   return error;
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/stdio.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/stdio.js
 var aliases = ["stdin", "stdout", "stderr"];
 var hasAlias = (options) => aliases.some((alias) => options[alias] !== void 0);
 var normalizeStdio = (options) => {
@@ -3785,7 +3829,7 @@ var normalizeStdio = (options) => {
   return Array.from({ length }, (value, index) => stdio[index]);
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/kill.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/kill.js
 var import_node_os3 = __toESM(require("os"), 1);
 var import_signal_exit = __toESM(require_signal_exit(), 1);
 var DEFAULT_FORCE_KILL_TIMEOUT = 1e3 * 5;
@@ -3859,7 +3903,7 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
   });
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/pipe.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/pipe.js
 var import_node_fs8 = require("fs");
 var import_node_child_process = require("child_process");
 
@@ -3871,7 +3915,7 @@ function isWritableStream(stream) {
   return isStream(stream) && stream.writable !== false && typeof stream._write === "function" && typeof stream._writableState === "object";
 }
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/pipe.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/pipe.js
 var isExecaChildProcess = (target) => target instanceof import_node_child_process.ChildProcess && typeof target.then === "function";
 var pipeToTarget = (spawned, streamName, target) => {
   if (typeof target === "string") {
@@ -3903,7 +3947,7 @@ var addPipeMethods = (spawned) => {
   }
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/stream.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/stream.js
 var import_node_fs9 = require("fs");
 var import_get_stream = __toESM(require_get_stream(), 1);
 var import_merge_stream = __toESM(require_merge_stream(), 1);
@@ -3993,9 +4037,9 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
   }
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/promise.js
-var nativePromisePrototype = (async () => {
-})().constructor.prototype;
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/promise.js
+var nativePromisePrototype = (/* @__PURE__ */ (async () => {
+})()).constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
   property,
   Reflect.getOwnPropertyDescriptor(nativePromisePrototype, property)
@@ -4020,7 +4064,7 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
   }
 });
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/command.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/command.js
 var import_node_buffer = require("buffer");
 var import_node_child_process2 = require("child_process");
 var normalizeArgs = (file, args = []) => {
@@ -4104,27 +4148,27 @@ var parseTemplates = (templates2, expressions) => {
   return tokens;
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/lib/verbose.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/verbose.js
 var import_node_util = require("util");
-var import_node_process4 = __toESM(require("process"), 1);
+var import_node_process5 = __toESM(require("process"), 1);
 var verboseDefault = (0, import_node_util.debuglog)("execa").enabled;
 var padField = (field, padding) => String(field).padStart(padding, "0");
 var getTimestamp = () => {
-  const date = new Date();
+  const date = /* @__PURE__ */ new Date();
   return `${padField(date.getHours(), 2)}:${padField(date.getMinutes(), 2)}:${padField(date.getSeconds(), 2)}.${padField(date.getMilliseconds(), 3)}`;
 };
 var logCommand = (escapedCommand, { verbose }) => {
   if (!verbose) {
     return;
   }
-  import_node_process4.default.stderr.write(`[${getTimestamp()}] ${escapedCommand}
+  import_node_process5.default.stderr.write(`[${getTimestamp()}] ${escapedCommand}
 `);
 };
 
-// node_modules/.pnpm/execa@7.1.1/node_modules/execa/index.js
+// node_modules/.pnpm/execa@7.2.0/node_modules/execa/index.js
 var DEFAULT_MAX_BUFFER = 1e3 * 1e3 * 100;
 var getEnv = ({ env: envOption, extendEnv, preferLocal, localDir, execPath }) => {
-  const env = extendEnv ? { ...import_node_process5.default.env, ...envOption } : envOption;
+  const env = extendEnv ? { ...import_node_process6.default.env, ...envOption } : envOption;
   if (preferLocal) {
     return npmRunPathEnv({ env, cwd: localDir, execPath });
   }
@@ -4141,8 +4185,8 @@ var handleArguments = (file, args, options = {}) => {
     stripFinalNewline: true,
     extendEnv: true,
     preferLocal: false,
-    localDir: options.cwd || import_node_process5.default.cwd(),
-    execPath: import_node_process5.default.execPath,
+    localDir: options.cwd || import_node_process6.default.cwd(),
+    execPath: import_node_process6.default.execPath,
     encoding: "utf8",
     reject: true,
     cleanup: true,
@@ -4153,7 +4197,7 @@ var handleArguments = (file, args, options = {}) => {
   };
   options.env = getEnv(options);
   options.stdio = normalizeStdio(options);
-  if (import_node_process5.default.platform === "win32" && import_node_path9.default.basename(file, ".exe") === "cmd") {
+  if (import_node_process6.default.platform === "win32" && import_node_path9.default.basename(file, ".exe") === "cmd") {
     args.unshift("/q");
   }
   return { file, args, options, parsed };
@@ -4731,7 +4775,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: command }));
 }
 function printVersion() {
-  console.log("1.2.6");
+  console.log("1.2.10");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

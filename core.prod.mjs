@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.2.6
+ * @builder.io/qwik 1.2.10
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -51,15 +51,13 @@ const isComment = value => 8 === value.nodeType;
 
 const STYLE = "";
 
-const logError = (message, ...optionalParams) => {
-    const err = message instanceof Error ? message : createError(message);
-    return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
-    err;
+const logError = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+
+const throwErrorAndStop = (message, ...optionalParams) => {
+    throw createAndLogError(!1, message, ...optionalParams);
 };
 
-const createError = message => new Error(message);
-
-const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
+const logErrorAndStop = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
 
 const _printed = /*#__PURE__*/ new Set;
 
@@ -88,6 +86,14 @@ const printElement = el => {
         element: isServer ? void 0 : el,
         ctx: isServer ? void 0 : ctx
     };
+};
+
+const createAndLogError = (asyncThrow, message, ...optionalParams) => {
+    const err = message instanceof Error ? message : new Error(message);
+    return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
+    asyncThrow && setTimeout((() => {
+        throw err;
+    }), 0), err;
 };
 
 const QError_stringifyClassOrStyle = 0;
@@ -1263,8 +1269,11 @@ class VirtualElementImpl {
         const parent = this.parentElement;
         if (parent) {
             const ch = this.childNodes;
-            assertEqual(this.$template$.childElementCount, 0, "children should be empty"), parent.removeChild(this.open), 
-            this.$template$.append(...ch), parent.removeChild(this.close);
+            assertEqual(this.$template$.childElementCount, 0, "children should be empty"), parent.removeChild(this.open);
+            for (let i = 0; i < ch.length; i++) {
+                this.$template$.appendChild(ch[i]);
+            }
+            parent.removeChild(this.close);
         }
     }
     appendChild(node) {
@@ -1633,7 +1642,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.2.6";
+const version = "1.2.10";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -1712,7 +1721,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "1.2.6",
+        "q:version": "1.2.10",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -4136,9 +4145,10 @@ const collectProps = (elCtx, collector) => {
         const subs = getSubscriptionManager(props)?.$subs$;
         const el = elCtx.$element$;
         if (subs) {
-            for (const sub of subs) {
-                0 === sub[0] ? (sub[1] !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
-                collectElement(sub[1], collector)) : (collectValue(props, collector, !1), collectSubscriptions(getSubscriptionManager(props), collector, !1));
+            for (const [type, host] of subs) {
+                0 === type ? (host !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
+                isNode$1(host) ? collectElement(host, collector) : collectValue(host, collector, !0)) : (collectValue(props, collector, !1), 
+                collectSubscriptions(getSubscriptionManager(props), collector, !1));
             }
         }
     }
@@ -4258,11 +4268,7 @@ const collectValue = (obj, collector, leaks) => {
                 const input = obj;
                 const target = getProxyTarget(obj);
                 if (target) {
-                    if (seen.has(obj = target)) {
-                        return;
-                    }
-                    seen.add(obj);
-                    const mutable = 0 == (2 & getProxyFlags(obj));
+                    const mutable = 0 == (2 & getProxyFlags(obj = target));
                     if (leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks), 
                     fastWeakSerialize(input)) {
                         return void collector.$objSet$.add(obj);
@@ -5003,7 +5009,7 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
             const fnName = value.name;
             message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
         }
-        throw console.error("Trying to serialize", value), createError(message);
+        console.error("Trying to serialize", value), throwErrorAndStop(message);
     }
     return value;
 };
@@ -5349,7 +5355,7 @@ const renderRoot = async (rCtx, parent, jsxNode) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.2.6"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.2.10"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 

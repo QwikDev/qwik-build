@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.2.6
+ * @builder.io/qwik 1.2.10
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -30,13 +30,11 @@
     const isVirtualElement = value => 111 === value.nodeType;
     const isText = value => 3 === value.nodeType;
     const isComment = value => 8 === value.nodeType;
-    const logError = (message, ...optionalParams) => {
-        const err = message instanceof Error ? message : createError(message);
-        return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
-        err;
+    const logError = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+    const throwErrorAndStop = (message, ...optionalParams) => {
+        throw createAndLogError(!1, message, ...optionalParams);
     };
-    const createError = message => new Error(message);
-    const logErrorAndStop = (message, ...optionalParams) => logError(message, ...optionalParams);
+    const logErrorAndStop = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
     const logWarn = () => {
         qDev;
     };
@@ -44,6 +42,13 @@
         qDev;
     };
     const printParams = optionalParams => optionalParams;
+    const createAndLogError = (asyncThrow, message, ...optionalParams) => {
+        const err = message instanceof Error ? message : new Error(message);
+        return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
+        asyncThrow && setTimeout((() => {
+            throw err;
+        }), 0), err;
+    };
     const qError = (code, ...parts) => {
         const text = codeToText(code);
         return logErrorAndStop(text, ...parts);
@@ -829,7 +834,11 @@
             const parent = this.parentElement;
             if (parent) {
                 const ch = this.childNodes;
-                assertEqual(), parent.removeChild(this.open), this.$template$.append(...ch), parent.removeChild(this.close);
+                assertEqual(), parent.removeChild(this.open);
+                for (let i = 0; i < ch.length; i++) {
+                    this.$template$.appendChild(ch[i]);
+                }
+                parent.removeChild(this.close);
             }
         }
         appendChild(node) {
@@ -3158,9 +3167,10 @@
             const subs = getSubscriptionManager(props)?.$subs$;
             const el = elCtx.$element$;
             if (subs) {
-                for (const sub of subs) {
-                    0 === sub[0] ? (sub[1] !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
-                    collectElement(sub[1], collector)) : (collectValue(props, collector, !1), collectSubscriptions(getSubscriptionManager(props), collector, !1));
+                for (const [type, host] of subs) {
+                    0 === type ? (host !== el && collectSubscriptions(getSubscriptionManager(props), collector, !1), 
+                    isNode$1(host) ? collectElement(host, collector) : collectValue(host, collector, !0)) : (collectValue(props, collector, !1), 
+                    collectSubscriptions(getSubscriptionManager(props), collector, !1));
                 }
             }
         }
@@ -3262,11 +3272,7 @@
                     const input = obj;
                     const target = getProxyTarget(obj);
                     if (target) {
-                        if (seen.has(obj = target)) {
-                            return;
-                        }
-                        seen.add(obj);
-                        const mutable = 0 == (2 & getProxyFlags(obj));
+                        const mutable = 0 == (2 & getProxyFlags(obj = target));
                         if (leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks), 
                         fastWeakSerialize(input)) {
                             return void collector.$objSet$.add(obj);
@@ -3899,7 +3905,7 @@
                 const fnName = value.name;
                 message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
             }
-            throw console.error("Trying to serialize", value), createError(message);
+            console.error("Trying to serialize", value), throwErrorAndStop(message);
         }
         return value;
     };
@@ -4182,7 +4188,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.2.6"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.2.10"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4466,7 +4472,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "1.2.6",
+            "q:version": "1.2.10",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4674,7 +4680,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.2.6", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.2.10", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();

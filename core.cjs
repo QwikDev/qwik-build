@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.2.6
+ * @builder.io/qwik 1.2.10
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -100,17 +100,16 @@
         ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
         : '';
     const logError = (message, ...optionalParams) => {
-        const err = message instanceof Error ? message : createError(message);
-        const messageStr = err.stack || err.message;
-        console.error('%cQWIK ERROR', STYLE, messageStr, ...printParams(optionalParams));
-        return err;
+        return createAndLogError(true, message, ...optionalParams);
     };
-    const createError = (message) => {
-        const err = new Error(message);
-        return err;
+    const throwErrorAndStop = (message, ...optionalParams) => {
+        const error = createAndLogError(false, message, ...optionalParams);
+        // eslint-disable-next-line no-debugger
+        debugger;
+        throw error;
     };
     const logErrorAndStop = (message, ...optionalParams) => {
-        const err = logError(message, ...optionalParams);
+        const err = createAndLogError(true, message, ...optionalParams);
         // eslint-disable-next-line no-debugger
         debugger;
         return err;
@@ -159,6 +158,20 @@
             element: isServer ? undefined : el,
             ctx: isServer ? undefined : ctx,
         };
+    };
+    const createAndLogError = (asyncThrow, message, ...optionalParams) => {
+        const err = message instanceof Error ? message : new Error(message);
+        const messageStr = err.stack || err.message;
+        console.error('%cQWIK ERROR', STYLE, messageStr, ...printParams(optionalParams));
+        asyncThrow &&
+            !qTest &&
+            setTimeout(() => {
+                // throwing error asynchronously to avoid breaking the current call stack.
+                // We throw so that the error is delivered to the global error handler for
+                // reporting it to a third-party tools such as Qwik Insights, Sentry or New Relic.
+                throw err;
+            }, 0);
+        return err;
     };
 
     const QError_stringifyClassOrStyle = 0;
@@ -339,7 +352,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (value != null) {
                 return;
             }
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertEqual(value1, value2, text, ...parts) {
@@ -347,12 +360,12 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (value1 === value2) {
                 return;
             }
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertFail(text, ...parts) {
         if (qDev) {
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertTrue(value1, text, ...parts) {
@@ -360,7 +373,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (value1 === true) {
                 return;
             }
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertNumber(value1, text, ...parts) {
@@ -368,7 +381,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (typeof value1 === 'number') {
                 return;
             }
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertString(value1, text, ...parts) {
@@ -376,14 +389,14 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             if (typeof value1 === 'string') {
                 return;
             }
-            throw logErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
         }
     }
     function assertQwikElement(el) {
         if (qDev) {
             if (!isQwikElement(el)) {
                 console.error('Not a Qwik Element, got', el);
-                throw logErrorAndStop(ASSERT_DISCLAIMER + 'Not a Qwik Element');
+                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not a Qwik Element');
             }
         }
     }
@@ -391,7 +404,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         if (qDev) {
             if (!isElement$1(el)) {
                 console.error('Not a Element, got', el);
-                throw logErrorAndStop(ASSERT_DISCLAIMER + 'Not an Element');
+                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not an Element');
             }
         }
     }
@@ -1854,11 +1867,12 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         remove() {
             const parent = this.parentElement;
             if (parent) {
-                // const ch = this.childNodes;
                 const ch = this.childNodes;
                 assertEqual(this.$template$.childElementCount, 0, 'children should be empty');
                 parent.removeChild(this.open);
-                this.$template$.append(...ch);
+                for (let i = 0; i < ch.length; i++) {
+                    this.$template$.appendChild(ch[i]);
+                }
                 parent.removeChild(this.close);
             }
         }
@@ -2555,7 +2569,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * QWIK_VERSION
      * @public
      */
-    const version = "1.2.6";
+    const version = "1.2.10";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -6587,12 +6601,17 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             const subs = getSubscriptionManager(props)?.$subs$;
             const el = elCtx.$element$;
             if (subs) {
-                for (const sub of subs) {
-                    if (sub[0] === 0) {
-                        if (sub[1] !== el) {
+                for (const [type, host] of subs) {
+                    if (type === 0) {
+                        if (host !== el) {
                             collectSubscriptions(getSubscriptionManager(props), collector, false);
                         }
-                        collectElement(sub[1], collector);
+                        if (isNode$1(host)) {
+                            collectElement(host, collector);
+                        }
+                        else {
+                            collectValue(host, collector, true);
+                        }
                     }
                     else {
                         collectValue(props, collector, false);
@@ -6757,10 +6776,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     const target = getProxyTarget(obj);
                     if (target) {
                         obj = target;
-                        if (seen.has(obj)) {
-                            return;
-                        }
-                        seen.add(obj);
+                        // NOTE: You may be tempted to add the `target` to the `seen` set,
+                        // but that would not work as it is possible for the `target` object
+                        // to already be in `seen` set if it was passed in directly, so
+                        // we can't short circuit and need to do the work.
+                        // Issue: https://github.com/BuilderIO/qwik/issues/5001
                         const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
                         if (leaks && mutable) {
                             collectSubscriptions(getSubscriptionManager(input), collector, leaks);
@@ -7951,7 +7971,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
             }
             console.error('Trying to serialize', value);
-            throw createError(message);
+            throwErrorAndStop(message);
         }
         return value;
     };
