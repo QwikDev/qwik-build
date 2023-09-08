@@ -964,6 +964,11 @@ declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttribut
  * NOTE: `element` is needed because `QRL`s are relative and need a base location to resolve
  * against. The base location is encoded in the HTML in the form of `<div q:base="/url">`.
  *
+ * ## `QRL.resolved`
+ *
+ * Once `QRL.resolve()` returns, the value is stored under `QRL.resolved`. This allows the value
+ * to be used without having to await `QRL.resolve()` again.
+ *
  * ## Question: Why not just use `import()`?
  *
  * At first glance, `QRL` serves the same purpose as `import()`. However, there are three subtle
@@ -1012,7 +1017,7 @@ declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttribut
 declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     /**
-     * Resolve the QRL of closure and invoke it.
+     * Resolve the QRL of closure and invoke it. The signal is used to abort the invocation.
      * @param signal - An AbortSignal object.
      * @param args - Closure arguments.
      * @returns A promise of the return value of the closure.
@@ -1024,10 +1029,10 @@ declare interface QRL<TYPE = any> {
      * @returns A promise of the return value of the closure.
      */
     (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
-    /**
-     * Resolve the QRL and return the actual value.
-     */
+    /** Resolve the QRL and return the actual value. */
     resolve(): Promise<TYPE>;
+    /** The resolved value, once `resolve()` returns. */
+    resolved: undefined | TYPE;
     getCaptured(): any[] | null;
     getSymbol(): string;
     getHash(): string;

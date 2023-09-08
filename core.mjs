@@ -8240,6 +8240,11 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
     }
     let _containerEl;
+    const qrl = async function (...args) {
+        const fn = invokeFn.call(this, tryGetInvokeContext());
+        const result = await fn(...args);
+        return result;
+    };
     const setContainer = (el) => {
         if (!_containerEl) {
             _containerEl = el;
@@ -8254,12 +8259,12 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             return symbolRef;
         }
         if (symbolFn !== null) {
-            return (symbolRef = symbolFn().then((module) => (symbolRef = module[symbol])));
+            return (symbolRef = symbolFn().then((module) => (qrl.resolved = symbolRef = module[symbol])));
         }
         else {
             const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
             return (symbolRef = then(symbol2, (ref) => {
-                return (symbolRef = ref);
+                return (qrl.resolved = symbolRef = ref);
             }));
         }
     };
@@ -8278,7 +8283,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                     const baseContext = createOrReuseInvocationContext(currentCtx);
                     const context = {
                         ...baseContext,
-                        $qrl$: QRL,
+                        $qrl$: qrl,
                     };
                     if (context.$event$ === undefined) {
                         context.$event$ = this;
@@ -8301,15 +8306,9 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             return invoke;
         }
     };
-    const invokeQRL = async function (...args) {
-        const fn = invokeFn.call(this, tryGetInvokeContext());
-        const result = await fn(...args);
-        return result;
-    };
     const resolvedSymbol = refSymbol ?? symbol;
     const hash = getSymbolHash(resolvedSymbol);
-    const QRL = invokeQRL;
-    const methods = {
+    Object.assign(qrl, {
         getSymbol: () => resolvedSymbol,
         getHash: () => hash,
         getCaptured: () => captureRef,
@@ -8324,8 +8323,8 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         $capture$: capture,
         $captureRef$: captureRef,
         dev: null,
-    };
-    const qrl = Object.assign(invokeQRL, methods);
+        resolved: undefined,
+    });
     seal(qrl);
     return qrl;
 };

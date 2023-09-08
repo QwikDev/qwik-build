@@ -4054,17 +4054,21 @@
     const isQrl = value => "function" == typeof value && "function" == typeof value.getSymbol;
     const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
         let _containerEl;
+        const qrl = async function(...args) {
+            const fn = invokeFn.call(this, tryGetInvokeContext());
+            return await fn(...args);
+        };
         const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
         const resolve = async containerEl => {
             if (containerEl && setContainer(containerEl), null !== symbolRef) {
                 return symbolRef;
             }
             if (null !== symbolFn) {
-                return symbolRef = symbolFn().then((module => symbolRef = module[symbol]));
+                return symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = module[symbol]));
             }
             {
                 const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
-                return symbolRef = then(symbol2, (ref => symbolRef = ref));
+                return symbolRef = then(symbol2, (ref => qrl.resolved = symbolRef = ref));
             }
         };
         const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
@@ -4079,7 +4083,7 @@
                         }
                         const context = {
                             ...createOrReuseInvocationContext(currentCtx),
-                            $qrl$: QRL
+                            $qrl$: qrl
                         };
                         return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
                         invoke.call(this, context, fn, ...args);
@@ -4089,14 +4093,9 @@
             };
         }
         const createOrReuseInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
-        const invokeQRL = async function(...args) {
-            const fn = invokeFn.call(this, tryGetInvokeContext());
-            return await fn(...args);
-        };
         const resolvedSymbol = refSymbol ?? symbol;
         const hash = getSymbolHash(resolvedSymbol);
-        const QRL = invokeQRL;
-        const qrl = Object.assign(invokeQRL, {
+        return Object.assign(qrl, {
             getSymbol: () => resolvedSymbol,
             getHash: () => hash,
             getCaptured: () => captureRef,
@@ -4110,9 +4109,9 @@
             getFn: invokeFn,
             $capture$: capture,
             $captureRef$: captureRef,
-            dev: null
-        });
-        return seal(), qrl;
+            dev: null,
+            resolved: void 0
+        }), seal(), qrl;
     };
     const getSymbolHash = symbolName => {
         const index = symbolName.lastIndexOf("_");
