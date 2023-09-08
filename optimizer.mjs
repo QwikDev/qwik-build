@@ -2117,6 +2117,11 @@ function createPlugin(optimizerOptions = {}) {
           }
         }
       }
+      for (const id3 of deps.values()) {
+        await ctx.load({
+          id: id3
+        });
+      }
       const module = newOutput.modules.find((m => !m.isEntry));
       return {
         code: module.code,

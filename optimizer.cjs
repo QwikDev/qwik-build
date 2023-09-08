@@ -2108,6 +2108,11 @@ globalThis.qwikOptimizer = function(module) {
             }
           }
         }
+        for (const id3 of deps.values()) {
+          await ctx.load({
+            id: id3
+          });
+        }
         const module2 = newOutput.modules.find((m => !m.isEntry));
         return {
           code: module2.code,
