@@ -426,7 +426,8 @@ const isFunction = (v) => {
 };
 
 const isPromise = (value) => {
-    return value instanceof Promise;
+    // not using "value instanceof Promise" to have zone.js support
+    return value && typeof value.then === 'function';
 };
 const safeCall = (call, thenFn, rejectFn) => {
     try {
@@ -7305,7 +7306,7 @@ const Resource = (props) => {
         }
         promise = resource.value;
     }
-    else if (resource instanceof Promise) {
+    else if (isPromise(resource)) {
         promise = resource;
     }
     else if (isSignal(resource)) {

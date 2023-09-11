@@ -430,7 +430,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
 
     const isPromise = (value) => {
-        return value instanceof Promise;
+        // not using "value instanceof Promise" to have zone.js support
+        return value && typeof value.then === 'function';
     };
     const safeCall = (call, thenFn, rejectFn) => {
         try {
@@ -7309,7 +7310,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             promise = resource.value;
         }
-        else if (resource instanceof Promise) {
+        else if (isPromise(resource)) {
             promise = resource;
         }
         else if (isSignal(resource)) {

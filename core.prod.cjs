@@ -127,7 +127,7 @@
     const isArray = v => Array.isArray(v);
     const isString = v => "string" == typeof v;
     const isFunction = v => "function" == typeof v;
-    const isPromise = value => value instanceof Promise;
+    const isPromise = value => value && "function" == typeof value.then;
     const safeCall = (call, thenFn, rejectFn) => {
         try {
             const promise = call();
@@ -4379,7 +4379,7 @@
                 }
             }
             promise = resource.value;
-        } else if (resource instanceof Promise) {
+        } else if (isPromise(resource)) {
             promise = resource;
         } else {
             if (!isSignal(resource)) {
