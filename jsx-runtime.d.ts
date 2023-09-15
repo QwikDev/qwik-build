@@ -5,6 +5,9 @@ declare interface AbstractView {
     document: Document;
 }
 
+/**
+ * @public
+ */
 declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
@@ -17,6 +20,9 @@ declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
@@ -226,11 +232,17 @@ declare interface AriaAttributes {
  */
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
+/**
+ * @public
+ */
 declare interface AudioHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
 }
 
 declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
+/**
+ * @public
+ */
 declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
@@ -255,12 +267,21 @@ declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = 
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
+/**
+ * @public
+ */
 declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type Booleanish = boolean | `${boolean}`;
 
+/**
+ * @public
+ */
 declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -275,6 +296,9 @@ declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     width?: Size | undefined;
@@ -285,10 +309,16 @@ declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes
  */
 declare type ClassList = BaseClassList | BaseClassList[];
 
+/**
+ * @public
+ */
 declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: Size | undefined;
@@ -310,19 +340,31 @@ declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2
     [v: `--${string}`]: string | number | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface DevJSX {
     fileName: string;
     lineNumber: number;
@@ -330,6 +372,9 @@ declare interface DevJSX {
     stack?: string;
 }
 
+/**
+ * @public
+ */
 declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
@@ -342,6 +387,9 @@ declare interface DOMAttributes<T extends Element> extends QwikProps<T>, QwikEve
     key?: string | number | null | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     src?: string | undefined;
@@ -350,12 +398,18 @@ declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
@@ -382,14 +436,26 @@ export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null, flags: number, dev?: DevJSX): JSXNode | null;
 }
 
+/**
+ * @public
+ */
 declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
+/**
+ * @public
+ */
 declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
 
+/**
+ * @public
+ */
 /**
  * @public
  */
@@ -443,19 +509,34 @@ declare interface HTMLAttributes<T extends Element> extends AriaAttributes, DOMA
     is?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
 
+/**
+ * @public
+ */
 declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
 
+/**
+ * @public
+ */
 declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
 declare interface HTMLWebViewElement extends HTMLElement {
 }
 
+/**
+ * @public
+ */
 declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allow?: string | undefined;
     allowFullScreen?: boolean | undefined;
@@ -480,6 +561,9 @@ declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
@@ -501,6 +585,9 @@ declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T>
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
@@ -540,11 +627,17 @@ declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface IntrinsicHTMLElements {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
@@ -716,6 +809,9 @@ export declare interface JSXNode<T = string | FunctionComponent> {
     dev?: DevJSX;
 }
 
+/**
+ * @public
+ */
 declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     challenge?: string | undefined;
@@ -727,15 +823,24 @@ declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     as?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
@@ -753,10 +858,16 @@ declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoPlay?: boolean | undefined;
     controls?: boolean | undefined;
@@ -770,10 +881,16 @@ declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<
     src?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     charSet?: string | undefined;
     content?: string | undefined;
@@ -783,6 +900,9 @@ declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     high?: number | undefined;
@@ -834,8 +954,14 @@ declare type NativeUIEvent = UIEvent;
 /** @public */
 declare type NativeWheelEvent = WheelEvent;
 
+/**
+ * @public
+ */
 declare type Numberish = number | `${number}`;
 
+/**
+ * @public
+ */
 declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
@@ -848,17 +974,26 @@ declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes
     wmode?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
@@ -867,12 +1002,18 @@ declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: string;
 }
 
+/**
+ * @public
+ */
 declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
     name?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -883,6 +1024,9 @@ declare type PreventDefault<T extends Element> = {
     [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
+/**
+ * @public
+ */
 declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -1048,6 +1192,9 @@ declare interface QRLDev {
     hi: number;
 }
 
+/**
+ * @public
+ */
 declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
@@ -1435,6 +1582,9 @@ declare interface RefFnInterface {
     (el: Element): void;
 }
 
+/**
+ * @public
+ */
 declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
@@ -1449,6 +1599,9 @@ declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes
     type?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
@@ -1471,12 +1624,21 @@ declare interface Signal<T = any> {
 
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
+/**
+ * @public
+ */
 declare type Size = number | string;
 
+/**
+ * @public
+ */
 declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     media?: string | undefined;
@@ -1488,6 +1650,9 @@ declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     media?: string | undefined;
     nonce?: string | undefined;
@@ -1499,6 +1664,9 @@ declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<
 declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
 }
 
+/**
+ * @public
+ */
 declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
@@ -1506,6 +1674,9 @@ declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<
     width?: Size | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
@@ -1518,6 +1689,9 @@ declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> 
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
@@ -1540,6 +1714,9 @@ declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttribut
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
@@ -1549,14 +1726,23 @@ declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> 
     abbr?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: string;
 }
 
+/**
+ * @public
+ */
 declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
@@ -1566,6 +1752,9 @@ declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<
     children?: undefined;
 }
 
+/**
+ * @public
+ */
 declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
     height?: Numberish | undefined;
     playsInline?: boolean | undefined;
@@ -1575,6 +1764,9 @@ declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttrib
     disableRemotePlayback?: boolean | undefined;
 }
 
+/**
+ * @public
+ */
 declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
     allowpopups?: boolean | undefined;

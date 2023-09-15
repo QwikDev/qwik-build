@@ -82,7 +82,10 @@ declare interface AbstractView {
     document: Document;
 }
 
-declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
     hrefLang?: string | undefined;
@@ -94,7 +97,10 @@ declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
 }
 
-declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
     download?: any;
@@ -303,7 +309,10 @@ export declare interface AriaAttributes {
  */
 export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-declare interface AudioHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface AudioHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
 }
 
 declare type B = [
@@ -317,7 +326,10 @@ key: string | undefined
 
 declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
-declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
     children?: undefined;
@@ -341,13 +353,22 @@ declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = 
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
-declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-declare type Booleanish = boolean | `${boolean}`;
+/**
+ * @public
+ */
+export declare type Booleanish = boolean | `${boolean}`;
 
-declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
     form?: string | undefined;
@@ -369,7 +390,10 @@ elm: Node | QwikElement,
 key: string | undefined
 ];
 
-declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     width?: Size | undefined;
 }
@@ -379,11 +403,17 @@ declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes
  */
 export declare type ClassList = BaseClassList | BaseClassList[];
 
-declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
 }
 
-declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: Size | undefined;
     children?: undefined;
@@ -760,11 +790,17 @@ export declare interface CSSProperties extends CSS_2.Properties<string | number>
     [v: `--${string}`]: string | number | undefined;
 }
 
-declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
@@ -786,18 +822,27 @@ declare interface DescriptorBase<T = any, B = undefined> {
  */
 export declare const _deserializeData: (data: string, element?: unknown) => any;
 
-declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
-declare interface DevJSX {
+/**
+ * @public
+ */
+export declare interface DevJSX {
     fileName: string;
     lineNumber: number;
     columnNumber: number;
     stack?: string;
 }
 
-declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
@@ -814,7 +859,10 @@ export declare interface DOMAttributes<T extends Element> extends QwikProps<T>, 
  */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
-declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     src?: string | undefined;
     type?: string | undefined;
@@ -839,7 +887,10 @@ export declare const event$: <T>(first: T) => QRL<T>;
  */
 export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
 
-declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
@@ -850,7 +901,10 @@ declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttribut
  */
 export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
-declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
     autoComplete?: 'on' | 'off' | Omit<'on' | 'off', string> | undefined;
@@ -947,14 +1001,26 @@ declare namespace h {
 export { h as createElement }
 export { h }
 
-declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
+/**
+ * @public
+ */
+export declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
-declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
+/**
+ * @public
+ */
+export declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
 
+/**
+ * @public
+ */
 /**
  * @public
  */
@@ -1008,7 +1074,10 @@ export declare interface HTMLAttributes<T extends Element> extends AriaAttribute
     is?: string | undefined;
 }
 
-declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
+/**
+ * @public
+ */
+export declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
 
 /**
  * @public
@@ -1017,13 +1086,22 @@ export declare const HTMLFragment: FunctionComponent<{
     dangerouslySetInnerHTML: string;
 }>;
 
-declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
-declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
+/**
+ * @public
+ */
+export declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
 
-declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
+/**
+ * @public
+ */
+export declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
 declare interface HTMLWebViewElement extends HTMLElement {
 }
@@ -1037,7 +1115,10 @@ declare interface HTMLWebViewElement extends HTMLElement {
  */
 export declare const _hW: () => void;
 
-declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allow?: string | undefined;
     allowFullScreen?: boolean | undefined;
     allowTransparency?: boolean | undefined;
@@ -1061,7 +1142,10 @@ declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: undefined;
 }
 
-declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     decoding?: 'async' | 'auto' | 'sync' | undefined;
@@ -1135,7 +1219,10 @@ export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScope
  */
 export declare const inlinedQrlDEV: <T = any>(symbol: T, symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
-declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
@@ -1174,12 +1261,24 @@ declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<
     children?: undefined;
 }
 
-declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
 
-declare interface IntrinsicHTMLElements {
+/**
+ * @public
+ */
+export declare interface IntrinsicElements extends IntrinsicHTMLElements, IntrinsicSVGElements {
+}
+
+/**
+ * @public
+ */
+export declare interface IntrinsicHTMLElements {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
     address: HTMLAttributes<HTMLElement>;
@@ -1299,6 +1398,70 @@ declare interface IntrinsicHTMLElements {
     webview: WebViewHTMLAttributes<HTMLWebViewElement>;
 }
 
+/**
+ * @public
+ */
+export declare interface IntrinsicSVGElements {
+    svg: SVGProps<SVGSVGElement>;
+    animate: SVGProps<SVGElement>;
+    animateMotion: SVGProps<SVGElement>;
+    animateTransform: SVGProps<SVGElement>;
+    circle: SVGProps<SVGCircleElement>;
+    clipPath: SVGProps<SVGClipPathElement>;
+    defs: SVGProps<SVGDefsElement>;
+    desc: SVGProps<SVGDescElement>;
+    ellipse: SVGProps<SVGEllipseElement>;
+    feBlend: SVGProps<SVGFEBlendElement>;
+    feColorMatrix: SVGProps<SVGFEColorMatrixElement>;
+    feComponentTransfer: SVGProps<SVGFEComponentTransferElement>;
+    feComposite: SVGProps<SVGFECompositeElement>;
+    feConvolveMatrix: SVGProps<SVGFEConvolveMatrixElement>;
+    feDiffuseLighting: SVGProps<SVGFEDiffuseLightingElement>;
+    feDisplacementMap: SVGProps<SVGFEDisplacementMapElement>;
+    feDistantLight: SVGProps<SVGFEDistantLightElement>;
+    feDropShadow: SVGProps<SVGFEDropShadowElement>;
+    feFlood: SVGProps<SVGFEFloodElement>;
+    feFuncA: SVGProps<SVGFEFuncAElement>;
+    feFuncB: SVGProps<SVGFEFuncBElement>;
+    feFuncG: SVGProps<SVGFEFuncGElement>;
+    feFuncR: SVGProps<SVGFEFuncRElement>;
+    feGaussianBlur: SVGProps<SVGFEGaussianBlurElement>;
+    feImage: SVGProps<SVGFEImageElement>;
+    feMerge: SVGProps<SVGFEMergeElement>;
+    feMergeNode: SVGProps<SVGFEMergeNodeElement>;
+    feMorphology: SVGProps<SVGFEMorphologyElement>;
+    feOffset: SVGProps<SVGFEOffsetElement>;
+    fePointLight: SVGProps<SVGFEPointLightElement>;
+    feSpecularLighting: SVGProps<SVGFESpecularLightingElement>;
+    feSpotLight: SVGProps<SVGFESpotLightElement>;
+    feTile: SVGProps<SVGFETileElement>;
+    feTurbulence: SVGProps<SVGFETurbulenceElement>;
+    filter: SVGProps<SVGFilterElement>;
+    foreignObject: SVGProps<SVGForeignObjectElement>;
+    g: SVGProps<SVGGElement>;
+    image: SVGProps<SVGImageElement>;
+    line: SVGProps<SVGLineElement>;
+    linearGradient: SVGProps<SVGLinearGradientElement>;
+    marker: SVGProps<SVGMarkerElement>;
+    mask: SVGProps<SVGMaskElement>;
+    metadata: SVGProps<SVGMetadataElement>;
+    mpath: SVGProps<SVGElement>;
+    path: SVGProps<SVGPathElement>;
+    pattern: SVGProps<SVGPatternElement>;
+    polygon: SVGProps<SVGPolygonElement>;
+    polyline: SVGProps<SVGPolylineElement>;
+    radialGradient: SVGProps<SVGRadialGradientElement>;
+    rect: SVGProps<SVGRectElement>;
+    stop: SVGProps<SVGStopElement>;
+    switch: SVGProps<SVGSwitchElement>;
+    symbol: SVGProps<SVGSymbolElement>;
+    text: SVGProps<SVGTextElement>;
+    textPath: SVGProps<SVGTextPathElement>;
+    tspan: SVGProps<SVGTSpanElement>;
+    use: SVGProps<SVGUseElement>;
+    view: SVGProps<SVGViewElement>;
+}
+
 declare interface InvokeContext {
     $url$: URL | undefined;
     $seq$: number;
@@ -1375,7 +1538,10 @@ export declare const _jsxS: <T extends string>(type: T, mutableProps: (T extends
  */
 export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
-declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     challenge?: string | undefined;
     disabled?: boolean | undefined;
@@ -1386,16 +1552,25 @@ declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: undefined;
 }
 
-declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
 }
 
-declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     as?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     href?: string | undefined;
@@ -1453,11 +1628,17 @@ declare class LocalSubscriptionManager {
     $notifySubs$(key?: string | undefined): void;
 }
 
-declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
-declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoPlay?: boolean | undefined;
     controls?: boolean | undefined;
     controlsList?: string | undefined;
@@ -1470,11 +1651,17 @@ declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<
     src?: string | undefined;
 }
 
-declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     charSet?: string | undefined;
     content?: string | undefined;
     httpEquiv?: string | undefined;
@@ -1483,7 +1670,10 @@ declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T
     children?: undefined;
 }
 
-declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     high?: number | undefined;
     low?: number | undefined;
@@ -1567,9 +1757,15 @@ export declare type NoSerialize<T> = (T & {
  */
 export declare const noSerialize: <T extends object | undefined>(input: T) => NoSerialize<T>;
 
-declare type Numberish = number | `${number}`;
+/**
+ * @public
+ */
+export declare type Numberish = number | `${number}`;
 
-declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
     form?: string | undefined;
@@ -1583,7 +1779,10 @@ declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes
 
 declare type ObjToProxyMap = WeakMap<any, any>;
 
-declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
@@ -1608,12 +1807,18 @@ export declare interface OnVisibleTaskOptions {
     strategy?: VisibleTaskStrategy;
 }
 
-declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
 }
 
-declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
     selected?: boolean | undefined;
@@ -1621,13 +1826,19 @@ declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes
     children?: string;
 }
 
-declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
     name?: string | undefined;
 }
 
-declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
     children?: undefined;
@@ -1677,7 +1888,10 @@ declare interface ProcessedJSXNode {
     $dev$?: DevJSX;
 }
 
-declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
@@ -1945,7 +2159,10 @@ declare interface QRLInternalMethods<TYPE> {
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 
-declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
@@ -2597,7 +2814,10 @@ declare interface ResourceReturnInternal<T> {
  */
 export declare const _restProps: (props: Record<string, any>, omit: string[]) => Record<string, any>;
 
-declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
     charSet?: string | undefined;
@@ -2611,7 +2831,10 @@ declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes
     type?: string | undefined;
 }
 
-declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -2667,7 +2890,10 @@ declare interface SignalInternal<T> extends Signal<T> {
 
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
-declare type Size = number | string;
+/**
+ * @public
+ */
+export declare type Size = number | string;
 
 /**
  * @public
@@ -2683,7 +2909,10 @@ export declare const Slot: FunctionComponent<{
     name?: string;
 }>;
 
-declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
@@ -2733,7 +2962,10 @@ export declare interface SnapshotState {
     subs: any[];
 }
 
-declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     media?: string | undefined;
     sizes?: string | undefined;
@@ -2802,7 +3034,10 @@ declare interface StyleAppend {
     content: string | null;
 }
 
-declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     media?: string | undefined;
     nonce?: string | undefined;
     scoped?: boolean | undefined;
@@ -2844,10 +3079,285 @@ declare interface SubscriptionManager {
 
 declare type Subscriptions = A | SubscriberSignal;
 
+/**
+ * @public
+ */
+export declare interface SVGAttributes<T extends Element> extends AriaAttributes, DOMAttributes<T> {
+    class?: ClassList | undefined;
+    /** @deprecated - Use `class` instead */
+    className?: string | undefined;
+    color?: string | undefined;
+    height?: Numberish | undefined;
+    id?: string | undefined;
+    lang?: string | undefined;
+    max?: number | string | undefined;
+    media?: string | undefined;
+    method?: string | undefined;
+    min?: number | string | undefined;
+    name?: string | undefined;
+    style?: CSSProperties | string | undefined;
+    target?: string | undefined;
+    type?: string | undefined;
+    width?: Numberish | undefined;
+    role?: string | undefined;
+    tabindex?: number | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
+    'accent-height'?: number | string | undefined;
+    accumulate?: 'none' | 'sum' | undefined;
+    additive?: 'replace' | 'sum' | undefined;
+    'alignment-baseline'?: 'auto' | 'baseline' | 'before-edge' | 'text-before-edge' | 'middle' | 'central' | 'after-edge' | 'text-after-edge' | 'ideographic' | 'alphabetic' | 'hanging' | 'mathematical' | 'inherit' | undefined;
+    allowReorder?: 'no' | 'yes' | undefined;
+    alphabetic?: number | string | undefined;
+    amplitude?: number | string | undefined;
+    'arabic-form'?: 'initial' | 'medial' | 'terminal' | 'isolated' | undefined;
+    ascent?: number | string | undefined;
+    attributeName?: string | undefined;
+    attributeType?: string | undefined;
+    autoReverse?: Booleanish | undefined;
+    azimuth?: number | string | undefined;
+    baseFrequency?: number | string | undefined;
+    'baseline-shift'?: number | string | undefined;
+    baseProfile?: number | string | undefined;
+    bbox?: number | string | undefined;
+    begin?: number | string | undefined;
+    bias?: number | string | undefined;
+    by?: number | string | undefined;
+    calcMode?: number | string | undefined;
+    'cap-height'?: number | string | undefined;
+    clip?: number | string | undefined;
+    'clip-path'?: string | undefined;
+    clipPathUnits?: number | string | undefined;
+    'clip-rule'?: number | string | undefined;
+    'color-interpolation'?: number | string | undefined;
+    'color-interpolation-filters'?: 'auto' | 's-rGB' | 'linear-rGB' | 'inherit' | undefined;
+    'color-profile'?: number | string | undefined;
+    'color-rendering'?: number | string | undefined;
+    contentScriptType?: number | string | undefined;
+    contentStyleType?: number | string | undefined;
+    cursor?: number | string;
+    cx?: number | string | undefined;
+    cy?: number | string | undefined;
+    d?: string | undefined;
+    decelerate?: number | string | undefined;
+    descent?: number | string | undefined;
+    diffuseConstant?: number | string | undefined;
+    direction?: number | string | undefined;
+    display?: number | string | undefined;
+    divisor?: number | string | undefined;
+    'dominant-baseline'?: number | string | undefined;
+    dur?: number | string | undefined;
+    dx?: number | string | undefined;
+    dy?: number | string | undefined;
+    'edge-mode'?: number | string | undefined;
+    elevation?: number | string | undefined;
+    'enable-background'?: number | string | undefined;
+    end?: number | string | undefined;
+    exponent?: number | string | undefined;
+    externalResourcesRequired?: number | string | undefined;
+    fill?: string | undefined;
+    'fill-opacity'?: number | string | undefined;
+    'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit' | undefined;
+    filter?: string | undefined;
+    filterRes?: number | string | undefined;
+    filterUnits?: number | string | undefined;
+    'flood-color'?: number | string | undefined;
+    'flood-opacity'?: number | string | undefined;
+    focusable?: number | string | undefined;
+    'font-family'?: string | undefined;
+    'font-size'?: number | string | undefined;
+    'font-size-adjust'?: number | string | undefined;
+    'font-stretch'?: number | string | undefined;
+    'font-style'?: number | string | undefined;
+    'font-variant'?: number | string | undefined;
+    'font-weight'?: number | string | undefined;
+    format?: number | string | undefined;
+    fr?: number | string | undefined;
+    from?: number | string | undefined;
+    fx?: number | string | undefined;
+    fy?: number | string | undefined;
+    g1?: number | string | undefined;
+    g2?: number | string | undefined;
+    'glyph-name'?: number | string | undefined;
+    'glyph-orientation-horizontal'?: number | string | undefined;
+    'glyph-orientation-vertical'?: number | string | undefined;
+    glyphRef?: number | string | undefined;
+    gradientTransform?: string | undefined;
+    gradientUnits?: string | undefined;
+    hanging?: number | string | undefined;
+    'horiz-adv-x'?: number | string | undefined;
+    'horiz-origin-x'?: number | string | undefined;
+    href?: string | undefined;
+    ideographic?: number | string | undefined;
+    'image-rendering'?: number | string | undefined;
+    in2?: number | string | undefined;
+    in?: string | undefined;
+    intercept?: number | string | undefined;
+    k1?: number | string | undefined;
+    k2?: number | string | undefined;
+    k3?: number | string | undefined;
+    k4?: number | string | undefined;
+    k?: number | string | undefined;
+    kernelMatrix?: number | string | undefined;
+    kernelUnitLength?: number | string | undefined;
+    kerning?: number | string | undefined;
+    keyPoints?: number | string | undefined;
+    keySplines?: number | string | undefined;
+    keyTimes?: number | string | undefined;
+    lengthAdjust?: number | string | undefined;
+    'letter-spacing'?: number | string | undefined;
+    'lighting-color'?: number | string | undefined;
+    limitingConeAngle?: number | string | undefined;
+    local?: number | string | undefined;
+    'marker-end'?: string | undefined;
+    markerHeight?: number | string | undefined;
+    'marker-mid'?: string | undefined;
+    'marker-start'?: string | undefined;
+    markerUnits?: number | string | undefined;
+    markerWidth?: number | string | undefined;
+    mask?: string | undefined;
+    maskContentUnits?: number | string | undefined;
+    maskUnits?: number | string | undefined;
+    mathematical?: number | string | undefined;
+    mode?: number | string | undefined;
+    numOctaves?: number | string | undefined;
+    offset?: number | string | undefined;
+    opacity?: number | string | undefined;
+    operator?: number | string | undefined;
+    order?: number | string | undefined;
+    orient?: number | string | undefined;
+    orientation?: number | string | undefined;
+    origin?: number | string | undefined;
+    overflow?: number | string | undefined;
+    'overline-position'?: number | string | undefined;
+    'overline-thickness'?: number | string | undefined;
+    'paint-order'?: number | string | undefined;
+    panose1?: number | string | undefined;
+    path?: string | undefined;
+    pathLength?: number | string | undefined;
+    patternContentUnits?: string | undefined;
+    patternTransform?: number | string | undefined;
+    patternUnits?: string | undefined;
+    'pointer-events'?: number | string | undefined;
+    points?: string | undefined;
+    pointsAtX?: number | string | undefined;
+    pointsAtY?: number | string | undefined;
+    pointsAtZ?: number | string | undefined;
+    preserveAlpha?: number | string | undefined;
+    preserveAspectRatio?: string | undefined;
+    primitiveUnits?: number | string | undefined;
+    r?: number | string | undefined;
+    radius?: number | string | undefined;
+    refX?: number | string | undefined;
+    refY?: number | string | undefined;
+    'rendering-intent'?: number | string | undefined;
+    repeatCount?: number | string | undefined;
+    repeatDur?: number | string | undefined;
+    requiredextensions?: number | string | undefined;
+    requiredFeatures?: number | string | undefined;
+    restart?: number | string | undefined;
+    result?: string | undefined;
+    rotate?: number | string | undefined;
+    rx?: number | string | undefined;
+    ry?: number | string | undefined;
+    scale?: number | string | undefined;
+    seed?: number | string | undefined;
+    'shape-rendering'?: number | string | undefined;
+    slope?: number | string | undefined;
+    spacing?: number | string | undefined;
+    specularConstant?: number | string | undefined;
+    specularExponent?: number | string | undefined;
+    speed?: number | string | undefined;
+    spreadMethod?: string | undefined;
+    startOffset?: number | string | undefined;
+    stdDeviation?: number | string | undefined;
+    stemh?: number | string | undefined;
+    stemv?: number | string | undefined;
+    stitchTiles?: number | string | undefined;
+    'stop-color'?: string | undefined;
+    'stop-opacity'?: number | string | undefined;
+    'strikethrough-position'?: number | string | undefined;
+    'strikethrough-thickness'?: number | string | undefined;
+    string?: number | string | undefined;
+    stroke?: string | undefined;
+    'stroke-dasharray'?: string | number | undefined;
+    'stroke-dashoffset'?: string | number | undefined;
+    'stroke-linecap'?: 'butt' | 'round' | 'square' | 'inherit' | undefined;
+    'stroke-linejoin'?: 'miter' | 'round' | 'bevel' | 'inherit' | undefined;
+    'stroke-miterlimit'?: string | undefined;
+    'stroke-opacity'?: number | string | undefined;
+    'stroke-width'?: number | string | undefined;
+    surfaceScale?: number | string | undefined;
+    systemLanguage?: number | string | undefined;
+    tableValues?: number | string | undefined;
+    targetX?: number | string | undefined;
+    targetY?: number | string | undefined;
+    'text-anchor'?: string | undefined;
+    'text-decoration'?: number | string | undefined;
+    textLength?: number | string | undefined;
+    'text-rendering'?: number | string | undefined;
+    to?: number | string | undefined;
+    transform?: string | undefined;
+    u1?: number | string | undefined;
+    u2?: number | string | undefined;
+    'underline-position'?: number | string | undefined;
+    'underline-thickness'?: number | string | undefined;
+    unicode?: number | string | undefined;
+    'unicode-bidi'?: number | string | undefined;
+    'unicode-range'?: number | string | undefined;
+    'units-per-em'?: number | string | undefined;
+    'v-alphabetic'?: number | string | undefined;
+    values?: string | undefined;
+    'vector-effect'?: number | string | undefined;
+    version?: string | undefined;
+    'vert-adv-y'?: number | string | undefined;
+    'vert-origin-x'?: number | string | undefined;
+    'vert-origin-y'?: number | string | undefined;
+    'v-hanging'?: number | string | undefined;
+    'v-ideographic'?: number | string | undefined;
+    viewBox?: string | undefined;
+    viewTarget?: number | string | undefined;
+    visibility?: number | string | undefined;
+    'v-mathematical'?: number | string | undefined;
+    widths?: number | string | undefined;
+    'word-spacing'?: number | string | undefined;
+    'writing-mode'?: number | string | undefined;
+    x1?: number | string | undefined;
+    x2?: number | string | undefined;
+    x?: number | string | undefined;
+    'x-channel-selector'?: string | undefined;
+    'x-height'?: number | string | undefined;
+    xlinkActuate?: string | undefined;
+    xlinkArcrole?: string | undefined;
+    xlinkHref?: string | undefined;
+    xlinkRole?: string | undefined;
+    xlinkShow?: string | undefined;
+    xlinkTitle?: string | undefined;
+    xlinkType?: string | undefined;
+    xmlBase?: string | undefined;
+    xmlLang?: string | undefined;
+    xmlns?: string | undefined;
+    xmlSpace?: string | undefined;
+    y1?: number | string | undefined;
+    y2?: number | string | undefined;
+    y?: number | string | undefined;
+    yChannelSelector?: string | undefined;
+    z?: number | string | undefined;
+    zoomAndPan?: string | undefined;
+}
+
+/**
+ * @public
+ */
+export declare interface SVGProps<T extends Element> extends SVGAttributes<T> {
+}
+
 declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
 }
 
-declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
     summary?: string | undefined;
@@ -2869,7 +3379,10 @@ declare type TaskDescriptor = DescriptorBase<TaskFn>;
  */
 export declare type TaskFn = (ctx: TaskCtx) => ValueOrPromise<void | (() => void)>;
 
-declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
     headers?: string | undefined;
@@ -2881,7 +3394,10 @@ declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> 
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
-declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
     cols?: number | undefined;
@@ -2903,7 +3419,10 @@ declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttribut
     children?: undefined;
 }
 
-declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
     headers?: string | undefined;
@@ -2912,11 +3431,17 @@ declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> 
     abbr?: string | undefined;
 }
 
-declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
-declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: string;
 }
 
@@ -2976,7 +3501,10 @@ export declare interface Tracker {
     <T extends {}>(obj: T): T;
 }
 
-declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
     label?: string | undefined;
@@ -3713,7 +4241,10 @@ export declare const _verifySerializable: <T>(value: T, preMessage?: string) => 
  */
 export declare const version: string;
 
-declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
     height?: Numberish | undefined;
     playsInline?: boolean | undefined;
     poster?: string | undefined;
@@ -3770,7 +4301,10 @@ export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
  */
 export declare const _weakSerialize: <T extends Record<string, any>>(input: T) => Partial<T>;
 
-declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+/**
+ * @public
+ */
+export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
     allowpopups?: boolean | undefined;
     autoFocus?: boolean | undefined;
