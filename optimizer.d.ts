@@ -558,7 +558,7 @@ export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper |
 /**
  * @public
  */
-export declare type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
+export declare type SystemEnvironment = 'node' | 'deno' | 'bun' | 'webworker' | 'browsermain' | 'unknown';
 
 /**
  * @public

@@ -45,17 +45,17 @@ var require_src = __commonJS({
     var CSI = `${ESC}[`;
     var beep = "\x07";
     var cursor = {
-      to(x2, y3) {
+      to(x3, y3) {
         if (!y3)
-          return `${CSI}${x2 + 1}G`;
-        return `${CSI}${y3 + 1};${x2 + 1}H`;
+          return `${CSI}${x3 + 1}G`;
+        return `${CSI}${y3 + 1};${x3 + 1}H`;
       },
-      move(x2, y3) {
+      move(x3, y3) {
         let ret = "";
-        if (x2 < 0)
-          ret += `${CSI}${-x2}D`;
-        else if (x2 > 0)
-          ret += `${CSI}${x2}C`;
+        if (x3 < 0)
+          ret += `${CSI}${-x3}D`;
+        else if (x3 > 0)
+          ret += `${CSI}${x3}C`;
         if (y3 < 0)
           ret += `${CSI}${-y3}A`;
         else if (y3 > 0)
@@ -116,7 +116,7 @@ var require_picocolors = __commonJS({
     };
     var createColors = (enabled = isColorSupported) => ({
       isColorSupported: enabled,
-      reset: enabled ? (s) => `\x1B[0m${s}\x1B[0m` : String,
+      reset: enabled ? (s2) => `\x1B[0m${s2}\x1B[0m` : String,
       bold: enabled ? formatter("\x1B[1m", "\x1B[22m", "\x1B[22m\x1B[1m") : String,
       dim: enabled ? formatter("\x1B[2m", "\x1B[22m", "\x1B[22m\x1B[2m") : String,
       italic: enabled ? formatter("\x1B[3m", "\x1B[23m") : String,
@@ -147,6 +147,28 @@ var require_picocolors = __commonJS({
   }
 });
 
+// node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js
+var require_which_pm_runs = __commonJS({
+  "node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js"(exports, module2) {
+    "use strict";
+    module2.exports = function() {
+      if (!process.env.npm_config_user_agent) {
+        return void 0;
+      }
+      return pmFromUserAgent(process.env.npm_config_user_agent);
+    };
+    function pmFromUserAgent(userAgent) {
+      const pmSpec = userAgent.split(" ")[0];
+      const separatorPos = pmSpec.lastIndexOf("/");
+      const name = pmSpec.substring(0, separatorPos);
+      return {
+        name: name === "npminstall" ? "cnpm" : name,
+        version: pmSpec.substring(separatorPos + 1)
+      };
+    }
+  }
+});
+
 // node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js
 var require_windows = __commonJS({
   "node_modules/.pnpm/isexe@2.0.0/node_modules/isexe/windows.js"(exports, module2) {
@@ -163,8 +185,8 @@ var require_windows = __commonJS({
         return true;
       }
       for (var i = 0; i < pathext.length; i++) {
-        var p3 = pathext[i].toLowerCase();
-        if (p3 && path3.substr(-p3.length).toLowerCase() === p3) {
+        var p2 = pathext[i].toLowerCase();
+        if (p2 && path3.substr(-p2.length).toLowerCase() === p2) {
           return true;
         }
       }
@@ -210,11 +232,11 @@ var require_mode = __commonJS({
       var gid = stat.gid;
       var myUid = options.uid !== void 0 ? options.uid : process.getuid && process.getuid();
       var myGid = options.gid !== void 0 ? options.gid : process.getgid && process.getgid();
-      var u2 = parseInt("100", 8);
-      var g3 = parseInt("010", 8);
+      var u = parseInt("100", 8);
+      var g2 = parseInt("010", 8);
       var o2 = parseInt("001", 8);
-      var ug = u2 | g3;
-      var ret = mod & o2 || mod & g3 && gid === myGid || mod & u2 && uid === myUid || mod & ug && myUid === 0;
+      var ug = u | g2;
+      var ret = mod & o2 || mod & g2 && gid === myGid || mod & u && uid === myUid || mod & ug && myUid === 0;
       return ret;
     }
   }
@@ -318,21 +340,21 @@ var require_which = __commonJS({
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path3.join(pathPart, cmd);
-        const p3 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
-        resolve2(subStep(p3, i, 0));
+        const p2 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
+        resolve2(subStep(p2, i, 0));
       });
-      const subStep = (p3, i, ii) => new Promise((resolve2, reject) => {
+      const subStep = (p2, i, ii) => new Promise((resolve2, reject) => {
         if (ii === pathExt.length)
           return resolve2(step(i + 1));
         const ext = pathExt[ii];
-        isexe(p3 + ext, { pathExt: pathExtExe }, (er, is) => {
+        isexe(p2 + ext, { pathExt: pathExtExe }, (er, is) => {
           if (!er && is) {
             if (opt.all)
-              found.push(p3 + ext);
+              found.push(p2 + ext);
             else
-              return resolve2(p3 + ext);
+              return resolve2(p2 + ext);
           }
-          return resolve2(subStep(p3, i, ii + 1));
+          return resolve2(subStep(p2, i, ii + 1));
         });
       });
       return cb ? step(0).then((res) => cb(null, res), cb) : step(0);
@@ -345,9 +367,9 @@ var require_which = __commonJS({
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path3.join(pathPart, cmd);
-        const p3 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
+        const p2 = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
         for (let j2 = 0; j2 < pathExt.length; j2++) {
-          const cur = p3 + pathExt[j2];
+          const cur = p2 + pathExt[j2];
           try {
             const is = isexe.sync(cur, { pathExt: pathExtExe });
             if (is) {
@@ -641,28 +663,6 @@ var require_cross_spawn = __commonJS({
     module2.exports.sync = spawnSync;
     module2.exports._parse = parse;
     module2.exports._enoent = enoent;
-  }
-});
-
-// node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js
-var require_which_pm_runs = __commonJS({
-  "node_modules/.pnpm/which-pm-runs@1.1.0/node_modules/which-pm-runs/index.js"(exports, module2) {
-    "use strict";
-    module2.exports = function() {
-      if (!process.env.npm_config_user_agent) {
-        return void 0;
-      }
-      return pmFromUserAgent(process.env.npm_config_user_agent);
-    };
-    function pmFromUserAgent(userAgent) {
-      const pmSpec = userAgent.split(" ")[0];
-      const separatorPos = pmSpec.lastIndexOf("/");
-      const name = pmSpec.substring(0, separatorPos);
-      return {
-        name: name === "npminstall" ? "cnpm" : name,
-        version: pmSpec.substring(separatorPos + 1)
-      };
-    }
   }
 });
 
@@ -1023,9 +1023,9 @@ if (typeof process !== "undefined") {
 var $ = {
   enabled: !NODE_DISABLE_COLORS && NO_COLOR == null && TERM !== "dumb" && (FORCE_COLOR != null && FORCE_COLOR !== "0" || isTTY)
 };
-function init(x2, y3) {
+function init(x3, y3) {
   let rgx = new RegExp(`\\x1b\\[${y3}m`, "g");
-  let open = `\x1B[${x2}m`, close = `\x1B[${y3}m`;
+  let open = `\x1B[${x3}m`, close = `\x1B[${y3}m`;
   return function(txt) {
     if (!$.enabled || txt == null)
       return txt;
@@ -1114,15 +1114,7 @@ var AppCommand = class {
   }
 };
 
-// packages/qwik/src/cli/utils/integrations.ts
-var import_node_fs3 = __toESM(require("fs"), 1);
-var import_node_path3 = require("path");
-
-// packages/qwik/src/cli/utils/utils.ts
-var import_node_fs2 = __toESM(require("fs"), 1);
-var import_node_path2 = require("path");
-
-// node_modules/.pnpm/@clack+core@0.3.2/node_modules/@clack/core/dist/index.mjs
+// node_modules/.pnpm/@clack+core@0.3.3/node_modules/@clack/core/dist/index.mjs
 var import_sisteransi = __toESM(require_src(), 1);
 var import_node_process = require("process");
 var f = __toESM(require("readline"), 1);
@@ -1130,8 +1122,8 @@ var import_node_readline = __toESM(require("readline"), 1);
 var import_node_tty = require("tty");
 var import_picocolors = __toESM(require_picocolors(), 1);
 function z({ onlyFirst: t = false } = {}) {
-  const u2 = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"].join("|");
-  return new RegExp(u2, t ? void 0 : "g");
+  const u = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"].join("|");
+  return new RegExp(u, t ? void 0 : "g");
 }
 function $2(t) {
   if (typeof t != "string")
@@ -1145,56 +1137,56 @@ var G = { get exports() {
   m = t;
 } };
 (function(t) {
-  var u2 = {};
-  t.exports = u2, u2.eastAsianWidth = function(e2) {
-    var s = e2.charCodeAt(0), C2 = e2.length == 2 ? e2.charCodeAt(1) : 0, D2 = s;
-    return 55296 <= s && s <= 56319 && 56320 <= C2 && C2 <= 57343 && (s &= 1023, C2 &= 1023, D2 = s << 10 | C2, D2 += 65536), D2 == 12288 || 65281 <= D2 && D2 <= 65376 || 65504 <= D2 && D2 <= 65510 ? "F" : D2 == 8361 || 65377 <= D2 && D2 <= 65470 || 65474 <= D2 && D2 <= 65479 || 65482 <= D2 && D2 <= 65487 || 65490 <= D2 && D2 <= 65495 || 65498 <= D2 && D2 <= 65500 || 65512 <= D2 && D2 <= 65518 ? "H" : 4352 <= D2 && D2 <= 4447 || 4515 <= D2 && D2 <= 4519 || 4602 <= D2 && D2 <= 4607 || 9001 <= D2 && D2 <= 9002 || 11904 <= D2 && D2 <= 11929 || 11931 <= D2 && D2 <= 12019 || 12032 <= D2 && D2 <= 12245 || 12272 <= D2 && D2 <= 12283 || 12289 <= D2 && D2 <= 12350 || 12353 <= D2 && D2 <= 12438 || 12441 <= D2 && D2 <= 12543 || 12549 <= D2 && D2 <= 12589 || 12593 <= D2 && D2 <= 12686 || 12688 <= D2 && D2 <= 12730 || 12736 <= D2 && D2 <= 12771 || 12784 <= D2 && D2 <= 12830 || 12832 <= D2 && D2 <= 12871 || 12880 <= D2 && D2 <= 13054 || 13056 <= D2 && D2 <= 19903 || 19968 <= D2 && D2 <= 42124 || 42128 <= D2 && D2 <= 42182 || 43360 <= D2 && D2 <= 43388 || 44032 <= D2 && D2 <= 55203 || 55216 <= D2 && D2 <= 55238 || 55243 <= D2 && D2 <= 55291 || 63744 <= D2 && D2 <= 64255 || 65040 <= D2 && D2 <= 65049 || 65072 <= D2 && D2 <= 65106 || 65108 <= D2 && D2 <= 65126 || 65128 <= D2 && D2 <= 65131 || 110592 <= D2 && D2 <= 110593 || 127488 <= D2 && D2 <= 127490 || 127504 <= D2 && D2 <= 127546 || 127552 <= D2 && D2 <= 127560 || 127568 <= D2 && D2 <= 127569 || 131072 <= D2 && D2 <= 194367 || 177984 <= D2 && D2 <= 196605 || 196608 <= D2 && D2 <= 262141 ? "W" : 32 <= D2 && D2 <= 126 || 162 <= D2 && D2 <= 163 || 165 <= D2 && D2 <= 166 || D2 == 172 || D2 == 175 || 10214 <= D2 && D2 <= 10221 || 10629 <= D2 && D2 <= 10630 ? "Na" : D2 == 161 || D2 == 164 || 167 <= D2 && D2 <= 168 || D2 == 170 || 173 <= D2 && D2 <= 174 || 176 <= D2 && D2 <= 180 || 182 <= D2 && D2 <= 186 || 188 <= D2 && D2 <= 191 || D2 == 198 || D2 == 208 || 215 <= D2 && D2 <= 216 || 222 <= D2 && D2 <= 225 || D2 == 230 || 232 <= D2 && D2 <= 234 || 236 <= D2 && D2 <= 237 || D2 == 240 || 242 <= D2 && D2 <= 243 || 247 <= D2 && D2 <= 250 || D2 == 252 || D2 == 254 || D2 == 257 || D2 == 273 || D2 == 275 || D2 == 283 || 294 <= D2 && D2 <= 295 || D2 == 299 || 305 <= D2 && D2 <= 307 || D2 == 312 || 319 <= D2 && D2 <= 322 || D2 == 324 || 328 <= D2 && D2 <= 331 || D2 == 333 || 338 <= D2 && D2 <= 339 || 358 <= D2 && D2 <= 359 || D2 == 363 || D2 == 462 || D2 == 464 || D2 == 466 || D2 == 468 || D2 == 470 || D2 == 472 || D2 == 474 || D2 == 476 || D2 == 593 || D2 == 609 || D2 == 708 || D2 == 711 || 713 <= D2 && D2 <= 715 || D2 == 717 || D2 == 720 || 728 <= D2 && D2 <= 731 || D2 == 733 || D2 == 735 || 768 <= D2 && D2 <= 879 || 913 <= D2 && D2 <= 929 || 931 <= D2 && D2 <= 937 || 945 <= D2 && D2 <= 961 || 963 <= D2 && D2 <= 969 || D2 == 1025 || 1040 <= D2 && D2 <= 1103 || D2 == 1105 || D2 == 8208 || 8211 <= D2 && D2 <= 8214 || 8216 <= D2 && D2 <= 8217 || 8220 <= D2 && D2 <= 8221 || 8224 <= D2 && D2 <= 8226 || 8228 <= D2 && D2 <= 8231 || D2 == 8240 || 8242 <= D2 && D2 <= 8243 || D2 == 8245 || D2 == 8251 || D2 == 8254 || D2 == 8308 || D2 == 8319 || 8321 <= D2 && D2 <= 8324 || D2 == 8364 || D2 == 8451 || D2 == 8453 || D2 == 8457 || D2 == 8467 || D2 == 8470 || 8481 <= D2 && D2 <= 8482 || D2 == 8486 || D2 == 8491 || 8531 <= D2 && D2 <= 8532 || 8539 <= D2 && D2 <= 8542 || 8544 <= D2 && D2 <= 8555 || 8560 <= D2 && D2 <= 8569 || D2 == 8585 || 8592 <= D2 && D2 <= 8601 || 8632 <= D2 && D2 <= 8633 || D2 == 8658 || D2 == 8660 || D2 == 8679 || D2 == 8704 || 8706 <= D2 && D2 <= 8707 || 8711 <= D2 && D2 <= 8712 || D2 == 8715 || D2 == 8719 || D2 == 8721 || D2 == 8725 || D2 == 8730 || 8733 <= D2 && D2 <= 8736 || D2 == 8739 || D2 == 8741 || 8743 <= D2 && D2 <= 8748 || D2 == 8750 || 8756 <= D2 && D2 <= 8759 || 8764 <= D2 && D2 <= 8765 || D2 == 8776 || D2 == 8780 || D2 == 8786 || 8800 <= D2 && D2 <= 8801 || 8804 <= D2 && D2 <= 8807 || 8810 <= D2 && D2 <= 8811 || 8814 <= D2 && D2 <= 8815 || 8834 <= D2 && D2 <= 8835 || 8838 <= D2 && D2 <= 8839 || D2 == 8853 || D2 == 8857 || D2 == 8869 || D2 == 8895 || D2 == 8978 || 9312 <= D2 && D2 <= 9449 || 9451 <= D2 && D2 <= 9547 || 9552 <= D2 && D2 <= 9587 || 9600 <= D2 && D2 <= 9615 || 9618 <= D2 && D2 <= 9621 || 9632 <= D2 && D2 <= 9633 || 9635 <= D2 && D2 <= 9641 || 9650 <= D2 && D2 <= 9651 || 9654 <= D2 && D2 <= 9655 || 9660 <= D2 && D2 <= 9661 || 9664 <= D2 && D2 <= 9665 || 9670 <= D2 && D2 <= 9672 || D2 == 9675 || 9678 <= D2 && D2 <= 9681 || 9698 <= D2 && D2 <= 9701 || D2 == 9711 || 9733 <= D2 && D2 <= 9734 || D2 == 9737 || 9742 <= D2 && D2 <= 9743 || 9748 <= D2 && D2 <= 9749 || D2 == 9756 || D2 == 9758 || D2 == 9792 || D2 == 9794 || 9824 <= D2 && D2 <= 9825 || 9827 <= D2 && D2 <= 9829 || 9831 <= D2 && D2 <= 9834 || 9836 <= D2 && D2 <= 9837 || D2 == 9839 || 9886 <= D2 && D2 <= 9887 || 9918 <= D2 && D2 <= 9919 || 9924 <= D2 && D2 <= 9933 || 9935 <= D2 && D2 <= 9953 || D2 == 9955 || 9960 <= D2 && D2 <= 9983 || D2 == 10045 || D2 == 10071 || 10102 <= D2 && D2 <= 10111 || 11093 <= D2 && D2 <= 11097 || 12872 <= D2 && D2 <= 12879 || 57344 <= D2 && D2 <= 63743 || 65024 <= D2 && D2 <= 65039 || D2 == 65533 || 127232 <= D2 && D2 <= 127242 || 127248 <= D2 && D2 <= 127277 || 127280 <= D2 && D2 <= 127337 || 127344 <= D2 && D2 <= 127386 || 917760 <= D2 && D2 <= 917999 || 983040 <= D2 && D2 <= 1048573 || 1048576 <= D2 && D2 <= 1114109 ? "A" : "N";
-  }, u2.characterLength = function(e2) {
-    var s = this.eastAsianWidth(e2);
-    return s == "F" || s == "W" || s == "A" ? 2 : 1;
+  var u = {};
+  t.exports = u, u.eastAsianWidth = function(e2) {
+    var s2 = e2.charCodeAt(0), C2 = e2.length == 2 ? e2.charCodeAt(1) : 0, D = s2;
+    return 55296 <= s2 && s2 <= 56319 && 56320 <= C2 && C2 <= 57343 && (s2 &= 1023, C2 &= 1023, D = s2 << 10 | C2, D += 65536), D == 12288 || 65281 <= D && D <= 65376 || 65504 <= D && D <= 65510 ? "F" : D == 8361 || 65377 <= D && D <= 65470 || 65474 <= D && D <= 65479 || 65482 <= D && D <= 65487 || 65490 <= D && D <= 65495 || 65498 <= D && D <= 65500 || 65512 <= D && D <= 65518 ? "H" : 4352 <= D && D <= 4447 || 4515 <= D && D <= 4519 || 4602 <= D && D <= 4607 || 9001 <= D && D <= 9002 || 11904 <= D && D <= 11929 || 11931 <= D && D <= 12019 || 12032 <= D && D <= 12245 || 12272 <= D && D <= 12283 || 12289 <= D && D <= 12350 || 12353 <= D && D <= 12438 || 12441 <= D && D <= 12543 || 12549 <= D && D <= 12589 || 12593 <= D && D <= 12686 || 12688 <= D && D <= 12730 || 12736 <= D && D <= 12771 || 12784 <= D && D <= 12830 || 12832 <= D && D <= 12871 || 12880 <= D && D <= 13054 || 13056 <= D && D <= 19903 || 19968 <= D && D <= 42124 || 42128 <= D && D <= 42182 || 43360 <= D && D <= 43388 || 44032 <= D && D <= 55203 || 55216 <= D && D <= 55238 || 55243 <= D && D <= 55291 || 63744 <= D && D <= 64255 || 65040 <= D && D <= 65049 || 65072 <= D && D <= 65106 || 65108 <= D && D <= 65126 || 65128 <= D && D <= 65131 || 110592 <= D && D <= 110593 || 127488 <= D && D <= 127490 || 127504 <= D && D <= 127546 || 127552 <= D && D <= 127560 || 127568 <= D && D <= 127569 || 131072 <= D && D <= 194367 || 177984 <= D && D <= 196605 || 196608 <= D && D <= 262141 ? "W" : 32 <= D && D <= 126 || 162 <= D && D <= 163 || 165 <= D && D <= 166 || D == 172 || D == 175 || 10214 <= D && D <= 10221 || 10629 <= D && D <= 10630 ? "Na" : D == 161 || D == 164 || 167 <= D && D <= 168 || D == 170 || 173 <= D && D <= 174 || 176 <= D && D <= 180 || 182 <= D && D <= 186 || 188 <= D && D <= 191 || D == 198 || D == 208 || 215 <= D && D <= 216 || 222 <= D && D <= 225 || D == 230 || 232 <= D && D <= 234 || 236 <= D && D <= 237 || D == 240 || 242 <= D && D <= 243 || 247 <= D && D <= 250 || D == 252 || D == 254 || D == 257 || D == 273 || D == 275 || D == 283 || 294 <= D && D <= 295 || D == 299 || 305 <= D && D <= 307 || D == 312 || 319 <= D && D <= 322 || D == 324 || 328 <= D && D <= 331 || D == 333 || 338 <= D && D <= 339 || 358 <= D && D <= 359 || D == 363 || D == 462 || D == 464 || D == 466 || D == 468 || D == 470 || D == 472 || D == 474 || D == 476 || D == 593 || D == 609 || D == 708 || D == 711 || 713 <= D && D <= 715 || D == 717 || D == 720 || 728 <= D && D <= 731 || D == 733 || D == 735 || 768 <= D && D <= 879 || 913 <= D && D <= 929 || 931 <= D && D <= 937 || 945 <= D && D <= 961 || 963 <= D && D <= 969 || D == 1025 || 1040 <= D && D <= 1103 || D == 1105 || D == 8208 || 8211 <= D && D <= 8214 || 8216 <= D && D <= 8217 || 8220 <= D && D <= 8221 || 8224 <= D && D <= 8226 || 8228 <= D && D <= 8231 || D == 8240 || 8242 <= D && D <= 8243 || D == 8245 || D == 8251 || D == 8254 || D == 8308 || D == 8319 || 8321 <= D && D <= 8324 || D == 8364 || D == 8451 || D == 8453 || D == 8457 || D == 8467 || D == 8470 || 8481 <= D && D <= 8482 || D == 8486 || D == 8491 || 8531 <= D && D <= 8532 || 8539 <= D && D <= 8542 || 8544 <= D && D <= 8555 || 8560 <= D && D <= 8569 || D == 8585 || 8592 <= D && D <= 8601 || 8632 <= D && D <= 8633 || D == 8658 || D == 8660 || D == 8679 || D == 8704 || 8706 <= D && D <= 8707 || 8711 <= D && D <= 8712 || D == 8715 || D == 8719 || D == 8721 || D == 8725 || D == 8730 || 8733 <= D && D <= 8736 || D == 8739 || D == 8741 || 8743 <= D && D <= 8748 || D == 8750 || 8756 <= D && D <= 8759 || 8764 <= D && D <= 8765 || D == 8776 || D == 8780 || D == 8786 || 8800 <= D && D <= 8801 || 8804 <= D && D <= 8807 || 8810 <= D && D <= 8811 || 8814 <= D && D <= 8815 || 8834 <= D && D <= 8835 || 8838 <= D && D <= 8839 || D == 8853 || D == 8857 || D == 8869 || D == 8895 || D == 8978 || 9312 <= D && D <= 9449 || 9451 <= D && D <= 9547 || 9552 <= D && D <= 9587 || 9600 <= D && D <= 9615 || 9618 <= D && D <= 9621 || 9632 <= D && D <= 9633 || 9635 <= D && D <= 9641 || 9650 <= D && D <= 9651 || 9654 <= D && D <= 9655 || 9660 <= D && D <= 9661 || 9664 <= D && D <= 9665 || 9670 <= D && D <= 9672 || D == 9675 || 9678 <= D && D <= 9681 || 9698 <= D && D <= 9701 || D == 9711 || 9733 <= D && D <= 9734 || D == 9737 || 9742 <= D && D <= 9743 || 9748 <= D && D <= 9749 || D == 9756 || D == 9758 || D == 9792 || D == 9794 || 9824 <= D && D <= 9825 || 9827 <= D && D <= 9829 || 9831 <= D && D <= 9834 || 9836 <= D && D <= 9837 || D == 9839 || 9886 <= D && D <= 9887 || 9918 <= D && D <= 9919 || 9924 <= D && D <= 9933 || 9935 <= D && D <= 9953 || D == 9955 || 9960 <= D && D <= 9983 || D == 10045 || D == 10071 || 10102 <= D && D <= 10111 || 11093 <= D && D <= 11097 || 12872 <= D && D <= 12879 || 57344 <= D && D <= 63743 || 65024 <= D && D <= 65039 || D == 65533 || 127232 <= D && D <= 127242 || 127248 <= D && D <= 127277 || 127280 <= D && D <= 127337 || 127344 <= D && D <= 127386 || 917760 <= D && D <= 917999 || 983040 <= D && D <= 1048573 || 1048576 <= D && D <= 1114109 ? "A" : "N";
+  }, u.characterLength = function(e2) {
+    var s2 = this.eastAsianWidth(e2);
+    return s2 == "F" || s2 == "W" || s2 == "A" ? 2 : 1;
   };
-  function F2(e2) {
+  function F(e2) {
     return e2.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]/g) || [];
   }
-  u2.length = function(e2) {
-    for (var s = F2(e2), C2 = 0, D2 = 0; D2 < s.length; D2++)
-      C2 = C2 + this.characterLength(s[D2]);
+  u.length = function(e2) {
+    for (var s2 = F(e2), C2 = 0, D = 0; D < s2.length; D++)
+      C2 = C2 + this.characterLength(s2[D]);
     return C2;
-  }, u2.slice = function(e2, s, C2) {
-    textLen = u2.length(e2), s = s || 0, C2 = C2 || 1, s < 0 && (s = textLen + s), C2 < 0 && (C2 = textLen + C2);
-    for (var D2 = "", i = 0, o2 = F2(e2), E2 = 0; E2 < o2.length; E2++) {
-      var a2 = o2[E2], n = u2.length(a2);
-      if (i >= s - (n == 2 ? 1 : 0))
+  }, u.slice = function(e2, s2, C2) {
+    textLen = u.length(e2), s2 = s2 || 0, C2 = C2 || 1, s2 < 0 && (s2 = textLen + s2), C2 < 0 && (C2 = textLen + C2);
+    for (var D = "", i = 0, o2 = F(e2), E2 = 0; E2 < o2.length; E2++) {
+      var a2 = o2[E2], n = u.length(a2);
+      if (i >= s2 - (n == 2 ? 1 : 0))
         if (i + n <= C2)
-          D2 += a2;
+          D += a2;
         else
           break;
       i += n;
     }
-    return D2;
+    return D;
   };
 })(G);
 var K = m;
 var Y = function() {
   return /\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62(?:\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73|\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74|\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67)\uDB40\uDC7F|(?:\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFF\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB-\uDFFE])|(?:\uD83E\uDDD1\uD83C\uDFFE\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFE\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB-\uDFFD\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFD\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFD\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB\uDFFC\uDFFE\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFC\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFC\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB\uDFFD-\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFB\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFB\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFC-\uDFFF])|\uD83D\uDC68(?:\uD83C\uDFFB(?:\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF]))|\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFC-\uDFFF])|[\u2695\u2696\u2708]\uFE0F|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))?|(?:\uD83C[\uDFFC-\uDFFF])\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFF]))|\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83D\uDC68|(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFE])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFD\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFC\uDFFE\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFD-\uDFFF])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])\uFE0F|\u200D(?:(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D[\uDC66\uDC67])|\uD83D[\uDC66\uDC67])|\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC)?|(?:\uD83D\uDC69(?:\uD83C\uDFFB\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69])|(?:\uD83C[\uDFFC-\uDFFF])\u200D\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69]))|\uD83E\uDDD1(?:\uD83C[\uDFFB-\uDFFF])\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1)(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|\uD83D\uDC69(?:\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69])|\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFB\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))|\uD83E\uDDD1(?:\u200D(?:\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFB\u200D(?:\uD83C[\uDF3E\uDF73\uDF7C\uDF84\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))|\uD83D\uDC69\u200D\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D[\uDC66\uDC67])|\uD83D\uDC69\u200D\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|(?:\uD83D\uDC41\uFE0F\u200D\uD83D\uDDE8|\uD83E\uDDD1(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])|\uD83D\uDC69(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])|\uD83D\uDE36\u200D\uD83C\uDF2B|\uD83C\uDFF3\uFE0F\u200D\u26A7|\uD83D\uDC3B\u200D\u2744|(?:(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])(?:\uD83C[\uDFFB-\uDFFF])|\uD83D\uDC6F|\uD83E[\uDD3C\uDDDE\uDDDF])\u200D[\u2640\u2642]|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])\u200D[\u2640\u2642]|\uD83C\uDFF4\u200D\u2620|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])\u200D[\u2640\u2642]|[\xA9\xAE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA\u2328\u23CF\u23ED-\u23EF\u23F1\u23F2\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB\u25FC\u2600-\u2604\u260E\u2611\u2618\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E\u2692\u2694-\u2697\u2699\u269B\u269C\u26A0\u26A7\u26B0\u26B1\u26C8\u26CF\u26D1\u26D3\u26E9\u26F0\u26F1\u26F4\u26F7\u26F8\u2702\u2708\u2709\u270F\u2712\u2714\u2716\u271D\u2721\u2733\u2734\u2744\u2747\u2763\u27A1\u2934\u2935\u2B05-\u2B07\u3030\u303D\u3297\u3299]|\uD83C[\uDD70\uDD71\uDD7E\uDD7F\uDE02\uDE37\uDF21\uDF24-\uDF2C\uDF36\uDF7D\uDF96\uDF97\uDF99-\uDF9B\uDF9E\uDF9F\uDFCD\uDFCE\uDFD4-\uDFDF\uDFF5\uDFF7]|\uD83D[\uDC3F\uDCFD\uDD49\uDD4A\uDD6F\uDD70\uDD73\uDD76-\uDD79\uDD87\uDD8A-\uDD8D\uDDA5\uDDA8\uDDB1\uDDB2\uDDBC\uDDC2-\uDDC4\uDDD1-\uDDD3\uDDDC-\uDDDE\uDDE1\uDDE3\uDDE8\uDDEF\uDDF3\uDDFA\uDECB\uDECD-\uDECF\uDEE0-\uDEE5\uDEE9\uDEF0\uDEF3])\uFE0F|\uD83C\uDFF3\uFE0F\u200D\uD83C\uDF08|\uD83D\uDC69\u200D\uD83D\uDC67|\uD83D\uDC69\u200D\uD83D\uDC66|\uD83D\uDE35\u200D\uD83D\uDCAB|\uD83D\uDE2E\u200D\uD83D\uDCA8|\uD83D\uDC15\u200D\uD83E\uDDBA|\uD83E\uDDD1(?:\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC|\uD83C\uDFFB)?|\uD83D\uDC69(?:\uD83C\uDFFF|\uD83C\uDFFE|\uD83C\uDFFD|\uD83C\uDFFC|\uD83C\uDFFB)?|\uD83C\uDDFD\uD83C\uDDF0|\uD83C\uDDF6\uD83C\uDDE6|\uD83C\uDDF4\uD83C\uDDF2|\uD83D\uDC08\u200D\u2B1B|\u2764\uFE0F\u200D(?:\uD83D\uDD25|\uD83E\uDE79)|\uD83D\uDC41\uFE0F|\uD83C\uDFF3\uFE0F|\uD83C\uDDFF(?:\uD83C[\uDDE6\uDDF2\uDDFC])|\uD83C\uDDFE(?:\uD83C[\uDDEA\uDDF9])|\uD83C\uDDFC(?:\uD83C[\uDDEB\uDDF8])|\uD83C\uDDFB(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDEE\uDDF3\uDDFA])|\uD83C\uDDFA(?:\uD83C[\uDDE6\uDDEC\uDDF2\uDDF3\uDDF8\uDDFE\uDDFF])|\uD83C\uDDF9(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDED\uDDEF-\uDDF4\uDDF7\uDDF9\uDDFB\uDDFC\uDDFF])|\uD83C\uDDF8(?:\uD83C[\uDDE6-\uDDEA\uDDEC-\uDDF4\uDDF7-\uDDF9\uDDFB\uDDFD-\uDDFF])|\uD83C\uDDF7(?:\uD83C[\uDDEA\uDDF4\uDDF8\uDDFA\uDDFC])|\uD83C\uDDF5(?:\uD83C[\uDDE6\uDDEA-\uDDED\uDDF0-\uDDF3\uDDF7-\uDDF9\uDDFC\uDDFE])|\uD83C\uDDF3(?:\uD83C[\uDDE6\uDDE8\uDDEA-\uDDEC\uDDEE\uDDF1\uDDF4\uDDF5\uDDF7\uDDFA\uDDFF])|\uD83C\uDDF2(?:\uD83C[\uDDE6\uDDE8-\uDDED\uDDF0-\uDDFF])|\uD83C\uDDF1(?:\uD83C[\uDDE6-\uDDE8\uDDEE\uDDF0\uDDF7-\uDDFB\uDDFE])|\uD83C\uDDF0(?:\uD83C[\uDDEA\uDDEC-\uDDEE\uDDF2\uDDF3\uDDF5\uDDF7\uDDFC\uDDFE\uDDFF])|\uD83C\uDDEF(?:\uD83C[\uDDEA\uDDF2\uDDF4\uDDF5])|\uD83C\uDDEE(?:\uD83C[\uDDE8-\uDDEA\uDDF1-\uDDF4\uDDF6-\uDDF9])|\uD83C\uDDED(?:\uD83C[\uDDF0\uDDF2\uDDF3\uDDF7\uDDF9\uDDFA])|\uD83C\uDDEC(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEE\uDDF1-\uDDF3\uDDF5-\uDDFA\uDDFC\uDDFE])|\uD83C\uDDEB(?:\uD83C[\uDDEE-\uDDF0\uDDF2\uDDF4\uDDF7])|\uD83C\uDDEA(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDED\uDDF7-\uDDFA])|\uD83C\uDDE9(?:\uD83C[\uDDEA\uDDEC\uDDEF\uDDF0\uDDF2\uDDF4\uDDFF])|\uD83C\uDDE8(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDEE\uDDF0-\uDDF5\uDDF7\uDDFA-\uDDFF])|\uD83C\uDDE7(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEF\uDDF1-\uDDF4\uDDF6-\uDDF9\uDDFB\uDDFC\uDDFE\uDDFF])|\uD83C\uDDE6(?:\uD83C[\uDDE8-\uDDEC\uDDEE\uDDF1\uDDF2\uDDF4\uDDF6-\uDDFA\uDDFC\uDDFD\uDDFF])|[#\*0-9]\uFE0F\u20E3|\u2764\uFE0F|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD])(?:\uD83C[\uDFFB-\uDFFF])|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])|\uD83C\uDFF4|(?:[\u270A\u270B]|\uD83C[\uDF85\uDFC2\uDFC7]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66\uDC67\uDC6B-\uDC6D\uDC72\uDC74-\uDC76\uDC78\uDC7C\uDC83\uDC85\uDC8F\uDC91\uDCAA\uDD7A\uDD95\uDD96\uDE4C\uDE4F\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1C\uDD1E\uDD1F\uDD30-\uDD34\uDD36\uDD77\uDDB5\uDDB6\uDDBB\uDDD2\uDDD3\uDDD5])(?:\uD83C[\uDFFB-\uDFFF])|(?:[\u261D\u270C\u270D]|\uD83D[\uDD74\uDD90])(?:\uFE0F|\uD83C[\uDFFB-\uDFFF])|[\u270A\u270B]|\uD83C[\uDF85\uDFC2\uDFC7]|\uD83D[\uDC08\uDC15\uDC3B\uDC42\uDC43\uDC46-\uDC50\uDC66\uDC67\uDC6B-\uDC6D\uDC72\uDC74-\uDC76\uDC78\uDC7C\uDC83\uDC85\uDC8F\uDC91\uDCAA\uDD7A\uDD95\uDD96\uDE2E\uDE35\uDE36\uDE4C\uDE4F\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1C\uDD1E\uDD1F\uDD30-\uDD34\uDD36\uDD77\uDDB5\uDDB6\uDDBB\uDDD2\uDDD3\uDDD5]|\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC70\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD35\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD4\uDDD6-\uDDDD]|\uD83D\uDC6F|\uD83E[\uDD3C\uDDDE\uDDDF]|[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]|\uD83C[\uDC04\uDCCF\uDD8E\uDD91-\uDD9A\uDE01\uDE1A\uDE2F\uDE32-\uDE36\uDE38-\uDE3A\uDE50\uDE51\uDF00-\uDF20\uDF2D-\uDF35\uDF37-\uDF7C\uDF7E-\uDF84\uDF86-\uDF93\uDFA0-\uDFC1\uDFC5\uDFC6\uDFC8\uDFC9\uDFCF-\uDFD3\uDFE0-\uDFF0\uDFF8-\uDFFF]|\uD83D[\uDC00-\uDC07\uDC09-\uDC14\uDC16-\uDC3A\uDC3C-\uDC3E\uDC40\uDC44\uDC45\uDC51-\uDC65\uDC6A\uDC79-\uDC7B\uDC7D-\uDC80\uDC84\uDC88-\uDC8E\uDC90\uDC92-\uDCA9\uDCAB-\uDCFC\uDCFF-\uDD3D\uDD4B-\uDD4E\uDD50-\uDD67\uDDA4\uDDFB-\uDE2D\uDE2F-\uDE34\uDE37-\uDE44\uDE48-\uDE4A\uDE80-\uDEA2\uDEA4-\uDEB3\uDEB7-\uDEBF\uDEC1-\uDEC5\uDED0-\uDED2\uDED5-\uDED7\uDEEB\uDEEC\uDEF4-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0D\uDD0E\uDD10-\uDD17\uDD1D\uDD20-\uDD25\uDD27-\uDD2F\uDD3A\uDD3F-\uDD45\uDD47-\uDD76\uDD78\uDD7A-\uDDB4\uDDB7\uDDBA\uDDBC-\uDDCB\uDDD0\uDDE0-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6]|(?:[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]|\uD83C[\uDC04\uDCCF\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE1A\uDE2F\uDE32-\uDE36\uDE38-\uDE3A\uDE50\uDE51\uDF00-\uDF20\uDF2D-\uDF35\uDF37-\uDF7C\uDF7E-\uDF93\uDFA0-\uDFCA\uDFCF-\uDFD3\uDFE0-\uDFF0\uDFF4\uDFF8-\uDFFF]|\uD83D[\uDC00-\uDC3E\uDC40\uDC42-\uDCFC\uDCFF-\uDD3D\uDD4B-\uDD4E\uDD50-\uDD67\uDD7A\uDD95\uDD96\uDDA4\uDDFB-\uDE4F\uDE80-\uDEC5\uDECC\uDED0-\uDED2\uDED5-\uDED7\uDEEB\uDEEC\uDEF4-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0C-\uDD3A\uDD3C-\uDD45\uDD47-\uDD78\uDD7A-\uDDCB\uDDCD-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6])|(?:[#\*0-9\xA9\xAE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614\u2615\u2618\u261D\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E\u267F\u2692-\u2697\u2699\u269B\u269C\u26A0\u26A1\u26A7\u26AA\u26AB\u26B0\u26B1\u26BD\u26BE\u26C4\u26C5\u26C8\u26CE\u26CF\u26D1\u26D3\u26D4\u26E9\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934\u2935\u2B05-\u2B07\u2B1B\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299]|\uD83C[\uDC04\uDCCF\uDD70\uDD71\uDD7E\uDD7F\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE02\uDE1A\uDE2F\uDE32-\uDE3A\uDE50\uDE51\uDF00-\uDF21\uDF24-\uDF93\uDF96\uDF97\uDF99-\uDF9B\uDF9E-\uDFF0\uDFF3-\uDFF5\uDFF7-\uDFFF]|\uD83D[\uDC00-\uDCFD\uDCFF-\uDD3D\uDD49-\uDD4E\uDD50-\uDD67\uDD6F\uDD70\uDD73-\uDD7A\uDD87\uDD8A-\uDD8D\uDD90\uDD95\uDD96\uDDA4\uDDA5\uDDA8\uDDB1\uDDB2\uDDBC\uDDC2-\uDDC4\uDDD1-\uDDD3\uDDDC-\uDDDE\uDDE1\uDDE3\uDDE8\uDDEF\uDDF3\uDDFA-\uDE4F\uDE80-\uDEC5\uDECB-\uDED2\uDED5-\uDED7\uDEE0-\uDEE5\uDEE9\uDEEB\uDEEC\uDEF0\uDEF3-\uDEFC\uDFE0-\uDFEB]|\uD83E[\uDD0C-\uDD3A\uDD3C-\uDD45\uDD47-\uDD78\uDD7A-\uDDCB\uDDCD-\uDDFF\uDE70-\uDE74\uDE78-\uDE7A\uDE80-\uDE86\uDE90-\uDEA8\uDEB0-\uDEB6\uDEC0-\uDEC2\uDED0-\uDED6])\uFE0F|(?:[\u261D\u26F9\u270A-\u270D]|\uD83C[\uDF85\uDFC2-\uDFC4\uDFC7\uDFCA-\uDFCC]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66-\uDC78\uDC7C\uDC81-\uDC83\uDC85-\uDC87\uDC8F\uDC91\uDCAA\uDD74\uDD75\uDD7A\uDD90\uDD95\uDD96\uDE45-\uDE47\uDE4B-\uDE4F\uDEA3\uDEB4-\uDEB6\uDEC0\uDECC]|\uD83E[\uDD0C\uDD0F\uDD18-\uDD1F\uDD26\uDD30-\uDD39\uDD3C-\uDD3E\uDD77\uDDB5\uDDB6\uDDB8\uDDB9\uDDBB\uDDCD-\uDDCF\uDDD1-\uDDDD])/g;
 };
-function c(t, u2 = {}) {
-  if (typeof t != "string" || t.length === 0 || (u2 = { ambiguousIsNarrow: true, ...u2 }, t = $2(t), t.length === 0))
+function c(t, u = {}) {
+  if (typeof t != "string" || t.length === 0 || (u = { ambiguousIsNarrow: true, ...u }, t = $2(t), t.length === 0))
     return 0;
   t = t.replace(Y(), "  ");
-  const F2 = u2.ambiguousIsNarrow ? 1 : 2;
+  const F = u.ambiguousIsNarrow ? 1 : 2;
   let e2 = 0;
-  for (const s of t) {
-    const C2 = s.codePointAt(0);
+  for (const s2 of t) {
+    const C2 = s2.codePointAt(0);
     if (C2 <= 31 || C2 >= 127 && C2 <= 159 || C2 >= 768 && C2 <= 879)
       continue;
-    switch (K.eastAsianWidth(s)) {
+    switch (K.eastAsianWidth(s2)) {
       case "F":
       case "W":
         e2 += 2;
         break;
       case "A":
-        e2 += F2;
+        e2 += F;
         break;
       default:
         e2 += 1;
@@ -1203,9 +1195,9 @@ function c(t, u2 = {}) {
   return e2;
 }
 var v = 10;
-var L = (t = 0) => (u2) => `\x1B[${u2 + t}m`;
-var M = (t = 0) => (u2) => `\x1B[${38 + t};5;${u2}m`;
-var T = (t = 0) => (u2, F2, e2) => `\x1B[${38 + t};2;${u2};${F2};${e2}m`;
+var M = (t = 0) => (u) => `\x1B[${u + t}m`;
+var L = (t = 0) => (u) => `\x1B[${38 + t};5;${u}m`;
+var T = (t = 0) => (u, F, e2) => `\x1B[${38 + t};2;${u};${F};${e2}m`;
 var r = { modifier: { reset: [0, 0], bold: [1, 22], dim: [2, 22], italic: [3, 23], underline: [4, 24], overline: [53, 55], inverse: [7, 27], hidden: [8, 28], strikethrough: [9, 29] }, color: { black: [30, 39], red: [31, 39], green: [32, 39], yellow: [33, 39], blue: [34, 39], magenta: [35, 39], cyan: [36, 39], white: [37, 39], blackBright: [90, 39], gray: [90, 39], grey: [90, 39], redBright: [91, 39], greenBright: [92, 39], yellowBright: [93, 39], blueBright: [94, 39], magentaBright: [95, 39], cyanBright: [96, 39], whiteBright: [97, 39] }, bgColor: { bgBlack: [40, 49], bgRed: [41, 49], bgGreen: [42, 49], bgYellow: [43, 49], bgBlue: [44, 49], bgMagenta: [45, 49], bgCyan: [46, 49], bgWhite: [47, 49], bgBlackBright: [100, 49], bgGray: [100, 49], bgGrey: [100, 49], bgRedBright: [101, 49], bgGreenBright: [102, 49], bgYellowBright: [103, 49], bgBlueBright: [104, 49], bgMagentaBright: [105, 49], bgCyanBright: [106, 49], bgWhiteBright: [107, 49] } };
 Object.keys(r.modifier);
 var Z = Object.keys(r.color);
@@ -1213,38 +1205,38 @@ var H = Object.keys(r.bgColor);
 [...Z, ...H];
 function U() {
   const t = /* @__PURE__ */ new Map();
-  for (const [u2, F2] of Object.entries(r)) {
-    for (const [e2, s] of Object.entries(F2))
-      r[e2] = { open: `\x1B[${s[0]}m`, close: `\x1B[${s[1]}m` }, F2[e2] = r[e2], t.set(s[0], s[1]);
-    Object.defineProperty(r, u2, { value: F2, enumerable: false });
+  for (const [u, F] of Object.entries(r)) {
+    for (const [e2, s2] of Object.entries(F))
+      r[e2] = { open: `\x1B[${s2[0]}m`, close: `\x1B[${s2[1]}m` }, F[e2] = r[e2], t.set(s2[0], s2[1]);
+    Object.defineProperty(r, u, { value: F, enumerable: false });
   }
-  return Object.defineProperty(r, "codes", { value: t, enumerable: false }), r.color.close = "\x1B[39m", r.bgColor.close = "\x1B[49m", r.color.ansi = L(), r.color.ansi256 = M(), r.color.ansi16m = T(), r.bgColor.ansi = L(v), r.bgColor.ansi256 = M(v), r.bgColor.ansi16m = T(v), Object.defineProperties(r, { rgbToAnsi256: { value: (u2, F2, e2) => u2 === F2 && F2 === e2 ? u2 < 8 ? 16 : u2 > 248 ? 231 : Math.round((u2 - 8) / 247 * 24) + 232 : 16 + 36 * Math.round(u2 / 255 * 5) + 6 * Math.round(F2 / 255 * 5) + Math.round(e2 / 255 * 5), enumerable: false }, hexToRgb: { value: (u2) => {
-    const F2 = /[a-f\d]{6}|[a-f\d]{3}/i.exec(u2.toString(16));
-    if (!F2)
+  return Object.defineProperty(r, "codes", { value: t, enumerable: false }), r.color.close = "\x1B[39m", r.bgColor.close = "\x1B[49m", r.color.ansi = M(), r.color.ansi256 = L(), r.color.ansi16m = T(), r.bgColor.ansi = M(v), r.bgColor.ansi256 = L(v), r.bgColor.ansi16m = T(v), Object.defineProperties(r, { rgbToAnsi256: { value: (u, F, e2) => u === F && F === e2 ? u < 8 ? 16 : u > 248 ? 231 : Math.round((u - 8) / 247 * 24) + 232 : 16 + 36 * Math.round(u / 255 * 5) + 6 * Math.round(F / 255 * 5) + Math.round(e2 / 255 * 5), enumerable: false }, hexToRgb: { value: (u) => {
+    const F = /[a-f\d]{6}|[a-f\d]{3}/i.exec(u.toString(16));
+    if (!F)
       return [0, 0, 0];
-    let [e2] = F2;
+    let [e2] = F;
     e2.length === 3 && (e2 = [...e2].map((C2) => C2 + C2).join(""));
-    const s = Number.parseInt(e2, 16);
-    return [s >> 16 & 255, s >> 8 & 255, s & 255];
-  }, enumerable: false }, hexToAnsi256: { value: (u2) => r.rgbToAnsi256(...r.hexToRgb(u2)), enumerable: false }, ansi256ToAnsi: { value: (u2) => {
-    if (u2 < 8)
-      return 30 + u2;
-    if (u2 < 16)
-      return 90 + (u2 - 8);
-    let F2, e2, s;
-    if (u2 >= 232)
-      F2 = ((u2 - 232) * 10 + 8) / 255, e2 = F2, s = F2;
+    const s2 = Number.parseInt(e2, 16);
+    return [s2 >> 16 & 255, s2 >> 8 & 255, s2 & 255];
+  }, enumerable: false }, hexToAnsi256: { value: (u) => r.rgbToAnsi256(...r.hexToRgb(u)), enumerable: false }, ansi256ToAnsi: { value: (u) => {
+    if (u < 8)
+      return 30 + u;
+    if (u < 16)
+      return 90 + (u - 8);
+    let F, e2, s2;
+    if (u >= 232)
+      F = ((u - 232) * 10 + 8) / 255, e2 = F, s2 = F;
     else {
-      u2 -= 16;
-      const i = u2 % 36;
-      F2 = Math.floor(u2 / 36) / 5, e2 = Math.floor(i / 6) / 5, s = i % 6 / 5;
+      u -= 16;
+      const i = u % 36;
+      F = Math.floor(u / 36) / 5, e2 = Math.floor(i / 6) / 5, s2 = i % 6 / 5;
     }
-    const C2 = Math.max(F2, e2, s) * 2;
+    const C2 = Math.max(F, e2, s2) * 2;
     if (C2 === 0)
       return 30;
-    let D2 = 30 + (Math.round(s) << 2 | Math.round(e2) << 1 | Math.round(F2));
-    return C2 === 2 && (D2 += 60), D2;
-  }, enumerable: false }, rgbToAnsi: { value: (u2, F2, e2) => r.ansi256ToAnsi(r.rgbToAnsi256(u2, F2, e2)), enumerable: false }, hexToAnsi: { value: (u2) => r.ansi256ToAnsi(r.hexToAnsi256(u2)), enumerable: false } }), r;
+    let D = 30 + (Math.round(s2) << 2 | Math.round(e2) << 1 | Math.round(F));
+    return C2 === 2 && (D += 60), D;
+  }, enumerable: false }, rgbToAnsi: { value: (u, F, e2) => r.ansi256ToAnsi(r.rgbToAnsi256(u, F, e2)), enumerable: false }, hexToAnsi: { value: (u) => r.ansi256ToAnsi(r.hexToAnsi256(u)), enumerable: false } }), r;
 }
 var q = U();
 var p = /* @__PURE__ */ new Set(["\x1B", "\x9B"]);
@@ -1256,177 +1248,177 @@ var I = "m";
 var w = `${Q}8;;`;
 var N = (t) => `${p.values().next().value}${W}${t}${I}`;
 var j = (t) => `${p.values().next().value}${w}${t}${b}`;
-var X = (t) => t.split(" ").map((u2) => c(u2));
-var _ = (t, u2, F2) => {
-  const e2 = [...u2];
-  let s = false, C2 = false, D2 = c($2(t[t.length - 1]));
+var X = (t) => t.split(" ").map((u) => c(u));
+var _ = (t, u, F) => {
+  const e2 = [...u];
+  let s2 = false, C2 = false, D = c($2(t[t.length - 1]));
   for (const [i, o2] of e2.entries()) {
     const E2 = c(o2);
-    if (D2 + E2 <= F2 ? t[t.length - 1] += o2 : (t.push(o2), D2 = 0), p.has(o2) && (s = true, C2 = e2.slice(i + 1).join("").startsWith(w)), s) {
-      C2 ? o2 === b && (s = false, C2 = false) : o2 === I && (s = false);
+    if (D + E2 <= F ? t[t.length - 1] += o2 : (t.push(o2), D = 0), p.has(o2) && (s2 = true, C2 = e2.slice(i + 1).join("").startsWith(w)), s2) {
+      C2 ? o2 === b && (s2 = false, C2 = false) : o2 === I && (s2 = false);
       continue;
     }
-    D2 += E2, D2 === F2 && i < e2.length - 1 && (t.push(""), D2 = 0);
+    D += E2, D === F && i < e2.length - 1 && (t.push(""), D = 0);
   }
-  !D2 && t[t.length - 1].length > 0 && t.length > 1 && (t[t.length - 2] += t.pop());
+  !D && t[t.length - 1].length > 0 && t.length > 1 && (t[t.length - 2] += t.pop());
 };
 var DD = (t) => {
-  const u2 = t.split(" ");
-  let F2 = u2.length;
-  for (; F2 > 0 && !(c(u2[F2 - 1]) > 0); )
-    F2--;
-  return F2 === u2.length ? t : u2.slice(0, F2).join(" ") + u2.slice(F2).join("");
+  const u = t.split(" ");
+  let F = u.length;
+  for (; F > 0 && !(c(u[F - 1]) > 0); )
+    F--;
+  return F === u.length ? t : u.slice(0, F).join(" ") + u.slice(F).join("");
 };
-var uD = (t, u2, F2 = {}) => {
-  if (F2.trim !== false && t.trim() === "")
+var uD = (t, u, F = {}) => {
+  if (F.trim !== false && t.trim() === "")
     return "";
-  let e2 = "", s, C2;
-  const D2 = X(t);
+  let e2 = "", s2, C2;
+  const D = X(t);
   let i = [""];
   for (const [E2, a2] of t.split(" ").entries()) {
-    F2.trim !== false && (i[i.length - 1] = i[i.length - 1].trimStart());
+    F.trim !== false && (i[i.length - 1] = i[i.length - 1].trimStart());
     let n = c(i[i.length - 1]);
-    if (E2 !== 0 && (n >= u2 && (F2.wordWrap === false || F2.trim === false) && (i.push(""), n = 0), (n > 0 || F2.trim === false) && (i[i.length - 1] += " ", n++)), F2.hard && D2[E2] > u2) {
-      const B = u2 - n, A2 = 1 + Math.floor((D2[E2] - B - 1) / u2);
-      Math.floor((D2[E2] - 1) / u2) < A2 && i.push(""), _(i, a2, u2);
+    if (E2 !== 0 && (n >= u && (F.wordWrap === false || F.trim === false) && (i.push(""), n = 0), (n > 0 || F.trim === false) && (i[i.length - 1] += " ", n++)), F.hard && D[E2] > u) {
+      const B2 = u - n, A2 = 1 + Math.floor((D[E2] - B2 - 1) / u);
+      Math.floor((D[E2] - 1) / u) < A2 && i.push(""), _(i, a2, u);
       continue;
     }
-    if (n + D2[E2] > u2 && n > 0 && D2[E2] > 0) {
-      if (F2.wordWrap === false && n < u2) {
-        _(i, a2, u2);
+    if (n + D[E2] > u && n > 0 && D[E2] > 0) {
+      if (F.wordWrap === false && n < u) {
+        _(i, a2, u);
         continue;
       }
       i.push("");
     }
-    if (n + D2[E2] > u2 && F2.wordWrap === false) {
-      _(i, a2, u2);
+    if (n + D[E2] > u && F.wordWrap === false) {
+      _(i, a2, u);
       continue;
     }
     i[i.length - 1] += a2;
   }
-  F2.trim !== false && (i = i.map((E2) => DD(E2)));
+  F.trim !== false && (i = i.map((E2) => DD(E2)));
   const o2 = [...i.join(`
 `)];
   for (const [E2, a2] of o2.entries()) {
     if (e2 += a2, p.has(a2)) {
-      const { groups: B } = new RegExp(`(?:\\${W}(?<code>\\d+)m|\\${w}(?<uri>.*)${b})`).exec(o2.slice(E2).join("")) || { groups: {} };
-      if (B.code !== void 0) {
-        const A2 = Number.parseFloat(B.code);
-        s = A2 === J ? void 0 : A2;
+      const { groups: B2 } = new RegExp(`(?:\\${W}(?<code>\\d+)m|\\${w}(?<uri>.*)${b})`).exec(o2.slice(E2).join("")) || { groups: {} };
+      if (B2.code !== void 0) {
+        const A2 = Number.parseFloat(B2.code);
+        s2 = A2 === J ? void 0 : A2;
       } else
-        B.uri !== void 0 && (C2 = B.uri.length === 0 ? void 0 : B.uri);
+        B2.uri !== void 0 && (C2 = B2.uri.length === 0 ? void 0 : B2.uri);
     }
-    const n = q.codes.get(Number(s));
+    const n = q.codes.get(Number(s2));
     o2[E2 + 1] === `
-` ? (C2 && (e2 += j("")), s && n && (e2 += N(n))) : a2 === `
-` && (s && n && (e2 += N(s)), C2 && (e2 += j(C2)));
+` ? (C2 && (e2 += j("")), s2 && n && (e2 += N(n))) : a2 === `
+` && (s2 && n && (e2 += N(s2)), C2 && (e2 += j(C2)));
   }
   return e2;
 };
-function P(t, u2, F2) {
+function P(t, u, F) {
   return String(t).normalize().replace(/\r\n/g, `
 `).split(`
-`).map((e2) => uD(e2, u2, F2)).join(`
+`).map((e2) => uD(e2, u, F)).join(`
 `);
 }
-function FD(t, u2) {
-  if (t === u2)
+function FD(t, u) {
+  if (t === u)
     return;
-  const F2 = t.split(`
-`), e2 = u2.split(`
-`), s = [];
-  for (let C2 = 0; C2 < Math.max(F2.length, e2.length); C2++)
-    F2[C2] !== e2[C2] && s.push(C2);
-  return s;
+  const F = t.split(`
+`), e2 = u.split(`
+`), s2 = [];
+  for (let C2 = 0; C2 < Math.max(F.length, e2.length); C2++)
+    F[C2] !== e2[C2] && s2.push(C2);
+  return s2;
 }
 var R = Symbol("clack:cancel");
 function eD(t) {
   return t === R;
 }
-function g(t, u2) {
-  t.isTTY && t.setRawMode(u2);
+function g(t, u) {
+  t.isTTY && t.setRawMode(u);
 }
 var V = /* @__PURE__ */ new Map([["k", "up"], ["j", "down"], ["h", "left"], ["l", "right"]]);
 var tD = /* @__PURE__ */ new Set(["up", "down", "left", "right", "space", "enter"]);
 var h = class {
-  constructor({ render: u2, input: F2 = import_node_process.stdin, output: e2 = import_node_process.stdout, ...s }, C2 = true) {
-    this._track = false, this._cursor = 0, this.state = "initial", this.error = "", this.subscribers = /* @__PURE__ */ new Map(), this._prevFrame = "", this.opts = s, this.onKeypress = this.onKeypress.bind(this), this.close = this.close.bind(this), this.render = this.render.bind(this), this._render = u2.bind(this), this._track = C2, this.input = F2, this.output = e2;
+  constructor({ render: u, input: F = import_node_process.stdin, output: e2 = import_node_process.stdout, ...s2 }, C2 = true) {
+    this._track = false, this._cursor = 0, this.state = "initial", this.error = "", this.subscribers = /* @__PURE__ */ new Map(), this._prevFrame = "", this.opts = s2, this.onKeypress = this.onKeypress.bind(this), this.close = this.close.bind(this), this.render = this.render.bind(this), this._render = u.bind(this), this._track = C2, this.input = F, this.output = e2;
   }
   prompt() {
-    const u2 = new import_node_tty.WriteStream(0);
-    return u2._write = (F2, e2, s) => {
-      this._track && (this.value = this.rl.line.replace(/\t/g, ""), this._cursor = this.rl.cursor, this.emit("value", this.value)), s();
-    }, this.input.pipe(u2), this.rl = import_node_readline.default.createInterface({ input: this.input, output: u2, tabSize: 2, prompt: "", escapeCodeTimeout: 50 }), import_node_readline.default.emitKeypressEvents(this.input, this.rl), this.rl.prompt(), this.opts.initialValue !== void 0 && this._track && this.rl.write(this.opts.initialValue), this.input.on("keypress", this.onKeypress), g(this.input, true), this.output.on("resize", this.render), this.render(), new Promise((F2, e2) => {
+    const u = new import_node_tty.WriteStream(0);
+    return u._write = (F, e2, s2) => {
+      this._track && (this.value = this.rl.line.replace(/\t/g, ""), this._cursor = this.rl.cursor, this.emit("value", this.value)), s2();
+    }, this.input.pipe(u), this.rl = import_node_readline.default.createInterface({ input: this.input, output: u, tabSize: 2, prompt: "", escapeCodeTimeout: 50 }), import_node_readline.default.emitKeypressEvents(this.input, this.rl), this.rl.prompt(), this.opts.initialValue !== void 0 && this._track && this.rl.write(this.opts.initialValue), this.input.on("keypress", this.onKeypress), g(this.input, true), this.output.on("resize", this.render), this.render(), new Promise((F, e2) => {
       this.once("submit", () => {
-        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F2(this.value);
+        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F(this.value);
       }), this.once("cancel", () => {
-        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F2(R);
+        this.output.write(import_sisteransi.cursor.show), this.output.off("resize", this.render), g(this.input, false), F(R);
       });
     });
   }
-  on(u2, F2) {
-    const e2 = this.subscribers.get(u2) ?? [];
-    e2.push({ cb: F2 }), this.subscribers.set(u2, e2);
+  on(u, F) {
+    const e2 = this.subscribers.get(u) ?? [];
+    e2.push({ cb: F }), this.subscribers.set(u, e2);
   }
-  once(u2, F2) {
-    const e2 = this.subscribers.get(u2) ?? [];
-    e2.push({ cb: F2, once: true }), this.subscribers.set(u2, e2);
+  once(u, F) {
+    const e2 = this.subscribers.get(u) ?? [];
+    e2.push({ cb: F, once: true }), this.subscribers.set(u, e2);
   }
-  emit(u2, ...F2) {
-    const e2 = this.subscribers.get(u2) ?? [], s = [];
+  emit(u, ...F) {
+    const e2 = this.subscribers.get(u) ?? [], s2 = [];
     for (const C2 of e2)
-      C2.cb(...F2), C2.once && s.push(() => e2.splice(e2.indexOf(C2), 1));
-    for (const C2 of s)
+      C2.cb(...F), C2.once && s2.push(() => e2.splice(e2.indexOf(C2), 1));
+    for (const C2 of s2)
       C2();
   }
   unsubscribe() {
     this.subscribers.clear();
   }
-  onKeypress(u2, F2) {
-    if (this.state === "error" && (this.state = "active"), (F2 == null ? void 0 : F2.name) && !this._track && V.has(F2.name) && this.emit("cursor", V.get(F2.name)), (F2 == null ? void 0 : F2.name) && tD.has(F2.name) && this.emit("cursor", F2.name), u2 && (u2.toLowerCase() === "y" || u2.toLowerCase() === "n") && this.emit("confirm", u2.toLowerCase() === "y"), u2 && this.emit("key", u2.toLowerCase()), (F2 == null ? void 0 : F2.name) === "return") {
+  onKeypress(u, F) {
+    if (this.state === "error" && (this.state = "active"), (F == null ? void 0 : F.name) && !this._track && V.has(F.name) && this.emit("cursor", V.get(F.name)), (F == null ? void 0 : F.name) && tD.has(F.name) && this.emit("cursor", F.name), u && (u.toLowerCase() === "y" || u.toLowerCase() === "n") && this.emit("confirm", u.toLowerCase() === "y"), u && this.emit("key", u.toLowerCase()), (F == null ? void 0 : F.name) === "return") {
       if (this.opts.validate) {
         const e2 = this.opts.validate(this.value);
         e2 && (this.error = e2, this.state = "error", this.rl.write(this.value));
       }
       this.state !== "error" && (this.state = "submit");
     }
-    u2 === "" && (this.state = "cancel"), (this.state === "submit" || this.state === "cancel") && this.emit("finalize"), this.render(), (this.state === "submit" || this.state === "cancel") && this.close();
+    u === "" && (this.state = "cancel"), (this.state === "submit" || this.state === "cancel") && this.emit("finalize"), this.render(), (this.state === "submit" || this.state === "cancel") && this.close();
   }
   close() {
     this.input.unpipe(), this.input.removeListener("keypress", this.onKeypress), this.output.write(`
 `), g(this.input, false), this.rl.close(), this.emit(`${this.state}`, this.value), this.unsubscribe();
   }
   restoreCursor() {
-    const u2 = P(this._prevFrame, process.stdout.columns, { hard: true }).split(`
+    const u = P(this._prevFrame, process.stdout.columns, { hard: true }).split(`
 `).length - 1;
-    this.output.write(import_sisteransi.cursor.move(-999, u2 * -1));
+    this.output.write(import_sisteransi.cursor.move(-999, u * -1));
   }
   render() {
-    const u2 = P(this._render(this) ?? "", process.stdout.columns, { hard: true });
-    if (u2 !== this._prevFrame) {
+    const u = P(this._render(this) ?? "", process.stdout.columns, { hard: true });
+    if (u !== this._prevFrame) {
       if (this.state === "initial")
         this.output.write(import_sisteransi.cursor.hide);
       else {
-        const F2 = FD(this._prevFrame, u2);
-        if (this.restoreCursor(), F2 && (F2 == null ? void 0 : F2.length) === 1) {
-          const e2 = F2[0];
+        const F = FD(this._prevFrame, u);
+        if (this.restoreCursor(), F && (F == null ? void 0 : F.length) === 1) {
+          const e2 = F[0];
           this.output.write(import_sisteransi.cursor.move(0, e2)), this.output.write(import_sisteransi.erase.lines(1));
-          const s = u2.split(`
+          const s2 = u.split(`
 `);
-          this.output.write(s[e2]), this._prevFrame = u2, this.output.write(import_sisteransi.cursor.move(0, s.length - e2 - 1));
+          this.output.write(s2[e2]), this._prevFrame = u, this.output.write(import_sisteransi.cursor.move(0, s2.length - e2 - 1));
           return;
-        } else if (F2 && (F2 == null ? void 0 : F2.length) > 1) {
-          const e2 = F2[0];
+        } else if (F && (F == null ? void 0 : F.length) > 1) {
+          const e2 = F[0];
           this.output.write(import_sisteransi.cursor.move(0, e2)), this.output.write(import_sisteransi.erase.down());
-          const C2 = u2.split(`
+          const C2 = u.split(`
 `).slice(e2);
           this.output.write(C2.join(`
-`)), this._prevFrame = u2;
+`)), this._prevFrame = u;
           return;
         }
         this.output.write(import_sisteransi.erase.down());
       }
-      this.output.write(u2), this.state === "initial" && (this.state = "active"), this._prevFrame = u2;
+      this.output.write(u), this.state === "initial" && (this.state = "active"), this._prevFrame = u;
     }
   }
 };
@@ -1437,20 +1429,20 @@ var sD = class extends h {
   get _value() {
     return this.cursor === 0;
   }
-  constructor(u2) {
-    super(u2, false), this.value = !!u2.initialValue, this.on("value", () => {
+  constructor(u) {
+    super(u, false), this.value = !!u.initialValue, this.on("value", () => {
       this.value = this._value;
-    }), this.on("confirm", (F2) => {
-      this.output.write(import_sisteransi.cursor.move(0, -1)), this.value = F2, this.state = "submit", this.close();
+    }), this.on("confirm", (F) => {
+      this.output.write(import_sisteransi.cursor.move(0, -1)), this.value = F, this.state = "submit", this.close();
     }), this.on("cursor", () => {
       this.value = !this.value;
     });
   }
 };
 var ED = class extends h {
-  constructor(u2) {
-    super(u2, false), this.cursor = 0, this.options = u2.options, this.cursor = this.options.findIndex(({ value: F2 }) => F2 === u2.initialValue), this.cursor === -1 && (this.cursor = 0), this.changeValue(), this.on("cursor", (F2) => {
-      switch (F2) {
+  constructor(u) {
+    super(u, false), this.cursor = 0, this.options = u.options, this.cursor = this.options.findIndex(({ value: F }) => F === u.initialValue), this.cursor === -1 && (this.cursor = 0), this.changeValue(), this.on("cursor", (F) => {
+      switch (F) {
         case "left":
         case "up":
           this.cursor = this.cursor === 0 ? this.options.length - 1 : this.cursor - 1;
@@ -1471,15 +1463,15 @@ var ED = class extends h {
   }
 };
 var oD = class extends h {
-  constructor(u2) {
-    super(u2), this.valueWithCursor = "", this.on("finalize", () => {
-      this.value || (this.value = u2.defaultValue), this.valueWithCursor = this.value;
+  constructor(u) {
+    super(u), this.valueWithCursor = "", this.on("finalize", () => {
+      this.value || (this.value = u.defaultValue), this.valueWithCursor = this.value;
     }), this.on("value", () => {
       if (this.cursor >= this.value.length)
         this.valueWithCursor = `${this.value}${import_picocolors.default.inverse(import_picocolors.default.hidden("_"))}`;
       else {
-        const F2 = this.value.slice(0, this.cursor), e2 = this.value.slice(this.cursor);
-        this.valueWithCursor = `${F2}${import_picocolors.default.inverse(e2[0])}${e2.slice(1)}`;
+        const F = this.value.slice(0, this.cursor), e2 = this.value.slice(this.cursor);
+        this.valueWithCursor = `${F}${import_picocolors.default.inverse(e2[0])}${e2.slice(1)}`;
       }
     });
   }
@@ -1487,77 +1479,77 @@ var oD = class extends h {
     return this._cursor;
   }
 };
-function aD({ input: t = import_node_process.stdin, output: u2 = import_node_process.stdout, overwrite: F2 = true, hideCursor: e2 = true } = {}) {
-  const s = f.createInterface({ input: t, output: u2, prompt: "", tabSize: 1 });
-  f.emitKeypressEvents(t, s), t.isTTY && t.setRawMode(true);
-  const C2 = (D2, { name: i }) => {
-    if (String(D2) === "" && process.exit(0), !F2)
+function aD({ input: t = import_node_process.stdin, output: u = import_node_process.stdout, overwrite: F = true, hideCursor: e2 = true } = {}) {
+  const s2 = f.createInterface({ input: t, output: u, prompt: "", tabSize: 1 });
+  f.emitKeypressEvents(t, s2), t.isTTY && t.setRawMode(true);
+  const C2 = (D, { name: i }) => {
+    if (String(D) === "" && process.exit(0), !F)
       return;
     let E2 = i === "return" ? 0 : -1, a2 = i === "return" ? -1 : 0;
-    f.moveCursor(u2, E2, a2, () => {
-      f.clearLine(u2, 1, () => {
+    f.moveCursor(u, E2, a2, () => {
+      f.clearLine(u, 1, () => {
         t.once("keypress", C2);
       });
     });
   };
   return e2 && process.stdout.write(import_sisteransi.cursor.hide), t.once("keypress", C2), () => {
-    t.off("keypress", C2), e2 && process.stdout.write(import_sisteransi.cursor.show), s.terminal = false, s.close();
+    t.off("keypress", C2), e2 && process.stdout.write(import_sisteransi.cursor.show), t.isTTY && t.setRawMode(false), s2.terminal = false, s2.close();
   };
 }
 
-// node_modules/.pnpm/@clack+prompts@0.6.3/node_modules/@clack/prompts/dist/index.mjs
+// node_modules/.pnpm/@clack+prompts@0.7.0/node_modules/@clack/prompts/dist/index.mjs
 var import_node_process2 = __toESM(require("process"), 1);
 var import_picocolors2 = __toESM(require_picocolors(), 1);
 var import_sisteransi2 = __toESM(require_src(), 1);
-function N2() {
+function q2() {
   return import_node_process2.default.platform !== "win32" ? import_node_process2.default.env.TERM !== "linux" : Boolean(import_node_process2.default.env.CI) || Boolean(import_node_process2.default.env.WT_SESSION) || Boolean(import_node_process2.default.env.TERMINUS_SUBLIME) || import_node_process2.default.env.ConEmuTask === "{cmd::Cmder}" || import_node_process2.default.env.TERM_PROGRAM === "Terminus-Sublime" || import_node_process2.default.env.TERM_PROGRAM === "vscode" || import_node_process2.default.env.TERM === "xterm-256color" || import_node_process2.default.env.TERM === "alacritty" || import_node_process2.default.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
 }
-var p2 = N2();
-var u = (r2, n) => p2 ? r2 : n;
-var W2 = u("\u25C6", "*");
-var D = u("\u25A0", "x");
-var F = u("\u25B2", "x");
-var f2 = u("\u25C7", "o");
-var L2 = u("\u250C", "T");
-var a = u("\u2502", "|");
-var o = u("\u2514", "\u2014");
-var w2 = u("\u25CF", ">");
-var S2 = u("\u25CB", " ");
-var _2 = u("\u25FB", "[\u2022]");
-var y2 = u("\u25FC", "[+]");
-var A = u("\u25FB", "[ ]");
-var q2 = u("\u25AA", "\u2022");
-var R2 = u("\u2500", "-");
-var G2 = u("\u256E", "+");
-var H2 = u("\u251C", "+");
-var K2 = u("\u256F", "+");
-var U2 = u("\u25CF", "\u2022");
-var Z2 = u("\u25C6", "*");
-var z2 = u("\u25B2", "!");
-var X2 = u("\u25A0", "x");
-var h2 = (r2) => {
+var _2 = q2();
+var o = (r2, n) => _2 ? r2 : n;
+var H2 = o("\u25C6", "*");
+var I2 = o("\u25A0", "x");
+var x2 = o("\u25B2", "x");
+var S2 = o("\u25C7", "o");
+var K2 = o("\u250C", "T");
+var a = o("\u2502", "|");
+var d2 = o("\u2514", "\u2014");
+var b2 = o("\u25CF", ">");
+var E = o("\u25CB", " ");
+var C = o("\u25FB", "[\u2022]");
+var w2 = o("\u25FC", "[+]");
+var M2 = o("\u25FB", "[ ]");
+var U2 = o("\u25AA", "\u2022");
+var B = o("\u2500", "-");
+var Z2 = o("\u256E", "+");
+var z2 = o("\u251C", "+");
+var X2 = o("\u256F", "+");
+var J2 = o("\u25CF", "\u2022");
+var Y2 = o("\u25C6", "*");
+var Q2 = o("\u25B2", "!");
+var ee = o("\u25A0", "x");
+var y2 = (r2) => {
   switch (r2) {
     case "initial":
     case "active":
-      return import_picocolors2.default.cyan(W2);
+      return import_picocolors2.default.cyan(H2);
     case "cancel":
-      return import_picocolors2.default.red(D);
+      return import_picocolors2.default.red(I2);
     case "error":
-      return import_picocolors2.default.yellow(F);
+      return import_picocolors2.default.yellow(x2);
     case "submit":
-      return import_picocolors2.default.green(f2);
+      return import_picocolors2.default.green(S2);
   }
 };
-var J2 = (r2) => new oD({ validate: r2.validate, placeholder: r2.placeholder, defaultValue: r2.defaultValue, initialValue: r2.initialValue, render() {
+var te = (r2) => new oD({ validate: r2.validate, placeholder: r2.placeholder, defaultValue: r2.defaultValue, initialValue: r2.initialValue, render() {
   var _a;
   const n = `${import_picocolors2.default.gray(a)}
-${h2(this.state)}  ${r2.message}
-`, s = r2.placeholder ? import_picocolors2.default.inverse(r2.placeholder[0]) + import_picocolors2.default.dim(r2.placeholder.slice(1)) : import_picocolors2.default.inverse(import_picocolors2.default.hidden("_")), t = this.value ? this.valueWithCursor : s;
+${y2(this.state)}  ${r2.message}
+`, i = r2.placeholder ? import_picocolors2.default.inverse(r2.placeholder[0]) + import_picocolors2.default.dim(r2.placeholder.slice(1)) : import_picocolors2.default.inverse(import_picocolors2.default.hidden("_")), t = this.value ? this.valueWithCursor : i;
   switch (this.state) {
     case "error":
       return `${n.trim()}
 ${import_picocolors2.default.yellow(a)}  ${t}
-${import_picocolors2.default.yellow(o)}  ${import_picocolors2.default.yellow(this.error)}
+${import_picocolors2.default.yellow(d2)}  ${import_picocolors2.default.yellow(this.error)}
 `;
     case "submit":
       return `${n}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.dim(this.value || r2.placeholder)}`;
@@ -1566,109 +1558,120 @@ ${import_picocolors2.default.yellow(o)}  ${import_picocolors2.default.yellow(thi
 ` + import_picocolors2.default.gray(a) : ""}`;
     default:
       return `${n}${import_picocolors2.default.cyan(a)}  ${t}
-${import_picocolors2.default.cyan(o)}
+${import_picocolors2.default.cyan(d2)}
 `;
   }
 } }).prompt();
-var Q2 = (r2) => {
-  const n = r2.active ?? "Yes", s = r2.inactive ?? "No";
-  return new sD({ active: n, inactive: s, initialValue: r2.initialValue ?? true, render() {
+var se = (r2) => {
+  const n = r2.active ?? "Yes", i = r2.inactive ?? "No";
+  return new sD({ active: n, inactive: i, initialValue: r2.initialValue ?? true, render() {
     const t = `${import_picocolors2.default.gray(a)}
-${h2(this.state)}  ${r2.message}
-`, i = this.value ? n : s;
+${y2(this.state)}  ${r2.message}
+`, s2 = this.value ? n : i;
     switch (this.state) {
       case "submit":
-        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.dim(i)}`;
+        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.dim(s2)}`;
       case "cancel":
-        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(i))}
+        return `${t}${import_picocolors2.default.gray(a)}  ${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(s2))}
 ${import_picocolors2.default.gray(a)}`;
       default:
-        return `${t}${import_picocolors2.default.cyan(a)}  ${this.value ? `${import_picocolors2.default.green(w2)} ${n}` : `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(n)}`} ${import_picocolors2.default.dim("/")} ${this.value ? `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(s)}` : `${import_picocolors2.default.green(w2)} ${s}`}
-${import_picocolors2.default.cyan(o)}
+        return `${t}${import_picocolors2.default.cyan(a)}  ${this.value ? `${import_picocolors2.default.green(b2)} ${n}` : `${import_picocolors2.default.dim(E)} ${import_picocolors2.default.dim(n)}`} ${import_picocolors2.default.dim("/")} ${this.value ? `${import_picocolors2.default.dim(E)} ${import_picocolors2.default.dim(i)}` : `${import_picocolors2.default.green(b2)} ${i}`}
+${import_picocolors2.default.cyan(d2)}
 `;
     }
   } }).prompt();
 };
-var ee = (r2) => {
-  const n = (s, t) => {
-    const i = s.label ?? String(s.value);
-    return t === "active" ? `${import_picocolors2.default.green(w2)} ${i} ${s.hint ? import_picocolors2.default.dim(`(${s.hint})`) : ""}` : t === "selected" ? `${import_picocolors2.default.dim(i)}` : t === "cancelled" ? `${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(i))}` : `${import_picocolors2.default.dim(S2)} ${import_picocolors2.default.dim(i)}`;
+var ie = (r2) => {
+  const n = (t, s2) => {
+    const c2 = t.label ?? String(t.value);
+    return s2 === "active" ? `${import_picocolors2.default.green(b2)} ${c2} ${t.hint ? import_picocolors2.default.dim(`(${t.hint})`) : ""}` : s2 === "selected" ? `${import_picocolors2.default.dim(c2)}` : s2 === "cancelled" ? `${import_picocolors2.default.strikethrough(import_picocolors2.default.dim(c2))}` : `${import_picocolors2.default.dim(E)} ${import_picocolors2.default.dim(c2)}`;
   };
+  let i = 0;
   return new ED({ options: r2.options, initialValue: r2.initialValue, render() {
-    const s = `${import_picocolors2.default.gray(a)}
-${h2(this.state)}  ${r2.message}
+    const t = `${import_picocolors2.default.gray(a)}
+${y2(this.state)}  ${r2.message}
 `;
     switch (this.state) {
       case "submit":
-        return `${s}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "selected")}`;
+        return `${t}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "selected")}`;
       case "cancel":
-        return `${s}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "cancelled")}
+        return `${t}${import_picocolors2.default.gray(a)}  ${n(this.options[this.cursor], "cancelled")}
 ${import_picocolors2.default.gray(a)}`;
-      default:
-        return `${s}${import_picocolors2.default.cyan(a)}  ${this.options.map((t, i) => n(t, i === this.cursor ? "active" : "inactive")).join(`
+      default: {
+        const s2 = r2.maxItems === void 0 ? 1 / 0 : Math.max(r2.maxItems, 5);
+        this.cursor >= i + s2 - 3 ? i = Math.max(Math.min(this.cursor - s2 + 3, this.options.length - s2), 0) : this.cursor < i + 2 && (i = Math.max(this.cursor - 2, 0));
+        const c2 = s2 < this.options.length && i > 0, l2 = s2 < this.options.length && i + s2 < this.options.length;
+        return `${t}${import_picocolors2.default.cyan(a)}  ${this.options.slice(i, i + s2).map((u, m2, $4) => m2 === 0 && c2 ? import_picocolors2.default.dim("...") : m2 === $4.length - 1 && l2 ? import_picocolors2.default.dim("...") : n(u, m2 + i === this.cursor ? "active" : "inactive")).join(`
 ${import_picocolors2.default.cyan(a)}  `)}
-${import_picocolors2.default.cyan(o)}
+${import_picocolors2.default.cyan(d2)}
 `;
+      }
     }
   } }).prompt();
 };
-var ae = (r2 = "") => {
-  process.stdout.write(`${import_picocolors2.default.gray(L2)}  ${r2}
+var oe = (r2 = "") => {
+  process.stdout.write(`${import_picocolors2.default.gray(K2)}  ${r2}
 `);
 };
-var ce = (r2 = "") => {
+var $e = (r2 = "") => {
   process.stdout.write(`${import_picocolors2.default.gray(a)}
-${import_picocolors2.default.gray(o)}  ${r2}
+${import_picocolors2.default.gray(d2)}  ${r2}
 
 `);
 };
-var g2 = { message: (r2 = "", { symbol: n = import_picocolors2.default.gray(a) } = {}) => {
-  const s = [`${import_picocolors2.default.gray(a)}`];
+var f2 = { message: (r2 = "", { symbol: n = import_picocolors2.default.gray(a) } = {}) => {
+  const i = [`${import_picocolors2.default.gray(a)}`];
   if (r2) {
-    const [t, ...i] = r2.split(`
+    const [t, ...s2] = r2.split(`
 `);
-    s.push(`${n}  ${t}`, ...i.map((c2) => `${import_picocolors2.default.gray(a)}  ${c2}`));
+    i.push(`${n}  ${t}`, ...s2.map((c2) => `${import_picocolors2.default.gray(a)}  ${c2}`));
   }
-  process.stdout.write(`${s.join(`
+  process.stdout.write(`${i.join(`
 `)}
 `);
 }, info: (r2) => {
-  g2.message(r2, { symbol: import_picocolors2.default.blue(U2) });
+  f2.message(r2, { symbol: import_picocolors2.default.blue(J2) });
 }, success: (r2) => {
-  g2.message(r2, { symbol: import_picocolors2.default.green(Z2) });
+  f2.message(r2, { symbol: import_picocolors2.default.green(Y2) });
 }, step: (r2) => {
-  g2.message(r2, { symbol: import_picocolors2.default.green(f2) });
+  f2.message(r2, { symbol: import_picocolors2.default.green(S2) });
 }, warn: (r2) => {
-  g2.message(r2, { symbol: import_picocolors2.default.yellow(z2) });
+  f2.message(r2, { symbol: import_picocolors2.default.yellow(Q2) });
 }, warning: (r2) => {
-  g2.warn(r2);
+  f2.warn(r2);
 }, error: (r2) => {
-  g2.message(r2, { symbol: import_picocolors2.default.red(X2) });
+  f2.message(r2, { symbol: import_picocolors2.default.red(ee) });
 } };
-var C = p2 ? ["\u25D2", "\u25D0", "\u25D3", "\u25D1"] : ["\u2022", "o", "O", "0"];
-var le = () => {
-  let r2, n;
-  const s = p2 ? 80 : 120;
-  return { start(t = "") {
-    t = t.replace(/\.?\.?\.$/, ""), r2 = aD(), process.stdout.write(`${import_picocolors2.default.gray(a)}
-${import_picocolors2.default.magenta("\u25CB")}  ${t}
+var de = () => {
+  const r2 = _2 ? ["\u25D2", "\u25D0", "\u25D3", "\u25D1"] : ["\u2022", "o", "O", "0"], n = _2 ? 80 : 120;
+  let i, t, s2 = false, c2 = "";
+  const l2 = (v2 = "") => {
+    s2 = true, i = aD(), c2 = v2.replace(/\.+$/, ""), process.stdout.write(`${import_picocolors2.default.gray(a)}
 `);
-    let i = 0, c2 = 0;
-    n = setInterval(() => {
-      let l2 = C[i];
-      process.stdout.write(import_sisteransi2.cursor.move(-999, -1)), process.stdout.write(`${import_picocolors2.default.magenta(l2)}  ${t}${Math.floor(c2) >= 1 ? ".".repeat(Math.floor(c2)).slice(0, 3) : ""}   
-`), i = i === C.length - 1 ? 0 : i + 1, c2 = c2 === C.length ? 0 : c2 + 0.125;
-    }, s);
-  }, stop(t = "") {
-    process.stdout.write(import_sisteransi2.cursor.move(-999, -2)), process.stdout.write(import_sisteransi2.erase.down(2)), clearInterval(n), process.stdout.write(`${import_picocolors2.default.gray(a)}
-${import_picocolors2.default.green(f2)}  ${t}
-`), r2();
-  } };
+    let g2 = 0, p2 = 0;
+    t = setInterval(() => {
+      const O2 = import_picocolors2.default.magenta(r2[g2]), P2 = ".".repeat(Math.floor(p2)).slice(0, 3);
+      process.stdout.write(import_sisteransi2.cursor.move(-999, 0)), process.stdout.write(import_sisteransi2.erase.down(1)), process.stdout.write(`${O2}  ${c2}${P2}`), g2 = g2 + 1 < r2.length ? g2 + 1 : 0, p2 = p2 < r2.length ? p2 + 0.125 : 0;
+    }, n);
+  }, u = (v2 = "", g2 = 0) => {
+    c2 = v2 ?? c2, s2 = false, clearInterval(t);
+    const p2 = g2 === 0 ? import_picocolors2.default.green(S2) : g2 === 1 ? import_picocolors2.default.red(I2) : import_picocolors2.default.red(x2);
+    process.stdout.write(import_sisteransi2.cursor.move(-999, 0)), process.stdout.write(import_sisteransi2.erase.down(1)), process.stdout.write(`${p2}  ${c2}
+`), i();
+  }, m2 = (v2 = "") => {
+    c2 = v2 ?? c2;
+  }, $4 = (v2) => {
+    const g2 = v2 > 1 ? "Something went wrong" : "Canceled";
+    s2 && u(g2, v2);
+  };
+  return process.on("uncaughtExceptionMonitor", () => $4(2)), process.on("unhandledRejection", () => $4(2)), process.on("SIGINT", () => $4(1)), process.on("SIGTERM", () => $4(1)), process.on("exit", $4), { start: l2, stop: u, message: m2 };
 };
 
 // packages/qwik/src/cli/utils/utils.ts
-var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 var import_which_pm_runs = __toESM(require_which_pm_runs(), 1);
+var import_node_fs2 = __toESM(require("fs"), 1);
+var import_node_path2 = require("path");
+var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function runCommand(cmd, args, cwd) {
   let child;
   const install = new Promise((resolve2) => {
@@ -1680,11 +1683,11 @@ function runCommand(cmd, args, cwd) {
       child.on("error", (e2) => {
         if (e2) {
           if (e2.message) {
-            g2.error(red(String(e2.message)) + `
+            f2.error(red(String(e2.message)) + `
 
 `);
           } else {
-            g2.error(red(String(e2)) + `
+            f2.error(red(String(e2)) + `
 
 `);
           }
@@ -1741,7 +1744,7 @@ function panic(msg) {
   process.exit(1);
 }
 function bye() {
-  ce("Take care, see you soon! \u{1F44B}");
+  $e("Take care, see you soon! \u{1F44B}");
   process.exit(0);
 }
 function printHeader() {
@@ -1782,6 +1785,23 @@ async function getFilesDeep(root) {
   await getFiles(root);
   return files;
 }
+function isUnicodeSupported() {
+  if (process.platform !== "win32") {
+    return process.env.TERM !== "linux";
+  }
+  return Boolean(process.env.CI) || Boolean(process.env.WT_SESSION) || // Windows Terminal
+  Boolean(process.env.TERMINUS_SUBLIME) || // Terminus (<0.2.27)
+  process.env.ConEmuTask === "{cmd::Cmder}" || // ConEmu and cmder
+  process.env.TERM_PROGRAM === "Terminus-Sublime" || process.env.TERM_PROGRAM === "vscode" || process.env.TERM === "xterm-256color" || process.env.TERM === "alacritty" || process.env.TERMINAL_EMULATOR === "JetBrains-JediTerm";
+}
+var unicode = isUnicodeSupported();
+var s = (c2, fallback) => unicode ? c2 : fallback;
+var S_BAR = s("\u2502", "|");
+var S_BAR_H = s("\u2500", "-");
+var S_CORNER_TOP_RIGHT = s("\u256E", "+");
+var S_CONNECT_LEFT = s("\u251C", "+");
+var S_CORNER_BOTTOM_RIGHT = s("\u256F", "+");
+var S_STEP_SUBMIT = s("\u25C7", "o");
 function ansiRegex() {
   const pattern = [
     "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
@@ -1789,39 +1809,44 @@ function ansiRegex() {
   ].join("|");
   return new RegExp(pattern, "g");
 }
-var bar = "\u2502";
 var strip = (str) => str.replace(ansiRegex(), "");
 var note = (message = "", title = "") => {
   const lines = `
 ${message}
 `.split("\n");
-  const len = lines.reduce((sum, ln) => {
-    ln = strip(ln);
-    return ln.length > sum ? ln.length : sum;
-  }, 0) + 2;
-  const msg = lines.map((ln) => `${gray(bar)}  ${white(ln)}${" ".repeat(len - strip(ln).length)}${gray(bar)}`).join("\n");
+  const titleLen = strip(title).length;
+  const len = Math.max(
+    lines.reduce((sum, ln) => {
+      ln = strip(ln);
+      return ln.length > sum ? ln.length : sum;
+    }, 0),
+    titleLen
+  ) + 2;
+  const msg = lines.map((ln) => `${gray(S_BAR)}  ${white(ln)}${" ".repeat(len - strip(ln).length)}${gray(S_BAR)}`).join("\n");
   process.stdout.write(
-    `${gray(bar)}
-${green("\u25CB")}  ${reset(title)} ${gray(
-      "\u2500".repeat(len - title.length - 1) + "\u256E"
+    `${gray(S_BAR)}
+${green(S_STEP_SUBMIT)}  ${reset(title)} ${gray(
+      S_BAR_H.repeat(Math.max(len - titleLen - 1, 1)) + S_CORNER_TOP_RIGHT
     )}
 ${msg}
-${gray("\u251C" + "\u2500".repeat(len + 2) + "\u256F")}
+${gray(S_CONNECT_LEFT + S_BAR_H.repeat(len + 2) + S_CORNER_BOTTOM_RIGHT)}
 `
   );
 };
 
 // packages/qwik/src/cli/utils/integrations.ts
+var import_node_fs3 = __toESM(require("fs"), 1);
+var import_node_path3 = require("path");
 var integrations = null;
 async function sortIntegrationsAndReturnAsClackOptions(integrations2, { maxHintLength = 50, showHint = true } = {}) {
-  return integrations2.sort((a2, b2) => {
-    if (a2.priority > b2.priority) {
+  return integrations2.sort((a2, b3) => {
+    if (a2.priority > b3.priority) {
       return -1;
     }
-    if (a2.priority < b2.priority) {
+    if (a2.priority < b3.priority) {
       return 1;
     }
-    return a2.id < b2.id ? -1 : 1;
+    return a2.id < b3.id ? -1 : 1;
   }).map((i) => ({
     value: i.id,
     label: i.name,
@@ -1863,23 +1888,33 @@ async function loadIntegrations() {
         }
       })
     );
-    loadingIntegrations.sort((a2, b2) => {
-      if (a2.priority > b2.priority) {
+    loadingIntegrations.sort((a2, b3) => {
+      if (a2.priority > b3.priority) {
         return -1;
       }
-      if (a2.priority < b2.priority) {
+      if (a2.priority < b3.priority) {
         return 1;
       }
-      return a2.id < b2.id ? -1 : 1;
+      return a2.id < b3.id ? -1 : 1;
     });
     integrations = loadingIntegrations;
   }
   return integrations;
 }
 
-// packages/qwik/src/cli/add/update-app.ts
-var import_node_path5 = require("path");
-var import_node_fs5 = __toESM(require("fs"), 1);
+// packages/qwik/src/cli/utils/log.ts
+function logNextStep(nextSteps, packageManager) {
+  const outString = [];
+  if (nextSteps) {
+    nextSteps.lines.forEach(
+      (step) => outString.push(`${step.replace(/\bpnpm\b/g, packageManager)}`)
+    );
+  }
+  return outString.join("\n");
+}
+
+// packages/qwik/src/cli/add/run-add-interactive.ts
+var import_node_path6 = require("path");
 
 // packages/qwik/src/cli/utils/install-deps.ts
 function installDeps(pkgManager, dir) {
@@ -1889,6 +1924,10 @@ function runInPkg(pkgManager, args, cwd) {
   const cmd = pkgManager === "npm" ? "npx" : pkgManager;
   return runCommand(cmd, args, cwd);
 }
+
+// packages/qwik/src/cli/add/update-app.ts
+var import_node_path5 = require("path");
+var import_node_fs5 = __toESM(require("fs"), 1);
 
 // packages/qwik/src/cli/add/update-files.ts
 var import_node_fs4 = __toESM(require("fs"), 1);
@@ -1901,10 +1940,10 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
       const ext = (0, import_node_path4.extname)(destName);
       const srcChildPath = (0, import_node_path4.join)(srcDir, itemName);
       const destChildPath = (0, import_node_path4.join)(destDir, destName);
-      const s = await import_node_fs4.default.promises.stat(srcChildPath);
-      if (s.isDirectory()) {
+      const s2 = await import_node_fs4.default.promises.stat(srcChildPath);
+      if (s2.isDirectory()) {
         await mergeIntegrationDir(fileUpdates, opts, srcChildPath, destChildPath);
-      } else if (s.isFile()) {
+      } else if (s2.isFile()) {
         if (destName === "package.json") {
           await mergePackageJsons(fileUpdates, srcChildPath, destChildPath);
         } else if (destName === "settings.json") {
@@ -2080,20 +2119,20 @@ function updateViteConfig(ts, sourceText, updates) {
       }
     }
     const statements = [];
-    for (const s of tsSourceFile.statements) {
-      if (ts.isExportAssignment(s) && s.expression && ts.isCallExpression(s.expression)) {
-        if (ts.isIdentifier(s.expression.expression) && s.expression.expression.text === "defineConfig" && (updates.viteConfig || updates.qwikViteConfig || updates.vitePlugins || updates.vitePluginsPrepend)) {
+    for (const s2 of tsSourceFile.statements) {
+      if (ts.isExportAssignment(s2) && s2.expression && ts.isCallExpression(s2.expression)) {
+        if (ts.isIdentifier(s2.expression.expression) && s2.expression.expression.text === "defineConfig" && (updates.viteConfig || updates.qwikViteConfig || updates.vitePlugins || updates.vitePluginsPrepend)) {
           statements.push(
             ts.factory.updateExportAssignment(
-              s,
-              s.modifiers,
-              updateDefineConfig(ts, s.expression, updates)
+              s2,
+              s2.modifiers,
+              updateDefineConfig(ts, s2.expression, updates)
             )
           );
           continue;
         }
       }
-      statements.push(s);
+      statements.push(s2);
     }
     return ts.factory.updateSourceFile(tsSourceFile, statements);
   });
@@ -2201,9 +2240,9 @@ function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath)
       const importSpecifier = ts.factory.createImportSpecifier(false, void 0, identifier);
       existingNamedImports.push(importSpecifier);
     }
-    existingNamedImports.sort((a2, b2) => {
+    existingNamedImports.sort((a2, b3) => {
       const aName = a2.name.escapedText.toString();
-      const bName = b2.name.escapedText.toString();
+      const bName = b3.name.escapedText.toString();
       return aName < bName ? -1 : 1;
     });
     let defaultIdentifier = n.importClause ? n.importClause.name : void 0;
@@ -2249,11 +2288,11 @@ function appendImports(ts, tsSourceFile, defaultImport, namedImport, importPath)
 }
 function findLastImportIndex(ts, tsSourceFile) {
   for (let i = tsSourceFile.statements.length - 1; i >= 0; i--) {
-    const s = tsSourceFile.statements[i];
-    if (ts.isImportDeclaration(s)) {
+    const s2 = tsSourceFile.statements[i];
+    if (ts.isImportDeclaration(s2)) {
       return i;
     }
-    if (ts.isStringLiteral(s) && s.text === "use strict") {
+    if (ts.isStringLiteral(s2) && s2.text === "use strict") {
       return i;
     }
   }
@@ -2304,13 +2343,13 @@ function updateDefineConfig(ts, callExp, updates) {
 }
 function updateDefineConfigFnReturn(ts, fnBody, updates) {
   const statements = [];
-  for (const s of fnBody.statements) {
-    if (ts.isReturnStatement(s) && s.expression && ts.isObjectLiteralExpression(s.expression)) {
+  for (const s2 of fnBody.statements) {
+    if (ts.isReturnStatement(s2) && s2.expression && ts.isObjectLiteralExpression(s2.expression)) {
       statements.push(
-        ts.factory.updateReturnStatement(s, updateVitConfigObj(ts, s.expression, updates))
+        ts.factory.updateReturnStatement(s2, updateVitConfigObj(ts, s2.expression, updates))
       );
     } else {
-      statements.push(s);
+      statements.push(s2);
     }
   }
   return ts.factory.updateBlock(fnBody, statements);
@@ -2326,22 +2365,22 @@ function updateVitConfigObj(ts, obj, updates) {
 }
 function updatePlugins(ts, obj, updates) {
   const properties = [];
-  for (const p3 of obj.properties) {
-    if (ts.isPropertyAssignment(p3)) {
-      if (p3.name && ts.isIdentifier(p3.name) && p3.name.text === "plugins") {
-        if (ts.isArrayLiteralExpression(p3.initializer)) {
+  for (const p2 of obj.properties) {
+    if (ts.isPropertyAssignment(p2)) {
+      if (p2.name && ts.isIdentifier(p2.name) && p2.name.text === "plugins") {
+        if (ts.isArrayLiteralExpression(p2.initializer)) {
           properties.push(
             ts.factory.updatePropertyAssignment(
-              p3,
-              p3.name,
-              updatePluginsArray(ts, p3.initializer, updates)
+              p2,
+              p2.name,
+              updatePluginsArray(ts, p2.initializer, updates)
             )
           );
           continue;
         }
       }
     }
-    properties.push(p3);
+    properties.push(p2);
   }
   return ts.factory.updateObjectLiteralExpression(obj, properties);
 }
@@ -2391,9 +2430,9 @@ function createPluginCall(ts, vitePlugin) {
       "export default " + vitePlugin,
       ts.ScriptTarget.Latest
     );
-    for (const s of tmp.statements) {
-      if (ts.isExportAssignment(s)) {
-        return s.expression;
+    for (const s2 of tmp.statements) {
+      if (ts.isExportAssignment(s2)) {
+        return s2.expression;
       }
     }
   }
@@ -2409,17 +2448,17 @@ function updateObjectLiteralExpression(ts, obj, updateObj) {
   for (const [propName, value] of Object.entries(updateObj)) {
     if (typeof value === "string") {
       const tmp = ts.createSourceFile("tmp.ts", "export default " + value, ts.ScriptTarget.Latest);
-      for (const s of tmp.statements) {
-        if (ts.isExportAssignment(s)) {
-          const exp = s.expression;
+      for (const s2 of tmp.statements) {
+        if (ts.isExportAssignment(s2)) {
+          const exp = s2.expression;
           let added = false;
           const properties = [];
-          for (const p3 of obj.properties) {
-            if (p3.name && ts.isIdentifier(p3.name) && p3.name.text === propName) {
+          for (const p2 of obj.properties) {
+            if (p2.name && ts.isIdentifier(p2.name) && p2.name.text === propName) {
               properties.push(ts.factory.createPropertyAssignment(propName, exp));
               added = true;
             } else {
-              properties.push(p3);
+              properties.push(p2);
             }
           }
           if (!added) {
@@ -2436,12 +2475,12 @@ function transformSource(ts, sourceText, transformer) {
   const t = ts.transform(ts.createSourceFile("/tmp.ts", sourceText, ts.ScriptTarget.Latest), [
     transformer
   ]);
-  const p3 = ts.createPrinter({
+  const p2 = ts.createPrinter({
     removeComments: false,
     omitTrailingSemicolon: false,
     noEmitHelpers: true
   });
-  return p3.printFile(t.transformed[0]);
+  return p2.printFile(t.transformed[0]);
 }
 
 // packages/qwik/src/cli/add/update-vite-config.ts
@@ -2485,7 +2524,7 @@ export default`);
 // packages/qwik/src/cli/add/update-app.ts
 async function updateApp(pkgManager, opts) {
   const integrations2 = await loadIntegrations();
-  const integration = integrations2.find((s) => s.id === opts.integration);
+  const integration = integrations2.find((s2) => s2.id === opts.integration);
   if (!integration) {
     throw new Error(`Unable to find integration "${opts.integration}"`);
   }
@@ -2506,9 +2545,9 @@ async function updateApp(pkgManager, opts) {
   }
   const commit = async (showSpinner) => {
     const isInstallingDeps = Object.keys(fileUpdates.installedDeps).length > 0;
-    const s = le();
+    const s2 = de();
     if (showSpinner) {
-      s.start(`Updating app${isInstallingDeps ? " and installing dependencies" : ""}...`);
+      s2.start(`Updating app${isInstallingDeps ? " and installing dependencies" : ""}...`);
     }
     let passed = true;
     try {
@@ -2529,7 +2568,7 @@ async function updateApp(pkgManager, opts) {
         passed = await install;
       }
       await fsWrites;
-      showSpinner && s.stop("App updated");
+      showSpinner && s2.stop("App updated");
       if (!passed) {
         const errorMessage = `${bgRed(
           ` ${pkgManager} install failed `
@@ -2537,10 +2576,10 @@ async function updateApp(pkgManager, opts) {
  You might need to run "${cyan(
           `${pkgManager} install`
         )}" manually inside the root of the project.`;
-        g2.error(errorMessage);
+        f2.error(errorMessage);
       }
     } catch (e2) {
-      showSpinner && s.stop("App updated");
+      showSpinner && s2.stop("App updated");
       panic(String(e2));
     }
   };
@@ -2551,20 +2590,6 @@ async function updateApp(pkgManager, opts) {
     commit
   };
   return result;
-}
-
-// packages/qwik/src/cli/add/run-add-interactive.ts
-var import_node_path6 = require("path");
-
-// packages/qwik/src/cli/utils/log.ts
-function logNextStep(nextSteps, packageManager) {
-  const outString = [];
-  if (nextSteps) {
-    nextSteps.lines.forEach(
-      (step) => outString.push(`   ${step.replace(/\bpnpm\b/g, packageManager)}`)
-    );
-  }
-  return outString.join("\n");
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
@@ -2580,14 +2605,14 @@ async function runAddInteractive(app, id) {
     if (!integration) {
       throw new Error(`Invalid integration: ${id}`);
     }
-    ae(`\u{1F98B} ${bgBlue(` Add Integration `)} ${bold(magenta(integration.id))}`);
+    oe(`\u{1F98B} ${bgBlue(` Add Integration `)} ${bold(magenta(integration.id))}`);
   } else {
-    ae(`\u{1F98B} ${bgBlue(` Add Integration `)}`);
+    oe(`\u{1F98B} ${bgBlue(` Add Integration `)}`);
     const integrationChoices = [
       ...integrations2.filter((i) => i.type === "adapter"),
       ...integrations2.filter((i) => i.type === "feature")
     ];
-    const integrationAnswer = await ee({
+    const integrationAnswer = await ie({
       message: "What integration would you like to add?",
       options: await sortIntegrationsAndReturnAsClackOptions(integrationChoices)
     });
@@ -2616,10 +2641,10 @@ async function runAddInteractive(app, id) {
   await result.commit(true);
   const postInstall = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.postInstall;
   if (postInstall) {
-    const s = le();
-    s.start(`Running post install script: ${postInstall}`);
+    const s2 = de();
+    s2.start(`Running post install script: ${postInstall}`);
     await runInPkg(pkgManager, postInstall.split(" "), app.rootDir);
-    s.stop("Post install script complete");
+    s2.stop("Post install script complete");
   }
   logUpdateAppCommitResult(result, pkgManager);
   process.exit(0);
@@ -2634,9 +2659,9 @@ async function logUpdateAppResult(pkgManager, result) {
   if (modifyFiles.length === 0 && overwriteFiles.length === 0 && createFiles.length === 0 && installScripts.length === 0 && !installDeps2) {
     panic(`No updates made`);
   }
-  g2.step(`\u{1F47B} ${bgBlue(` Ready? `)} Add ${bold(magenta(result.integration.id))} to your app?`);
+  f2.step(`\u{1F47B} ${bgBlue(` Ready? `)} Add ${bold(magenta(result.integration.id))} to your app?`);
   if (modifyFiles.length > 0) {
-    g2.message(
+    f2.message(
       [
         `\u{1F42C} ${cyan("Modify")}`,
         ...modifyFiles.map((f3) => `   - ${(0, import_node_path6.relative)(process.cwd(), f3.path)}`)
@@ -2644,7 +2669,7 @@ async function logUpdateAppResult(pkgManager, result) {
     );
   }
   if (createFiles.length > 0) {
-    g2.message(
+    f2.message(
       [
         `\u{1F31F} ${cyan(`Create`)}`,
         ...createFiles.map((f3) => `   - ${(0, import_node_path6.relative)(process.cwd(), f3.path)}`)
@@ -2652,7 +2677,7 @@ async function logUpdateAppResult(pkgManager, result) {
     );
   }
   if (overwriteFiles.length > 0) {
-    g2.message(
+    f2.message(
       [
         `\u{1F433} ${cyan(`Overwrite`)}`,
         ...overwriteFiles.map((f3) => `   - ${(0, import_node_path6.relative)(process.cwd(), f3.path)}`)
@@ -2660,7 +2685,7 @@ async function logUpdateAppResult(pkgManager, result) {
     );
   }
   if (installDepNames.length > 0) {
-    g2.message(
+    f2.message(
       [
         `\u{1F4BE} ${cyan(`Install ${pkgManager} dependenc${installDepNames.length > 1 ? "ies" : "y"}:`)}`,
         ...installDepNames.map(
@@ -2671,14 +2696,14 @@ async function logUpdateAppResult(pkgManager, result) {
   }
   if (installScripts.length > 0) {
     const prefix = pkgManager === "npm" ? "npm run" : pkgManager;
-    g2.message(
+    f2.message(
       [
         `\u{1F4DC} ${cyan(`New ${pkgManager} script${installDepNames.length > 1 ? "s" : ""}:`)}`,
         ...installScripts.map((script) => `   - ${prefix} ${script}`)
       ].join("\n")
     );
   }
-  const commit = await ee({
+  const commit = await ie({
     message: `Ready to apply the ${bold(magenta(result.integration.id))} updates to your app?`,
     options: [
       { label: "Yes looks good, finish update!", value: true },
@@ -2692,8 +2717,8 @@ async function logUpdateAppResult(pkgManager, result) {
 function logUpdateAppCommitResult(result, pkgManager) {
   var _a;
   if (result.updates.installedScripts.length > 0) {
-    const prefix = pkgManager === "npm" ? "npm run" : pkgManager;
-    const message = result.updates.installedScripts.map((script) => `   - ${prefix} ${green(script)}`).join("\n");
+    const prefix = pkgManager === "npm" || pkgManager === "bun" ? `${pkgManager} run` : pkgManager;
+    const message = result.updates.installedScripts.map((script) => `- ${prefix} ${blue(script)}`).join("\n");
     note(message, "New scripts added");
   }
   const nextSteps = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.nextSteps;
@@ -2701,7 +2726,7 @@ function logUpdateAppCommitResult(result, pkgManager) {
     const noteMessage = `\u{1F7E3} ${bgMagenta(` ${nextSteps.title ?? "Action Required!"} `)}`;
     note(logNextStep(nextSteps, pkgManager), noteMessage);
   }
-  ce(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
+  $e(`\u{1F984} ${bgMagenta(` Success! `)} Added ${bold(cyan(result.integration.id))} to your app`);
 }
 
 // packages/qwik/src/cli/add/print-add-help.ts
@@ -2718,17 +2743,17 @@ async function printAddHelp(app) {
   const adapters = integrations2.filter((i) => i.type === "adapter");
   const features = integrations2.filter((i) => i.type === "feature");
   const pmRun = pmRunCmd();
-  ae(`${pmRun} qwik ${magenta(`add`)} [integration]`);
+  oe(`${pmRun} qwik ${magenta(`add`)} [integration]`);
   note(renderIntegration(adapters), "Adapters");
   note(renderIntegration(features), "Features");
-  const proceed = await Q2({
+  const proceed = await se({
     message: "Do you want to install an integration?",
     initialValue: true
   });
   if (eD(proceed) || !proceed) {
     bye();
   }
-  const command = await ee({
+  const command = await ie({
     message: "Select an integration",
     options: await sortIntegrationsAndReturnAsClackOptions(integrations2)
   });
@@ -2775,13 +2800,13 @@ async function loadTemplates() {
         allTemplates.push(template);
       })
     );
-    allTemplates.sort((a2, b2) => {
+    allTemplates.sort((a2, b3) => {
       if (a2.id === "qwik") {
         return -1;
-      } else if (b2.id === "qwik") {
+      } else if (b3.id === "qwik") {
         return 1;
       }
-      return a2.id > b2.id ? 1 : -1;
+      return a2.id > b3.id ? 1 : -1;
     });
     templates = allTemplates;
   }
@@ -2858,11 +2883,11 @@ var MDX_SUFFIX = ".mdx";
 async function runNewCommand(app) {
   try {
     if (app.args.length > 1 && app.args[1] === "help") {
-      ae(`\u{1F52D}  ${bgMagenta(" Qwik Help ")}`);
+      oe(`\u{1F52D}  ${bgMagenta(" Qwik Help ")}`);
       await printNewHelp();
       bye();
     } else {
-      ae(`\u2728  ${bgMagenta(" Create a new Qwik component or route ")}`);
+      oe(`\u2728  ${bgMagenta(" Create a new Qwik component or route ")}`);
     }
     const args = app.args.filter((a2) => !a2.startsWith("--"));
     const mainInput = args.slice(1).join(" ");
@@ -2907,7 +2932,7 @@ async function runNewCommand(app) {
         (i) => i.id === templateArg && i[typeArg] && i[typeArg].length
       );
       if (!templates2.length) {
-        g2.error(`Template "${templateArg}" not found`);
+        f2.error(`Template "${templateArg}" not found`);
         bye();
       }
       template = templates2[0][typeArg][0];
@@ -2919,19 +2944,19 @@ async function runNewCommand(app) {
     }
     const fileOutput = await writeToFile(name, slug, template, outDir);
     if (typeArg === "markdown") {
-      g2.success(`${green(`Markdown route "${name}" created!`)}`);
+      f2.success(`${green(`Markdown route "${name}" created!`)}`);
     } else {
-      g2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
+      f2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
     }
-    g2.message(`Emitted in ${dim(fileOutput)}`);
+    f2.message(`Emitted in ${dim(fileOutput)}`);
   } catch (e2) {
-    g2.error(String(e2));
+    f2.error(String(e2));
     await printNewHelp();
   }
   bye();
 }
 async function selectType() {
-  const typeAnswer = await ee({
+  const typeAnswer = await ie({
     message: "What would you like to create?",
     options: [
       { value: "component", label: "Component" },
@@ -2960,7 +2985,7 @@ async function selectName(type) {
     component: "my-component"
   };
   const placeholder = placeholders[type];
-  const nameAnswer = await J2({
+  const nameAnswer = await te({
     message,
     placeholder,
     validate: (v2) => {
@@ -2990,13 +3015,13 @@ async function selectTemplate(typeArg) {
   const allTemplates = await loadTemplates();
   const templates2 = allTemplates.filter((i) => i[typeArg] && i[typeArg].length);
   if (!templates2.length) {
-    g2.error(`No templates found for type "${typeArg}"`);
+    f2.error(`No templates found for type "${typeArg}"`);
     bye();
   }
   if (templates2.length === 1) {
     return templates2[0][typeArg][0];
   }
-  const templateAnswer = await ee({
+  const templateAnswer = await ie({
     message: "Which template would you like to use?",
     options: templates2.map((t) => ({ value: t[typeArg][0], label: t.id }))
   });
@@ -3042,7 +3067,7 @@ function toSlug(list) {
   return list.join("-").toLowerCase();
 }
 function toPascal(list) {
-  return list.map((p3) => p3[0].toUpperCase() + p3.substring(1).toLowerCase()).join("");
+  return list.map((p2) => p2[0].toUpperCase() + p2.substring(1).toLowerCase()).join("");
 }
 
 // packages/create-qwik/src/helpers/jokes.json
@@ -4397,8 +4422,8 @@ async function runBuildCommand(app) {
   const buildTypes = getScript("build.types");
   const lint = getScript("lint");
   const mode = app.getArg("mode");
-  const prebuildScripts = Object.keys(pkgJsonScripts).filter((s) => s.startsWith("prebuild.")).map(getScript).filter(isString);
-  const postbuildScripts = Object.keys(pkgJsonScripts).filter((s) => s.startsWith("postbuild.")).map(getScript).filter(isString);
+  const prebuildScripts = Object.keys(pkgJsonScripts).filter((s2) => s2.startsWith("prebuild.")).map(getScript).filter(isString);
+  const postbuildScripts = Object.keys(pkgJsonScripts).filter((s2) => s2.startsWith("postbuild.")).map(getScript).filter(isString);
   const scripts = [
     buildTypes,
     buildClientScript,
@@ -4641,8 +4666,8 @@ function attachArg(command, key, value) {
   }
   return command;
 }
-function isString(s) {
-  return typeof s === "string" && s.trim().length > 0;
+function isString(s2) {
+  return typeof s2 === "string" && s2.trim().length > 0;
 }
 
 // packages/qwik/src/cli/run.ts
@@ -4747,21 +4772,21 @@ async function runCommand2(app) {
 }
 async function printHelp(app) {
   const pmRun = pmRunCmd();
-  ae(`\u{1F52D}  ${bgMagenta(" Qwik Help ")}`);
+  oe(`\u{1F52D}  ${bgMagenta(" Qwik Help ")}`);
   note(
     COMMANDS.filter((cmd) => cmd.showInHelp).map(
       (cmd) => `${pmRun} qwik ${cyan(cmd.label)}` + " ".repeat(Math.max(SPACE_TO_HINT2 - cmd.label.length, 2)) + dim(cmd.hint)
     ).join("\n"),
     "Available commands"
   );
-  const proceed = await Q2({
+  const proceed = await se({
     message: "Do you want to run a command?",
     initialValue: true
   });
   if (eD(proceed) || !proceed) {
     bye();
   }
-  const command = await ee({
+  const command = await ie({
     message: "Select a command",
     options: COMMANDS.filter((cmd) => cmd.showInHelp).map((cmd) => ({
       value: cmd.value,

@@ -1319,6 +1319,9 @@ var getEnv = () => {
   if ("undefined" !== typeof Deno) {
     return "deno";
   }
+  if ("undefined" !== typeof Bun) {
+    return "bun";
+  }
   if ("undefined" !== typeof process && "undefined" !== typeof global && process.versions && process.versions.node) {
     return "node";
   }
