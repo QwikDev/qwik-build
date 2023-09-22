@@ -6126,41 +6126,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             }
             return key + suffix;
         };
-        const convertedObjs = objs.map((obj) => {
-            if (obj === null) {
-                return null;
-            }
-            const typeObj = typeof obj;
-            switch (typeObj) {
-                case 'undefined':
-                    return UNDEFINED_PREFIX;
-                case 'number':
-                    if (!Number.isFinite(obj)) {
-                        break;
-                    }
-                    return obj;
-                case 'string':
-                case 'boolean':
-                    return obj;
-            }
-            const value = serializeValue(obj, mustGetObjId, collector, containerState);
-            if (value !== undefined) {
-                return value;
-            }
-            if (typeObj === 'object') {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key in obj) {
-                        output[key] = mustGetObjId(obj[key]);
-                    }
-                    return output;
-                }
-            }
-            throw qError(QError_verifySerializable, obj);
-        });
+        const convertedObjs = serializeObjects(objs, mustGetObjId, null, collector, containerState);
         return JSON.stringify({
             _entry: mustGetObjId(data),
             _objs: convertedObjs,
@@ -6432,45 +6398,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 .filter(isNotNullable));
         }
         assertEqual(subs.length, subsMap.size, 'missing subscriptions to serialize', subs, subsMap);
-        // Serialize objects
-        const convertedObjs = objs.map((obj) => {
-            if (obj === null) {
-                return null;
-            }
-            const typeObj = typeof obj;
-            switch (typeObj) {
-                case 'undefined':
-                    return UNDEFINED_PREFIX;
-                case 'number':
-                    if (!Number.isFinite(obj)) {
-                        break;
-                    }
-                    return obj;
-                case 'string':
-                case 'boolean':
-                    return obj;
-            }
-            const value = serializeValue(obj, mustGetObjId, collector, containerState);
-            if (value !== undefined) {
-                return value;
-            }
-            if (typeObj === 'object') {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key in obj) {
-                        const id = getObjId(obj[key]);
-                        if (id !== null) {
-                            output[key] = id;
-                        }
-                    }
-                    return output;
-                }
-            }
-            throw qError(QError_verifySerializable, obj);
-        });
+        const convertedObjs = serializeObjects(objs, mustGetObjId, getObjId, collector, containerState);
         const meta = {};
         const refs = {};
         // Write back to the dom
@@ -6882,6 +6810,60 @@ Task Symbol: ${task.$qrl$.$symbol$}
     const isEmptyObj = (obj) => {
         return Object.keys(obj).length === 0;
     };
+    function serializeObjects(objs, mustGetObjId, getObjId, collector, containerState) {
+        return objs.map((obj) => {
+            if (obj === null) {
+                return null;
+            }
+            const typeObj = typeof obj;
+            switch (typeObj) {
+                case 'undefined':
+                    return UNDEFINED_PREFIX;
+                case 'number':
+                    if (!Number.isFinite(obj)) {
+                        break;
+                    }
+                    return obj;
+                case 'string':
+                    if (obj.charCodeAt(0) < 32 /* space */) {
+                        // if strings starts with a special character let the string serializer handle it
+                        // to deal with escape sequences.
+                        break;
+                    }
+                    else {
+                        // Fast path of just serializing the string.
+                        return obj;
+                    }
+                case 'boolean':
+                    return obj;
+            }
+            const value = serializeValue(obj, mustGetObjId, collector, containerState);
+            if (value !== undefined) {
+                return value;
+            }
+            if (typeObj === 'object') {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key in obj) {
+                        if (getObjId) {
+                            const id = getObjId(obj[key]);
+                            if (id !== null) {
+                                output[key] = id;
+                            }
+                        }
+                        else {
+                            output[key] = mustGetObjId(obj[key]);
+                        }
+                    }
+                    return output;
+                }
+            }
+            throw qError(QError_verifySerializable, obj);
+        });
+    }
 
     // https://regexr.com/68v72
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
@@ -7407,7 +7389,24 @@ Task Symbol: ${task.$qrl$.$symbol$}
     \\: backslash (U+005C REVERSE SOLIDUS)
      */
     const UNDEFINED_PREFIX = '\u0001';
-    const QRLSerializer = {
+    /**
+     * Normalize the shape of the serializer for better inline-cache performance.
+     * @param serializer
+     * @returns
+     */
+    function serializer(serializer) {
+        return {
+            $prefixCode$: serializer.$prefix$.charCodeAt(0),
+            $prefixChar$: serializer.$prefix$,
+            $test$: serializer.$test$,
+            $serialize$: serializer.$serialize$,
+            $prepare$: serializer.$prepare$,
+            $fill$: serializer.$fill$,
+            $collect$: serializer.$collect$,
+            $subs$: serializer.$subs$,
+        };
+    }
+    const QRLSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0002',
         $test$: (v) => isQrl(v),
         $collect$: (v, collector, leaks) => {
@@ -7434,8 +7433,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 qrl.$capture$ = null;
             }
         },
-    };
-    const TaskSerializer = {
+    });
+    const TaskSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0003',
         $test$: (v) => isSubscriberDescriptor(v),
         $collect$: (v, collector, leaks) => {
@@ -7456,8 +7455,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 task.$state$ = getObject(task.$state$);
             }
         },
-    };
-    const ResourceSerializer = {
+    });
+    const ResourceSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0004',
         $test$: (v) => isResourceReturn(v),
         $collect$: (obj, collector, leaks) => {
@@ -7482,22 +7481,22 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 resource.value = p;
             }
         },
-    };
-    const URLSerializer = {
+    });
+    const URLSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0005',
         $test$: (v) => v instanceof URL,
         $serialize$: (obj) => obj.href,
         $prepare$: (data) => new URL(data),
         $fill$: undefined,
-    };
-    const DateSerializer = {
+    });
+    const DateSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0006',
         $test$: (v) => v instanceof Date,
         $serialize$: (obj) => obj.toISOString(),
         $prepare$: (data) => new Date(data),
         $fill$: undefined,
-    };
-    const RegexSerializer = {
+    });
+    const RegexSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0007',
         $test$: (v) => v instanceof RegExp,
         $serialize$: (obj) => `${obj.flags} ${obj.source}`,
@@ -7508,8 +7507,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return new RegExp(source, flags);
         },
         $fill$: undefined,
-    };
-    const ErrorSerializer = {
+    });
+    const ErrorSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u000E',
         $test$: (v) => v instanceof Error,
         $serialize$: (obj) => {
@@ -7521,8 +7520,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return err;
         },
         $fill$: undefined,
-    };
-    const DocumentSerializer = {
+    });
+    const DocumentSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u000F',
         $test$: (v) => isDocument(v),
         $serialize$: undefined,
@@ -7530,9 +7529,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return doc;
         },
         $fill$: undefined,
-    };
+    });
     const SERIALIZABLE_STATE = Symbol('serializable-data');
-    const ComponentSerializer = {
+    const ComponentSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0010',
         $test$: (obj) => isQwikComponent(obj),
         $serialize$: (obj, getObjId) => {
@@ -7552,8 +7551,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 qrl.$capture$ = null;
             }
         },
-    };
-    const DerivedSignalSerializer = {
+    });
+    const DerivedSignalSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0011',
         $test$: (obj) => obj instanceof SignalDerived,
         $collect$: (obj, collector, leaks) => {
@@ -7583,8 +7582,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             fn.$func$ = getObject(fn.$func$);
             fn.$args$ = fn.$args$.map(getObject);
         },
-    };
-    const SignalSerializer = {
+    });
+    const SignalSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0012',
         $test$: (v) => v instanceof SignalImpl,
         $collect$: (obj, collector, leaks) => {
@@ -7607,8 +7606,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
         $fill$: (signal, getObject) => {
             signal.untrackedValue = getObject(signal.untrackedValue);
         },
-    };
-    const SignalWrapperSerializer = {
+    });
+    const SignalWrapperSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0013',
         $test$: (v) => v instanceof SignalWrapper,
         $collect$(obj, collector, leaks) {
@@ -7631,8 +7630,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
         $fill$: (signal, getObject) => {
             signal.ref = getObject(signal.ref);
         },
-    };
-    const NoFiniteNumberSerializer = {
+    });
+    const NoFiniteNumberSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0014',
         $test$: (v) => typeof v === 'number',
         $serialize$: (v) => {
@@ -7642,15 +7641,15 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return Number(data);
         },
         $fill$: undefined,
-    };
-    const URLSearchParamsSerializer = {
+    });
+    const URLSearchParamsSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0015',
         $test$: (v) => v instanceof URLSearchParams,
         $serialize$: (obj) => obj.toString(),
         $prepare$: (data) => new URLSearchParams(data),
         $fill$: undefined,
-    };
-    const FormDataSerializer = {
+    });
+    const FormDataSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0016',
         $test$: (v) => typeof FormData !== 'undefined' && v instanceof globalThis.FormData,
         $serialize$: (formData) => {
@@ -7674,8 +7673,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return formData;
         },
         $fill$: undefined,
-    };
-    const JSXNodeSerializer = {
+    });
+    const JSXNodeSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0017',
         $test$: (v) => isJSXNode(v),
         $collect$: (node, collector, leaks) => {
@@ -7712,8 +7711,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             node.immutableProps = getObject(node.immutableProps);
             node.children = getObject(node.children);
         },
-    };
-    const BigIntSerializer = {
+    });
+    const BigIntSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0018',
         $test$: (v) => typeof v === 'bigint',
         $serialize$: (v) => {
@@ -7723,9 +7722,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return BigInt(data);
         },
         $fill$: undefined,
-    };
+    });
     const DATA = Symbol();
-    const SetSerializer = {
+    const SetSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u0019',
         $test$: (v) => v instanceof Set,
         $collect$: (set, collector, leaks) => {
@@ -7747,8 +7746,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 set.add(getObject(id));
             }
         },
-    };
-    const MapSerializer = {
+    });
+    const MapSerializer = /*#__PURE__*/ serializer({
         $prefix$: '\u001a',
         $test$: (v) => v instanceof Map,
         $collect$: (map, collector, leaks) => {
@@ -7779,28 +7778,64 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 set.set(getObject(items[i]), getObject(items[i + 1]));
             }
         },
-    };
-    const serializers = [
+    });
+    const StringSerializer = /*#__PURE__*/ serializer({
+        $prefix$: '\u001b',
+        $test$: (v) => !!getSerializer(v) || v === UNDEFINED_PREFIX,
+        $serialize$: (v) => v,
+        $prepare$: (data) => data,
+        $fill$: undefined,
+    });
+    const serializers =  [
+        // NULL                       \u0000
+        // UNDEFINED_PREFIX           \u0001
         QRLSerializer,
-        SignalSerializer,
-        SignalWrapperSerializer,
         TaskSerializer,
         ResourceSerializer,
         URLSerializer,
         DateSerializer,
         RegexSerializer,
+        // BACKSPACE                  \u0008
+        // HORIZONTAL TAB             \u0009
+        // NEW LINE                   \u000A
+        // VERTICAL TAB               \u000B
+        // FORM FEED                  \u000C
+        // CARRIAGE RETURN            \u000D
         ErrorSerializer,
-        DerivedSignalSerializer,
-        FormDataSerializer,
-        URLSearchParamsSerializer,
+        DocumentSerializer,
         ComponentSerializer,
+        DerivedSignalSerializer,
+        SignalSerializer,
+        SignalWrapperSerializer,
         NoFiniteNumberSerializer,
+        URLSearchParamsSerializer,
+        FormDataSerializer,
         JSXNodeSerializer,
         BigIntSerializer,
         SetSerializer,
         MapSerializer,
-        DocumentSerializer, ///////// \u000F
+        StringSerializer, /////////// \u001b
     ];
+    const serializerByPrefix = /*#__PURE__*/ (() => {
+        const serializerByPrefix = [];
+        serializers.forEach((s) => {
+            const prefix = s.$prefixCode$;
+            while (serializerByPrefix.length < prefix) {
+                serializerByPrefix.push(undefined);
+            }
+            serializerByPrefix.push(s);
+        });
+        return serializerByPrefix;
+    })();
+    function getSerializer(obj) {
+        if (typeof obj === 'string') {
+            const prefix = obj.charCodeAt(0);
+            if (prefix < serializerByPrefix.length) {
+                return serializerByPrefix[prefix];
+            }
+        }
+        return undefined;
+    }
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a) => a.$collect$);
     const canSerialize = (obj) => {
         for (const s of serializers) {
@@ -7822,12 +7857,15 @@ Task Symbol: ${task.$qrl$.$symbol$}
     const serializeValue = (obj, getObjID, collector, containerState) => {
         for (const s of serializers) {
             if (s.$test$(obj)) {
-                let value = s.$prefix$;
+                let value = s.$prefixChar$;
                 if (s.$serialize$) {
                     value += s.$serialize$(obj, getObjID, collector, containerState);
                 }
                 return value;
             }
+        }
+        if (typeof obj === 'string') {
+            return obj;
         }
         return undefined;
     };
@@ -7836,18 +7874,16 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const subsMap = new Map();
         return {
             prepare(data) {
-                for (const s of serializers) {
-                    const prefix = s.$prefix$;
-                    if (data.startsWith(prefix)) {
-                        const value = s.$prepare$(data.slice(prefix.length), containerState, doc);
-                        if (s.$fill$) {
-                            fillMap.set(value, s);
-                        }
-                        if (s.$subs$) {
-                            subsMap.set(value, s);
-                        }
-                        return value;
+                const serializer = getSerializer(data);
+                if (serializer) {
+                    const value = serializer.$prepare$(data.slice(1), containerState, doc);
+                    if (serializer.$fill$) {
+                        fillMap.set(value, serializer);
                     }
+                    if (serializer.$subs$) {
+                        subsMap.set(value, serializer);
+                    }
+                    return value;
                 }
                 return data;
             },

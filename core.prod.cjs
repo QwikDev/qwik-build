@@ -3055,44 +3055,7 @@
             subs.push(value.map((s => "number" == typeof s ? `_${s}` : serializeSubscription(s, getObjId))).filter(isNotNullable));
         }
         assertEqual();
-        const convertedObjs = objs.map((obj => {
-            if (null === obj) {
-                return null;
-            }
-            const typeObj = typeof obj;
-            switch (typeObj) {
-              case "undefined":
-                return UNDEFINED_PREFIX;
-
-              case "number":
-                if (!Number.isFinite(obj)) {
-                    break;
-                }
-                return obj;
-
-              case "string":
-              case "boolean":
-                return obj;
-            }
-            const value = serializeValue(obj, mustGetObjId, collector, containerState);
-            if (void 0 !== value) {
-                return value;
-            }
-            if ("object" === typeObj) {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key in obj) {
-                        const id = getObjId(obj[key]);
-                        null !== id && (output[key] = id);
-                    }
-                    return output;
-                }
-            }
-            throw qError(3, obj);
-        }));
+        const convertedObjs = serializeObjects(objs, mustGetObjId, getObjId, collector, containerState);
         const meta = {};
         const refs = {};
         for (const ctx of allContexts) {
@@ -3374,6 +3337,55 @@
         "#" + id;
     };
     const isEmptyObj = obj => 0 === Object.keys(obj).length;
+    function serializeObjects(objs, mustGetObjId, getObjId, collector, containerState) {
+        return objs.map((obj => {
+            if (null === obj) {
+                return null;
+            }
+            const typeObj = typeof obj;
+            switch (typeObj) {
+              case "undefined":
+                return UNDEFINED_PREFIX;
+
+              case "number":
+                if (!Number.isFinite(obj)) {
+                    break;
+                }
+                return obj;
+
+              case "string":
+                if (obj.charCodeAt(0) < 32) {
+                    break;
+                }
+                return obj;
+
+              case "boolean":
+                return obj;
+            }
+            const value = serializeValue(obj, mustGetObjId, collector, containerState);
+            if (void 0 !== value) {
+                return value;
+            }
+            if ("object" === typeObj) {
+                if (isArray(obj)) {
+                    return obj.map(mustGetObjId);
+                }
+                if (isSerializableObject(obj)) {
+                    const output = {};
+                    for (const key in obj) {
+                        if (getObjId) {
+                            const id = getObjId(obj[key]);
+                            null !== id && (output[key] = id);
+                        } else {
+                            output[key] = mustGetObjId(obj[key]);
+                        }
+                    }
+                    return output;
+                }
+            }
+            throw qError(3, obj);
+        }));
+    }
     const EXTRACT_IMPORT_PATH = /\(\s*(['"])([^\1]+)\1\s*\)/;
     const EXTRACT_SELF_IMPORT = /Promise\s*\.\s*resolve/;
     const EXTRACT_FILE_NAME = /[\\/(]([\w\d.\-_]+\.(js|ts)x?):/;
@@ -3497,7 +3509,19 @@
         "q:s": ""
     }, 0, props.name ?? "");
     const UNDEFINED_PREFIX = "";
-    const QRLSerializer = {
+    function serializer(serializer) {
+        return {
+            $prefixCode$: serializer.$prefix$.charCodeAt(0),
+            $prefixChar$: serializer.$prefix$,
+            $test$: serializer.$test$,
+            $serialize$: serializer.$serialize$,
+            $prepare$: serializer.$prepare$,
+            $fill$: serializer.$fill$,
+            $collect$: serializer.$collect$,
+            $subs$: serializer.$subs$
+        };
+    }
+    const QRLSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => isQrl(v),
         $collect$: (v, collector, leaks) => {
@@ -3516,8 +3540,8 @@
             qrl.$capture$ && qrl.$capture$.length > 0 && (qrl.$captureRef$ = qrl.$capture$.map(getObject), 
             qrl.$capture$ = null);
         }
-    };
-    const TaskSerializer = {
+    });
+    const TaskSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => isSubscriberDescriptor(v),
         $collect$: (v, collector, leaks) => {
@@ -3535,8 +3559,8 @@
         $fill$: (task, getObject) => {
             task.$el$ = getObject(task.$el$), task.$qrl$ = getObject(task.$qrl$), task.$state$ && (task.$state$ = getObject(task.$state$));
         }
-    };
-    const ResourceSerializer = {
+    });
+    const ResourceSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => isResourceReturn(v),
         $collect$: (obj, collector, leaks) => {
@@ -3562,22 +3586,22 @@
                 p.catch((() => null)), resource._error = getObject(resource._error), resource.value = p;
             }
         }
-    };
-    const URLSerializer = {
+    });
+    const URLSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof URL,
         $serialize$: obj => obj.href,
         $prepare$: data => new URL(data),
         $fill$: void 0
-    };
-    const DateSerializer = {
+    });
+    const DateSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof Date,
         $serialize$: obj => obj.toISOString(),
         $prepare$: data => new Date(data),
         $fill$: void 0
-    };
-    const RegexSerializer = {
+    });
+    const RegexSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof RegExp,
         $serialize$: obj => `${obj.flags} ${obj.source}`,
@@ -3588,8 +3612,8 @@
             return new RegExp(source, flags);
         },
         $fill$: void 0
-    };
-    const ErrorSerializer = {
+    });
+    const ErrorSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof Error,
         $serialize$: obj => obj.message,
@@ -3598,16 +3622,16 @@
             return err.stack = void 0, err;
         },
         $fill$: void 0
-    };
-    const DocumentSerializer = {
+    });
+    const DocumentSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => isDocument(v),
         $serialize$: void 0,
         $prepare$: (_, _c, doc) => doc,
         $fill$: void 0
-    };
+    });
     const SERIALIZABLE_STATE = Symbol("serializable-data");
-    const ComponentSerializer = {
+    const ComponentSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: obj => isQwikComponent(obj),
         $serialize$: (obj, getObjId) => {
@@ -3625,8 +3649,8 @@
             qrl.$capture$ && qrl.$capture$.length > 0 && (qrl.$captureRef$ = qrl.$capture$.map(getObject), 
             qrl.$capture$ = null);
         }
-    };
-    const DerivedSignalSerializer = {
+    });
+    const DerivedSignalSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: obj => obj instanceof SignalDerived,
         $collect$: (obj, collector, leaks) => {
@@ -3659,8 +3683,8 @@
         $fill$: (fn, getObject) => {
             assertString(), fn.$func$ = getObject(fn.$func$), fn.$args$ = fn.$args$.map(getObject);
         }
-    };
-    const SignalSerializer = {
+    });
+    const SignalSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof SignalImpl,
         $collect$: (obj, collector, leaks) => {
@@ -3676,8 +3700,8 @@
         $fill$: (signal, getObject) => {
             signal.untrackedValue = getObject(signal.untrackedValue);
         }
-    };
-    const SignalWrapperSerializer = {
+    });
+    const SignalWrapperSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof SignalWrapper,
         $collect$(obj, collector, leaks) {
@@ -3695,22 +3719,22 @@
         $fill$: (signal, getObject) => {
             signal.ref = getObject(signal.ref);
         }
-    };
-    const NoFiniteNumberSerializer = {
+    });
+    const NoFiniteNumberSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => "number" == typeof v,
         $serialize$: v => String(v),
         $prepare$: data => Number(data),
         $fill$: void 0
-    };
-    const URLSearchParamsSerializer = {
+    });
+    const URLSearchParamsSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof URLSearchParams,
         $serialize$: obj => obj.toString(),
         $prepare$: data => new URLSearchParams(data),
         $fill$: void 0
-    };
-    const FormDataSerializer = {
+    });
+    const FormDataSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => "undefined" != typeof FormData && v instanceof globalThis.FormData,
         $serialize$: formData => {
@@ -3728,8 +3752,8 @@
             return formData;
         },
         $fill$: void 0
-    };
-    const JSXNodeSerializer = {
+    });
+    const JSXNodeSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => isJSXNode(v),
         $collect$: (node, collector, leaks) => {
@@ -3751,16 +3775,16 @@
             node.type = getResolveJSXType(getObject(node.type)), node.props = getObject(node.props), 
             node.immutableProps = getObject(node.immutableProps), node.children = getObject(node.children);
         }
-    };
-    const BigIntSerializer = {
+    });
+    const BigIntSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => "bigint" == typeof v,
         $serialize$: v => v.toString(),
         $prepare$: data => BigInt(data),
         $fill$: void 0
-    };
+    });
     const DATA = Symbol();
-    const serializers = [ QRLSerializer, SignalSerializer, SignalWrapperSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DerivedSignalSerializer, FormDataSerializer, URLSearchParamsSerializer, ComponentSerializer, NoFiniteNumberSerializer, JSXNodeSerializer, BigIntSerializer, {
+    const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof Set,
         $collect$: (set, collector, leaks) => {
@@ -3778,7 +3802,7 @@
                 set.add(getObject(id));
             }
         }
-    }, {
+    }), /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof Map,
         $collect$: (map, collector, leaks) => {
@@ -3805,7 +3829,31 @@
                 set.set(getObject(items[i]), getObject(items[i + 1]));
             }
         }
-    }, DocumentSerializer ];
+    }), /*#__PURE__*/ serializer({
+        $prefix$: "",
+        $test$: v => !!getSerializer(v) || v === UNDEFINED_PREFIX,
+        $serialize$: v => v,
+        $prepare$: data => data,
+        $fill$: void 0
+    }) ];
+    const serializerByPrefix = /*#__PURE__*/ (() => {
+        const serializerByPrefix = [];
+        return serializers.forEach((s => {
+            const prefix = s.$prefixCode$;
+            for (;serializerByPrefix.length < prefix; ) {
+                serializerByPrefix.push(void 0);
+            }
+            serializerByPrefix.push(s);
+        })), serializerByPrefix;
+    })();
+    function getSerializer(obj) {
+        if ("string" == typeof obj) {
+            const prefix = obj.charCodeAt(0);
+            if (prefix < serializerByPrefix.length) {
+                return serializerByPrefix[prefix];
+            }
+        }
+    }
     const collectorSerializers = /*#__PURE__*/ serializers.filter((a => a.$collect$));
     const collectDeps = (obj, collector, leaks) => {
         for (const s of collectorSerializers) {
@@ -3818,10 +3866,13 @@
     const serializeValue = (obj, getObjID, collector, containerState) => {
         for (const s of serializers) {
             if (s.$test$(obj)) {
-                let value = s.$prefix$;
+                let value = s.$prefixChar$;
                 return s.$serialize$ && (value += s.$serialize$(obj, getObjID, collector, containerState)), 
                 value;
             }
+        }
+        if ("string" == typeof obj) {
+            return obj;
         }
     };
     const createParser = (containerState, doc) => {
@@ -3829,12 +3880,11 @@
         const subsMap = new Map;
         return {
             prepare(data) {
-                for (const s of serializers) {
-                    const prefix = s.$prefix$;
-                    if (data.startsWith(prefix)) {
-                        const value = s.$prepare$(data.slice(prefix.length), containerState, doc);
-                        return s.$fill$ && fillMap.set(value, s), s.$subs$ && subsMap.set(value, s), value;
-                    }
+                const serializer = getSerializer(data);
+                if (serializer) {
+                    const value = serializer.$prepare$(data.slice(1), containerState, doc);
+                    return serializer.$fill$ && fillMap.set(value, serializer), serializer.$subs$ && subsMap.set(value, serializer), 
+                    value;
                 }
                 return data;
             },
@@ -4544,43 +4594,7 @@
             }
             return key + suffix;
         };
-        const convertedObjs = objs.map((obj => {
-            if (null === obj) {
-                return null;
-            }
-            const typeObj = typeof obj;
-            switch (typeObj) {
-              case "undefined":
-                return UNDEFINED_PREFIX;
-
-              case "number":
-                if (!Number.isFinite(obj)) {
-                    break;
-                }
-                return obj;
-
-              case "string":
-              case "boolean":
-                return obj;
-            }
-            const value = serializeValue(obj, mustGetObjId, collector, containerState);
-            if (void 0 !== value) {
-                return value;
-            }
-            if ("object" === typeObj) {
-                if (isArray(obj)) {
-                    return obj.map(mustGetObjId);
-                }
-                if (isSerializableObject(obj)) {
-                    const output = {};
-                    for (const key in obj) {
-                        output[key] = mustGetObjId(obj[key]);
-                    }
-                    return output;
-                }
-            }
-            throw qError(3, obj);
-        }));
+        const convertedObjs = serializeObjects(objs, mustGetObjId, null, collector, containerState);
         return JSON.stringify({
             _entry: mustGetObjId(data),
             _objs: convertedObjs
