@@ -4834,7 +4834,8 @@ const SetSerializer = /*#__PURE__*/ serializer({
     $fill$: (set, getObject) => {
         const data = set[DATA];
         set[DATA] = void 0, assertString(data, "SetSerializer should be defined");
-        for (const id of data.split(" ")) {
+        const items = 0 === data.length ? [] : data.split(" ");
+        for (const id of items) {
             set.add(getObject(id));
         }
     }
@@ -4861,7 +4862,7 @@ const MapSerializer = /*#__PURE__*/ serializer({
     $fill$: (set, getObject) => {
         const data = set[DATA];
         set[DATA] = void 0, assertString(data, "SetSerializer should be defined");
-        const items = data.split(" ");
+        const items = 0 === data.length ? [] : data.split(" ");
         assertTrue(items.length % 2 == 0, "MapSerializer should have even number of items");
         for (let i = 0; i < items.length; i += 2) {
             set.set(getObject(items[i]), getObject(items[i + 1]));

@@ -3798,7 +3798,8 @@
         $fill$: (set, getObject) => {
             const data = set[DATA];
             set[DATA] = void 0, assertString();
-            for (const id of data.split(" ")) {
+            const items = 0 === data.length ? [] : data.split(" ");
+            for (const id of items) {
                 set.add(getObject(id));
             }
         }
@@ -3823,7 +3824,7 @@
         $fill$: (set, getObject) => {
             const data = set[DATA];
             set[DATA] = void 0, assertString();
-            const items = data.split(" ");
+            const items = 0 === data.length ? [] : data.split(" ");
             assertTrue();
             for (let i = 0; i < items.length; i += 2) {
                 set.set(getObject(items[i]), getObject(items[i + 1]));
