@@ -1787,8 +1787,7 @@ const getContext = (el, containerState) => {
             const {getObject, meta, refs} = pauseCtx;
             if (isElement(el)) {
                 const refMap = refs[elementID];
-                refMap && (assertTrue(isElement(el), "el must be an actual DOM element"), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
-                elCtx.li = getDomListeners(elCtx, containerState.$containerEl$));
+                refMap && (elCtx.$refMap$ = refMap.split(" ").map(getObject), elCtx.li = getDomListeners(elCtx, containerState.$containerEl$));
             } else {
                 const styleIds = el.getAttribute("q:sstyle");
                 elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null;

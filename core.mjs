@@ -3095,7 +3095,6 @@ const getContext = (el, containerState) => {
             if (isElement(el)) {
                 const refMap = refs[elementID];
                 if (refMap) {
-                    assertTrue(isElement(el), 'el must be an actual DOM element');
                     elCtx.$refMap$ = refMap.split(' ').map(getObject);
                     elCtx.li = getDomListeners(elCtx, containerState.$containerEl$);
                 }

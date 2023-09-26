@@ -1307,11 +1307,6 @@
             this.$state$ = $state$;
         }
     }
-    function isElement(value) {
-        return function(value) {
-            return value && "number" == typeof value.nodeType;
-        }(value) && 1 === value.nodeType;
-    }
     const HOST_FLAG_DIRTY = 1;
     const HOST_FLAG_NEED_ATTACH_LISTENER = 2;
     const HOST_FLAG_MOUNTED = 4;
@@ -1328,10 +1323,11 @@
             const pauseCtx = containerState.$pauseCtx$;
             if (elCtx.$id$ = elementID, pauseCtx) {
                 const {getObject, meta, refs} = pauseCtx;
-                if (isElement(el)) {
+                if (function(value) {
+                    return value && "number" == typeof value.nodeType;
+                }(value = el) && 1 === value.nodeType) {
                     const refMap = refs[elementID];
-                    refMap && (assertTrue(isElement(el)), elCtx.$refMap$ = refMap.split(" ").map(getObject), 
-                    elCtx.li = ((elCtx, containerEl) => {
+                    refMap && (elCtx.$refMap$ = refMap.split(" ").map(getObject), elCtx.li = ((elCtx, containerEl) => {
                         const attributes = elCtx.$element$.attributes;
                         const listeners = [];
                         for (let i = 0; i < attributes.length; i++) {
@@ -1377,6 +1373,7 @@
                 }
             }
         }
+        var value;
         return elCtx;
     };
     const getImmutableFromProps = props => {
