@@ -2979,7 +2979,7 @@ globalThis.qwikOptimizer = function(module) {
       return false;
     }
     const acceptHeader = req.headers.accept || "";
-    if (!acceptHeader.includes("text/html")) {
+    if (!acceptHeader.includes("text/html") && !acceptHeader.includes("*/*")) {
       return false;
     }
     return true;
