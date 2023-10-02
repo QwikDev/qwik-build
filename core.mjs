@@ -1452,30 +1452,26 @@ const useContext = (context, defaultValue) => {
 };
 const resolveContext = (context, hostCtx, containerState) => {
     const contextID = context.id;
-    if (hostCtx) {
-        let hostElement = hostCtx.$element$;
-        let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
-        while (ctx) {
-            hostElement = ctx.$element$;
-            if (ctx.$contexts$) {
-                const found = ctx.$contexts$.get(contextID);
-                if (found) {
-                    return found;
-                }
-                if (ctx.$contexts$.get('_') === true) {
-                    break;
-                }
-            }
-            ctx = ctx.$slotParent$ ?? ctx.$parent$;
-        }
-        if (hostElement.closest) {
-            const value = queryContextFromDom(hostElement, containerState, contextID);
-            if (value !== undefined) {
-                return value;
-            }
-        }
+    if (!hostCtx) {
+        return;
     }
-    return undefined;
+    let hostElement;
+    let ctx = hostCtx;
+    while (ctx) {
+        hostElement = ctx.$element$;
+        if (ctx.$contexts$) {
+            const found = ctx.$contexts$.get(contextID);
+            if (found) {
+                return found;
+            }
+            if (ctx.$contexts$.get('_') === true) {
+                break;
+            }
+        }
+        ctx = ctx.$slotParent$ ?? ctx.$parent$;
+    }
+    const value = queryContextFromDom(hostElement, containerState, contextID);
+    return value;
 };
 const queryContextFromDom = (hostElement, containerState, contextId) => {
     let element = hostElement;

@@ -812,28 +812,24 @@ const useContext = (context, defaultValue) => {
 
 const resolveContext = (context, hostCtx, containerState) => {
     const contextID = context.id;
-    if (hostCtx) {
-        let hostElement = hostCtx.$element$;
-        let ctx = hostCtx.$slotParent$ ?? hostCtx.$parent$;
-        for (;ctx; ) {
-            if (hostElement = ctx.$element$, ctx.$contexts$) {
-                const found = ctx.$contexts$.get(contextID);
-                if (found) {
-                    return found;
-                }
-                if (!0 === ctx.$contexts$.get("_")) {
-                    break;
-                }
-            }
-            ctx = ctx.$slotParent$ ?? ctx.$parent$;
-        }
-        if (hostElement.closest) {
-            const value = queryContextFromDom(hostElement, containerState, contextID);
-            if (void 0 !== value) {
-                return value;
-            }
-        }
+    if (!hostCtx) {
+        return;
     }
+    let hostElement;
+    let ctx = hostCtx;
+    for (;ctx; ) {
+        if (hostElement = ctx.$element$, ctx.$contexts$) {
+            const found = ctx.$contexts$.get(contextID);
+            if (found) {
+                return found;
+            }
+            if (!0 === ctx.$contexts$.get("_")) {
+                break;
+            }
+        }
+        ctx = ctx.$slotParent$ ?? ctx.$parent$;
+    }
+    return queryContextFromDom(hostElement, containerState, contextID);
 };
 
 const queryContextFromDom = (hostElement, containerState, contextId) => {
