@@ -1938,13 +1938,13 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
     const resumeContainer = (containerEl) => {
         if (!isContainer$1(containerEl)) {
-            logWarn('Skipping hydration because parent element is not q:container');
+            logWarn('Skipping resuming because parent element is not q:container');
             return;
         }
         const pauseState = containerEl['_qwikjson_'] ?? getPauseState(containerEl);
         containerEl['_qwikjson_'] = null;
         if (!pauseState) {
-            logWarn('Skipping hydration qwik/json metadata was not found.');
+            logWarn('Skipping resuming qwik/json metadata was not found.');
             return;
         }
         const doc = getDocument(containerEl);
@@ -1953,7 +1953,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         if (qDev) {
             const script = getQwikJSON(parentJSON, 'type');
             if (!script) {
-                logWarn('Skipping hydration qwik/json metadata was not found.');
+                logWarn('Skipping resuming qwik/json metadata was not found.');
                 return;
             }
         }

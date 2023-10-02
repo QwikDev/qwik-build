@@ -1934,13 +1934,13 @@ const _deserializeData = (data, element) => {
 };
 const resumeContainer = (containerEl) => {
     if (!isContainer$1(containerEl)) {
-        logWarn('Skipping hydration because parent element is not q:container');
+        logWarn('Skipping resuming because parent element is not q:container');
         return;
     }
     const pauseState = containerEl['_qwikjson_'] ?? getPauseState(containerEl);
     containerEl['_qwikjson_'] = null;
     if (!pauseState) {
-        logWarn('Skipping hydration qwik/json metadata was not found.');
+        logWarn('Skipping resuming qwik/json metadata was not found.');
         return;
     }
     const doc = getDocument(containerEl);
@@ -1949,7 +1949,7 @@ const resumeContainer = (containerEl) => {
     if (qDev) {
         const script = getQwikJSON(parentJSON, 'type');
         if (!script) {
-            logWarn('Skipping hydration qwik/json metadata was not found.');
+            logWarn('Skipping resuming qwik/json metadata was not found.');
             return;
         }
     }

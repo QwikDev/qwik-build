@@ -1137,12 +1137,12 @@ const _deserializeData = (data, element) => {
 
 const resumeContainer = containerEl => {
     if (!isElement$1(el = containerEl) || !el.hasAttribute("q:container")) {
-        return void logWarn("Skipping hydration because parent element is not q:container");
+        return void logWarn("Skipping resuming because parent element is not q:container");
     }
     var el;
     const pauseState = containerEl._qwikjson_ ?? getPauseState(containerEl);
     if (containerEl._qwikjson_ = null, !pauseState) {
-        return void logWarn("Skipping hydration qwik/json metadata was not found.");
+        return void logWarn("Skipping resuming qwik/json metadata was not found.");
     }
     const doc = getDocument(containerEl);
     const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
