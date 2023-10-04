@@ -4598,11 +4598,8 @@ async function runBuildCommand(app) {
       title: "Lint checked"
     })).catch((e2) => {
       console.log(``);
-      if (e2.stderr) {
-        console.log(e2.stderr);
-      } else {
-        console.log(e2.stdout);
-      }
+      console.log(e2.stdout);
+      console.error(e2.stderr);
       console.log(``);
       process.exit(1);
     });
