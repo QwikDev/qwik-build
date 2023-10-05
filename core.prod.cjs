@@ -506,9 +506,6 @@
                 if (found) {
                     return found;
                 }
-                if (!0 === ctx.$contexts$.get("_")) {
-                    break;
-                }
             }
             ctx = ctx.$slotParent$ ?? ctx.$parent$;
         }
@@ -3203,9 +3200,6 @@
             if (elCtx.$contexts$) {
                 for (const obj of elCtx.$contexts$.values()) {
                     collectValue(obj, collector, !0);
-                }
-                if (!0 === elCtx.$contexts$.get("_")) {
-                    break;
                 }
             }
             elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;

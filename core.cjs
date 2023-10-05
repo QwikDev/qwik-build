@@ -1468,9 +1468,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 if (found) {
                     return found;
                 }
-                if (ctx.$contexts$.get('_') === true) {
-                    break;
-                }
             }
             ctx = ctx.$slotParent$ ?? ctx.$parent$;
         }
@@ -6622,9 +6619,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
             if (elCtx.$contexts$) {
                 for (const obj of elCtx.$contexts$.values()) {
                     collectValue(obj, collector, true);
-                }
-                if (elCtx.$contexts$.get('_') === true) {
-                    break;
                 }
             }
             elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
