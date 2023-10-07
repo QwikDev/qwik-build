@@ -1972,9 +1972,16 @@
         const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
         return validateJSXNode(node), seal(), node;
     };
-    const _jsxC = (type, mutableProps, flags, key) => {
+    const _jsxC = (type, mutableProps, flags, key, dev) => {
         const processed = null == key ? null : String(key);
         const props = mutableProps ?? EMPTY_OBJ;
+        if ("string" == typeof type && _IMMUTABLE in props) {
+            const p = {};
+            for (const [k, v] of Object.entries(props[_IMMUTABLE])) {
+                p[k] = v === _IMMUTABLE ? props[k] : v;
+            }
+            return _jsxQ(type, null, p, props.children, flags, key, dev);
+        }
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
         return "string" == typeof type && mutableProps && delete mutableProps.children, 
         validateJSXNode(node), seal(), node;
