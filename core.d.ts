@@ -6,6 +6,8 @@ import * as CSS_2 from 'csstype';
  * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
  * resource referenced by `QRL`.
  *
+ * @param expression - Expression which should be lazy loaded
+ * @public
  * @see `implicit$FirstArg` for additional `____$(...)` rules.
  *
  * In this example, `$(...)` is used to capture the callback function of `onmousemove` into a
@@ -69,9 +71,6 @@ import * as CSS_2 from 'csstype';
  * }
  *
  * ```
- *
- * @param expression - Expression which should be lazy loaded
- * @public
  */
 export declare const $: <T>(expression: T) => QRL<T>;
 
@@ -82,9 +81,7 @@ declare interface AbstractView {
     document: Document;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     download?: any;
     href?: string | undefined;
@@ -97,9 +94,7 @@ export declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAtt
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     coords?: string | undefined;
@@ -114,112 +109,153 @@ export declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttri
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface AriaAttributes {
-    /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
+    /**
+     * Identifies the currently active element when DOM focus is on a composite widget, textbox,
+     * group, or application.
+     */
     'aria-activedescendant'?: string | undefined;
-    /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
+    /**
+     * Indicates whether assistive technologies will present all, or only parts of, the changed region
+     * based on the change notifications defined by the aria-relevant attribute.
+     */
     'aria-atomic'?: Booleanish | undefined;
     /**
-     * Indicates whether inputting text could trigger display of one or more predictions of the user's intended value for an input and specifies how predictions would be
-     * presented if they are made.
+     * Indicates whether inputting text could trigger display of one or more predictions of the user's
+     * intended value for an input and specifies how predictions would be presented if they are made.
      */
     'aria-autocomplete'?: 'none' | 'inline' | 'list' | 'both' | undefined;
-    /** Indicates an element is being modified and that assistive technologies MAY want to wait until the modifications are complete before exposing them to the user. */
+    /**
+     * Indicates an element is being modified and that assistive technologies MAY want to wait until
+     * the modifications are complete before exposing them to the user.
+     */
     'aria-busy'?: Booleanish | undefined;
     /**
      * Indicates the current "checked" state of checkboxes, radio buttons, and other widgets.
+     *
      * @see aria-pressed @see aria-selected.
      */
     'aria-checked'?: boolean | 'false' | 'mixed' | 'true' | undefined;
     /**
      * Defines the total number of columns in a table, grid, or treegrid.
+     *
      * @see aria-colindex.
      */
     'aria-colcount'?: number | undefined;
     /**
-     * Defines an element's column index or position with respect to the total number of columns within a table, grid, or treegrid.
+     * Defines an element's column index or position with respect to the total number of columns
+     * within a table, grid, or treegrid.
+     *
      * @see aria-colcount @see aria-colspan.
      */
     'aria-colindex'?: number | undefined;
     /**
      * Defines the number of columns spanned by a cell or gridcell within a table, grid, or treegrid.
+     *
      * @see aria-colindex @see aria-rowspan.
      */
     'aria-colspan'?: number | undefined;
     /**
-     * Identifies the element (or elements) whose contents or presence are controlled by the current element.
+     * Identifies the element (or elements) whose contents or presence are controlled by the current
+     * element.
+     *
      * @see aria-owns.
      */
     'aria-controls'?: string | undefined;
-    /** Indicates the element that represents the current item within a container or set of related elements. */
+    /**
+     * Indicates the element that represents the current item within a container or set of related
+     * elements.
+     */
     'aria-current'?: boolean | 'false' | 'true' | 'page' | 'step' | 'location' | 'date' | 'time' | undefined;
     /**
      * Identifies the element (or elements) that describes the object.
+     *
      * @see aria-labelledby
      */
     'aria-describedby'?: string | undefined;
     /**
      * Identifies the element that provides a detailed, extended description for the object.
+     *
      * @see aria-describedby.
      */
     'aria-details'?: string | undefined;
     /**
-     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise operable.
+     * Indicates that the element is perceivable but disabled, so it is not editable or otherwise
+     * operable.
+     *
      * @see aria-hidden @see aria-readonly.
      */
     'aria-disabled'?: Booleanish | undefined;
     /**
      * Indicates what functions can be performed when a dragged object is released on the drop target.
-     * @deprecated in ARIA 1.1
+     *
+     * @deprecated In ARIA 1.1
      */
     'aria-dropeffect'?: 'none' | 'copy' | 'execute' | 'link' | 'move' | 'popup' | undefined;
     /**
      * Identifies the element that provides an error message for the object.
+     *
      * @see aria-invalid @see aria-describedby.
      */
     'aria-errormessage'?: string | undefined;
-    /** Indicates whether the element, or another grouping element it controls, is currently expanded or collapsed. */
+    /**
+     * Indicates whether the element, or another grouping element it controls, is currently expanded
+     * or collapsed.
+     */
     'aria-expanded'?: Booleanish | undefined;
     /**
-     * Identifies the next element (or elements) in an alternate reading order of content which, at the user's discretion,
-     * allows assistive technology to override the general default of reading in document source order.
+     * Identifies the next element (or elements) in an alternate reading order of content which, at
+     * the user's discretion, allows assistive technology to override the general default of reading
+     * in document source order.
      */
     'aria-flowto'?: string | undefined;
     /**
      * Indicates an element's "grabbed" state in a drag-and-drop operation.
-     * @deprecated in ARIA 1.1
+     *
+     * @deprecated In ARIA 1.1
      */
     'aria-grabbed'?: Booleanish | undefined;
-    /** Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element. */
+    /**
+     * Indicates the availability and type of interactive popup element, such as menu or dialog, that
+     * can be triggered by an element.
+     */
     'aria-haspopup'?: boolean | 'false' | 'true' | 'menu' | 'listbox' | 'tree' | 'grid' | 'dialog' | undefined;
     /**
      * Indicates whether the element is exposed to an accessibility API.
+     *
      * @see aria-disabled.
      */
     'aria-hidden'?: Booleanish | undefined;
     /**
      * Indicates the entered value does not conform to the format expected by the application.
+     *
      * @see aria-errormessage.
      */
     'aria-invalid'?: boolean | 'false' | 'true' | 'grammar' | 'spelling' | undefined;
-    /** Indicates keyboard shortcuts that an author has implemented to activate or give focus to an element. */
+    /**
+     * Indicates keyboard shortcuts that an author has implemented to activate or give focus to an
+     * element.
+     */
     'aria-keyshortcuts'?: string | undefined;
     /**
      * Defines a string value that labels the current element.
+     *
      * @see aria-labelledby.
      */
     'aria-label'?: string | undefined;
     /**
      * Identifies the element (or elements) that labels the current element.
+     *
      * @see aria-describedby.
      */
     'aria-labelledby'?: string | undefined;
     /** Defines the hierarchical level of an element within a structure. */
     'aria-level'?: number | undefined;
-    /** Indicates that an element will be updated, and describes the types of updates the user agents, assistive technologies, and user can expect from the live region. */
+    /**
+     * Indicates that an element will be updated, and describes the types of updates the user agents,
+     * assistive technologies, and user can expect from the live region.
+     */
     'aria-live'?: 'off' | 'assertive' | 'polite' | undefined;
     /** Indicates whether an element is modal when displayed. */
     'aria-modal'?: Booleanish | undefined;
@@ -230,33 +266,42 @@ export declare interface AriaAttributes {
     /** Indicates whether the element's orientation is horizontal, vertical, or unknown/ambiguous. */
     'aria-orientation'?: 'horizontal' | 'vertical' | undefined;
     /**
-     * Identifies an element (or elements) in order to define a visual, functional, or contextual parent/child relationship
-     * between DOM elements where the DOM hierarchy cannot be used to represent the relationship.
+     * Identifies an element (or elements) in order to define a visual, functional, or contextual
+     * parent/child relationship between DOM elements where the DOM hierarchy cannot be used to
+     * represent the relationship.
+     *
      * @see aria-controls.
      */
     'aria-owns'?: string | undefined;
     /**
-     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when the control has no value.
-     * A hint could be a sample value or a brief description of the expected format.
+     * Defines a short hint (a word or short phrase) intended to aid the user with data entry when the
+     * control has no value. A hint could be a sample value or a brief description of the expected
+     * format.
      */
     'aria-placeholder'?: string | undefined;
     /**
-     * Defines an element's number or position in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines an element's number or position in the current set of listitems or treeitems. Not
+     * required if all elements in the set are present in the DOM.
+     *
      * @see aria-setsize.
      */
     'aria-posinset'?: number | undefined;
     /**
      * Indicates the current "pressed" state of toggle buttons.
+     *
      * @see aria-checked @see aria-selected.
      */
     'aria-pressed'?: boolean | 'false' | 'mixed' | 'true' | undefined;
     /**
      * Indicates that the element is not editable, but is otherwise operable.
+     *
      * @see aria-disabled.
      */
     'aria-readonly'?: Booleanish | undefined;
     /**
-     * Indicates what notifications the user agent will trigger when the accessibility tree within a live region is modified.
+     * Indicates what notifications the user agent will trigger when the accessibility tree within a
+     * live region is modified.
+     *
      * @see aria-atomic.
      */
     'aria-relevant'?: 'additions' | 'additions removals' | 'additions text' | 'all' | 'removals' | 'removals additions' | 'removals text' | 'text' | 'text additions' | 'text removals' | undefined;
@@ -266,26 +311,33 @@ export declare interface AriaAttributes {
     'aria-roledescription'?: string | undefined;
     /**
      * Defines the total number of rows in a table, grid, or treegrid.
+     *
      * @see aria-rowindex.
      */
     'aria-rowcount'?: number | undefined;
     /**
-     * Defines an element's row index or position with respect to the total number of rows within a table, grid, or treegrid.
+     * Defines an element's row index or position with respect to the total number of rows within a
+     * table, grid, or treegrid.
+     *
      * @see aria-rowcount @see aria-rowspan.
      */
     'aria-rowindex'?: number | undefined;
     /**
      * Defines the number of rows spanned by a cell or gridcell within a table, grid, or treegrid.
+     *
      * @see aria-rowindex @see aria-colspan.
      */
     'aria-rowspan'?: number | undefined;
     /**
      * Indicates the current "selected" state of various widgets.
+     *
      * @see aria-checked @see aria-pressed.
      */
     'aria-selected'?: Booleanish | undefined;
     /**
-     * Defines the number of items in the current set of listitems or treeitems. Not required if all elements in the set are present in the DOM.
+     * Defines the number of items in the current set of listitems or treeitems. Not required if all
+     * elements in the set are present in the DOM.
+     *
      * @see aria-posinset.
      */
     'aria-setsize'?: number | undefined;
@@ -297,6 +349,7 @@ export declare interface AriaAttributes {
     'aria-valuemin'?: number | undefined;
     /**
      * Defines the current value for a range widget.
+     *
      * @see aria-valuetext.
      */
     'aria-valuenow'?: number | undefined;
@@ -304,14 +357,10 @@ export declare interface AriaAttributes {
     'aria-valuetext'?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-/**
- * @public
- */
+/** @public */
 export declare interface AudioHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
 }
 
@@ -326,9 +375,7 @@ key: string | undefined
 
 declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
 
-/**
- * @public
- */
+/** @public */
 export declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     href?: string | undefined;
     target?: string | undefined;
@@ -353,21 +400,15 @@ declare type BivariantEventHandler<T extends SyntheticEvent<any> | Event, EL> = 
     bivarianceHack(event: T, element: EL): any;
 }['bivarianceHack'];
 
-/**
- * @public
- */
+/** @public */
 export declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type Booleanish = boolean | `${boolean}`;
 
-/**
- * @public
- */
+/** @public */
 export declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     disabled?: boolean | undefined;
@@ -390,29 +431,21 @@ elm: Node | QwikElement,
 key: string | undefined
 ];
 
-/**
- * @public
- */
+/** @public */
 export declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     width?: Size | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type ClassList = BaseClassList | BaseClassList[];
 
-/**
- * @public
- */
+/** @public */
 export declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     span?: number | undefined;
     width?: Size | undefined;
@@ -423,8 +456,8 @@ export declare interface ColHTMLAttributes<T extends Element> extends HTMLAttrib
  * Declare a Qwik component that can be used to create UI.
  *
  * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
- * that allows the Qwik framework to lazy load and execute the component independently of other
- * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+ * that allows the Qwik framework to lazy load and execute the component independently of other Qwik
+ * components as well as lazy load the component's life-cycle hooks and event handlers.
  *
  * Side note: You can also declare regular (standard JSX) components that will have standard
  * synchronous behavior.
@@ -476,7 +509,7 @@ export declare const component$: <PROPS = unknown, ARG extends {} = PROPS extend
  *
  * `Component` is the type returned by invoking `component$`.
  *
- * ```
+ * ```tsx
  * interface MyComponentProps {
  *   someProp: string;
  * }
@@ -489,9 +522,7 @@ export declare const component$: <PROPS = unknown, ARG extends {} = PROPS extend
  */
 export declare type Component<PROPS extends {}> = FunctionComponent<PublicProps<PROPS>>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface ComponentBaseProps {
     key?: string | number | null | undefined;
     'q:slot'?: string;
@@ -507,8 +538,8 @@ declare type ComponentChildren<PROPS extends {}> = PROPS extends {
  * Declare a Qwik component that can be used to create UI.
  *
  * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
- * that allows the Qwik framework to lazy load and execute the component independently of other
- * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+ * that allows the Qwik framework to lazy load and execute the component independently of other Qwik
+ * components as well as lazy load the component's life-cycle hooks and event handlers.
  *
  * Side note: You can also declare regular (standard JSX) components that will have standard
  * synchronous behavior.
@@ -562,18 +593,14 @@ declare interface Computed {
 declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, SignalInternal<T>> {
 }
 
-/**
- * @public
- */
+/** @public */
 declare type ComputedFn<T> = () => T;
 
 declare interface ComputedQRL {
     <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<Awaited<T>>;
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface ContainerState {
     readonly $containerEl$: Element;
     readonly $proxyMap$: ObjToProxyMap;
@@ -599,8 +626,8 @@ declare interface ContainerState {
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
- * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+ * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier
+ * for the context. It is not the context value itself. See `useContextProvider()` and
  * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
  * track context providers and consumers in a way that survives resumability.
  *
@@ -640,29 +667,26 @@ declare interface ContainerState {
  * });
  *
  * ```
+ *
  * @public
  */
 export declare interface ContextId<STATE> {
-    /**
-     * Design-time property to store type information for the context.
-     */
+    /** Design-time property to store type information for the context. */
     readonly __brand_context_type__: STATE;
-    /**
-     * A unique ID for the context.
-     */
+    /** A unique ID for the context. */
     readonly id: string;
 }
 
 /**
  * Low-level API for platform abstraction.
  *
- * Different platforms (browser, node, service workers) may have different ways of handling
- * things such as `requestAnimationFrame` and imports. To make Qwik platform-independent Qwik
- * uses the `CorePlatform` API to access the platform API.
+ * Different platforms (browser, node, service workers) may have different ways of handling things
+ * such as `requestAnimationFrame` and imports. To make Qwik platform-independent Qwik uses the
+ * `CorePlatform` API to access the platform API.
  *
  * `CorePlatform` also is responsible for importing symbols. The import map is different on the
- * client (browser) then on the server. For this reason, the server has a manifest that is used
- * to map symbols to javascript chunks. The manifest is encapsulated in `CorePlatform`, for this
+ * client (browser) then on the server. For this reason, the server has a manifest that is used to
+ * map symbols to javascript chunks. The manifest is encapsulated in `CorePlatform`, for this
  * reason, the `CorePlatform` can't be global as there may be multiple applications running at
  * server concurrently.
  *
@@ -689,9 +713,9 @@ export declare interface CorePlatform {
      * serialize imports relative to application base rather than the Qwik framework file.
      *
      * @param element - The element against which the `url` is resolved. Used to locate the container
-     * root and `q:base` attribute.
+     *   root and `q:base` attribute.
      * @param url - Relative URL retrieved from the attribute that needs to be resolved against the
-     * container `q:base` attribute.
+     *   container `q:base` attribute.
      * @param symbol - The name of the symbol to import.
      * @returns A promise that resolves to the imported symbol.
      */
@@ -714,23 +738,22 @@ export declare interface CorePlatform {
      * When the application is running on the server the symbols may be imported from different files
      * (as server build is typically a single javascript chunk.) For this reason, it is necessary to
      * convert the chunks from server format to client (browser) format. This is done by looking up
-     * symbols (which are globally unique) in the manifest. (Manifest is the mapping of symbols to
-     * the client chunk names.)
+     * symbols (which are globally unique) in the manifest. (Manifest is the mapping of symbols to the
+     * client chunk names.)
      *
      * @param symbolName - Resolve `symbolName` against the manifest and return the chunk that
-     * contains the symbol.
+     *   contains the symbol.
      */
     chunkForSymbol: (symbolName: string, chunk: string | null) => readonly [symbol: string, chunk: string] | undefined;
 }
 
 /**
- * Create a context ID to be used in your application.
- * The name should be written with no spaces.
+ * Create a context ID to be used in your application. The name should be written with no spaces.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
  *
- * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
- * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+ * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier
+ * for the context. It is not the context value itself. See `useContextProvider()` and
  * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
  * track context providers and consumers in a way that survives resumability.
  *
@@ -770,19 +793,17 @@ export declare interface CorePlatform {
  * });
  *
  * ```
+ *
  * @param name - The name of the context.
  * @public
  */
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2.PropertiesHyphen<string | number> {
     /**
-     * The index signature was removed to enable closed typing for style
-     * using CSSType. You're able to use type assertion or module augmentation
-     * to add properties or an index signature of your own.
+     * The index signature was removed to enable closed typing for style using CSSType. You're able to
+     * use type assertion or module augmentation to add properties or an index signature of your own.
      *
      * For examples and more information, visit:
      * https://github.com/frenic/csstype#what-should-i-do-when-i-get-type-errors
@@ -790,24 +811,18 @@ export declare interface CSSProperties extends CSS_2.Properties<string | number>
     [v: `--${string}`]: string | number | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface DescriptorBase<T = any, B = undefined> {
     $qrl$: QRLInternal<T>;
     $el$: QwikElement;
@@ -817,21 +832,15 @@ declare interface DescriptorBase<T = any, B = undefined> {
     $state$: B;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _deserializeData: (data: string, element?: unknown) => any;
 
-/**
- * @public
- */
+/** @public */
 export declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface DevJSX {
     fileName: string;
     lineNumber: number;
@@ -839,29 +848,21 @@ export declare interface DevJSX {
     stack?: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     open?: boolean | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface DOMAttributes<T extends Element> extends QwikProps<T>, QwikEvents<T> {
     children?: JSXChildren;
     key?: string | number | null | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
-/**
- * @public
- */
+/** @public */
 export declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     src?: string | undefined;
@@ -870,40 +871,28 @@ export declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttr
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ErrorBoundaryStore {
     error: any | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const event$: <T>(first: T) => QRL<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     form?: string | undefined;
     name?: string | undefined;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _fnSignal: <T extends (...args: any[]) => any>(fn: T, args: any[], fnStr?: string) => SignalDerived<any, any[]>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     acceptCharset?: string | undefined;
     action?: string | undefined;
@@ -915,37 +904,29 @@ export declare interface FormHTMLAttributes<T extends Element> extends HTMLAttri
     target?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const Fragment: FunctionComponent<{
     children?: any;
     key?: string | number | null;
 }>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface FunctionComponent<P = Record<string, any>> {
     (props: P, key: string | null, flags: number, dev?: DevJSX): JSXNode | null;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _getContextElement: () => unknown;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _getContextEvent: () => unknown;
 
 /**
- * Retrieve the current lang.
+ * Retrieve the current locale.
  *
- * If no current lang and there is no `defaultLang` the function throws an error.
+ * If no current locale and there is no `defaultLocale` the function throws an error.
  *
- * @returns  the lang.
+ * @returns The locale.
  * @internal
  */
 export declare function getLocale(defaultLocale?: string): string;
@@ -957,11 +938,11 @@ declare type GetObjID = (obj: any) => string | null;
 /**
  * Retrieve the `CorePlatform`.
  *
- * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings
- * from symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but
- * is specific to the application currently running. On server it is possible that many different
- * applications are running in a single server instance, and for this reason the `CorePlatform`
- * is associated with the application document.
+ * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings from
+ * symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but is
+ * specific to the application currently running. On server it is possible that many different
+ * applications are running in a single server instance, and for this reason the `CorePlatform` is
+ * associated with the application document.
  *
  * @param docOrNode - The document (or node) of the application for which the platform is needed.
  * @public
@@ -970,14 +951,10 @@ export declare const getPlatform: () => CorePlatform;
 
 declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect | Node, LocalSubscriptionManager[]>;
 
-/**
- * @public
- */
+/** @public */
 declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends {} = {}>(type: TYPE, props: PROPS | null, ...children: any[]): JSXNode<TYPE>;
 
-/**
- * @public
- */
+/** @public */
 declare namespace h {
     function h(type: any): JSXNode<any>;
     function h(type: Node, data: any): JSXNode<any>;
@@ -1001,29 +978,19 @@ declare namespace h {
 export { h as createElement }
 export { h }
 
-/**
- * @public
- */
+/** @public */
 export declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top' | (string & {});
 
-/**
- * @public
- */
+/** @public */
 export declare type HTMLAttributeReferrerPolicy = '' | 'no-referrer' | 'no-referrer-when-downgrade' | 'origin' | 'origin-when-cross-origin' | 'same-origin' | 'strict-origin' | 'strict-origin-when-cross-origin' | 'unsafe-url';
 
-/**
- * @public
- */
-/**
- * @public
- */
+/** @public */
+/** @public */
 export declare interface HTMLAttributes<T extends Element> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: string | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
@@ -1063,61 +1030,51 @@ export declare interface HTMLAttributes<T extends Element> extends AriaAttribute
     security?: string | undefined;
     unselectable?: 'on' | 'off' | undefined;
     /**
-     * Hints at the type of data that might be entered by the user while editing the element or its contents
+     * Hints at the type of data that might be entered by the user while editing the element or its
+     * contents
+     *
      * @see https://html.spec.whatwg.org/multipage/interaction.html#input-modalities:-the-inputmode-attribute
      */
     inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search' | undefined;
     /**
      * Specify that a standard HTML element should behave like a defined custom built-in element
+     *
      * @see https://html.spec.whatwg.org/multipage/custom-elements.html#attr-is
      */
     is?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
 
-/**
- * @public
- */
+/** @public */
 export declare const HTMLFragment: FunctionComponent<{
     dangerouslySetInnerHTML: string;
 }>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     manifest?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
 
-/**
- * @public
- */
+/** @public */
 export declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' | 'datetime-local' | 'email' | 'file' | 'hidden' | 'image' | 'month' | 'number' | 'password' | 'radio' | 'range' | 'reset' | 'search' | 'submit' | 'tel' | 'text' | 'time' | 'url' | 'week' | (string & {});
 
 declare interface HTMLWebViewElement extends HTMLElement {
 }
 
 /**
- * Low-level API used by the Optimizer to process `useTask$()` API. This method
- * is not intended to be used by developers.
+ * Low-level API used by the Optimizer to process `useTask$()` API. This method is not intended to
+ * be used by developers.
  *
  * @internal
- *
  */
 export declare const _hW: () => void;
 
-/**
- * @public
- */
+/** @public */
 export declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allow?: string | undefined;
     allowFullScreen?: boolean | undefined;
@@ -1142,16 +1099,12 @@ export declare interface IframeHTMLAttributes<T extends Element> extends HTMLAtt
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     alt?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
     decoding?: 'async' | 'auto' | 'sync' | undefined;
-    /**
-     * Intrinsic height of the image in pixels.
-     */
+    /** Intrinsic height of the image in pixels. */
     height?: Numberish | undefined;
     loading?: 'eager' | 'lazy' | undefined;
     referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
@@ -1159,24 +1112,20 @@ export declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttrib
     src?: string | undefined;
     srcSet?: string | undefined;
     useMap?: string | undefined;
-    /**
-     * Intrinsic width of the image in pixels.
-     */
+    /** Intrinsic width of the image in pixels. */
     width?: Numberish | undefined;
     children?: undefined;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _IMMUTABLE: unique symbol;
 
 /**
  * Create a `____$(...)` convenience method from `___(...)`.
  *
  * It is very common for functions to take a lazy-loadable resource as a first argument. For this
- * reason, the Qwik Optimizer automatically extracts the first argument from any function which
- * ends in `$`.
+ * reason, the Qwik Optimizer automatically extracts the first argument from any function which ends
+ * in `$`.
  *
  * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
  * The former is just a shorthand for the latter.
@@ -1204,24 +1153,18 @@ export declare const _IMMUTABLE: unique symbol;
  * export const callback = () => console.log('callback');
  * ```
  *
- * @param fn - a function that should have its first argument automatically `$`.
+ * @param fn - A function that should have its first argument automatically `$`.
  * @public
  */
 export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const inlinedQrlDEV: <T = any>(symbol: T, symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     accept?: string | undefined;
     alt?: string | undefined;
@@ -1261,23 +1204,17 @@ export declare interface InputHTMLAttributes<T extends Element> extends HTMLAttr
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
     dateTime?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface IntrinsicElements extends IntrinsicHTMLElements, IntrinsicSVGElements {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface IntrinsicHTMLElements {
     a: AnchorHTMLAttributes<HTMLAnchorElement>;
     abbr: HTMLAttributes<HTMLElement>;
@@ -1398,9 +1335,7 @@ export declare interface IntrinsicHTMLElements {
     webview: WebViewHTMLAttributes<HTMLWebViewElement>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface IntrinsicSVGElements {
     svg: SVGProps<SVGSVGElement>;
     animate: SVGProps<SVGElement>;
@@ -1477,31 +1412,21 @@ declare interface InvokeContext {
 
 declare type InvokeTuple = [Element, Event, URL?];
 
-/**
- * @public
- */
+/** @public */
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxs }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _jsxBranch: (input?: any) => any;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
-/**
- * @public
- */
+/** @public */
 export declare const jsxDEV: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: any) => JSXNode<T>;
 
 declare interface JsxDevOpts {
@@ -1510,9 +1435,7 @@ declare interface JsxDevOpts {
     columnNumber: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface JSXNode<T = string | FunctionComponent> {
     type: T;
     props: T extends FunctionComponent<infer B> ? B : Record<string, any>;
@@ -1523,24 +1446,16 @@ export declare interface JSXNode<T = string | FunctionComponent> {
     dev?: DevJSX;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _jsxQ: <T extends string>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _jsxS: <T extends string>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoFocus?: boolean | undefined;
     challenge?: string | undefined;
@@ -1552,24 +1467,18 @@ export declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAtt
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     as?: string | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
@@ -1590,15 +1499,15 @@ export declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttri
 declare type Listener = [eventName: string, qrl: QRLInternal];
 
 /**
- * Allows creating a union type by combining primitive types and literal types
- * without sacrificing auto-completion in IDEs for the literal type part of the union.
+ * Allows creating a union type by combining primitive types and literal types without sacrificing
+ * auto-completion in IDEs for the literal type part of the union.
  *
- * This type is a workaround for Microsoft/TypeScript#29729.
- * It will be removed as soon as it's not needed anymore.
+ * This type is a workaround for Microsoft/TypeScript#29729. It will be removed as soon as it's not
+ * needed anymore.
  *
  * Example:
  *
- * ```
+ * ```ts
  * // Before
  * type Pet = 'dog' | 'cat' | string;
  *
@@ -1628,16 +1537,12 @@ declare class LocalSubscriptionManager {
     $notifySubs$(key?: string | undefined): void;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoPlay?: boolean | undefined;
     controls?: boolean | undefined;
@@ -1651,16 +1556,12 @@ export declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttr
     src?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     type?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     charSet?: string | undefined;
     content?: string | undefined;
@@ -1670,9 +1571,7 @@ export declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttri
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     high?: number | undefined;
@@ -1695,9 +1594,7 @@ export declare type NativeCompositionEvent = CompositionEvent;
 /** @public */
 export declare type NativeDragEvent = DragEvent;
 
-/**
- * @public
- */
+/** @public */
 declare type NativeEventHandler<T extends Event = Event, EL = Element> = BivariantEventHandler<T, EL> | QRL<BivariantEventHandler<T, EL>>[];
 
 /** @public */
@@ -1724,16 +1621,14 @@ export declare type NativeUIEvent = UIEvent;
 /** @public */
 export declare type NativeWheelEvent = WheelEvent;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _noopQrl: <T>(symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
 
 /**
  * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
  *
- * @see noSerialize
  * @public
+ * @see noSerialize
  */
 export declare type NoSerialize<T> = (T & {
     __no_serialize__: true;
@@ -1742,9 +1637,9 @@ export declare type NoSerialize<T> = (T & {
 /**
  * Marks a property on a store as non-serializable.
  *
- * At times it is necessary to store values on a store that are non-serializable. Normally this
- * is a runtime error as Store wants to eagerly report when a non-serializable property is
- * assigned to it.
+ * At times it is necessary to store values on a store that are non-serializable. Normally this is a
+ * runtime error as Store wants to eagerly report when a non-serializable property is assigned to
+ * it.
  *
  * You can use `noSerialize()` to mark a value as non-serializable. The value is persisted in the
  * Store but does not survive serialization. The implication is that when your application is
@@ -1757,14 +1652,10 @@ export declare type NoSerialize<T> = (T & {
  */
 export declare const noSerialize: <T extends object | undefined>(input: T) => NoSerialize<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare type Numberish = number | `${number}`;
 
-/**
- * @public
- */
+/** @public */
 export declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     classID?: string | undefined;
     data?: string | undefined;
@@ -1779,45 +1670,38 @@ export declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAtt
 
 declare type ObjToProxyMap = WeakMap<any, any>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     reversed?: boolean | undefined;
     start?: number | undefined;
     type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type OnRenderFn<PROPS extends {}> = (props: PROPS) => JSXNode<any> | null;
 
-/**
- * @public
- */
+/** @public */
 export declare interface OnVisibleTaskOptions {
     /**
      * The strategy to use to determine when the "VisibleTask" should first execute.
      *
-     * - `intersection-observer`: the task will first execute when the element is visible in the viewport, under the hood it uses the IntersectionObserver API.
-     * - `document-ready`: the task will first execute when the document is ready, under the hood it uses the document `load` event.
-     * - `document-idle`: the task will first execute when the document is idle, under the hood it uses the requestIdleCallback API.
+     * - `intersection-observer`: the task will first execute when the element is visible in the
+     *   viewport, under the hood it uses the IntersectionObserver API.
+     * - `document-ready`: the task will first execute when the document is ready, under the hood it
+     *   uses the document `load` event.
+     * - `document-idle`: the task will first execute when the document is idle, under the hood it uses
+     *   the requestIdleCallback API.
      */
     strategy?: VisibleTaskStrategy;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     disabled?: boolean | undefined;
     label?: string | undefined;
@@ -1826,18 +1710,14 @@ export declare interface OptionHTMLAttributes<T extends Element> extends HTMLAtt
     children?: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     form?: string | undefined;
     for?: string | undefined;
     name?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
@@ -1845,33 +1725,27 @@ export declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttr
 }
 
 /**
- * The PascalCaseEventLiteralType combines the QwikKeysEvents type and string type
- * using the LiteralUnion utility type, allowing autocompletion for event names while
- * retaining support for custom event names as strings.
+ * The PascalCaseEventLiteralType combines the QwikKeysEvents type and string type using the
+ * LiteralUnion utility type, allowing autocompletion for event names while retaining support for
+ * custom event names as strings.
  */
 declare type PascalCaseEventLiteralType = LiteralUnion<QwikKeysEvents, string>;
 
-/**
- * @public
- */
+/** @public */
 declare interface PauseContext {
     getObject: GetObject;
     meta: SnapshotMeta;
     refs: Record<string, string>;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
 
 declare type PreventDefault<T extends Element> = {
     [K in keyof QwikEventMap<T> as `preventdefault:${Lowercase<K>}`]?: boolean;
 };
 
-/**
- * Matches any primitive value.
- */
+/** Matches any primitive value. */
 declare type Primitive = null | undefined | string | number | boolean | symbol | bigint;
 
 declare interface ProcessedJSXNode {
@@ -1888,29 +1762,21 @@ declare interface ProcessedJSXNode {
     $dev$?: DevJSX;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     max?: number | string | undefined;
     value?: string | ReadonlyArray<string> | number | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface PropFnInterface<ARGS extends any[], RET> {
     (...args: ARGS): Promise<RET>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type PropFunction<T extends Function = (...args: any[]) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : never;
 
-/**
- * @public
- */
+/** @public */
 export declare type PropFunctionProps<PROPS extends {}> = {
     [K in keyof PROPS]: NonNullable<PROPS[K]> extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : PROPS[K];
 };
@@ -1930,6 +1796,7 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
 
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot)..
+ *
  * @public
  */
 export declare type PublicProps<PROPS extends {}> = TransformProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
@@ -1963,12 +1830,11 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * QRL stands for Qwik URL.
  *
- * Use `QRL` when you want to refer to a lazy-loaded resource. `QRL`s are most often used for
- * code (functions) but can also be used for other resources such as `string`s in the case of
- * styles.
+ * Use `QRL` when you want to refer to a lazy-loaded resource. `QRL`s are most often used for code
+ * (functions) but can also be used for other resources such as `string`s in the case of styles.
  *
- * `QRL` is an opaque token that is generated by the Qwik Optimizer. (Do not rely on any
- * properties in `QRL` as it may change between versions.)
+ * `QRL` is an opaque token that is generated by the Qwik Optimizer. (Do not rely on any properties
+ * in `QRL` as it may change between versions.)
  *
  * ## Creating `QRL` references
  *
@@ -1993,13 +1859,13 @@ declare const QObjectSignalFlags: unique symbol;
  * ```
  *
  * NOTE: `qrl(...)` is a result of Qwik Optimizer transformation. You should never have to invoke
- * this function directly in your application. The `qrl(...)` function should be invoked only
- * after the Qwik Optimizer transformation.
+ * this function directly in your application. The `qrl(...)` function should be invoked only after
+ * the Qwik Optimizer transformation.
  *
  * ## Using `QRL`s
  *
- * Use `QRL` type in your application when you want to get a lazy-loadable reference to a
- * resource (most likely a function).
+ * Use `QRL` type in your application when you want to get a lazy-loadable reference to a resource
+ * (most likely a function).
  *
  * ```tsx
  * // Example of declaring a custom functions which takes callback as QRL.
@@ -2010,10 +1876,10 @@ declare const QObjectSignalFlags: unique symbol;
  * }
  * ```
  *
- * In the above example, the way to think about the code is that you are not asking for a
- * callback function but rather a reference to a lazy-loadable callback function. Specifically,
- * the function loading should be delayed until it is actually needed. In the above example, the
- * function would not load until after a `mousemove` event on `document` fires.
+ * In the above example, the way to think about the code is that you are not asking for a callback
+ * function but rather a reference to a lazy-loadable callback function. Specifically, the function
+ * loading should be delayed until it is actually needed. In the above example, the function would
+ * not load until after a `mousemove` event on `document` fires.
  *
  * ## Resolving `QRL` references
  *
@@ -2036,8 +1902,8 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * ## `QRL.resolved`
  *
- * Once `QRL.resolve()` returns, the value is stored under `QRL.resolved`. This allows the value
- * to be used without having to await `QRL.resolve()` again.
+ * Once `QRL.resolve()` returns, the value is stored under `QRL.resolved`. This allows the value to
+ * be used without having to await `QRL.resolve()` again.
  *
  * ## Question: Why not just use `import()`?
  *
@@ -2048,8 +1914,7 @@ declare const QObjectSignalFlags: unique symbol;
  * 2. `QRL`s must be resolved by framework relative to `q:base`.
  * 3. `QRL`s must be able to capture lexically scoped variables.
  * 4. `QRL`s encapsulate the difference between running with and without Qwik Optimizer.
- * 5. `QRL`s allow expressing lazy-loaded boundaries without thinking about chunk and symbol
- * names.
+ * 5. `QRL`s allow expressing lazy-loaded boundaries without thinking about chunk and symbol names.
  *
  * Let's assume that you intend to write code such as this:
  *
@@ -2059,35 +1924,34 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * The above code needs to be serialized into DOM such as:
  *
- * ```
+ * ```html
  * <div q:base="/build/">
  *   <button on:click="./chunk-abc.js#onClick">...</button>
  * </div>
  * ```
  *
- * 1. Notice there is no easy way to extract chunk (`./chunk-abc.js`) and symbol (`onClick`) into
- * HTML.
- * 2. Notice that even if you could extract it, the `import('./chunk-abc.js')` would become
- * relative to where the `import()` file is declared. Because it is our framework doing the load,
- * the `./chunk-abc.js` would become relative to the framework file. This is not correct, as it
- * should be relative to the original file generated by the bundler.
+ * 1. Notice there is no easy way to extract chunk (`./chunk-abc.js`) and symbol (`onClick`) into HTML.
+ * 2. Notice that even if you could extract it, the `import('./chunk-abc.js')` would become relative to
+ *    where the `import()` file is declared. Because it is our framework doing the load, the
+ *    `./chunk-abc.js` would become relative to the framework file. This is not correct, as it
+ *    should be relative to the original file generated by the bundler.
  * 3. Next, the framework needs to resolve the `./chunk-abc.js` and needs a base location that is
- * encoded in the HTML.
- * 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows
- * loading top-level symbols which don't capture variables.)
- * 5. As a developer, you don't want to think about `import` and naming the chunks and symbols.
- * You just want to say: "this should be lazy."
+ *    encoded in the HTML.
+ * 4. The QRL needs to be able to capture lexically scoped variables. (`import()` only allows loading
+ *    top-level symbols which don't capture variables.)
+ * 5. As a developer, you don't want to think about `import` and naming the chunks and symbols. You
+ *    just want to say: "this should be lazy."
  *
  * These are the main reasons why Qwik introduces its own concept of `QRL`.
  *
- * @see `$`
- *
  * @public
+ * @see `$`
  */
 export declare interface QRL<TYPE = any> {
     __brand__QRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it. The signal is used to abort the invocation.
+     *
      * @param signal - An AbortSignal object.
      * @param args - Closure arguments.
      * @returns A promise of the return value of the closure.
@@ -2095,6 +1959,7 @@ export declare interface QRL<TYPE = any> {
     (signal: AbortSignal, ...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
     /**
      * Resolve the QRL of closure and invoke it.
+     *
      * @param args - Closure arguments.
      * @returns A promise of the return value of the closure.
      */
@@ -2115,27 +1980,22 @@ export declare interface QRL<TYPE = any> {
  * This function should be used by the Qwik Optimizer only. The function should not be directly
  * referred to in the source code of the application.
  *
- * @see `QRL`, `$(...)`
- *
  * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
  * @param symbol - Symbol to lazy load
- * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
+ * @param lexicalScopeCapture - A set of lexically scoped variables to capture.
  * @public
+ * @see `QRL`, `$(...)`
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[], stackOffset?: number) => QRL<T>;
 
-/**
- * @public
- */
+/** @public */
 declare interface QRLDev {
     file: string;
     lo: number;
     hi: number;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const qrlDEV: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
 declare interface QRLInternal<TYPE = any> extends QRL<TYPE>, QRLInternalMethods<TYPE> {
@@ -2159,39 +2019,29 @@ declare interface QRLInternalMethods<TYPE> {
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cite?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikAnimationEvent<T = Element> extends SyntheticEvent<T, NativeAnimationEvent> {
     animationName: string;
     elapsedTime: number;
     pseudoElement: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikChangeEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikClipboardEvent<T = Element> extends SyntheticEvent<T, NativeClipboardEvent> {
     clipboardData: DataTransfer;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikCompositionEvent<T = Element> extends SyntheticEvent<T, NativeCompositionEvent> {
     data: string;
 }
@@ -2207,15 +2057,11 @@ declare interface QwikCustomHTMLAttributes<T extends Element> extends HTMLAttrib
 declare interface QwikCustomHTMLElement extends Element {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikDOMAttributes extends DOMAttributes<Element> {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikDragEvent<T = Element> extends QwikMouseEvent<T, NativeDragEvent> {
     dataTransfer: DataTransfer;
 }
@@ -2361,9 +2207,7 @@ declare type QwikEventMap<T> = {
     Waiting: Event;
 };
 
-/**
- * @public
- */
+/** @public */
 declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> {
     'document:onLoad$'?: BivariantEventHandler<Event, T>;
     'document:onScroll$'?: BivariantEventHandler<QwikUIEvent<T>, T>;
@@ -2371,24 +2215,20 @@ declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> 
     'document:onVisibilityChange$'?: BivariantEventHandler<Event, T>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikFocusEvent<T = Element> extends SyntheticEvent<T, NativeFocusEvent> {
     relatedTarget: EventTarget | null;
     target: EventTarget & T;
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface QwikIntrinsicAttributes {
     key?: string | number | undefined | null;
 }
 
 /**
- * The interface holds available attributes of both native DOM elements and custom Qwik elements.
- * An example showing how to define a customizable wrapper component:
+ * The interface holds available attributes of both native DOM elements and custom Qwik elements. An
+ * example showing how to define a customizable wrapper component:
  *
  * ```tsx
  * import { component$, Slot, type QwikIntrinsicElements } from "@builder.io/qwik";
@@ -2405,22 +2245,19 @@ declare interface QwikIntrinsicAttributes {
  *   );
  * });
  * ```
+ *
  * @public
  */
 export declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
     [key: string]: QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikInvalidEvent<T = Element> extends SyntheticEvent<T> {
     target: EventTarget & T;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare namespace QwikJSX {
     export interface Element extends JSXNode {
     }
@@ -2433,20 +2270,20 @@ export declare namespace QwikJSX {
     }
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
     isComposing: boolean;
     altKey: boolean;
     charCode: number;
     ctrlKey: boolean;
     /**
-     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of
+     * valid (case-sensitive) arguments to this method.
      */
     getModifierState(key: string): boolean;
     /**
-     * See the [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
+     * See the [DOM Level 3 Events
+     * spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
      */
     key: string;
     keyCode: number;
@@ -2464,9 +2301,7 @@ declare type QwikKnownEvents<T> = {
     [K in keyof QwikEventMap<T> as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<BivariantEventHandler<QwikEventMap<T>[K], T>>;
 };
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> extends SyntheticEvent<T, E> {
     altKey: boolean;
     button: number;
@@ -2475,7 +2310,8 @@ export declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> exten
     clientY: number;
     ctrlKey: boolean;
     /**
-     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of
+     * valid (case-sensitive) arguments to this method.
      */
     getModifierState(key: string): boolean;
     metaKey: boolean;
@@ -2491,9 +2327,7 @@ export declare interface QwikMouseEvent<T = Element, E = NativeMouseEvent> exten
     y: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikPointerEvent<T = Element> extends QwikMouseEvent<T, NativePointerEvent> {
     pointerId: number;
     pressure: number;
@@ -2509,27 +2343,22 @@ declare interface QwikProps<T extends Element> extends PreventDefault<T> {
     class?: ClassList | Signal<ClassList> | undefined;
     dangerouslySetInnerHTML?: string | undefined;
     ref?: Ref<T> | undefined;
-    /**
-     * Corresponding slot name used to project the element into.
-     */
+    /** Corresponding slot name used to project the element into. */
     'q:slot'?: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikSubmitEvent<T = Element> extends SyntheticEvent<T> {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, NativeTouchEvent> {
     altKey: boolean;
     changedTouches: TouchList;
     ctrlKey: boolean;
     /**
-     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of valid (case-sensitive) arguments to this method.
+     * See [DOM Level 3 Events spec](https://www.w3.org/TR/uievents-key/#keys-modifier). for a list of
+     * valid (case-sensitive) arguments to this method.
      */
     getModifierState(key: string): boolean;
     metaKey: boolean;
@@ -2538,26 +2367,20 @@ export declare interface QwikTouchEvent<T = Element> extends SyntheticEvent<T, N
     touches: TouchList;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikTransitionEvent<T = Element> extends SyntheticEvent<T, NativeTransitionEvent> {
     elapsedTime: number;
     propertyName: string;
     pseudoElement: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikUIEvent<T = Element> extends SyntheticEvent<T, NativeUIEvent> {
     detail: number;
     view: AbstractView;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, NativeWheelEvent> {
     deltaMode: number;
     deltaX: number;
@@ -2565,88 +2388,67 @@ export declare interface QwikWheelEvent<T = Element> extends QwikMouseEvent<T, N
     deltaZ: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
 
-/**
- * @public
- */
+/** @public */
 declare type Ref<T extends Element = Element> = Signal<Element | undefined> | RefFnInterface;
 
 declare interface RefFnInterface {
     (el: Element): void;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _regSymbol: (symbol: any, hash: string) => any;
 
 /**
  * Render JSX.
  *
- * Use this method to render JSX. This function does reconciling which means
- * it always tries to reuse what is already in the DOM (rather then destroy and
- * recreate content.)
- * It returns a cleanup function you could use for cleaning up subscriptions.
+ * Use this method to render JSX. This function does reconciling which means it always tries to
+ * reuse what is already in the DOM (rather then destroy and recreate content.) It returns a cleanup
+ * function you could use for cleaning up subscriptions.
  *
- * @param parent - Element which will act as a parent to `jsxNode`. When
- *     possible the rendering will try to reuse existing nodes.
+ * @param parent - Element which will act as a parent to `jsxNode`. When possible the rendering will
+ *   try to reuse existing nodes.
  * @param jsxNode - JSX to render
- * @returns an object containing a cleanup function.
+ * @returns An object containing a cleanup function.
  * @public
  */
 export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
 
-/**
- * @public
- */
+/** @public */
 declare interface RenderContext {
     readonly $static$: RenderStaticContext;
     $cmpCtx$: QContext | null;
     $slotCtx$: QContext | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const RenderOnce: FunctionComponent<{
     children?: any;
     key?: string | number | null | undefined;
 }>;
 
-/**
- * @public
- */
+/** @public */
 declare interface RenderOperation {
     $operation$: (...args: any[]) => void;
     $args$: any[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderOptions {
     serverData?: Record<string, any>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderResult {
     cleanup(): void;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderSSROptions {
     containerTagName: string;
     containerAttributes: Record<string, string>;
@@ -2672,8 +2474,8 @@ declare interface RenderStaticContext {
 }
 
 /**
- * This method works like an async memoized function that runs whenever some tracked value
- * changes and returns some data.
+ * This method works like an async memoized function that runs whenever some tracked value changes
+ * and returns some data.
  *
  * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
@@ -2686,8 +2488,8 @@ declare interface RenderStaticContext {
  *
  * ### Example
  *
- * Example showing how `useResource` to perform a fetch to request the weather, whenever the
- * input city name changes.
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+ * city name changes.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -2720,16 +2522,13 @@ declare interface RenderStaticContext {
  * });
  * ```
  *
+ * @public
  * @see Resource
  * @see ResourceReturn
- *
- * @public
  */
 export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResourceCtx<T> {
     readonly track: Tracker;
     cleanup(callback: () => void): void;
@@ -2740,36 +2539,30 @@ export declare interface ResourceCtx<T> {
 declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturnInternal<T>> {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type ResourceFn<T> = (ctx: ResourceCtx<any>) => ValueOrPromise<T>;
 
 /**
  * Options to pass to `useResource$()`
  *
- * @see useResource
  * @public
+ * @see useResource
  */
 export declare interface ResourceOptions {
     /**
-     * Timeout in milliseconds. If the resource takes more than the specified millisecond, it will timeout.
-     * Resulting on a rejected resource.
+     * Timeout in milliseconds. If the resource takes more than the specified millisecond, it will
+     * timeout. Resulting on a rejected resource.
      */
     timeout?: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResourcePending<T> {
     readonly value: Promise<T>;
     readonly loading: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResourceProps<T> {
     readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
     onResolved: (value: T) => JSXNode;
@@ -2777,25 +2570,19 @@ export declare interface ResourceProps<T> {
     onRejected?: (reason: any) => JSXNode;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResourceRejected<T> {
     readonly value: Promise<T>;
     readonly loading: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResourceResolved<T> {
     readonly value: Promise<T>;
     readonly loading: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type ResourceReturn<T> = ResourcePending<T> | ResourceResolved<T> | ResourceRejected<T>;
 
 declare interface ResourceReturnInternal<T> {
@@ -2809,14 +2596,10 @@ declare interface ResourceReturnInternal<T> {
     loading: boolean;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _restProps: (props: Record<string, any>, omit: string[]) => Record<string, any>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     async?: boolean | undefined;
     /** @deprecated Deprecated */
@@ -2831,9 +2614,7 @@ export declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAtt
     type?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
@@ -2847,9 +2628,7 @@ export declare interface SelectHTMLAttributes<T extends Element> extends HTMLAtt
     'bind:value'?: Signal<string | undefined>;
 }
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _serializeData: (data: any, pureQRL?: boolean) => Promise<string>;
 
 /**
@@ -2864,9 +2643,7 @@ export declare const _serializeData: (data: any, pureQRL?: boolean) => Promise<s
  */
 export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 
-/**
- * @public
- */
+/** @public */
 export declare interface Signal<T = any> {
     value: T;
 }
@@ -2890,18 +2667,15 @@ declare interface SignalInternal<T> extends Signal<T> {
 
 declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
-/**
- * @public
- */
+/** @public */
 export declare type Size = number | string;
 
-/**
- * @public
- */
+/** @public */
 export declare const SkipRender: JSXNode;
 
 /**
- * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
+ * Allows to project the children of the current component. <Slot/> can only be used within the
+ * context of a component defined with `component$`.
  *
  * @public
  */
@@ -2909,30 +2683,22 @@ export declare const Slot: FunctionComponent<{
     name?: string;
 }>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     name?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SnapshotListener {
     key: string;
     qrl: QRL<any>;
     el: Element;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type SnapshotMeta = Record<string, SnapshotMetaValue>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SnapshotMetaValue {
     w?: string;
     s?: string;
@@ -2940,9 +2706,7 @@ export declare interface SnapshotMetaValue {
     c?: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SnapshotResult {
     state: SnapshotState;
     funcs: string[];
@@ -2952,9 +2716,7 @@ export declare interface SnapshotResult {
     mode: 'render' | 'listeners' | 'static';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SnapshotState {
     ctx: SnapshotMeta;
     refs: Record<string, string>;
@@ -2962,9 +2724,7 @@ export declare interface SnapshotState {
     subs: any[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     height?: Size | undefined;
     media?: string | undefined;
@@ -2976,55 +2736,41 @@ export declare interface SourceHTMLAttributes<T extends Element> extends HTMLAtt
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const SSRComment: FunctionComponent<{
     data: string;
 }>;
 
 /**
- * @public
  * @deprecated - It has no effect
+ * @public
  */
 export declare const SSRHint: FunctionComponent<SSRHintProps>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SSRHintProps {
     dynamic?: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const SSRRaw: FunctionComponent<{
     data: string;
 }>;
 
-/**
- * @public
- */
+/** @public */
 export declare const SSRStream: FunctionComponent<SSRStreamProps>;
 
-/**
- * @public
- */
+/** @public */
 export declare const SSRStreamBlock: FunctionComponent<{
     children?: any;
 }>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SSRStreamProps {
     children: AsyncGenerator<JSXChildren, void, any> | ((stream: StreamWriter) => Promise<void>) | (() => AsyncGenerator<JSXChildren, void, any>);
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type StreamWriter = {
     write: (chunk: string) => void;
 };
@@ -3034,9 +2780,7 @@ declare interface StyleAppend {
     content: string | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     media?: string | undefined;
     nonce?: string | undefined;
@@ -3079,9 +2823,7 @@ declare interface SubscriptionManager {
 
 declare type Subscriptions = A | SubscriberSignal;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SVGAttributes<T extends Element> extends AriaAttributes, DOMAttributes<T> {
     class?: ClassList | undefined;
     /** @deprecated - Use `class` instead */
@@ -3345,18 +3087,14 @@ export declare interface SVGAttributes<T extends Element> extends AriaAttributes
     zoomAndPan?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SVGProps<T extends Element> extends SVGAttributes<T> {
 }
 
 declare interface SyntheticEvent<T = Element, E = Event> extends BaseSyntheticEvent<E, EventTarget & T, EventTarget> {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     cellPadding?: number | string | undefined;
     cellSpacing?: number | string | undefined;
@@ -3364,9 +3102,7 @@ export declare interface TableHTMLAttributes<T extends Element> extends HTMLAttr
     width?: Size | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TaskCtx {
     track: Tracker;
     cleanup(callback: () => void): void;
@@ -3374,14 +3110,10 @@ export declare interface TaskCtx {
 
 declare type TaskDescriptor = DescriptorBase<TaskFn>;
 
-/**
- * @public
- */
+/** @public */
 export declare type TaskFn = (ctx: TaskCtx) => ValueOrPromise<void | (() => void)>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
@@ -3394,9 +3126,7 @@ export declare interface TdHTMLAttributes<T extends Element> extends HTMLAttribu
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
     autoFocus?: boolean | undefined;
@@ -3419,9 +3149,7 @@ export declare interface TextareaHTMLAttributes<T extends Element> extends HTMLA
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ThHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     colSpan?: number | undefined;
@@ -3431,16 +3159,12 @@ export declare interface ThHTMLAttributes<T extends Element> extends HTMLAttribu
     abbr?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     dateTime?: string | undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     children?: string;
 }
@@ -3448,14 +3172,14 @@ export declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttr
 /**
  * Used to signal to Qwik which state should be watched for changes.
  *
- * The `Tracker` is passed into the `taskFn` of `useTask`. It is intended to be used to wrap
- * state objects in a read proxy which signals to Qwik which properties should be watched for
- * changes. A change to any of the properties causes the `taskFn` to rerun.
+ * The `Tracker` is passed into the `taskFn` of `useTask`. It is intended to be used to wrap state
+ * objects in a read proxy which signals to Qwik which properties should be watched for changes. A
+ * change to any of the properties causes the `taskFn` to rerun.
  *
  * ### Example
  *
- * The `obs` passed into the `taskFn` is used to mark `state.count` as a property of interest.
- * Any changes to the `state.count` property will cause the `taskFn` to rerun.
+ * The `obs` passed into the `taskFn` is used to mark `state.count` as a property of interest. Any
+ * changes to the `state.count` property will cause the `taskFn` to rerun.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3475,16 +3199,15 @@ export declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttr
  * });
  * ```
  *
- * @see `useTask`
- *
  * @public
+ * @see `useTask`
  */
 export declare interface Tracker {
     /**
      * Include the expression using stores / signals to track:
      *
      * ```tsx
-     * track(() => store.value)
+     * track(() => store.value);
      * ```
      *
      * The `track()` function also returns the value of the scoped expression:
@@ -3495,15 +3218,13 @@ export declare interface Tracker {
      */
     <T>(ctx: () => T): T;
     /**
-     * Used to track the whole object. If any property of the passed store changes,
-     * the task will be scheduled to run.
+     * Used to track the whole object. If any property of the passed store changes, the task will be
+     * scheduled to run.
      */
     <T extends {}>(obj: T): T;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     default?: boolean | undefined;
     kind?: string | undefined;
@@ -3513,32 +3234,25 @@ export declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttr
     children?: undefined;
 }
 
-/**
- * @public
- */
+/** @public */
 declare type TransformProp<T> = NonNullable<T> extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => ValueOrPromise<Awaited<RET>> : T;
 
 /**
  * Transform the component PROPS.
+ *
  * @public
  */
 declare type TransformProps<PROPS extends {}> = {
     [K in keyof PROPS]: TransformProp<PROPS[K]>;
 };
 
-/**
- * @public
- */
+/** @public */
 export declare const untrack: <T>(fn: () => T) => T;
 
-/**
- * @public
- */
+/** @public */
 export declare const useComputed$: Computed;
 
-/**
- * @public
- */
+/** @public */
 export declare const useComputedQrl: ComputedQRL;
 
 declare interface UseContext {
@@ -3550,8 +3264,8 @@ declare interface UseContext {
 /**
  * Retrieve Context value.
  *
- * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
- * parent component needs to invoke `useContextProvider()` to assign a value.
+ * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a parent
+ * component needs to invoke `useContextProvider()` to assign a value.
  *
  * ### Example
  *
@@ -3589,6 +3303,7 @@ declare interface UseContext {
  * });
  *
  * ```
+ *
  * @param context - The context to retrieve a value from.
  * @public
  */
@@ -3639,20 +3354,17 @@ export declare const useContext: UseContext;
  * });
  *
  * ```
+ *
  * @param context - The context to assign a value to.
  * @param value - The value to assign to the context.
  * @public
  */
 export declare const useContextProvider: <STATE extends object>(context: ContextId<STATE>, newValue: STATE) => void;
 
-/**
- * @public
- */
+/** @public */
 export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
 
-/**
- * @public
- */
+/** @public */
 export declare const useId: () => string;
 
 /**
@@ -3673,9 +3385,8 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better idea.
  *
- * @see `useOn`, `useOnWindow`, `useOnDocument`.
- *
  * @public
+ * @see `useOn`, `useOnWindow`, `useOnDocument`.
  */
 export declare const useOn: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
@@ -3685,6 +3396,7 @@ export declare const useOn: (event: PascalCaseEventLiteralType | PascalCaseEvent
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
+ * @public
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
  * ```tsx
@@ -3702,8 +3414,6 @@ export declare const useOn: (event: PascalCaseEventLiteralType | PascalCaseEvent
  *   return <div>Profit!</div>;
  * });
  * ```
- *
- * @public
  */
 export declare const useOnDocument: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
@@ -3713,6 +3423,7 @@ export declare const useOnDocument: (event: PascalCaseEventLiteralType | PascalC
  * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
  * have access to the JSX.
  *
+ * @public
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  *
  * ```tsx
@@ -3731,14 +3442,12 @@ export declare const useOnDocument: (event: PascalCaseEventLiteralType | PascalC
  *   return <div>Profit!</div>;
  * });
  * ```
- *
- * @public
  */
 export declare const useOnWindow: (event: PascalCaseEventLiteralType | PascalCaseEventLiteralType[], eventQrl: QRL<(ev: Event) => void> | undefined) => void;
 
 /**
- * This method works like an async memoized function that runs whenever some tracked value
- * changes and returns some data.
+ * This method works like an async memoized function that runs whenever some tracked value changes
+ * and returns some data.
  *
  * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
@@ -3751,8 +3460,8 @@ export declare const useOnWindow: (event: PascalCaseEventLiteralType | PascalCas
  *
  * ### Example
  *
- * Example showing how `useResource` to perform a fetch to request the weather, whenever the
- * input city name changes.
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+ * city name changes.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3785,16 +3494,15 @@ export declare const useOnWindow: (event: PascalCaseEventLiteralType | PascalCas
  * });
  * ```
  *
+ * @public
  * @see Resource
  * @see ResourceReturn
- *
- * @public
  */
 export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: ResourceOptions) => ResourceReturn<T>;
 
 /**
- * This method works like an async memoized function that runs whenever some tracked value
- * changes and returns some data.
+ * This method works like an async memoized function that runs whenever some tracked value changes
+ * and returns some data.
  *
  * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
  * state that indicates if the data is available or not.
@@ -3807,8 +3515,8 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  *
  * ### Example
  *
- * Example showing how `useResource` to perform a fetch to request the weather, whenever the
- * input city name changes.
+ * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+ * city name changes.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3841,41 +3549,32 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  * });
  * ```
  *
+ * @public
  * @see Resource
  * @see ResourceReturn
- *
- * @public
  */
 export declare const useResourceQrl: <T>(qrl: QRL<ResourceFn<T>>, opts?: ResourceOptions) => ResourceReturn<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare function useServerData<T>(key: string): T | undefined;
 
-/**
- * @public
- */
+/** @public */
 export declare function useServerData<T, B = T>(key: string, defaultValue: B): T | B;
 
-/**
- * @public
- */
+/** @public */
 export declare interface UseSignal {
     <T>(): Signal<T | undefined>;
     <T>(value: T | (() => T)): Signal<T>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const useSignal: UseSignal;
 
 /**
  * Creates an object that Qwik can track across serializations.
  *
- * Use `useStore` to create a state for your application. The returned object is a proxy that has
- * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+ * Use `useStore` to create a state for your application. The returned object is a proxy that has a
+ * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
  *
  * ### Example
  *
@@ -3932,19 +3631,11 @@ export declare const useSignal: UseSignal;
  */
 export declare const useStore: <STATE extends object>(initialState: STATE | (() => STATE), opts?: UseStoreOptions) => STATE;
 
-/**
- * @public
- */
+/** @public */
 export declare interface UseStoreOptions {
-    /**
-     * If `true` then all nested objects and arrays will be tracked as well.
-     * Default is `false`.
-     */
+    /** If `true` then all nested objects and arrays will be tracked as well. Default is `false`. */
     deep?: boolean;
-    /**
-     * If `false` then the object will not be tracked for changes.
-     * Default is `true`.
-     */
+    /** If `false` then the object will not be tracked for changes. Default is `true`. */
     reactive?: boolean;
 }
 
@@ -3964,9 +3655,8 @@ export declare interface UseStoreOptions {
  * });
  * ```
  *
- * @see `useStylesScoped`
- *
  * @public
+ * @see `useStylesScoped`
  */
 export declare const useStyles$: (first: string) => void;
 
@@ -3986,9 +3676,8 @@ export declare const useStyles$: (first: string) => void;
  * });
  * ```
  *
- * @see `useStylesScoped`
- *
  * @public
+ * @see `useStylesScoped`
  */
 export declare const useStylesQrl: (styles: QRL<string>) => void;
 
@@ -4008,15 +3697,12 @@ export declare const useStylesQrl: (styles: QRL<string>) => void;
  * });
  * ```
  *
- * @see `useStyles`
- *
  * @public
+ * @see `useStyles`
  */
 export declare const useStylesScoped$: (first: string) => UseStylesScoped;
 
-/**
- * @public
- */
+/** @public */
 export declare interface UseStylesScoped {
     scopeId: string;
 }
@@ -4037,24 +3723,22 @@ export declare interface UseStylesScoped {
  * });
  * ```
  *
- * @see `useStyles`
- *
  * @public
+ * @see `useStyles`
  */
 export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScoped;
 
 /**
  * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
- * those inputs change.
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when those
+ * inputs change.
  *
  * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
  * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
  * rerun.
  *
- * @see `Tracker`
- *
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  *
  * ### Example
@@ -4098,14 +3782,12 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  * });
  * ```
  *
- * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
+ * @see `Tracker`
  */
 export declare const useTask$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
-/**
- * @public
- */
+/** @public */
 export declare interface UseTaskOptions {
     /**
      * - `visible`: run the effect when the element is visible.
@@ -4117,15 +3799,14 @@ export declare interface UseTaskOptions {
 /**
  * Reruns the `taskFn` when the observed inputs change.
  *
- * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
- * those inputs change.
+ * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when those
+ * inputs change.
  *
  * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
  * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
  * rerun.
  *
- * @see `Tracker`
- *
+ * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
  *
  * ### Example
@@ -4169,8 +3850,8 @@ export declare interface UseTaskOptions {
  * });
  * ```
  *
- * @param task - Function which should be re-executed when changes to the inputs are detected
  * @public
+ * @see `Tracker`
  */
 export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => void;
 
@@ -4226,24 +3907,22 @@ export declare const useVisibleTaskQrl: (qrl: QRL<TaskFn>, opts?: OnVisibleTaskO
 
 /**
  * Type representing a value which is either resolve or a promise.
+ *
  * @public
  */
 export declare type ValueOrPromise<T> = T | Promise<T>;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
  * 1.2.13
+ *
  * @public
  */
 export declare const version: string;
 
-/**
- * @public
- */
+/** @public */
 export declare interface VideoHTMLAttributes<T extends Element> extends MediaHTMLAttributes<T> {
     height?: Numberish | undefined;
     playsInline?: boolean | undefined;
@@ -4286,24 +3965,16 @@ declare interface VirtualElement {
     innerHTML: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type VisibleTaskStrategy = 'intersection-observer' | 'document-ready' | 'document-idle';
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _weakSerialize: <T extends Record<string, any>>(input: T) => Partial<T>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
     allowFullScreen?: boolean | undefined;
     allowpopups?: boolean | undefined;
@@ -4331,14 +4002,10 @@ export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAt
  */
 export declare function withLocale<T>(locale: string, fn: () => T): T;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _wrapProp: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => any;
 
-/**
- * @internal
- */
+/** @internal */
 export declare const _wrapSignal: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => any;
 
 export { }

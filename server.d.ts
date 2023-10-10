@@ -16,9 +16,7 @@ export declare function getQwikLoaderScript(opts?: {
     debug?: boolean;
 }): string;
 
-/**
- * @public
- */
+/** @public */
 declare interface GlobalInjections {
     tag: string;
     attributes?: {
@@ -110,9 +108,7 @@ export declare interface PrefetchStrategy {
     symbolsToPrefetch?: SymbolsToPrefetch;
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface QwikBundle {
     size: number;
     symbols?: string[];
@@ -130,9 +126,7 @@ export declare interface QwikLoaderOptions {
     position?: 'top' | 'bottom';
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface QwikManifest_2 {
     manifestHash: string;
     symbols: {
@@ -158,9 +152,7 @@ declare interface QwikManifest_2 {
     };
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface QwikSymbol {
     origin: string;
     displayName: string;
@@ -287,9 +279,7 @@ export declare interface RenderToStringResult extends RenderResult {
     };
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface ResolvedManifest_2 {
     mapper: SymbolMapper;
     manifest: QwikManifest_2;
@@ -321,9 +311,7 @@ export declare interface StreamingOptions {
     inOrder?: InOrderStreaming;
 }
 
-/**
- * @public
- */
+/** @public */
 declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /**

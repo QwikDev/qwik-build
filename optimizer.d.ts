@@ -1,19 +1,13 @@
-/**
- * @public
- */
+/** @public */
 export declare interface ComponentEntryStrategy {
     type: 'component';
     manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface Diagnostic {
     scope: string;
     category: DiagnosticCategory;
@@ -24,24 +18,16 @@ export declare interface Diagnostic {
     suggestions: string[] | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 
-/**
- * @public
- */
+/** @public */
 declare type EmitMode = 'dev' | 'prod' | 'lib';
 
-/**
- * @public
- */
+/** @public */
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
-/**
- * @public
- */
+/** @public */
 export declare interface GlobalInjections {
     tag: string;
     attributes?: {
@@ -50,16 +36,12 @@ export declare interface GlobalInjections {
     location: 'head' | 'body';
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface HoistEntryStrategy {
     type: 'hoist';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface HookAnalysis {
     origin: string;
     name: string;
@@ -75,68 +57,46 @@ export declare interface HookAnalysis {
     loc: [number, number];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface HookEntryStrategy {
     type: 'hook';
     manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface InlineEntryStrategy {
     type: 'inline';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
 declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
     input: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface Optimizer {
-    /**
-     * Transforms the input code string, does not access the file system.
-     */
+    /** Transforms the input code string, does not access the file system. */
     transformModules(opts: TransformModulesOptions): Promise<TransformOutput>;
-    /**
-     * Transforms the input code string, does not access the file system.
-     */
+    /** Transforms the input code string, does not access the file system. */
     transformModulesSync(opts: TransformModulesOptions): TransformOutput;
-    /**
-     * Transforms the directory from the file system.
-     */
+    /** Transforms the directory from the file system. */
     transformFs(opts: TransformFsOptions): Promise<TransformOutput>;
-    /**
-     * Transforms the directory from the file system.
-     */
+    /** Transforms the directory from the file system. */
     transformFsSync(opts: TransformFsOptions): TransformOutput;
-    /**
-     * Optimizer system use. This can be updated with a custom file system.
-     */
+    /** Optimizer system use. This can be updated with a custom file system. */
     sys: OptimizerSystem;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface OptimizerOptions {
     sys?: OptimizerSystem;
     binding?: any;
     inlineStylesUpToBytes?: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface OptimizerSystem {
     cwd: () => string;
     env: SystemEnvironment;
@@ -147,9 +107,7 @@ export declare interface OptimizerSystem {
     path: Path;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface Path {
     resolve(...paths: string[]): string;
     normalize(path: string): string;
@@ -179,19 +137,13 @@ export declare interface Path {
     readonly posix: Path;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type QwikBuildMode = 'production' | 'development';
 
-/**
- * @public
- */
+/** @public */
 export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikBundle {
     size: number;
     symbols?: string[];
@@ -200,9 +152,7 @@ export declare interface QwikBundle {
     origins?: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikManifest {
     manifestHash: string;
     symbols: {
@@ -261,80 +211,80 @@ declare interface QwikPluginOptions {
     inlineStylesUpToBytes?: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare function qwikRollup(qwikRollupOpts?: QwikRollupPluginOptions): any;
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikRollupPluginOptions {
     csr?: boolean;
     /**
      * Build `production` or `development`.
+     *
      * Default `development`
      */
     buildMode?: QwikBuildMode;
     /**
      * Target `client` or `ssr`.
+     *
      * Default `client`
      */
     target?: QwikBuildTarget;
     /**
      * Prints verbose Qwik plugin debug logs.
+     *
      * Default `false`
      */
     debug?: boolean;
     /**
-     * The Qwik entry strategy to use while building for production.
-     * During development the type is always `hook`.
+     * The Qwik entry strategy to use while building for production. During development the type is
+     * always `hook`.
+     *
      * Default `{ type: "smart" }`)
      */
     entryStrategy?: EntryStrategy;
     /**
-     * The source directory to find all the Qwik components. Since Qwik
-     * does not have a single input, the `srcDir` is used to recursively
-     * find Qwik files.
+     * The source directory to find all the Qwik components. Since Qwik does not have a single input,
+     * the `srcDir` is used to recursively find Qwik files.
+     *
      * Default `src`
      */
     srcDir?: string;
     /**
-     * Alternative to `srcDir`, where `srcInputs` is able to provide the
-     * files manually. This option is useful for an environment without
-     * a file system, such as a webworker.
+     * Alternative to `srcDir`, where `srcInputs` is able to provide the files manually. This option
+     * is useful for an environment without a file system, such as a webworker.
+     *
      * Default: `null`
      */
     srcInputs?: TransformModuleInput[] | null;
     /**
-     * The root of the application, which is commonly the same
-     * directory as `package.json` and `rollup.config.js`.
+     * The root of the application, which is commonly the same directory as `package.json` and
+     * `rollup.config.js`.
+     *
      * Default `process.cwd()`
      */
     rootDir?: string;
     /**
-     * The client build will create a manifest and this hook
-     * is called with the generated build data.
+     * The client build will create a manifest and this hook is called with the generated build data.
+     *
      * Default `undefined`
      */
     manifestOutput?: (manifest: QwikManifest) => Promise<void> | void;
     /**
-     * The SSR build requires the manifest generated during the client build.
-     * The `manifestInput` option can be used to manually provide a manifest.
+     * The SSR build requires the manifest generated during the client build. The `manifestInput`
+     * option can be used to manually provide a manifest.
+     *
      * Default `undefined`
      */
     manifestInput?: QwikManifest;
     optimizerOptions?: OptimizerOptions;
     /**
-     * Hook that's called after the build and provides all of the transformed
-     * modules that were used before bundling.
+     * Hook that's called after the build and provides all of the transformed modules that were used
+     * before bundling.
      */
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikSymbol {
     origin: string;
     displayName: string;
@@ -347,30 +297,22 @@ export declare interface QwikSymbol {
     loc: [number, number];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikViteDevResponse {
     _qwikEnvData?: Record<string, any>;
     _qwikRenderResolve?: () => void;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikVitePlugin {
     name: 'vite-plugin-qwik';
     api: QwikVitePluginApi;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikVitePluginApi {
     getOptimizer: () => Optimizer | null;
     getOptions: () => NormalizedQwikPluginOptions;
@@ -383,154 +325,150 @@ export declare interface QwikVitePluginApi {
 declare interface QwikVitePluginCommonOptions {
     /**
      * Prints verbose Qwik plugin debug logs.
+     *
      * Default `false`
      */
     debug?: boolean;
     /**
-     * The Qwik entry strategy to use while building for production.
-     * During development the type is always `hook`.
+     * The Qwik entry strategy to use while building for production. During development the type is
+     * always `hook`.
+     *
      * Default `{ type: "smart" }`)
      */
     entryStrategy?: EntryStrategy;
     /**
-     * The source directory to find all the Qwik components. Since Qwik
-     * does not have a single input, the `srcDir` is used to recursively
-     * find Qwik files.
+     * The source directory to find all the Qwik components. Since Qwik does not have a single input,
+     * the `srcDir` is used to recursively find Qwik files.
+     *
      * Default `src`
      */
     srcDir?: string;
     /**
      * List of tsconfig.json files to use for ESLint warnings during development.
+     *
      * Default `['tsconfig.json']`
      */
     tsconfigFileNames?: string[];
     /**
      * List of directories to recursively search for Qwik components or Vendors.
+     *
      * Default `[]`
      */
     vendorRoots?: string[];
     /**
      * Options for the Qwik optimizer.
+     *
      * Default `undefined`
      */
     optimizerOptions?: OptimizerOptions;
     /**
-     * Hook that's called after the build and provides all of the transformed
-     * modules that were used before bundling.
+     * Hook that's called after the build and provides all of the transformed modules that were used
+     * before bundling.
      */
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
     devTools?: {
         /**
-         * Press-hold the defined keys to enable qwik dev inspector.
-         * By default the behavior is activated by pressing the left or right `Alt` key.
-         * If set to `false`, qwik dev inspector will be disabled.
-         * Valid values are `KeyboardEvent.code` values.
-         * Please note that the 'Left' and 'Right' suffixes are ignored.
+         * Press-hold the defined keys to enable qwik dev inspector. By default the behavior is
+         * activated by pressing the left or right `Alt` key. If set to `false`, qwik dev inspector will
+         * be disabled.
+         *
+         * Valid values are `KeyboardEvent.code` values. Please note that the 'Left' and 'Right'
+         * suffixes are ignored.
          */
         clickToSource: string[] | false;
     };
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
-    /**
-     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
-     */
+    /** Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file. */
     csr: true;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
-    /**
-     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
-     */
+    /** Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file. */
     csr: true;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type QwikVitePluginOptions = QwikVitePluginCSROptions | QwikVitePluginSSROptions;
 
 declare interface QwikVitePluginSSROptions extends QwikVitePluginCommonOptions {
-    /**
-     * Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file.
-     */
+    /** Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file. */
     csr?: false | undefined;
     client?: {
         /**
-         * The entry point for the client builds. This would be
-         * the application's root component typically.
+         * The entry point for the client builds. This would be the application's root component
+         * typically.
+         *
          * Default `src/components/app/app.tsx`
          */
         input?: string[] | string;
         /**
-         * Entry input for client-side only development with hot-module reloading.
-         * This is for Vite development only and does not use SSR.
+         * Entry input for client-side only development with hot-module reloading. This is for Vite
+         * development only and does not use SSR.
+         *
          * Default `src/entry.dev.tsx`
          */
         devInput?: string;
         /**
          * Output directory for the client build.
+         *
          * Default `dist`
          */
         outDir?: string;
         /**
-         * The client build will create a manifest and this hook
-         * is called with the generated build data.
+         * The client build will create a manifest and this hook is called with the generated build
+         * data.
+         *
          * Default `undefined`
          */
         manifestOutput?: (manifest: QwikManifest) => Promise<void> | void;
     };
     ssr?: {
         /**
-         * The entry point for the SSR renderer. This file should export
-         * a `render()` function. This entry point and `render()` export
-         * function is also used for Vite's SSR development and Node.js
-         * debug mode.
+         * The entry point for the SSR renderer. This file should export a `render()` function. This
+         * entry point and `render()` export function is also used for Vite's SSR development and
+         * Node.js debug mode.
+         *
          * Default `src/entry.ssr.tsx`
          */
         input?: string;
         /**
          * Output directory for the server build.
+         *
          * Default `server`
          */
         outDir?: string;
         /**
-         * The SSR build requires the manifest generated during the client build.
-         * By default, this plugin will wire the client manifest to the ssr build.
-         * However, the `manifestInput` option can be used to manually provide a manifest.
+         * The SSR build requires the manifest generated during the client build. By default, this
+         * plugin will wire the client manifest to the ssr build. However, the `manifestInput` option
+         * can be used to manually provide a manifest.
+         *
          * Default `undefined`
          */
         manifestInput?: QwikManifest;
     };
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface ResolvedManifest {
     mapper: SymbolMapper;
     manifest: QwikManifest;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SingleEntryStrategy {
     type: 'single';
     manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SmartEntryStrategy {
     type: 'smart';
     manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface SourceLocation {
     hi: number;
     lo: number;
@@ -540,36 +478,24 @@ export declare interface SourceLocation {
     endCol: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 
-/**
- * @public
- */
+/** @public */
 export declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
-/**
- * @public
- */
+/** @public */
 export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => readonly [symbol: string, chunk: string] | undefined;
 
-/**
- * @public
- */
+/** @public */
 export declare type SystemEnvironment = 'node' | 'deno' | 'bun' | 'webworker' | 'browsermain' | 'unknown';
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformFsOptions extends TransformOptions {
     vendorRoots: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformModule {
     path: string;
     isEntry: boolean;
@@ -578,24 +504,18 @@ export declare interface TransformModule {
     hook: HookAnalysis | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformModuleInput {
     path: string;
     code: string;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformModulesOptions extends TransformOptions {
     input: TransformModuleInput[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformOptions {
     srcDir: string;
     rootDir?: string;
@@ -615,9 +535,7 @@ export declare interface TransformOptions {
     isServer?: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface TransformOutput {
     modules: TransformModule[];
     diagnostics: Diagnostic[];
@@ -625,14 +543,10 @@ export declare interface TransformOutput {
     isJsx: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type TranspileOption = boolean | undefined | null;
 
-/**
- * @public
- */
+/** @public */
 export declare const versions: {
     qwik: string;
 };

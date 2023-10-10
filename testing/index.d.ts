@@ -3,6 +3,7 @@ import { RenderResult } from '..';
 
 /**
  * CreatePlatform and CreateDocument
+ *
  * @public
  */
 export declare const createDOM: () => Promise<{

@@ -18,8 +18,8 @@
      * Create a `____$(...)` convenience method from `___(...)`.
      *
      * It is very common for functions to take a lazy-loadable resource as a first argument. For this
-     * reason, the Qwik Optimizer automatically extracts the first argument from any function which
-     * ends in `$`.
+     * reason, the Qwik Optimizer automatically extracts the first argument from any function which ends
+     * in `$`.
      *
      * This means that `foo$(arg0)` and `foo($(arg0))` are equivalent with respect to Qwik Optimizer.
      * The former is just a shorthand for the latter.
@@ -47,7 +47,7 @@
      * export const callback = () => console.log('callback');
      * ```
      *
-     * @param fn - a function that should have its first argument automatically `$`.
+     * @param fn - A function that should have its first argument automatically `$`.
      * @public
      */
     // </docs>
@@ -292,12 +292,14 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * Convert relative base URI and relative URL into a fully qualified URL.
      *
      * @param base -`QRL`s are relative, and therefore they need a base for resolution.
-     *    - `Element` use `base.ownerDocument.baseURI`
-     *    - `Document` use `base.baseURI`
-     *    - `string` use `base` as is
-     *    - `QConfig` use `base.baseURI`
-     * @param url - relative URL
-     * @returns fully qualified URL.
+     *
+     *   - `Element` use `base.ownerDocument.baseURI`
+     *   - `Document` use `base.baseURI`
+     *   - `string` use `base` as is
+     *   - `QConfig` use `base.baseURI`
+     *
+     * @param url - Relative URL
+     * @returns Fully qualified URL.
      */
     const toUrl = (doc, containerEl, url) => {
         const baseURI = doc.baseURI;
@@ -326,11 +328,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Retrieve the `CorePlatform`.
      *
-     * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings
-     * from symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but
-     * is specific to the application currently running. On server it is possible that many different
-     * applications are running in a single server instance, and for this reason the `CorePlatform`
-     * is associated with the application document.
+     * The `CorePlatform` is also responsible for retrieving the Manifest, that contains mappings from
+     * symbols to javascript import chunks. For this reason, `CorePlatform` can't be global, but is
+     * specific to the application currently running. On server it is possible that many different
+     * applications are running in a single server instance, and for this reason the `CorePlatform` is
+     * associated with the application document.
      *
      * @param docOrNode - The document (or node) of the application for which the platform is needed.
      * @public
@@ -409,9 +411,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
     }
 
-    /**
-     * @private
-     */
+    /** @private */
     const isSerializableObject = (v) => {
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || proto === null;
@@ -495,17 +495,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return doc;
     };
 
-    /**
-     * State factory of the component.
-     */
+    /** State factory of the component. */
     const OnRenderProp = 'q:renderFn';
-    /**
-     * Component style content prefix
-     */
+    /** Component style content prefix */
     const ComponentStylesPrefixContent = '⭐️';
-    /**
-     * `<some-element q:slot="...">`
-     */
+    /** `<some-element q:slot="...">` */
     const QSlot = 'q:slot';
     const QSlotRef = 'q:sref';
     const QSlotS = 'q:s';
@@ -630,9 +624,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
 
     const CONTAINER_STATE = Symbol('ContainerState');
-    /**
-     * @internal
-     */
+    /** @internal */
     const _getContainerState = (containerEl) => {
         let set = containerEl[CONTAINER_STATE];
         if (!set) {
@@ -710,9 +702,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
      * have access to the JSX. Otherwise, it's adding a JSX listener in the `<div>` is a better idea.
      *
-     * @see `useOn`, `useOnWindow`, `useOnDocument`.
-     *
      * @public
+     * @see `useOn`, `useOnWindow`, `useOnDocument`.
      */
     // </docs>
     const useOn = (event, eventQrl) => {
@@ -727,6 +718,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
      * have access to the JSX.
      *
+     * @public
      * @see `useOn`, `useOnWindow`, `useOnDocument`.
      *
      * ```tsx
@@ -744,8 +736,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      *   return <div>Profit!</div>;
      * });
      * ```
-     *
-     * @public
      */
     // </docs>
     const useOnDocument = (event, eventQrl) => {
@@ -760,6 +750,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * Used to programmatically add event listeners. Useful from custom `use*` methods, which do not
      * have access to the JSX.
      *
+     * @public
      * @see `useOn`, `useOnWindow`, `useOnDocument`.
      *
      * ```tsx
@@ -778,8 +769,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      *   return <div>Profit!</div>;
      * });
      * ```
-     *
-     * @public
      */
     // </docs>
     const useOnWindow = (event, eventQrl) => {
@@ -824,15 +813,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const QOjectTargetSymbol = Symbol('proxy target');
     const QObjectFlagsSymbol = Symbol('proxy flags');
     const QObjectManagerSymbol = Symbol('proxy manager');
-    /**
-     * @internal
-     */
+    /** @internal */
     const _IMMUTABLE = Symbol('IMMUTABLE');
     const _IMMUTABLE_PREFIX = '$$';
 
-    /**
-     * @internal
-     */
+    /** @internal */
     const _fnSignal = (fn, args, fnStr) => {
         return new SignalDerived(fn, args, fnStr);
     };
@@ -847,9 +832,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
 
     var _a$1;
-    /**
-     * @internal
-     */
+    /** @internal */
     const _createSignal = (value, containerState, flags, subscriptions) => {
         const manager = containerState.$subsManager$.$createManager$(subscriptions);
         const signal = new SignalImpl(value, manager, flags);
@@ -951,9 +934,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const isSignal = (obj) => {
         return obj instanceof SignalBase;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _wrapProp = (obj, prop) => {
         if (!isObject(obj)) {
             return obj[prop];
@@ -979,9 +960,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         return _IMMUTABLE;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _wrapSignal = (obj, prop) => {
         const r = _wrapProp(obj, prop);
         if (r === _IMMUTABLE) {
@@ -990,9 +969,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return r;
     };
 
-    /**
-     * Creates a proxy that notifies of any writes.
-     */
+    /** Creates a proxy that notifies of any writes. */
     const getOrCreateProxy = (target, containerState, flags = 0) => {
         const proxy = containerState.$proxyMap$.get(target);
         if (proxy) {
@@ -1021,9 +998,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const setObjectFlags = (obj, flags) => {
         Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _restProps = (props, omit) => {
         const rest = {};
         for (const key in props) {
@@ -1199,21 +1174,13 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return value;
     };
 
-    /**
-     * @public
-     */
+    /** @public */
     const SkipRender = Symbol('skip render');
-    /**
-     * @public
-     */
+    /** @public */
     const SSRRaw = (() => null);
-    /**
-     * @public
-     */
+    /** @public */
     const SSRComment = (props) => jsx(SSRRaw, { data: `<!--${props.data}-->` }, null);
-    /**
-     * @public
-     */
+    /** @public */
     const SSRStreamBlock = (props) => {
         return [
             jsx(SSRComment, { data: 'qkssr-pu' }),
@@ -1221,13 +1188,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             jsx(SSRComment, { data: 'qkssr-po' }),
         ];
     };
-    /**
-     * @public
-     */
+    /** @public */
     const SSRStream = (props, key) => jsx(RenderOnce, { children: jsx(InternalSSRStream, props) }, key);
     /**
-     * @public
      * @deprecated - It has no effect
+     * @public
      */
     const SSRHint = (() => null);
     const InternalSSRStream = () => null;
@@ -1258,13 +1223,12 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#createContextId instead)
     /**
-     * Create a context ID to be used in your application.
-     * The name should be written with no spaces.
+     * Create a context ID to be used in your application. The name should be written with no spaces.
      *
      * Context is a way to pass stores to the child components without prop-drilling.
      *
-     * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable
-     * identifier for the context. It is not the context value itself. See `useContextProvider()` and
+     * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier
+     * for the context. It is not the context value itself. See `useContextProvider()` and
      * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
      * track context providers and consumers in a way that survives resumability.
      *
@@ -1304,6 +1268,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * });
      *
      * ```
+     *
      * @param name - The name of the context.
      * @public
      */
@@ -1362,6 +1327,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * });
      *
      * ```
+     *
      * @param context - The context to assign a value to.
      * @param value - The value to assign to the context.
      * @public
@@ -1391,8 +1357,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Retrieve Context value.
      *
-     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a
-     * parent component needs to invoke `useContextProvider()` to assign a value.
+     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a parent
+     * component needs to invoke `useContextProvider()` to assign a value.
      *
      * ### Example
      *
@@ -1430,6 +1396,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * });
      *
      * ```
+     *
      * @param context - The context to retrieve a value from.
      * @public
      */
@@ -1895,9 +1862,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             return JSON.parse(unescapeText(data) || '{}');
         }
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _deserializeData = (data, element) => {
         const obj = JSON.parse(data);
         if (typeof obj !== 'object') {
@@ -2281,16 +2246,15 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Mark component for rendering.
      *
-     * Use `notifyRender` method to mark a component for rendering at some later point in time.
-     * This method uses `getPlatform(doc).queueRender` for scheduling of the rendering. The
-     * default implementation of the method is to use `requestAnimationFrame` to do actual rendering.
+     * Use `notifyRender` method to mark a component for rendering at some later point in time. This
+     * method uses `getPlatform(doc).queueRender` for scheduling of the rendering. The default
+     * implementation of the method is to use `requestAnimationFrame` to do actual rendering.
      *
      * The method is intended to coalesce multiple calls into `notifyRender` into a single call for
      * rendering.
      *
      * @param hostElement - Host-element of the component to re-render.
      * @returns A promise which is resolved when the component has been rendered.
-     *
      */
     const notifyRender = (hostElement, containerState) => {
         const server = isServerPlatform();
@@ -2344,11 +2308,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return containerState.$renderPromise$;
     };
     /**
-     * Low-level API used by the Optimizer to process `useTask$()` API. This method
-     * is not intended to be used by developers.
+     * Low-level API used by the Optimizer to process `useTask$()` API. This method is not intended to
+     * be used by developers.
      *
      * @internal
-     *
      */
     const _hW = () => {
         const [task] = useLexicalScope();
@@ -2561,15 +2524,14 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Reruns the `taskFn` when the observed inputs change.
      *
-     * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
-     * those inputs change.
+     * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when those
+     * inputs change.
      *
      * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
      * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
      * rerun.
      *
-     * @see `Tracker`
-     *
+     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
      *
      * ### Example
@@ -2613,8 +2575,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * });
      * ```
      *
-     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
+     * @see `Tracker`
      */
     // </docs>
     const useTaskQrl = (qrl, opts) => {
@@ -2636,9 +2598,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             useRunTask(task, opts?.eagerness);
         }
     };
-    /**
-     * @public
-     */
+    /** @public */
     const useComputedQrl = (qrl) => {
         const { get, set, iCtx, i, elCtx } = useSequentialScope();
         if (get) {
@@ -2656,9 +2616,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
         return set(signal);
     };
-    /**
-     * @public
-     */
+    /** @public */
     const useComputed$ = implicit$FirstArg(useComputedQrl);
     // <docs markdown="../readme.md#useTask">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
@@ -2666,15 +2624,14 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Reruns the `taskFn` when the observed inputs change.
      *
-     * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when
-     * those inputs change.
+     * Use `useTask` to observe changes on a set of inputs, and then re-execute the `taskFn` when those
+     * inputs change.
      *
      * The `taskFn` only executes if the observed inputs change. To observe the inputs, use the `obs`
      * function to wrap property reads. This creates subscriptions that will trigger the `taskFn` to
      * rerun.
      *
-     * @see `Tracker`
-     *
+     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
      *
      * ### Example
@@ -2718,8 +2675,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      * });
      * ```
      *
-     * @param task - Function which should be re-executed when changes to the inputs are detected
      * @public
+     * @see `Tracker`
      */
     // </docs>
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
@@ -3187,11 +3144,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
 
     let _locale = undefined;
     /**
-     * Retrieve the current lang.
+     * Retrieve the current locale.
      *
-     * If no current lang and there is no `defaultLang` the function throws an error.
+     * If no current locale and there is no `defaultLocale` the function throws an error.
      *
-     * @returns  the lang.
+     * @returns The locale.
      * @internal
      */
     function getLocale(defaultLocale) {
@@ -3225,9 +3182,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     /**
      * Globally set a lang.
      *
-     * This can be used only in browser. Server execution requires that each
-     * request could potentially be a different lang, therefore setting
-     * a global lang would produce incorrect responses.
+     * This can be used only in browser. Server execution requires that each request could potentially
+     * be a different lang, therefore setting a global lang would produce incorrect responses.
      *
      * @param lang
      */
@@ -3236,9 +3192,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     }
 
     let _context;
-    /**
-     * @public
-     */
+    /** @public */
     const tryGetInvokeContext = () => {
         if (!_context) {
             const context = typeof document !== 'undefined' && document && document.__q_context__;
@@ -3329,41 +3283,31 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const getWrappingContainer = (el) => {
         return el.closest(QContainerSelector);
     };
-    /**
-     * @public
-     */
+    /** @public */
     const untrack = (fn) => {
         return invoke(undefined, fn);
     };
     const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
-    /**
-     * @public
-     */
+    /** @public */
     const trackSignal = (signal, sub) => {
         trackInvocation.$subscriber$ = sub;
         return invoke(trackInvocation, () => signal.value);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _getContextElement = () => {
         const iCtx = tryGetInvokeContext();
         if (iCtx) {
             return (iCtx.$element$ ?? iCtx.$hostElement$ ?? iCtx.$qrl$?.$setContainer$(undefined));
         }
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _getContextEvent = () => {
         const iCtx = tryGetInvokeContext();
         if (iCtx) {
             return iCtx.$event$;
         }
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _jsxBranch = (input) => {
         const iCtx = tryGetInvokeContext();
         if (iCtx && iCtx.$hostElement$ && iCtx.$renderCtx$) {
@@ -3373,9 +3317,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         return input;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _waitUntilRendered = (elm) => {
         const containerEl = getWrappingContainer(elm);
         if (!containerEl) {
@@ -3387,6 +3329,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
 
     /**
      * QWIK_VERSION
+     *
      * @public
      */
     const version = "1.2.13";
@@ -3438,9 +3381,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const createDocument = () => {
         return new MockElement(9);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _renderSSR = async (node, opts) => {
         const root = opts.containerTagName;
         const containerEl = createSSRContext(1).$element$;
@@ -4360,9 +4301,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
     };
 
-    /**
-     * @internal
-     */
+    /** @internal */
     const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
         assertString(type, 'jsx type must be a string');
         const processed = key == null ? null : String(key);
@@ -4377,9 +4316,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         seal(node);
         return node;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _jsxS = (type, mutableProps, immutableProps, flags, key, dev) => {
         let children = null;
         if (mutableProps && 'children' in mutableProps) {
@@ -4388,9 +4325,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         }
         return _jsxQ(type, mutableProps, immutableProps, children, flags, key, dev);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _jsxC = (type, mutableProps, flags, key, dev) => {
         const processed = key == null ? null : String(key);
         const props = mutableProps ?? EMPTY_OBJ;
@@ -4417,9 +4352,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         seal(node);
         return node;
     };
-    /**
-     * @public
-     */
+    /** @public */
     const jsx = (type, props, key) => {
         const processed = key == null ? null : String(key);
         const children = untrack(() => {
@@ -4454,13 +4387,9 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             this.key = key;
         }
     }
-    /**
-     * @public
-     */
+    /** @public */
     const Virtual = ((props) => props.children);
-    /**
-     * @public
-     */
+    /** @public */
     const RenderOnce = (props, key) => {
         return new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, static_subtree, key);
     };
@@ -4610,17 +4539,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         return false;
     };
-    /**
-     * @public
-     */
+    /** @public */
     const Fragment = (props) => props.children;
-    /**
-     * @public
-     */
+    /** @public */
     const HTMLFragment = (props) => jsx(Virtual, props);
-    /**
-     * @public
-     */
+    /** @public */
     const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
         const processed = key == null ? null : String(key);
         const children = untrack(() => {
@@ -6072,9 +5995,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
     };
 
-    /**
-     * @internal
-     */
+    /** @internal */
     const _serializeData = async (data, pureQRL) => {
         const containerState = {};
         const collector = createCollector(containerState);
@@ -6136,8 +6057,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     // <docs markdown="../readme.md#pauseContainer">
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#pauseContainer instead)
-    /**
-     */
     // </docs>
     const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
         const doc = getDocument(elmOrDoc);
@@ -6190,9 +6109,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         parentJSON.appendChild(eventsScript);
         return data;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
         const collector = createCollector(containerState);
         textNodes?.forEach((_, key) => {
@@ -6879,12 +6796,11 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * This function should be used by the Qwik Optimizer only. The function should not be directly
      * referred to in the source code of the application.
      *
-     * @see `QRL`, `$(...)`
-     *
      * @param chunkOrFn - Chunk name (or function which is stringified to extract chunk name)
      * @param symbol - Symbol to lazy load
-     * @param lexicalScopeCapture - a set of lexically scoped variables to capture.
+     * @param lexicalScopeCapture - A set of lexically scoped variables to capture.
      * @public
+     * @see `QRL`, `$(...)`
      */
     // </docs>
     const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset = 0) => {
@@ -6932,30 +6848,22 @@ Task Symbol: ${task.$qrl$.$symbol$}
         // Unwrap subscribers
         return createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
         // Unwrap subscribers
         return createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
         return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         newQrl.dev = opts;
         return newQrl;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
         qrl.dev = opts;
@@ -7010,9 +6918,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         };
         return mapJoin(existingQRLs, (qrl) => serializeQRL(qrl, opts), '\n');
     };
-    /**
-     * `./chunk#symbol[captures]
-     */
+    /** `./chunk#symbol[captures] */
     const parseQRL = (qrl, containerEl) => {
         const endIdx = qrl.length;
         const hashIdx = indexOf(qrl, 0, '#');
@@ -7055,9 +6961,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return obj;
         }));
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _regSymbol = (symbol, hash) => {
         if (typeof globalThis.__qwik_reg_symbols === 'undefined') {
             globalThis.__qwik_reg_symbols = new Map();
@@ -7070,8 +6974,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useResource instead)
     /**
-     * This method works like an async memoized function that runs whenever some tracked value
-     * changes and returns some data.
+     * This method works like an async memoized function that runs whenever some tracked value changes
+     * and returns some data.
      *
      * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
      * state that indicates if the data is available or not.
@@ -7084,8 +6988,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ### Example
      *
-     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
-     * input city name changes.
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+     * city name changes.
      *
      * ```tsx
      * const Cmp = component$(() => {
@@ -7118,10 +7022,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
+     * @public
      * @see Resource
      * @see ResourceReturn
-     *
-     * @public
      */
     // </docs>
     const useResourceQrl = (qrl, opts) => {
@@ -7147,8 +7050,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useResource instead)
     /**
-     * This method works like an async memoized function that runs whenever some tracked value
-     * changes and returns some data.
+     * This method works like an async memoized function that runs whenever some tracked value changes
+     * and returns some data.
      *
      * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
      * state that indicates if the data is available or not.
@@ -7161,8 +7064,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ### Example
      *
-     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
-     * input city name changes.
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+     * city name changes.
      *
      * ```tsx
      * const Cmp = component$(() => {
@@ -7195,10 +7098,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
+     * @public
      * @see Resource
      * @see ResourceReturn
-     *
-     * @public
      */
     // </docs>
     const useResource$ = (generatorFn, opts) => {
@@ -7208,8 +7110,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
     // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
     // (edit ../readme.md#useResource instead)
     /**
-     * This method works like an async memoized function that runs whenever some tracked value
-     * changes and returns some data.
+     * This method works like an async memoized function that runs whenever some tracked value changes
+     * and returns some data.
      *
      * `useResource` however returns immediate a `ResourceReturn` object that contains the data and a
      * state that indicates if the data is available or not.
@@ -7222,8 +7124,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ### Example
      *
-     * Example showing how `useResource` to perform a fetch to request the weather, whenever the
-     * input city name changes.
+     * Example showing how `useResource` to perform a fetch to request the weather, whenever the input
+     * city name changes.
      *
      * ```tsx
      * const Cmp = component$(() => {
@@ -7256,10 +7158,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
+     * @public
      * @see Resource
      * @see ResourceReturn
-     *
-     * @public
      */
     // </docs>
     const Resource = (props) => {
@@ -7363,7 +7264,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
 
     /**
-     * Allows to project the children of the current component. <Slot/> can only be used within the context of a component defined with `component$`.
+     * Allows to project the children of the current component. <Slot/> can only be used within the
+     * context of a component defined with `component$`.
      *
      * @public
      */
@@ -7374,21 +7276,23 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
 
     /**
-     * 0, 8, 9, A, B, C, D
-    \0: null character (U+0000 NULL) (only if the next character is not a decimal digit; else it’s an octal escape sequence)
-    \b: backspace (U+0008 BACKSPACE)
-    \t: horizontal tab (U+0009 CHARACTER TABULATION)
-    \n: line feed (U+000A LINE FEED)
-    \v: vertical tab (U+000B LINE TABULATION)
-    \f: form feed (U+000C FORM FEED)
-    \r: carriage return (U+000D CARRIAGE RETURN)
-    \": double quote (U+0022 QUOTATION MARK)
-    \': single quote (U+0027 APOSTROPHE)
-    \\: backslash (U+005C REVERSE SOLIDUS)
+     * - 0, 8, 9, A, B, C, D
+     * - `\0`: null character (U+0000 NULL) (only if the next character is not a decimal digit; else it’s
+     *   an octal escape sequence)
+     * - `\b`: backspace (U+0008 BACKSPACE)
+     * - `\t`: horizontal tab (U+0009 CHARACTER TABULATION)
+     * - `\n`: line feed (U+000A LINE FEED)
+     * - `\v`: vertical tab (U+000B LINE TABULATION)
+     * - `\f`: form feed (U+000C FORM FEED)
+     * - `\r`: carriage return (U+000D CARRIAGE RETURN)
+     * - `\"`: double quote (U+0022 QUOTATION MARK)
+     * - `\'`: single quote (U+0027 APOSTROPHE)
+     * - `\\`: backslash (U+005C REVERSE SOLIDUS)
      */
     const UNDEFINED_PREFIX = '\u0001';
     /**
      * Normalize the shape of the serializer for better inline-cache performance.
+     *
      * @param serializer
      * @returns
      */
@@ -7938,9 +7842,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return type;
     };
 
-    /**
-     * @internal
-     */
+    /** @internal */
     const verifySerializable = (value, preMessage) => {
         const seen = new Set();
         return _verifySerializable(value, seen, '_', preMessage);
@@ -8033,9 +7935,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
     /**
      * Marks a property on a store as non-serializable.
      *
-     * At times it is necessary to store values on a store that are non-serializable. Normally this
-     * is a runtime error as Store wants to eagerly report when a non-serializable property is
-     * assigned to it.
+     * At times it is necessary to store values on a store that are non-serializable. Normally this is a
+     * runtime error as Store wants to eagerly report when a non-serializable property is assigned to
+     * it.
      *
      * You can use `noSerialize()` to mark a value as non-serializable. The value is persisted in the
      * Store but does not survive serialization. The implication is that when your application is
@@ -8053,9 +7955,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         return input;
     };
-    /**
-     * @internal
-     */
+    /** @internal */
     const _weakSerialize = (input) => {
         weakSerializeSet.add(input);
         return input;
@@ -8068,9 +7968,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return !!tryGetContext(sub) || sub.isConnected;
         }
     };
-    /**
-     * @public
-     */
+    /** @public */
     const unwrapProxy = (proxy) => {
         return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
     };
@@ -8430,6 +8328,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * Use `$(...)` to tell Qwik Optimizer to extract the expression in `$(...)` into a lazy-loadable
      * resource referenced by `QRL`.
      *
+     * @param expression - Expression which should be lazy loaded
+     * @public
      * @see `implicit$FirstArg` for additional `____$(...)` rules.
      *
      * In this example, `$(...)` is used to capture the callback function of `onmousemove` into a
@@ -8493,9 +8393,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * }
      *
      * ```
-     *
-     * @param expression - Expression which should be lazy loaded
-     * @public
      */
     // </docs>
     const $ = (expression) => {
@@ -8504,15 +8401,11 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         return createQRL(null, 's' + runtimeSymbolId++, expression, null, null, null, null);
     };
-    /**
-     * @public
-     */
+    /** @public */
     const eventQrl = (qrl) => {
         return qrl;
     };
-    /**
-     * @public
-     */
+    /** @public */
     const event$ = implicit$FirstArg(eventQrl);
 
     // const ELEMENTS_SKIP_KEY: JSXTagName[] = ['html', 'body', 'head'];
@@ -8523,8 +8416,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * Declare a Qwik component that can be used to create UI.
      *
      * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
-     * that allows the Qwik framework to lazy load and execute the component independently of other
-     * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+     * that allows the Qwik framework to lazy load and execute the component independently of other Qwik
+     * components as well as lazy load the component's life-cycle hooks and event handlers.
      *
      * Side note: You can also declare regular (standard JSX) components that will have standard
      * synchronous behavior.
@@ -8598,8 +8491,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * Declare a Qwik component that can be used to create UI.
      *
      * Use `component$` to declare a Qwik component. A Qwik component is a special kind of component
-     * that allows the Qwik framework to lazy load and execute the component independently of other
-     * Qwik components as well as lazy load the component's life-cycle hooks and event handlers.
+     * that allows the Qwik framework to lazy load and execute the component independently of other Qwik
+     * components as well as lazy load the component's life-cycle hooks and event handlers.
      *
      * Side note: You can also declare regular (standard JSX) components that will have standard
      * synchronous behavior.
@@ -8664,9 +8557,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         return dst;
     };
-    /**
-     * @public
-     */
+    /** @public */
     function h(type, props, ...children) {
         // Using legacy h() jsx transform and morphing it
         // so it can use the modern vdom structure
@@ -8692,15 +8583,14 @@ Task Symbol: ${task.$qrl$.$symbol$}
     /**
      * Render JSX.
      *
-     * Use this method to render JSX. This function does reconciling which means
-     * it always tries to reuse what is already in the DOM (rather then destroy and
-     * recreate content.)
-     * It returns a cleanup function you could use for cleaning up subscriptions.
+     * Use this method to render JSX. This function does reconciling which means it always tries to
+     * reuse what is already in the DOM (rather then destroy and recreate content.) It returns a cleanup
+     * function you could use for cleaning up subscriptions.
      *
-     * @param parent - Element which will act as a parent to `jsxNode`. When
-     *     possible the rendering will try to reuse existing nodes.
+     * @param parent - Element which will act as a parent to `jsxNode`. When possible the rendering will
+     *   try to reuse existing nodes.
      * @param jsxNode - JSX to render
-     * @returns an object containing a cleanup function.
+     * @returns An object containing a cleanup function.
      * @public
      */
     const render = async (parent, jsxNode, opts) => {
@@ -8779,8 +8669,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
     /**
      * Creates an object that Qwik can track across serializations.
      *
-     * Use `useStore` to create a state for your application. The returned object is a proxy that has
-     * a unique ID. The ID of the object is used in the `QRL`s to refer to the store.
+     * Use `useStore` to create a state for your application. The returned object is a proxy that has a
+     * unique ID. The ID of the object is used in the `QRL`s to refer to the store.
      *
      * ### Example
      *
@@ -8856,9 +8746,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
     };
 
-    /**
-     * @public
-     */
+    /** @public */
     const useId = () => {
         const { get, set, elCtx, iCtx } = useSequentialScope();
         if (get != null) {
@@ -8872,9 +8760,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return set(id);
     };
 
-    /**
-     * @public
-     */
+    /** @public */
     function useServerData(key, defaultValue) {
         const ctx = tryGetInvokeContext();
         return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
@@ -9243,9 +9129,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
-     * @see `useStylesScoped`
-     *
      * @public
+     * @see `useStylesScoped`
      */
     // </docs>
     const useStylesQrl = (styles) => {
@@ -9270,9 +9155,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
-     * @see `useStylesScoped`
-     *
      * @public
+     * @see `useStylesScoped`
      */
     // </docs>
     const useStyles$ = /*#__PURE__*/ implicit$FirstArg(useStylesQrl);
@@ -9295,9 +9179,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
-     * @see `useStyles`
-     *
      * @public
+     * @see `useStyles`
      */
     // </docs>
     const useStylesScopedQrl = (styles) => {
@@ -9324,9 +9207,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * });
      * ```
      *
-     * @see `useStyles`
-     *
      * @public
+     * @see `useStyles`
      */
     // </docs>
     const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
@@ -9369,9 +9251,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return styleId;
     };
 
-    /**
-     * @public
-     */
+    /** @public */
     const useSignal = (initialState) => {
         const { get, set, iCtx } = useSequentialScope();
         if (get != null) {
@@ -9385,9 +9265,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return set(signal);
     };
 
-    /**
-     * @public
-     */
+    /** @public */
     const useErrorBoundary = () => {
         const store = useStore({
             error: undefined,
