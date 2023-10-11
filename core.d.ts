@@ -1924,7 +1924,7 @@ declare const QObjectSignalFlags: unique symbol;
  *
  * The above code needs to be serialized into DOM such as:
  *
- * ```html
+ * ```
  * <div q:base="/build/">
  *   <button on:click="./chunk-abc.js#onClick">...</button>
  * </div>

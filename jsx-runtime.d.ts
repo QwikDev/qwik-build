@@ -1065,7 +1065,7 @@ declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttribut
  *
  * The above code needs to be serialized into DOM such as:
  *
- * ```html
+ * ```
  * <div q:base="/build/">
  *   <button on:click="./chunk-abc.js#onClick">...</button>
  * </div>
