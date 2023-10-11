@@ -1718,6 +1718,7 @@ function createPlugin(optimizerOptions = {}) {
     srcDir: null,
     srcInputs: null,
     manifestInput: null,
+    insightsManifest: null,
     manifestOutput: null,
     transformedModuleOutput: null,
     vendorRoots: [],
@@ -3145,10 +3146,20 @@ function qwikVite(qwikViteOpts = {}) {
   let ssrOutDir = null;
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
+  async function loadQwikInsights() {
+    const sys = qwikPlugin.getSys();
+    const fs = await sys.dynamicImport("node:fs");
+    const path = sys.path.join(process.cwd(), "dist", "q-insights.json");
+    if (fs.existsSync(path)) {
+      return JSON.parse(await fs.promises.readFile(path, "utf-8"));
+    }
+    return null;
+  }
   const api = {
     getOptimizer: () => qwikPlugin.getOptimizer(),
     getOptions: () => qwikPlugin.getOptions(),
     getManifest: () => manifestInput,
+    getInsightsManifest: () => loadQwikInsights(),
     getRootDir: () => qwikPlugin.getOptions().rootDir,
     getClientOutDir: () => clientOutDir,
     getClientPublicOutDir: () => clientPublicOutDir
@@ -3169,14 +3180,9 @@ function qwikVite(qwikViteOpts = {}) {
       isClientDevOnly = "serve" === viteCommand && "ssr" !== viteEnv.mode;
       qwikPlugin.log(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
       if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
-        const fs = await sys.dynamicImport("node:fs");
         try {
-          const path2 = sys.path.join(process.cwd(), "dist", "q-insights.json");
-          if (fs.existsSync(path2)) {
-            const entryStrategy = JSON.parse(await fs.promises.readFile(path2, "utf-8"));
-            entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-            await fs.promises.unlink(path2);
-          }
+          const entryStrategy = await loadQwikInsights();
+          entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
         } catch (e) {}
       }
       "serve" === viteCommand ? qwikViteOpts.entryStrategy = {

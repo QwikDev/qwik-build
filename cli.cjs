@@ -4459,6 +4459,7 @@ async function runBuildCommand(app) {
       await execaCommand(script, {
         cwd: app.rootDir,
         stdout: "inherit",
+        stderr: "inherit",
         env: {
           FORCE_COLOR: "true"
         }
@@ -4474,6 +4475,8 @@ async function runBuildCommand(app) {
       copyScript += " --pretty";
     }
     typecheck = execaCommand(copyScript, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir
     }).then(() => ({
       title: "Type checked"
@@ -4489,7 +4492,8 @@ async function runBuildCommand(app) {
   if (buildClientScript) {
     const script = attachArg(buildClientScript, "mode", mode);
     await execaCommand(script, {
-      stdio: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir
     }).catch(() => {
       process.exit(1);
@@ -4501,6 +4505,8 @@ async function runBuildCommand(app) {
   if (buildLibScript) {
     const script = attachArg(buildLibScript, "mode", mode);
     const libBuild = execaCommand(script, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -4523,6 +4529,8 @@ async function runBuildCommand(app) {
   if (buildPreviewScript) {
     const script = attachArg(buildPreviewScript, "mode", mode);
     const previewBuild = execaCommand(script, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -4545,6 +4553,8 @@ async function runBuildCommand(app) {
   if (buildServerScript) {
     const script = attachArg(buildServerScript, "mode", mode);
     const serverBuild = execaCommand(script, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -4566,6 +4576,8 @@ async function runBuildCommand(app) {
   }
   if (buildStaticScript) {
     const staticBuild = execaCommand(buildStaticScript, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -4590,6 +4602,8 @@ async function runBuildCommand(app) {
   }
   if (lint) {
     const lintBuild = execaCommand(lint, {
+      stdout: "inherit",
+      stderr: "inherit",
       cwd: app.rootDir,
       env: {
         FORCE_COLOR: "true"
@@ -4624,6 +4638,8 @@ async function runBuildCommand(app) {
       }
       if (isPreviewBuild && buildStaticScript && runSsgScript) {
         return execaCommand(buildStaticScript, {
+          stdout: "inherit",
+          stderr: "inherit",
           cwd: app.rootDir,
           env: {
             FORCE_COLOR: "true"
@@ -4644,8 +4660,9 @@ async function runBuildCommand(app) {
   for (const script of postbuildScripts) {
     try {
       await execaCommand(script, {
-        cwd: app.rootDir,
         stdout: "inherit",
+        stderr: "inherit",
+        cwd: app.rootDir,
         env: {
           FORCE_COLOR: "true"
         }

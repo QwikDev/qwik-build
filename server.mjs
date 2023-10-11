@@ -208,12 +208,6 @@ function workerFetchScript() {
   s += `w.onmessage=()=>{w.terminate()};`;
   return s;
 }
-function prefetchUrlsEventScript(prefetchResources) {
-  const data = {
-    bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split("/").pop())
-  };
-  return `document.dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
-}
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -289,7 +283,8 @@ function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
   }
   prefetchNodes.push(
     jsx("script", {
-      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources),
+      "q:type": "prefetch-bundles",
+      dangerouslySetInnerHTML: `document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
       nonce
     })
   );
@@ -340,6 +335,7 @@ function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, no
   prefetchNodes.push(
     jsx("script", {
       type: "module",
+      "q:type": "link-js",
       dangerouslySetInnerHTML: s,
       nonce
     })
@@ -351,6 +347,7 @@ function workerFetchImplementation(prefetchNodes, prefetchResources, nonce) {
   prefetchNodes.push(
     jsx("script", {
       type: "module",
+      "q:type": "prefetch-worker",
       dangerouslySetInnerHTML: s,
       nonce
     })

@@ -7,8 +7,9 @@ import type { StreamWriter } from '.';
 import type { SymbolMapperFn } from './optimizer';
 
 /**
- * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader
- * script into HTML.
+ * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader script
+ * into HTML.
+ *
  * @public
  */
 export declare function getQwikLoaderScript(opts?: {
@@ -25,37 +26,27 @@ declare interface GlobalInjections {
     location: 'head' | 'body';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface InOrderAuto {
     strategy: 'auto';
     maximunInitialChunk?: number;
     maximunChunk?: number;
 }
 
-/**
- * @public
- */
+/** @public */
 declare interface InOrderDirect {
     strategy: 'direct';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface InOrderDisabled {
     strategy: 'disabled';
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDirect;
 
-/**
- * @public
- */
+/** @public */
 export declare interface PrefetchImplementation {
     /**
      * `js-append`: Use JS runtime to create each `<link>` and append to the body.
@@ -64,14 +55,15 @@ export declare interface PrefetchImplementation {
      */
     linkInsert?: 'js-append' | 'html-append' | null;
     /**
-     * Value of the `<link rel="...">` attribute when link is used.
-     * Defaults to `prefetch` if links are inserted.
+     * Value of the `<link rel="...">` attribute when link is used. Defaults to `prefetch` if links
+     * are inserted.
      */
     linkRel?: 'prefetch' | 'preload' | 'modulepreload' | null;
     /**
      * `always`: Always include the worker fetch JS runtime.
      *
-     * `no-link-support`: Only include the worker fetch JS runtime when the browser doesn't support `<link>` prefetch/preload/modulepreload.
+     * `no-link-support`: Only include the worker fetch JS runtime when the browser doesn't support
+     * `<link>` prefetch/preload/modulepreload.
      */
     workerFetchInsert?: 'always' | 'no-link-support' | null;
     /**
@@ -92,17 +84,13 @@ export declare interface PrefetchImplementation {
     prefetchEvent?: 'always' | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface PrefetchResource {
     url: string;
     imports: PrefetchResource[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface PrefetchStrategy {
     implementation?: PrefetchImplementation;
     symbolsToPrefetch?: SymbolsToPrefetch;
@@ -117,9 +105,7 @@ declare interface QwikBundle {
     origins?: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface QwikLoaderOptions {
     events?: string[];
     include?: 'always' | 'never' | 'auto';
@@ -165,45 +151,37 @@ declare interface QwikSymbol {
     loc: [number, number];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type Render = RenderToString | RenderToStream;
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderOptions extends SerializeDocumentOptions {
-    /**
-     * Defaults to `true`
-     */
+    /** Defaults to `true` */
     snapshot?: boolean;
     /**
-     * Specifies the root of the JS files of the client build.
-     * Setting a base, will cause the render of the `q:base` attribute in the `q:container` element.
+     * Specifies the root of the JS files of the client build. Setting a base, will cause the render
+     * of the `q:base` attribute in the `q:container` element.
      */
     base?: string | ((options: RenderOptions) => string);
-    /**
-     * Language to use when rendering the document.
-     */
+    /** Language to use when rendering the document. */
     locale?: string | ((options: RenderOptions) => string);
     /**
-     * Specifies if the Qwik Loader script is added to the document or not. Defaults to `{ include: true }`.
+     * Specifies if the Qwik Loader script is added to the document or not.
+     *
+     * Defaults to `{ include: true }`.
      */
     qwikLoader?: QwikLoaderOptions;
     prefetchStrategy?: PrefetchStrategy | null;
     /**
-     * When set, the app is serialized into a fragment. And the returned html is not a complete document.
-     * Defaults to `html`
+     * When set, the app is serialized into a fragment. And the returned html is not a complete
+     * document. Defaults to `html`
      */
     containerTagName?: string;
     containerAttributes?: Record<string, string>;
     serverData?: Record<string, any>;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderResult {
     prefetchResources: PrefetchResource[];
     snapshotResult: SnapshotResult | undefined;
@@ -213,31 +191,24 @@ export declare interface RenderResult {
     _symbols?: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type RenderToStream = (opts: RenderToStreamOptions) => Promise<RenderToStreamResult>;
 
 /**
- * Creates a server-side `document`, renders to root node to the document,
- * then serializes the document to a string.
+ * Creates a server-side `document`, renders to root node to the document, then serializes the
+ * document to a string.
  *
  * @public
- *
  */
 export declare function renderToStream(rootNode: any, opts: RenderToStreamOptions): Promise<RenderToStreamResult>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderToStreamOptions extends RenderOptions {
     stream: StreamWriter;
     streaming?: StreamingOptions;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderToStreamResult extends RenderResult {
     flushes: number;
     size: number;
@@ -248,29 +219,22 @@ export declare interface RenderToStreamResult extends RenderResult {
     };
 }
 
-/**
- * @public
- */
+/** @public */
 export declare type RenderToString = (opts: RenderToStringOptions) => Promise<RenderToStringResult>;
 
 /**
- * Creates a server-side `document`, renders to root node to the document,
- * then serializes the document to a string.
+ * Creates a server-side `document`, renders to root node to the document, then serializes the
+ * document to a string.
  *
  * @public
- *
  */
 export declare function renderToString(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderToStringOptions extends RenderOptions {
 }
 
-/**
- * @public
- */
+/** @public */
 export declare interface RenderToStringResult extends RenderResult {
     html: string;
     timing: {
@@ -285,28 +249,20 @@ declare interface ResolvedManifest_2 {
     manifest: QwikManifest_2;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare function resolveManifest(manifest: QwikManifest | ResolvedManifest_2 | undefined): ResolvedManifest_2 | undefined;
 
-/**
- * @public
- */
+/** @public */
 export declare interface SerializeDocumentOptions {
     manifest?: QwikManifest | ResolvedManifest;
     symbolMapper?: SymbolMapperFn;
     debug?: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export declare function setServerPlatform(manifest: QwikManifest | ResolvedManifest | undefined): Promise<void>;
 
-/**
- * @public
- */
+/** @public */
 export declare interface StreamingOptions {
     inOrder?: InOrderStreaming;
 }
@@ -315,7 +271,7 @@ export declare interface StreamingOptions {
 declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /**
- * auto: Prefetch all possible QRLs used by the document. Default
+ * Auto: Prefetch all possible QRLs used by the document. Default
  *
  * @public
  */
@@ -323,9 +279,7 @@ export declare type SymbolsToPrefetch = 'auto' | ((opts: {
     manifest: QwikManifest;
 }) => PrefetchResource[]);
 
-/**
- * @public
- */
+/** @public */
 export declare const versions: {
     readonly qwik: string;
     readonly qwikDom: string;

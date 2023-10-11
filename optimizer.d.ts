@@ -69,6 +69,16 @@ export declare interface InlineEntryStrategy {
 }
 
 /** @public */
+export declare interface InsightManifest {
+    type: 'smart';
+    manual: Record<string, string>;
+    prefetch: {
+        route: string;
+        symbols: string[];
+    }[];
+}
+
+/** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
 declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
@@ -192,6 +202,7 @@ declare interface QwikPluginOptions {
     vendorRoots?: string[];
     manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     manifestInput?: QwikManifest | null;
+    insightsManifest?: InsightManifest | null;
     input?: string[] | string | {
         [entry: string]: string;
     };
@@ -317,6 +328,7 @@ export declare interface QwikVitePluginApi {
     getOptimizer: () => Optimizer | null;
     getOptions: () => NormalizedQwikPluginOptions;
     getManifest: () => QwikManifest | null;
+    getInsightsManifest: () => Promise<InsightManifest | null>;
     getRootDir: () => string | null;
     getClientOutDir: () => string | null;
     getClientPublicOutDir: () => string | null;
