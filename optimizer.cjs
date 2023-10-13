@@ -2464,7 +2464,11 @@ globalThis.qwikOptimizer = function(module) {
   }
   async function getInfoForSrc(src) {
     try {
-      const res = await fetch(src);
+      const res = await fetch(src, {
+        headers: {
+          Accept: "image/*,*/*"
+        }
+      });
       if (!res.ok) {
         console.error("can not fetch", src);
         return;
@@ -2980,7 +2984,11 @@ globalThis.qwikOptimizer = function(module) {
       return false;
     }
     const acceptHeader = req.headers.accept || "";
-    if (!acceptHeader.includes("text/html") && !acceptHeader.includes("*/*")) {
+    const accepts = acceptHeader.split(",").map((accept => accept.split(";")[0]));
+    if (1 == accepts.length && accepts.includes("*/*")) {
+      return true;
+    }
+    if (!accepts.includes("text/html")) {
       return false;
     }
     return true;
