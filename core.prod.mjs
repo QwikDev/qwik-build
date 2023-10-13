@@ -78,7 +78,7 @@ const tryGetContext$1 = element => element._qc_;
 const printParams = optionalParams => optionalParams;
 
 const printElement = el => {
-    const ctx = el._qc_;
+    const ctx = tryGetContext$1(el);
     const isServer = /*#__PURE__*/ (() => "undefined" != typeof process && !!process.versions && !!process.versions.node)();
     return {
         tagName: el.tagName,
@@ -249,7 +249,7 @@ const safeCall = (call, thenFn, rejectFn) => {
     }
 };
 
-const then = (promise, thenFn) => isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+const maybeThen = (promise, thenFn) => isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
 
 const promiseAll = promises => promises.some(isPromise) ? Promise.all(promises) : promises;
 
@@ -448,7 +448,7 @@ const strToInt = nu => parseInt(nu, 36);
 
 const getEventName = attribute => {
     const colonPos = attribute.indexOf(":");
-    return attribute ? attribute.slice(colonPos + 1).replace(/-./g, (x => x[1].toUpperCase())) : attribute;
+    return attribute ? fromKebabToCamelCase(attribute.slice(colonPos + 1)) : attribute;
 };
 
 const useOn = (event, eventQrl) => {
@@ -995,7 +995,7 @@ const renderComponent = (rCtx, elCtx, flags) => {
     const hostElement = elCtx.$element$;
     const containerState = rCtx.$static$.$containerState$;
     return containerState.$hostsStaging$.delete(elCtx), containerState.$subsManager$.$clearSub$(hostElement), 
-    then(executeComponent(rCtx, elCtx), (res => {
+    maybeThen(executeComponent(rCtx, elCtx), (res => {
         const staticCtx = rCtx.$static$;
         const newCtx = res.rCtx;
         const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
@@ -1006,10 +1006,10 @@ const renderComponent = (rCtx, elCtx, flags) => {
             }
         }
         const processedJSXNode = processData$1(res.node, iCtx);
-        return then(processedJSXNode, (processedJSXNode => {
+        return maybeThen(processedJSXNode, (processedJSXNode => {
             const newVdom = wrapJSX(hostElement, processedJSXNode);
             const oldVdom = getVdom(elCtx);
-            return then(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), (() => {
+            return maybeThen(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), (() => {
                 elCtx.$vdom$ = newVdom;
             }));
         }));
@@ -1047,7 +1047,7 @@ const processNode = (node, invocationContext) => {
     }
     let convertedChildren = EMPTY_ARRAY;
     if (null != children) {
-        return then(processData$1(children, invocationContext), (result => {
+        return maybeThen(processData$1(children, invocationContext), (result => {
             void 0 !== result && (convertedChildren = isArray(result) ? result : [ result ]);
             const vnode = new ProcessedJSXNodeImpl(textType, props, immutableProps, convertedChildren, flags, key);
             return vnode;
@@ -1080,7 +1080,7 @@ const processData$1 = (node, invocationContext) => {
         }
         if (isArray(node)) {
             const output = promiseAll(node.flatMap((n => processData$1(n, invocationContext))));
-            return then(output, (array => array.flat(100).filter(isNotNullable)));
+            return maybeThen(output, (array => array.flat(100).filter(isNotNullable)));
         }
         return isPromise(node) ? node.then((node => processData$1(node, invocationContext))) : node === SkipRender ? new ProcessedJSXNodeImpl(SKIP_RENDER_TYPE, EMPTY_OBJ, null, EMPTY_ARRAY, 0, null) : void logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
     }
@@ -1129,10 +1129,9 @@ const _deserializeData = (data, element) => {
 };
 
 const resumeContainer = containerEl => {
-    if (!isElement$1(el = containerEl) || !el.hasAttribute("q:container")) {
+    if (!isContainer$1(containerEl)) {
         return void logWarn("Skipping resuming because parent element is not q:container");
     }
-    var el;
     const pauseState = containerEl._qwikjson_ ?? getPauseState(containerEl);
     if (containerEl._qwikjson_ = null, !pauseState) {
         return void logWarn("Skipping resuming qwik/json metadata was not found.");
@@ -1477,13 +1476,13 @@ const executeTasksBefore = async (containerState, rCtx) => {
     const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
     const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
     containerState.$taskNext$.forEach((task => {
-        isTask(task) && (taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
-        containerState.$taskNext$.delete(task)), isResourceTask(task) && (resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        isTask(task) && (taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        containerState.$taskNext$.delete(task)), isResourceTask(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
         containerState.$taskNext$.delete(task));
     }));
     do {
         if (containerState.$taskStaging$.forEach((task => {
-            isTask(task) ? taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask(task) ? resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
+            isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
         })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
             const tasks = await Promise.all(taskPromises);
             sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
@@ -1500,12 +1499,12 @@ const executeTasksAfter = async (containerState, rCtx, taskPred) => {
     const taskPromises = [];
     const containerEl = containerState.$containerEl$;
     containerState.$taskNext$.forEach((task => {
-        taskPred(task, !1) && (task.$el$.isConnected && taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        taskPred(task, !1) && (task.$el$.isConnected && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
         containerState.$taskNext$.delete(task));
     }));
     do {
         if (containerState.$taskStaging$.forEach((task => {
-            task.$el$.isConnected && (taskPred(task, !0) ? taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task));
+            task.$el$.isConnected && (taskPred(task, !0) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task));
         })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
             const tasks = await Promise.all(taskPromises);
             sortTasks(tasks);
@@ -1635,7 +1634,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
     })), task.$destroy$ = noSerialize((() => {
         done = !0, cleanups.forEach((fn => fn()));
     }));
-    const promise = safeCall((() => then(waitOn, (() => taskFn(opts)))), (value => {
+    const promise = safeCall((() => maybeThen(waitOn, (() => taskFn(opts)))), (value => {
         setState(!0, value);
     }), (reason => {
         setState(!1, reason);
@@ -2062,7 +2061,7 @@ const _renderSSR = async (node, opts) => {
     const containerEl = createSSRContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? "/");
     containerState.$serverData$.locale = opts.serverData?.locale;
-    const doc = new MockElement(9);
+    const doc = createDocument();
     const rCtx = createRenderContext(doc, containerState);
     const headNodes = opts.beforeContent ?? [];
     const ssrCtx = {
@@ -2146,7 +2145,7 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
         }
     }
     const promise = walkChildren(node.children, rCtx, ssrCtx, stream, flags);
-    return then(promise, (() => {
+    return maybeThen(promise, (() => {
         if (!isSlot && !beforeClose) {
             return void stream.write(CLOSE_VIRTUAL);
         }
@@ -2160,7 +2159,8 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
                 newSlotRctx.$slotCtx$ = elCtx, ssrCtx.$projectedChildren$[key] = void 0, promise = processData(content, newSlotRctx, sCtx, stream, flags);
             }
         }
-        return beforeClose && (promise = then(promise, (() => beforeClose(stream)))), then(promise, (() => {
+        return beforeClose && (promise = maybeThen(promise, (() => beforeClose(stream)))), 
+        maybeThen(promise, (() => {
             stream.write(CLOSE_VIRTUAL);
         }));
     }));
@@ -2202,7 +2202,7 @@ const renderNodeElementSync = (tagName, attributes, stream) => {
 };
 
 const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => (setComponentProps$1(rCtx, elCtx, node.props.props), 
-then(executeComponent(rCtx, elCtx), (res => {
+maybeThen(executeComponent(rCtx, elCtx), (res => {
     const hostElement = elCtx.$element$;
     const newRCtx = res.rCtx;
     const iCtx = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, void 0);
@@ -2249,7 +2249,7 @@ then(executeComponent(rCtx, elCtx), (res => {
             }
             renderNodeElementSync("script", attributes, stream);
         }
-        return beforeClose ? then(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
+        return beforeClose ? maybeThen(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
     }));
 })));
 
@@ -2380,7 +2380,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         }
         "html" === tagName ? flags |= 4 : flags &= -5, 2 & node.flags && (flags |= 1024);
         const promise = processData(node.children, rCtx, ssrCtx, stream, flags);
-        return then(promise, (() => {
+        return maybeThen(promise, (() => {
             if (isHead) {
                 for (const node of ssrCtx.$static$.$headNodes$) {
                     renderNodeElementSync(node.type, node.props, stream);
@@ -2388,7 +2388,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 ssrCtx.$static$.$headNodes$.length = 0;
             }
             if (beforeClose) {
-                return then(beforeClose(stream), (() => {
+                return maybeThen(beforeClose(stream), (() => {
                     stream.write(`</${tagName}>`);
                 }));
             }
@@ -2853,7 +2853,7 @@ const diffChildren = (ctx, parentElm, oldCh, newCh, flags) => {
                 insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
             } else if (elmToMove = oldCh[idxInOld], elmToMove.$type$ !== newStartVnode.$type$) {
                 const newElm = createElm(ctx, newStartVnode, flags, results);
-                then(newElm, (newElm => {
+                maybeThen(newElm, (newElm => {
                     insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                 }));
             } else {
@@ -2867,7 +2867,7 @@ const diffChildren = (ctx, parentElm, oldCh, newCh, flags) => {
         results.push(addChildren(ctx, parentElm, null == newCh[newEndIdx + 1] ? null : newCh[newEndIdx + 1].$elm$, newCh, newStartIdx, newEndIdx, flags));
     }
     let wait = promiseAll(results);
-    return oldStartIdx <= oldEndIdx && (wait = then(wait, (() => {
+    return oldStartIdx <= oldEndIdx && (wait = maybeThen(wait, (() => {
         removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
     }))), wait;
 };
@@ -2987,7 +2987,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
         let needsRender = !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
         return needsRender || elCtx.$componentQrl$ || elCtx.$element$.hasAttribute("q:id") || (setQId(rCtx, elCtx), 
         elCtx.$componentQrl$ = cmpProps["q:renderFn"], assertQrl(elCtx.$componentQrl$), 
-        needsRender = !0), needsRender ? then(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
+        needsRender = !0), needsRender ? maybeThen(renderComponent(rCtx, elCtx, flags), (() => renderContentProjection(rCtx, elCtx, newVnode, flags))) : renderContentProjection(rCtx, elCtx, newVnode, flags);
     }
     if ("q:s" in props) {
         return assertDefined(currentComponent.$slots$, "current component slots must be a defined array"), 
@@ -3112,7 +3112,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 }
             }
             setQId(rCtx, elCtx), elCtx.$componentQrl$ = renderQRL;
-            const wait = then(renderComponent(rCtx, elCtx, flags), (() => {
+            const wait = maybeThen(renderComponent(rCtx, elCtx, flags), (() => {
                 let children = vnode.$children$;
                 if (0 === children.length) {
                     return;
@@ -4200,13 +4200,7 @@ const collectValue = (obj, collector, leaks) => {
                     return void collector.$objSet$.add(obj);
                 }
                 if (isPromise(obj)) {
-                    return void collector.$promises$.push((promise = obj, promise.then((value => (promise[PROMISE_VALUE] = {
-                        resolved: !0,
-                        value
-                    }, value)), (value => (promise[PROMISE_VALUE] = {
-                        resolved: !1,
-                        value
-                    }, value)))).then((value => {
+                    return void collector.$promises$.push(resolvePromise(obj).then((value => {
                         collectValue(value, collector, leaks);
                     })));
                 }
@@ -4233,7 +4227,6 @@ const collectValue = (obj, collector, leaks) => {
             }
         }
     }
-    var promise;
     collector.$objSet$.add(obj);
 };
 
@@ -5210,7 +5203,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         }
         {
             const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
-            return symbolRef = then(symbol2, (ref => qrl.resolved = symbolRef = ref));
+            return symbolRef = maybeThen(symbol2, (ref => qrl.resolved = symbolRef = ref));
         }
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
@@ -5218,7 +5211,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         return (...args) => {
             const start = now();
             const fn = resolveLazy();
-            return then(fn, (fn => {
+            return maybeThen(fn, (fn => {
                 if (isFunction(fn)) {
                     if (beforeFn && !1 === beforeFn()) {
                         return;
@@ -5376,7 +5369,7 @@ const injectQContainer = containerEl => {
 
 function cleanupContainer(renderCtx, container) {
     cleanupTree(container, renderCtx.$static$, renderCtx.$static$.$containerState$.$subsManager$, !0), 
-    delete container[CONTAINER_STATE], directRemoveAttribute(container, "q:version"), 
+    removeContainerState(container), directRemoveAttribute(container, "q:version"), 
     directRemoveAttribute(container, "q:container"), directRemoveAttribute(container, "q:render"), 
     container.replaceChildren();
 }
@@ -5625,8 +5618,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
     if (get) {
         return get;
     }
-    const styleId = (index = i, assertQrl(qStyles = styleQrl), `${hashCode(qStyles.$hash$)}-${index}`);
-    var qStyles, index;
+    const styleId = styleKey(styleQrl, i);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     if (set(styleId), elCtx.$appendStyles$ || (elCtx.$appendStyles$ = []), elCtx.$scopeIds$ || (elCtx.$scopeIds$ = []), 
     scoped && elCtx.$scopeIds$.push(styleContent(styleId)), containerState.$styleIds$.has(styleId)) {

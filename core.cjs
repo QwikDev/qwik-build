@@ -447,7 +447,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             return rejectFn(e);
         }
     };
-    const then = (promise, thenFn) => {
+    const maybeThen = (promise, thenFn) => {
         return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
     };
     const promiseAll = (promises) => {
@@ -1711,7 +1711,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         // Clean current subscription before render
         containerState.$subsManager$.$clearSub$(hostElement);
         // TODO, serialize scopeIds
-        return then(executeComponent(rCtx, elCtx), (res) => {
+        return maybeThen(executeComponent(rCtx, elCtx), (res) => {
             const staticCtx = rCtx.$static$;
             const newCtx = res.rCtx;
             const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
@@ -1726,11 +1726,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }
             }
             const processedJSXNode = processData$1(res.node, iCtx);
-            return then(processedJSXNode, (processedJSXNode) => {
+            return maybeThen(processedJSXNode, (processedJSXNode) => {
                 const newVdom = wrapJSX(hostElement, processedJSXNode);
                 // const oldVdom = getVdom(hostElement);
                 const oldVdom = getVdom(elCtx);
-                return then(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), () => {
+                return maybeThen(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), () => {
                     // setVdom(hostElement, newVdom);
                     elCtx.$vdom$ = newVdom;
                 });
@@ -1782,7 +1782,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         let convertedChildren = EMPTY_ARRAY;
         if (children != null) {
-            return then(processData$1(children, invocationContext), (result) => {
+            return maybeThen(processData$1(children, invocationContext), (result) => {
                 if (result !== undefined) {
                     convertedChildren = isArray(result) ? result : [result];
                 }
@@ -1826,7 +1826,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         }
         else if (isArray(node)) {
             const output = promiseAll(node.flatMap((n) => processData$1(n, invocationContext)));
-            return then(output, (array) => array.flat(100).filter(isNotNullable));
+            return maybeThen(output, (array) => array.flat(100).filter(isNotNullable));
         }
         else if (isPromise(node)) {
             return node.then((node) => processData$1(node, invocationContext));
@@ -2427,11 +2427,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         const isResourceTask = (task) => (task.$flags$ & TaskFlagsIsResource) !== 0;
         containerState.$taskNext$.forEach((task) => {
             if (isTask(task)) {
-                taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 containerState.$taskNext$.delete(task);
             }
             if (isResourceTask(task)) {
-                resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 containerState.$taskNext$.delete(task);
             }
         });
@@ -2439,10 +2439,10 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             // Run staging effected
             containerState.$taskStaging$.forEach((task) => {
                 if (isTask(task)) {
-                    taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                    taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
                 else if (isResourceTask(task)) {
-                    resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                    resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
                 else {
                     containerState.$taskNext$.add(task);
@@ -2471,7 +2471,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         containerState.$taskNext$.forEach((task) => {
             if (taskPred(task, false)) {
                 if (task.$el$.isConnected) {
-                    taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                    taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
                 containerState.$taskNext$.delete(task);
             }
@@ -2481,7 +2481,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             containerState.$taskStaging$.forEach((task) => {
                 if (task.$el$.isConnected) {
                     if (taskPred(task, true)) {
-                        taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+                        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                     }
                     else {
                         containerState.$taskNext$.add(task);
@@ -2869,7 +2869,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             done = true;
             cleanups.forEach((fn) => fn());
         });
-        const promise = safeCall(() => then(waitOn, () => taskFn(opts)), (value) => {
+        const promise = safeCall(() => maybeThen(waitOn, () => taskFn(opts)), (value) => {
             setState(true, value);
         }, (reason) => {
             setState(false, reason);
@@ -3506,7 +3506,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
         }
         const promise = walkChildren(node.children, rCtx, ssrCtx, stream, flags);
-        return then(promise, () => {
+        return maybeThen(promise, () => {
             // Fast path
             if (!isSlot && !beforeClose) {
                 stream.write(CLOSE_VIRTUAL);
@@ -3526,9 +3526,9 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             }
             // Inject before close
             if (beforeClose) {
-                promise = then(promise, () => beforeClose(stream));
+                promise = maybeThen(promise, () => beforeClose(stream));
             }
-            return then(promise, () => {
+            return maybeThen(promise, () => {
                 stream.write(CLOSE_VIRTUAL);
             });
         });
@@ -3576,7 +3576,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClose) => {
         const props = node.props;
         setComponentProps$1(rCtx, elCtx, props.props);
-        return then(executeComponent(rCtx, elCtx), (res) => {
+        return maybeThen(executeComponent(rCtx, elCtx), (res) => {
             const hostElement = elCtx.$element$;
             const newRCtx = res.rCtx;
             const iCtx = newInvokeContext(ssrCtx.$static$.$locale$, hostElement, undefined);
@@ -3631,7 +3631,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     renderNodeElementSync('script', attributes, stream);
                 }
                 if (beforeClose) {
-                    return then(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), () => beforeClose(stream));
+                    return maybeThen(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), () => beforeClose(stream));
                 }
                 else {
                     return renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
@@ -3916,7 +3916,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 flags |= IS_IMMUTABLE$1;
             }
             const promise = processData(node.children, rCtx, ssrCtx, stream, flags);
-            return then(promise, () => {
+            return maybeThen(promise, () => {
                 // If head inject base styles
                 if (isHead) {
                     for (const node of ssrCtx.$static$.$headNodes$) {
@@ -3930,7 +3930,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                     return;
                 }
                 // Inject before close
-                return then(beforeClose(stream), () => {
+                return maybeThen(beforeClose(stream), () => {
                     stream.write(`</${tagName}>`);
                 });
             });
@@ -4693,7 +4693,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     elmToMove = oldCh[idxInOld];
                     if (elmToMove.$type$ !== newStartVnode.$type$) {
                         const newElm = createElm(ctx, newStartVnode, flags, results);
-                        then(newElm, (newElm) => {
+                        maybeThen(newElm, (newElm) => {
                             insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
                         });
                     }
@@ -4713,7 +4713,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         let wait = promiseAll(results);
         if (oldStartIdx <= oldEndIdx) {
-            wait = then(wait, () => {
+            wait = maybeThen(wait, () => {
                 removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
             });
         }
@@ -4914,7 +4914,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             // we need to render the nested component, and wait before projecting the content
             // since otherwise we don't know where the slots
             if (needsRender) {
-                return then(renderComponent(rCtx, elCtx, flags), () => renderContentProjection(rCtx, elCtx, newVnode, flags));
+                return maybeThen(renderComponent(rCtx, elCtx, flags), () => renderContentProjection(rCtx, elCtx, newVnode, flags));
             }
             return renderContentProjection(rCtx, elCtx, newVnode, flags);
         }
@@ -5142,7 +5142,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             setQId(rCtx, elCtx);
             // Run mount hook
             elCtx.$componentQrl$ = renderQRL;
-            const wait = then(renderComponent(rCtx, elCtx, flags), () => {
+            const wait = maybeThen(renderComponent(rCtx, elCtx, flags), () => {
                 let children = vnode.$children$;
                 if (children.length === 0) {
                     return;
@@ -8203,7 +8203,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             }
             else {
                 const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
-                return (symbolRef = then(symbol2, (ref) => {
+                return (symbolRef = maybeThen(symbol2, (ref) => {
                     return (qrl.resolved = symbolRef = ref);
                 }));
             }
@@ -8215,7 +8215,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             return ((...args) => {
                 const start = now();
                 const fn = resolveLazy();
-                return then(fn, (fn) => {
+                return maybeThen(fn, (fn) => {
                     if (isFunction(fn)) {
                         if (beforeFn && beforeFn() === false) {
                             return;
