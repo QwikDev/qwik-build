@@ -3013,6 +3013,10 @@
         const mustGetObjId = obj => {
             const key = getObjId(obj);
             if (null === key) {
+                if (isQrl(obj)) {
+                    const id = intToStr(objToId.size);
+                    return objToId.set(obj, id), id;
+                }
                 throw qError(27, obj);
             }
             return key;

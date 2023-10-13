@@ -6251,7 +6251,16 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const mustGetObjId = (obj) => {
             const key = getObjId(obj);
             if (key === null) {
-                throw qError(QError_missingObjectId, obj);
+                // TODO(mhevery): this is a hack as we should never get here.
+                // This as a workaround for https://github.com/BuilderIO/qwik/issues/4979
+                if (isQrl(obj)) {
+                    const id = intToStr(objToId.size);
+                    objToId.set(obj, id);
+                    return id;
+                }
+                else {
+                    throw qError(QError_missingObjectId, obj);
+                }
             }
             return key;
         };
