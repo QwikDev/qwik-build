@@ -931,6 +931,13 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             this.ref[this.prop] = value;
         }
     }
+    /**
+     * Checks if a given object is a `Signal`.
+     *
+     * @param obj - The object to check if `Signal`.
+     * @returns Boolean - True if the object is a `Signal`.
+     * @public
+     */
     const isSignal = (obj) => {
         return obj instanceof SignalBase;
     };
@@ -9329,6 +9336,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports.implicit$FirstArg = implicit$FirstArg;
     exports.inlinedQrl = inlinedQrl;
     exports.inlinedQrlDEV = inlinedQrlDEV;
+    exports.isSignal = isSignal;
     exports.jsx = jsx;
     exports.jsxDEV = jsxDEV;
     exports.jsxs = jsx;

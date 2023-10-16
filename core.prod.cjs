@@ -4627,7 +4627,7 @@
     exports.inlinedQrl = inlinedQrl, exports.inlinedQrlDEV = (symbol, symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const qrl = inlinedQrl(symbol, symbolName, lexicalScopeCapture);
         return qrl.dev = opts, qrl;
-    }, exports.jsx = jsx, exports.jsxDEV = (type, props, key, _isStatic, opts) => {
+    }, exports.isSignal = isSignal, exports.jsx = jsx, exports.jsxDEV = (type, props, key, _isStatic, opts) => {
         const processed = null == key ? null : String(key);
         const children = untrack((() => {
             const c = props.children;

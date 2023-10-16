@@ -1412,6 +1412,15 @@ declare interface InvokeContext {
 
 declare type InvokeTuple = [Element, Event, URL?];
 
+/**
+ * Checks if a given object is a `Signal`.
+ *
+ * @param obj - The object to check if `Signal`.
+ * @returns Boolean - True if the object is a `Signal`.
+ * @public
+ */
+export declare const isSignal: (obj: any) => obj is Signal<any>;
+
 /** @public */
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
