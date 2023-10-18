@@ -2983,6 +2983,9 @@ globalThis.qwikOptimizer = function(module) {
     if (InternalPrefixRE.test(url.pathname)) {
       return false;
     }
+    if (pathname.includes("@builder.io/qwik/build")) {
+      return false;
+    }
     const acceptHeader = req.headers.accept || "";
     const accepts = acceptHeader.split(",").map((accept => accept.split(";")[0]));
     if (1 == accepts.length && accepts.includes("*/*")) {
