@@ -306,6 +306,24 @@ const ELEMENT_ID = "q:id";
 
 const ELEMENT_ID_PREFIX = "#";
 
+const QObjectRecursive = 1;
+
+const QObjectImmutable = 2;
+
+const QOjectTargetSymbol = Symbol("proxy target");
+
+const QObjectFlagsSymbol = Symbol("proxy flags");
+
+const QObjectManagerSymbol = Symbol("proxy manager");
+
+const _IMMUTABLE = Symbol("IMMUTABLE");
+
+const _IMMUTABLE_PREFIX = "$$";
+
+const VIRTUAL_SYMBOL = "__virtual";
+
+const Q_CTX = "_qc_";
+
 const directSetAttribute = (el, prop, value) => el.setAttribute(prop, value);
 
 const directGetAttribute = (el, prop) => el.getAttribute(prop);
@@ -484,20 +502,6 @@ const emitEvent$1 = (el, eventName, detail, bubbles) => {
         composed: bubbles
     }));
 };
-
-const QObjectRecursive = 1;
-
-const QObjectImmutable = 2;
-
-const QOjectTargetSymbol = Symbol("proxy target");
-
-const QObjectFlagsSymbol = Symbol("proxy flags");
-
-const QObjectManagerSymbol = Symbol("proxy manager");
-
-const _IMMUTABLE = Symbol("IMMUTABLE");
-
-const _IMMUTABLE_PREFIX = "$$";
 
 const _fnSignal = (fn, args, fnStr) => new SignalDerived(fn, args, fnStr);
 
@@ -764,12 +768,11 @@ const InternalSSRStream = () => null;
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
-    const i = iCtx.$seq$;
     const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
-    const seq = elCtx.$seq$ ? elCtx.$seq$ : elCtx.$seq$ = [];
-    iCtx.$seq$++;
+    const seq = elCtx.$seq$ || (elCtx.$seq$ = []);
+    const i = iCtx.$i$++;
     return {
-        get: seq[i],
+        val: seq[i],
         set: value => seq[i] = value,
         i,
         iCtx,
@@ -783,19 +786,18 @@ const createContextId = name => (assertTrue(/^[\w/.-]+$/.test(name), "Context na
 }));
 
 const useContextProvider = (context, newValue) => {
-    const {get, set, elCtx} = useSequentialScope();
-    if (void 0 !== get) {
+    const {val, set, elCtx} = useSequentialScope();
+    if (void 0 !== val) {
         return;
     }
-    let contexts = elCtx.$contexts$;
-    contexts || (elCtx.$contexts$ = contexts = new Map), contexts.set(context.id, newValue), 
-    set(!0);
+    const contexts = elCtx.$contexts$ || (elCtx.$contexts$ = new Map);
+    contexts.set(context.id, newValue), set(!0);
 };
 
 const useContext = (context, defaultValue) => {
-    const {get, set, iCtx, elCtx} = useSequentialScope();
-    if (void 0 !== get) {
-        return get;
+    const {val, set, iCtx, elCtx} = useSequentialScope();
+    if (void 0 !== val) {
+        return val;
     }
     const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
     if ("function" == typeof defaultValue) {
@@ -810,54 +812,59 @@ const useContext = (context, defaultValue) => {
     throw qError(13, context.id);
 };
 
+const findParentCtx = (el, containerState) => {
+    let node = el;
+    let stack = 1;
+    for (;node && !node.hasAttribute?.("q:container"); ) {
+        for (;node = node.previousSibling; ) {
+            if (isComment(node)) {
+                const virtual = node.__virtual;
+                if (virtual) {
+                    const qtx = virtual[Q_CTX];
+                    if (node === virtual.open) {
+                        return qtx ?? getContext(virtual, containerState);
+                    }
+                    if (qtx?.$parentCtx$) {
+                        return qtx.$parentCtx$;
+                    }
+                    node = virtual;
+                    continue;
+                }
+                if ("/qv" === node.data) {
+                    stack++;
+                } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
+                    return getContext(getVirtualElement(node), containerState);
+                }
+            }
+        }
+        node = el.parentElement, el = node;
+    }
+    return null;
+};
+
+const getParentProvider = (ctx, containerState) => {
+    if (void 0 === ctx.$parentCtx$) {
+        const wrappingCtx = findParentCtx(ctx.$element$, containerState);
+        ctx.$parentCtx$ = !wrappingCtx || wrappingCtx.$contexts$ ? wrappingCtx : getParentProvider(wrappingCtx, containerState);
+    } else {
+        ctx.$parentCtx$ && !ctx.$parentCtx$.$contexts$ && (ctx.$parentCtx$ = getParentProvider(ctx.$parentCtx$, containerState));
+    }
+    return ctx.$parentCtx$;
+};
+
 const resolveContext = (context, hostCtx, containerState) => {
     const contextID = context.id;
     if (!hostCtx) {
         return;
     }
-    let hostElement;
     let ctx = hostCtx;
     for (;ctx; ) {
-        if (hostElement = ctx.$element$, ctx.$contexts$) {
-            const found = ctx.$contexts$.get(contextID);
-            if (found) {
-                return found;
-            }
+        const found = ctx.$contexts$?.get(contextID);
+        if (found) {
+            return found;
         }
-        ctx = ctx.$slotParent$ ?? ctx.$parent$;
+        ctx = getParentProvider(ctx, containerState);
     }
-    return queryContextFromDom(hostElement, containerState, contextID);
-};
-
-const queryContextFromDom = (hostElement, containerState, contextId) => {
-    let element = hostElement;
-    for (;element; ) {
-        let node = element;
-        let virtual;
-        for (;node && (virtual = findVirtual(node)); ) {
-            const contexts = getContext(virtual, containerState)?.$contexts$;
-            if (contexts && contexts.has(contextId)) {
-                return contexts.get(contextId);
-            }
-            node = virtual;
-        }
-        element = element.parentElement;
-    }
-};
-
-const findVirtual = el => {
-    let node = el;
-    let stack = 1;
-    for (;node = node.previousSibling; ) {
-        if (isComment(node)) {
-            if ("/qv" === node.data) {
-                stack++;
-            } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
-                return getVirtualElement(node);
-            }
-        }
-    }
-    return null;
 };
 
 const validateContext = context => {
@@ -890,21 +897,18 @@ const executeComponent = (rCtx, elCtx) => {
     const hostElement = elCtx.$element$;
     const componentQRL = elCtx.$componentQrl$;
     const props = elCtx.$props$;
-    const newCtx = pushRenderContext(rCtx);
     const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qRender");
     const waitOn = iCtx.$waitOn$ = [];
-    assertDefined(componentQRL, "render: host element to render must has a $renderQrl$:", elCtx), 
-    assertDefined(props, "render: host element to render must has defined props", elCtx), 
+    assertDefined(componentQRL, "render: host element to render must have a $renderQrl$:", elCtx), 
+    assertDefined(props, "render: host element to render must have defined props", elCtx);
+    const newCtx = pushRenderContext(rCtx);
     newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, iCtx.$subscriber$ = [ 0, hostElement ], 
     iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(iCtx);
-    return safeCall((() => componentFn(props)), (jsxNode => waitOn.length > 0 ? Promise.all(waitOn).then((() => elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
+    return safeCall((() => componentFn(props)), (jsxNode => maybeThen(promiseAllLazy(waitOn), (() => elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
         node: jsxNode,
         rCtx: newCtx
-    })) : elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
-        node: jsxNode,
-        rCtx: newCtx
-    }), (err => err === SignalUnassignedException ? Promise.all(waitOn).then((() => executeComponent(rCtx, elCtx))) : (handleError(err, hostElement, rCtx), 
+    }))), (err => err === SignalUnassignedException ? maybeThen(promiseAllLazy(waitOn), (() => executeComponent(rCtx, elCtx))) : (handleError(err, hostElement, rCtx), 
     {
         node: SkipRender,
         rCtx: newCtx
@@ -939,10 +943,26 @@ const pushRenderContext = ctx => ({
 
 const serializeClassWithHost = (obj, hostCtx) => hostCtx && hostCtx.$scopeIds$ ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
 
-const serializeClass = obj => obj ? isString(obj) ? obj.trim() : isArray(obj) ? obj.reduce(((result, o) => {
-    const classList = serializeClass(o);
-    return classList ? result ? `${result} ${classList}` : classList : result;
-}), "") : Object.entries(obj).reduce(((result, [key, value]) => value ? result ? `${result} ${key.trim()}` : key.trim() : result), "") : "";
+const serializeClass = obj => {
+    if (!obj) {
+        return "";
+    }
+    if (isString(obj)) {
+        return obj.trim();
+    }
+    const classes = [];
+    if (isArray(obj)) {
+        for (const o of obj) {
+            const classList = serializeClass(o);
+            classList && classes.push(classList);
+        }
+    } else {
+        for (const [key, value] of Object.entries(obj)) {
+            value && classes.push(key.trim());
+        }
+    }
+    return classes.join(" ");
+};
 
 const stringifyStyle = obj => {
     if (null == obj) {
@@ -1185,8 +1205,7 @@ const resumeContainer = containerEl => {
                 if (!rawElement.isConnected) {
                     return void finalized.set(id, void 0);
                 }
-                const close = findClose(rawElement);
-                const virtual = new VirtualElementImpl(rawElement, close, rawElement.parentElement?.namespaceURI === SVG_NS);
+                const virtual = getVirtualElement(rawElement);
                 return finalized.set(id, virtual), getContext(virtual, containerState), virtual;
             }
             return isElement$1(rawElement) ? (finalized.set(id, rawElement), getContext(rawElement, containerState), 
@@ -1537,8 +1556,8 @@ const TaskFlagsIsDirty = 16;
 const TaskFlagsIsCleanup = 32;
 
 const useTaskQrl = (qrl, opts) => {
-    const {get, set, iCtx, i, elCtx} = useSequentialScope();
-    if (get) {
+    const {val, set, iCtx, i, elCtx} = useSequentialScope();
+    if (val) {
         return;
     }
     assertQrl(qrl);
@@ -1550,9 +1569,9 @@ const useTaskQrl = (qrl, opts) => {
 };
 
 const useComputedQrl = qrl => {
-    const {get, set, iCtx, i, elCtx} = useSequentialScope();
-    if (get) {
-        return get;
+    const {val, set, iCtx, i, elCtx} = useSequentialScope();
+    if (val) {
+        return val;
     }
     assertQrl(qrl);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
@@ -1568,10 +1587,10 @@ const useComputed$ = implicit$FirstArg(useComputedQrl);
 const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
 
 const useVisibleTaskQrl = (qrl, opts) => {
-    const {get, set, i, iCtx, elCtx} = useSequentialScope();
+    const {val, set, i, iCtx, elCtx} = useSequentialScope();
     const eagerness = opts?.strategy ?? "intersection-observer";
-    if (get) {
-        return void (isServerPlatform() && useRunTask(get, eagerness));
+    if (val) {
+        return void (isServerPlatform() && useRunTask(val, eagerness));
     }
     assertQrl(qrl);
     const task = new Task(TaskFlagsIsVisibleTask, i, elCtx.$element$, qrl, void 0);
@@ -1753,8 +1772,6 @@ function isNode(value) {
     return value && "number" == typeof value.nodeType;
 }
 
-const Q_CTX = "_qc_";
-
 const HOST_FLAG_DIRTY = 1;
 
 const HOST_FLAG_NEED_ATTACH_LISTENER = 2;
@@ -1840,8 +1857,7 @@ const createContext = element => {
         $componentQrl$: null,
         $contexts$: null,
         $dynamicSlots$: null,
-        $parent$: null,
-        $slotParent$: null
+        $parentCtx$: void 0
     };
     return seal(), element[Q_CTX] = ctx, ctx;
 };
@@ -1950,16 +1966,16 @@ const newInvokeContextFromTuple = context => {
 
 const newInvokeContext = (locale, hostElement, element, event, url) => {
     const ctx = {
-        $seq$: 0,
+        $url$: url,
+        $i$: 0,
         $hostElement$: hostElement,
         $element$: element,
         $event$: event,
-        $url$: url,
-        $locale$: locale,
         $qrl$: void 0,
-        $renderCtx$: void 0,
+        $waitOn$: void 0,
         $subscriber$: void 0,
-        $waitOn$: void 0
+        $renderCtx$: void 0,
+        $locale$: locale
     };
     return seal(), ctx;
 };
@@ -2058,7 +2074,7 @@ const createDocument = () => new MockElement(9);
 
 const _renderSSR = async (node, opts) => {
     const root = opts.containerTagName;
-    const containerEl = createSSRContext(1).$element$;
+    const containerEl = createMockQContext(1).$element$;
     const containerState = createContainerState(containerEl, opts.base ?? "/");
     containerState.$serverData$.locale = opts.serverData?.locale;
     const doc = createDocument();
@@ -2089,7 +2105,7 @@ const _renderSSR = async (node, opts) => {
     };
     const children = "html" === root ? [ node ] : [ headNodes, node ];
     "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-    opts.serverData && (containerState.$serverData$ = opts.serverData), node = _jsxQ(root, null, containerAttributes, children, 3, null), 
+    opts.serverData && (containerState.$serverData$ = opts.serverData), node = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null), 
     containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts)));
 };
 
@@ -2233,7 +2249,7 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
     }, 0, node.key);
     return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => {
         if (elCtx.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-            const placeholderCtx = createSSRContext(1);
+            const placeholderCtx = createMockQContext(1);
             const listeners = placeholderCtx.li;
             listeners.push(...elCtx.li), elCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER, placeholderCtx.$id$ = getNextIndex(rCtx);
             const attributes = {
@@ -2249,26 +2265,26 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
             }
             renderNodeElementSync("script", attributes, stream);
         }
-        return beforeClose ? maybeThen(renderQTemplates(rCtx, newSSrContext, ssrCtx, stream), (() => beforeClose(stream))) : renderQTemplates(rCtx, newSSrContext, ssrCtx, stream);
+        const projectedChildren = newSSrContext.$projectedChildren$;
+        let missingSlotsDone;
+        if (projectedChildren) {
+            const nodes = Object.keys(projectedChildren).map((slotName => {
+                const content = projectedChildren[slotName];
+                if (content) {
+                    return _jsxQ("q:template", {
+                        [QSlot]: slotName,
+                        hidden: "",
+                        "aria-hidden": "true"
+                    }, null, content, 0, null);
+                }
+            }));
+            const [_rCtx, sCtx] = newSSrContext.$projectedCtxs$;
+            const newSlotRctx = pushRenderContext(_rCtx);
+            newSlotRctx.$slotCtx$ = elCtx, missingSlotsDone = processData(nodes, newSlotRctx, sCtx, stream, 0, void 0);
+        }
+        return beforeClose ? maybeThen(missingSlotsDone, (() => beforeClose(stream))) : missingSlotsDone;
     }));
 })));
-
-const renderQTemplates = (rCtx, ssrCtx, parentSSRCtx, stream) => {
-    const projectedChildren = ssrCtx.$projectedChildren$;
-    if (projectedChildren) {
-        const nodes = Object.keys(projectedChildren).map((slotName => {
-            const value = projectedChildren[slotName];
-            if (value) {
-                return _jsxQ("q:template", {
-                    [QSlot]: slotName,
-                    hidden: "",
-                    "aria-hidden": "true"
-                }, null, value, 0, null);
-            }
-        }));
-        return processData(nodes, rCtx, parentSSRCtx, stream, 0, void 0);
-    }
-};
 
 const splitProjectedChildren = (children, ssrCtx) => {
     const flatChildren = flatVirtualChildren(children, ssrCtx);
@@ -2278,14 +2294,12 @@ const splitProjectedChildren = (children, ssrCtx) => {
     const slotMap = {};
     for (const child of flatChildren) {
         let slotName = "";
-        isJSXNode(child) && (slotName = child.props[QSlot] ?? "");
-        let array = slotMap[slotName];
-        array || (slotMap[slotName] = array = []), array.push(child);
+        isJSXNode(child) && (slotName = child.props[QSlot] ?? ""), (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
     }
     return slotMap;
 };
 
-const createSSRContext = nodeType => {
+const createMockQContext = nodeType => {
     const elm = new MockElement(nodeType);
     return createContext(elm);
 };
@@ -2297,7 +2311,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         const key = node.key;
         const props = node.props;
         const immutable = node.immutableProps;
-        const elCtx = createSSRContext(1);
+        const elCtx = createMockQContext(1);
         const elm = elCtx.$element$;
         const isHead = "head" === tagName;
         let openingElement = "<" + tagName;
@@ -2305,7 +2319,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         let hasRef = !1;
         let classStr = "";
         let htmlStr = null;
-        if (assertElement(elm), immutable) {
+        if (immutable) {
             for (const prop in immutable) {
                 let value = immutable[prop];
                 if (isOnProp(prop)) {
@@ -2396,8 +2410,8 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         }));
     }
     if (tagName === Virtual) {
-        const elCtx = createSSRContext(111);
-        return elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, hostCtx && 8 & hostCtx.$flags$ && addDynamicSlot(hostCtx, elCtx), 
+        const elCtx = createMockQContext(111);
+        return elCtx.$parentCtx$ = rCtx.$slotCtx$ || rCtx.$cmpCtx$, hostCtx && 8 & hostCtx.$flags$ && addDynamicSlot(hostCtx, elCtx), 
         renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
     }
     if (tagName === SSRRaw) {
@@ -2685,8 +2699,8 @@ const isSSRUnsafeAttr = name => unsafeAttrCharRE.test(name);
 const listenersNeedId = listeners => listeners.some((l => l[1].$captureRef$ && l[1].$captureRef$.length > 0));
 
 const addDynamicSlot = (hostCtx, elCtx) => {
-    let dynamicSlots = hostCtx.$dynamicSlots$;
-    dynamicSlots || (hostCtx.$dynamicSlots$ = dynamicSlots = []), dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
+    const dynamicSlots = hostCtx.$dynamicSlots$ || (hostCtx.$dynamicSlots$ = []);
+    dynamicSlots.includes(elCtx) || dynamicSlots.push(elCtx);
 };
 
 const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
@@ -3064,7 +3078,7 @@ const getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
     }
     const template = createTemplate(staticCtx.$doc$, slotName);
     const elCtx = createContext(template);
-    return elCtx.$parent$ = hostCtx, prepend(staticCtx, hostCtx.$element$, template), 
+    return elCtx.$parentCtx$ = hostCtx, prepend(staticCtx, hostCtx.$element$, template), 
     slotMaps.templates[slotName] = template, elCtx;
 };
 
@@ -3094,7 +3108,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
     flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), 2 & vnode.$flags$ && (flags |= 4), 
     vnode.$elm$ = elm;
     const elCtx = createContext(elm);
-    if (elCtx.$parent$ = rCtx.$cmpCtx$, elCtx.$slotParent$ = rCtx.$slotCtx$, isVirtual) {
+    if (elCtx.$parentCtx$ = rCtx.$slotCtx$ ?? rCtx.$cmpCtx$, isVirtual) {
         if ("q:renderFn" in props) {
             const renderQRL = props["q:renderFn"];
             assertQrl(renderQRL);
@@ -3527,8 +3541,6 @@ const printRenderStats = () => {
     qDev;
 };
 
-const VIRTUAL_SYMBOL = "__virtual";
-
 const newVirtualElement = (doc, isSvg) => {
     const open = doc.createComment("qv ");
     const close = doc.createComment("/qv");
@@ -3589,7 +3601,7 @@ class VirtualElementImpl {
         const doc = this.ownerDocument = open.ownerDocument;
         this.$template$ = createElement(doc, "template", !1), this.$attributes$ = parseVirtualAttributes(open.data.slice(3)), 
         assertTrue(open.data.startsWith("qv "), "comment is not a qv"), open.__virtual = this, 
-        seal();
+        close.__virtual = this, seal();
     }
     insertBefore(node, ref) {
         const parent = this.parentElement;
@@ -3728,6 +3740,24 @@ const processVirtualNodes = node => {
     return node;
 };
 
+const findClose = open => {
+    let node = open;
+    let stack = 1;
+    for (;node = node.nextSibling; ) {
+        if (isComment(node)) {
+            const virtual = node.__virtual;
+            if (virtual) {
+                node = virtual;
+            } else if (node.data.startsWith("qv ")) {
+                stack++;
+            } else if ("/qv" === node.data && (stack--, 0 === stack)) {
+                return node;
+            }
+        }
+    }
+    assertFail("close not found");
+};
+
 const getVirtualElement = open => {
     const virtual = open.__virtual;
     if (virtual) {
@@ -3738,22 +3768,6 @@ const getVirtualElement = open => {
         return new VirtualElementImpl(open, close, open.parentElement?.namespaceURI === SVG_NS);
     }
     return null;
-};
-
-const findClose = open => {
-    let node = open.nextSibling;
-    let stack = 1;
-    for (;node; ) {
-        if (isComment(node)) {
-            if (node.data.startsWith("qv ")) {
-                stack++;
-            } else if ("/qv" === node.data && (stack--, 0 === stack)) {
-                return node;
-            }
-        }
-        node = node.nextSibling;
-    }
-    assertFail("close not found");
 };
 
 const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
@@ -4068,7 +4082,7 @@ const getNodesInScope = (parent, predicate) => {
 };
 
 const collectProps = (elCtx, collector) => {
-    const parentCtx = elCtx.$parent$;
+    const parentCtx = elCtx.$parentCtx$;
     const props = elCtx.$props$;
     if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
         const subs = getSubscriptionManager(props)?.$subs$;
@@ -4143,7 +4157,7 @@ const collectContext = (elCtx, collector) => {
                 collectValue(obj, collector, !0);
             }
         }
-        elCtx = elCtx.$slotParent$ ?? elCtx.$parent$;
+        elCtx = elCtx.$parentCtx$;
     }
 };
 
@@ -4448,9 +4462,9 @@ const _regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols &
 globalThis.__qwik_reg_symbols.set(hash, symbol), symbol);
 
 const useResourceQrl = (qrl, opts) => {
-    const {get, set, i, iCtx, elCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
+    const {val, set, i, iCtx, elCtx} = useSequentialScope();
+    if (null != val) {
+        return val;
     }
     assertQrl(qrl);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
@@ -5379,9 +5393,9 @@ function cleanupContainer(renderCtx, container) {
 }
 
 const useStore = (initialState, opts) => {
-    const {get, set, iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
+    const {val, set, iCtx} = useSequentialScope();
+    if (null != val) {
+        return val;
     }
     const value = isFunction(initialState) ? invoke(void 0, initialState) : initialState;
     if (!1 === opts?.reactive) {
@@ -5394,9 +5408,9 @@ const useStore = (initialState, opts) => {
 };
 
 const useId = () => {
-    const {get, set, elCtx, iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
+    const {val, set, elCtx, iCtx} = useSequentialScope();
+    if (null != val) {
+        return val;
     }
     const containerBase = iCtx.$renderCtx$?.$static$?.$containerState$?.$base$ || "";
     return set(`${containerBase ? hashCode(containerBase) : ""}-${elCtx.$componentQrl$?.getHash() || ""}-${getNextIndex(iCtx.$renderCtx$) || ""}`);
@@ -5618,9 +5632,9 @@ const useStylesScoped$ = /*#__PURE__*/ implicit$FirstArg(useStylesScopedQrl);
 
 const _useStyles = (styleQrl, transform, scoped) => {
     assertQrl(styleQrl);
-    const {get, set, iCtx, i, elCtx} = useSequentialScope();
-    if (get) {
-        return get;
+    const {val, set, iCtx, i, elCtx} = useSequentialScope();
+    if (val) {
+        return val;
     }
     const styleId = styleKey(styleQrl, i);
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
@@ -5641,9 +5655,9 @@ const _useStyles = (styleQrl, transform, scoped) => {
 };
 
 const useSignal = initialState => {
-    const {get, set, iCtx} = useSequentialScope();
-    if (null != get) {
-        return get;
+    const {val, set, iCtx} = useSequentialScope();
+    if (null != val) {
+        return val;
     }
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
     const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;

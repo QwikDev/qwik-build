@@ -1397,14 +1397,22 @@ export declare interface IntrinsicSVGElements {
     view: SVGProps<SVGViewElement>;
 }
 
+/** The shared state during an invoke() call */
 declare interface InvokeContext {
     $url$: URL | undefined;
-    $seq$: number;
+    /** The next available index for the sequentialScope array */
+    $i$: number;
+    /** The Virtual parent component for the current component code */
     $hostElement$: QwikElement | undefined;
+    /** The current DOM element */
     $element$: Element | undefined;
+    /** The event we're currently handling */
     $event$: any | undefined;
+    /** The QRL function we're currently executing */
     $qrl$: QRL<any> | undefined;
+    /** Promises that need awaiting before the current invocation is done */
     $waitOn$: Promise<any>[] | undefined;
+    /** The current subscriber for registering signal reads */
     $subscriber$: Subscriber | null | undefined;
     $renderCtx$: RenderContext | undefined;
     $locale$: string | undefined;
@@ -1429,7 +1437,11 @@ export { jsx as jsxs }
 /** @internal */
 export declare const _jsxBranch: (input?: any) => any;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * Create a JSXNode for any tag, with possibly immutable props embedded in props
+ */
 export declare const _jsxC: <T extends string | FunctionComponent<any>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
 /** @public */
@@ -1455,10 +1467,18 @@ export declare interface JSXNode<T = string | FunctionComponent> {
     dev?: DevJSX;
 }
 
-/** @internal */
+/**
+ * @internal
+ *
+ * Create a JSXNode for a string tag
+ */
 export declare const _jsxQ: <T extends string>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, children: any | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
-/** @internal */
+/**
+ * @internal
+ *
+ * Create a JSXNode for a string tag, with the children extracted from the mutableProps
+ */
 export declare const _jsxS: <T extends string>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<string, any>) | null, immutableProps: Record<string, any> | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
 /** @public */
@@ -1810,24 +1830,31 @@ export declare type PropsOf<COMP extends Component<any>> = COMP extends Componen
  */
 export declare type PublicProps<PROPS extends {}> = TransformProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
 
+/** Qwik Context of an element. */
 declare interface QContext {
+    /** VDOM element. */
     $element$: QwikElement;
     $refMap$: any[];
     $flags$: number;
+    /** QId, for referenced components */
     $id$: string;
+    /** Proxy for the component props */
     $props$: Record<string, any> | null;
+    /** The QRL if this is `component$`-wrapped component. */
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
     li: Listener[];
+    /** Sequential data store for hooks, managed by useSequentialScope. */
     $seq$: any[] | null;
     $tasks$: SubscriberEffect[] | null;
+    /** The public contexts defined on this (always Virtual) component, managed by useContextProvider. */
     $contexts$: Map<string, any> | null;
     $appendStyles$: StyleAppend[] | null;
     $scopeIds$: string[] | null;
     $vdom$: ProcessedJSXNode | null;
     $slots$: ProcessedJSXNode[] | null;
     $dynamicSlots$: QContext[] | null;
-    $parent$: QContext | null;
-    $slotParent$: QContext | null;
+    /** The Qwik Context of a parent component that has a useContextProvider, null if no parent */
+    $parentCtx$: QContext | null | undefined;
 }
 
 declare const QObjectManagerSymbol: unique symbol;
@@ -2428,7 +2455,9 @@ export declare const render: (parent: Element | Document, jsxNode: JSXNode | Fun
 /** @public */
 declare interface RenderContext {
     readonly $static$: RenderStaticContext;
+    /** Current Qwik component */
     $cmpCtx$: QContext | null;
+    /** Current Slot parent */
     $slotCtx$: QContext | null;
 }
 

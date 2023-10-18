@@ -22479,8 +22479,16 @@ function getTestPlatform() {
 }
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
-// packages/qwik/src/core/state/context.ts
+// packages/qwik/src/core/state/constants.ts
+var QObjectRecursive = 1 << 0;
+var QObjectImmutable = 1 << 1;
+var QOjectTargetSymbol = Symbol("proxy target");
+var QObjectFlagsSymbol = Symbol("proxy flags");
+var QObjectManagerSymbol = Symbol("proxy manager");
+var _IMMUTABLE = Symbol("IMMUTABLE");
 var Q_CTX = "_qc_";
+
+// packages/qwik/src/core/state/context.ts
 var HOST_FLAG_DIRTY = 1 << 0;
 var HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
 var HOST_FLAG_MOUNTED = 1 << 2;
