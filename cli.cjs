@@ -4811,7 +4811,8 @@ async function printHelp(app) {
   if (eD(command)) {
     bye();
   }
-  await runCommand2(Object.assign(app, { task: command }));
+  const args = command.split(" ");
+  await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
   console.log("1.2.14");
