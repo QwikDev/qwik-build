@@ -3598,7 +3598,8 @@ function qwikVite(qwikViteOpts = {}) {
     },
     configureServer(server) {
       server.middlewares.use(getImageSizeServer(qwikPlugin.getSys(), rootDir, srcDir));
-      if (!qwikViteOpts.csr) {
+      const devSsrServer = !("devSsrServer" in qwikViteOpts) || qwikViteOpts.devSsrServer;
+      if (!qwikViteOpts.csr && devSsrServer) {
         const plugin = async () => {
           const opts = qwikPlugin.getOptions();
           const sys = qwikPlugin.getSys();
