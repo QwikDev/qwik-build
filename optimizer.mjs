@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.2.14
+ * @builder.io/qwik/optimizer 1.2.15
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1238,7 +1238,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.2.14"
+  qwik: "1.2.15"
 };
 
 async function getSystem() {
@@ -3243,10 +3243,10 @@ function qwikVite(qwikViteOpts = {}) {
   let ssrOutDir = null;
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
-  async function loadQwikInsights() {
+  async function loadQwikInsights(clientOutDir2) {
     const sys = qwikPlugin.getSys();
     const fs2 = await sys.dynamicImport("node:fs");
-    const path2 = sys.path.join(process.cwd(), "dist", "q-insights.json");
+    const path2 = sys.path.join(process.cwd(), clientOutDir2 ?? "dist", "q-insights.json");
     if (fs2.existsSync(path2)) {
       return JSON.parse(await fs2.promises.readFile(path2, "utf-8"));
     }
@@ -3256,7 +3256,7 @@ function qwikVite(qwikViteOpts = {}) {
     getOptimizer: () => qwikPlugin.getOptimizer(),
     getOptions: () => qwikPlugin.getOptions(),
     getManifest: () => manifestInput,
-    getInsightsManifest: () => loadQwikInsights(),
+    getInsightsManifest: clientOutDir2 => loadQwikInsights(clientOutDir2),
     getRootDir: () => qwikPlugin.getOptions().rootDir,
     getClientOutDir: () => clientOutDir,
     getClientPublicOutDir: () => clientPublicOutDir
@@ -3278,7 +3278,7 @@ function qwikVite(qwikViteOpts = {}) {
       qwikPlugin.log(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
       if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
         try {
-          const entryStrategy = await loadQwikInsights();
+          const entryStrategy = await loadQwikInsights(qwikViteOpts.csr ? void 0 : qwikViteOpts.client?.outDir);
           entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
         } catch (e) {}
       }

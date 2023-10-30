@@ -328,7 +328,7 @@ export declare interface QwikVitePluginApi {
     getOptimizer: () => Optimizer | null;
     getOptions: () => NormalizedQwikPluginOptions;
     getManifest: () => QwikManifest | null;
-    getInsightsManifest: () => Promise<InsightManifest | null>;
+    getInsightsManifest: (clientOutDir?: string | null) => Promise<InsightManifest | null>;
     getRootDir: () => string | null;
     getClientOutDir: () => string | null;
     getClientPublicOutDir: () => string | null;

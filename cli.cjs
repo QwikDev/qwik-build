@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.2.14
+ * @builder.io/qwik/cli 1.2.15
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2829,7 +2829,7 @@ async function readTemplates(rootDir) {
   };
 }
 function parseTemplatePath(path3, type) {
-  const parts = path3.split(`/${type}/`);
+  const parts = path3.split(import_node_path7.sep + type + import_node_path7.sep);
   return {
     absolute: path3,
     relative: parts[1]
@@ -4815,7 +4815,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.2.14");
+  console.log("1.2.15");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
