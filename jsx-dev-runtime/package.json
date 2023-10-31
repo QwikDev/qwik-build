@@ -1,0 +1,16 @@
+{
+  "name": "@builder.io/qwik/jsx-dev-runtime",
+  "version": "1.2.15",
+  "main": "../jsx-runtime.mjs",
+  "module": "../jsx-runtime.mjs",
+  "types": "../jsx-runtime.d.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "../jsx-runtime.d.ts",
+      "require": "../jsx-runtime.cjs",
+      "import": "../jsx-runtime.mjs"
+    }
+  }
+}
