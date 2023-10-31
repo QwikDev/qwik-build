@@ -2121,7 +2121,7 @@ function createPlugin(optimizerOptions = {}) {
       }
       const deps = new Set;
       for (const mod of newOutput.modules) {
-        if (mod.isEntry) {
+        if (isTransformedFile(mod)) {
           const key = normalizePath(path2.join(srcDir, mod.path));
           currentOutputs.set(key, [ mod, id2 ]);
           deps.add(key);
@@ -2152,7 +2152,7 @@ function createPlugin(optimizerOptions = {}) {
         diagnosticsCallback(clientNewOutput.diagnostics, optimizer, srcDir);
         results.set(normalizedID, clientNewOutput);
         for (const mod of clientNewOutput.modules) {
-          if (mod.isEntry) {
+          if (isTransformedFile(mod)) {
             const key = normalizePath(path2.join(srcDir, mod.path));
             ctx.addWatchFile(key);
             transformedOutputs.set(key, [ mod, id2 ]);
@@ -2165,7 +2165,7 @@ function createPlugin(optimizerOptions = {}) {
           id: id3
         });
       }
-      const module = newOutput.modules.find((m => !m.isEntry));
+      const module = newOutput.modules.find((mod => !isTransformedFile(mod)));
       return {
         code: module.code,
         map: module.map,
@@ -2273,6 +2273,10 @@ var insideRoots = (ext, dir, srcDir, vendorRoots) => {
   }
   return false;
 };
+
+function isTransformedFile(mod) {
+  return mod.isEntry || mod.hook;
+}
 
 function parseId(originalId) {
   const [pathId, query] = originalId.split("?");
