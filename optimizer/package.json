@@ -1,0 +1,16 @@
+{
+  "name": "@builder.io/qwik/optimizer",
+  "version": "1.2.15",
+  "main": "../optimizer.mjs",
+  "module": "../optimizer.mjs",
+  "types": "../optimizer.d.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "../optimizer.d.ts",
+      "require": "../optimizer.cjs",
+      "import": "../optimizer.mjs"
+    }
+  }
+}

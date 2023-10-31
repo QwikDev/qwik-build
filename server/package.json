@@ -1,0 +1,16 @@
+{
+  "name": "@builder.io/qwik/server",
+  "version": "1.2.15",
+  "main": "../server.mjs",
+  "module": "../server.mjs",
+  "types": "../server.d.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "../server.d.ts",
+      "require": "../server.cjs",
+      "import": "../server.mjs"
+    }
+  }
+}
