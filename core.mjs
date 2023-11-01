@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.2.15
+ * @builder.io/qwik 1.2.16
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3337,7 +3337,7 @@ const _waitUntilRendered = (elm) => {
  *
  * @public
  */
-const version = "1.2.15";
+const version = "1.2.16";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
