@@ -1823,7 +1823,7 @@ globalThis.qwikOptimizer = function(module) {
     };
     const buildStart = async ctx => {
       var _a;
-      log("buildStart()", opts.buildMode, opts.scope);
+      debug("buildStart()", opts.buildMode, opts.scope);
       const optimizer = getOptimizer();
       if ("node" === optimizer.sys.env && "ssr" === opts.target) {
         try {
@@ -1836,7 +1836,7 @@ globalThis.qwikOptimizer = function(module) {
         let srcDir = "/";
         if ("string" === typeof opts.srcDir) {
           srcDir = normalizePath(opts.srcDir);
-          log("buildStart() srcDir", opts.srcDir);
+          debug("buildStart() srcDir", opts.srcDir);
         } else if (Array.isArray(opts.srcInputs)) {
           optimizer.sys.getInputFiles = async rootDir => opts.srcInputs.map((i => {
             const relInput = {
@@ -1845,11 +1845,11 @@ globalThis.qwikOptimizer = function(module) {
             };
             return relInput;
           }));
-          log(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
+          debug(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
         }
         const vendorRoots = opts.vendorRoots;
-        vendorRoots.length > 0 && log("vendorRoots", vendorRoots);
-        log("transformedOutput.clear()");
+        vendorRoots.length > 0 && debug("vendorRoots", vendorRoots);
+        debug("transformedOutput.clear()");
         transformedOutputs.clear();
         const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
         const transformOpts = {
@@ -1878,7 +1878,7 @@ globalThis.qwikOptimizer = function(module) {
         const result = await optimizer.transformFs(transformOpts);
         for (const output of result.modules) {
           const key = normalizePath(path.join(srcDir, output.path));
-          log("buildStart() add transformedOutput", key, null == (_a = output.hook) ? void 0 : _a.displayName);
+          debug("buildStart() add transformedOutput", key, null == (_a = output.hook) ? void 0 : _a.displayName);
           transformedOutputs.set(key, [ output, key ]);
           ssrTransformedOutputs.set(key, [ output, key ]);
           output.hook ? hookManifest[output.hook.hash] = key : output.isEntry && ctx.emitFile({
@@ -1892,7 +1892,7 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
     const resolveId = async (_ctx, id2, importer, ssrOpts) => {
-      log("resolveId()", "Start", id2, importer);
+      debug("resolveId()", "Start", id2, importer);
       if (id2.startsWith("\0")) {
         return;
       }
@@ -1906,14 +1906,14 @@ globalThis.qwikOptimizer = function(module) {
         };
       }
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
-        log("resolveId()", "Resolved", QWIK_BUILD_ID);
+        debug("resolveId()", "Resolved", QWIK_BUILD_ID);
         return {
           id: normalizePath(getPath().resolve(opts.rootDir, QWIK_BUILD_ID)),
           moduleSideEffects: false
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
-        log("resolveId()", "Resolved", QWIK_CLIENT_MANIFEST_ID);
+        debug("resolveId()", "Resolved", QWIK_CLIENT_MANIFEST_ID);
         if ("lib" === opts.target) {
           return {
             id: id2,
@@ -1937,13 +1937,13 @@ globalThis.qwikOptimizer = function(module) {
         const ext = path.extname(importeePathId).toLowerCase();
         if (ext in RESOLVE_EXTS) {
           importer = normalizePath(importer);
-          log(`resolveId("${importeePathId}", "${importer}")`);
+          debug(`resolveId("${importeePathId}", "${importer}")`);
           const parsedImporterId = parseId(importer);
           const dir = path.dirname(parsedImporterId.pathId);
           importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(path.join(dir, importeePathId)) : normalizePath(path.resolve(dir, importeePathId));
           const transformedOutput = isSSR ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
           if (transformedOutput) {
-            log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
+            debug(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
               id: importeePathId + parsedId.query
             };
@@ -1954,10 +1954,10 @@ globalThis.qwikOptimizer = function(module) {
         const importeePathId = normalizePath(parsedId.pathId);
         const ext = path.extname(importeePathId).toLowerCase();
         if (ext in RESOLVE_EXTS) {
-          log(`resolveId("${importeePathId}", "${importer}")`);
+          debug(`resolveId("${importeePathId}", "${importer}")`);
           const transformedOutput = isSSR ? ssrTransformedOutputs.get(importeePathId) : transformedOutputs.get(importeePathId);
           if (transformedOutput) {
-            log(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
+            debug(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
               id: importeePathId + parsedId.query
             };
@@ -1972,14 +1972,14 @@ globalThis.qwikOptimizer = function(module) {
       }
       const isSSR = (null == ssrOpts ? void 0 : ssrOpts.ssr) ?? "ssr" === opts.target;
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
-        log("load()", QWIK_BUILD_ID, opts.buildMode);
+        debug("load()", QWIK_BUILD_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
           code: getQwikBuildModule(isSSR, opts.target)
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
-        log("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
+        debug("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
         return {
           moduleSideEffects: false,
           code: await getQwikServerManifestModule(isSSR)
@@ -1990,7 +1990,7 @@ globalThis.qwikOptimizer = function(module) {
       id2 = normalizePath(parsedId.pathId);
       const transformedModule = isSSR ? ssrTransformedOutputs.get(id2) : transformedOutputs.get(id2);
       if (transformedModule) {
-        log("load()", "Found", id2);
+        debug("load()", "Found", id2);
         let code = transformedModule[0].code;
         "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID))));
         return {
@@ -2022,7 +2022,7 @@ globalThis.qwikOptimizer = function(module) {
       if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
         const strip = "client" === opts.target || "ssr" === opts.target;
         const normalizedID = normalizePath(pathId);
-        log("transform()", "Transforming", pathId);
+        debug("transform()", "Transforming", pathId);
         let filePath = base;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
@@ -2127,7 +2127,7 @@ globalThis.qwikOptimizer = function(module) {
           }
         };
       }
-      log("transform()", "No Transforming", id2);
+      debug("transform()", "No Transforming", id2);
       return null;
     };
     const createOutputAnalyzer = () => {
@@ -2160,8 +2160,11 @@ globalThis.qwikOptimizer = function(module) {
     };
     const getOptions = () => opts;
     const getTransformedOutputs = () => Array.from(transformedOutputs.values()).map((t => t[0]));
-    const log = (...str) => {
+    const debug = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
+    };
+    const log = (...str) => {
+      console.log(`[QWIK PLUGIN: ${id}]`, ...str);
     };
     const onDiagnostics = cb => {
       diagnosticsCallback = cb;
@@ -2201,6 +2204,7 @@ globalThis.qwikOptimizer = function(module) {
       getTransformedOutputs: getTransformedOutputs,
       init: init2,
       load: load,
+      debug: debug,
       log: log,
       normalizeOptions: normalizeOptions,
       normalizePath: normalizePath,
@@ -3044,11 +3048,14 @@ globalThis.qwikOptimizer = function(module) {
     const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
     async function loadQwikInsights(clientOutDir2) {
       const sys = qwikPlugin.getSys();
+      const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2 ?? "dist", "q-insights.json");
+      const path = absolutePathAwareJoin(sys.path, process.cwd(), cwdRelativePath);
       const fs = await sys.dynamicImport("node:fs");
-      const path = sys.path.join(process.cwd(), clientOutDir2 ?? "dist", "q-insights.json");
       if (fs.existsSync(path)) {
+        qwikPlugin.log("Reading Qwik Insight data from: " + cwdRelativePath);
         return JSON.parse(await fs.promises.readFile(path, "utf-8"));
       }
+      qwikPlugin.log("Qwik Insight not found  `" + cwdRelativePath + "`, skipping.\n\t\tConsider setting up https://qwik.builder.io/docs/labs/insights/ for better bundle optimization.");
       return null;
     }
     const api = {
@@ -3065,7 +3072,7 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
@@ -3075,13 +3082,7 @@ globalThis.qwikOptimizer = function(module) {
         buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteCommand && "client" === target ? "production" : "development";
         viteCommand = viteEnv.command;
         isClientDevOnly = "serve" === viteCommand && "ssr" !== viteEnv.mode;
-        qwikPlugin.log(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
-        if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
-          try {
-            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_b = qwikViteOpts.client) ? void 0 : _b.outDir);
-            entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-          } catch (e) {}
-        }
+        qwikPlugin.debug(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
         "serve" === viteCommand ? qwikViteOpts.entryStrategy = {
           type: "hook"
         } : "ssr" === target ? qwikViteOpts.entryStrategy = {
@@ -3103,20 +3104,20 @@ globalThis.qwikOptimizer = function(module) {
           resolveQwikBuild: true,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
-          outDir: null == (_c = viteConfig.build) ? void 0 : _c.outDir,
+          outDir: null == (_b = viteConfig.build) ? void 0 : _b.outDir,
           devTools: qwikViteOpts.devTools
         };
         if (!qwikViteOpts.csr) {
           if ("ssr" === target) {
-            "string" === typeof (null == (_d = viteConfig.build) ? void 0 : _d.ssr) ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof (null == (_e = qwikViteOpts.ssr) ? void 0 : _e.input) && (pluginOpts.input = qwikViteOpts.ssr.input);
-            (null == (_f = qwikViteOpts.ssr) ? void 0 : _f.outDir) && (pluginOpts.outDir = qwikViteOpts.ssr.outDir);
-            pluginOpts.manifestInput = null == (_g = qwikViteOpts.ssr) ? void 0 : _g.manifestInput;
+            "string" === typeof (null == (_c = viteConfig.build) ? void 0 : _c.ssr) ? pluginOpts.input = viteConfig.build.ssr : "string" === typeof (null == (_d = qwikViteOpts.ssr) ? void 0 : _d.input) && (pluginOpts.input = qwikViteOpts.ssr.input);
+            (null == (_e = qwikViteOpts.ssr) ? void 0 : _e.outDir) && (pluginOpts.outDir = qwikViteOpts.ssr.outDir);
+            pluginOpts.manifestInput = null == (_f = qwikViteOpts.ssr) ? void 0 : _f.manifestInput;
           } else if ("client" === target) {
-            pluginOpts.input = null == (_h = qwikViteOpts.client) ? void 0 : _h.input;
-            (null == (_i = qwikViteOpts.client) ? void 0 : _i.outDir) && (pluginOpts.outDir = qwikViteOpts.client.outDir);
-            pluginOpts.manifestOutput = null == (_j = qwikViteOpts.client) ? void 0 : _j.manifestOutput;
+            pluginOpts.input = null == (_g = qwikViteOpts.client) ? void 0 : _g.input;
+            (null == (_h = qwikViteOpts.client) ? void 0 : _h.outDir) && (pluginOpts.outDir = qwikViteOpts.client.outDir);
+            pluginOpts.manifestOutput = null == (_i = qwikViteOpts.client) ? void 0 : _i.manifestOutput;
           } else {
-            "object" === typeof (null == (_k = viteConfig.build) ? void 0 : _k.lib) && (pluginOpts.input = null == (_l = viteConfig.build) ? void 0 : _l.lib.entry);
+            "object" === typeof (null == (_j = viteConfig.build) ? void 0 : _j.lib) && (pluginOpts.input = null == (_k = viteConfig.build) ? void 0 : _k.lib.entry);
           }
           if ("node" === sys.env) {
             const fs = await sys.dynamicImport("node:fs");
@@ -3147,10 +3148,10 @@ globalThis.qwikOptimizer = function(module) {
         srcDir = opts.srcDir;
         rootDir = opts.rootDir;
         if (!qwikViteOpts.csr) {
-          clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_m = qwikViteOpts.client) ? void 0 : _m.outDir) || CLIENT_OUT_DIR));
+          clientOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_l = qwikViteOpts.client) ? void 0 : _l.outDir) || CLIENT_OUT_DIR));
           clientPublicOutDir = viteConfig.base ? path.join(clientOutDir, viteConfig.base) : clientOutDir;
-          ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_n = qwikViteOpts.ssr) ? void 0 : _n.outDir) || SSR_OUT_DIR));
-          clientDevInput = "string" === typeof (null == (_o = qwikViteOpts.client) ? void 0 : _o.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
+          ssrOutDir = qwikPlugin.normalizePath(sys.path.resolve(opts.rootDir, (null == (_m = qwikViteOpts.ssr) ? void 0 : _m.outDir) || SSR_OUT_DIR));
+          clientDevInput = "string" === typeof (null == (_n = qwikViteOpts.client) ? void 0 : _n.devInput) ? path.resolve(opts.rootDir, qwikViteOpts.client.devInput) : opts.srcDir ? path.resolve(opts.srcDir, CLIENT_DEV_INPUT) : path.resolve(opts.rootDir, "src", CLIENT_DEV_INPUT);
           clientDevInput = qwikPlugin.normalizePath(clientDevInput);
         }
         const vendorIds = vendorRoots.map((v => v.id));
@@ -3158,9 +3159,9 @@ globalThis.qwikOptimizer = function(module) {
         const qDevKey = "globalThis.qDev";
         const qInspectorKey = "globalThis.qInspector";
         const qSerializeKey = "globalThis.qSerialize";
-        const qDev = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qDevKey]) ?? isDevelopment;
-        const qInspector = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qInspectorKey]) ?? isDevelopment;
-        const qSerialize = (null == (_r = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _r[qSerializeKey]) ?? isDevelopment;
+        const qDev = (null == (_o = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _o[qDevKey]) ?? isDevelopment;
+        const qInspector = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qInspectorKey]) ?? isDevelopment;
+        const qSerialize = (null == (_q = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _q[qSerializeKey]) ?? isDevelopment;
         const updatedViteConfig = {
           ssr: {
             noExternal: [ QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_BUILD_ID, ...vendorIds ]
@@ -3198,7 +3199,7 @@ globalThis.qwikOptimizer = function(module) {
           updatedViteConfig.build.rollupOptions = {
             input: opts.input,
             output: {
-              ...normalizeRollupOutputOptions(path, opts, null == (_t = null == (_s = viteConfig.build) ? void 0 : _s.rollupOptions) ? void 0 : _t.output),
+              ...normalizeRollupOutputOptions(path, opts, null == (_s = null == (_r = viteConfig.build) ? void 0 : _r.rollupOptions) ? void 0 : _s.output),
               dir: buildOutputDir
             },
             preserveEntrySignatures: "exports-only",
@@ -3213,7 +3214,7 @@ globalThis.qwikOptimizer = function(module) {
             if ("build" === viteCommand) {
               updatedViteConfig.publicDir = false;
               updatedViteConfig.build.ssr = true;
-              null == (null == (_u = viteConfig.build) ? void 0 : _u.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
+              null == (null == (_t = viteConfig.build) ? void 0 : _t.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
             }
           } else if ("client" === opts.target) {
             isClientDevOnly && !opts.csr && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
@@ -3234,8 +3235,16 @@ globalThis.qwikOptimizer = function(module) {
         }
         return updatedViteConfig;
       },
-      configResolved(config) {
+      async configResolved(config) {
+        var _a;
         basePathname = config.base;
+        const sys = qwikPlugin.getSys();
+        if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
+          try {
+            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a = qwikViteOpts.client) ? void 0 : _a.outDir);
+            entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
+          } catch (e) {}
+        }
       },
       async buildStart() {
         const resolver = this.resolve.bind(this);
@@ -3418,7 +3427,7 @@ globalThis.qwikOptimizer = function(module) {
       },
       handleHotUpdate(ctx) {
         var _a, _b;
-        qwikPlugin.log("handleHotUpdate()", ctx);
+        qwikPlugin.debug("handleHotUpdate()", ctx);
         for (const mod of ctx.modules) {
           const deps = null == (_b = null == (_a = mod.info) ? void 0 : _a.meta) ? void 0 : _b.qwikdeps;
           if (deps && deps.length > 0) {
@@ -3479,6 +3488,16 @@ globalThis.qwikOptimizer = function(module) {
   var isNotNullable = v => null != v;
   var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
   var CLIENT_DEV_INPUT = "entry.dev.tsx";
+  function absolutePathAwareJoin(path, ...segments) {
+    for (let i = segments.length - 1; i >= 0; --i) {
+      const segment = segments[i];
+      if (segment.startsWith(path.sep) || -1 !== segment.indexOf(path.delimiter)) {
+        segments.splice(0, i);
+        break;
+      }
+    }
+    return path.join(...segments);
+  }
   return module.exports;
 }("object" === typeof module && module.exports ? module : {
   exports: {}
