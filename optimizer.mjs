@@ -3561,10 +3561,44 @@ function qwikVite(qwikViteOpts = {}) {
           }
         }
       }
+    },
+    onLog(level, log) {
+      if ("vite-plugin-qwik" == log.plugin) {
+        const color = LOG_COLOR[level] || ANSI_COLOR.White;
+        const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+        console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${log?.loc?.file}:${log?.loc?.line}:${log?.loc?.column}\n`, `  ${frames.join("\n  ")}\n`);
+        return false;
+      }
     }
   };
   return vitePlugin;
 }
+
+var ANSI_COLOR = {
+  Black: "[30m",
+  Red: "[31m",
+  Green: "[32m",
+  Yellow: "[33m",
+  Blue: "[34m",
+  Magenta: "[35m",
+  Cyan: "[36m",
+  White: "[37m",
+  BrightBlack: "[90m",
+  BrightRed: "[91m",
+  BrightGreen: "[92m",
+  BrightYellow: "[93m",
+  BrightBlue: "[94m",
+  BrightMagenta: "[95m",
+  BrightCyan: "[96m",
+  BrightWhite: "[97m",
+  RESET: "[0m"
+};
+
+var LOG_COLOR = {
+  warn: ANSI_COLOR.Yellow,
+  info: ANSI_COLOR.Cyan,
+  debug: ANSI_COLOR.BrightBlack
+};
 
 function updateEntryDev(code) {
   code = code.replace(/["']@builder.io\/qwik["']/g, `'${VITE_CLIENT_MODULE}'`);
