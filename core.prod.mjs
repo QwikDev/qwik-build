@@ -842,15 +842,8 @@ const findParentCtx = (el, containerState) => {
     return null;
 };
 
-const getParentProvider = (ctx, containerState) => {
-    if (void 0 === ctx.$parentCtx$) {
-        const wrappingCtx = findParentCtx(ctx.$element$, containerState);
-        ctx.$parentCtx$ = !wrappingCtx || wrappingCtx.$contexts$ ? wrappingCtx : getParentProvider(wrappingCtx, containerState);
-    } else {
-        ctx.$parentCtx$ && !ctx.$parentCtx$.$contexts$ && (ctx.$parentCtx$ = getParentProvider(ctx.$parentCtx$, containerState));
-    }
-    return ctx.$parentCtx$;
-};
+const getParentProvider = (ctx, containerState) => (void 0 === ctx.$parentCtx$ && (ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState)), 
+ctx.$parentCtx$);
 
 const resolveContext = (context, hostCtx, containerState) => {
     const contextID = context.id;

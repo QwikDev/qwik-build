@@ -1434,7 +1434,7 @@ const useContext = (context, defaultValue) => {
     }
     throw qError(QError_notFoundContext, context.id);
 };
-/** Find a wrapping Virtual component in the DOM that has contexts */
+/** Find a wrapping Virtual component in the DOM */
 const findParentCtx = (el, containerState) => {
     let node = el;
     let stack = 1;
@@ -1475,19 +1475,16 @@ const findParentCtx = (el, containerState) => {
     return null;
 };
 const getParentProvider = (ctx, containerState) => {
+    // `null` means there's no parent, `undefined` means we don't know yet.
     if (ctx.$parentCtx$ === undefined) {
         // Not fully resumed container, find context from DOM
-        const wrappingCtx = findParentCtx(ctx.$element$, containerState);
-        ctx.$parentCtx$ =
-            !wrappingCtx || wrappingCtx.$contexts$
-                ? wrappingCtx
-                : // Keep trying until we find a provider
-                    getParentProvider(wrappingCtx, containerState);
+        ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState);
     }
-    else if (ctx.$parentCtx$ && !ctx.$parentCtx$.$contexts$) {
-        // Fully resumed container, but parent is not a provider: update the reference
-        ctx.$parentCtx$ = getParentProvider(ctx.$parentCtx$, containerState);
-    }
+    /**
+     * Note, the parentCtx is used during pause to to get the immediate parent, so we can't shortcut
+     * the search for $contexts$ here. If that turns out to be needed, it needs to be cached in a
+     * separate property.
+     */
     return ctx.$parentCtx$;
 };
 const resolveContext = (context, hostCtx, containerState) => {

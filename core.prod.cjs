@@ -491,43 +491,35 @@
         const contexts = elCtx.$contexts$ || (elCtx.$contexts$ = new Map);
         contexts.set(context.id, newValue), set(!0);
     };
-    const getParentProvider = (ctx, containerState) => {
-        if (void 0 === ctx.$parentCtx$) {
-            const wrappingCtx = ((el, containerState) => {
-                let node = el;
-                let stack = 1;
-                for (;node && !node.hasAttribute?.("q:container"); ) {
-                    for (;node = node.previousSibling; ) {
-                        if (isComment(node)) {
-                            const virtual = node.__virtual;
-                            if (virtual) {
-                                const qtx = virtual._qc_;
-                                if (node === virtual.open) {
-                                    return qtx ?? getContext(virtual, containerState);
-                                }
-                                if (qtx?.$parentCtx$) {
-                                    return qtx.$parentCtx$;
-                                }
-                                node = virtual;
-                                continue;
-                            }
-                            if ("/qv" === node.data) {
-                                stack++;
-                            } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
-                                return getContext(getVirtualElement(node), containerState);
-                            }
+    const getParentProvider = (ctx, containerState) => (void 0 === ctx.$parentCtx$ && (ctx.$parentCtx$ = ((el, containerState) => {
+        let node = el;
+        let stack = 1;
+        for (;node && !node.hasAttribute?.("q:container"); ) {
+            for (;node = node.previousSibling; ) {
+                if (isComment(node)) {
+                    const virtual = node.__virtual;
+                    if (virtual) {
+                        const qtx = virtual._qc_;
+                        if (node === virtual.open) {
+                            return qtx ?? getContext(virtual, containerState);
                         }
+                        if (qtx?.$parentCtx$) {
+                            return qtx.$parentCtx$;
+                        }
+                        node = virtual;
+                        continue;
                     }
-                    node = el.parentElement, el = node;
+                    if ("/qv" === node.data) {
+                        stack++;
+                    } else if (node.data.startsWith("qv ") && (stack--, 0 === stack)) {
+                        return getContext(getVirtualElement(node), containerState);
+                    }
                 }
-                return null;
-            })(ctx.$element$, containerState);
-            ctx.$parentCtx$ = !wrappingCtx || wrappingCtx.$contexts$ ? wrappingCtx : getParentProvider(wrappingCtx, containerState);
-        } else {
-            ctx.$parentCtx$ && !ctx.$parentCtx$.$contexts$ && (ctx.$parentCtx$ = getParentProvider(ctx.$parentCtx$, containerState));
+            }
+            node = el.parentElement, el = node;
         }
-        return ctx.$parentCtx$;
-    };
+        return null;
+    })(ctx.$element$, containerState)), ctx.$parentCtx$);
     const resolveContext = (context, hostCtx, containerState) => {
         const contextID = context.id;
         if (!hostCtx) {
