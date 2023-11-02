@@ -525,6 +525,7 @@ export declare interface TransformModule {
     code: string;
     map: string | null;
     hook: HookAnalysis | null;
+    origPath: string | null;
 }
 
 /** @public */

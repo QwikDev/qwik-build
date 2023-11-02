@@ -1890,22 +1890,24 @@ function createPlugin(optimizerOptions = {}) {
         debug("buildStart() add transformedOutput", key, output.hook?.displayName);
         transformedOutputs.set(key, [ output, key ]);
         ssrTransformedOutputs.set(key, [ output, key ]);
-        output.hook ? hookManifest[output.hook.hash] = key : output.isEntry && ctx.emitFile({
-          id: key,
-          type: "chunk"
-        });
+        if (output.hook) {
+          hookManifest[output.hook.hash] = key;
+          output.origPath = path.resolve(srcDir, output.hook.origin);
+        } else {
+          output.isEntry && ctx.emitFile({
+            id: key,
+            type: "chunk"
+          });
+        }
       }
       diagnosticsCallback(result.diagnostics, optimizer, srcDir);
       results.set("@buildStart", result);
       ssrResults.set("@buildStart", result);
     }
   };
-  const resolveId = async (_ctx, id2, importer, ssrOpts) => {
+  const resolveId = async (ctx, id2, importer, ssrOpts) => {
     debug("resolveId()", "Start", id2, importer);
-    if (id2.startsWith("\0")) {
-      return;
-    }
-    if (id2.startsWith("/@fs")) {
+    if (id2.startsWith("\0") || id2.startsWith("/@fs")) {
       return;
     }
     if ("lib" === opts.target && id2.startsWith(QWIK_CORE_ID)) {
@@ -1939,6 +1941,13 @@ function createPlugin(optimizerOptions = {}) {
     const isSSR = ssrOpts?.ssr ?? "ssr" === opts.target;
     if (importer) {
       if (!id2.startsWith(".") && !path.isAbsolute(id2)) {
+        const transformedOutput = isSSR ? ssrTransformedOutputs.get(importer) : transformedOutputs.get(importer);
+        const p = transformedOutput?.[0].origPath;
+        if (p) {
+          return ctx.resolve(id2, p, {
+            skipSelf: true
+          });
+        }
         return;
       }
       const parsedId = parseId(id2);
