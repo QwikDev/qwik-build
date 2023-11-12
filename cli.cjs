@@ -2943,11 +2943,7 @@ async function runNewCommand(app) {
       outDir = (0, import_path2.join)(app.rootDir, "src", `components`, nameArg);
     }
     const fileOutput = await writeToFile(name, slug, template, outDir);
-    if (typeArg === "markdown") {
-      f2.success(`${green(`Markdown route "${name}" created!`)}`);
-    } else {
-      f2.success(`${green(`${toPascal([typeArg])} "${name}" created!`)}`);
-    }
+    f2.success(`${green(`${toPascal([typeArg])} "${slug}" created!`)}`);
     f2.message(`Emitted in ${dim(fileOutput)}`);
   } catch (e2) {
     f2.error(String(e2));
@@ -3000,16 +2996,16 @@ async function selectName(type) {
   if (typeof nameAnswer !== "string") {
     bye();
   }
-  if (type === "route" && !nameAnswer.startsWith("/")) {
-    return `/${nameAnswer}`;
+  let result = nameAnswer;
+  if (type !== "component" && !nameAnswer.startsWith("/")) {
+    result = `/${result}`;
   }
-  if (type === "markdown" && !nameAnswer.startsWith("/")) {
-    return `/${nameAnswer.replace(MARKDOWN_SUFFIX, "")}`;
+  if (type === "markdown") {
+    result = result.replace(MARKDOWN_SUFFIX, "");
+  } else if (type === "mdx") {
+    result = result.replace(MDX_SUFFIX, "");
   }
-  if (type === "mdx" && !nameAnswer.startsWith("/")) {
-    return `/${nameAnswer.replace(MDX_SUFFIX, "")}`;
-  }
-  return nameAnswer.replace(MARKDOWN_SUFFIX, "");
+  return result;
 }
 async function selectTemplate(typeArg) {
   const allTemplates = await loadTemplates();
@@ -3064,10 +3060,10 @@ function parseInputName(input) {
   };
 }
 function toSlug(list) {
-  return list.join("-").toLowerCase();
+  return list.join("-");
 }
 function toPascal(list) {
-  return list.map((p2) => p2[0].toUpperCase() + p2.substring(1).toLowerCase()).join("");
+  return list.map((p2) => p2[0].toUpperCase() + p2.substring(1)).join("");
 }
 
 // packages/create-qwik/src/helpers/jokes.json
