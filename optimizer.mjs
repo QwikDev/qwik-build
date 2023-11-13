@@ -1428,6 +1428,15 @@ var convertOptions = opts => {
   return output;
 };
 
+var hashCode = (text, hash = 0) => {
+  for (let i = 0; i < text.length; i++) {
+    const chr = text.charCodeAt(i);
+    hash = (hash << 5) - hash + chr;
+    hash |= 0;
+  }
+  return Number(Math.abs(hash)).toString(36);
+};
+
 function prioritizeSymbolNames(manifest) {
   const symbols = manifest.symbols;
   return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
@@ -1676,15 +1685,6 @@ function createRollupError(id, reportMessage) {
   });
   return err;
 }
-
-var hashCode = (text, hash = 0) => {
-  for (let i = 0; i < text.length; i++) {
-    const chr = text.charCodeAt(i);
-    hash = (hash << 5) - hash + chr;
-    hash |= 0;
-  }
-  return Number(Math.abs(hash)).toString(36);
-};
 
 var REG_CTX_NAME = [ "server" ];
 
@@ -1942,9 +1942,9 @@ function createPlugin(optimizerOptions = {}) {
     if (importer) {
       if (!id2.startsWith(".") && !path.isAbsolute(id2)) {
         const transformedOutput = isSSR ? ssrTransformedOutputs.get(importer) : transformedOutputs.get(importer);
-        const p = transformedOutput?.[0].origPath;
-        if (p) {
-          return ctx.resolve(id2, p, {
+        const originalPath = transformedOutput?.[0].origPath || transformedOutput?.[1];
+        if (originalPath) {
+          return ctx.resolve(id2, originalPath, {
             skipSelf: true
           });
         }

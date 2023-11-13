@@ -1435,6 +1435,14 @@ globalThis.qwikOptimizer = function(module) {
     output.manualChunks = (null == (_b = opts.entryStrategy) ? void 0 : _b.manual) ?? void 0;
     return output;
   };
+  var hashCode = (text, hash = 0) => {
+    for (let i = 0; i < text.length; i++) {
+      const chr = text.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0;
+    }
+    return Number(Math.abs(hash)).toString(36);
+  };
   function prioritizeSymbolNames(manifest) {
     const symbols = manifest.symbols;
     return Object.keys(symbols).sort(((symbolNameA, symbolNameB) => {
@@ -1672,14 +1680,6 @@ globalThis.qwikOptimizer = function(module) {
     });
     return err;
   }
-  var hashCode = (text, hash = 0) => {
-    for (let i = 0; i < text.length; i++) {
-      const chr = text.charCodeAt(i);
-      hash = (hash << 5) - hash + chr;
-      hash |= 0;
-    }
-    return Number(Math.abs(hash)).toString(36);
-  };
   var REG_CTX_NAME = [ "server" ];
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
@@ -1933,9 +1933,9 @@ globalThis.qwikOptimizer = function(module) {
       if (importer) {
         if (!id2.startsWith(".") && !path.isAbsolute(id2)) {
           const transformedOutput = isSSR ? ssrTransformedOutputs.get(importer) : transformedOutputs.get(importer);
-          const p = null == transformedOutput ? void 0 : transformedOutput[0].origPath;
-          if (p) {
-            return ctx.resolve(id2, p, {
+          const originalPath = (null == transformedOutput ? void 0 : transformedOutput[0].origPath) || (null == transformedOutput ? void 0 : transformedOutput[1]);
+          if (originalPath) {
+            return ctx.resolve(id2, originalPath, {
               skipSelf: true
             });
           }
