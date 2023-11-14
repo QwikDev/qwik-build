@@ -1552,6 +1552,57 @@ const isRecoverable = (err) => {
     return true;
 };
 
+/** CSS properties which accept numbers but are not in units of "px". */
+const unitlessNumbers = new Set([
+    'animationIterationCount',
+    'aspectRatio',
+    'borderImageOutset',
+    'borderImageSlice',
+    'borderImageWidth',
+    'boxFlex',
+    'boxFlexGroup',
+    'boxOrdinalGroup',
+    'columnCount',
+    'columns',
+    'flex',
+    'flexGrow',
+    'flexShrink',
+    'gridArea',
+    'gridRow',
+    'gridRowEnd',
+    'gridRowStart',
+    'gridColumn',
+    'gridColumnEnd',
+    'gridColumnStart',
+    'fontWeight',
+    'lineClamp',
+    'lineHeight',
+    'opacity',
+    'order',
+    'orphans',
+    'scale',
+    'tabSize',
+    'widows',
+    'zIndex',
+    'zoom',
+    'MozAnimationIterationCount',
+    'MozBoxFlex',
+    'msFlex',
+    'msFlexPositive',
+    'WebkitAnimationIterationCount',
+    'WebkitBoxFlex',
+    'WebkitBoxOrdinalGroup',
+    'WebkitColumnCount',
+    'WebkitColumns',
+    'WebkitFlex',
+    'WebkitFlexGrow',
+    'WebkitFlexShrink',
+    'WebkitLineClamp',
+]);
+const isUnitlessNumber = (name) => {
+    return unitlessNumbers.has(name);
+};
+
 const executeComponent = (rCtx, elCtx) => {
     elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
     elCtx.$flags$ |= HOST_FLAG_MOUNTED;
@@ -1671,8 +1722,12 @@ const stringifyStyle = (obj) => {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
                     if (value != null) {
-                        const normalizedKey = key.startsWith('--') ? key : fromCamelToKebabCase(key);
-                        chunks.push(normalizedKey + ':' + value);
+                        if (key.startsWith('--')) {
+                            chunks.push(key + ':' + value);
+                        }
+                        else {
+                            chunks.push(fromCamelToKebabCase(key) + ':' + setValueForStyle(key, value));
+                        }
                     }
                 }
             }
@@ -1680,6 +1735,12 @@ const stringifyStyle = (obj) => {
         }
     }
     return String(obj);
+};
+const setValueForStyle = (styleName, value) => {
+    if (typeof value === 'number' && value !== 0 && !isUnitlessNumber(styleName)) {
+        return value + 'px';
+    }
+    return value;
 };
 const getNextIndex = (ctx) => {
     return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
