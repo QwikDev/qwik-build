@@ -2313,6 +2313,7 @@ export declare namespace QwikJSX {
 export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T, NativeKeyboardEvent> {
     isComposing: boolean;
     altKey: boolean;
+    /** @deprecated Deprecated. */
     charCode: number;
     ctrlKey: boolean;
     /**
@@ -2325,12 +2326,15 @@ export declare interface QwikKeyboardEvent<T = Element> extends SyntheticEvent<T
      * spec](https://www.w3.org/TR/uievents-key/#named-key-attribute-values). for possible values
      */
     key: string;
+    code: string;
+    /** @deprecated Deprecated. */
     keyCode: number;
     locale: string;
     location: number;
     metaKey: boolean;
     repeat: boolean;
     shiftKey: boolean;
+    /** @deprecated Deprecated. */
     which: number;
 }
 
@@ -3957,7 +3961,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.2.17
+ * 1.2.18
  *
  * @public
  */
