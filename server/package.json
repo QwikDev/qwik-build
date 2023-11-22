@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/server",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "main": "../server.mjs",
   "module": "../server.mjs",
   "types": "../server.d.ts",
