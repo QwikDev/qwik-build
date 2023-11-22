@@ -3142,7 +3142,6 @@ globalThis.qwikOptimizer = function(module) {
         qwikPlugin.log("Reading Qwik Insight data from: " + cwdRelativePath);
         return JSON.parse(await fs2.promises.readFile(path2, "utf-8"));
       }
-      qwikPlugin.log("Qwik Insight not found  `" + cwdRelativePath + "`, skipping.\n\t\tConsider setting up https://qwik.builder.io/docs/labs/insights/ for better bundle optimization.");
       return null;
     }
     const api = {
