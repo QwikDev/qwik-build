@@ -1778,7 +1778,7 @@ declare type PreventDefault<T extends Element> = {
 declare type Primitive = null | undefined | string | number | boolean | symbol | bigint;
 
 declare interface ProcessedJSXNode {
-    $type$: string;
+    $type$: ProcessedJSXNodeType;
     $id$: string;
     $props$: Record<string, any>;
     $immutableProps$: Record<string, any> | null;
@@ -1790,6 +1790,8 @@ declare interface ProcessedJSXNode {
     $signal$: Signal<any> | null;
     $dev$?: DevJSX;
 }
+
+declare type ProcessedJSXNodeType = '#text' | ':virtual' | ':signal' | typeof SKIP_RENDER_TYPE | string;
 
 /** @public */
 export declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
@@ -2714,6 +2716,8 @@ declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
 
 /** @public */
 export declare type Size = number | string;
+
+declare const SKIP_RENDER_TYPE = ":skipRender";
 
 /** @public */
 export declare const SkipRender: JSXNode;
