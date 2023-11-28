@@ -3265,9 +3265,7 @@ globalThis.qwikOptimizer = function(module) {
             exclude: [ "@vite/client", "@vite/env", "node-fetch", "undici", QWIK_CORE_ID, QWIK_CORE_SERVER, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID, QWIK_BUILD_ID, QWIK_CLIENT_MANIFEST_ID, ...vendorIds ]
           },
           build: {
-            modulePreload: {
-              polyfill: false
-            },
+            modulePreload: false,
             dynamicImportVarsOptions: {
               exclude: [ /./ ]
             }
