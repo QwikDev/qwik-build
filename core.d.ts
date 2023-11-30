@@ -949,7 +949,9 @@ declare type GetObjID = (obj: any) => string | null;
  */
 export declare const getPlatform: () => CorePlatform;
 
-declare type GroupToManagersMap = Map<SubscriberHost | SubscriberEffect | Node, LocalSubscriptionManager[]>;
+declare type Group = SubscriberEffect | SubscriberHost | Node;
+
+declare type GroupToManagersMap = Map<Group, LocalSubscriptionManager[]>;
 
 /** @public */
 declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends {} = {}>(type: TYPE, props: PROPS | null, ...children: any[]): JSXNode<TYPE>;
@@ -1559,8 +1561,8 @@ declare class LocalSubscriptionManager {
     readonly $subs$: Subscriptions[];
     constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
     $addSubs$(subs: Subscriptions[]): void;
-    $addToGroup$(group: SubscriberHost | SubscriberEffect | Node, manager: LocalSubscriptionManager): void;
-    $unsubGroup$(group: SubscriberEffect | SubscriberHost | Node): void;
+    $addToGroup$(group: Group, manager: LocalSubscriptionManager): void;
+    $unsubGroup$(group: Group): void;
     $unsubEntry$(entry: SubscriberSignal): void;
     $addSub$(sub: Subscriber, key?: string): void;
     $notifySubs$(key?: string | undefined): void;
@@ -2866,8 +2868,8 @@ declare type SubscriberSignal = B | C;
 declare interface SubscriptionManager {
     $groupToManagers$: GroupToManagersMap;
     $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
-    $clearSub$: (sub: SubscriberEffect | SubscriberHost | Node) => void;
-    $clearSignal$: (sub: SubscriberSignal) => void;
+    $clearSub$: (group: Group) => void;
+    $clearSignal$: (signal: SubscriberSignal) => void;
 }
 
 declare type Subscriptions = A | SubscriberSignal;
