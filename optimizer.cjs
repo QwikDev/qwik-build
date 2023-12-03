@@ -3052,11 +3052,12 @@ globalThis.qwikOptimizer = function(module) {
       res.end(msg);
     }));
   }
+  var CYPRESS_DEV_SERVER_PATH = "/__cypress/src";
   var FS_PREFIX = "/@fs/";
   var VALID_ID_PREFIX = "/@id/";
   var VITE_PUBLIC_PATH = "/@vite/";
   var internalPrefixes = [ FS_PREFIX, VALID_ID_PREFIX, VITE_PUBLIC_PATH ];
-  var InternalPrefixRE = new RegExp(`^(?:${internalPrefixes.join("|")})`);
+  var InternalPrefixRE = new RegExp(`^(${CYPRESS_DEV_SERVER_PATH})?(?:${internalPrefixes.join("|")})`);
   var shouldSsrRender = (req, url) => {
     const pathname = url.pathname;
     if (/\.[\w?=&]+$/.test(pathname) && !pathname.endsWith(".html")) {
