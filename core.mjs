@@ -197,39 +197,39 @@ const qError = (code, ...parts) => {
 const codeToText = (code) => {
     if (qDev) {
         const MAP = [
-            'Error while serializing class attribute',
-            'Can not serialize a HTML Node that is not an Element',
-            'Runtime but no instance found on element.',
-            'Only primitive and object literals can be serialized',
-            'Crash while rendering',
-            'You can render over a existing q:container. Skipping render().',
-            'Set property',
-            "Only function's and 'string's are supported.",
-            "Only objects can be wrapped in 'QObject'",
-            `Only objects literals can be wrapped in 'QObject'`,
-            'QRL is not a function',
-            'Dynamic import not found',
-            'Unknown type argument',
-            'Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()',
-            "Invoking 'use*()' method outside of invocation context.",
-            'Cant access renderCtx for existing context',
-            'Cant access document for existing context',
-            'props are immutable',
-            '<div> component can only be used at the root of a Qwik component$()',
-            'Props are immutable by default.',
+            'Error while serializing class attribute', // 0
+            'Can not serialize a HTML Node that is not an Element', // 1
+            'Runtime but no instance found on element.', // 2
+            'Only primitive and object literals can be serialized', // 3
+            'Crash while rendering', // 4
+            'You can render over a existing q:container. Skipping render().', // 5
+            'Set property', // 6
+            "Only function's and 'string's are supported.", // 7
+            "Only objects can be wrapped in 'QObject'", // 8
+            `Only objects literals can be wrapped in 'QObject'`, // 9
+            'QRL is not a function', // 10
+            'Dynamic import not found', // 11
+            'Unknown type argument', // 12
+            'Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()', // 13
+            "Invoking 'use*()' method outside of invocation context.", // 14
+            'Cant access renderCtx for existing context', // 15
+            'Cant access document for existing context', // 16
+            'props are immutable', // 17
+            '<div> component can only be used at the root of a Qwik component$()', // 18
+            'Props are immutable by default.', // 19
             `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
-For more information see: https://qwik.builder.io/docs/components/tasks/#use-method-rules`,
-            'Container is already paused. Skipping',
-            'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead',
-            'When rendering directly on top of Document, the root node must be a <html>',
-            'A <html> node must have 2 children. The first one <head> and the second one a <body>',
-            'Invalid JSXNode type. It must be either a function or a string. Found:',
-            'Tracking value changes can only be done to useStore() objects and component props',
-            'Missing Object ID for captured object',
-            'The provided Context reference is not a valid context created by createContextId()',
-            '<html> is the root container, it can not be rendered inside a component',
-            'QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.',
-            'QRLs can not be dynamically resolved, because it does not have a chunk path',
+For more information see: https://qwik.builder.io/docs/components/tasks/#use-method-rules`, // 20
+            'Container is already paused. Skipping', // 21
+            'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', // 22
+            'When rendering directly on top of Document, the root node must be a <html>', // 23
+            'A <html> node must have 2 children. The first one <head> and the second one a <body>', // 24
+            'Invalid JSXNode type. It must be either a function or a string. Found:', // 25
+            'Tracking value changes can only be done to useStore() objects and component props', // 26
+            'Missing Object ID for captured object', // 27
+            'The provided Context reference is not a valid context created by createContextId()', // 28
+            '<html> is the root container, it can not be rendered inside a component', // 29
+            'QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.', // 30
+            'QRLs can not be dynamically resolved, because it does not have a chunk path', // 31
             'The JSX ref attribute must be a Signal', // 32
         ];
         return `Code(${code}): ${MAP[code] ?? ''}`;
@@ -507,6 +507,7 @@ const QContainerSelector = '[q\\:container]';
 const ResourceEvent = 'qResource';
 const ComputedEvent = 'qComputed';
 const RenderEvent = 'qRender';
+const TaskEvent = 'qTask';
 const ELEMENT_ID = 'q:id';
 const ELEMENT_ID_PREFIX = '#';
 
@@ -1362,6 +1363,7 @@ const renderNodeVirtual = (node, elCtx, extraNodes, rCtx, ssrCtx, stream, flags,
     }
     if (extraNodes) {
         for (const node of extraNodes) {
+            // We trust that the attributes are strings
             renderNodeElementSync(node.type, node.props, stream);
         }
     }
@@ -1520,7 +1522,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
     for (const child of flatChildren) {
         let slotName = '';
         if (isJSXNode(child)) {
-            slotName = child.props[QSlot] ?? '';
+            slotName = child.props[QSlot] || '';
         }
         (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
     }
@@ -2161,7 +2163,7 @@ const normalizeInvisibleEvents = (eventName) => {
 const _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
     assertString(type, 'jsx type must be a string');
     const processed = key == null ? null : String(key);
-    const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
+    const node = new JSXNodeImpl(type, mutableProps || EMPTY_OBJ, immutableProps, children, flags, processed);
     if (qDev && dev) {
         node.dev = {
             stack: new Error().stack,
@@ -2228,8 +2230,8 @@ const jsx = (type, props, key) => {
     });
     if (isString(type)) {
         if ('className' in props) {
-            props['class'] = props['className'];
-            delete props['className'];
+            props.class = props.className;
+            delete props.className;
             if (qDev) {
                 logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
             }
@@ -2252,7 +2254,7 @@ class JSXNodeImpl {
     }
 }
 /** @public */
-const Virtual = ((props) => props.children);
+const Virtual = (props) => props.children;
 /** @public */
 const RenderOnce = (props, key) => {
     return new JSXNodeImpl(Virtual, EMPTY_OBJ, null, props.children, static_subtree, key);
@@ -2419,8 +2421,8 @@ const jsxDEV = (type, props, key, _isStatic, opts, _ctx) => {
     });
     if (isString(type)) {
         if ('className' in props) {
-            props['class'] = props['className'];
-            delete props['className'];
+            props.class = props.className;
+            delete props.className;
             if (qDev) {
                 logOnceWarn('jsx: `className` is deprecated. Use `class` instead.');
             }
@@ -3934,7 +3936,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
     task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const el = task.$el$;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, 'TaskEvent');
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, el, undefined, TaskEvent);
     const { $subsManager$: subsManager } = containerState;
     iCtx.$renderCtx$ = rCtx;
     const taskFn = task.$qrl$.getFn(iCtx, () => {
@@ -4045,7 +4047,7 @@ const runTask = (task, containerState, rCtx) => {
     task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const hostElement = task.$el$;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'TaskEvent');
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, TaskEvent);
     iCtx.$renderCtx$ = rCtx;
     const { $subsManager$: subsManager } = containerState;
     const taskFn = task.$qrl$.getFn(iCtx, () => {
@@ -4066,6 +4068,9 @@ const runTask = (task, containerState, rCtx) => {
         }
         if (prop) {
             return obj[prop];
+        }
+        else if (isSignal(obj)) {
+            return obj.value;
         }
         else {
             return obj;
@@ -4094,7 +4099,7 @@ const runComputed = (task, containerState, rCtx) => {
     task.$flags$ &= ~TaskFlagsIsDirty;
     cleanupTask(task);
     const hostElement = task.$el$;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, 'ComputedEvent');
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, ComputedEvent);
     iCtx.$subscriber$ = [0, task];
     iCtx.$renderCtx$ = rCtx;
     const { $subsManager$: subsManager } = containerState;
@@ -4376,16 +4381,21 @@ const useInvokeContext = () => {
     assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
     return ctx;
 };
-const useBindInvokeContext = (callback) => {
-    if (callback == null) {
-        return callback;
+function useBindInvokeContext(fn) {
+    if (fn == null) {
+        return fn;
     }
     const ctx = getInvokeContext();
-    return ((...args) => {
-        return invoke(ctx, callback.bind(undefined, ...args));
-    });
-};
+    return function (...args) {
+        return (invokeApply).call(this, ctx, fn, args);
+    };
+}
+/** Call a function with the given InvokeContext and given arguments. */
 function invoke(context, fn, ...args) {
+    return invokeApply.call(this, context, fn, args);
+}
+/** Call a function with the given InvokeContext and array of arguments. */
+function invokeApply(context, fn, args) {
     const previousContext = _context;
     let returnValue;
     try {
@@ -4409,13 +4419,13 @@ const waitAndRun = (ctx, callback) => {
         waitOn.push(Promise.all(waitOn).then(callback));
     }
 };
-const newInvokeContextFromTuple = (context) => {
-    const element = context[0];
+const newInvokeContextFromTuple = ([element, event, url]) => {
     const container = element.closest(QContainerSelector);
     const locale = container?.getAttribute(QLocaleAttr) || undefined;
     locale && setLocale(locale);
-    return newInvokeContext(locale, undefined, element, context[1], context[2]);
+    return newInvokeContext(locale, undefined, element, event, url);
 };
+// TODO how about putting url and locale (and event/custom?) in to a "static" object
 const newInvokeContext = (locale, hostElement, element, event, url) => {
     const ctx = {
         $url$: url,
@@ -4435,12 +4445,20 @@ const newInvokeContext = (locale, hostElement, element, event, url) => {
 const getWrappingContainer = (el) => {
     return el.closest(QContainerSelector);
 };
-/** @public */
+/**
+ * Don't track listeners for this callback
+ *
+ * @public
+ */
 const untrack = (fn) => {
     return invoke(undefined, fn);
 };
 const trackInvocation = /*#__PURE__*/ newInvokeContext(undefined, undefined, undefined, RenderEvent);
-/** @public */
+/**
+ * Mark sub as a listener for the signal
+ *
+ * @public
+ */
 const trackSignal = (signal, sub) => {
     trackInvocation.$subscriber$ = sub;
     return invoke(trackInvocation, () => signal.value);
@@ -4512,8 +4530,8 @@ const unitlessNumbers = new Set([
     'widows',
     'zIndex',
     'zoom',
-    'MozAnimationIterationCount',
-    'MozBoxFlex',
+    'MozAnimationIterationCount', // Known Prefixed Properties
+    'MozBoxFlex', // TODO: Remove these since they shouldn't be used in modern code
     'msFlex',
     'msFlexPositive',
     'WebkitAnimationIterationCount',
@@ -7848,31 +7866,31 @@ const StringSerializer = /*#__PURE__*/ serializer({
 const serializers =  [
     // NULL                       \u0000
     // UNDEFINED_PREFIX           \u0001
-    QRLSerializer,
-    TaskSerializer,
-    ResourceSerializer,
-    URLSerializer,
-    DateSerializer,
-    RegexSerializer,
+    QRLSerializer, ////////////// \u0002
+    TaskSerializer, ///////////// \u0003
+    ResourceSerializer, ///////// \u0004
+    URLSerializer, ////////////// \u0005
+    DateSerializer, ///////////// \u0006
+    RegexSerializer, //////////// \u0007
     // BACKSPACE                  \u0008
     // HORIZONTAL TAB             \u0009
     // NEW LINE                   \u000A
     // VERTICAL TAB               \u000B
     // FORM FEED                  \u000C
     // CARRIAGE RETURN            \u000D
-    ErrorSerializer,
-    DocumentSerializer,
-    ComponentSerializer,
-    DerivedSignalSerializer,
-    SignalSerializer,
-    SignalWrapperSerializer,
-    NoFiniteNumberSerializer,
-    URLSearchParamsSerializer,
-    FormDataSerializer,
-    JSXNodeSerializer,
-    BigIntSerializer,
-    SetSerializer,
-    MapSerializer,
+    ErrorSerializer, //////////// \u000E
+    DocumentSerializer, ///////// \u000F
+    ComponentSerializer, //////// \u0010
+    DerivedSignalSerializer, //// \u0011
+    SignalSerializer, /////////// \u0012
+    SignalWrapperSerializer, //// \u0013
+    NoFiniteNumberSerializer, /// \u0014
+    URLSearchParamsSerializer, // \u0015
+    FormDataSerializer, ///////// \u0016
+    JSXNodeSerializer, ////////// \u0017
+    BigIntSerializer, /////////// \u0018
+    SetSerializer, ////////////// \u0019
+    MapSerializer, ////////////// \u001a
     StringSerializer, /////////// \u001b
 ];
 const serializerByPrefix = /*#__PURE__*/ (() => {
@@ -8375,11 +8393,11 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         return symbolRef !== null ? symbolRef : resolve(containerEl);
     };
     function invokeFn(currentCtx, beforeFn) {
-        return ((...args) => {
+        return (...args) => {
             const start = now();
             const fn = resolveLazy();
-            return maybeThen(fn, (fn) => {
-                if (isFunction(fn)) {
+            return maybeThen(fn, (f) => {
+                if (isFunction(f)) {
                     if (beforeFn && beforeFn() === false) {
                         return;
                     }
@@ -8392,11 +8410,11 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         context.$event$ = this;
                     }
                     emitUsedSymbol(symbol, context.$element$, start);
-                    return invoke.call(this, context, fn, ...args);
+                    return invoke.call(this, context, f, ...args);
                 }
                 throw qError(QError_qrlIsNotFunction);
             });
-        });
+        };
     }
     const createOrReuseInvocationContext = (invoke) => {
         if (invoke == null) {

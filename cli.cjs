@@ -4059,8 +4059,8 @@ var getSpawnedResult = async ({ stdout, stderr, all }, { encoding, buffer, maxBu
 };
 
 // node_modules/.pnpm/execa@7.2.0/node_modules/execa/lib/promise.js
-var nativePromisePrototype = (/* @__PURE__ */ (async () => {
-})()).constructor.prototype;
+var nativePromisePrototype = (async () => {
+})().constructor.prototype;
 var descriptors = ["then", "catch", "finally"].map((property) => [
   property,
   Reflect.getOwnPropertyDescriptor(nativePromisePrototype, property)

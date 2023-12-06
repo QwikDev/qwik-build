@@ -302,6 +302,8 @@ const ComputedEvent = "qComputed";
 
 const RenderEvent = "qRender";
 
+const TaskEvent = "qTask";
+
 const ELEMENT_ID = "q:id";
 
 const ELEMENT_ID_PREFIX = "#";
@@ -1020,7 +1022,7 @@ const splitProjectedChildren = (children, ssrCtx) => {
     const slotMap = {};
     for (const child of flatChildren) {
         let slotName = "";
-        isJSXNode(child) && (slotName = child.props[QSlot] ?? ""), (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
+        isJSXNode(child) && (slotName = child.props[QSlot] || ""), (slotMap[slotName] || (slotMap[slotName] = [])).push(child);
     }
     return slotMap;
 };
@@ -1438,7 +1440,7 @@ const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-
 const _jsxQ = (type, mutableProps, immutableProps, children, flags, key) => {
     assertString(type, "jsx type must be a string");
     const processed = null == key ? null : String(key);
-    const node = new JSXNodeImpl(type, mutableProps ?? EMPTY_OBJ, immutableProps, children, flags, processed);
+    const node = new JSXNodeImpl(type, mutableProps || EMPTY_OBJ, immutableProps, children, flags, processed);
     return validateJSXNode(node), seal(), node;
 };
 
@@ -2294,7 +2296,7 @@ isResourceTask(task) ? runResource(task, containerState, rCtx) : isComputedTask(
 
 const runResource = (task, containerState, rCtx, waitOn) => {
     task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "TaskEvent");
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, task.$el$, void 0, "qTask");
     const {$subsManager$: subsManager} = containerState;
     iCtx.$renderCtx$ = rCtx;
     const taskFn = task.$qrl$.getFn(iCtx, (() => {
@@ -2351,7 +2353,7 @@ const runResource = (task, containerState, rCtx, waitOn) => {
 const runTask = (task, containerState, rCtx) => {
     task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
     const hostElement = task.$el$;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "TaskEvent");
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qTask");
     iCtx.$renderCtx$ = rCtx;
     const {$subsManager$: subsManager} = containerState;
     const taskFn = task.$qrl$.getFn(iCtx, (() => {
@@ -2369,7 +2371,7 @@ const runTask = (task, containerState, rCtx) => {
             }
             const manager = getSubscriptionManager(obj);
             return manager ? manager.$addSub$([ 0, task ], prop) : logErrorAndStop(codeToText(26), obj), 
-            prop ? obj[prop] : obj;
+            prop ? obj[prop] : isSignal(obj) ? obj.value : obj;
         },
         cleanup(callback) {
             cleanups.push(callback);
@@ -2385,7 +2387,7 @@ const runTask = (task, containerState, rCtx) => {
 const runComputed = (task, containerState, rCtx) => {
     assertSignal(task.$state$), task.$flags$ &= ~TaskFlagsIsDirty, cleanupTask(task);
     const hostElement = task.$el$;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "ComputedEvent");
+    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, "qComputed");
     iCtx.$subscriber$ = [ 0, task ], iCtx.$renderCtx$ = rCtx;
     const {$subsManager$: subsManager} = containerState;
     const taskFn = task.$qrl$.getFn(iCtx, (() => {
@@ -2612,15 +2614,21 @@ const useInvokeContext = () => {
     assertDefined(ctx.$subscriber$, "invoke: $subscriber$ must be defined", ctx), ctx;
 };
 
-const useBindInvokeContext = callback => {
-    if (null == callback) {
-        return callback;
+function useBindInvokeContext(fn) {
+    if (null == fn) {
+        return fn;
     }
     const ctx = getInvokeContext();
-    return (...args) => invoke(ctx, callback.bind(void 0, ...args));
-};
+    return function(...args) {
+        return invokeApply.call(this, ctx, fn, args);
+    };
+}
 
 function invoke(context, fn, ...args) {
+    return invokeApply.call(this, context, fn, args);
+}
+
+function invokeApply(context, fn, args) {
     const previousContext = _context;
     let returnValue;
     try {
@@ -2641,11 +2649,10 @@ const waitAndRun = (ctx, callback) => {
     }
 };
 
-const newInvokeContextFromTuple = context => {
-    const element = context[0];
+const newInvokeContextFromTuple = ([element, event, url]) => {
     const container = element.closest("[q\\:container]");
     const locale = container?.getAttribute("q:locale") || void 0;
-    return locale && setLocale(locale), newInvokeContext(locale, void 0, element, context[1], context[2]);
+    return locale && setLocale(locale), newInvokeContext(locale, void 0, element, event, url);
 };
 
 const newInvokeContext = (locale, hostElement, element, event, url) => {
@@ -5287,8 +5294,8 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         return (...args) => {
             const start = now();
             const fn = resolveLazy();
-            return maybeThen(fn, (fn => {
-                if (isFunction(fn)) {
+            return maybeThen(fn, (f => {
+                if (isFunction(f)) {
                     if (beforeFn && !1 === beforeFn()) {
                         return;
                     }
@@ -5297,7 +5304,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
                         $qrl$: qrl
                     };
                     return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
-                    invoke.call(this, context, fn, ...args);
+                    invoke.call(this, context, f, ...args);
                 }
                 throw qError(10);
             }));
