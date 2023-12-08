@@ -1,0 +1,209 @@
+{
+  "name": "@builder.io/qwik",
+  "version": "1.3.0",
+  "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
+  "license": "MIT",
+  "main": "./core.mjs",
+  "types": "./core.d.ts",
+  "bin": {
+    "qwik": "./qwik.cjs"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "undici": "^5.14.0"
+  },
+  "dependencies": {
+    "csstype": "^3.1.2",
+    "vite": "^5.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./core.d.ts",
+      "import": {
+        "min": "./core.min.mjs",
+        "development": "./core.mjs",
+        "production": "./core.prod.mjs",
+        "default": "./core.prod.mjs"
+      },
+      "require": {
+        "development": "./core.cjs",
+        "production": "./core.prod.cjs",
+        "default": "./core.prod.cjs"
+      }
+    },
+    "./cli": {
+      "require": "./cli.cjs"
+    },
+    "./jsx-runtime": {
+      "types": "./jsx-runtime.d.ts",
+      "import": {
+        "min": "./core.min.mjs",
+        "development": "./core.mjs",
+        "production": "./core.prod.mjs",
+        "default": "./core.prod.mjs"
+      },
+      "require": {
+        "development": "./core.cjs",
+        "production": "./core.prod.cjs",
+        "default": "./core.prod.cjs"
+      }
+    },
+    "./jsx-dev-runtime": {
+      "types": "./jsx-runtime.d.ts",
+      "import": {
+        "min": "./core.min.mjs",
+        "development": "./core.mjs",
+        "production": "./core.prod.mjs",
+        "default": "./core.mjs"
+      },
+      "require": {
+        "development": "./core.cjs",
+        "production": "./core.prod.cjs",
+        "default": "./core.cjs"
+      }
+    },
+    "./build": {
+      "import": {
+        "development": "./build/index.dev.mjs",
+        "production": "./build/index.prod.mjs",
+        "default": "./build/index.mjs"
+      },
+      "require": {
+        "development": "./build/index.dev.cjs",
+        "production": "./build/index.prod.cjs",
+        "default": "./build/index.cjs"
+      }
+    },
+    "./loader": {
+      "types": "./loader/index.d.ts",
+      "import": "./loader/index.mjs",
+      "require": "./loader/index.cjs"
+    },
+    "./optimizer.cjs": "./optimizer.cjs",
+    "./optimizer.mjs": "./optimizer.mjs",
+    "./optimizer": {
+      "types": "./optimizer.d.ts",
+      "import": "./optimizer.mjs",
+      "require": "./optimizer.cjs"
+    },
+    "./server.cjs": "./server.cjs",
+    "./server.mjs": "./server.mjs",
+    "./server": {
+      "types": "./server.d.ts",
+      "import": "./server.mjs",
+      "require": "./server.cjs"
+    },
+    "./testing": {
+      "types": "./testing/index.d.ts",
+      "import": "./testing/index.mjs",
+      "require": "./testing/index.cjs"
+    },
+    "./qwikloader.js": "./qwikloader.js",
+    "./qwikloader.debug.js": "./qwikloader.debug.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bindings/qwik.darwin-arm64.node",
+    "bindings/qwik.darwin-x64.node",
+    "bindings/qwik.wasm.cjs",
+    "bindings/qwik.wasm.mjs",
+    "bindings/qwik.win32-x64-msvc.node",
+    "bindings/qwik_wasm_bg.wasm",
+    "build/index.cjs",
+    "build/index.cjs.map",
+    "build/index.d.ts",
+    "build/index.dev.cjs",
+    "build/index.dev.cjs.map",
+    "build/index.dev.mjs",
+    "build/index.dev.mjs.map",
+    "build/index.mjs",
+    "build/index.mjs.map",
+    "build/index.prod.cjs",
+    "build/index.prod.cjs.map",
+    "build/index.prod.mjs",
+    "build/index.prod.mjs.map",
+    "build/package.json",
+    "cli.cjs",
+    "core.cjs",
+    "core.cjs.map",
+    "core.d.ts",
+    "core.min.mjs",
+    "core.mjs",
+    "core.mjs.map",
+    "core.prod.cjs",
+    "core.prod.mjs",
+    "core/package.json",
+    "jsx-dev-runtime/package.json",
+    "jsx-runtime.cjs",
+    "jsx-runtime.cjs.map",
+    "jsx-runtime.d.ts",
+    "jsx-runtime.mjs",
+    "jsx-runtime.mjs.map",
+    "jsx-runtime/package.json",
+    "loader/index.cjs",
+    "loader/index.d.ts",
+    "loader/index.mjs",
+    "loader/package.json",
+    "optimizer.cjs",
+    "optimizer.d.ts",
+    "optimizer.mjs",
+    "optimizer/package.json",
+    "qwik.cjs",
+    "qwikloader.debug.js",
+    "qwikloader.js",
+    "qwikloader.optimize.debug.js",
+    "qwikloader.optimize.js",
+    "server-modules.d.ts",
+    "server.cjs",
+    "server.d.ts",
+    "server.mjs",
+    "server/package.json",
+    "starters/adapters",
+    "starters/features",
+    "templates",
+    "testing/index.cjs",
+    "testing/index.d.ts",
+    "testing/index.mjs",
+    "testing/package.json"
+  ],
+  "contributors": [
+    {
+      "name": "Miško Hevery",
+      "email": "misko@hevery.com",
+      "url": "https://github.com/BuilderIO/qwik"
+    },
+    {
+      "name": "Adam Bradley",
+      "email": "adam@builder.io",
+      "url": "https://twitter.com/adamdbradley"
+    },
+    {
+      "name": "Manu Mtz.-Almeida",
+      "email": "manu@builder.io",
+      "url": "https://twitter.com/manucorporat"
+    }
+  ],
+  "homepage": "https://qwik.builder.io/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BuilderIO/qwik.git",
+    "directory": "packages/qwik"
+  },
+  "bugs": "https://github.com/BuilderIO/qwik/issues",
+  "keywords": [
+    "Builder.io",
+    "framework",
+    "generator",
+    "prerender",
+    "server-side-render",
+    "ssg",
+    "ssr",
+    "static-site",
+    "static-site-generator",
+    "webapp",
+    "website"
+  ],
+  "engines": {
+    "node": ">=16.8.0 <18.0.0 || >=18.11"
+  }
+}
