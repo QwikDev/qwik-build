@@ -3697,9 +3697,9 @@ const TaskFlagsIsCleanup = 1 << 5;
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3797,9 +3797,9 @@ const useComputed$ = implicit$FirstArg(useComputedQrl);
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -7195,24 +7195,22 @@ const _regSymbol = (symbol, hash) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -7271,24 +7269,22 @@ const useResourceQrl = (qrl, opts) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -7331,24 +7327,22 @@ const useResource$ = (generatorFn, opts) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -8380,6 +8374,7 @@ const must = (a) => {
 const isQrl = (value) => {
     return typeof value === 'function' && typeof value.getSymbol === 'function';
 };
+// Make sure this value is same as value in `platform.ts`
 const SYNC_QRL = '<sync>';
 /** Sync QRL is a function which is serialized into `<script q:func="qwik/json">` tag. */
 const isSyncQrl = (value) => {
@@ -8593,6 +8588,7 @@ let runtimeSymbolId = 0;
  *
  * import { createContextId, useContext, useContextProvider } from './use/use-context';
  * import { Resource, useResource$ } from './use/use-resource';
+ * import { useSignal } from './use/use-signal';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}
@@ -8638,12 +8634,12 @@ const event$ = implicit$FirstArg(eventQrl);
  * @returns
  * @alpha
  */
-const $sync = (fn) => {
+const sync$ = (fn) => {
     if (!qRuntimeQrl && qDev) {
-        throw new Error('Optimizer should replace all usages of $sync() with some special syntax. If you need to create a QRL manually, use inlinedSyncQrl() instead.');
+        throw new Error('Optimizer should replace all usages of sync$() with some special syntax. If you need to create a QRL manually, use inlinedSyncQrl() instead.');
     }
     if (qDev) {
-        // To make sure that in dev mode we don't accidentally capture context in `$sync()` we serialize and deserialize the function.
+        // To make sure that in dev mode we don't accidentally capture context in `sync$()` we serialize and deserialize the function.
         // eslint-disable-next-line no-new-func
         fn = new Function('return ' + fn.toString())();
     }
@@ -9533,5 +9529,5 @@ const useErrorBoundary = () => {
     return store;
 };
 
-export { $, $sync, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

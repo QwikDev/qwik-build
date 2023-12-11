@@ -59,6 +59,7 @@ var import_qwik4 = require("@builder.io/qwik");
 
 // packages/qwik/src/server/platform.ts
 var import_qwik = require("@builder.io/qwik");
+var SYNC_QRL = "<sync>";
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest == null ? void 0 : resolvedManifest.mapper;
   const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
@@ -67,6 +68,9 @@ function createPlatform(opts, resolvedManifest) {
       const hash = getSymbolHash(symbolName);
       const result = mapper[hash];
       if (!result) {
+        if (hash === SYNC_QRL) {
+          return [hash, ""];
+        }
         const isRegistered = (_a = globalThis.__qwik_reg_symbols) == null ? void 0 : _a.has(hash);
         if (isRegistered) {
           return [symbolName, "_"];

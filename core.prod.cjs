@@ -4509,8 +4509,7 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    exports.$ = $, exports.$sync = fn => createQRL("", "<sync>", fn, null, null, null, null), 
-    exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
+    exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
     exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServerPlatform();
         const resource = props.value;
@@ -4755,8 +4754,9 @@
                 directRemoveAttribute(container, "q:render"), container.replaceChildren();
             }
         };
-    }, exports.setPlatform = plt => _platform = plt, exports.untrack = untrack, exports.useComputed$ = useComputed$, 
-    exports.useComputedQrl = useComputedQrl, exports.useContext = (context, defaultValue) => {
+    }, exports.setPlatform = plt => _platform = plt, exports.sync$ = fn => createQRL("", "<sync>", fn, null, null, null, null), 
+    exports.untrack = untrack, exports.useComputed$ = useComputed$, exports.useComputedQrl = useComputedQrl, 
+    exports.useContext = (context, defaultValue) => {
         const {val, set, iCtx, elCtx} = useSequentialScope();
         if (void 0 !== val) {
             return val;

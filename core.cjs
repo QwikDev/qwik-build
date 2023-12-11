@@ -3701,9 +3701,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *
      * ### Example
      *
-     * The `useTask` function is used to observe the `state.count` property. Any changes to the
-     * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
-     * the double of `state.count`.
+     * The `useTask` function is used to observe the `store.count` property. Any changes to the
+     * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+     * the double of `store.count`.
      *
      * ```tsx
      * const Cmp = component$(() => {
@@ -3801,9 +3801,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *
      * ### Example
      *
-     * The `useTask` function is used to observe the `state.count` property. Any changes to the
-     * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
-     * the double of `state.count`.
+     * The `useTask` function is used to observe the `store.count` property. Any changes to the
+     * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+     * the double of `store.count`.
      *
      * ```tsx
      * const Cmp = component$(() => {
@@ -7199,24 +7199,22 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ```tsx
      * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     city: '',
-     *   });
+     *   const cityS = useSignal('');
      *
-     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
-     *     const cityName = track(() => store.city);
+     *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+     *     const cityName = track(cityS);
      *     const abortController = new AbortController();
      *     cleanup(() => abortController.abort('cleanup'));
      *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
      *       signal: abortController.signal,
      *     });
-     *     const data = res.json();
-     *     return data;
+     *     const data = await res.json();
+     *     return data as { temp: number };
      *   });
      *
      *   return (
      *     <div>
-     *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+     *       <input name="city" bind:value={cityS} />
      *       <Resource
      *         value={weatherResource}
      *         onResolved={(weather) => {
@@ -7275,24 +7273,22 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ```tsx
      * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     city: '',
-     *   });
+     *   const cityS = useSignal('');
      *
-     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
-     *     const cityName = track(() => store.city);
+     *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+     *     const cityName = track(cityS);
      *     const abortController = new AbortController();
      *     cleanup(() => abortController.abort('cleanup'));
      *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
      *       signal: abortController.signal,
      *     });
-     *     const data = res.json();
-     *     return data;
+     *     const data = await res.json();
+     *     return data as { temp: number };
      *   });
      *
      *   return (
      *     <div>
-     *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+     *       <input name="city" bind:value={cityS} />
      *       <Resource
      *         value={weatherResource}
      *         onResolved={(weather) => {
@@ -7335,24 +7331,22 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * ```tsx
      * const Cmp = component$(() => {
-     *   const store = useStore({
-     *     city: '',
-     *   });
+     *   const cityS = useSignal('');
      *
-     *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
-     *     const cityName = track(() => store.city);
+     *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+     *     const cityName = track(cityS);
      *     const abortController = new AbortController();
      *     cleanup(() => abortController.abort('cleanup'));
      *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
      *       signal: abortController.signal,
      *     });
-     *     const data = res.json();
-     *     return data;
+     *     const data = await res.json();
+     *     return data as { temp: number };
      *   });
      *
      *   return (
      *     <div>
-     *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+     *       <input name="city" bind:value={cityS} />
      *       <Resource
      *         value={weatherResource}
      *         onResolved={(weather) => {
@@ -8384,6 +8378,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     const isQrl = (value) => {
         return typeof value === 'function' && typeof value.getSymbol === 'function';
     };
+    // Make sure this value is same as value in `platform.ts`
     const SYNC_QRL = '<sync>';
     /** Sync QRL is a function which is serialized into `<script q:func="qwik/json">` tag. */
     const isSyncQrl = (value) => {
@@ -8597,6 +8592,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * import { createContextId, useContext, useContextProvider } from './use/use-context';
      * import { Resource, useResource$ } from './use/use-resource';
+     * import { useSignal } from './use/use-signal';
      *
      * export const greet = () => console.log('greet');
      * function topLevelFn() {}
@@ -8642,12 +8638,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * @returns
      * @alpha
      */
-    const $sync = (fn) => {
+    const sync$ = (fn) => {
         if (!qRuntimeQrl && qDev) {
-            throw new Error('Optimizer should replace all usages of $sync() with some special syntax. If you need to create a QRL manually, use inlinedSyncQrl() instead.');
+            throw new Error('Optimizer should replace all usages of sync$() with some special syntax. If you need to create a QRL manually, use inlinedSyncQrl() instead.');
         }
         if (qDev) {
-            // To make sure that in dev mode we don't accidentally capture context in `$sync()` we serialize and deserialize the function.
+            // To make sure that in dev mode we don't accidentally capture context in `sync$()` we serialize and deserialize the function.
             // eslint-disable-next-line no-new-func
             fn = new Function('return ' + fn.toString())();
         }
@@ -9538,7 +9534,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
 
     exports.$ = $;
-    exports.$sync = $sync;
     exports.Fragment = Fragment;
     exports.HTMLFragment = HTMLFragment;
     exports.RenderOnce = RenderOnce;
@@ -9593,6 +9588,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports.qrlDEV = qrlDEV;
     exports.render = render;
     exports.setPlatform = setPlatform;
+    exports.sync$ = sync$;
     exports.untrack = untrack;
     exports.useComputed$ = useComputed$;
     exports.useComputedQrl = useComputedQrl;

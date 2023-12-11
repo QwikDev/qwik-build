@@ -1,21 +1,15 @@
 import * as CSS_2 from 'csstype';
 
-declare type AllEventMaps = HTMLElementEventMap & DocumentEventMap & WindowEventHandlersEventMap & {
-    qvisible: QwikVisibleEvent;
+declare type AllEventMapRaw = HTMLElementEventMap & DocumentEventMap & WindowEventHandlersEventMap & {
+    qidle: QwikIdleEvent;
+    qinit: QwikInitEvent;
     qsymbol: QwikSymbolEvent;
+    qvisible: QwikVisibleEvent;
 };
 
-declare type AllPascalEventMaps = PascalMap<AllEventMaps>;
+declare type AllEventsMap = Omit<AllEventMapRaw, keyof EventCorrectionMap> & EventCorrectionMap;
 
-declare type AnchorAttrs = Augmented<HTMLAnchorElement, {
-    download?: any;
-    target?: HTMLAttributeAnchorTarget | undefined;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
-
-declare type AreaAttrs = Augmented<HTMLAreaElement, {
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
+declare type AllPascalEventMaps = PascalMap<AllEventsMap>;
 
 /**
  * TS defines these with the React syntax which is not compatible with Qwik. E.g. `ariaAtomic`
@@ -273,10 +267,6 @@ declare interface AriaAttributes {
 /** @public */
 declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-declare type AudioAttrs = Augmented<HTMLAudioElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-}>;
-
 /**
  * Replace given element's props with custom types and return all props specific to the element. Use
  * this for known props that are incorrect or missing.
@@ -284,26 +274,6 @@ declare type AudioAttrs = Augmented<HTMLAudioElement, {
  * Uses Prettify so we see the special props for each element in editor hover
  */
 declare type Augmented<E, A = {}> = Prettify<Filtered<E, A> & A>;
-
-declare type BadOnes<T> = Extract<{
-    [K in keyof T]: T[K] extends (...args: any) => any ? K : K extends string ? K extends Uppercase<K> ? K : never : never;
-}[keyof T] | ReadonlyKeysOf<T> | keyof HTMLAttributesBase<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'inputMode' | 'onfullscreenchange' | 'onfullscreenerror' | 'outerText' | 'textContent', string>;
-
-declare type BaseAttrs = Augmented<HTMLBaseElement, {}>;
-
-declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
-
-/**
- * Allows for Event Handlers to by typed as QwikEventMap[Key] or Event
- * https://stackoverflow.com/questions/52667959/what-is-the-purpose-of-bivariancehack-in-typescript-types/52668133#52668133
- *
- * It would be great if we could override the type of EventTarget to be EL, but that gives problems
- * with assigning a user-provided `QRL<(ev: Event)=>void>` because Event doesn't match the extended
- * `Event & {target?: EL}` type.
- */
-declare type BivariantEventHandler<T extends Event, EL> = {
-    bivarianceHack(event: T, element: EL): any;
-}['bivarianceHack'];
 
 declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
     /**
@@ -318,16 +288,6 @@ declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
 /** @public */
 declare type Booleanish = boolean | `${boolean}`;
 
-declare type ButtonAttrs = Augmented<HTMLButtonElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
-declare type CanvasAttrs = Augmented<HTMLCanvasElement, {
-    height?: Size | undefined;
-    width?: Size | undefined;
-}>;
-
 /**
  * A class list can be a string, a boolean, an array, or an object.
  *
@@ -338,11 +298,13 @@ declare type CanvasAttrs = Augmented<HTMLCanvasElement, {
  *
  * @public
  */
-declare type ClassList = BaseClassList | BaseClassList[];
+declare type ClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | ClassList[];
 
-declare type ColAttrs = Augmented<HTMLTableColElement, {
-    width?: Size | undefined;
-}>;
+/** This corrects the TS definition for ToggleEvent @public */
+declare interface CorrectedToggleEvent extends Event {
+    readonly newState: 'open' | 'closed';
+    readonly prevState: 'open' | 'closed';
+}
 
 /** @public */
 declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2.PropertiesHyphen<string | number> {
@@ -356,10 +318,6 @@ declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2
     [v: `--${string}`]: string | number | undefined;
 }
 
-declare type DataAttrs = Augmented<HTMLDataElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
 /** @public */
 declare interface DevJSX {
     fileName: string;
@@ -368,33 +326,32 @@ declare interface DevJSX {
     stack?: string;
 }
 
-/** @public */
-declare interface DOMAttributes<T extends Element, Children = JSXChildren> extends QwikProps<T>, QwikEvents<T> {
-    children?: Children;
-    key?: string | number | null | undefined;
+/** The Qwik-specific attributes that DOM elements accept @public */
+declare interface DOMAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL> {
+    class?: ClassList | Signal<ClassList> | undefined;
 }
 
-declare type EmbedAttrs = Augmented<HTMLEmbedElement, {
-    height?: Size | undefined;
-    width?: Size | undefined;
-    children?: undefined;
-}>;
-
-declare type FieldSetAttrs = Augmented<HTMLFieldSetElement, {
-    form?: string | undefined;
-}>;
-
-/**
- * Filter out "any" value types and non-string keys from an object, currently only for
- * HTMLFormElement
- */
-declare type FilterAny<T> = {
-    [K in keyof T as any extends T[K] ? never : K extends string ? K : never]: T[K];
+declare type EventCorrectionMap = {
+    auxclick: PointerEvent;
+    beforetoggle: CorrectedToggleEvent;
+    click: PointerEvent;
+    dblclick: PointerEvent;
+    input: InputEvent;
+    toggle: CorrectedToggleEvent;
 };
 
-/** Only keep props that are specific to the element */
+/** A DOM event handler */
+declare type EventHandler<EV = Event, EL = Element> = {
+    bivarianceHack(event: EV, element: EL): any;
+}['bivarianceHack'];
+
+declare type FilterBase<T> = {
+    [K in keyof T as K extends string ? K extends Uppercase<K> ? never : any extends T[K] ? never : false extends IsAcceptableDOMValue<T[K]> ? never : IsReadOnlyKey<T, K> extends true ? never : K extends UnwantedKeys ? never : K : never]?: T[K];
+};
+
+/** Only keep props that are specific to the element and make partial */
 declare type Filtered<T, A = {}> = {
-    [K in keyof Omit<FilterAny<T>, keyof HTMLAttributes<any> | BadOnes<FilterAny<T>> | keyof A>]?: T[K];
+    [K in keyof Omit<FilterBase<T>, keyof HTMLAttributes<any> | keyof A>]?: T[K];
 };
 
 /** @public */
@@ -415,10 +372,10 @@ declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' | '_top'
 declare type HTMLAttributeReferrerPolicy = ReferrerPolicy;
 
 /** @public */
-declare interface HTMLAttributes<E extends Element, Children = JSXChildren> extends HTMLAttributesBase<E, Children>, Partial<Omit<HTMLElement, BadOnes<HTMLElement>>> {
+declare interface HTMLAttributes<E extends Element> extends HTMLElementAttrs, DOMAttributes<E> {
 }
 
-declare interface HTMLAttributesBase<E extends Element, Children = JSXChildren> extends AriaAttributes, DOMAttributes<E, Children> {
+declare interface HTMLAttributesBase extends AriaAttributes {
     /** @deprecated Use `class` instead */
     className?: ClassList | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
@@ -458,10 +415,14 @@ declare interface HTMLAttributesBase<E extends Element, Children = JSXChildren> 
      * @see https://html.spec.whatwg.org/multipage/custom-elements.html#attr-is
      */
     is?: string | undefined;
+    popover?: 'manual' | 'auto' | undefined;
 }
 
 /** @public */
 declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
+
+declare interface HTMLElementAttrs extends HTMLAttributesBase, FilterBase<HTMLElement> {
+}
 
 /** @public */
 declare type HTMLInputAutocompleteAttribute = 'on' | 'off' | 'billing' | 'shipping' | 'name' | 'honorific-prefix' | 'given-name' | 'additional-name' | 'family-name' | 'honorific-suffix' | 'nickname' | 'username' | 'new-password' | 'current-password' | 'one-time-code' | 'organization-title' | 'organization' | 'street-address' | 'address-line1' | 'address-line2' | 'address-line3' | 'address-level4' | 'address-level3' | 'address-level2' | 'address-level1' | 'country' | 'country-name' | 'postal-code' | 'cc-name' | 'cc-given-name' | 'cc-additional-name' | 'cc-family-name' | 'cc-number' | 'cc-exp' | 'cc-exp-month' | 'cc-exp-year' | 'cc-csc' | 'cc-type' | 'transaction-currency' | 'transaction-amount' | 'language' | 'bday' | 'bday-day' | 'bday-month' | 'bday-year' | 'sex' | 'url' | 'photo';
@@ -471,46 +432,36 @@ declare type HTMLInputTypeAttribute = 'button' | 'checkbox' | 'color' | 'date' |
 
 declare type IfEquals<X, Y, A, B> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? A : B;
 
-declare type IframeAttrs = Augmented<HTMLIFrameElement, {
-    allowTransparency?: boolean | undefined;
-    /** @deprecated Deprecated */
-    frameBorder?: number | string | undefined;
-    height?: Size | undefined;
-    loading?: 'eager' | 'lazy' | undefined;
-    sandbox?: string | undefined;
-    seamless?: boolean | undefined;
-    width?: Size | undefined;
-    children?: undefined;
-}>;
+/**
+ * These are the HTML tags with handlers allowing plain callbacks, to be used for the JSX interface
+ *
+ * @internal
+ */
+declare type IntrinsicHTMLElements = {
+    [key in keyof HTMLElementTagNameMap]: Augmented<HTMLElementTagNameMap[key], SpecialAttrs[key]> & HTMLAttributes<HTMLElementTagNameMap[key]>;
+} & {
+    /** For unknown tags we allow all props */
+    [unknownTag: string]: {
+        [prop: string]: any;
+    } & HTMLElementAttrs & HTMLAttributes<any>;
+};
 
-declare type ImgAttrs = Augmented<HTMLImageElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    /** Intrinsic height of the image in pixels. */
-    height?: Numberish | undefined;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-    /** Intrinsic width of the image in pixels. */
-    width?: Numberish | undefined;
-}>;
+/**
+ * These are the SVG tags with handlers allowing plain callbacks, to be used for the JSX interface
+ *
+ * @internal
+ */
+declare type IntrinsicSVGElements = {
+    [K in keyof Omit<SVGElementTagNameMap, keyof HTMLElementTagNameMap>]: LenientSVGProps<SVGElementTagNameMap[K]>;
+};
 
-declare type InputAttrs = Augmented<HTMLInputElement, {
-    autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
-    'bind:checked'?: Signal<boolean | undefined>;
-    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
-    height?: Size | undefined;
-    max?: number | string | undefined;
-    maxLength?: number | undefined;
-    min?: number | string | undefined;
-    minLength?: number | undefined;
-    step?: number | string | undefined;
-    type?: HTMLInputTypeAttribute | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
-    'bind:value'?: Signal<string | undefined>;
-    width?: Size | undefined;
-}>;
+declare type IsAcceptableDOMValue<T> = T extends boolean | number | string | null | undefined ? ((...args: any[]) => any) extends T ? false : true : false;
 
-/** @public */
-declare interface IntrinsicHTMLElements extends QwikHTMLExceptions, PlainHTMLElements {
-}
+declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
+    [Q in K]: T[K];
+}, {
+    -readonly [Q in K]: T[K];
+}, false, true>;
 
 /** @public */
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>, key?: string | number | null) => JSXNode<T>;
@@ -521,12 +472,13 @@ export { jsx as jsxs }
 declare namespace JSX_2 {
     interface Element extends JSXNode {
     }
+    type ElementType = string | ((...args: any[]) => JSXNode | null);
     interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
     interface ElementChildrenAttribute {
         children: any;
     }
-    interface IntrinsicElements extends QwikIntrinsicElements {
+    interface IntrinsicElements extends LenientQwikElements {
     }
 }
 export { JSX_2 as JSX }
@@ -554,78 +506,27 @@ export declare interface JSXNode<T = string | FunctionComponent> {
     dev?: DevJSX;
 }
 
-/** @public */
-declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    autoFocus?: boolean | undefined;
-    challenge?: string | undefined;
-    disabled?: boolean | undefined;
-    form?: string | undefined;
-    keyType?: string | undefined;
-    keyParams?: string | undefined;
-    name?: string | undefined;
-    children?: undefined;
-}
-
-declare type LabelAttrs = Augmented<HTMLLabelElement, {
-    form?: string | undefined;
-    for?: string | undefined;
-    /** @deprecated Use `for` */
-    htmlFor?: string | undefined;
-}>;
-
 declare type LcEventNameMap = {
     [name in PascalCaseNames as Lowercase<name>]: name;
 };
 
-declare type LiAttrs = Augmented<HTMLLIElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
+/**
+ * These definitions are for the JSX namespace, they allow passing plain event handlers instead of
+ * QRLs
+ */
+declare interface LenientQwikElements extends IntrinsicHTMLElements, IntrinsicSVGElements {
+}
 
-declare type LinkAttrs = Augmented<HTMLLinkElement, {
+/** @internal */
+declare interface LenientSVGProps<T extends Element> extends SVGAttributes, DOMAttributes<T> {
+}
+
+declare type MediaSpecialAttrs = {
     crossOrigin?: HTMLCrossOriginAttribute;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-    sizes?: string | undefined;
-    type?: string | undefined;
-    charSet?: string | undefined;
-}>;
-
-declare type MetaAttrs = Augmented<HTMLMetaElement, {
-    charSet?: string | undefined;
-}>;
-
-declare type MeterAttrs = Augmented<HTMLMeterElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
-/** @public */
-declare type NativeEventHandler<T extends Event = Event, EL = Element> = BivariantEventHandler<T, EL> | QRL<BivariantEventHandler<T, EL>>[];
+};
 
 /** @public */
 declare type Numberish = number | `${number}`;
-
-declare type ObjectAttrs = Augmented<HTMLObjectElement, {
-    classID?: string | undefined;
-    form?: string | undefined;
-    height?: Size | undefined;
-    width?: Size | undefined;
-    wmode?: string | undefined;
-}>;
-
-declare type OlAttrs = Augmented<HTMLOListElement, {
-    type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
-}>;
-
-declare type OptionAttrs = Augmented<HTMLOptionElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
-declare type OutputAttrs = Augmented<HTMLOutputElement, {
-    form?: string | undefined;
-    for?: string | undefined;
-    /** @deprecated Use `for` instead */
-    htmlFor?: string | undefined;
-}>;
 
 /**
  * Capitalized multi-word names of some known events so we have nicer qwik attributes. For example,
@@ -634,7 +535,7 @@ declare type OutputAttrs = Augmented<HTMLOutputElement, {
  *
  * Add any multi-word event names to this list. Single word events are automatically converted.
  */
-declare type PascalCaseNames = 'AnimationEnd' | 'AnimationIteration' | 'AnimationStart' | 'AuxClick' | 'CanPlay' | 'CanPlayThrough' | 'CompositionEnd' | 'CompositionStart' | 'CompositionUpdate' | 'ContextMenu' | 'DblClick' | 'DragEnd' | 'DragEnter' | 'DragExit' | 'DragLeave' | 'DragOver' | 'DragStart' | 'DurationChange' | 'FocusIn' | 'FocusOut' | 'FullscreenChange' | 'FullscreenError' | 'GotPointerCapture' | 'KeyDown' | 'KeyPress' | 'KeyUp' | 'LoadedData' | 'LoadedMetadata' | 'LoadEnd' | 'LoadStart' | 'LostPointerCapture' | 'MouseDown' | 'MouseEnter' | 'MouseLeave' | 'MouseMove' | 'MouseOut' | 'MouseOver' | 'MouseUp' | 'PointerCancel' | 'PointerDown' | 'PointerEnter' | 'PointerLeave' | 'PointerMove' | 'PointerOut' | 'PointerOver' | 'PointerUp' | 'RateChange' | 'RateChange' | 'SecurityPolicyViolation' | 'SelectionChange' | 'SelectStart' | 'TimeUpdate' | 'TouchCancel' | 'TouchEnd' | 'TouchMove' | 'TouchStart' | 'TransitionCancel' | 'TransitionEnd' | 'TransitionRun' | 'TransitionStart' | 'VisibilityChange' | 'VolumeChange';
+declare type PascalCaseNames = 'AnimationEnd' | 'AnimationIteration' | 'AnimationStart' | 'AuxClick' | 'BeforeToggle' | 'CanPlay' | 'CanPlayThrough' | 'CompositionEnd' | 'CompositionStart' | 'CompositionUpdate' | 'ContextMenu' | 'DblClick' | 'DragEnd' | 'DragEnter' | 'DragExit' | 'DragLeave' | 'DragOver' | 'DragStart' | 'DurationChange' | 'FocusIn' | 'FocusOut' | 'FullscreenChange' | 'FullscreenError' | 'GotPointerCapture' | 'KeyDown' | 'KeyPress' | 'KeyUp' | 'LoadedData' | 'LoadedMetadata' | 'LoadEnd' | 'LoadStart' | 'LostPointerCapture' | 'MouseDown' | 'MouseEnter' | 'MouseLeave' | 'MouseMove' | 'MouseOut' | 'MouseOver' | 'MouseUp' | 'PointerCancel' | 'PointerDown' | 'PointerEnter' | 'PointerLeave' | 'PointerMove' | 'PointerOut' | 'PointerOver' | 'PointerUp' | 'QIdle' | 'QInit' | 'QSymbol' | 'QVisible' | 'RateChange' | 'RateChange' | 'SecurityPolicyViolation' | 'SelectionChange' | 'SelectStart' | 'TimeUpdate' | 'TouchCancel' | 'TouchEnd' | 'TouchMove' | 'TouchStart' | 'TransitionCancel' | 'TransitionEnd' | 'TransitionRun' | 'TransitionStart' | 'VisibilityChange' | 'VolumeChange';
 
 /**
  * Convert an event map to PascalCase. For example, `HTMLElementEventMap` contains lowercase keys,
@@ -644,22 +545,15 @@ declare type PascalMap<M> = {
     [K in Extract<keyof M, string> as K extends keyof LcEventNameMap ? LcEventNameMap[K] : Capitalize<K>]: M[K];
 };
 
-declare type PlainHTMLElements = {
-    [key in keyof Omit<HTMLElementTagNameMap, keyof QwikHTMLExceptions>]: HTMLAttributes<HTMLElementTagNameMap[key]> & Prettify<Filtered<HTMLElementTagNameMap[key], {}>>;
-};
+declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 
 declare type Prettify<T> = {} & {
     [K in keyof T]: T[K];
 };
 
-declare type PreventDefault<T = any> = {
+declare type PreventDefault = {
     [K in keyof HTMLElementEventMap as `preventdefault:${K}`]?: boolean;
 };
-
-declare type ProgressAttrs = Augmented<HTMLProgressElement, {
-    max?: number | string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -804,114 +698,48 @@ declare interface QRLDev {
     hi: number;
 }
 
+declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
+
 declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
 
-declare interface QwikCustomEvents<El> {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event, El>> | SingleOrArray<Function> | SingleOrArray<undefined> | null;
+declare interface QwikAttributesBase extends PreventDefault {
+    key?: string | number | null | undefined;
+    dangerouslySetInnerHTML?: string | undefined;
+    children?: JSXChildren;
+    /** Corresponding slot name used to project the element into. */
+    'q:slot'?: string;
 }
 
-/** All unknown attributes are allowed */
-declare interface QwikCustomHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    [key: string]: any;
-}
+declare type QwikCustomEvents<EL> = {
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL>;
+};
 
-/**
- * Any custom DOM element.
- *
- * @public
- */
-declare interface QwikCustomHTMLElement extends Element {
-}
+declare type QwikCustomEventsPlain<EL> = {
+    /** The handler */
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL> | EventHandler<Event, EL>;
+};
 
 /** @public */
-declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> {
-}
+declare type QwikEvents<EL, Plain extends boolean = true> = Plain extends true ? QwikKnownEventsPlain<EL> & QwikCustomEventsPlain<EL> : QwikKnownEvents<EL> & QwikCustomEvents<EL>;
 
-declare interface QwikHTMLExceptions {
-    a: HTMLAttributes<HTMLAnchorElement> & AnchorAttrs;
-    area: HTMLAttributes<HTMLAreaElement, false> & AreaAttrs;
-    audio: HTMLAttributes<HTMLAudioElement> & AudioAttrs;
-    base: HTMLAttributes<HTMLBaseElement, undefined> & BaseAttrs;
-    button: HTMLAttributes<HTMLButtonElement> & ButtonAttrs;
-    canvas: HTMLAttributes<HTMLCanvasElement> & CanvasAttrs;
-    col: HTMLAttributes<HTMLTableColElement, undefined> & ColAttrs;
-    data: HTMLAttributes<HTMLDataElement> & DataAttrs;
-    embed: HTMLAttributes<HTMLEmbedElement, undefined> & EmbedAttrs;
-    fieldset: HTMLAttributes<HTMLFieldSetElement> & FieldSetAttrs;
-    hr: HTMLAttributes<HTMLHRElement, undefined>;
-    iframe: HTMLAttributes<HTMLIFrameElement> & IframeAttrs;
-    img: HTMLAttributes<HTMLImageElement, undefined> & ImgAttrs;
-    input: HTMLAttributes<HTMLInputElement, undefined> & InputAttrs;
-    keygen: KeygenHTMLAttributes<HTMLElement>;
-    label: HTMLAttributes<HTMLLabelElement> & LabelAttrs;
-    li: HTMLAttributes<HTMLLIElement> & LiAttrs;
-    link: HTMLAttributes<HTMLLinkElement, undefined> & LinkAttrs;
-    meta: HTMLAttributes<HTMLMetaElement> & MetaAttrs;
-    meter: HTMLAttributes<HTMLMeterElement> & MeterAttrs;
-    object: HTMLAttributes<HTMLObjectElement> & ObjectAttrs;
-    ol: HTMLAttributes<HTMLOListElement> & OlAttrs;
-    option: HTMLAttributes<HTMLOptionElement, string> & OptionAttrs;
-    output: HTMLAttributes<HTMLOutputElement> & OutputAttrs;
-    progress: HTMLAttributes<HTMLProgressElement> & ProgressAttrs;
-    script: HTMLAttributes<HTMLScriptElement> & ScriptAttrs;
-    select: HTMLAttributes<HTMLSelectElement> & SelectAttrs;
-    source: HTMLAttributes<HTMLSourceElement, undefined> & SourceAttrs;
-    style: HTMLAttributes<HTMLStyleElement, string> & StyleAttrs;
-    table: HTMLAttributes<HTMLTableElement> & TableAttrs;
-    td: HTMLAttributes<HTMLTableCellElement> & TableCellAttrs;
-    textarea: HTMLAttributes<HTMLTextAreaElement, undefined> & TextareaAttrs;
-    th: HTMLAttributes<HTMLTableCellElement> & TableCellAttrs;
-    title: HTMLAttributes<HTMLTitleElement, string>;
-    track: HTMLAttributes<HTMLTrackElement, undefined> & TrackAttrs;
-    video: VideoHTMLAttributes<HTMLVideoElement> & VideoAttrs;
-}
+/** Emitted by qwik-loader on document when the document first becomes idle @public */
+declare type QwikIdleEvent = CustomEvent<{}>;
+
+/** Emitted by qwik-loader on document when the document first becomes interactive @public */
+declare type QwikInitEvent = CustomEvent<{}>;
 
 /** @public */
 declare interface QwikIntrinsicAttributes {
     key?: string | number | undefined | null;
 }
 
-/**
- * The interface holds available attributes of both native DOM elements and custom Qwik elements. An
- * example showing how to define a customizable wrapper component:
- *
- * ```tsx
- * import { component$, Slot, type QwikIntrinsicElements } from "@builder.io/qwik";
- *
- * type WrapperProps = {
- *   attributes?: QwikIntrinsicElements["div"];
- * };
- *
- * export default component$<WrapperProps>(({ attributes }) => {
- *   return (
- *     <div {...attributes} class="p-2">
- *       <Slot />
- *     </div>
- *   );
- * });
- * ```
- *
- * @public
- */
-declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
-    /**
-     * Custom DOM elements can have any name We need to add the empty object to match the type with
-     * the Intrinsic elements
-     */
-    [key: string]: {} | QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
-}
-
-declare type QwikKnownEvents<T> = {
-    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<NativeEventHandler<AllPascalEventMaps[K], T>> | null;
+declare type QwikKnownEvents<EL> = {
+    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: QRLEventHandlerMulti<AllPascalEventMaps[K], EL>;
 };
 
-declare interface QwikProps<T extends Element> extends PreventDefault {
-    class?: ClassList | Signal<ClassList> | undefined;
-    dangerouslySetInnerHTML?: string | undefined;
-    ref?: Ref<T> | undefined;
-    /** Corresponding slot name used to project the element into. */
-    'q:slot'?: string;
-}
+declare type QwikKnownEventsPlain<EL> = {
+    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: QRLEventHandlerMulti<AllPascalEventMaps[K], EL> | EventHandler<AllPascalEventMaps[K], EL>;
+};
 
 /** Emitted by qwik-loader when a module was lazily loaded @public */
 declare type QwikSymbolEvent = CustomEvent<{
@@ -923,88 +751,510 @@ declare type QwikSymbolEvent = CustomEvent<{
 /** Emitted by qwik-loader when an element becomes visible. Used by `useVisibleTask$` @public */
 declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 
-declare type ReadonlyKeysOf<T> = {
-    [P in keyof T]: IfEquals<{
-        [Q in P]: T[P];
-    }, {
-        -readonly [Q in P]: T[P];
-    }, never, P>;
-}[keyof T];
-
 /**
  * A ref can be either a signal or a function. Note that the type of Signal is Element so that it
  * can accept more specialized elements too
  *
  * @public
  */
-declare type Ref<T extends Element = Element> = Signal<Element | undefined> | RefFnInterface<T>;
+declare type Ref<EL extends Element = Element> = Signal<Element | undefined> | RefFnInterface<EL>;
 
-declare type RefFnInterface<T> = {
-    (el: T): void;
+declare interface RefAttr<EL extends Element> {
+    ref?: Ref<EL> | undefined;
+}
+
+declare type RefFnInterface<EL> = {
+    (el: EL): void;
 };
-
-declare type ScriptAttrs = Augmented<HTMLScriptElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
-
-declare type SelectAttrs = Augmented<HTMLSelectElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-    'bind:value'?: Signal<string | undefined>;
-}>;
 
 /** @public */
 declare interface Signal<T = any> {
     value: T;
 }
 
-declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
-
 /** @public */
 declare type Size = number | string;
 
-declare type SourceAttrs = Augmented<HTMLSourceElement, {
+declare type SpecialAttrs = {
+    a: {
+        download?: any;
+        target?: HTMLAttributeAnchorTarget | undefined;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+    };
+    area: {
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        children?: undefined;
+    };
+    audio: MediaSpecialAttrs;
+    base: {
+        children?: undefined;
+    };
+    button: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        popovertarget?: string | undefined;
+        popovertargetaction?: PopoverTargetAction | undefined;
+    };
+    canvas: {
+        height?: Size | undefined;
+        width?: Size | undefined;
+    };
+    col: {
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    data: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    embed: {
+        height?: Size | undefined;
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    fieldset: {
+        form?: string | undefined;
+    };
+    hr: {
+        children?: undefined;
+    };
+    iframe: {
+        allowTransparency?: boolean | undefined;
+        /** @deprecated Deprecated */
+        frameBorder?: number | string | undefined;
+        height?: Size | undefined;
+        loading?: 'eager' | 'lazy' | undefined;
+        sandbox?: string | undefined;
+        seamless?: boolean | undefined;
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    img: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        /** Intrinsic height of the image in pixels. */
+        height?: Numberish | undefined;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        /** Intrinsic width of the image in pixels. */
+        width?: Numberish | undefined;
+        children?: undefined;
+    };
+    input: {
+        autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
+        'bind:checked'?: Signal<boolean | undefined>;
+        'bind:value'?: Signal<string | undefined>;
+        enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
+        height?: Size | undefined;
+        max?: number | string | undefined;
+        maxLength?: number | undefined;
+        min?: number | string | undefined;
+        minLength?: number | undefined;
+        step?: number | string | undefined;
+        type?: HTMLInputTypeAttribute | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
+        width?: Size | undefined;
+        children?: undefined;
+    } & ({
+        type?: Exclude<HTMLInputTypeAttribute, 'button' | 'reset' | 'submit' | 'checkbox' | 'radio'> | undefined;
+        'bind:checked'?: undefined;
+    } | {
+        type: 'button' | 'reset' | 'submit';
+        'bind:value'?: undefined;
+        'bind:checked'?: undefined;
+        autoComplete?: undefined;
+    } | {
+        type: 'checkbox' | 'radio';
+        'bind:value'?: undefined;
+        autoComplete?: undefined;
+    }) & ({
+        type?: Exclude<HTMLInputTypeAttribute, 'button'> | undefined;
+        popovertarget?: undefined;
+        popovertargetaction?: undefined;
+    } | {
+        type: 'button';
+        popovertarget?: string | undefined;
+        popovertargetaction?: PopoverTargetAction | undefined;
+    });
+    label: {
+        form?: string | undefined;
+        for?: string | undefined;
+        /** @deprecated Use `for` */
+        htmlFor?: string | undefined;
+    };
+    li: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    link: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        sizes?: string | undefined;
+        type?: string | undefined;
+        charSet?: string | undefined;
+        children?: undefined;
+    };
+    meta: {
+        charSet?: string | undefined;
+        children?: undefined;
+    };
+    meter: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    object: {
+        classID?: string | undefined;
+        form?: string | undefined;
+        height?: Size | undefined;
+        width?: Size | undefined;
+        wmode?: string | undefined;
+    };
+    ol: {
+        type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
+    };
+    optgroup: {
+        disabled?: boolean | undefined;
+        label?: string | undefined;
+    };
+    option: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+        children?: string;
+    };
+    output: {
+        form?: string | undefined;
+        for?: string | undefined;
+        /** @deprecated Use `for` instead */
+        htmlFor?: string | undefined;
+    };
+    param: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+        children?: undefined;
+    };
+    progress: {
+        max?: number | string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    script: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+    };
+    select: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        'bind:value'?: Signal<string | undefined>;
+    };
+    source: {
+        /** Allowed if the parent is a `picture` element */
+        height?: Size | undefined;
+        /** Allowed if the parent is a `picture` element */
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    style: {
+        scoped?: boolean | undefined;
+        children?: string;
+    };
+    table: {
+        cellPadding?: number | string | undefined;
+        cellSpacing?: number | string | undefined;
+        width?: Size | undefined;
+    };
+    td: TableCellSpecialAttrs;
+    th: TableCellSpecialAttrs;
+    title: {
+        children?: string;
+    };
+    textarea: {
+        enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        'bind:value'?: Signal<string | undefined>;
+        children?: undefined;
+    };
+    track: {
+        children?: undefined;
+    };
+    video: MediaSpecialAttrs & {
+        height?: Numberish | undefined;
+        width?: Numberish | undefined;
+        disablePictureInPicture?: boolean | undefined;
+        disableRemotePlayback?: boolean | undefined;
+    };
+} & {
+    [key: string]: {};
+};
+
+/**
+ * The TS types don't include the SVG attributes so we have to define them ourselves
+ *
+ * NOTE: These props are probably not complete
+ *
+ * @public
+ */
+declare interface SVGAttributes<T extends Element = Element> extends AriaAttributes {
+    color?: string | undefined;
     height?: Size | undefined;
+    id?: string | undefined;
+    lang?: string | undefined;
+    max?: number | string | undefined;
+    media?: string | undefined;
+    method?: string | undefined;
+    min?: number | string | undefined;
+    name?: string | undefined;
+    style?: CSSProperties | string | undefined;
+    target?: string | undefined;
+    type?: string | undefined;
     width?: Size | undefined;
-}>;
+    role?: string | undefined;
+    tabindex?: number | undefined;
+    crossOrigin?: HTMLCrossOriginAttribute;
+    'accent-height'?: number | string | undefined;
+    accumulate?: 'none' | 'sum' | undefined;
+    additive?: 'replace' | 'sum' | undefined;
+    'alignment-baseline'?: 'auto' | 'baseline' | 'before-edge' | 'text-before-edge' | 'middle' | 'central' | 'after-edge' | 'text-after-edge' | 'ideographic' | 'alphabetic' | 'hanging' | 'mathematical' | 'inherit' | undefined;
+    allowReorder?: 'no' | 'yes' | undefined;
+    alphabetic?: number | string | undefined;
+    amplitude?: number | string | undefined;
+    'arabic-form'?: 'initial' | 'medial' | 'terminal' | 'isolated' | undefined;
+    ascent?: number | string | undefined;
+    attributeName?: string | undefined;
+    attributeType?: string | undefined;
+    autoReverse?: Booleanish | undefined;
+    azimuth?: number | string | undefined;
+    baseFrequency?: number | string | undefined;
+    'baseline-shift'?: number | string | undefined;
+    baseProfile?: number | string | undefined;
+    bbox?: number | string | undefined;
+    begin?: number | string | undefined;
+    bias?: number | string | undefined;
+    by?: number | string | undefined;
+    calcMode?: number | string | undefined;
+    'cap-height'?: number | string | undefined;
+    clip?: number | string | undefined;
+    'clip-path'?: string | undefined;
+    clipPathUnits?: number | string | undefined;
+    'clip-rule'?: number | string | undefined;
+    'color-interpolation'?: number | string | undefined;
+    'color-interpolation-filters'?: 'auto' | 's-rGB' | 'linear-rGB' | 'inherit' | undefined;
+    'color-profile'?: number | string | undefined;
+    'color-rendering'?: number | string | undefined;
+    contentScriptType?: number | string | undefined;
+    contentStyleType?: number | string | undefined;
+    cursor?: number | string;
+    cx?: number | string | undefined;
+    cy?: number | string | undefined;
+    d?: string | undefined;
+    decelerate?: number | string | undefined;
+    descent?: number | string | undefined;
+    diffuseConstant?: number | string | undefined;
+    direction?: number | string | undefined;
+    display?: number | string | undefined;
+    divisor?: number | string | undefined;
+    'dominant-baseline'?: number | string | undefined;
+    dur?: number | string | undefined;
+    dx?: number | string | undefined;
+    dy?: number | string | undefined;
+    'edge-mode'?: number | string | undefined;
+    elevation?: number | string | undefined;
+    'enable-background'?: number | string | undefined;
+    end?: number | string | undefined;
+    exponent?: number | string | undefined;
+    externalResourcesRequired?: number | string | undefined;
+    fill?: string | undefined;
+    'fill-opacity'?: number | string | undefined;
+    'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit' | undefined;
+    filter?: string | undefined;
+    filterRes?: number | string | undefined;
+    filterUnits?: number | string | undefined;
+    'flood-color'?: number | string | undefined;
+    'flood-opacity'?: number | string | undefined;
+    focusable?: number | string | undefined;
+    'font-family'?: string | undefined;
+    'font-size'?: number | string | undefined;
+    'font-size-adjust'?: number | string | undefined;
+    'font-stretch'?: number | string | undefined;
+    'font-style'?: number | string | undefined;
+    'font-variant'?: number | string | undefined;
+    'font-weight'?: number | string | undefined;
+    format?: number | string | undefined;
+    fr?: number | string | undefined;
+    from?: number | string | undefined;
+    fx?: number | string | undefined;
+    fy?: number | string | undefined;
+    g1?: number | string | undefined;
+    g2?: number | string | undefined;
+    'glyph-name'?: number | string | undefined;
+    'glyph-orientation-horizontal'?: number | string | undefined;
+    'glyph-orientation-vertical'?: number | string | undefined;
+    glyphRef?: number | string | undefined;
+    gradientTransform?: string | undefined;
+    gradientUnits?: string | undefined;
+    hanging?: number | string | undefined;
+    'horiz-adv-x'?: number | string | undefined;
+    'horiz-origin-x'?: number | string | undefined;
+    href?: string | undefined;
+    ideographic?: number | string | undefined;
+    'image-rendering'?: number | string | undefined;
+    in2?: number | string | undefined;
+    in?: string | undefined;
+    intercept?: number | string | undefined;
+    k1?: number | string | undefined;
+    k2?: number | string | undefined;
+    k3?: number | string | undefined;
+    k4?: number | string | undefined;
+    k?: number | string | undefined;
+    kernelMatrix?: number | string | undefined;
+    kernelUnitLength?: number | string | undefined;
+    kerning?: number | string | undefined;
+    keyPoints?: number | string | undefined;
+    keySplines?: number | string | undefined;
+    keyTimes?: number | string | undefined;
+    lengthAdjust?: number | string | undefined;
+    'letter-spacing'?: number | string | undefined;
+    'lighting-color'?: number | string | undefined;
+    limitingConeAngle?: number | string | undefined;
+    local?: number | string | undefined;
+    'marker-end'?: string | undefined;
+    markerHeight?: number | string | undefined;
+    'marker-mid'?: string | undefined;
+    'marker-start'?: string | undefined;
+    markerUnits?: number | string | undefined;
+    markerWidth?: number | string | undefined;
+    mask?: string | undefined;
+    maskContentUnits?: number | string | undefined;
+    maskUnits?: number | string | undefined;
+    mathematical?: number | string | undefined;
+    mode?: number | string | undefined;
+    numOctaves?: number | string | undefined;
+    offset?: number | string | undefined;
+    opacity?: number | string | undefined;
+    operator?: number | string | undefined;
+    order?: number | string | undefined;
+    orient?: number | string | undefined;
+    orientation?: number | string | undefined;
+    origin?: number | string | undefined;
+    overflow?: number | string | undefined;
+    'overline-position'?: number | string | undefined;
+    'overline-thickness'?: number | string | undefined;
+    'paint-order'?: number | string | undefined;
+    panose1?: number | string | undefined;
+    path?: string | undefined;
+    pathLength?: number | string | undefined;
+    patternContentUnits?: string | undefined;
+    patternTransform?: number | string | undefined;
+    patternUnits?: string | undefined;
+    'pointer-events'?: number | string | undefined;
+    points?: string | undefined;
+    pointsAtX?: number | string | undefined;
+    pointsAtY?: number | string | undefined;
+    pointsAtZ?: number | string | undefined;
+    preserveAlpha?: number | string | undefined;
+    preserveAspectRatio?: string | undefined;
+    primitiveUnits?: number | string | undefined;
+    r?: number | string | undefined;
+    radius?: number | string | undefined;
+    refX?: number | string | undefined;
+    refY?: number | string | undefined;
+    'rendering-intent'?: number | string | undefined;
+    repeatCount?: number | string | undefined;
+    repeatDur?: number | string | undefined;
+    requiredextensions?: number | string | undefined;
+    requiredFeatures?: number | string | undefined;
+    restart?: number | string | undefined;
+    result?: string | undefined;
+    rotate?: number | string | undefined;
+    rx?: number | string | undefined;
+    ry?: number | string | undefined;
+    scale?: number | string | undefined;
+    seed?: number | string | undefined;
+    'shape-rendering'?: number | string | undefined;
+    slope?: number | string | undefined;
+    spacing?: number | string | undefined;
+    specularConstant?: number | string | undefined;
+    specularExponent?: number | string | undefined;
+    speed?: number | string | undefined;
+    spreadMethod?: string | undefined;
+    startOffset?: number | string | undefined;
+    stdDeviation?: number | string | undefined;
+    stemh?: number | string | undefined;
+    stemv?: number | string | undefined;
+    stitchTiles?: number | string | undefined;
+    'stop-color'?: string | undefined;
+    'stop-opacity'?: number | string | undefined;
+    'strikethrough-position'?: number | string | undefined;
+    'strikethrough-thickness'?: number | string | undefined;
+    string?: number | string | undefined;
+    stroke?: string | undefined;
+    'stroke-dasharray'?: string | number | undefined;
+    'stroke-dashoffset'?: string | number | undefined;
+    'stroke-linecap'?: 'butt' | 'round' | 'square' | 'inherit' | undefined;
+    'stroke-linejoin'?: 'miter' | 'round' | 'bevel' | 'inherit' | undefined;
+    'stroke-miterlimit'?: string | undefined;
+    'stroke-opacity'?: number | string | undefined;
+    'stroke-width'?: number | string | undefined;
+    surfaceScale?: number | string | undefined;
+    systemLanguage?: number | string | undefined;
+    tableValues?: number | string | undefined;
+    targetX?: number | string | undefined;
+    targetY?: number | string | undefined;
+    'text-anchor'?: string | undefined;
+    'text-decoration'?: number | string | undefined;
+    textLength?: number | string | undefined;
+    'text-rendering'?: number | string | undefined;
+    to?: number | string | undefined;
+    transform?: string | undefined;
+    u1?: number | string | undefined;
+    u2?: number | string | undefined;
+    'underline-position'?: number | string | undefined;
+    'underline-thickness'?: number | string | undefined;
+    unicode?: number | string | undefined;
+    'unicode-bidi'?: number | string | undefined;
+    'unicode-range'?: number | string | undefined;
+    'units-per-em'?: number | string | undefined;
+    'v-alphabetic'?: number | string | undefined;
+    values?: string | undefined;
+    'vector-effect'?: number | string | undefined;
+    version?: string | undefined;
+    'vert-adv-y'?: number | string | undefined;
+    'vert-origin-x'?: number | string | undefined;
+    'vert-origin-y'?: number | string | undefined;
+    'v-hanging'?: number | string | undefined;
+    'v-ideographic'?: number | string | undefined;
+    viewBox?: string | undefined;
+    viewTarget?: number | string | undefined;
+    visibility?: number | string | undefined;
+    'v-mathematical'?: number | string | undefined;
+    widths?: number | string | undefined;
+    'word-spacing'?: number | string | undefined;
+    'writing-mode'?: number | string | undefined;
+    x1?: number | string | undefined;
+    x2?: number | string | undefined;
+    x?: number | string | undefined;
+    'x-channel-selector'?: string | undefined;
+    'x-height'?: number | string | undefined;
+    'xlink:actuate'?: string | undefined;
+    'xlink:arcrole'?: string | undefined;
+    'xlink:href'?: string | undefined;
+    'xlink:role'?: string | undefined;
+    'xlink:show'?: string | undefined;
+    'xlink:title'?: string | undefined;
+    'xlink:type'?: string | undefined;
+    'xml:base'?: string | undefined;
+    'xml:lang'?: string | undefined;
+    'xml:space'?: string | undefined;
+    xmlns?: string | undefined;
+    'xmlns:xlink'?: string | undefined;
+    y1?: number | string | undefined;
+    y2?: number | string | undefined;
+    y?: number | string | undefined;
+    yChannelSelector?: string | undefined;
+    z?: number | string | undefined;
+    zoomAndPan?: string | undefined;
+}
 
-declare type StyleAttrs = Augmented<HTMLStyleElement, {
-    scoped?: boolean | undefined;
-}>;
-
-declare type TableAttrs = Augmented<HTMLTableElement, {
-    cellPadding?: number | string | undefined;
-    cellSpacing?: number | string | undefined;
-    width?: Size | undefined;
-}>;
-
-declare type TableCellAttrs = Augmented<HTMLTableCellElement, {
+declare type TableCellSpecialAttrs = {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     height?: Size | undefined;
     width?: Size | undefined;
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
-}>;
+};
 
-declare type TextareaAttrs = Augmented<HTMLTextAreaElement, {
-    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-    'bind:value'?: Signal<string | undefined>;
-}>;
-
-declare type TrackAttrs = Augmented<HTMLTrackElement, {}>;
-
-declare type VideoAttrs = Augmented<HTMLVideoElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    height?: Numberish | undefined;
-    width?: Numberish | undefined;
-    disablePictureInPicture?: boolean | undefined;
-    disableRemotePlayback?: boolean | undefined;
-}>;
-
-/** @public */
-declare interface VideoHTMLAttributes<T extends Element> extends HTMLAttributes<T>, VideoAttrs {
-}
+declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
 export { }
