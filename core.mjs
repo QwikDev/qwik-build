@@ -3692,9 +3692,9 @@ const TaskFlagsIsCleanup = 1 << 5;
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3792,9 +3792,9 @@ const useComputed$ = implicit$FirstArg(useComputedQrl);
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -7167,24 +7167,22 @@ const _regSymbol = (symbol, hash) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -7243,24 +7241,22 @@ const useResourceQrl = (qrl, opts) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -7303,24 +7299,22 @@ const useResource$ = (generatorFn, opts) => {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -8552,6 +8546,7 @@ let runtimeSymbolId = 0;
  *
  * import { createContextId, useContext, useContextProvider } from './use/use-context';
  * import { Resource, useResource$ } from './use/use-resource';
+ * import { useSignal } from './use/use-signal';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}

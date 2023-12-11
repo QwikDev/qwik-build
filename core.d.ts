@@ -50,6 +50,7 @@ import type { ServerRequestEvent } from '.-city/middleware/request-handler';
  *
  * import { createContextId, useContext, useContextProvider } from './use/use-context';
  * import { Resource, useResource$ } from './use/use-resource';
+ * import { useSignal } from './use/use-signal';
  *
  * export const greet = () => console.log('greet');
  * function topLevelFn() {}
@@ -77,29 +78,25 @@ export declare const $: <T>(expression: T) => QRL<T>;
 
 declare type A = [type: 0, host: SubscriberEffect | SubscriberHost, key: string | undefined];
 
-declare type AllEventMaps = HTMLElementEventMap & DocumentEventMap & WindowEventHandlersEventMap & {
-    qvisible: QwikVisibleEvent;
+declare type AllEventKeys = keyof AllEventsMap;
+
+declare type AllEventMapRaw = HTMLElementEventMap & DocumentEventMap & WindowEventHandlersEventMap & {
+    qidle: QwikIdleEvent;
+    qinit: QwikInitEvent;
     qsymbol: QwikSymbolEvent;
+    qvisible: QwikVisibleEvent;
 };
 
-declare type AllPascalEventMaps = PascalMap<AllEventMaps>;
+declare type AllEventsMap = Omit<AllEventMapRaw, keyof EventCorrectionMap> & EventCorrectionMap;
 
-declare type AnchorAttrs = Augmented<HTMLAnchorElement, {
-    download?: any;
-    target?: HTMLAttributeAnchorTarget | undefined;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
+declare type AllPascalEventMaps = PascalMap<AllEventsMap>;
 
 /** @public */
-export declare interface AnchorHTMLAttributes<T extends Element> extends HTMLAttributes<T>, AnchorAttrs {
+export declare interface AnchorHTMLAttributes<T extends Element> extends Attrs<'a', T> {
 }
 
-declare type AreaAttrs = Augmented<HTMLAreaElement, {
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
-
 /** @public */
-export declare interface AreaHTMLAttributes<T extends Element> extends HTMLAttributes<T, false>, AreaAttrs {
+export declare interface AreaHTMLAttributes<T extends Element> extends Attrs<'area', T> {
 }
 
 /**
@@ -358,12 +355,10 @@ export declare interface AriaAttributes {
 /** @public */
 export declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'banner' | 'button' | 'cell' | 'checkbox' | 'columnheader' | 'combobox' | 'complementary' | 'contentinfo' | 'definition' | 'dialog' | 'directory' | 'document' | 'feed' | 'figure' | 'form' | 'grid' | 'gridcell' | 'group' | 'heading' | 'img' | 'link' | 'list' | 'listbox' | 'listitem' | 'log' | 'main' | 'marquee' | 'math' | 'menu' | 'menubar' | 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' | 'navigation' | 'none' | 'note' | 'option' | 'presentation' | 'progressbar' | 'radio' | 'radiogroup' | 'region' | 'row' | 'rowgroup' | 'rowheader' | 'scrollbar' | 'search' | 'searchbox' | 'separator' | 'slider' | 'spinbutton' | 'status' | 'switch' | 'tab' | 'table' | 'tablist' | 'tabpanel' | 'term' | 'textbox' | 'timer' | 'toolbar' | 'tooltip' | 'tree' | 'treegrid' | 'treeitem' | (string & {});
 
-declare type AudioAttrs = Augmented<HTMLAudioElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-}>;
+declare type Attrs<Name extends keyof HTMLElementTagNameMap, EL extends Element = HTMLElementTagNameMap[Name], AttrEl = HTMLElementTagNameMap[Name]> = HTMLAttributes<EL> & Augmented<AttrEl, SpecialAttrs[Name]>;
 
 /** @public */
-export declare interface AudioHTMLAttributes<T extends Element> extends HTMLAttributes<T>, AudioAttrs {
+export declare interface AudioHTMLAttributes<T extends Element> extends Attrs<'audio', T> {
 }
 
 /**
@@ -383,29 +378,9 @@ prop: string,
 key: string | undefined
 ];
 
-declare type BadOnes<T> = Extract<{
-    [K in keyof T]: T[K] extends (...args: any) => any ? K : K extends string ? K extends Uppercase<K> ? K : never : never;
-}[keyof T] | ReadonlyKeysOf<T> | keyof HTMLAttributesBase<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'inputMode' | 'onfullscreenchange' | 'onfullscreenerror' | 'outerText' | 'textContent', string>;
-
-declare type BaseAttrs = Augmented<HTMLBaseElement, {}>;
-
-declare type BaseClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | BaseClassList[];
-
 /** @public */
-export declare interface BaseHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, BaseAttrs {
+export declare interface BaseHTMLAttributes<T extends Element> extends Attrs<'base', T> {
 }
-
-/**
- * Allows for Event Handlers to by typed as QwikEventMap[Key] or Event
- * https://stackoverflow.com/questions/52667959/what-is-the-purpose-of-bivariancehack-in-typescript-types/52668133#52668133
- *
- * It would be great if we could override the type of EventTarget to be EL, but that gives problems
- * with assigning a user-provided `QRL<(ev: Event)=>void>` because Event doesn't match the extended
- * `Event & {target?: EL}` type.
- */
-declare type BivariantEventHandler<T extends Event, EL> = {
-    bivarianceHack(event: T, element: EL): any;
-}['bivarianceHack'];
 
 declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
     /**
@@ -417,22 +392,15 @@ declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
     bivarianceHack(...args: ARGS): Promise<RETURN>;
 }['bivarianceHack'];
 
-declare type BlockquoteAttrs = Augmented<HTMLQuoteElement, {}>;
-
 /** @public */
-export declare interface BlockquoteHTMLAttributes<T extends Element> extends HTMLAttributes<T>, BlockquoteAttrs {
+export declare interface BlockquoteHTMLAttributes<T extends Element> extends Attrs<'blockquote', T> {
 }
 
 /** @public */
 export declare type Booleanish = boolean | `${boolean}`;
 
-declare type ButtonAttrs = Augmented<HTMLButtonElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
 /** @public */
-export declare interface ButtonHTMLAttributes<T extends Element> extends HTMLAttributes<T>, ButtonAttrs {
+export declare interface ButtonHTMLAttributes<T extends Element> extends Attrs<'button', T> {
 }
 
 declare type C = [
@@ -443,13 +411,8 @@ elm: Node | QwikElement,
 key: string | undefined
 ];
 
-declare type CanvasAttrs = Augmented<HTMLCanvasElement, {
-    height?: Size | undefined;
-    width?: Size | undefined;
-}>;
-
 /** @public */
-export declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAttributes<T>, CanvasAttrs {
+export declare interface CanvasHTMLAttributes<T extends Element> extends Attrs<'canvas', T> {
 }
 
 /**
@@ -462,19 +425,14 @@ export declare interface CanvasHTMLAttributes<T extends Element> extends HTMLAtt
  *
  * @public
  */
-export declare type ClassList = BaseClassList | BaseClassList[];
-
-declare type ColAttrs = Augmented<HTMLTableColElement, {
-    width?: Size | undefined;
-}>;
+export declare type ClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | ClassList[];
 
 /** @public */
-export declare interface ColgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    span?: number | undefined;
+export declare interface ColgroupHTMLAttributes<T extends Element> extends Attrs<'colgroup', T> {
 }
 
 /** @public */
-export declare interface ColHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, ColAttrs {
+export declare interface ColHTMLAttributes<T extends Element> extends Attrs<'col', T> {
 }
 
 /**
@@ -545,7 +503,7 @@ export declare const component$: <PROPS extends Record<any, any>>(onMount: (prop
  *
  * @public
  */
-export declare type Component<PROPS extends Record<any, any>> = FunctionComponent<PublicProps<PROPS>>;
+export declare type Component<PROPS extends Record<any, any> = Record<string, unknown>> = FunctionComponent<PublicProps<PROPS>>;
 
 /** @public */
 export declare interface ComponentBaseProps {
@@ -774,6 +732,12 @@ export declare interface CorePlatform {
     chunkForSymbol: (symbolName: string, chunk: string | null) => readonly [symbol: string, chunk: string] | undefined;
 }
 
+/** This corrects the TS definition for ToggleEvent @public */
+export declare interface CorrectedToggleEvent extends Event {
+    readonly newState: 'open' | 'closed';
+    readonly prevState: 'open' | 'closed';
+}
+
 /**
  * Create a context ID to be used in your application. The name should be written with no spaces.
  *
@@ -838,18 +802,12 @@ export declare interface CSSProperties extends CSS_2.Properties<string | number>
     [v: `--${string}`]: string | number | undefined;
 }
 
-declare type DataAttrs = Augmented<HTMLDataElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
 /** @public */
-export declare interface DataHTMLAttributes<T extends Element> extends HTMLAttributes<T>, DataAttrs {
+export declare interface DataHTMLAttributes<T extends Element> extends Attrs<'data', T> {
 }
 
 /** @public */
-export declare interface DelHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    cite?: string | undefined;
-    dateTime?: string | undefined;
+export declare interface DelHTMLAttributes<T extends Element> extends Attrs<'del', T> {
 }
 
 /** @public */
@@ -866,8 +824,7 @@ declare interface DescriptorBase<T = unknown, B = unknown> {
 export declare const _deserializeData: (data: string, element?: unknown) => any;
 
 /** @public */
-export declare interface DetailsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
+export declare interface DetailsHTMLAttributes<T extends Element> extends Attrs<'details', T> {
 }
 
 /** @public */
@@ -879,27 +836,19 @@ export declare interface DevJSX {
 }
 
 /** @public */
-export declare interface DialogHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    open?: boolean | undefined;
+export declare interface DialogHTMLAttributes<T extends Element> extends Attrs<'dialog', T> {
 }
 
-/** @public */
-export declare interface DOMAttributes<T extends Element, Children = JSXChildren> extends QwikProps<T>, QwikEvents<T> {
-    children?: Children;
-    key?: string | number | null | undefined;
+/** The Qwik-specific attributes that DOM elements accept @public */
+export declare interface DOMAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL> {
+    class?: ClassList | Signal<ClassList> | undefined;
 }
 
 /** @public */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
 
-declare type EmbedAttrs = Augmented<HTMLEmbedElement, {
-    height?: Size | undefined;
-    width?: Size | undefined;
-    children?: undefined;
-}>;
-
 /** @public */
-export declare interface EmbedHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, EmbedAttrs {
+export declare interface EmbedHTMLAttributes<T extends Element> extends Attrs<'embed', T> {
 }
 
 /** @public */
@@ -910,41 +859,45 @@ export declare interface ErrorBoundaryStore {
 /** @public */
 export declare const event$: <T>(first: T) => QRL<T>;
 
+declare type EventCorrectionMap = {
+    auxclick: PointerEvent;
+    beforetoggle: CorrectedToggleEvent;
+    click: PointerEvent;
+    dblclick: PointerEvent;
+    input: InputEvent;
+    toggle: CorrectedToggleEvent;
+};
+
 declare type EventFromName<T extends string> = LcEvent<T>;
 
-declare type EventQRL<T extends string = QwikKeysEvents> = QRL<BivariantEventHandler<EventFromName<T>, Element>> | undefined;
+/** A DOM event handler */
+declare type EventHandler<EV = Event, EL = Element> = {
+    bivarianceHack(event: EV, element: EL): any;
+}['bivarianceHack'];
+
+declare type EventQRL<T extends string = AllEventKeys> = QRL<EventHandler<EventFromName<T>, Element>> | undefined;
 
 /** @public */
 export declare const eventQrl: <T>(qrl: QRL<T>) => QRL<T>;
 
-declare type FieldSetAttrs = Augmented<HTMLFieldSetElement, {
-    form?: string | undefined;
-}>;
-
 /** @public */
-export declare interface FieldsetHTMLAttributes<T extends Element> extends HTMLAttributes<T>, FieldSetAttrs {
+export declare interface FieldsetHTMLAttributes<T extends Element> extends Attrs<'fieldset', T> {
 }
 
-/**
- * Filter out "any" value types and non-string keys from an object, currently only for
- * HTMLFormElement
- */
-declare type FilterAny<T> = {
-    [K in keyof T as any extends T[K] ? never : K extends string ? K : never]: T[K];
+declare type FilterBase<T> = {
+    [K in keyof T as K extends string ? K extends Uppercase<K> ? never : any extends T[K] ? never : false extends IsAcceptableDOMValue<T[K]> ? never : IsReadOnlyKey<T, K> extends true ? never : K extends UnwantedKeys ? never : K : never]?: T[K];
 };
 
-/** Only keep props that are specific to the element */
+/** Only keep props that are specific to the element and make partial */
 declare type Filtered<T, A = {}> = {
-    [K in keyof Omit<FilterAny<T>, keyof HTMLAttributes<any> | BadOnes<FilterAny<T>> | keyof A>]?: T[K];
+    [K in keyof Omit<FilterBase<T>, keyof HTMLAttributes<any> | keyof A>]?: T[K];
 };
 
 /** @internal */
 export declare const _fnSignal: <T extends (...args: any) => any>(fn: T, args: Parameters<T>, fnStr?: string) => SignalDerived<ReturnType<T>, Parameters<T>>;
 
-declare type FormAttrs = Augmented<HTMLFormElement, {}>;
-
 /** @public */
-export declare interface FormHTMLAttributes<T extends Element> extends HTMLAttributes<T>, FormAttrs {
+export declare interface FormHTMLAttributes<T extends Element> extends Attrs<'form', T> {
 }
 
 /** @public */
@@ -1024,7 +977,7 @@ export { h as createElement }
 export { h }
 
 /** @public */
-export declare interface HrHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined> {
+export declare interface HrHTMLAttributes<T extends Element> extends Attrs<'hr', T> {
 }
 
 /** @public */
@@ -1034,10 +987,10 @@ export declare type HTMLAttributeAnchorTarget = '_self' | '_blank' | '_parent' |
 export declare type HTMLAttributeReferrerPolicy = ReferrerPolicy;
 
 /** @public */
-export declare interface HTMLAttributes<E extends Element, Children = JSXChildren> extends HTMLAttributesBase<E, Children>, Partial<Omit<HTMLElement, BadOnes<HTMLElement>>> {
+export declare interface HTMLAttributes<E extends Element> extends HTMLElementAttrs, DOMAttributes<E> {
 }
 
-declare interface HTMLAttributesBase<E extends Element, Children = JSXChildren> extends AriaAttributes, DOMAttributes<E, Children> {
+declare interface HTMLAttributesBase extends AriaAttributes {
     /** @deprecated Use `class` instead */
     className?: ClassList | undefined;
     contentEditable?: 'true' | 'false' | 'inherit' | undefined;
@@ -1077,10 +1030,14 @@ declare interface HTMLAttributesBase<E extends Element, Children = JSXChildren> 
      * @see https://html.spec.whatwg.org/multipage/custom-elements.html#attr-is
      */
     is?: string | undefined;
+    popover?: 'manual' | 'auto' | undefined;
 }
 
 /** @public */
 export declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
+
+declare interface HTMLElementAttrs extends HTMLAttributesBase, FilterBase<HTMLElement> {
+}
 
 /** @public */
 export declare const HTMLFragment: FunctionComponent<{
@@ -1088,8 +1045,7 @@ export declare const HTMLFragment: FunctionComponent<{
 }>;
 
 /** @public */
-export declare interface HtmlHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    manifest?: string | undefined;
+export declare interface HtmlHTMLAttributes<T extends Element> extends Attrs<'html', T> {
 }
 
 /** @public */
@@ -1108,33 +1064,12 @@ export declare const _hW: () => void;
 
 declare type IfEquals<X, Y, A, B> = (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? A : B;
 
-declare type IframeAttrs = Augmented<HTMLIFrameElement, {
-    allowTransparency?: boolean | undefined;
-    /** @deprecated Deprecated */
-    frameBorder?: number | string | undefined;
-    height?: Size | undefined;
-    loading?: 'eager' | 'lazy' | undefined;
-    sandbox?: string | undefined;
-    seamless?: boolean | undefined;
-    width?: Size | undefined;
-    children?: undefined;
-}>;
-
 /** @public */
-export declare interface IframeHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, IframeAttrs {
+export declare interface IframeHTMLAttributes<T extends Element> extends Attrs<'iframe', T> {
 }
 
-declare type ImgAttrs = Augmented<HTMLImageElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    /** Intrinsic height of the image in pixels. */
-    height?: Numberish | undefined;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-    /** Intrinsic width of the image in pixels. */
-    width?: Numberish | undefined;
-}>;
-
 /** @public */
-export declare interface ImgHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, ImgAttrs {
+export declare interface ImgHTMLAttributes<T extends Element> extends Attrs<'img', T> {
 }
 
 /** @internal */
@@ -1184,43 +1119,38 @@ export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScope
 /** @internal */
 export declare const inlinedQrlDEV: <T = any>(symbol: T, symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
-declare type InputAttrs = Augmented<HTMLInputElement, {
-    autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
-    'bind:checked'?: Signal<boolean | undefined>;
-    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
-    height?: Size | undefined;
-    max?: number | string | undefined;
-    maxLength?: number | undefined;
-    min?: number | string | undefined;
-    minLength?: number | undefined;
-    step?: number | string | undefined;
-    type?: HTMLInputTypeAttribute | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
-    'bind:value'?: Signal<string | undefined>;
-    width?: Size | undefined;
-}>;
+/** @public */
+export declare type InputHTMLAttributes<T extends Element> = Attrs<'input', T, HTMLInputElement>;
 
 /** @public */
-export declare interface InputHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, InputAttrs {
-}
-
-/** @public */
-export declare interface InsHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    cite?: string | undefined;
-    dateTime?: string | undefined;
+export declare interface InsHTMLAttributes<T extends Element> extends Attrs<'ins', T> {
 }
 
 /** @public */
 export declare interface IntrinsicElements extends IntrinsicHTMLElements, IntrinsicSVGElements {
 }
 
-/** @public */
-export declare interface IntrinsicHTMLElements extends QwikHTMLExceptions, PlainHTMLElements {
-}
+/**
+ * These are the HTML tags with handlers allowing plain callbacks, to be used for the JSX interface
+ *
+ * @internal
+ */
+export declare type IntrinsicHTMLElements = {
+    [key in keyof HTMLElementTagNameMap]: Augmented<HTMLElementTagNameMap[key], SpecialAttrs[key]> & HTMLAttributes<HTMLElementTagNameMap[key]>;
+} & {
+    /** For unknown tags we allow all props */
+    [unknownTag: string]: {
+        [prop: string]: any;
+    } & HTMLElementAttrs & HTMLAttributes<any>;
+};
 
-/** @public */
+/**
+ * These are the SVG tags with handlers allowing plain callbacks, to be used for the JSX interface
+ *
+ * @internal
+ */
 export declare type IntrinsicSVGElements = {
-    [K in keyof Omit<SVGElementTagNameMap, keyof HTMLElementTagNameMap>]: SVGProps<SVGElementTagNameMap[K]>;
+    [K in keyof Omit<SVGElementTagNameMap, keyof HTMLElementTagNameMap>]: LenientSVGProps<SVGElementTagNameMap[K]>;
 };
 
 /** The shared state during an invoke() call */
@@ -1245,6 +1175,14 @@ declare interface InvokeContext {
 }
 
 declare type InvokeTuple = [Element, Event, URL?];
+
+declare type IsAcceptableDOMValue<T> = T extends boolean | number | string | null | undefined ? ((...args: any[]) => any) extends T ? false : true : false;
+
+declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
+    [Q in K]: T[K];
+}, {
+    -readonly [Q in K]: T[K];
+}, false, true>;
 
 /**
  * Checks if a given object is a `Signal`.
@@ -1310,53 +1248,45 @@ export declare const _jsxS: <T extends string>(type: T, mutableProps: Record<any
 /** @public */
 export declare type JSXTagName = keyof HTMLElementTagNameMap | Omit<string, keyof HTMLElementTagNameMap>;
 
-/** @public */
-export declare interface KeygenHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    autoFocus?: boolean | undefined;
-    challenge?: string | undefined;
-    disabled?: boolean | undefined;
-    form?: string | undefined;
-    keyType?: string | undefined;
-    keyParams?: string | undefined;
-    name?: string | undefined;
-    children?: undefined;
+/** @public @deprecated in html5 */
+export declare interface KeygenHTMLAttributes<T extends Element> extends Attrs<'base', T> {
 }
 
-declare type LabelAttrs = Augmented<HTMLLabelElement, {
-    form?: string | undefined;
-    for?: string | undefined;
-    /** @deprecated Use `for` */
-    htmlFor?: string | undefined;
-}>;
+/**
+ * The names of events that Qwik knows about. They are all lowercase, but on the JSX side, they are
+ * PascalCase for nicer DX. (`onAuxClick$` vs `onauxclick$`)
+ *
+ * @public
+ */
+export declare type KnownEventNames = LiteralUnion<AllEventKeys, string>;
 
 /** @public */
-export declare interface LabelHTMLAttributes<T extends Element> extends HTMLAttributes<T>, LabelAttrs {
+export declare interface LabelHTMLAttributes<T extends Element> extends Attrs<'label', T> {
 }
 
-declare type LcEvent<T extends string, C extends string = Lowercase<T>> = C extends keyof AllEventMaps ? AllEventMaps[C] : Event;
+declare type LcEvent<T extends string, C extends string = Lowercase<T>> = C extends keyof AllEventsMap ? AllEventsMap[C] : Event;
 
 declare type LcEventNameMap = {
     [name in PascalCaseNames as Lowercase<name>]: name;
 };
 
-declare type LiAttrs = Augmented<HTMLLIElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
-/** @public */
-export declare interface LiHTMLAttributes<T extends Element> extends HTMLAttributes<T>, LiAttrs {
+/**
+ * These definitions are for the JSX namespace, they allow passing plain event handlers instead of
+ * QRLs
+ */
+declare interface LenientQwikElements extends IntrinsicHTMLElements, IntrinsicSVGElements {
 }
 
-declare type LinkAttrs = Augmented<HTMLLinkElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-    sizes?: string | undefined;
-    type?: string | undefined;
-    charSet?: string | undefined;
-}>;
+/** @internal */
+export declare interface LenientSVGProps<T extends Element> extends SVGAttributes, DOMAttributes<T> {
+}
 
 /** @public */
-export declare interface LinkHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, LinkAttrs {
+export declare interface LiHTMLAttributes<T extends Element> extends Attrs<'li', T> {
+}
+
+/** @public */
+export declare interface LinkHTMLAttributes<T extends Element> extends Attrs<'link', T> {
 }
 
 declare type Listener = [
@@ -1404,38 +1334,29 @@ declare class LocalSubscriptionManager {
 }
 
 /** @public */
-export declare interface MapHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    name?: string | undefined;
+export declare interface MapHTMLAttributes<T extends Element> extends Attrs<'map', T> {
 }
 
-declare type MediaAttrs = Augmented<HTMLMediaElement, {
+/** @public */
+export declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T>, Augmented<HTMLMediaElement, {
     crossOrigin?: HTMLCrossOriginAttribute;
-}>;
+}> {
+}
+
+declare type MediaSpecialAttrs = {
+    crossOrigin?: HTMLCrossOriginAttribute;
+};
 
 /** @public */
-export declare interface MediaHTMLAttributes<T extends Element> extends HTMLAttributes<T>, MediaAttrs {
+export declare interface MenuHTMLAttributes<T extends Element> extends Attrs<'menu', T> {
 }
 
 /** @public */
-export declare interface MenuHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    type?: string | undefined;
+export declare interface MetaHTMLAttributes<T extends Element> extends Attrs<'meta', T> {
 }
 
-declare type MetaAttrs = Augmented<HTMLMetaElement, {
-    charSet?: string | undefined;
-}>;
-
 /** @public */
-export declare interface MetaHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, MetaAttrs {
-}
-
-declare type MeterAttrs = Augmented<HTMLMeterElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
-/** @public */
-export declare interface MeterHTMLAttributes<T extends Element> extends HTMLAttributes<T>, MeterAttrs {
+export declare interface MeterHTMLAttributes<T extends Element> extends Attrs<'meter', T> {
 }
 
 /** @public @deprecated Use `AnimationEvent` */
@@ -1449,9 +1370,6 @@ export declare type NativeCompositionEvent = CompositionEvent;
 
 /** @public @deprecated Use `DragEvent` */
 export declare type NativeDragEvent = DragEvent;
-
-/** @public */
-declare type NativeEventHandler<T extends Event = Event, EL = Element> = BivariantEventHandler<T, EL> | QRL<BivariantEventHandler<T, EL>>[];
 
 /** @public @deprecated Use `FocusEvent` */
 export declare type NativeFocusEvent = FocusEvent;
@@ -1511,26 +1429,14 @@ export declare const noSerialize: <T extends object | undefined>(input: T) => No
 /** @public */
 export declare type Numberish = number | `${number}`;
 
-declare type ObjectAttrs = Augmented<HTMLObjectElement, {
-    classID?: string | undefined;
-    form?: string | undefined;
-    height?: Size | undefined;
-    width?: Size | undefined;
-    wmode?: string | undefined;
-}>;
-
 /** @public */
-export declare interface ObjectHTMLAttributes<T extends Element> extends HTMLAttributes<T>, ObjectAttrs {
+export declare interface ObjectHTMLAttributes<T extends Element> extends Attrs<'object', T> {
 }
 
 declare type ObjToProxyMap = WeakMap<any, any>;
 
-declare type OlAttrs = Augmented<HTMLOListElement, {
-    type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
-}>;
-
 /** @public */
-export declare interface OlHTMLAttributes<T extends Element> extends HTMLAttributes<T>, OlAttrs {
+export declare interface OlHTMLAttributes<T extends Element> extends Attrs<'ol', T> {
 }
 
 /** @public */
@@ -1552,44 +1458,20 @@ export declare interface OnVisibleTaskOptions {
 }
 
 /** @public */
-export declare interface OptgroupHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    disabled?: boolean | undefined;
-    label?: string | undefined;
+export declare interface OptgroupHTMLAttributes<T extends Element> extends Attrs<'optgroup', T> {
 }
-
-declare type OptionAttrs = Augmented<HTMLOptionElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
 
 /** @public */
-export declare interface OptionHTMLAttributes<T extends Element> extends HTMLAttributes<T, string>, OptionAttrs {
+export declare interface OptionHTMLAttributes<T extends Element> extends Attrs<'option', T> {
 }
-
-declare type OutputAttrs = Augmented<HTMLOutputElement, {
-    form?: string | undefined;
-    for?: string | undefined;
-    /** @deprecated Use `for` instead */
-    htmlFor?: string | undefined;
-}>;
 
 /** @public */
-export declare interface OutputHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
+export declare interface OutputHTMLAttributes<T extends Element> extends Attrs<'output', T> {
 }
-
-declare type ParamAttrs = Augmented<HTMLParamElement, {
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
 
 /** @public @deprecated Old DOM API */
-export declare interface ParamHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, ParamAttrs {
+export declare interface ParamHTMLAttributes<T extends Element> extends Attrs<'base', T, HTMLParamElement> {
 }
-
-/**
- * The PascalCaseEventLiteralType combines the QwikKeysEvents type and string type using the
- * LiteralUnion utility type, allowing autocompletion for event names while retaining support for
- * custom event names as strings. Despite the name, the event names are all lowercase :)
- */
-declare type PascalCaseEventLiteralType = LiteralUnion<QwikKeysEvents, string>;
 
 /**
  * Capitalized multi-word names of some known events so we have nicer qwik attributes. For example,
@@ -1598,7 +1480,7 @@ declare type PascalCaseEventLiteralType = LiteralUnion<QwikKeysEvents, string>;
  *
  * Add any multi-word event names to this list. Single word events are automatically converted.
  */
-declare type PascalCaseNames = 'AnimationEnd' | 'AnimationIteration' | 'AnimationStart' | 'AuxClick' | 'CanPlay' | 'CanPlayThrough' | 'CompositionEnd' | 'CompositionStart' | 'CompositionUpdate' | 'ContextMenu' | 'DblClick' | 'DragEnd' | 'DragEnter' | 'DragExit' | 'DragLeave' | 'DragOver' | 'DragStart' | 'DurationChange' | 'FocusIn' | 'FocusOut' | 'FullscreenChange' | 'FullscreenError' | 'GotPointerCapture' | 'KeyDown' | 'KeyPress' | 'KeyUp' | 'LoadedData' | 'LoadedMetadata' | 'LoadEnd' | 'LoadStart' | 'LostPointerCapture' | 'MouseDown' | 'MouseEnter' | 'MouseLeave' | 'MouseMove' | 'MouseOut' | 'MouseOver' | 'MouseUp' | 'PointerCancel' | 'PointerDown' | 'PointerEnter' | 'PointerLeave' | 'PointerMove' | 'PointerOut' | 'PointerOver' | 'PointerUp' | 'RateChange' | 'RateChange' | 'SecurityPolicyViolation' | 'SelectionChange' | 'SelectStart' | 'TimeUpdate' | 'TouchCancel' | 'TouchEnd' | 'TouchMove' | 'TouchStart' | 'TransitionCancel' | 'TransitionEnd' | 'TransitionRun' | 'TransitionStart' | 'VisibilityChange' | 'VolumeChange';
+declare type PascalCaseNames = 'AnimationEnd' | 'AnimationIteration' | 'AnimationStart' | 'AuxClick' | 'BeforeToggle' | 'CanPlay' | 'CanPlayThrough' | 'CompositionEnd' | 'CompositionStart' | 'CompositionUpdate' | 'ContextMenu' | 'DblClick' | 'DragEnd' | 'DragEnter' | 'DragExit' | 'DragLeave' | 'DragOver' | 'DragStart' | 'DurationChange' | 'FocusIn' | 'FocusOut' | 'FullscreenChange' | 'FullscreenError' | 'GotPointerCapture' | 'KeyDown' | 'KeyPress' | 'KeyUp' | 'LoadedData' | 'LoadedMetadata' | 'LoadEnd' | 'LoadStart' | 'LostPointerCapture' | 'MouseDown' | 'MouseEnter' | 'MouseLeave' | 'MouseMove' | 'MouseOut' | 'MouseOver' | 'MouseUp' | 'PointerCancel' | 'PointerDown' | 'PointerEnter' | 'PointerLeave' | 'PointerMove' | 'PointerOut' | 'PointerOver' | 'PointerUp' | 'QIdle' | 'QInit' | 'QSymbol' | 'QVisible' | 'RateChange' | 'RateChange' | 'SecurityPolicyViolation' | 'SelectionChange' | 'SelectStart' | 'TimeUpdate' | 'TouchCancel' | 'TouchEnd' | 'TouchMove' | 'TouchStart' | 'TransitionCancel' | 'TransitionEnd' | 'TransitionRun' | 'TransitionStart' | 'VisibilityChange' | 'VolumeChange';
 
 /**
  * Convert an event map to PascalCase. For example, `HTMLElementEventMap` contains lowercase keys,
@@ -1618,9 +1500,7 @@ declare interface PauseContext {
 /** @internal */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
 
-declare type PlainHTMLElements = {
-    [key in keyof Omit<HTMLElementTagNameMap, keyof QwikHTMLExceptions>]: HTMLAttributes<HTMLElementTagNameMap[key]> & Prettify<Filtered<HTMLElementTagNameMap[key], {}>>;
-};
+declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 
 declare type PossibleEvents = Event | ServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
 
@@ -1628,7 +1508,7 @@ declare type Prettify<T> = {} & {
     [K in keyof T]: T[K];
 };
 
-declare type PreventDefault<T = any> = {
+declare type PreventDefault = {
     [K in keyof HTMLElementEventMap as `preventdefault:${K}`]?: boolean;
 };
 
@@ -1651,13 +1531,8 @@ declare interface ProcessedJSXNode {
 
 declare type ProcessedJSXNodeType = '#text' | ':virtual' | ':signal' | typeof SKIP_RENDER_TYPE | string;
 
-declare type ProgressAttrs = Augmented<HTMLProgressElement, {
-    max?: number | string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-}>;
-
 /** @public */
-export declare interface ProgressHTMLAttributes<T extends Element> extends HTMLAttributes<T>, ProgressAttrs {
+export declare interface ProgressHTMLAttributes<T extends Element> extends Attrs<'progress', T> {
 }
 
 /** @public */
@@ -1684,7 +1559,7 @@ export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
  *
  * @public
  */
-export declare type PropsOf<COMP extends Component<any>> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : never;
+export declare type PropsOf<COMP> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PublicProps<PROPS>> : COMP extends string ? QwikIntrinsicElements[COMP] : Record<string, unknown>;
 
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot)..
@@ -1883,6 +1758,8 @@ declare interface QRLDev {
 /** @internal */
 export declare const qrlDEV: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
+declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
+
 declare type QRLInternal<TYPE = unknown> = QRL<TYPE> & QRLInternalMethods<TYPE>;
 
 declare type QRLInternalMethods<TYPE> = {
@@ -1906,12 +1783,24 @@ declare type QRLInternalMethods<TYPE> = {
 declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
 
 /** @public */
-export declare interface QuoteHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    cite?: string | undefined;
+export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q', T> {
 }
 
 /** @public @deprecated Use `AnimationEvent` */
 export declare type QwikAnimationEvent<T = Element> = NativeAnimationEvent;
+
+/** The Qwik DOM attributes without plain handlers, for use as function parameters */
+declare interface QwikAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL, false> {
+    class?: ClassList | undefined;
+}
+
+declare interface QwikAttributesBase extends PreventDefault {
+    key?: string | number | null | undefined;
+    dangerouslySetInnerHTML?: string | undefined;
+    children?: JSXChildren;
+    /** Corresponding slot name used to project the element into. */
+    'q:slot'?: string;
+}
 
 /** @public @deprecated Use `ChangeEvent` */
 export declare type QwikChangeEvent<T = Element> = Event;
@@ -1922,22 +1811,14 @@ export declare type QwikClipboardEvent<T = Element> = NativeClipboardEvent;
 /** @public @deprecated Use `CompositionEvent` */
 export declare type QwikCompositionEvent<T = Element> = NativeCompositionEvent;
 
-declare interface QwikCustomEvents<El> {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: SingleOrArray<NativeEventHandler<Event, El>> | SingleOrArray<Function> | SingleOrArray<undefined> | null;
-}
+declare type QwikCustomEvents<EL> = {
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL>;
+};
 
-/** All unknown attributes are allowed */
-declare interface QwikCustomHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    [key: string]: any;
-}
-
-/**
- * Any custom DOM element.
- *
- * @public
- */
-declare interface QwikCustomHTMLElement extends Element {
-}
+declare type QwikCustomEventsPlain<EL> = {
+    /** The handler */
+    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL> | EventHandler<Event, EL>;
+};
 
 /** @public */
 export declare interface QwikDOMAttributes extends DOMAttributes<Element> {
@@ -1949,50 +1830,26 @@ export declare type QwikDragEvent<T = Element> = NativeDragEvent;
 declare type QwikElement = Element | VirtualElement;
 
 /** @public */
-declare interface QwikEvents<T> extends QwikKnownEvents<T>, QwikCustomEvents<T> {
-}
+declare type QwikEvents<EL, Plain extends boolean = true> = Plain extends true ? QwikKnownEventsPlain<EL> & QwikCustomEventsPlain<EL> : QwikKnownEvents<EL> & QwikCustomEvents<EL>;
 
 /** @public @deprecated Use `FocusEvent` */
 export declare type QwikFocusEvent<T = Element> = NativeFocusEvent;
 
-declare interface QwikHTMLExceptions {
-    a: HTMLAttributes<HTMLAnchorElement> & AnchorAttrs;
-    area: HTMLAttributes<HTMLAreaElement, false> & AreaAttrs;
-    audio: HTMLAttributes<HTMLAudioElement> & AudioAttrs;
-    base: HTMLAttributes<HTMLBaseElement, undefined> & BaseAttrs;
-    button: HTMLAttributes<HTMLButtonElement> & ButtonAttrs;
-    canvas: HTMLAttributes<HTMLCanvasElement> & CanvasAttrs;
-    col: HTMLAttributes<HTMLTableColElement, undefined> & ColAttrs;
-    data: HTMLAttributes<HTMLDataElement> & DataAttrs;
-    embed: HTMLAttributes<HTMLEmbedElement, undefined> & EmbedAttrs;
-    fieldset: HTMLAttributes<HTMLFieldSetElement> & FieldSetAttrs;
-    hr: HTMLAttributes<HTMLHRElement, undefined>;
-    iframe: HTMLAttributes<HTMLIFrameElement> & IframeAttrs;
-    img: HTMLAttributes<HTMLImageElement, undefined> & ImgAttrs;
-    input: HTMLAttributes<HTMLInputElement, undefined> & InputAttrs;
-    keygen: KeygenHTMLAttributes<HTMLElement>;
-    label: HTMLAttributes<HTMLLabelElement> & LabelAttrs;
-    li: HTMLAttributes<HTMLLIElement> & LiAttrs;
-    link: HTMLAttributes<HTMLLinkElement, undefined> & LinkAttrs;
-    meta: HTMLAttributes<HTMLMetaElement> & MetaAttrs;
-    meter: HTMLAttributes<HTMLMeterElement> & MeterAttrs;
-    object: HTMLAttributes<HTMLObjectElement> & ObjectAttrs;
-    ol: HTMLAttributes<HTMLOListElement> & OlAttrs;
-    option: HTMLAttributes<HTMLOptionElement, string> & OptionAttrs;
-    output: HTMLAttributes<HTMLOutputElement> & OutputAttrs;
-    progress: HTMLAttributes<HTMLProgressElement> & ProgressAttrs;
-    script: HTMLAttributes<HTMLScriptElement> & ScriptAttrs;
-    select: HTMLAttributes<HTMLSelectElement> & SelectAttrs;
-    source: HTMLAttributes<HTMLSourceElement, undefined> & SourceAttrs;
-    style: HTMLAttributes<HTMLStyleElement, string> & StyleAttrs;
-    table: HTMLAttributes<HTMLTableElement> & TableAttrs;
-    td: HTMLAttributes<HTMLTableCellElement> & TableCellAttrs;
-    textarea: HTMLAttributes<HTMLTextAreaElement, undefined> & TextareaAttrs;
-    th: HTMLAttributes<HTMLTableCellElement> & TableCellAttrs;
-    title: HTMLAttributes<HTMLTitleElement, string>;
-    track: HTMLAttributes<HTMLTrackElement, undefined> & TrackAttrs;
-    video: VideoHTMLAttributes<HTMLVideoElement> & VideoAttrs;
-}
+/** The DOM props without plain handlers, for use inside functions @public */
+export declare type QwikHTMLElements = {
+    [tag in keyof HTMLElementTagNameMap]: Augmented<HTMLElementTagNameMap[tag], SpecialAttrs[tag]> & HTMLElementAttrs & QwikAttributes<HTMLElementTagNameMap[tag]>;
+} & {
+    /** For unknown tags we allow all props */
+    [unknownTag: string]: {
+        [prop: string]: any;
+    } & HTMLElementAttrs & QwikAttributes<any>;
+};
+
+/** Emitted by qwik-loader on document when the document first becomes idle @public */
+export declare type QwikIdleEvent = CustomEvent<{}>;
+
+/** Emitted by qwik-loader on document when the document first becomes interactive @public */
+export declare type QwikInitEvent = CustomEvent<{}>;
 
 /** @public */
 declare interface QwikIntrinsicAttributes {
@@ -2019,14 +1876,11 @@ declare interface QwikIntrinsicAttributes {
  * });
  * ```
  *
+ * Note: It is shorter to use `PropsOf<'div'>`
+ *
  * @public
  */
-export declare interface QwikIntrinsicElements extends IntrinsicHTMLElements {
-    /**
-     * Custom DOM elements can have any name We need to add the empty object to match the type with
-     * the Intrinsic elements
-     */
-    [key: string]: {} | QwikCustomHTMLAttributes<QwikCustomHTMLElement>;
+export declare interface QwikIntrinsicElements extends QwikHTMLElements, QwikSVGElements {
 }
 
 /** @public @deprecated Use `InvalidEvent` */
@@ -2036,22 +1890,25 @@ export declare type QwikInvalidEvent<T = Element> = Event;
 export declare namespace QwikJSX {
     export interface Element extends JSXNode {
     }
+    export type ElementType = string | ((...args: any[]) => JSXNode | null);
     export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
     export interface ElementChildrenAttribute {
         children: any;
     }
-    export interface IntrinsicElements extends QwikIntrinsicElements {
+    export interface IntrinsicElements extends LenientQwikElements {
     }
 }
 
 /** @public @deprecated Use `KeyboardEvent` */
 export declare type QwikKeyboardEvent<T = Element> = NativeKeyboardEvent;
 
-declare type QwikKeysEvents = Lowercase<keyof AllEventMaps>;
+declare type QwikKnownEvents<EL> = {
+    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: QRLEventHandlerMulti<AllPascalEventMaps[K], EL>;
+};
 
-declare type QwikKnownEvents<T> = {
-    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: SingleOrArray<NativeEventHandler<AllPascalEventMaps[K], T>> | null;
+declare type QwikKnownEventsPlain<EL> = {
+    [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: QRLEventHandlerMulti<AllPascalEventMaps[K], EL> | EventHandler<AllPascalEventMaps[K], EL>;
 };
 
 /** @public @deprecated Use `MouseEvent` */
@@ -2060,16 +1917,13 @@ export declare type QwikMouseEvent<T = Element, E = NativeMouseEvent> = E;
 /** @public @deprecated Use `PointerEvent` */
 export declare type QwikPointerEvent<T = Element> = NativePointerEvent;
 
-declare interface QwikProps<T extends Element> extends PreventDefault {
-    class?: ClassList | Signal<ClassList> | undefined;
-    dangerouslySetInnerHTML?: string | undefined;
-    ref?: Ref<T> | undefined;
-    /** Corresponding slot name used to project the element into. */
-    'q:slot'?: string;
-}
-
 /** @public @deprecated Use `SubmitEvent` */
 export declare type QwikSubmitEvent<T = Element> = Event;
+
+/** The SVG props without plain handlers, for use inside functions @public */
+export declare type QwikSVGElements = {
+    [K in keyof Omit<SVGElementTagNameMap, keyof HTMLElementTagNameMap>]: SVGProps<SVGElementTagNameMap[K]>;
+};
 
 /** Emitted by qwik-loader when a module was lazily loaded @public */
 export declare type QwikSymbolEvent = CustomEvent<{
@@ -2093,14 +1947,6 @@ export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 /** @public @deprecated Use `WheelEvent` */
 export declare type QwikWheelEvent<T = Element> = NativeWheelEvent;
 
-declare type ReadonlyKeysOf<T> = {
-    [P in keyof T]: IfEquals<{
-        [Q in P]: T[P];
-    }, {
-        -readonly [Q in P]: T[P];
-    }, never, P>;
-}[keyof T];
-
 /** @public */
 export declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
 
@@ -2110,10 +1956,14 @@ export declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
  *
  * @public
  */
-declare type Ref<T extends Element = Element> = Signal<Element | undefined> | RefFnInterface<T>;
+declare type Ref<EL extends Element = Element> = Signal<Element | undefined> | RefFnInterface<EL>;
 
-declare type RefFnInterface<T> = {
-    (el: T): void;
+declare interface RefAttr<EL extends Element> {
+    ref?: Ref<EL> | undefined;
+}
+
+declare type RefFnInterface<EL> = {
+    (el: EL): void;
 };
 
 /** @internal */
@@ -2215,24 +2065,22 @@ declare interface RenderStaticContext {
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -2323,23 +2171,12 @@ declare interface ResourceReturnInternal<T> {
 /** @internal */
 export declare const _restProps: (props: Record<string, any>, omit: string[]) => Record<string, any>;
 
-declare type ScriptAttrs = Augmented<HTMLScriptElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
-}>;
-
 /** @public */
-export declare interface ScriptHTMLAttributes<T extends Element> extends HTMLAttributes<T>, ScriptAttrs {
+export declare interface ScriptHTMLAttributes<T extends Element> extends Attrs<'script', T> {
 }
 
-declare type SelectAttrs = Augmented<HTMLSelectElement, {
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-    'bind:value'?: Signal<string | undefined>;
-}>;
-
 /** @public */
-export declare interface SelectHTMLAttributes<T extends Element> extends HTMLAttributes<T>, SelectAttrs {
+export declare interface SelectHTMLAttributes<T extends Element> extends Attrs<'select', T> {
 }
 
 /** @internal */
@@ -2373,8 +2210,6 @@ declare class SignalDerived<RETURN = unknown, ARGS extends any[] = unknown[]> ex
     get value(): RETURN;
 }
 
-declare type SingleOrArray<T> = T | (SingleOrArray<T> | undefined | null)[];
-
 /** @public */
 export declare type Size = number | string;
 
@@ -2394,8 +2229,7 @@ export declare const Slot: FunctionComponent<{
 }>;
 
 /** @public */
-export declare interface SlotHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    name?: string | undefined;
+export declare interface SlotHTMLAttributes<T extends Element> extends Attrs<'slot', T> {
 }
 
 /** @public */
@@ -2434,14 +2268,214 @@ export declare interface SnapshotState {
     subs: any[];
 }
 
-declare type SourceAttrs = Augmented<HTMLSourceElement, {
-    height?: Size | undefined;
-    width?: Size | undefined;
-}>;
-
 /** @public */
-export declare interface SourceHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, SourceAttrs {
+export declare interface SourceHTMLAttributes<T extends Element> extends Attrs<'source', T> {
 }
+
+declare type SpecialAttrs = {
+    a: {
+        download?: any;
+        target?: HTMLAttributeAnchorTarget | undefined;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+    };
+    area: {
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        children?: undefined;
+    };
+    audio: MediaSpecialAttrs;
+    base: {
+        children?: undefined;
+    };
+    button: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        popovertarget?: string | undefined;
+        popovertargetaction?: PopoverTargetAction | undefined;
+    };
+    canvas: {
+        height?: Size | undefined;
+        width?: Size | undefined;
+    };
+    col: {
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    data: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    embed: {
+        height?: Size | undefined;
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    fieldset: {
+        form?: string | undefined;
+    };
+    hr: {
+        children?: undefined;
+    };
+    iframe: {
+        allowTransparency?: boolean | undefined;
+        /** @deprecated Deprecated */
+        frameBorder?: number | string | undefined;
+        height?: Size | undefined;
+        loading?: 'eager' | 'lazy' | undefined;
+        sandbox?: string | undefined;
+        seamless?: boolean | undefined;
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    img: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        /** Intrinsic height of the image in pixels. */
+        height?: Numberish | undefined;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        /** Intrinsic width of the image in pixels. */
+        width?: Numberish | undefined;
+        children?: undefined;
+    };
+    input: {
+        autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
+        'bind:checked'?: Signal<boolean | undefined>;
+        'bind:value'?: Signal<string | undefined>;
+        enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
+        height?: Size | undefined;
+        max?: number | string | undefined;
+        maxLength?: number | undefined;
+        min?: number | string | undefined;
+        minLength?: number | undefined;
+        step?: number | string | undefined;
+        type?: HTMLInputTypeAttribute | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
+        width?: Size | undefined;
+        children?: undefined;
+    } & ({
+        type?: Exclude<HTMLInputTypeAttribute, 'button' | 'reset' | 'submit' | 'checkbox' | 'radio'> | undefined;
+        'bind:checked'?: undefined;
+    } | {
+        type: 'button' | 'reset' | 'submit';
+        'bind:value'?: undefined;
+        'bind:checked'?: undefined;
+        autoComplete?: undefined;
+    } | {
+        type: 'checkbox' | 'radio';
+        'bind:value'?: undefined;
+        autoComplete?: undefined;
+    }) & ({
+        type?: Exclude<HTMLInputTypeAttribute, 'button'> | undefined;
+        popovertarget?: undefined;
+        popovertargetaction?: undefined;
+    } | {
+        type: 'button';
+        popovertarget?: string | undefined;
+        popovertargetaction?: PopoverTargetAction | undefined;
+    });
+    label: {
+        form?: string | undefined;
+        for?: string | undefined;
+        /** @deprecated Use `for` */
+        htmlFor?: string | undefined;
+    };
+    li: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    link: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+        sizes?: string | undefined;
+        type?: string | undefined;
+        charSet?: string | undefined;
+        children?: undefined;
+    };
+    meta: {
+        charSet?: string | undefined;
+        children?: undefined;
+    };
+    meter: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    object: {
+        classID?: string | undefined;
+        form?: string | undefined;
+        height?: Size | undefined;
+        width?: Size | undefined;
+        wmode?: string | undefined;
+    };
+    ol: {
+        type?: '1' | 'a' | 'A' | 'i' | 'I' | undefined;
+    };
+    optgroup: {
+        disabled?: boolean | undefined;
+        label?: string | undefined;
+    };
+    option: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+        children?: string;
+    };
+    output: {
+        form?: string | undefined;
+        for?: string | undefined;
+        /** @deprecated Use `for` instead */
+        htmlFor?: string | undefined;
+    };
+    param: {
+        value?: string | ReadonlyArray<string> | number | undefined;
+        children?: undefined;
+    };
+    progress: {
+        max?: number | string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+    };
+    script: {
+        crossOrigin?: HTMLCrossOriginAttribute;
+        referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
+    };
+    select: {
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        'bind:value'?: Signal<string | undefined>;
+    };
+    source: {
+        /** Allowed if the parent is a `picture` element */
+        height?: Size | undefined;
+        /** Allowed if the parent is a `picture` element */
+        width?: Size | undefined;
+        children?: undefined;
+    };
+    style: {
+        scoped?: boolean | undefined;
+        children?: string;
+    };
+    table: {
+        cellPadding?: number | string | undefined;
+        cellSpacing?: number | string | undefined;
+        width?: Size | undefined;
+    };
+    td: TableCellSpecialAttrs;
+    th: TableCellSpecialAttrs;
+    title: {
+        children?: string;
+    };
+    textarea: {
+        enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
+        form?: string | undefined;
+        value?: string | ReadonlyArray<string> | number | undefined;
+        'bind:value'?: Signal<string | undefined>;
+        children?: undefined;
+    };
+    track: {
+        children?: undefined;
+    };
+    video: MediaSpecialAttrs & {
+        height?: Numberish | undefined;
+        width?: Numberish | undefined;
+        disablePictureInPicture?: boolean | undefined;
+        disableRemotePlayback?: boolean | undefined;
+    };
+} & {
+    [key: string]: {};
+};
 
 /** @public */
 export declare const SSRComment: FunctionComponent<{
@@ -2487,12 +2521,8 @@ declare interface StyleAppend {
     content: string | null;
 }
 
-declare type StyleAttrs = Augmented<HTMLStyleElement, {
-    scoped?: boolean | undefined;
-}>;
-
 /** @public */
-export declare interface StyleHTMLAttributes<T extends Element> extends HTMLAttributes<T, string>, StyleAttrs {
+export declare interface StyleHTMLAttributes<T extends Element> extends Attrs<'style', T> {
 }
 
 declare type Subscriber = SubscriberA | SubscriberB | SubscriberC;
@@ -2532,12 +2562,13 @@ declare type Subscriptions = A | SubscriberSignal;
 /**
  * The TS types don't include the SVG attributes so we have to define them ourselves
  *
+ * NOTE: These props are probably not complete
+ *
  * @public
  */
-export declare interface SVGAttributes<T extends Element> extends AriaAttributes, DOMAttributes<T> {
-    class?: ClassList | undefined;
+export declare interface SVGAttributes<T extends Element = Element> extends AriaAttributes {
     color?: string | undefined;
-    height?: Numberish | undefined;
+    height?: Size | undefined;
     id?: string | undefined;
     lang?: string | undefined;
     max?: number | string | undefined;
@@ -2548,7 +2579,7 @@ export declare interface SVGAttributes<T extends Element> extends AriaAttributes
     style?: CSSProperties | string | undefined;
     target?: string | undefined;
     type?: string | undefined;
-    width?: Numberish | undefined;
+    width?: Size | undefined;
     role?: string | undefined;
     tabindex?: number | undefined;
     crossOrigin?: HTMLCrossOriginAttribute;
@@ -2776,17 +2807,18 @@ export declare interface SVGAttributes<T extends Element> extends AriaAttributes
     x?: number | string | undefined;
     'x-channel-selector'?: string | undefined;
     'x-height'?: number | string | undefined;
-    xlinkActuate?: string | undefined;
-    xlinkArcrole?: string | undefined;
-    xlinkHref?: string | undefined;
-    xlinkRole?: string | undefined;
-    xlinkShow?: string | undefined;
-    xlinkTitle?: string | undefined;
-    xlinkType?: string | undefined;
-    xmlBase?: string | undefined;
-    xmlLang?: string | undefined;
+    'xlink:actuate'?: string | undefined;
+    'xlink:arcrole'?: string | undefined;
+    'xlink:href'?: string | undefined;
+    'xlink:role'?: string | undefined;
+    'xlink:show'?: string | undefined;
+    'xlink:title'?: string | undefined;
+    'xlink:type'?: string | undefined;
+    'xml:base'?: string | undefined;
+    'xml:lang'?: string | undefined;
+    'xml:space'?: string | undefined;
     xmlns?: string | undefined;
-    xmlSpace?: string | undefined;
+    'xmlns:xlink'?: string | undefined;
     y1?: number | string | undefined;
     y2?: number | string | undefined;
     y?: number | string | undefined;
@@ -2796,24 +2828,18 @@ export declare interface SVGAttributes<T extends Element> extends AriaAttributes
 }
 
 /** @public */
-export declare interface SVGProps<T extends Element> extends SVGAttributes<T> {
+export declare interface SVGProps<T extends Element> extends SVGAttributes, QwikAttributes<T> {
 }
 
-declare type TableAttrs = Augmented<HTMLTableElement, {
-    cellPadding?: number | string | undefined;
-    cellSpacing?: number | string | undefined;
-    width?: Size | undefined;
-}>;
-
-declare type TableCellAttrs = Augmented<HTMLTableCellElement, {
+declare type TableCellSpecialAttrs = {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     height?: Size | undefined;
     width?: Size | undefined;
     valign?: 'top' | 'middle' | 'bottom' | 'baseline' | undefined;
-}>;
+};
 
 /** @public */
-export declare interface TableHTMLAttributes<T extends Element> extends HTMLAttributes<T>, TableAttrs {
+export declare interface TableHTMLAttributes<T extends Element> extends Attrs<'table', T> {
 }
 
 /** @public */
@@ -2830,34 +2856,24 @@ declare const TaskEvent = "qTask";
 export declare type TaskFn = (ctx: TaskCtx) => ValueOrPromise<void | (() => void)>;
 
 /** @public */
-export declare interface TdHTMLAttributes<T extends Element> extends HTMLAttributes<T>, TableCellAttrs {
-}
-
-declare type TextareaAttrs = Augmented<HTMLTextAreaElement, {
-    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
-    form?: string | undefined;
-    value?: string | ReadonlyArray<string> | number | undefined;
-    'bind:value'?: Signal<string | undefined>;
-}>;
-
-/** @public */
-export declare interface TextareaHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, TextareaAttrs {
+export declare interface TdHTMLAttributes<T extends Element> extends Attrs<'td', T> {
 }
 
 /** @public */
-export declare interface ThHTMLAttributes<T extends Element> extends TdHTMLAttributes<T> {
+export declare interface TextareaHTMLAttributes<T extends Element> extends Attrs<'textarea', T> {
 }
 
 /** @public */
-export declare interface TimeHTMLAttributes<T extends Element> extends HTMLAttributes<T> {
-    dateTime?: string | undefined;
+export declare interface ThHTMLAttributes<T extends Element> extends Attrs<'tr', T> {
 }
 
 /** @public */
-export declare interface TitleHTMLAttributes<T extends Element> extends HTMLAttributes<T, string> {
+export declare interface TimeHTMLAttributes<T extends Element> extends Attrs<'time', T> {
 }
 
-declare type TrackAttrs = Augmented<HTMLTrackElement, {}>;
+/** @public */
+export declare interface TitleHTMLAttributes<T extends Element> extends Attrs<'title', T> {
+}
 
 /**
  * Used to signal to Qwik which state should be watched for changes.
@@ -2874,16 +2890,27 @@ declare type TrackAttrs = Augmented<HTMLTrackElement, {}>;
  * ```tsx
  * const Cmp = component$(() => {
  *   const store = useStore({ count: 0, doubleCount: 0 });
+ *   const signal = useSignal(0);
  *   useTask$(({ track }) => {
+ *     // Any signals or stores accessed inside the task will be tracked
  *     const count = track(() => store.count);
- *     store.doubleCount = 2 * count;
+ *     // You can also pass a signal to track() directly
+ *     const signalCount = track(signal);
+ *     store.doubleCount = count + signalCount;
  *   });
  *   return (
  *     <div>
  *       <span>
  *         {store.count} / {store.doubleCount}
  *       </span>
- *       <button onClick$={() => store.count++}>+</button>
+ *       <button
+ *         onClick$={() => {
+ *           store.count++;
+ *           signal.value++;
+ *         }}
+ *       >
+ *         +
+ *       </button>
  *     </div>
  *   );
  * });
@@ -2911,20 +2938,23 @@ export declare interface Tracker {
      * Used to track the whole object. If any property of the passed store changes, the task will be
      * scheduled to run. Also accepts signals.
      *
+     * Note that the change tracking is not deep. If you want to track changes to nested properties,
+     * you need to use `track` on each of them.
+     *
      * ```tsx
-     * track(store);
-     * track(signal);
+     * track(store); // returns store
+     * track(signal); // returns signal.value
      * ```
      */
-    <T extends object>(obj: T): T;
+    <T extends object>(obj: T): T extends Signal<infer U> ? U : T;
 }
 
 /** @public */
-export declare interface TrackHTMLAttributes<T extends Element> extends HTMLAttributes<T, undefined>, TrackAttrs {
+export declare interface TrackHTMLAttributes<T extends Element> extends Attrs<'track', T> {
 }
 
 /** @public */
-declare type TransformProp<T> = NonNullable<T> extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => ValueOrPromise<Awaited<RET>> : T;
+declare type TransformProp<T, K> = NonNullable<T> extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => ValueOrPromise<Awaited<RET>> : T extends QRLEventHandlerMulti<infer EV, infer EL> ? EventHandler<EV, EL> | T : K extends `${string}$` ? T extends QRL<infer U> ? T | U : T : T;
 
 /**
  * Transform the component PROPS.
@@ -2932,7 +2962,7 @@ declare type TransformProp<T> = NonNullable<T> extends (...args: infer ARGS) => 
  * @public
  */
 declare type TransformProps<PROPS extends Record<any, any>> = {
-    [K in keyof PROPS]: TransformProp<PROPS[K]>;
+    [K in keyof PROPS]: TransformProp<PROPS[K], K>;
 };
 
 /**
@@ -2941,6 +2971,8 @@ declare type TransformProps<PROPS extends Record<any, any>> = {
  * @public
  */
 export declare const untrack: <T>(fn: () => T) => T;
+
+declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
 /** @public */
 export declare const useComputed$: Computed;
@@ -3081,7 +3113,7 @@ export declare const useLexicalScope: <VARS extends any[]>() => VARS;
  * @public
  * @see `useOn`, `useOnWindow`, `useOnDocument`.
  */
-export declare const useOn: <T extends PascalCaseEventLiteralType>(event: T | T[], eventQrl: EventQRL<T>) => void;
+export declare const useOn: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>) => void;
 
 /**
  * Register a listener on `document`.
@@ -3108,7 +3140,7 @@ export declare const useOn: <T extends PascalCaseEventLiteralType>(event: T | T[
  * });
  * ```
  */
-export declare const useOnDocument: <T extends PascalCaseEventLiteralType>(event: T | T[], eventQrl: EventQRL<T>) => void;
+export declare const useOnDocument: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>) => void;
 
 /**
  * Register a listener on `window`.
@@ -3136,7 +3168,7 @@ export declare const useOnDocument: <T extends PascalCaseEventLiteralType>(event
  * });
  * ```
  */
-export declare const useOnWindow: <T extends PascalCaseEventLiteralType>(event: T | T[], eventQrl: EventQRL<T>) => void;
+export declare const useOnWindow: <T extends KnownEventNames>(event: T | T[], eventQrl: EventQRL<T>) => void;
 
 /**
  * This method works like an async memoized function that runs whenever some tracked value changes
@@ -3158,24 +3190,22 @@ export declare const useOnWindow: <T extends PascalCaseEventLiteralType>(event: 
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -3213,24 +3243,22 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  *
  * ```tsx
  * const Cmp = component$(() => {
- *   const store = useStore({
- *     city: '',
- *   });
+ *   const cityS = useSignal('');
  *
- *   const weatherResource = useResource$<any>(async ({ track, cleanup }) => {
- *     const cityName = track(() => store.city);
+ *   const weatherResource = useResource$(async ({ track, cleanup }) => {
+ *     const cityName = track(cityS);
  *     const abortController = new AbortController();
  *     cleanup(() => abortController.abort('cleanup'));
  *     const res = await fetch(`http://weatherdata.com?city=${cityName}`, {
  *       signal: abortController.signal,
  *     });
- *     const data = res.json();
- *     return data;
+ *     const data = await res.json();
+ *     return data as { temp: number };
  *   });
  *
  *   return (
  *     <div>
- *       <input name="city" onInput$={(ev: any) => (store.city = ev.target.value)} />
+ *       <input name="city" bind:value={cityS} />
  *       <Resource
  *         value={weatherResource}
  *         onResolved={(weather) => {
@@ -3436,9 +3464,9 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3504,9 +3532,9 @@ export declare interface UseTaskOptions {
  *
  * ### Example
  *
- * The `useTask` function is used to observe the `state.count` property. Any changes to the
- * `state.count` cause the `taskFn` to execute which in turn updates the `state.doubleCount` to
- * the double of `state.count`.
+ * The `useTask` function is used to observe the `store.count` property. Any changes to the
+ * `store.count` cause the `taskFn` to execute which in turn updates the `store.doubleCount` to
+ * the double of `store.count`.
  *
  * ```tsx
  * const Cmp = component$(() => {
@@ -3615,16 +3643,8 @@ export declare const _verifySerializable: <T>(value: T, preMessage?: string) => 
  */
 export declare const version: string;
 
-declare type VideoAttrs = Augmented<HTMLVideoElement, {
-    crossOrigin?: HTMLCrossOriginAttribute;
-    height?: Numberish | undefined;
-    width?: Numberish | undefined;
-    disablePictureInPicture?: boolean | undefined;
-    disableRemotePlayback?: boolean | undefined;
-}>;
-
 /** @public */
-export declare interface VideoHTMLAttributes<T extends Element> extends HTMLAttributes<T>, VideoAttrs {
+export declare interface VideoHTMLAttributes<T extends Element> extends Attrs<'video', T> {
 }
 
 declare interface VirtualElement {
