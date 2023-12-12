@@ -1615,30 +1615,37 @@ globalThis.qwikOptimizer = function(module) {
   }
   async function createLinter(sys, rootDir, tsconfigFileNames) {
     const module2 = await sys.dynamicImport("eslint");
-    const options = {
-      cache: true,
-      useEslintrc: false,
-      overrideConfig: {
-        root: true,
-        env: {
-          browser: true,
-          es2021: true,
-          node: true
-        },
-        extends: [ "plugin:qwik/recommended" ],
-        parser: "@typescript-eslint/parser",
-        parserOptions: {
-          tsconfigRootDir: rootDir,
-          project: tsconfigFileNames,
-          ecmaVersion: 2021,
-          sourceType: "module",
-          ecmaFeatures: {
-            jsx: true
+    let eslint = new module2.ESLint({
+      cache: true
+    });
+    const eslintConfig = await eslint.calculateConfigForFile("no-real-file.tsx");
+    const invalidEslintConfig = null === eslintConfig.parser;
+    if (invalidEslintConfig) {
+      const options = {
+        cache: true,
+        useEslintrc: false,
+        overrideConfig: {
+          root: true,
+          env: {
+            browser: true,
+            es2021: true,
+            node: true
+          },
+          extends: [ "plugin:qwik/recommended" ],
+          parser: "@typescript-eslint/parser",
+          parserOptions: {
+            tsconfigRootDir: rootDir,
+            project: tsconfigFileNames,
+            ecmaVersion: 2021,
+            sourceType: "module",
+            ecmaFeatures: {
+              jsx: true
+            }
           }
         }
-      }
-    };
-    const eslint = new module2.ESLint(options);
+      };
+      eslint = new module2.ESLint(options);
+    }
     return {
       async lint(ctx, code, id) {
         try {
