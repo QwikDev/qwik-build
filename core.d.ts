@@ -604,7 +604,7 @@ declare interface ContainerState {
     $styleMoved$: boolean;
     readonly $styleIds$: Set<string>;
     readonly $events$: Set<string>;
-    readonly $inlineFns$: Map<Function, number>;
+    readonly $inlineFns$: Map<string, number>;
 }
 
 /**

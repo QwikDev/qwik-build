@@ -4156,11 +4156,11 @@ const collectProps = (elCtx, collector) => {
 
 const createCollector = containerState => {
     const inlinedFunctions = [];
-    return containerState.$inlineFns$.forEach(((id, fn) => {
+    return containerState.$inlineFns$.forEach(((id, fnStr) => {
         for (;inlinedFunctions.length <= id; ) {
             inlinedFunctions.push("");
         }
-        inlinedFunctions[id] = fn.toString();
+        inlinedFunctions[id] = fnStr;
     })), {
         $containerState$: containerState,
         $seen$: new Set,
@@ -4477,10 +4477,10 @@ const serializeQRL = (qrl, opts = {}) => {
     }
     if (chunk.startsWith("./") && (chunk = chunk.slice(2)), isSyncQrl(qrl)) {
         if (opts.$containerState$) {
-            const fn = qrl.resolved;
             const containerState = opts.$containerState$;
-            let id = containerState.$inlineFns$.get(fn);
-            void 0 === id && (id = containerState.$inlineFns$.size, containerState.$inlineFns$.set(fn, id)), 
+            const fnStrKey = qrl.resolved.toString();
+            let id = containerState.$inlineFns$.get(fnStrKey);
+            void 0 === id && (id = containerState.$inlineFns$.size, containerState.$inlineFns$.set(fnStrKey, id)), 
             symbol = String(id);
         } else {
             throwErrorAndStop("Sync QRL without containerState");

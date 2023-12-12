@@ -6651,11 +6651,11 @@ const collectProps = (elCtx, collector) => {
 };
 const createCollector = (containerState) => {
     const inlinedFunctions = [];
-    containerState.$inlineFns$.forEach((id, fn) => {
+    containerState.$inlineFns$.forEach((id, fnStr) => {
         while (inlinedFunctions.length <= id) {
             inlinedFunctions.push('');
         }
-        inlinedFunctions[id] = fn.toString();
+        inlinedFunctions[id] = fnStr;
     });
     return {
         $containerState$: containerState,
@@ -7085,10 +7085,11 @@ const serializeQRL = (qrl, opts = {}) => {
         if (opts.$containerState$) {
             const fn = qrl.resolved;
             const containerState = opts.$containerState$;
-            let id = containerState.$inlineFns$.get(fn);
+            const fnStrKey = fn.toString();
+            let id = containerState.$inlineFns$.get(fnStrKey);
             if (id === undefined) {
                 id = containerState.$inlineFns$.size;
-                containerState.$inlineFns$.set(fn, id);
+                containerState.$inlineFns$.set(fnStrKey, id);
             }
             symbol = String(id);
         }
