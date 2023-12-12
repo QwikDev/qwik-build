@@ -1360,40 +1360,40 @@ export declare interface MetaHTMLAttributes<T extends Element> extends Attrs<'me
 export declare interface MeterHTMLAttributes<T extends Element> extends Attrs<'meter', T> {
 }
 
-/** @public @deprecated Use `AnimationEvent` */
+/** @public @deprecated Use `AnimationEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeAnimationEvent = AnimationEvent;
 
-/** @public @deprecated Use `ClipboardEvent` */
+/** @public @deprecated Use `ClipboardEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeClipboardEvent = ClipboardEvent;
 
-/** @public @deprecated Use `CompositionEvent` */
+/** @public @deprecated Use `CompositionEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeCompositionEvent = CompositionEvent;
 
-/** @public @deprecated Use `DragEvent` */
+/** @public @deprecated Use `DragEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeDragEvent = DragEvent;
 
-/** @public @deprecated Use `FocusEvent` */
+/** @public @deprecated Use `FocusEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeFocusEvent = FocusEvent;
 
-/** @public @deprecated Use `KeyboardEvent` */
+/** @public @deprecated Use `KeyboardEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeKeyboardEvent = KeyboardEvent;
 
-/** @public @deprecated Use `MouseEvent` */
+/** @public @deprecated Use `MouseEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeMouseEvent = MouseEvent;
 
-/** @public @deprecated Use `PointerEvent` */
+/** @public @deprecated Use `PointerEvent` and use the second argument to the handler function for the current event target */
 export declare type NativePointerEvent = PointerEvent;
 
-/** @public @deprecated Use `TouchEvent` */
+/** @public @deprecated Use `TouchEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeTouchEvent = TouchEvent;
 
-/** @public @deprecated Use `TransitionEvent` */
+/** @public @deprecated Use `TransitionEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeTransitionEvent = TransitionEvent;
 
-/** @public @deprecated Use `UIEvent` */
+/** @public @deprecated Use `UIEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeUIEvent = UIEvent;
 
-/** @public @deprecated Use `WheelEvent` */
+/** @public @deprecated Use `WheelEvent` and use the second argument to the handler function for the current event target */
 export declare type NativeWheelEvent = WheelEvent;
 
 /** @internal */
@@ -1799,7 +1799,7 @@ export declare const _qrlSync: <TYPE extends Function>(fn: TYPE, serializedFn?: 
 export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q', T> {
 }
 
-/** @public @deprecated Use `AnimationEvent` */
+/** @public @deprecated Use `AnimationEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikAnimationEvent<T = Element> = NativeAnimationEvent;
 
 /** The Qwik DOM attributes without plain handlers, for use as function parameters */
@@ -1815,13 +1815,13 @@ declare interface QwikAttributesBase extends PreventDefault {
     'q:slot'?: string;
 }
 
-/** @public @deprecated Use `ChangeEvent` */
+/** @public @deprecated Use `Event` and use the second argument to the handler function for the current event target. Also note that in Qwik, onInput$ with the InputEvent is the event that behaves like onChange in React. */
 export declare type QwikChangeEvent<T = Element> = Event;
 
-/** @public @deprecated Use `ClipboardEvent` */
+/** @public @deprecated Use `ClipboardEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikClipboardEvent<T = Element> = NativeClipboardEvent;
 
-/** @public @deprecated Use `CompositionEvent` */
+/** @public @deprecated Use `CompositionEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikCompositionEvent<T = Element> = NativeCompositionEvent;
 
 declare type QwikCustomEvents<EL> = {
@@ -1837,7 +1837,7 @@ declare type QwikCustomEventsPlain<EL> = {
 export declare interface QwikDOMAttributes extends DOMAttributes<Element> {
 }
 
-/** @public @deprecated Use `DragEvent` */
+/** @public @deprecated Use `DragEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikDragEvent<T = Element> = NativeDragEvent;
 
 declare type QwikElement = Element | VirtualElement;
@@ -1845,7 +1845,7 @@ declare type QwikElement = Element | VirtualElement;
 /** @public */
 declare type QwikEvents<EL, Plain extends boolean = true> = Plain extends true ? QwikKnownEventsPlain<EL> & QwikCustomEventsPlain<EL> : QwikKnownEvents<EL> & QwikCustomEvents<EL>;
 
-/** @public @deprecated Use `FocusEvent` */
+/** @public @deprecated Use `FocusEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikFocusEvent<T = Element> = NativeFocusEvent;
 
 /** The DOM props without plain handlers, for use inside functions @public */
@@ -1896,7 +1896,7 @@ declare interface QwikIntrinsicAttributes {
 export declare interface QwikIntrinsicElements extends QwikHTMLElements, QwikSVGElements {
 }
 
-/** @public @deprecated Use `InvalidEvent` */
+/** @public @deprecated Use `Event` and use the second argument to the handler function for the current event target */
 export declare type QwikInvalidEvent<T = Element> = Event;
 
 /** @public */
@@ -1913,7 +1913,7 @@ export declare namespace QwikJSX {
     }
 }
 
-/** @public @deprecated Use `KeyboardEvent` */
+/** @public @deprecated Use `KeyboardEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikKeyboardEvent<T = Element> = NativeKeyboardEvent;
 
 declare type QwikKnownEvents<EL> = {
@@ -1924,14 +1924,14 @@ declare type QwikKnownEventsPlain<EL> = {
     [K in keyof AllPascalEventMaps as `${'document:' | 'window:' | ''}on${K}$`]?: QRLEventHandlerMulti<AllPascalEventMaps[K], EL> | EventHandler<AllPascalEventMaps[K], EL>;
 };
 
-/** @public @deprecated Use `MouseEvent` */
+/** @public @deprecated Use `MouseEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikMouseEvent<T = Element, E = NativeMouseEvent> = E;
 
-/** @public @deprecated Use `PointerEvent` */
+/** @public @deprecated Use `PointerEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikPointerEvent<T = Element> = NativePointerEvent;
 
-/** @public @deprecated Use `SubmitEvent` */
-export declare type QwikSubmitEvent<T = Element> = Event;
+/** @public @deprecated Use `SubmitEvent` and use the second argument to the handler function for the current event target */
+export declare type QwikSubmitEvent<T = Element> = SubmitEvent;
 
 /** The SVG props without plain handlers, for use inside functions @public */
 export declare type QwikSVGElements = {
@@ -1945,19 +1945,19 @@ export declare type QwikSymbolEvent = CustomEvent<{
     reqTime: number;
 }>;
 
-/** @public @deprecated Use `TouchEvent` */
+/** @public @deprecated Use `TouchEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikTouchEvent<T = Element> = NativeTouchEvent;
 
-/** @public @deprecated Use `TransitionEvent` */
+/** @public @deprecated Use `TransitionEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikTransitionEvent<T = Element> = NativeTransitionEvent;
 
-/** @public @deprecated Use `UIEvent` */
+/** @public @deprecated Use `UIEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikUIEvent<T = Element> = NativeUIEvent;
 
 /** Emitted by qwik-loader when an element becomes visible. Used by `useVisibleTask$` @public */
 export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 
-/** @public @deprecated Use `WheelEvent` */
+/** @public @deprecated Use `WheelEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikWheelEvent<T = Element> = NativeWheelEvent;
 
 /** @public */
