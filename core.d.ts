@@ -1537,6 +1537,7 @@ export declare interface ProgressHTMLAttributes<T extends Element> extends Attrs
 
 /** @public */
 export declare type PropFnInterface<ARGS extends any[], RET> = {
+    __qwik_serializable__?: any;
     (...args: ARGS): Promise<RET>;
 };
 
@@ -1721,7 +1722,7 @@ declare interface QContext {
  * @see `$`
  */
 export declare type QRL<TYPE = unknown> = {
-    __qwik_serializable__: any;
+    __qwik_serializable__?: any;
     __brand__QRL__: TYPE;
     /** Resolve the QRL and return the actual value. */
     resolve(): Promise<TYPE>;
