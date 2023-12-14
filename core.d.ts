@@ -382,16 +382,6 @@ key: string | undefined
 export declare interface BaseHTMLAttributes<T extends Element> extends Attrs<'base', T> {
 }
 
-declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
-    /**
-     * Resolve the QRL of closure and invoke it.
-     *
-     * @param args - Closure arguments.
-     * @returns A promise of the return value of the closure.
-     */
-    bivarianceHack(...args: ARGS): Promise<RETURN>;
-}['bivarianceHack'];
-
 /** @public */
 export declare interface BlockquoteHTMLAttributes<T extends Element> extends Attrs<'blockquote', T> {
 }
@@ -1724,6 +1714,13 @@ declare interface QContext {
 export declare type QRL<TYPE = unknown> = {
     __qwik_serializable__?: any;
     __brand__QRL__: TYPE;
+    /**
+     * Resolve the QRL of closure and invoke it.
+     *
+     * @param args - Closure arguments.
+     * @returns A promise of the return value of the closure.
+     */
+    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
     /** Resolve the QRL and return the actual value. */
     resolve(): Promise<TYPE>;
     /** The resolved value, once `resolve()` returns. */
@@ -1732,7 +1729,7 @@ export declare type QRL<TYPE = unknown> = {
     getSymbol(): string;
     getHash(): string;
     dev: QRLDev | null;
-} & BivariantQrlFn<QrlArgs<TYPE>, QrlReturn<TYPE>>;
+};
 
 /**
  * Used by Qwik Optimizer to point to lazy-loaded resources.
@@ -1747,8 +1744,6 @@ export declare type QRL<TYPE = unknown> = {
  * @see `QRL`, `$(...)`
  */
 export declare const qrl: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, lexicalScopeCapture?: any[], stackOffset?: number) => QRL<T>;
-
-declare type QrlArgs<T> = T extends (...args: infer ARGS) => any ? ARGS : unknown[];
 
 /** @public */
 declare interface QRLDev {
@@ -1781,8 +1776,6 @@ declare type QRLInternalMethods<TYPE> = {
     $setContainer$(containerEl: Element | undefined): Element | undefined;
     $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
 };
-
-declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
 
 /** @public */
 export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q', T> {
