@@ -275,6 +275,16 @@ declare type AriaRole = 'alert' | 'alertdialog' | 'application' | 'article' | 'b
  */
 declare type Augmented<E, A = {}> = Prettify<Filtered<E, A> & A>;
 
+declare type BivariantQrlFn<ARGS extends any[], RETURN> = {
+    /**
+     * Resolve the QRL of closure and invoke it.
+     *
+     * @param args - Closure arguments.
+     * @returns A promise of the return value of the closure.
+     */
+    bivarianceHack(...args: ARGS): Promise<RETURN>;
+}['bivarianceHack'];
+
 /** @public */
 declare type Booleanish = boolean | `${boolean}`;
 
@@ -670,13 +680,6 @@ declare type PreventDefault = {
 declare type QRL<TYPE = unknown> = {
     __qwik_serializable__?: any;
     __brand__QRL__: TYPE;
-    /**
-     * Resolve the QRL of closure and invoke it.
-     *
-     * @param args - Closure arguments.
-     * @returns A promise of the return value of the closure.
-     */
-    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): Promise<TYPE extends (...args: any[]) => infer RETURN ? Awaited<RETURN> : never>;
     /** Resolve the QRL and return the actual value. */
     resolve(): Promise<TYPE>;
     /** The resolved value, once `resolve()` returns. */
@@ -685,7 +688,9 @@ declare type QRL<TYPE = unknown> = {
     getSymbol(): string;
     getHash(): string;
     dev: QRLDev | null;
-};
+} & BivariantQrlFn<QrlArgs<TYPE>, QrlReturn<TYPE>>;
+
+declare type QrlArgs<T> = T extends (...args: infer ARGS) => any ? ARGS : unknown[];
 
 /** @public */
 declare interface QRLDev {
@@ -695,6 +700,8 @@ declare interface QRLDev {
 }
 
 declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
+
+declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
 
 declare interface QwikAttributesBase extends PreventDefault {
     key?: string | number | null | undefined;
