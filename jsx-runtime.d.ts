@@ -678,6 +678,7 @@ declare type PreventDefault = {
  * @see `$`
  */
 declare type QRL<TYPE = unknown> = {
+    __qwik_serializable__?: any;
     __brand__QRL__: TYPE;
     /** Resolve the QRL and return the actual value. */
     resolve(): Promise<TYPE>;
