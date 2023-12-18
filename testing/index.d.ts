@@ -6,7 +6,9 @@ import { RenderResult } from '..';
  *
  * @public
  */
-export declare const createDOM: () => Promise<{
+export declare const createDOM: ({ html }?: {
+    html?: string | undefined;
+}) => Promise<{
     render: (jsxElement: JSXNode) => Promise<RenderResult>;
     screen: HTMLElement;
     userEvent: (queryOrElement: string | Element | keyof HTMLElementTagNameMap | null, eventNameCamel: string | keyof WindowEventMap, eventPayload?: any) => Promise<void>;

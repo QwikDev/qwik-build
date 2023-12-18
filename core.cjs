@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.3.0
+ * @builder.io/qwik 1.3.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -173,6 +173,69 @@
             }, 0);
         return err;
     };
+
+    const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik: ';
+    function assertDefined(value, text, ...parts) {
+        if (qDev) {
+            if (value != null) {
+                return;
+            }
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertEqual(value1, value2, text, ...parts) {
+        if (qDev) {
+            if (value1 === value2) {
+                return;
+            }
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertFail(text, ...parts) {
+        if (qDev) {
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertTrue(value1, text, ...parts) {
+        if (qDev) {
+            if (value1 === true) {
+                return;
+            }
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertNumber(value1, text, ...parts) {
+        if (qDev) {
+            if (typeof value1 === 'number') {
+                return;
+            }
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertString(value1, text, ...parts) {
+        if (qDev) {
+            if (typeof value1 === 'string') {
+                return;
+            }
+            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+        }
+    }
+    function assertQwikElement(el) {
+        if (qDev) {
+            if (!isQwikElement(el)) {
+                console.error('Not a Qwik Element, got', el);
+                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not a Qwik Element');
+            }
+        }
+    }
+    function assertElement(el) {
+        if (qDev) {
+            if (!isElement$1(el)) {
+                console.error('Not a Element, got', el);
+                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not an Element');
+            }
+        }
+    }
 
     const QError_stringifyClassOrStyle = 0;
     const QError_verifySerializable = 3; // 'Only primitive and object literals can be serialized', value,
@@ -348,69 +411,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return false;
     };
 
-    const ASSERT_DISCLAIMER = 'Internal assert, this is likely caused by a bug in Qwik: ';
-    function assertDefined(value, text, ...parts) {
-        if (qDev) {
-            if (value != null) {
-                return;
-            }
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertEqual(value1, value2, text, ...parts) {
-        if (qDev) {
-            if (value1 === value2) {
-                return;
-            }
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertFail(text, ...parts) {
-        if (qDev) {
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertTrue(value1, text, ...parts) {
-        if (qDev) {
-            if (value1 === true) {
-                return;
-            }
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertNumber(value1, text, ...parts) {
-        if (qDev) {
-            if (typeof value1 === 'number') {
-                return;
-            }
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertString(value1, text, ...parts) {
-        if (qDev) {
-            if (typeof value1 === 'string') {
-                return;
-            }
-            throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-        }
-    }
-    function assertQwikElement(el) {
-        if (qDev) {
-            if (!isQwikElement(el)) {
-                console.error('Not a Qwik Element, got', el);
-                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not a Qwik Element');
-            }
-        }
-    }
-    function assertElement(el) {
-        if (qDev) {
-            if (!isElement$1(el)) {
-                console.error('Not a Element, got', el);
-                throwErrorAndStop(ASSERT_DISCLAIMER + 'Not an Element');
-            }
-        }
-    }
-
     /** @private */
     const isSerializableObject = (v) => {
         const proto = Object.getPrototypeOf(v);
@@ -554,11 +554,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     const CONTAINER_STATE = Symbol('ContainerState');
     /** @internal */
     const _getContainerState = (containerEl) => {
-        let set = containerEl[CONTAINER_STATE];
-        if (!set) {
-            containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
+        let state = containerEl[CONTAINER_STATE];
+        if (!state) {
+            containerEl[CONTAINER_STATE] = state = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
         }
-        return set;
+        return state;
     };
     const createContainerState = (containerEl, base) => {
         const containerState = {
@@ -579,6 +579,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             $hostsRendering$: undefined,
             $pauseCtx$: undefined,
             $subsManager$: null,
+            $inlineFns$: new Map(),
         };
         seal(containerState);
         containerState.$subsManager$ = createSubscriptionManager(containerState);
@@ -1197,7 +1198,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
      *
      * @public
      */
-    const version = "1.3.0";
+    const version = "1.3.1";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -1491,7 +1492,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     const groups = groupListeners(listeners);
                     for (const listener of groups) {
                         const eventName = normalizeInvisibleEvents(listener[0]);
-                        attributes[eventName] = serializeQRLs(listener[1], placeholderCtx);
+                        attributes[eventName] = serializeQRLs(listener[1], rCtx.$static$.$containerState$, placeholderCtx);
                         registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
                     }
                     renderNodeElementSync('script', attributes, stream);
@@ -1728,7 +1729,12 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                 const isInvisible = (flags & IS_INVISIBLE) !== 0;
                 for (const listener of groups) {
                     const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
-                    openingElement += ' ' + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"';
+                    openingElement +=
+                        ' ' +
+                            eventName +
+                            '="' +
+                            serializeQRLs(listener[1], rCtx.$static$.$containerState$, elCtx) +
+                            '"';
                     registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
                 }
             }
@@ -2690,7 +2696,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 return;
             }
         }
-        const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
+        const inlinedFunctions = getQwikInlinedFuncs(containerEl);
         const containerState = _getContainerState(containerEl);
         // Collect all elements
         const elements = new Map();
@@ -2873,9 +2879,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const unescapeText = (str) => {
         return str.replace(/\\x3C(\/?script)/g, '<$1');
     };
-    const getQwikInlinedFuncs = (parentElm) => {
-        const elm = getQwikJSON(parentElm, 'q:func');
-        return elm?.qFuncs ?? EMPTY_ARRAY;
+    const getQwikInlinedFuncs = (containerEl) => {
+        return containerEl.qFuncs ?? EMPTY_ARRAY;
     };
     const getQwikJSON = (parentElm, attribute) => {
         let child = parentElm.lastElementChild;
@@ -6166,7 +6171,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
 
     /** @internal */
     const _serializeData = async (data, pureQRL) => {
-        const containerState = {};
+        const containerState = createContainerState(null, null);
         const collector = createCollector(containerState);
         collectValue(data, collector, false);
         // Wait for remaining promises
@@ -6255,7 +6260,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (isElement$1(elm) && listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 for (const listener of groups) {
-                    elm.setAttribute(listener[0], serializeQRLs(listener[1], elCtx));
+                    elm.setAttribute(listener[0], serializeQRLs(listener[1], containerState, elCtx));
                 }
             }
         }
@@ -6649,13 +6654,20 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
     };
     const createCollector = (containerState) => {
+        const inlinedFunctions = [];
+        containerState.$inlineFns$.forEach((id, fnStr) => {
+            while (inlinedFunctions.length <= id) {
+                inlinedFunctions.push('');
+            }
+            inlinedFunctions[id] = fnStr;
+        });
         return {
             $containerState$: containerState,
             $seen$: new Set(),
             $objSet$: new Set(),
             $prefetch$: 0,
             $noSerialize$: [],
-            $inlinedFunctions$: [],
+            $inlinedFunctions$: inlinedFunctions,
             $resources$: [],
             $elements$: [],
             $qrls$: [],
@@ -7063,15 +7075,31 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 }
             }
         }
-        if (qRuntimeQrl && !chunk) {
+        if (qRuntimeQrl && chunk == null) {
             chunk = '/runtimeQRL';
             symbol = '_';
         }
-        if (!chunk) {
+        if (chunk == null) {
             throw qError(QError_qrlMissingChunk, qrl.$symbol$);
         }
         if (chunk.startsWith('./')) {
             chunk = chunk.slice(2);
+        }
+        if (isSyncQrl(qrl)) {
+            if (opts.$containerState$) {
+                const fn = qrl.resolved;
+                const containerState = opts.$containerState$;
+                const fnStrKey = fn.toString();
+                let id = containerState.$inlineFns$.get(fnStrKey);
+                if (id === undefined) {
+                    id = containerState.$inlineFns$.size;
+                    containerState.$inlineFns$.set(fnStrKey, id);
+                }
+                symbol = String(id);
+            }
+            else {
+                throwErrorAndStop('Sync QRL without containerState');
+            }
         }
         let output = `${chunk}#${symbol}`;
         const capture = qrl.$capture$;
@@ -7089,9 +7117,10 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         return output;
     };
-    const serializeQRLs = (existingQRLs, elCtx) => {
+    const serializeQRLs = (existingQRLs, containerState, elCtx) => {
         assertElement(elCtx.$element$);
         const opts = {
+            $containerState$: containerState,
             $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj),
         };
         return mapJoin(existingQRLs, (qrl) => serializeQRL(qrl, opts), '\n');
@@ -7640,8 +7669,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             const serialized = serializeDerivedSignalFunc(signal);
             let index = collector.$inlinedFunctions$.indexOf(serialized);
             if (index < 0) {
+                index = collector.$inlinedFunctions$.length;
                 collector.$inlinedFunctions$.push(serialized);
-                index = collector.$inlinedFunctions$.length - 1;
             }
             return mapJoin(signal.$args$, getObjID, ' ') + ' @' + intToStr(index);
         },
@@ -8350,6 +8379,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
     const isQrl = (value) => {
         return typeof value === 'function' && typeof value.getSymbol === 'function';
     };
+    // Make sure this value is same as value in `platform.ts`
+    const SYNC_QRL = '<sync>';
+    /** Sync QRL is a function which is serialized into `<script q:func="qwik/json">` tag. */
+    const isSyncQrl = (value) => {
+        return isQrl(value) && value.$symbol$ == SYNC_QRL;
+    };
     const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
         if (qDev && qSerialize) {
             if (captureRef) {
@@ -8373,6 +8408,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const resolve = async (containerEl) => {
             if (containerEl) {
                 setContainer(containerEl);
+            }
+            if (chunk == '') {
+                // Sync QRL
+                assertDefined(_containerEl, 'Sync QRL must have container element');
+                const qFuncs = _containerEl.qFuncs || [];
+                symbolRef = qFuncs[Number(symbol)];
             }
             if (symbolRef !== null) {
                 return symbolRef;
@@ -8442,9 +8483,11 @@ Task Symbol: ${task.$qrl$.$symbol$}
             $capture$: capture,
             $captureRef$: captureRef,
             dev: null,
-            resolved: undefined,
+            resolved: symbol == SYNC_QRL ? symbolRef : undefined,
         });
-        seal(qrl);
+        if (qDev) {
+            seal(qrl);
+        }
         return qrl;
     };
     const getSymbolHash = (symbolName) => {
@@ -8587,6 +8630,42 @@ Task Symbol: ${task.$qrl$.$symbol$}
     };
     /** @public */
     const event$ = implicit$FirstArg(eventQrl);
+    /**
+     * Extract function into a synchronously loadable QRL.
+     *
+     * NOTE: Synchronous QRLs functions can't close over any variables, including exports.
+     *
+     * @param fn - Function to extract.
+     * @returns
+     * @alpha
+     */
+    const sync$ = (fn) => {
+        if (!qRuntimeQrl && qDev) {
+            throw new Error('Optimizer should replace all usages of sync$() with some special syntax. If you need to create a QRL manually, use inlinedSyncQrl() instead.');
+        }
+        if (qDev) {
+            // To make sure that in dev mode we don't accidentally capture context in `sync$()` we serialize and deserialize the function.
+            // eslint-disable-next-line no-new-func
+            fn = new Function('return ' + fn.toString())();
+        }
+        return createQRL('', SYNC_QRL, fn, null, null, null, null);
+    };
+    /**
+     * Extract function into a synchronously loadable QRL.
+     *
+     * NOTE: Synchronous QRLs functions can't close over any variables, including exports.
+     *
+     * @param fn - Extracted function
+     * @param serializedFn - Serialized function in string form.
+     * @returns
+     * @alpha
+     */
+    const _qrlSync = function (fn, serializedFn) {
+        if (serializedFn === undefined) {
+            serializedFn = fn.toString();
+        }
+        return createQRL('', SYNC_QRL, fn, null, null, null, null);
+    };
 
     // const ELEMENTS_SKIP_KEY: JSXTagName[] = ['html', 'body', 'head'];
     // <docs markdown="../readme.md#component">
@@ -9479,6 +9558,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports._jsxS = _jsxS;
     exports._noopQrl = _noopQrl;
     exports._pauseFromContexts = _pauseFromContexts;
+    exports._qrlSync = _qrlSync;
     exports._regSymbol = _regSymbol;
     exports._renderSSR = _renderSSR;
     exports._restProps = _restProps;
@@ -9509,6 +9589,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports.qrlDEV = qrlDEV;
     exports.render = render;
     exports.setPlatform = setPlatform;
+    exports.sync$ = sync$;
     exports.untrack = untrack;
     exports.useComputed$ = useComputed$;
     exports.useComputedQrl = useComputedQrl;

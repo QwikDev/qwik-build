@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.3.0
+ * @builder.io/qwik/testing 1.3.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -313,12 +313,12 @@ var require_DOMException = __commonJS({
       INVALID_NODE_TYPE_ERR,
       DATA_CLONE_ERR
     };
-    function DOMException(code) {
+    function DOMException(code2) {
       Error.call(this);
       Error.captureStackTrace(this, this.constructor);
-      this.code = code;
-      this.message = messages[code];
-      this.name = names[code];
+      this.code = code2;
+      this.message = messages[code2];
+      this.name = names[code2];
     }
     DOMException.prototype.__proto__ = Error.prototype;
     for (c in constants) {
@@ -2989,12 +2989,12 @@ var require_ChildNode = __commonJS({
     "use strict";
     var Node = require_Node();
     var LinkedList = require_LinkedList();
-    var createDocumentFragmentFromArguments = function(document, args) {
-      var docFrag = document.createDocumentFragment();
+    var createDocumentFragmentFromArguments = function(document2, args) {
+      var docFrag = document2.createDocumentFragment();
       for (var i = 0; i < args.length; i++) {
         var argItem = args[i];
-        var isNode = argItem instanceof Node;
-        docFrag.appendChild(isNode ? argItem : document.createTextNode(String(argItem)));
+        var isNode2 = argItem instanceof Node;
+        docFrag.appendChild(isNode2 ? argItem : document2.createTextNode(String(argItem)));
       }
       return docFrag;
     };
@@ -3291,7 +3291,7 @@ var require_Element = __commonJS({
           return NodeUtils.serializeOne(this, { nodeType: 0 });
         },
         set: function(v) {
-          var document = this.ownerDocument;
+          var document2 = this.ownerDocument;
           var parent = this.parentNode;
           if (parent === null) {
             return;
@@ -3302,7 +3302,7 @@ var require_Element = __commonJS({
           if (parent.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
             parent = parent.ownerDocument.createElement("body");
           }
-          var parser = document.implementation.mozHTMLParser(document._address, parent);
+          var parser = document2.implementation.mozHTMLParser(document2._address, parent);
           parser.parse(v === null ? "" : String(v), true);
           this.replaceWith(parser._asDocumentFragment());
         }
@@ -6359,9 +6359,9 @@ var require_cssparser = __commonJS({
       }
       MediaQuery.prototype = new SyntaxUnit();
       MediaQuery.prototype.constructor = MediaQuery;
-      function Parser(options) {
+      function Parser(options2) {
         EventTarget.call(this);
-        this.options = options || {};
+        this.options = options2 || {};
         this._tokenStream = null;
       }
       Parser.DEFAULT_TYPE = 0;
@@ -8782,15 +8782,15 @@ var require_cssparser = __commonJS({
          * @return {Object} A token object.
          * @method createToken
          */
-        createToken: function(tt, value, startLine, startCol, options) {
+        createToken: function(tt, value, startLine, startCol, options2) {
           var reader = this._reader;
-          options = options || {};
+          options2 = options2 || {};
           return {
             value,
             type: tt,
-            channel: options.channel,
-            endChar: options.endChar,
-            hide: options.hide || false,
+            channel: options2.channel,
+            endChar: options2.endChar,
+            hide: options2.hide || false,
             startLine,
             startCol,
             endLine: reader.getLine(),
@@ -11048,9 +11048,9 @@ var require_defineElement = __commonJS({
       });
       return c;
     };
-    function EventHandlerBuilder(body, document, form, element) {
+    function EventHandlerBuilder(body, document2, form, element) {
       this.body = body;
-      this.document = document;
+      this.document = document2;
       this.form = form;
       this.element = element;
     }
@@ -16808,7 +16808,7 @@ var require_HTMLParser = __commonJS({
         this.attrs.splice(idx, 0, b);
       }
     };
-    function HTMLParser(address, fragmentContext, options) {
+    function HTMLParser(address, fragmentContext, options2) {
       var chars = null;
       var numchars = 0;
       var nextchar = 0;
@@ -16845,7 +16845,7 @@ var require_HTMLParser = __commonJS({
       if (fragmentContext) {
         scripting_enabled = fragmentContext.ownerDocument._scripting_enabled;
       }
-      if (options && options.scripting_enabled === false)
+      if (options2 && options2.scripting_enabled === false)
         scripting_enabled = false;
       var frameset_ok = true;
       var force_quirks = false;
@@ -22154,8 +22154,8 @@ var require_Window = __commonJS({
     var Location = require_Location();
     var utils = require_utils();
     module2.exports = Window;
-    function Window(document) {
-      this.document = document || new DOMImplementation(null).createHTMLDocument("");
+    function Window(document2) {
+      this.document = document2 || new DOMImplementation(null).createHTMLDocument("");
       this.document._scripting_enabled = true;
       this.document.defaultView = this;
       this.location = new Location(this, this.document._address || "about:blank");
@@ -22309,9 +22309,126 @@ __export(testing_exports, {
 });
 module.exports = __toCommonJS(testing_exports);
 
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType === "number";
+};
+var isElement = (value) => {
+  return value.nodeType === 1;
+};
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev !== false;
+var qInspector = globalThis.qInspector === true;
+var qSerialize = globalThis.qSerialize !== false;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+var qRuntimeQrl = globalThis.qRuntimeQrl === true;
+
+// packages/qwik/src/core/util/log.ts
+var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var throwErrorAndStop = (message, ...optionalParams) => {
+  const error = createAndLogError(false, message, ...optionalParams);
+  debugger;
+  throw error;
+};
+var tryGetContext = (element) => {
+  return element["_qc_"];
+};
+var printParams = (optionalParams) => {
+  if (qDev) {
+    return optionalParams.map((p) => {
+      if (isNode(p) && isElement(p)) {
+        return printElement(p);
+      }
+      return p;
+    });
+  }
+  return optionalParams;
+};
+var printElement = (el) => {
+  var _a;
+  const ctx = tryGetContext(el);
+  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
+  return {
+    tagName: el.tagName,
+    renderQRL: (_a = ctx == null ? void 0 : ctx.$componentQrl$) == null ? void 0 : _a.getSymbol(),
+    element: isServer ? void 0 : el,
+    ctx: isServer ? void 0 : ctx
+  };
+};
+var createAndLogError = (asyncThrow, message, ...optionalParams) => {
+  const err = message instanceof Error ? message : new Error(message);
+  const messageStr = err.stack || err.message;
+  console.error("%cQWIK ERROR", STYLE, messageStr, ...printParams(optionalParams));
+  asyncThrow && !qTest && setTimeout(() => {
+    throw err;
+  }, 0);
+  return err;
+};
+
+// packages/qwik/src/core/error/assert.ts
+var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
+function assertDefined(value, text, ...parts) {
+  if (qDev) {
+    if (value != null) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+
 // packages/qwik/src/core/util/case.ts
 var fromCamelToKebabCase = (text) => {
   return text.replace(/([A-Z])/g, "-$1").toLowerCase();
+};
+
+// packages/qwik/src/core/util/markers.ts
+var QContainerSelector = "[q\\:container]";
+
+// packages/qwik/src/core/state/constants.ts
+var QObjectRecursive = 1 << 0;
+var QObjectImmutable = 1 << 1;
+var QOjectTargetSymbol = Symbol("proxy target");
+var QObjectFlagsSymbol = Symbol("proxy flags");
+var QObjectManagerSymbol = Symbol("proxy manager");
+var _IMMUTABLE = Symbol("IMMUTABLE");
+var Q_CTX = "_qc_";
+
+// packages/qwik/src/core/state/listeners.ts
+var PREFIXES = ["on", "window:on", "document:on"];
+var SCOPED = ["on", "on-window", "on-document"];
+var normalizeOnProp = (prop) => {
+  let scope = "on";
+  for (let i = 0; i < PREFIXES.length; i++) {
+    const prefix = PREFIXES[i];
+    if (prop.startsWith(prefix)) {
+      scope = SCOPED[i];
+      prop = prop.slice(prefix.length);
+      break;
+    }
+  }
+  if (prop.startsWith("-")) {
+    prop = fromCamelToKebabCase(prop.slice(1));
+  } else {
+    prop = prop.toLowerCase();
+  }
+  return scope + ":" + prop;
+};
+
+// packages/qwik/src/core/use/use-core.ts
+var getWrappingContainer = (el) => {
+  return el.closest(QContainerSelector);
+};
+
+// packages/qwik/src/core/state/context.ts
+var HOST_FLAG_DIRTY = 1 << 0;
+var HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
+var HOST_FLAG_MOUNTED = 1 << 2;
+var HOST_FLAG_DYNAMIC = 1 << 3;
+var HOST_REMOVED = 1 << 4;
+var tryGetContext2 = (element) => {
+  return element[Q_CTX];
 };
 
 // packages/qwik/src/testing/document.ts
@@ -22479,82 +22596,111 @@ function getTestPlatform() {
 }
 var testExts = [".ts", ".tsx", ".js", ".cjs", ".mjs", ".jsx"];
 
-// packages/qwik/src/core/state/constants.ts
-var QObjectRecursive = 1 << 0;
-var QObjectImmutable = 1 << 1;
-var QOjectTargetSymbol = Symbol("proxy target");
-var QObjectFlagsSymbol = Symbol("proxy flags");
-var QObjectManagerSymbol = Symbol("proxy manager");
-var _IMMUTABLE = Symbol("IMMUTABLE");
-var Q_CTX = "_qc_";
-
-// packages/qwik/src/core/state/context.ts
-var HOST_FLAG_DIRTY = 1 << 0;
-var HOST_FLAG_NEED_ATTACH_LISTENER = 1 << 1;
-var HOST_FLAG_MOUNTED = 1 << 2;
-var HOST_FLAG_DYNAMIC = 1 << 3;
-var HOST_REMOVED = 1 << 4;
-var tryGetContext = (element) => {
-  return element[Q_CTX];
-};
-
 // packages/qwik/src/testing/element-fixture.ts
 var ElementFixture = class {
   constructor(options = {}) {
     this.window = createWindow();
     this.document = this.window.document;
     this.superParent = this.document.createElement("super-parent");
-    this.parent = this.document.createElement("parent");
-    this.host = this.document.createElement(options.tagName || "host");
-    this.child = this.document.createElement("child");
-    this.superParent.appendChild(this.parent);
-    this.parent.appendChild(this.host);
-    this.host.appendChild(this.child);
     this.document.body.appendChild(this.superParent);
-  }
-};
-var dispatch = async (root, attrName, ev) => {
-  while (root) {
-    const elm = root;
-    const ctx = tryGetContext(elm);
-    const qrls = ctx == null ? void 0 : ctx.li.filter((li) => li[0] === attrName);
-    if (qrls && qrls.length > 0) {
-      for (const q of qrls) {
-        await q[1].getFn([elm, ev], () => elm.isConnected)(ev, elm);
-      }
+    this.parent = this.document.createElement("parent");
+    this.superParent.appendChild(this.parent);
+    if (options.html) {
+      this.parent.innerHTML = options.html;
+      this.host = this.parent.firstElementChild;
+      assertDefined(this.host, "host element must be defined");
+      this.host.querySelectorAll('script[q\\:func="qwik/json"]').forEach((script) => {
+        const code = script.textContent;
+        if (code == null ? void 0 : code.startsWith(Q_FUNCS_PREFIX)) {
+          const qFuncs = eval(code.substring(Q_FUNCS_PREFIX.length));
+          const container = this.host.closest(QContainerSelector2);
+          container.qFuncs = qFuncs;
+        }
+      });
+      this.child = null;
+    } else {
+      this.host = this.document.createElement(options.tagName || "host");
+      this.child = this.document.createElement("child");
+      this.parent.appendChild(this.host);
+      this.host.appendChild(this.child);
     }
-    root = elm.parentElement;
   }
 };
-
-// packages/qwik/src/testing/library.ts
-async function triggerUserEvent(root, selector, eventNameCamel, eventPayload = {}) {
-  for (const element of Array.from(root.querySelectorAll(selector))) {
+async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) {
+  const elements = typeof queryOrElement === "string" ? Array.from(root.querySelectorAll(queryOrElement)) : [queryOrElement];
+  for (const element of elements) {
     const kebabEventName = fromCamelToKebabCase(eventNameCamel);
-    const event = { type: kebabEventName, ...eventPayload };
+    const event = root.ownerDocument.createEvent("Event");
+    event.initEvent(kebabEventName, true, true);
+    Object.assign(event, eventPayload);
     const attrName = "on:" + kebabEventName;
     await dispatch(element, attrName, event);
   }
   await getTestPlatform().flush();
 }
-var createDOM = async function() {
+var PREVENT_DEFAULT = "preventdefault:";
+var Q_FUNCS_PREFIX = 'document.currentScript.closest("[q\\\\:container]").qFuncs=';
+var QContainerSelector2 = "[q\\:container]";
+var dispatch = async (element, attrName, event) => {
+  const preventAttributeName = PREVENT_DEFAULT + event.type;
+  const collectListeners = [];
+  while (element) {
+    const preventDefault = element.hasAttribute(preventAttributeName);
+    if (preventDefault) {
+      event.preventDefault();
+    }
+    const ctx = tryGetContext2(element);
+    if (ctx) {
+      for (const li of ctx.li) {
+        if (li[0] === attrName) {
+          const qrl = li[1];
+          if (isSyncQrl(qrl)) {
+            qrl(event, element);
+          } else {
+            collectListeners.push({ element, qrl });
+          }
+        }
+      }
+    }
+    element = element.parentElement;
+  }
+  for (let i = 0; i < collectListeners.length; i++) {
+    const { element: element2, qrl } = collectListeners[i];
+    await qrl.getFn([element2, event], () => element2.isConnected)(event, element2);
+  }
+};
+function getEvent(elCtx, prop) {
+  return qPropReadQRL(elCtx, normalizeOnProp(prop));
+}
+function qPropReadQRL(elCtx, prop) {
+  const allListeners = elCtx.li;
+  const containerEl = getWrappingContainer(elCtx.$element$);
+  assertDefined(containerEl, "container element must be defined");
+  return (event) => {
+    return Promise.all(
+      allListeners.filter((li) => li[0] === prop).map(([_, qrl]) => {
+        qrl.$setContainer$(containerEl);
+        return qrl(event);
+      })
+    );
+  };
+}
+function isSyncQrl(qrl) {
+  return qrl.$chunk$ == "";
+}
+
+// packages/qwik/src/testing/library.ts
+var createDOM = async function({ html } = {}) {
   const qwik = await getQwik();
   setTestPlatform(qwik.setPlatform);
-  const host = new ElementFixture().host;
+  const host = new ElementFixture({ html }).host;
   return {
     render: function(jsxElement) {
       return qwik.render(host, jsxElement);
     },
     screen: host,
     userEvent: async function(queryOrElement, eventNameCamel, eventPayload = {}) {
-      if (typeof queryOrElement === "string") {
-        return triggerUserEvent(host, queryOrElement, eventNameCamel, eventPayload);
-      }
-      const kebabEventName = fromCamelToKebabCase(eventNameCamel);
-      const event = { type: kebabEventName, ...eventPayload };
-      const attrName = "on:" + kebabEventName;
-      await dispatch(queryOrElement, attrName, event);
-      await getTestPlatform().flush();
+      return trigger(host, queryOrElement, eventNameCamel, eventPayload);
     }
   };
 };

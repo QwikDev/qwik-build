@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.3.0
+ * @builder.io/qwik 1.3.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -96,6 +96,40 @@ const createAndLogError = (asyncThrow, message, ...optionalParams) => {
     }), 0), err;
 };
 
+const ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
+
+function assertDefined() {
+    qDev;
+}
+
+function assertEqual() {
+    qDev;
+}
+
+function assertFail() {
+    qDev;
+}
+
+function assertTrue() {
+    qDev;
+}
+
+function assertNumber() {
+    qDev;
+}
+
+function assertString() {
+    qDev;
+}
+
+function assertQwikElement() {
+    qDev;
+}
+
+function assertElement() {
+    qDev;
+}
+
 const QError_stringifyClassOrStyle = 0;
 
 const QError_verifySerializable = 3;
@@ -190,40 +224,6 @@ const setPlatform = plt => _platform = plt;
 const getPlatform = () => _platform;
 
 const isServerPlatform = () => _platform.isServer;
-
-const ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
-
-function assertDefined() {
-    qDev;
-}
-
-function assertEqual() {
-    qDev;
-}
-
-function assertFail() {
-    qDev;
-}
-
-function assertTrue() {
-    qDev;
-}
-
-function assertNumber() {
-    qDev;
-}
-
-function assertString() {
-    qDev;
-}
-
-function assertQwikElement() {
-    qDev;
-}
-
-function assertElement() {
-    qDev;
-}
 
 const isSerializableObject = v => {
     const proto = Object.getPrototypeOf(v);
@@ -339,9 +339,9 @@ const fromKebabToCamelCase = text => text.replace(/-./g, (x => x[1].toUpperCase(
 const CONTAINER_STATE = Symbol("ContainerState");
 
 const _getContainerState = containerEl => {
-    let set = containerEl[CONTAINER_STATE];
-    return set || (containerEl[CONTAINER_STATE] = set = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
-    set;
+    let state = containerEl[CONTAINER_STATE];
+    return state || (containerEl[CONTAINER_STATE] = state = createContainerState(containerEl, directGetAttribute(containerEl, "q:base") ?? "/")), 
+    state;
 };
 
 const createContainerState = (containerEl, base) => {
@@ -362,7 +362,8 @@ const createContainerState = (containerEl, base) => {
         $renderPromise$: void 0,
         $hostsRendering$: void 0,
         $pauseCtx$: void 0,
-        $subsManager$: null
+        $subsManager$: null,
+        $inlineFns$: new Map
     };
     return seal(), containerState.$subsManager$ = createSubscriptionManager(containerState), 
     containerState;
@@ -746,7 +747,7 @@ const wrap = (value, containerState) => {
     return value;
 };
 
-const version = "1.3.0";
+const version = "1.3.1";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -825,7 +826,7 @@ const _renderSSR = async (node, opts) => {
     const containerAttributes = {
         ...opts.containerAttributes,
         "q:container": "paused",
-        "q:version": "1.3.0",
+        "q:version": "1.3.1",
         "q:render": qRender,
         "q:base": opts.base,
         "q:locale": opts.serverData?.locale,
@@ -989,7 +990,8 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
             const groups = groupListeners(listeners);
             for (const listener of groups) {
                 const eventName = normalizeInvisibleEvents(listener[0]);
-                attributes[eventName] = serializeQRLs(listener[1], placeholderCtx), registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
+                attributes[eventName] = serializeQRLs(listener[1], rCtx.$static$.$containerState$, placeholderCtx), 
+                registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
             }
             renderNodeElementSync("script", attributes, stream);
         }
@@ -1102,7 +1104,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             const isInvisible = 0 != (16 & flags);
             for (const listener of groups) {
                 const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
-                openingElement += " " + eventName + '="' + serializeQRLs(listener[1], elCtx) + '"', 
+                openingElement += " " + eventName + '="' + serializeQRLs(listener[1], rCtx.$static$.$containerState$, elCtx) + '"', 
                 registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
             }
         }
@@ -1694,8 +1696,7 @@ const resumeContainer = containerEl => {
         return void logWarn("Skipping resuming qwik/json metadata was not found.");
     }
     const doc = getDocument(containerEl);
-    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-    const inlinedFunctions = getQwikInlinedFuncs(parentJSON);
+    const inlinedFunctions = getQwikInlinedFuncs(containerEl);
     const containerState = _getContainerState(containerEl);
     const elements = new Map;
     const text = new Map;
@@ -1822,10 +1823,7 @@ const reviveNestedObjects = (obj, getObject, parser) => {
 
 const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
 
-const getQwikInlinedFuncs = parentElm => {
-    const elm = getQwikJSON(parentElm, "q:func");
-    return elm?.qFuncs ?? EMPTY_ARRAY;
-};
+const getQwikInlinedFuncs = containerEl => containerEl.qFuncs ?? EMPTY_ARRAY;
 
 const getQwikJSON = (parentElm, attribute) => {
     let child = parentElm.lastElementChild;
@@ -3832,7 +3830,7 @@ const getVirtualElement = open => {
 const getRootNode = node => null == node ? null : isVirtualElement(node) ? node.open : node;
 
 const _serializeData = async data => {
-    const containerState = {};
+    const containerState = createContainerState(null, null);
     const collector = createCollector(containerState);
     let promises;
     for (collectValue(data, collector, !1); (promises = collector.$promises$).length > 0; ) {
@@ -3898,7 +3896,7 @@ const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
         if (elCtx.$id$ && elm.setAttribute("q:id", elCtx.$id$), isElement$1(elm) && listeners.length > 0) {
             const groups = groupListeners(listeners);
             for (const listener of groups) {
-                elm.setAttribute(listener[0], serializeQRLs(listener[1], elCtx));
+                elm.setAttribute(listener[0], serializeQRLs(listener[1], containerState, elCtx));
             }
         }
     }
@@ -4156,19 +4154,27 @@ const collectProps = (elCtx, collector) => {
     }
 };
 
-const createCollector = containerState => ({
-    $containerState$: containerState,
-    $seen$: new Set,
-    $objSet$: new Set,
-    $prefetch$: 0,
-    $noSerialize$: [],
-    $inlinedFunctions$: [],
-    $resources$: [],
-    $elements$: [],
-    $qrls$: [],
-    $deferElements$: [],
-    $promises$: []
-});
+const createCollector = containerState => {
+    const inlinedFunctions = [];
+    return containerState.$inlineFns$.forEach(((id, fnStr) => {
+        for (;inlinedFunctions.length <= id; ) {
+            inlinedFunctions.push("");
+        }
+        inlinedFunctions[id] = fnStr;
+    })), {
+        $containerState$: containerState,
+        $seen$: new Set,
+        $objSet$: new Set,
+        $prefetch$: 0,
+        $noSerialize$: [],
+        $inlinedFunctions$: inlinedFunctions,
+        $resources$: [],
+        $elements$: [],
+        $qrls$: [],
+        $deferElements$: [],
+        $promises$: []
+    };
+};
 
 const collectDeferElement = (el, collector) => {
     const ctx = tryGetContext(el);
@@ -4466,10 +4472,20 @@ const serializeQRL = (qrl, opts = {}) => {
         const result = platform.chunkForSymbol(refSymbol, chunk);
         result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
     }
-    if (!chunk) {
+    if (null == chunk) {
         throw qError(31, qrl.$symbol$);
     }
-    chunk.startsWith("./") && (chunk = chunk.slice(2));
+    if (chunk.startsWith("./") && (chunk = chunk.slice(2)), isSyncQrl(qrl)) {
+        if (opts.$containerState$) {
+            const containerState = opts.$containerState$;
+            const fnStrKey = qrl.resolved.toString();
+            let id = containerState.$inlineFns$.get(fnStrKey);
+            void 0 === id && (id = containerState.$inlineFns$.size, containerState.$inlineFns$.set(fnStrKey, id)), 
+            symbol = String(id);
+        } else {
+            throwErrorAndStop("Sync QRL without containerState");
+        }
+    }
     let output = `${chunk}#${symbol}`;
     const capture = qrl.$capture$;
     const captureRef = qrl.$captureRef$;
@@ -4477,9 +4493,10 @@ const serializeQRL = (qrl, opts = {}) => {
     output;
 };
 
-const serializeQRLs = (existingQRLs, elCtx) => {
+const serializeQRLs = (existingQRLs, containerState, elCtx) => {
     assertElement(elCtx.$element$);
     const opts = {
+        $containerState$: containerState,
         $addRefMap$: obj => addToArray(elCtx.$refMap$, obj)
     };
     return mapJoin(existingQRLs, (qrl => serializeQRL(qrl, opts)), "\n");
@@ -4763,7 +4780,7 @@ const DerivedSignalSerializer = /*#__PURE__*/ serializer({
     $serialize$: (signal, getObjID, collector) => {
         const serialized = serializeDerivedSignalFunc(signal);
         let index = collector.$inlinedFunctions$.indexOf(serialized);
-        return index < 0 && (collector.$inlinedFunctions$.push(serialized), index = collector.$inlinedFunctions$.length - 1), 
+        return index < 0 && (index = collector.$inlinedFunctions$.length, collector.$inlinedFunctions$.push(serialized)), 
         mapJoin(signal.$args$, getObjID, " ") + " @" + intToStr(index);
     },
     $prepare$: data => {
@@ -5270,6 +5287,10 @@ const must = a => {
 
 const isQrl = value => "function" == typeof value && "function" == typeof value.getSymbol;
 
+const SYNC_QRL = "<sync>";
+
+const isSyncQrl = value => isQrl(value) && "<sync>" == value.$symbol$;
+
 const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
     let _containerEl;
     const qrl = async function(...args) {
@@ -5278,7 +5299,11 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     };
     const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
     const resolve = async containerEl => {
-        if (containerEl && setContainer(containerEl), null !== symbolRef) {
+        if (containerEl && setContainer(containerEl), "" == chunk) {
+            assertDefined(_containerEl, "Sync QRL must have container element");
+            symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
+        }
+        if (null !== symbolRef) {
             return symbolRef;
         }
         if (null !== symbolFn) {
@@ -5328,8 +5353,8 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         $capture$: capture,
         $captureRef$: captureRef,
         dev: null,
-        resolved: void 0
-    }), seal(), qrl;
+        resolved: "<sync>" == symbol ? symbolRef : void 0
+    }), qrl;
 };
 
 const getSymbolHash = symbolName => {
@@ -5371,6 +5396,12 @@ const $ = expression => createQRL(null, "s" + runtimeSymbolId++, expression, nul
 const eventQrl = qrl => qrl;
 
 const event$ = implicit$FirstArg(eventQrl);
+
+const sync$ = fn => createQRL("", "<sync>", fn, null, null, null, null);
+
+const _qrlSync = function(fn, serializedFn) {
+    return void 0 === serializedFn && (serializedFn = fn.toString()), createQRL("", "<sync>", fn, null, null, null, null);
+};
 
 const componentQrl = componentQrl => {
     function QwikComponent(props, key, flags) {
@@ -5446,7 +5477,7 @@ const renderRoot = async (rCtx, parent, jsxNode) => {
 const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
 
 const injectQContainer = containerEl => {
-    directSetAttribute(containerEl, "q:version", "1.3.0"), directSetAttribute(containerEl, "q:container", "resumed"), 
+    directSetAttribute(containerEl, "q:version", "1.3.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
     directSetAttribute(containerEl, "q:render", "dom");
 };
 
@@ -5737,4 +5768,4 @@ const useErrorBoundary = () => {
     store;
 };
 
-export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

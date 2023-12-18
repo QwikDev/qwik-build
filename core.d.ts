@@ -604,6 +604,7 @@ declare interface ContainerState {
     $styleMoved$: boolean;
     readonly $styleIds$: Set<string>;
     readonly $events$: Set<string>;
+    readonly $inlineFns$: Map<string, number>;
 }
 
 /**
@@ -1784,6 +1785,18 @@ declare type QRLInternalMethods<TYPE> = {
 
 declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
 
+/**
+ * Extract function into a synchronously loadable QRL.
+ *
+ * NOTE: Synchronous QRLs functions can't close over any variables, including exports.
+ *
+ * @param fn - Extracted function
+ * @param serializedFn - Serialized function in string form.
+ * @returns
+ * @alpha
+ */
+export declare const _qrlSync: <TYPE extends Function>(fn: TYPE, serializedFn?: string) => SyncQRL<TYPE>;
+
 /** @public */
 export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q', T> {
 }
@@ -2833,6 +2846,30 @@ export declare interface SVGAttributes<T extends Element = Element> extends Aria
 export declare interface SVGProps<T extends Element> extends SVGAttributes, QwikAttributes<T> {
 }
 
+/**
+ * Extract function into a synchronously loadable QRL.
+ *
+ * NOTE: Synchronous QRLs functions can't close over any variables, including exports.
+ *
+ * @param fn - Function to extract.
+ * @returns
+ * @alpha
+ */
+export declare const sync$: <T extends Function>(fn: T) => SyncQRL<T>;
+
+declare interface SyncQRL<TYPE extends Function = any> extends QRL<TYPE> {
+    __brand__SyncQRL__: TYPE;
+    /**
+     * Resolve the QRL of closure and invoke it.
+     *
+     * @param args - Closure arguments.
+     * @returns A return value of the closure.
+     */
+    (...args: TYPE extends (...args: infer ARGS) => any ? ARGS : never): TYPE extends (...args: any[]) => infer RETURN ? RETURN : never;
+    resolved: TYPE;
+    dev: QRLDev | null;
+}
+
 declare type TableCellSpecialAttrs = {
     align?: 'left' | 'center' | 'right' | 'justify' | 'char' | undefined;
     height?: Size | undefined;
@@ -3639,7 +3676,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.3.0
+ * 1.3.1
  *
  * @public
  */
