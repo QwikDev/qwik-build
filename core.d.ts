@@ -1,5 +1,4 @@
 import * as CSS_2 from 'csstype';
-import type { ServerRequestEvent } from '.-city/middleware/request-handler';
 
 /**
  * Qwik Optimizer marker function.
@@ -1503,7 +1502,7 @@ export declare const _pauseFromContexts: (allContexts: QContext[], containerStat
 
 declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 
-declare type PossibleEvents = Event | ServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
+declare type PossibleEvents = Event | SimplifiedServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
 
 declare type Prettify<T> = {} & {
     [K in keyof T]: T[K];
@@ -2223,6 +2222,12 @@ declare class SignalDerived<RETURN = unknown, ARGS extends any[] = unknown[]> ex
     $funcStr$?: string | undefined;
     constructor($func$: (...args: ARGS) => RETURN, $args$: ARGS, $funcStr$?: string | undefined);
     get value(): RETURN;
+}
+
+declare interface SimplifiedServerRequestEvent<T = unknown> {
+    url: URL;
+    locale: string | undefined;
+    request: Request;
 }
 
 /** @public */
