@@ -230,7 +230,7 @@ const isSerializableObject = v => {
     return proto === Object.prototype || null === proto;
 };
 
-const isObject = v => v && "object" == typeof v;
+const isObject = v => !!v && "object" == typeof v;
 
 const isArray = v => Array.isArray(v);
 
@@ -1049,45 +1049,31 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         let hasRef = !1;
         let classStr = "";
         let htmlStr = null;
+        qDev;
+        const handleProp = (rawProp, value, isImmutable) => {
+            if (isOnProp(rawProp)) {
+                return void setEvent(elCtx.li, rawProp, value, void 0);
+            }
+            if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
+            value = trackSignal(value, isImmutable ? [ 1, elm, value, hostCtx.$element$, rawProp ] : [ 2, hostCtx.$element$, value, elm, rawProp ]), 
+            useSignal = !0), rawProp === dangerouslySetInnerHTML) {
+                return void (htmlStr = value);
+            }
+            let attrValue;
+            rawProp.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(rawProp.slice(15), rCtx.$static$.$containerState$);
+            const prop = "htmlFor" === rawProp ? "for" : rawProp;
+            "class" === prop ? classStr = serializeClass(value) : attrValue = "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : !1 === value || null == value ? null : !0 === value ? "" : String(value), 
+            null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + ("" === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
+        };
         if (immutable) {
             for (const prop in immutable) {
-                let value = immutable[prop];
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, void 0);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-                value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), useSignal = !0), 
-                prop === dangerouslySetInnerHTML) {
-                    htmlStr = value;
-                    continue;
-                }
-                prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
-                const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
+                handleProp(prop, immutable[prop], !0);
             }
         }
         for (const prop in props) {
-            let value = props[prop];
-            if ("ref" === prop) {
-                void 0 !== value && (setRef(value, elm), hasRef = !0);
-                continue;
-            }
-            if (isOnProp(prop)) {
-                setEvent(elCtx.li, prop, value, void 0);
-                continue;
-            }
-            const attrName = processPropKey(prop);
-            if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-            value = trackSignal(value, [ 2, hostCtx.$element$, value, elm, attrName ]), useSignal = !0), 
-            prop === dangerouslySetInnerHTML) {
-                htmlStr = value;
-                continue;
-            }
-            prop.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
-            const attrValue = processPropValue(attrName, value);
-            null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
+            const value = props[prop];
+            "ref" !== prop ? handleProp(prop, value, !1) : void 0 !== value && (setRef(value, elm), 
+            hasRef = !0);
         }
         const listeners = elCtx.li;
         if (hostCtx) {
@@ -1141,7 +1127,8 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     }
     if (tagName === Virtual) {
         const elCtx = createMockQContext(111);
-        return elCtx.$parentCtx$ = rCtx.$slotCtx$ || rCtx.$cmpCtx$, hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC && addDynamicSlot(hostCtx, elCtx), 
+        return rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
+        hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC && addDynamicSlot(hostCtx, elCtx), 
         renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
     }
     if (tagName === SSRRaw) {
@@ -1214,10 +1201,13 @@ const walkChildren = (children, rCtx, ssrContext, stream, flags) => {
                 currentIndex === index ? stream.write(chunk) : buffer.push(chunk);
             }
         } : stream, flags);
-        const next = () => {
-            currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
-        };
-        return isPromise(rendered) && prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : isPromise(rendered) ? rendered.then(next) : prevPromise ? prevPromise.then(next) : void currentIndex++;
+        if (prevPromise || isPromise(rendered)) {
+            const next = () => {
+                currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
+            };
+            return isPromise(rendered) ? prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : rendered.then(next) : prevPromise.then(next);
+        }
+        currentIndex++;
     }), void 0);
 };
 
@@ -1255,10 +1245,6 @@ const setComponentProps$1 = (rCtx, elCtx, expectProps) => {
         "children" !== prop && prop !== QSlot && (isSignal(immutableMeta[prop]) ? target["$$" + prop] = immutableMeta[prop] : target[prop] = expectProps[prop]);
     }
 };
-
-const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
-
-const processPropValue = (prop, value) => "class" === prop ? serializeClass(value) : "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : !1 === value || null == value ? null : !0 === value ? "" : String(value);
 
 const invisibleElements = {
     head: !0,
@@ -2054,20 +2040,22 @@ const postRendering = async (containerState, rCtx) => {
     containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
 };
 
+const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
+
+const isResourceTask$1 = task => 0 != (task.$flags$ & TaskFlagsIsResource);
+
 const executeTasksBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
     const resourcesPromises = [];
     const taskPromises = [];
-    const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
-    const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
     containerState.$taskNext$.forEach((task => {
         isTask(task) && (taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
-        containerState.$taskNext$.delete(task)), isResourceTask(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+        containerState.$taskNext$.delete(task)), isResourceTask$1(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
         containerState.$taskNext$.delete(task));
     }));
     do {
         if (containerState.$taskStaging$.forEach((task => {
-            isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
+            isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask$1(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
         })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
             const tasks = await Promise.all(taskPromises);
             sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
@@ -2076,7 +2064,10 @@ const executeTasksBefore = async (containerState, rCtx) => {
     } while (containerState.$taskStaging$.size > 0);
     if (resourcesPromises.length > 0) {
         const resources = await Promise.all(resourcesPromises);
-        sortTasks(resources), resources.forEach((task => runSubscriber(task, containerState, rCtx)));
+        sortTasks(resources);
+        for (const task of resources) {
+            runSubscriber(task, containerState, rCtx);
+        }
     }
 };
 
@@ -2541,7 +2532,8 @@ const createContext = element => {
         $componentQrl$: null,
         $contexts$: null,
         $dynamicSlots$: null,
-        $parentCtx$: void 0
+        $parentCtx$: void 0,
+        $realParentCtx$: void 0
     };
     return seal(), element[Q_CTX] = ctx, ctx;
 };
@@ -2722,7 +2714,7 @@ const executeComponent = (rCtx, elCtx) => {
     assertDefined(componentQRL, "render: host element to render must have a $renderQrl$:", elCtx), 
     assertDefined(props, "render: host element to render must have defined props", elCtx);
     const newCtx = pushRenderContext(rCtx);
-    newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, iCtx.$subscriber$ = [ 0, hostElement ], 
+    newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = void 0, iCtx.$subscriber$ = [ 0, hostElement ], 
     iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(iCtx);
     return safeCall((() => componentFn(props)), (jsxNode => maybeThen(promiseAllLazy(waitOn), (() => elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
@@ -2750,7 +2742,7 @@ const createRenderContext = (doc, containerState) => {
             $visited$: []
         },
         $cmpCtx$: null,
-        $slotCtx$: null
+        $slotCtx$: void 0
     };
     return seal(), seal(), ctx;
 };
@@ -3165,7 +3157,8 @@ const createElm = (rCtx, vnode, flags, promises) => {
     flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), vnode.$flags$ & static_subtree && (flags |= 4), 
     vnode.$elm$ = elm;
     const elCtx = createContext(elm);
-    if (elCtx.$parentCtx$ = rCtx.$slotCtx$ ?? rCtx.$cmpCtx$, isVirtual) {
+    if (rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
+    isVirtual) {
         if ("q:renderFn" in props) {
             const renderQRL = props["q:renderFn"];
             assertQrl(renderQRL);
@@ -4139,7 +4132,7 @@ const getNodesInScope = (parent, predicate) => {
 };
 
 const collectProps = (elCtx, collector) => {
-    const parentCtx = elCtx.$parentCtx$;
+    const parentCtx = elCtx.$realParentCtx$ || elCtx.$parentCtx$;
     const props = elCtx.$props$;
     if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
         const subs = getSubscriptionManager(props)?.$subs$;
@@ -4178,9 +4171,8 @@ const createCollector = containerState => {
 
 const collectDeferElement = (el, collector) => {
     const ctx = tryGetContext(el);
-    collector.$elements$.includes(ctx) || (collector.$elements$.push(ctx), collector.$prefetch$++, 
-    ctx.$flags$ & HOST_FLAG_DYNAMIC ? collectElementData(ctx, collector, !0) : collector.$deferElements$.push(ctx), 
-    collector.$prefetch$--);
+    collector.$elements$.includes(ctx) || (collector.$elements$.push(ctx), ctx.$flags$ & HOST_FLAG_DYNAMIC ? (collector.$prefetch$++, 
+    collectElementData(ctx, collector, !0), collector.$prefetch$--) : collector.$deferElements$.push(ctx));
 };
 
 const collectElement = (el, collector) => {
@@ -4235,11 +4227,10 @@ const collectSubscriptions = (manager, collector, leaks) => {
     collector.$seen$.add(manager);
     const subs = manager.$subs$;
     assertDefined(subs, "subs must be defined");
-    for (const key of subs) {
-        const type = key[0];
-        if (type > 0 && collectValue(key[2], collector, leaks), !0 === leaks) {
-            const host = key[1];
-            isNode$1(host) && isVirtualElement(host) ? 0 === type && collectDeferElement(host, collector) : collectValue(host, collector, !0);
+    for (const sub of subs) {
+        if (sub[0] > 0 && collectValue(sub[2], collector, leaks), !0 === leaks) {
+            const host = sub[1];
+            isNode$1(host) && isVirtualElement(host) ? 0 === sub[0] && collectDeferElement(host, collector) : collectValue(host, collector, !0);
         }
     }
 };
@@ -4257,17 +4248,16 @@ const resolvePromise = promise => promise.then((value => (promise[PROMISE_VALUE]
 const getPromiseValue = promise => promise[PROMISE_VALUE];
 
 const collectValue = (obj, collector, leaks) => {
-    if (null !== obj) {
+    if (null != obj) {
         const objType = typeof obj;
         switch (objType) {
           case "function":
           case "object":
             {
-                const seen = collector.$seen$;
-                if (seen.has(obj)) {
+                if (collector.$seen$.has(obj)) {
                     return;
                 }
-                if (seen.add(obj), fastSkipSerialize(obj)) {
+                if (collector.$seen$.add(obj), fastSkipSerialize(obj)) {
                     return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
                 }
                 const input = obj;
@@ -4302,11 +4292,6 @@ const collectValue = (obj, collector, leaks) => {
                     }
                 }
                 break;
-            }
-
-          case "string":
-            if (collector.$seen$.has(obj)) {
-                return;
             }
         }
     }
@@ -4701,16 +4686,14 @@ const URLSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => v instanceof URL,
     $serialize$: obj => obj.href,
-    $prepare$: data => new URL(data),
-    $fill$: void 0
+    $prepare$: data => new URL(data)
 });
 
 const DateSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => v instanceof Date,
     $serialize$: obj => obj.toISOString(),
-    $prepare$: data => new Date(data),
-    $fill$: void 0
+    $prepare$: data => new Date(data)
 });
 
 const RegexSerializer = /*#__PURE__*/ serializer({
@@ -4722,8 +4705,7 @@ const RegexSerializer = /*#__PURE__*/ serializer({
         const source = data.slice(space + 1);
         const flags = data.slice(0, space);
         return new RegExp(source, flags);
-    },
-    $fill$: void 0
+    }
 });
 
 const ErrorSerializer = /*#__PURE__*/ serializer({
@@ -4733,16 +4715,13 @@ const ErrorSerializer = /*#__PURE__*/ serializer({
     $prepare$: text => {
         const err = new Error(text);
         return err.stack = void 0, err;
-    },
-    $fill$: void 0
+    }
 });
 
 const DocumentSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
-    $test$: v => isDocument(v),
-    $serialize$: void 0,
-    $prepare$: (_, _c, doc) => doc,
-    $fill$: void 0
+    $test$: v => !!v && "object" == typeof v && isDocument(v),
+    $prepare$: (_, _c, doc) => doc
 });
 
 const SERIALIZABLE_STATE = Symbol("serializable-data");
@@ -4762,8 +4741,7 @@ const ComponentSerializer = /*#__PURE__*/ serializer({
     },
     $fill$: (component, getObject) => {
         const [qrl] = component[SERIALIZABLE_STATE];
-        qrl.$capture$ && qrl.$capture$.length > 0 && (qrl.$captureRef$ = qrl.$capture$.map(getObject), 
-        qrl.$capture$ = null);
+        qrl.$capture$?.length && (qrl.$captureRef$ = qrl.$capture$.map(getObject), qrl.$capture$ = null);
     }
 });
 
@@ -4837,16 +4815,14 @@ const NoFiniteNumberSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => "number" == typeof v,
     $serialize$: v => String(v),
-    $prepare$: data => Number(data),
-    $fill$: void 0
+    $prepare$: data => Number(data)
 });
 
 const URLSearchParamsSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => v instanceof URLSearchParams,
     $serialize$: obj => obj.toString(),
-    $prepare$: data => new URLSearchParams(data),
-    $fill$: void 0
+    $prepare$: data => new URLSearchParams(data)
 });
 
 const FormDataSerializer = /*#__PURE__*/ serializer({
@@ -4865,8 +4841,7 @@ const FormDataSerializer = /*#__PURE__*/ serializer({
             formData.append(key, value);
         }
         return formData;
-    },
-    $fill$: void 0
+    }
 });
 
 const JSXNodeSerializer = /*#__PURE__*/ serializer({
@@ -4897,8 +4872,7 @@ const BigIntSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => "bigint" == typeof v,
     $serialize$: v => v.toString(),
-    $prepare$: data => BigInt(data),
-    $fill$: void 0
+    $prepare$: data => BigInt(data)
 });
 
 const DATA = Symbol();
@@ -4957,8 +4931,7 @@ const StringSerializer = /*#__PURE__*/ serializer({
     $prefix$: "",
     $test$: v => !!getSerializer(v) || v === UNDEFINED_PREFIX,
     $serialize$: v => v,
-    $prepare$: data => data,
-    $fill$: void 0
+    $prepare$: data => data
 });
 
 const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, SetSerializer, MapSerializer, StringSerializer ];
