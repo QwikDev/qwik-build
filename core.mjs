@@ -1501,7 +1501,7 @@ const renderSSRComponent = (rCtx, ssrCtx, stream, elCtx, node, flags, beforeClos
                     const content = projectedChildren[slotName];
                     // projectedChildren[slotName] = undefined;
                     if (content) {
-                        return _jsxQ('q:template', { [QSlot]: slotName, hidden: '', 'aria-hidden': 'true' }, null, content, 0, null);
+                        return _jsxQ('q:template', { [QSlot]: slotName || true, hidden: true, 'aria-hidden': 'true' }, null, content, 0, null);
                     }
                 });
                 const [_rCtx, sCtx] = newSSrContext.$projectedCtxs$;
@@ -1583,13 +1583,11 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 attrValue = stringifyStyle(value);
             }
             else if (isAriaAttribute(prop) || prop === 'draggable' || prop === 'spellcheck') {
-                attrValue = value != null ? String(value) : value;
+                attrValue = value != null ? String(value) : null;
+                value = attrValue;
             }
             else if (value === false || value == null) {
                 attrValue = null;
-            }
-            else if (value === true) {
-                attrValue = '';
             }
             else {
                 attrValue = String(value);
@@ -1604,7 +1602,8 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                     }
                 }
                 else {
-                    openingElement += ' ' + (value === '' ? prop : prop + '="' + escapeAttr(attrValue) + '"');
+                    openingElement +=
+                        ' ' + (value === true ? prop : prop + '="' + escapeAttr(attrValue) + '"');
                 }
             }
         };
@@ -5398,7 +5397,8 @@ const handleClass = (ctx, elm, newValue) => {
 };
 const checkBeforeAssign = (ctx, elm, newValue, prop) => {
     if (prop in elm) {
-        if (elm[prop] !== newValue) {
+        // a selected <option> is different from a selected <option value> (innerText vs '')
+        if (elm[prop] !== newValue || (prop === 'value' && !elm.hasAttribute(prop))) {
             if (elm.tagName === 'SELECT') {
                 setPropertyPost(ctx, elm, prop, newValue);
             }
@@ -5406,8 +5406,9 @@ const checkBeforeAssign = (ctx, elm, newValue, prop) => {
                 setProperty(ctx, elm, prop, newValue);
             }
         }
+        return true;
     }
-    return true;
+    return false;
 };
 const forceAttribute = (ctx, elm, newValue, prop) => {
     setAttribute(ctx, elm, prop.toLowerCase(), newValue);
@@ -5642,6 +5643,7 @@ const _setAttribute = (el, prop, value) => {
         el.removeAttribute(prop);
     }
     else {
+        // element.setAttribute requires string. Boolean attributes automatically convert "" to `true`
         const str = value === true ? '' : String(value);
         directSetAttribute(el, prop, str);
     }

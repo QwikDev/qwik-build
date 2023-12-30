@@ -1505,7 +1505,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         const content = projectedChildren[slotName];
                         // projectedChildren[slotName] = undefined;
                         if (content) {
-                            return _jsxQ('q:template', { [QSlot]: slotName, hidden: '', 'aria-hidden': 'true' }, null, content, 0, null);
+                            return _jsxQ('q:template', { [QSlot]: slotName || true, hidden: true, 'aria-hidden': 'true' }, null, content, 0, null);
                         }
                     });
                     const [_rCtx, sCtx] = newSSrContext.$projectedCtxs$;
@@ -1587,13 +1587,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                     attrValue = stringifyStyle(value);
                 }
                 else if (isAriaAttribute(prop) || prop === 'draggable' || prop === 'spellcheck') {
-                    attrValue = value != null ? String(value) : value;
+                    attrValue = value != null ? String(value) : null;
+                    value = attrValue;
                 }
                 else if (value === false || value == null) {
                     attrValue = null;
-                }
-                else if (value === true) {
-                    attrValue = '';
                 }
                 else {
                     attrValue = String(value);
@@ -1608,7 +1606,8 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                         }
                     }
                     else {
-                        openingElement += ' ' + (value === '' ? prop : prop + '="' + escapeAttr(attrValue) + '"');
+                        openingElement +=
+                            ' ' + (value === true ? prop : prop + '="' + escapeAttr(attrValue) + '"');
                     }
                 }
             };
@@ -5402,7 +5401,8 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     };
     const checkBeforeAssign = (ctx, elm, newValue, prop) => {
         if (prop in elm) {
-            if (elm[prop] !== newValue) {
+            // a selected <option> is different from a selected <option value> (innerText vs '')
+            if (elm[prop] !== newValue || (prop === 'value' && !elm.hasAttribute(prop))) {
                 if (elm.tagName === 'SELECT') {
                     setPropertyPost(ctx, elm, prop, newValue);
                 }
@@ -5410,8 +5410,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                     setProperty(ctx, elm, prop, newValue);
                 }
             }
+            return true;
         }
-        return true;
+        return false;
     };
     const forceAttribute = (ctx, elm, newValue, prop) => {
         setAttribute(ctx, elm, prop.toLowerCase(), newValue);
@@ -5646,6 +5647,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             el.removeAttribute(prop);
         }
         else {
+            // element.setAttribute requires string. Boolean attributes automatically convert "" to `true`
             const str = value === true ? '' : String(value);
             directSetAttribute(el, prop, str);
         }

@@ -1002,8 +1002,8 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
                 const content = projectedChildren[slotName];
                 if (content) {
                     return _jsxQ("q:template", {
-                        [QSlot]: slotName,
-                        hidden: "",
+                        [QSlot]: slotName || !0,
+                        hidden: !0,
                         "aria-hidden": "true"
                     }, null, content, 0, null);
                 }
@@ -1062,8 +1062,9 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             let attrValue;
             rawProp.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(rawProp.slice(15), rCtx.$static$.$containerState$);
             const prop = "htmlFor" === rawProp ? "for" : rawProp;
-            "class" === prop ? classStr = serializeClass(value) : attrValue = "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : !1 === value || null == value ? null : !0 === value ? "" : String(value), 
-            null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + ("" === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
+            "class" === prop ? classStr = serializeClass(value) : "style" === prop ? attrValue = stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? (attrValue = null != value ? String(value) : null, 
+            value = attrValue) : attrValue = !1 === value || null == value ? null : String(value), 
+            null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + (!0 === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
         };
         if (immutable) {
             for (const prop in immutable) {
@@ -3280,7 +3281,7 @@ const handleClass = (ctx, elm, newValue) => (assertTrue(null == newValue || "str
 elm.namespaceURI === SVG_NS ? setAttribute(ctx, elm, "class", newValue) : setProperty(ctx, elm, "className", newValue), 
 !0);
 
-const checkBeforeAssign = (ctx, elm, newValue, prop) => (prop in elm && elm[prop] !== newValue && ("SELECT" === elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
+const checkBeforeAssign = (ctx, elm, newValue, prop) => prop in elm && ((elm[prop] !== newValue || "value" === prop && !elm.hasAttribute(prop)) && ("SELECT" === elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
 !0);
 
 const forceAttribute = (ctx, elm, newValue, prop) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
