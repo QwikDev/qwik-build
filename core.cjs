@@ -4608,7 +4608,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return newCtx;
     };
     const serializeClassWithHost = (obj, hostCtx) => {
-        if (hostCtx && hostCtx.$scopeIds$) {
+        if (hostCtx?.$scopeIds$?.length) {
             return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
         }
         return serializeClass(obj);

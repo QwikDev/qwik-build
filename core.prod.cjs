@@ -1992,7 +1992,7 @@
         $cmpCtx$: ctx.$cmpCtx$,
         $slotCtx$: ctx.$slotCtx$
     });
-    const serializeClassWithHost = (obj, hostCtx) => hostCtx && hostCtx.$scopeIds$ ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
+    const serializeClassWithHost = (obj, hostCtx) => hostCtx?.$scopeIds$?.length ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
     const serializeClass = obj => {
         if (!obj) {
             return "";
