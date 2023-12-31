@@ -2175,15 +2175,21 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      */
     const _jsxC = (type, mutableProps, flags, key, dev) => {
         const processed = key == null ? null : String(key);
-        const props = mutableProps ?? EMPTY_OBJ;
+        const props = mutableProps ?? {};
         // In dynamic components, type could be a string
         if (typeof type === 'string' && _IMMUTABLE in props) {
-            const p = {};
-            // The immutable props are all regular props minus the children
-            for (const [k, v] of Object.entries(props[_IMMUTABLE])) {
-                p[k] = v === _IMMUTABLE ? props[k] : v;
+            const immutableProps = props[_IMMUTABLE];
+            delete props[_IMMUTABLE];
+            const children = props.children;
+            delete props.children;
+            // Immutable handling for string tags is a bit different, merge all and consider immutable
+            for (const [k, v] of Object.entries(immutableProps)) {
+                if (v !== _IMMUTABLE) {
+                    delete props[k];
+                    props[k] = v;
+                }
             }
-            return _jsxQ(type, null, p, props.children, flags, key, dev);
+            return _jsxQ(type, null, props, children, flags, key, dev);
         }
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
         if (typeof type === 'string' && mutableProps) {
