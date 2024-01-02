@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.3.1
+ * @builder.io/qwik/cli 1.3.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1667,6 +1667,10 @@ var de = () => {
   return process.on("uncaughtExceptionMonitor", () => $4(2)), process.on("unhandledRejection", () => $4(2)), process.on("SIGINT", () => $4(1)), process.on("SIGTERM", () => $4(1)), process.on("exit", $4), { start: l2, stop: u, message: m2 };
 };
 
+// packages/qwik/src/cli/utils/integrations.ts
+var import_node_fs3 = __toESM(require("fs"), 1);
+var import_node_path3 = require("path");
+
 // packages/qwik/src/cli/utils/utils.ts
 var import_which_pm_runs = __toESM(require_which_pm_runs(), 1);
 var import_node_fs2 = __toESM(require("fs"), 1);
@@ -1835,8 +1839,6 @@ ${gray(S_CONNECT_LEFT + S_BAR_H.repeat(len + 2) + S_CORNER_BOTTOM_RIGHT)}
 };
 
 // packages/qwik/src/cli/utils/integrations.ts
-var import_node_fs3 = __toESM(require("fs"), 1);
-var import_node_path3 = require("path");
 var integrations = null;
 async function sortIntegrationsAndReturnAsClackOptions(integrations2, { maxHintLength = 50, showHint = true } = {}) {
   return integrations2.sort((a2, b3) => {
@@ -1902,17 +1904,6 @@ async function loadIntegrations() {
   return integrations;
 }
 
-// packages/qwik/src/cli/utils/log.ts
-function logNextStep(nextSteps, packageManager) {
-  const outString = [];
-  if (nextSteps) {
-    nextSteps.lines.forEach(
-      (step) => outString.push(`${step.replace(/\bpnpm\b/g, packageManager)}`)
-    );
-  }
-  return outString.join("\n");
-}
-
 // packages/qwik/src/cli/add/run-add-interactive.ts
 var import_node_path6 = require("path");
 
@@ -1923,6 +1914,17 @@ function installDeps(pkgManager, dir) {
 function runInPkg(pkgManager, args, cwd) {
   const cmd = pkgManager === "npm" ? "npx" : pkgManager;
   return runCommand(cmd, args, cwd);
+}
+
+// packages/qwik/src/cli/utils/log.ts
+function logNextStep(nextSteps, packageManager) {
+  const outString = [];
+  if (nextSteps) {
+    nextSteps.lines.forEach(
+      (step) => outString.push(`${step.replace(/\bpnpm\b/g, packageManager)}`)
+    );
+  }
+  return outString.join("\n");
 }
 
 // packages/qwik/src/cli/add/update-app.ts
@@ -2637,7 +2639,9 @@ async function runAddInteractive(app, id) {
     integration: integration.id,
     installDeps: runInstall
   });
-  await logUpdateAppResult(pkgManager, result);
+  if (app.getArg("skipConfirmation") !== "true") {
+    await logUpdateAppResult(pkgManager, result);
+  }
   await result.commit(true);
   const postInstall = (_a = result.integration.pkgJson.__qwik__) == null ? void 0 : _a.postInstall;
   if (postInstall) {
@@ -3103,7 +3107,6 @@ var jokes_default = [
   ["What did the fish say when it hit the wall?", "Dam."],
   ["Want to hear a joke about a piece of paper?", "Never mind...it's tearable"],
   ["What did the big flower say to the littler flower?", "Hi, bud!"],
-  ["What has ears but cannot hear?", "A field of corn."],
   ["What's the best thing about elevator jokes?", "They work on so many levels."],
   ["Why can't your nose be  inches long?", "Because then it'd be a foot!"],
   ["Why does Superman get invited to dinners?", "Because he is a Supperhero."],
@@ -4811,7 +4814,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.3.1");
+  console.log("1.3.2");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

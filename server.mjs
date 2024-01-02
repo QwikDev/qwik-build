@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.3.1
+ * @builder.io/qwik/server 1.3.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -111,7 +111,7 @@ function getBuildBase(opts) {
   return "/build/";
 }
 var versions = {
-  qwik: "1.3.1",
+  qwik: "1.3.2",
   qwikDom: "2.1.19"
 };
 
@@ -130,6 +130,11 @@ function getQwikLoaderScript(opts = {}) {
     return loader.replace("window.qEvents", JSON.stringify(opts.events));
   }
   return opts.debug ? QWIK_LOADER_DEFAULT_DEBUG : QWIK_LOADER_DEFAULT_MINIFIED;
+}
+var QWIK_PREFETCH_MINIFIED = globalThis.QWIK_PREFETCH_MINIFIED;
+var QWIK_PREFETCH_DEBUG = globalThis.QWIK_PREFETCH_DEBUG;
+function getQwikPrefetchWorkerScript(opts = {}) {
+  return opts.debug ? QWIK_PREFETCH_DEBUG : QWIK_PREFETCH_MINIFIED;
 }
 
 // packages/qwik/src/server/prefetch-strategy.ts
@@ -212,6 +217,12 @@ function workerFetchScript() {
   s += `w.onmessage=()=>{w.terminate()};`;
   return s;
 }
+function prefetchUrlsEventScript(prefetchResources) {
+  const data = {
+    bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split("/").pop())
+  };
+  return `document.dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
+}
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -288,7 +299,7 @@ function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
   prefetchNodes.push(
     jsx("script", {
       "q:type": "prefetch-bundles",
-      dangerouslySetInnerHTML: `document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
+      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources) + `;document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
       nonce
     })
   );
@@ -358,10 +369,7 @@ function workerFetchImplementation(prefetchNodes, prefetchResources, nonce) {
   );
 }
 function normalizePrefetchImplementation(input) {
-  if (input && typeof input === "object") {
-    return input;
-  }
-  return PrefetchImplementationDefault;
+  return { ...PrefetchImplementationDefault, ...input };
 }
 var PrefetchImplementationDefault = {
   linkInsert: null,
@@ -457,6 +465,15 @@ async function renderToStream(rootNode, opts) {
       opts.qwikLoader = {
         include: "never"
       };
+    }
+    if (!opts.qwikPrefetchServiceWorker) {
+      opts.qwikPrefetchServiceWorker = {};
+    }
+    if (!opts.qwikPrefetchServiceWorker.include) {
+      opts.qwikPrefetchServiceWorker.include = false;
+    }
+    if (!opts.qwikPrefetchServiceWorker.position) {
+      opts.qwikPrefetchServiceWorker.position = "top";
     }
   }
   if (!opts.manifest) {
@@ -640,6 +657,7 @@ async function setServerPlatform2(manifest) {
 }
 export {
   getQwikLoaderScript,
+  getQwikPrefetchWorkerScript,
   renderToStream,
   renderToString,
   resolveManifest,

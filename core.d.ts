@@ -1,5 +1,5 @@
 import * as CSS_2 from 'csstype';
-import type { ServerRequestEvent } from '.-city/middleware/request-handler';
+import { JSXNode as JSXNode_2 } from './jsx-runtime';
 
 /**
  * Qwik Optimizer marker function.
@@ -1290,6 +1290,7 @@ export declare interface LiHTMLAttributes<T extends Element> extends Attrs<'li',
 export declare interface LinkHTMLAttributes<T extends Element> extends Attrs<'link', T> {
 }
 
+/** A QRL that will be called when the event occurs */
 declare type Listener = [
 eventName: string,
 qrl: QRLInternal<(event: PossibleEvents, elem?: Element) => any>
@@ -1498,12 +1499,32 @@ declare interface PauseContext {
     refs: Record<string, string>;
 }
 
-/** @internal */
+/**
+ * Grab all state needed to resume the container later.
+ *
+ * @internal
+ */
 export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
 
 declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 
-declare type PossibleEvents = Event | ServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
+declare type PossibleEvents = Event | SimplifiedServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
+
+/**
+ * @param opts - Options for the prefetch service worker.
+ *
+ *   - `base` Base URL for the service worker.
+ *   - `path` Path to the service worker.
+ *
+ * @returns
+ * @alpha
+ */
+export declare const PrefetchServiceWorker: (opts: {
+    base?: string;
+    path?: string;
+    verbose?: boolean;
+    fetchBundleGraph?: boolean;
+}) => JSXNode_2<"script">;
 
 declare type Prettify<T> = {} & {
     [K in keyof T]: T[K];
@@ -1582,6 +1603,7 @@ declare interface QContext {
     $props$: Record<string, any> | null;
     /** The QRL if this is `component$`-wrapped component. */
     $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
+    /** The event handlers for this element */
     li: Listener[];
     /** Sequential data store for hooks, managed by useSequentialScope. */
     $seq$: any[] | null;
@@ -1598,6 +1620,11 @@ declare interface QContext {
      * the owner virtual component, and for a virtual component it's the wrapping virtual component.
      */
     $parentCtx$: QContext | null | undefined;
+    /**
+     * During SSR, separately store the actual parent of slotted components to correctly pause
+     * subscriptions
+     */
+    $realParentCtx$: QContext | undefined;
 }
 
 /**
@@ -1826,9 +1853,7 @@ export declare type QwikClipboardEvent<T = Element> = NativeClipboardEvent;
 /** @public @deprecated Use `CompositionEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikCompositionEvent<T = Element> = NativeCompositionEvent;
 
-declare type QwikCustomEvents<EL> = {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL>;
-};
+declare type QwikCustomEvents<EL> = {};
 
 declare type QwikCustomEventsPlain<EL> = {
     /** The handler */
@@ -1963,7 +1988,7 @@ export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 export declare type QwikWheelEvent<T = Element> = NativeWheelEvent;
 
 /** @public */
-export declare type ReadonlySignal<T = any> = Readonly<Signal<T>>;
+export declare type ReadonlySignal<T = unknown> = Readonly<Signal<T>>;
 
 /**
  * A ref can be either a signal or a function. Note that the type of Signal is Element so that it
@@ -2005,7 +2030,7 @@ declare interface RenderContext {
     /** Current Qwik component */
     $cmpCtx$: QContext | null;
     /** Current Slot parent */
-    $slotCtx$: QContext | null;
+    $slotCtx$: QContext | undefined;
 }
 
 declare const RenderEvent = "qRender";
@@ -2223,6 +2248,12 @@ declare class SignalDerived<RETURN = unknown, ARGS extends any[] = unknown[]> ex
     $funcStr$?: string | undefined;
     constructor($func$: (...args: ARGS) => RETURN, $args$: ARGS, $funcStr$?: string | undefined);
     get value(): RETURN;
+}
+
+declare interface SimplifiedServerRequestEvent<T = unknown> {
+    url: URL;
+    locale: string | undefined;
+    request: Request;
 }
 
 /** @public */
@@ -3676,7 +3707,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.3.1
+ * 1.3.2
  *
  * @public
  */

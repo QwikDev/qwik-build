@@ -711,9 +711,7 @@ declare interface QwikAttributesBase extends PreventDefault {
     'q:slot'?: string;
 }
 
-declare type QwikCustomEvents<EL> = {
-    [key: `${'document:' | 'window:' | ''}on${string}$`]: QRLEventHandlerMulti<Event, EL>;
-};
+declare type QwikCustomEvents<EL> = {};
 
 declare type QwikCustomEventsPlain<EL> = {
     /** The handler */

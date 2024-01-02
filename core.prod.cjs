@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.3.1
+ * @builder.io/qwik 1.3.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -123,7 +123,7 @@
         const proto = Object.getPrototypeOf(v);
         return proto === Object.prototype || null === proto;
     };
-    const isObject = v => v && "object" == typeof v;
+    const isObject = v => !!v && "object" == typeof v;
     const isArray = v => Array.isArray(v);
     const isString = v => "string" == typeof v;
     const isFunction = v => "function" == typeof v;
@@ -616,8 +616,8 @@
                     const content = projectedChildren[slotName];
                     if (content) {
                         return _jsxQ("q:template", {
-                            [QSlot]: slotName,
-                            hidden: "",
+                            [QSlot]: slotName || !0,
+                            hidden: !0,
                             "aria-hidden": "true"
                         }, null, content, 0, null);
                     }
@@ -660,43 +660,31 @@
             let hasRef = !1;
             let classStr = "";
             let htmlStr = null;
+            qDev;
+            const handleProp = (rawProp, value, isImmutable) => {
+                if (isOnProp(rawProp)) {
+                    return void setEvent(elCtx.li, rawProp, value, void 0);
+                }
+                if (isSignal(value) && (assertDefined(), value = trackSignal(value, isImmutable ? [ 1, elm, value, hostCtx.$element$, rawProp ] : [ 2, hostCtx.$element$, value, elm, rawProp ]), 
+                useSignal = !0), rawProp === dangerouslySetInnerHTML) {
+                    return void (htmlStr = value);
+                }
+                let attrValue;
+                rawProp.startsWith("preventdefault:") && registerQwikEvent$1(rawProp.slice(15), rCtx.$static$.$containerState$);
+                const prop = "htmlFor" === rawProp ? "for" : rawProp;
+                "class" === prop ? classStr = serializeClass(value) : "style" === prop ? attrValue = stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? (attrValue = null != value ? String(value) : null, 
+                value = attrValue) : attrValue = !1 === value || null == value ? null : String(value), 
+                null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + (!0 === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
+            };
             if (immutable) {
                 for (const prop in immutable) {
-                    let value = immutable[prop];
-                    if (isOnProp(prop)) {
-                        setEvent(elCtx.li, prop, value, void 0);
-                        continue;
-                    }
-                    const attrName = processPropKey(prop);
-                    if (isSignal(value) && (assertDefined(), value = trackSignal(value, [ 1, elm, value, hostCtx.$element$, attrName ]), 
-                    useSignal = !0), prop === dangerouslySetInnerHTML) {
-                        htmlStr = value;
-                        continue;
-                    }
-                    prop.startsWith("preventdefault:") && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
-                    const attrValue = processPropValue(attrName, value);
-                    null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
+                    handleProp(prop, immutable[prop], !0);
                 }
             }
             for (const prop in props) {
-                let value = props[prop];
-                if ("ref" === prop) {
-                    void 0 !== value && (setRef(value, elm), hasRef = !0);
-                    continue;
-                }
-                if (isOnProp(prop)) {
-                    setEvent(elCtx.li, prop, value, void 0);
-                    continue;
-                }
-                const attrName = processPropKey(prop);
-                if (isSignal(value) && (assertDefined(), value = trackSignal(value, [ 2, hostCtx.$element$, value, elm, attrName ]), 
-                useSignal = !0), prop === dangerouslySetInnerHTML) {
-                    htmlStr = value;
-                    continue;
-                }
-                prop.startsWith("preventdefault:") && registerQwikEvent$1(prop.slice(15), rCtx.$static$.$containerState$);
-                const attrValue = processPropValue(attrName, value);
-                null != attrValue && ("class" === attrName ? classStr = attrValue : "value" === attrName && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(attrName) || (openingElement += " " + ("" === value ? attrName : attrName + '="' + escapeAttr(attrValue) + '"')));
+                const value = props[prop];
+                "ref" !== prop ? handleProp(prop, value, !1) : void 0 !== value && (setRef(value, elm), 
+                hasRef = !0);
             }
             const listeners = elCtx.li;
             if (hostCtx) {
@@ -750,7 +738,8 @@
         }
         if (tagName === Virtual) {
             const elCtx = createMockQContext(111);
-            return elCtx.$parentCtx$ = rCtx.$slotCtx$ || rCtx.$cmpCtx$, hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC && addDynamicSlot(hostCtx, elCtx), 
+            return rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
+            hostCtx && hostCtx.$flags$ & HOST_FLAG_DYNAMIC && addDynamicSlot(hostCtx, elCtx), 
             renderNodeVirtual(node, elCtx, void 0, rCtx, ssrCtx, stream, flags, beforeClose);
         }
         if (tagName === SSRRaw) {
@@ -841,10 +830,13 @@
                     currentIndex === index ? stream.write(chunk) : buffer.push(chunk);
                 }
             } : stream, flags);
-            const next = () => {
-                currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
-            };
-            return isPromise(rendered) && prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : isPromise(rendered) ? rendered.then(next) : prevPromise ? prevPromise.then(next) : void currentIndex++;
+            if (prevPromise || isPromise(rendered)) {
+                const next = () => {
+                    currentIndex++, buffers.length > currentIndex && buffers[currentIndex].forEach((chunk => stream.write(chunk)));
+                };
+                return isPromise(rendered) ? prevPromise ? Promise.all([ rendered, prevPromise ]).then(next) : rendered.then(next) : prevPromise.then(next);
+            }
+            currentIndex++;
         }), void 0);
     };
     const flatVirtualChildren = (children, ssrCtx) => {
@@ -879,8 +871,6 @@
             "children" !== prop && prop !== QSlot && (isSignal(immutableMeta[prop]) ? target["$$" + prop] = immutableMeta[prop] : target[prop] = expectProps[prop]);
         }
     };
-    const processPropKey = prop => "htmlFor" === prop ? "for" : prop;
-    const processPropValue = (prop, value) => "class" === prop ? serializeClass(value) : "style" === prop ? stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? null != value ? String(value) : value : !1 === value || null == value ? null : !0 === value ? "" : String(value);
     const invisibleElements = {
         head: !0,
         style: !0,
@@ -963,13 +953,16 @@
     };
     const _jsxC = (type, mutableProps, flags, key, dev) => {
         const processed = null == key ? null : String(key);
-        const props = mutableProps ?? EMPTY_OBJ;
+        const props = mutableProps ?? {};
         if ("string" == typeof type && _IMMUTABLE in props) {
-            const p = {};
-            for (const [k, v] of Object.entries(props[_IMMUTABLE])) {
-                p[k] = v === _IMMUTABLE ? props[k] : v;
+            const immutableProps = props[_IMMUTABLE];
+            delete props[_IMMUTABLE];
+            const children = props.children;
+            delete props.children;
+            for (const [k, v] of Object.entries(immutableProps)) {
+                v !== _IMMUTABLE && (delete props[k], props[k] = v);
             }
-            return _jsxQ(type, null, p, props.children, flags, key, dev);
+            return _jsxQ(type, null, props, children, flags, key, dev);
         }
         const node = new JSXNodeImpl(type, props, null, props.children, flags, processed);
         return "string" == typeof type && mutableProps && delete mutableProps.children, 
@@ -1454,20 +1447,20 @@
         containerState.$renderPromise$ = void 0;
         containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
     };
+    const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
+    const isResourceTask$1 = task => 0 != (task.$flags$ & TaskFlagsIsResource);
     const executeTasksBefore = async (containerState, rCtx) => {
         const containerEl = containerState.$containerEl$;
         const resourcesPromises = [];
         const taskPromises = [];
-        const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
-        const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
         containerState.$taskNext$.forEach((task => {
             isTask(task) && (taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
-            containerState.$taskNext$.delete(task)), isResourceTask(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
+            containerState.$taskNext$.delete(task)), isResourceTask$1(task) && (resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))), 
             containerState.$taskNext$.delete(task));
         }));
         do {
             if (containerState.$taskStaging$.forEach((task => {
-                isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
+                isTask(task) ? taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : isResourceTask$1(task) ? resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task))) : containerState.$taskNext$.add(task);
             })), containerState.$taskStaging$.clear(), taskPromises.length > 0) {
                 const tasks = await Promise.all(taskPromises);
                 sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
@@ -1476,7 +1469,10 @@
         } while (containerState.$taskStaging$.size > 0);
         if (resourcesPromises.length > 0) {
             const resources = await Promise.all(resourcesPromises);
-            sortTasks(resources), resources.forEach((task => runSubscriber(task, containerState, rCtx)));
+            sortTasks(resources);
+            for (const task of resources) {
+                runSubscriber(task, containerState, rCtx);
+            }
         }
     };
     const executeTasksAfter = async (containerState, rCtx, taskPred) => {
@@ -1864,7 +1860,8 @@
             $componentQrl$: null,
             $contexts$: null,
             $dynamicSlots$: null,
-            $parentCtx$: void 0
+            $parentCtx$: void 0,
+            $realParentCtx$: void 0
         };
         return seal(), element._qc_ = ctx, ctx;
     };
@@ -1962,7 +1959,7 @@
         const waitOn = iCtx.$waitOn$ = [];
         assertDefined(), assertDefined();
         const newCtx = pushRenderContext(rCtx);
-        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = null, iCtx.$subscriber$ = [ 0, hostElement ], 
+        newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = void 0, iCtx.$subscriber$ = [ 0, hostElement ], 
         iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
         const componentFn = componentQRL.getFn(iCtx);
         return safeCall((() => componentFn(props)), (jsxNode => maybeThen(promiseAllLazy(waitOn), (() => elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
@@ -1989,7 +1986,7 @@
                 $visited$: []
             },
             $cmpCtx$: null,
-            $slotCtx$: null
+            $slotCtx$: void 0
         };
         return seal(), seal(), ctx;
     };
@@ -1998,7 +1995,7 @@
         $cmpCtx$: ctx.$cmpCtx$,
         $slotCtx$: ctx.$slotCtx$
     });
-    const serializeClassWithHost = (obj, hostCtx) => hostCtx && hostCtx.$scopeIds$ ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
+    const serializeClassWithHost = (obj, hostCtx) => hostCtx?.$scopeIds$?.length ? hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj) : serializeClass(obj);
     const serializeClass = obj => {
         if (!obj) {
             return "";
@@ -2362,7 +2359,8 @@
         flags |= IS_HEAD) : (elm = createElement(doc, tag, isSvg), flags &= ~IS_HEAD), vnode.$flags$ & static_subtree && (flags |= 4), 
         vnode.$elm$ = elm;
         const elCtx = createContext(elm);
-        if (elCtx.$parentCtx$ = rCtx.$slotCtx$ ?? rCtx.$cmpCtx$, isVirtual) {
+        if (rCtx.$slotCtx$ ? (elCtx.$parentCtx$ = rCtx.$slotCtx$, elCtx.$realParentCtx$ = rCtx.$cmpCtx$) : elCtx.$parentCtx$ = rCtx.$cmpCtx$, 
+        isVirtual) {
             if ("q:renderFn" in props) {
                 const renderQRL = props["q:renderFn"];
                 assertQrl(renderQRL);
@@ -2468,7 +2466,7 @@
         const parent = elCtx.$element$.parentElement;
         return assertDefined(), queryAllVirtualByAttribute(parent, "q:sref", elCtx.$id$).map(domToVnode);
     };
-    const checkBeforeAssign = (ctx, elm, newValue, prop) => (prop in elm && elm[prop] !== newValue && ("SELECT" === elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
+    const checkBeforeAssign = (ctx, elm, newValue, prop) => prop in elm && ((elm[prop] !== newValue || "value" === prop && !elm.hasAttribute(prop)) && ("SELECT" === elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
     !0);
     const forceAttribute = (ctx, elm, newValue, prop) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
     !0);
@@ -3208,7 +3206,7 @@
         return results;
     };
     const collectProps = (elCtx, collector) => {
-        const parentCtx = elCtx.$parentCtx$;
+        const parentCtx = elCtx.$realParentCtx$ || elCtx.$parentCtx$;
         const props = elCtx.$props$;
         if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
             const subs = getSubscriptionManager(props)?.$subs$;
@@ -3245,9 +3243,8 @@
     };
     const collectDeferElement = (el, collector) => {
         const ctx = tryGetContext(el);
-        collector.$elements$.includes(ctx) || (collector.$elements$.push(ctx), collector.$prefetch$++, 
-        ctx.$flags$ & HOST_FLAG_DYNAMIC ? collectElementData(ctx, collector, !0) : collector.$deferElements$.push(ctx), 
-        collector.$prefetch$--);
+        collector.$elements$.includes(ctx) || (collector.$elements$.push(ctx), ctx.$flags$ & HOST_FLAG_DYNAMIC ? (collector.$prefetch$++, 
+        collectElementData(ctx, collector, !0), collector.$prefetch$--) : collector.$deferElements$.push(ctx));
     };
     const collectElement = (el, collector) => {
         const ctx = tryGetContext(el);
@@ -3297,28 +3294,26 @@
         collector.$seen$.add(manager);
         const subs = manager.$subs$;
         assertDefined();
-        for (const key of subs) {
-            const type = key[0];
-            if (type > 0 && collectValue(key[2], collector, leaks), !0 === leaks) {
-                const host = key[1];
-                isNode$1(host) && isVirtualElement(host) ? 0 === type && collectDeferElement(host, collector) : collectValue(host, collector, !0);
+        for (const sub of subs) {
+            if (sub[0] > 0 && collectValue(sub[2], collector, leaks), !0 === leaks) {
+                const host = sub[1];
+                isNode$1(host) && isVirtualElement(host) ? 0 === sub[0] && collectDeferElement(host, collector) : collectValue(host, collector, !0);
             }
         }
     };
     const PROMISE_VALUE = Symbol();
     const getPromiseValue = promise => promise[PROMISE_VALUE];
     const collectValue = (obj, collector, leaks) => {
-        if (null !== obj) {
+        if (null != obj) {
             const objType = typeof obj;
             switch (objType) {
               case "function":
               case "object":
                 {
-                    const seen = collector.$seen$;
-                    if (seen.has(obj)) {
+                    if (collector.$seen$.has(obj)) {
                         return;
                     }
-                    if (seen.add(obj), fastSkipSerialize(obj)) {
+                    if (collector.$seen$.add(obj), fastSkipSerialize(obj)) {
                         return collector.$objSet$.add(void 0), void collector.$noSerialize$.push(obj);
                     }
                     const input = obj;
@@ -3359,11 +3354,6 @@
                         }
                     }
                     break;
-                }
-
-              case "string":
-                if (collector.$seen$.has(obj)) {
-                    return;
                 }
             }
         }
@@ -3490,7 +3480,8 @@
             chunk = chunkOrFn;
         }
         return announcedQRL.has(symbol) || (announcedQRL.add(symbol), emitEvent("qprefetch", {
-            symbols: [ getSymbolHash(symbol) ]
+            symbols: [ getSymbolHash(symbol) ],
+            bundles: [ chunk ]
         })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     };
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
@@ -3673,15 +3664,13 @@
         $prefix$: "",
         $test$: v => v instanceof URL,
         $serialize$: obj => obj.href,
-        $prepare$: data => new URL(data),
-        $fill$: void 0
+        $prepare$: data => new URL(data)
     });
     const DateSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof Date,
         $serialize$: obj => obj.toISOString(),
-        $prepare$: data => new Date(data),
-        $fill$: void 0
+        $prepare$: data => new Date(data)
     });
     const RegexSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
@@ -3692,8 +3681,7 @@
             const source = data.slice(space + 1);
             const flags = data.slice(0, space);
             return new RegExp(source, flags);
-        },
-        $fill$: void 0
+        }
     });
     const ErrorSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
@@ -3702,15 +3690,12 @@
         $prepare$: text => {
             const err = new Error(text);
             return err.stack = void 0, err;
-        },
-        $fill$: void 0
+        }
     });
     const DocumentSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
-        $test$: v => isDocument(v),
-        $serialize$: void 0,
-        $prepare$: (_, _c, doc) => doc,
-        $fill$: void 0
+        $test$: v => !!v && "object" == typeof v && isDocument(v),
+        $prepare$: (_, _c, doc) => doc
     });
     const SERIALIZABLE_STATE = Symbol("serializable-data");
     const ComponentSerializer = /*#__PURE__*/ serializer({
@@ -3728,8 +3713,7 @@
         },
         $fill$: (component, getObject) => {
             const [qrl] = component[SERIALIZABLE_STATE];
-            qrl.$capture$ && qrl.$capture$.length > 0 && (qrl.$captureRef$ = qrl.$capture$.map(getObject), 
-            qrl.$capture$ = null);
+            qrl.$capture$?.length && (qrl.$captureRef$ = qrl.$capture$.map(getObject), qrl.$capture$ = null);
         }
     });
     const DerivedSignalSerializer = /*#__PURE__*/ serializer({
@@ -3806,15 +3790,13 @@
         $prefix$: "",
         $test$: v => "number" == typeof v,
         $serialize$: v => String(v),
-        $prepare$: data => Number(data),
-        $fill$: void 0
+        $prepare$: data => Number(data)
     });
     const URLSearchParamsSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
         $test$: v => v instanceof URLSearchParams,
         $serialize$: obj => obj.toString(),
-        $prepare$: data => new URLSearchParams(data),
-        $fill$: void 0
+        $prepare$: data => new URLSearchParams(data)
     });
     const FormDataSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
@@ -3832,8 +3814,7 @@
                 formData.append(key, value);
             }
             return formData;
-        },
-        $fill$: void 0
+        }
     });
     const JSXNodeSerializer = /*#__PURE__*/ serializer({
         $prefix$: "",
@@ -3862,8 +3843,7 @@
         $prefix$: "",
         $test$: v => "bigint" == typeof v,
         $serialize$: v => v.toString(),
-        $prepare$: data => BigInt(data),
-        $fill$: void 0
+        $prepare$: data => BigInt(data)
     });
     const DATA = Symbol();
     const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, /*#__PURE__*/ serializer({
@@ -3916,8 +3896,7 @@
         $prefix$: "",
         $test$: v => !!getSerializer(v) || v === UNDEFINED_PREFIX,
         $serialize$: v => v,
-        $prepare$: data => data,
-        $fill$: void 0
+        $prepare$: data => data
     }) ];
     const serializerByPrefix = /*#__PURE__*/ (() => {
         const serializerByPrefix = [];
@@ -4344,7 +4323,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", "1.3.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.3.2"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4509,8 +4488,30 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
+    const CODE = ((qc, c, q, v, f, b, h) => {
+        b = qc.getAttribute("q:base"), h = qc.getAttribute("q:manifest-hash"), c.register("URL", {
+            scope: "SCOPE"
+        }).then(((sw, onReady) => {
+            onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
+        })), v && q.push([ "verbose" ]), f && document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ]))), 
+        q.push([ "graph-url", b, `q-bundle-graph-${h}.json` ]);
+    }).toString();
     exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
-    exports.RenderOnce = RenderOnce, exports.Resource = props => {
+    exports.PrefetchServiceWorker = opts => {
+        const resolvedOpts = {
+            base: "/",
+            verbose: !1,
+            fetchBundleGraph: !0,
+            path: "qwik-prefetch-service-worker.js",
+            ...opts
+        };
+        let code = CODE.replace("URL", resolvedOpts.base + resolvedOpts.path).replace("SCOPE", resolvedOpts.base);
+        resolvedOpts.verbose || (code = code.replaceAll(/\s+/gm, ""));
+        const props = {
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose, resolvedOpts.fetchBundleGraph ].join(","), ");" ].join("")
+        };
+        return _jsxC("script", props, 0, "prefetch-service-worker");
+    }, exports.RenderOnce = RenderOnce, exports.Resource = props => {
         const isBrowser = !isServerPlatform();
         const resource = props.value;
         let promise;
@@ -4630,7 +4631,7 @@
         const containerAttributes = {
             ...opts.containerAttributes,
             "q:container": "paused",
-            "q:version": "1.3.1",
+            "q:version": "1.3.2",
             "q:render": qRender,
             "q:base": opts.base,
             "q:locale": opts.serverData?.locale,
@@ -4803,7 +4804,7 @@
     }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.3.1", exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.3.2", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();
