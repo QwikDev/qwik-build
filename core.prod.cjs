@@ -4488,27 +4488,41 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    const CODE = ((qc, c, q, v, f, b, h) => {
-        b = qc.getAttribute("q:base"), h = qc.getAttribute("q:manifest-hash"), c.register("URL", {
+    const PREFETCH_CODE = /*#__PURE__*/ ((qc, c, q, v, b) => {
+        b = qc.getAttribute("q:base"), qc.getAttribute("q:manifest-hash"), c.register("URL", {
             scope: "SCOPE"
         }).then(((sw, onReady) => {
             onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
-        })), v && q.push([ "verbose" ]), f && document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ]))), 
-        q.push([ "graph-url", b, `q-bundle-graph-${h}.json` ]);
+        })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
+    }).toString();
+    const PREFETCH_GRAPH_CODE = /*#__PURE__*/ ((qc, q, b, h, u) => {
+        q.push([ "graph-url", b, u || `q-bundle-graph-${h || qc.getAttribute("q:manifest-hash")}.json` ]);
     }).toString();
     exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
-    exports.PrefetchServiceWorker = opts => {
+    exports.PrefetchGraph = (opts = {}) => {
+        const resolvedOpts = {
+            base: "/build/",
+            manifestHash: null,
+            manifestURL: null,
+            ...opts
+        };
+        let code = PREFETCH_GRAPH_CODE;
+        build.isDev || (code = code.replaceAll(/\s+/gm, ""));
+        const props = {
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), JSON.stringify(resolvedOpts.manifestURL) ].join(","), ");" ].join("")
+        };
+        return _jsxC("script", props, 0, "prefetch-graph");
+    }, exports.PrefetchServiceWorker = opts => {
         const resolvedOpts = {
             base: "/",
             verbose: !1,
-            fetchBundleGraph: !0,
             path: "qwik-prefetch-service-worker.js",
             ...opts
         };
-        let code = CODE.replace("URL", resolvedOpts.base + resolvedOpts.path).replace("SCOPE", resolvedOpts.base);
-        resolvedOpts.verbose || (code = code.replaceAll(/\s+/gm, ""));
+        let code = PREFETCH_CODE.replace("URL", resolvedOpts.base + resolvedOpts.path).replace("SCOPE", resolvedOpts.base);
+        build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose, resolvedOpts.fetchBundleGraph ].join(","), ");" ].join("")
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join("")
         };
         return _jsxC("script", props, 0, "prefetch-service-worker");
     }, exports.RenderOnce = RenderOnce, exports.Resource = props => {

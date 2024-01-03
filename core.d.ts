@@ -1511,12 +1511,38 @@ declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 declare type PossibleEvents = Event | SimplifiedServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
 
 /**
+ * Load the prefetch graph for the container.
+ *
+ * Each Qwik container needs to include its own prefetch graph.
+ *
+ * @param opts - Options for the loading prefetch graph.
+ *
+ *   - `base` - Base of the graph. For a default installation this will default to `/build/`. But if
+ *       more than one MFE is installed on the page, then each MFE needs to have its own base.
+ *   - `manifestHash` - Hash of the manifest file to load. If not provided the hash will be extracted
+ *       from the container attribute `q:manifest-hash` and assume the default build file
+ *       `${base}/q-bundle-graph-${manifestHash}.json`.
+ *   - `manifestURL` - URL of the manifest file to load if non-standard bundle graph location name.
+ *
+ * @alpha
+ */
+export declare const PrefetchGraph: (opts?: {
+    base?: string;
+    manifestHash?: string;
+    manifestURL?: string;
+}) => JSXNode_2<"script">;
+
+/**
+ * Install a service worker which will prefetch the bundles.
+ *
+ * There can only be one service worker per page. Because there can be many separate Qwik Containers
+ * on the page each container needs to load its prefetch graph using `PrefetchGraph` component.
+ *
  * @param opts - Options for the prefetch service worker.
  *
- *   - `base` Base URL for the service worker.
- *   - `path` Path to the service worker.
+ *   - `base` - Base URL for the service worker.
+ *   - `path` - Path to the service worker.
  *
- * @returns
  * @alpha
  */
 export declare const PrefetchServiceWorker: (opts: {
