@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.3.1
+ * @builder.io/qwik/cli 1.3.2
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -3107,7 +3107,6 @@ var jokes_default = [
   ["What did the fish say when it hit the wall?", "Dam."],
   ["Want to hear a joke about a piece of paper?", "Never mind...it's tearable"],
   ["What did the big flower say to the littler flower?", "Hi, bud!"],
-  ["What has ears but cannot hear?", "A field of corn."],
   ["What's the best thing about elevator jokes?", "They work on so many levels."],
   ["Why can't your nose be  inches long?", "Because then it'd be a foot!"],
   ["Why does Superman get invited to dinners?", "Because he is a Supperhero."],
@@ -4815,7 +4814,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.3.1");
+  console.log("1.3.2");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
