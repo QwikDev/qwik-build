@@ -7,13 +7,23 @@ import type { StreamWriter } from '.';
 import type { SymbolMapperFn } from './optimizer';
 
 /**
- * Provides the qwikloader.js file as a string. Useful for tooling to inline the qwikloader script
+ * Provides the `qwikloader.js` file as a string. Useful for tooling to inline the qwikloader script
  * into HTML.
  *
  * @public
  */
 export declare function getQwikLoaderScript(opts?: {
     events?: string[];
+    debug?: boolean;
+}): string;
+
+/**
+ * Provides the `qwik-prefetch-service-worker.js` file as a string. Useful for tooling to inline the
+ * qwikloader script into HTML.
+ *
+ * @public
+ */
+export declare function getQwikPrefetchWorkerScript(opts?: {
     debug?: boolean;
 }): string;
 
@@ -138,6 +148,28 @@ declare interface QwikManifest_2 {
     };
 }
 
+/**
+ * Options which determine how the Qwik Prefetch Service Worker is added to the document.
+ *
+ * Qwik Prefetch Service Worker is used to prefetch resources so that the QwikLoader will always
+ * have a cache hit. This will ensure that there will not be any delays for the end user while
+ * interacting with the application.
+ *
+ * @public
+ */
+declare interface QwikPrefetchServiceWorkerOptions {
+    /**
+     * Should the Qwik Prefetch Service Worker be added to the container. Defaults to `false` until
+     * the QwikCity Service Worker is deprecated.
+     */
+    include?: boolean;
+    /**
+     * Where should the Qwik Prefetch Service Worker be added to the container. Defaults to `top` to
+     * get prefetching going as fast as possible.
+     */
+    position?: 'top' | 'bottom';
+}
+
 /** @public */
 declare interface QwikSymbol {
     origin: string;
@@ -171,6 +203,12 @@ export declare interface RenderOptions extends SerializeDocumentOptions {
      * Defaults to `{ include: true }`.
      */
     qwikLoader?: QwikLoaderOptions;
+    /**
+     * Specifies if the Qwik Prefetch Service Worker script is added to the document or not.
+     *
+     * Defaults to `{ include: false }`. NOTE: This may be change in the future.
+     */
+    qwikPrefetchServiceWorker?: QwikPrefetchServiceWorkerOptions;
     prefetchStrategy?: PrefetchStrategy | null;
     /**
      * When set, the app is serialized into a fragment. And the returned html is not a complete
