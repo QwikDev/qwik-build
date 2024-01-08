@@ -26,10 +26,10 @@
             const attrName = "on" + onPrefix + ":" + eventName;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
             const ctx = element._qc_;
-            const qrls = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));
-            if (qrls && qrls.length > 0) {
-                for (const q of qrls) {
-                    await q[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
+            const relevantListeners = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));
+            if (relevantListeners && relevantListeners.length > 0) {
+                for (const listener of relevantListeners) {
+                    await listener[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
                 }
                 return;
             }
