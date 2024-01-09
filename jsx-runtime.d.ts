@@ -340,7 +340,11 @@ declare type EventCorrectionMap = {
     toggle: CorrectedToggleEvent;
 };
 
-/** A DOM event handler */
+/**
+ * A DOM event handler
+ *
+ * @public
+ */
 declare type EventHandler<EV = Event, EL = Element> = {
     bivarianceHack(event: EV, element: EL): any;
 }['bivarianceHack'];
@@ -699,6 +703,11 @@ declare interface QRLDev {
     hi: number;
 }
 
+/**
+ * An event handler for Qwik events, can be a handler QRL or an array of handler QRLs.
+ *
+ * @beta
+ */
 declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
 
 declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;

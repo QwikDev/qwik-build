@@ -89,6 +89,9 @@ declare type AllEventMapRaw = HTMLElementEventMap & DocumentEventMap & WindowEve
 
 declare type AllEventsMap = Omit<AllEventMapRaw, keyof EventCorrectionMap> & EventCorrectionMap;
 
+/** @internal */
+export declare type _AllowPlainQrl<Q> = QRLEventHandlerMulti<any, any> extends Q ? Q extends QRLEventHandlerMulti<infer EV, infer EL> ? Q | (EL extends Element ? EventHandler<EV, EL> : never) : Q : Q extends QRL<infer U> ? Q | U : NonNullable<Q> extends never ? Q : QRL<Q> | Q;
+
 declare type AllPascalEventMaps = PascalMap<AllEventsMap>;
 
 /** @public */
@@ -485,7 +488,7 @@ export declare interface ColHTMLAttributes<T extends Element> extends Attrs<'col
  *
  * @public
  */
-export declare const component$: <PROPS extends Record<any, any>>(onMount: (props: PROPS) => JSXNode | null) => Component<PropFunctionProps<PROPS>>;
+export declare const component$: <PROPS extends Record<any, any>>(onMount: (props: PROPS) => JSXNode | null) => Component<PROPS>;
 
 /**
  * Type representing the Qwik component.
@@ -871,8 +874,12 @@ declare type EventCorrectionMap = {
 
 declare type EventFromName<T extends string> = LcEvent<T>;
 
-/** A DOM event handler */
-declare type EventHandler<EV = Event, EL = Element> = {
+/**
+ * A DOM event handler
+ *
+ * @public
+ */
+export declare type EventHandler<EV = Event, EL = Element> = {
     bivarianceHack(event: EV, element: EL): any;
 }['bivarianceHack'];
 
@@ -1441,6 +1448,11 @@ declare type ObjToProxyMap = WeakMap<any, any>;
 export declare interface OlHTMLAttributes<T extends Element> extends Attrs<'ol', T> {
 }
 
+/** @internal */
+export declare type _Only$<P> = {
+    [K in keyof P as K extends `${string}$` ? K : never]: _AllowPlainQrl<P[K]>;
+};
+
 /** @public */
 export declare type OnRenderFn<PROPS extends Record<any, any>> = (props: PROPS) => JSXNode | null;
 
@@ -1608,14 +1620,15 @@ export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
  *
  * @public
  */
-export declare type PropsOf<COMP> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PublicProps<PROPS>> : COMP extends string ? QwikIntrinsicElements[COMP] : Record<string, unknown>;
+export declare type PropsOf<COMP> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PublicProps<PROPS>> : COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : COMP extends string ? QwikIntrinsicElements['span'] : Record<string, unknown>;
 
 /**
- * Extends the defined component PROPS, adding the default ones (children and q:slot)..
+ * Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing
+ * plain functions to QRL arguments.
  *
  * @public
  */
-export declare type PublicProps<PROPS extends Record<any, any>> = TransformProps<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
+export declare type PublicProps<PROPS extends Record<any, any>> = Omit<PROPS, `${string}$`> & _Only$<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
 
 /** Qwik Context of an element. */
 declare interface QContext {
@@ -1814,7 +1827,12 @@ declare interface QRLDev {
 /** @internal */
 export declare const qrlDEV: <T = any>(chunkOrFn: string | (() => Promise<any>), symbol: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
-declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
+/**
+ * An event handler for Qwik events, can be a handler QRL or an array of handler QRLs.
+ *
+ * @beta
+ */
+export declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
 
 declare type QRLInternal<TYPE = unknown> = QRL<TYPE> & QRLInternalMethods<TYPE>;
 
@@ -1901,14 +1919,13 @@ declare type QwikEvents<EL, Plain extends boolean = true> = Plain extends true ?
 /** @public @deprecated Use `FocusEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikFocusEvent<T = Element> = NativeFocusEvent;
 
-/** The DOM props without plain handlers, for use inside functions @public */
+/**
+ * The DOM props without plain handlers, for use inside functions
+ *
+ * @public
+ */
 export declare type QwikHTMLElements = {
     [tag in keyof HTMLElementTagNameMap]: Augmented<HTMLElementTagNameMap[tag], SpecialAttrs[tag]> & HTMLElementAttrs & QwikAttributes<HTMLElementTagNameMap[tag]>;
-} & {
-    /** For unknown tags we allow all props */
-    [unknownTag: string]: {
-        [prop: string]: any;
-    } & HTMLElementAttrs & QwikAttributes<any>;
 };
 
 /** Emitted by qwik-loader on document when the document first becomes idle @public */
@@ -1986,7 +2003,11 @@ export declare type QwikPointerEvent<T = Element> = NativePointerEvent;
 /** @public @deprecated Use `SubmitEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikSubmitEvent<T = Element> = SubmitEvent;
 
-/** The SVG props without plain handlers, for use inside functions @public */
+/**
+ * The SVG props without plain handlers, for use inside functions
+ *
+ * @public
+ */
 export declare type QwikSVGElements = {
     [K in keyof Omit<SVGElementTagNameMap, keyof HTMLElementTagNameMap>]: SVGProps<SVGElementTagNameMap[K]>;
 };
@@ -3048,18 +3069,6 @@ export declare interface Tracker {
 /** @public */
 export declare interface TrackHTMLAttributes<T extends Element> extends Attrs<'track', T> {
 }
-
-/** @public */
-declare type TransformProp<T, K> = NonNullable<T> extends (...args: infer ARGS) => infer RET ? (...args: ARGS) => ValueOrPromise<Awaited<RET>> : T extends QRLEventHandlerMulti<infer EV, infer EL> ? EventHandler<EV, EL> | T : K extends `${string}$` ? T extends QRL<infer U> ? T | U : T : T;
-
-/**
- * Transform the component PROPS.
- *
- * @public
- */
-declare type TransformProps<PROPS extends Record<any, any>> = {
-    [K in keyof PROPS]: TransformProp<PROPS[K], K>;
-};
 
 /**
  * Don't track listeners for this callback

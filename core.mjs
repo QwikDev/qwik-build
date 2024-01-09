@@ -8655,7 +8655,6 @@ const _qrlSync = function (fn, serializedFn) {
     return createQRL('', SYNC_QRL, fn, null, null, null, null);
 };
 
-// const ELEMENTS_SKIP_KEY: JSXTagName[] = ['html', 'body', 'head'];
 // <docs markdown="../readme.md#component">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#component instead)
