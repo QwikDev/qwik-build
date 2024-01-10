@@ -662,6 +662,9 @@
             let htmlStr = null;
             qDev;
             const handleProp = (rawProp, value, isImmutable) => {
+                if ("ref" === rawProp) {
+                    return void (void 0 !== value && (setRef(value, elm), hasRef = !0));
+                }
                 if (isOnProp(rawProp)) {
                     return void setEvent(elCtx.li, rawProp, value, void 0);
                 }
@@ -682,9 +685,7 @@
                 }
             }
             for (const prop in props) {
-                const value = props[prop];
-                "ref" !== prop ? handleProp(prop, value, !1) : void 0 !== value && (setRef(value, elm), 
-                hasRef = !0);
+                handleProp(prop, props[prop], !1);
             }
             const listeners = elCtx.li;
             if (hostCtx) {

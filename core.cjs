@@ -1557,6 +1557,13 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 throw new TypeError('Can only have one of class or className');
             }
             const handleProp = (rawProp, value, isImmutable) => {
+                if (rawProp === 'ref') {
+                    if (value !== undefined) {
+                        setRef(value, elm);
+                        hasRef = true;
+                    }
+                    return;
+                }
                 if (isOnProp(rawProp)) {
                     setEvent(elCtx.li, rawProp, value, undefined);
                     return;
@@ -1617,15 +1624,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }
             }
             for (const prop in props) {
-                const value = props[prop];
-                if (prop === 'ref') {
-                    if (value !== undefined) {
-                        setRef(value, elm);
-                        hasRef = true;
-                    }
-                    continue;
-                }
-                handleProp(prop, value, false);
+                handleProp(prop, props[prop], false);
             }
             const listeners = elCtx.li;
             if (hostCtx) {
