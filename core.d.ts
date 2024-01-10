@@ -1620,7 +1620,7 @@ export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
  *
  * @public
  */
-export declare type PropsOf<COMP> = COMP extends Component<infer PROPS> ? NonNullable<PROPS> : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PublicProps<PROPS>> : COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : COMP extends string ? QwikIntrinsicElements['span'] : Record<string, unknown>;
+export declare type PropsOf<COMP> = COMP extends FunctionComponent<infer PROPS> ? NonNullable<PROPS> : COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : COMP extends string ? QwikIntrinsicElements['span'] : Record<string, unknown>;
 
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing
