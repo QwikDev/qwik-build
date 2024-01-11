@@ -46,38 +46,38 @@ globalThis.qwikOptimizer = function(module) {
     value: true
   }), mod);
   var require_utils = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/utils.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/utils.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.findBox = exports.readUInt = exports.readUInt32LE = exports.readUInt32BE = exports.readInt32LE = exports.readUInt24LE = exports.readUInt16LE = exports.readUInt16BE = exports.readInt16LE = exports.toHexString = exports.toUTF8String = void 0;
+      exports2.findBox = exports2.readUInt = exports2.readUInt32LE = exports2.readUInt32BE = exports2.readInt32LE = exports2.readUInt24LE = exports2.readUInt16LE = exports2.readUInt16BE = exports2.readInt16LE = exports2.toHexString = exports2.toUTF8String = void 0;
       var decoder = new TextDecoder;
       var toUTF8String = (input, start = 0, end = input.length) => decoder.decode(input.slice(start, end));
-      exports.toUTF8String = toUTF8String;
+      exports2.toUTF8String = toUTF8String;
       var toHexString = (input, start = 0, end = input.length) => input.slice(start, end).reduce(((memo, i) => memo + ("0" + i.toString(16)).slice(-2)), "");
-      exports.toHexString = toHexString;
+      exports2.toHexString = toHexString;
       var readInt16LE = (input, offset = 0) => {
         const val = input[offset] + 256 * input[offset + 1];
         return val | 131070 * (32768 & val);
       };
-      exports.readInt16LE = readInt16LE;
+      exports2.readInt16LE = readInt16LE;
       var readUInt16BE = (input, offset = 0) => 256 * input[offset] + input[offset + 1];
-      exports.readUInt16BE = readUInt16BE;
+      exports2.readUInt16BE = readUInt16BE;
       var readUInt16LE = (input, offset = 0) => input[offset] + 256 * input[offset + 1];
-      exports.readUInt16LE = readUInt16LE;
+      exports2.readUInt16LE = readUInt16LE;
       var readUInt24LE = (input, offset = 0) => input[offset] + 256 * input[offset + 1] + 65536 * input[offset + 2];
-      exports.readUInt24LE = readUInt24LE;
+      exports2.readUInt24LE = readUInt24LE;
       var readInt32LE = (input, offset = 0) => input[offset] + 256 * input[offset + 1] + 65536 * input[offset + 2] + (input[offset + 3] << 24);
-      exports.readInt32LE = readInt32LE;
+      exports2.readInt32LE = readInt32LE;
       var readUInt32BE = (input, offset = 0) => input[offset] * 2 ** 24 + 65536 * input[offset + 1] + 256 * input[offset + 2] + input[offset + 3];
-      exports.readUInt32BE = readUInt32BE;
+      exports2.readUInt32BE = readUInt32BE;
       var readUInt32LE = (input, offset = 0) => input[offset] + 256 * input[offset + 1] + 65536 * input[offset + 2] + input[offset + 3] * 2 ** 24;
-      exports.readUInt32LE = readUInt32LE;
+      exports2.readUInt32LE = readUInt32LE;
       var methods = {
-        readUInt16BE: exports.readUInt16BE,
-        readUInt16LE: exports.readUInt16LE,
-        readUInt32BE: exports.readUInt32BE,
-        readUInt32LE: exports.readUInt32LE
+        readUInt16BE: exports2.readUInt16BE,
+        readUInt16LE: exports2.readUInt16LE,
+        readUInt32BE: exports2.readUInt32BE,
+        readUInt32LE: exports2.readUInt32LE
       };
       function readUInt(input, bits, offset, isBigEndian) {
         offset = offset || 0;
@@ -85,17 +85,17 @@ globalThis.qwikOptimizer = function(module) {
         const methodName = "readUInt" + bits + endian;
         return methods[methodName](input, offset);
       }
-      exports.readUInt = readUInt;
+      exports2.readUInt = readUInt;
       function readBox(buffer, offset) {
         if (buffer.length - offset < 4) {
           return;
         }
-        const boxSize = (0, exports.readUInt32BE)(buffer, offset);
+        const boxSize = (0, exports2.readUInt32BE)(buffer, offset);
         if (buffer.length - offset < boxSize) {
           return;
         }
         return {
-          name: (0, exports.toUTF8String)(buffer, 4 + offset, 8 + offset),
+          name: (0, exports2.toUTF8String)(buffer, 4 + offset, 8 + offset),
           offset: offset,
           size: boxSize
         };
@@ -112,17 +112,17 @@ globalThis.qwikOptimizer = function(module) {
           offset += box.size;
         }
       }
-      exports.findBox = findBox;
+      exports2.findBox = findBox;
     }
   });
   var require_bmp = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/bmp.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/bmp.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.BMP = void 0;
+      exports2.BMP = void 0;
       var utils_1 = require_utils();
-      exports.BMP = {
+      exports2.BMP = {
         validate: input => "BM" === (0, utils_1.toUTF8String)(input, 0, 2),
         calculate: input => ({
           height: Math.abs((0, utils_1.readInt32LE)(input, 22)),
@@ -132,11 +132,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_ico = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ico.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ico.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.ICO = void 0;
+      exports2.ICO = void 0;
       var utils_1 = require_utils();
       var TYPE_ICON = 1;
       var SIZE_HEADER = 6;
@@ -152,7 +152,7 @@ globalThis.qwikOptimizer = function(module) {
           width: getSizeFromOffset(input, offset)
         };
       }
-      exports.ICO = {
+      exports2.ICO = {
         validate(input) {
           const reserved = (0, utils_1.readUInt16LE)(input, 0);
           const imageCount = (0, utils_1.readUInt16LE)(input, 4);
@@ -182,15 +182,15 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_cur = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/cur.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/cur.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.CUR = void 0;
+      exports2.CUR = void 0;
       var ico_12 = require_ico();
       var utils_1 = require_utils();
       var TYPE_CURSOR = 2;
-      exports.CUR = {
+      exports2.CUR = {
         validate(input) {
           const reserved = (0, utils_1.readUInt16LE)(input, 0);
           const imageCount = (0, utils_1.readUInt16LE)(input, 4);
@@ -205,13 +205,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_dds = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/dds.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/dds.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.DDS = void 0;
+      exports2.DDS = void 0;
       var utils_1 = require_utils();
-      exports.DDS = {
+      exports2.DDS = {
         validate: input => 542327876 === (0, utils_1.readUInt32LE)(input, 0),
         calculate: input => ({
           height: (0, utils_1.readUInt32LE)(input, 12),
@@ -221,14 +221,14 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_gif = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/gif.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/gif.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.GIF = void 0;
+      exports2.GIF = void 0;
       var utils_1 = require_utils();
       var gifRegexp = /^GIF8[79]a/;
-      exports.GIF = {
+      exports2.GIF = {
         validate: input => gifRegexp.test((0, utils_1.toUTF8String)(input, 0, 6)),
         calculate: input => ({
           height: (0, utils_1.readUInt16LE)(input, 8),
@@ -238,11 +238,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_icns = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/icns.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/icns.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.ICNS = void 0;
+      exports2.ICNS = void 0;
       var utils_1 = require_utils();
       var SIZE_HEADER = 8;
       var FILE_LENGTH_OFFSET = 4;
@@ -292,7 +292,7 @@ globalThis.qwikOptimizer = function(module) {
           type: type
         };
       }
-      exports.ICNS = {
+      exports2.ICNS = {
         validate: input => "icns" === (0, utils_1.toUTF8String)(input, 0, 4),
         calculate(input) {
           const inputLength = input.length;
@@ -321,13 +321,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_j2c = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/j2c.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/j2c.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.J2C = void 0;
+      exports2.J2C = void 0;
       var utils_1 = require_utils();
-      exports.J2C = {
+      exports2.J2C = {
         validate: input => "ff4fff51" === (0, utils_1.toHexString)(input, 0, 4),
         calculate: input => ({
           height: (0, utils_1.readUInt32BE)(input, 12),
@@ -337,13 +337,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_jp2 = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jp2.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jp2.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.JP2 = void 0;
+      exports2.JP2 = void 0;
       var utils_1 = require_utils();
-      exports.JP2 = {
+      exports2.JP2 = {
         validate(input) {
           if (1783636e3 !== (0, utils_1.readUInt32BE)(input, 4) || (0, utils_1.readUInt32BE)(input, 0) < 1) {
             return false;
@@ -369,11 +369,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_jpg = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jpg.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/jpg.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.JPG = void 0;
+      exports2.JPG = void 0;
       var utils_1 = require_utils();
       var EXIF_MARKER = "45786966";
       var APP1_DATA_SIZE_BYTES = 2;
@@ -431,7 +431,7 @@ globalThis.qwikOptimizer = function(module) {
           throw new TypeError("Corrupt JPG, exceeded buffer limits");
         }
       }
-      exports.JPG = {
+      exports2.JPG = {
         validate: input => "ffd8" === (0, utils_1.toHexString)(input, 0, 2),
         calculate(input) {
           input = input.slice(4);
@@ -465,13 +465,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_ktx = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ktx.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/ktx.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.KTX = void 0;
+      exports2.KTX = void 0;
       var utils_1 = require_utils();
-      exports.KTX = {
+      exports2.KTX = {
         validate: input => {
           const signature = (0, utils_1.toUTF8String)(input, 1, 7);
           return [ "KTX 11", "KTX 20" ].includes(signature);
@@ -489,16 +489,16 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_png = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/png.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/png.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.PNG = void 0;
+      exports2.PNG = void 0;
       var utils_1 = require_utils();
       var pngSignature = "PNG\r\n\n";
       var pngImageHeaderChunkName = "IHDR";
       var pngFriedChunkName = "CgBI";
-      exports.PNG = {
+      exports2.PNG = {
         validate(input) {
           if (pngSignature === (0, utils_1.toUTF8String)(input, 1, 8)) {
             let chunkName = (0, utils_1.toUTF8String)(input, 12, 16);
@@ -526,11 +526,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_pnm = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/pnm.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/pnm.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.PNM = void 0;
+      exports2.PNM = void 0;
       var utils_1 = require_utils();
       var PNMTypes = {
         P1: "pbm/ascii",
@@ -583,7 +583,7 @@ globalThis.qwikOptimizer = function(module) {
           throw new TypeError("Invalid PAM");
         }
       };
-      exports.PNM = {
+      exports2.PNM = {
         validate: input => (0, utils_1.toUTF8String)(input, 0, 2) in PNMTypes,
         calculate(input) {
           const signature = (0, utils_1.toUTF8String)(input, 0, 2);
@@ -596,13 +596,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_psd = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/psd.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/psd.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.PSD = void 0;
+      exports2.PSD = void 0;
       var utils_1 = require_utils();
-      exports.PSD = {
+      exports2.PSD = {
         validate: input => "8BPS" === (0, utils_1.toUTF8String)(input, 0, 4),
         calculate: input => ({
           height: (0, utils_1.readUInt32BE)(input, 14),
@@ -612,11 +612,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_svg = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/svg.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/svg.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.SVG = void 0;
+      exports2.SVG = void 0;
       var utils_1 = require_utils();
       var svgReg = /<svg\s([^>"']|"[^"]*"|'[^']*')*>/;
       var extractorRegExps = {
@@ -687,7 +687,7 @@ globalThis.qwikOptimizer = function(module) {
           width: viewbox.width
         };
       }
-      exports.SVG = {
+      exports2.SVG = {
         validate: input => svgReg.test((0, utils_1.toUTF8String)(input, 0, 1e3)),
         calculate(input) {
           const root = (0, utils_1.toUTF8String)(input).match(extractorRegExps.root);
@@ -706,13 +706,13 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_tga = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/tga.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/tga.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.TGA = void 0;
+      exports2.TGA = void 0;
       var utils_1 = require_utils();
-      exports.TGA = {
+      exports2.TGA = {
         validate: input => 0 === (0, utils_1.readUInt16LE)(input, 0) && 0 === (0, utils_1.readUInt16LE)(input, 4),
         calculate: input => ({
           height: (0, utils_1.readUInt16LE)(input, 14),
@@ -722,11 +722,11 @@ globalThis.qwikOptimizer = function(module) {
     }
   });
   var require_webp = __commonJS({
-    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/webp.js"(exports) {
-      Object.defineProperty(exports, "__esModule", {
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/webp.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
         value: true
       });
-      exports.WEBP = void 0;
+      exports2.WEBP = void 0;
       var utils_1 = require_utils();
       function calculateExtended(input) {
         return {
@@ -746,7 +746,7 @@ globalThis.qwikOptimizer = function(module) {
           width: 16383 & (0, utils_1.readInt16LE)(input, 6)
         };
       }
-      exports.WEBP = {
+      exports2.WEBP = {
         validate(input) {
           const riffHeader = "RIFF" === (0, utils_1.toUTF8String)(input, 0, 4);
           const webpHeader = "WEBP" === (0, utils_1.toUTF8String)(input, 8, 12);

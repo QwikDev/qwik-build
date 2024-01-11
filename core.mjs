@@ -2577,7 +2577,6 @@ const processData = (node, invocationContext) => {
         return newNode;
     }
     else if (isArray(node)) {
-        // PERF(misko): possible place to make it faster by not creating promises unnecessarily
         const output = promiseAll(node.flatMap((n) => processData(n, invocationContext)));
         return maybeThen(output, (array) => array.flat(100).filter(isNotNullable));
     }

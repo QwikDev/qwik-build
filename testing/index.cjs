@@ -39,7 +39,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 
 // packages/qwik-dom/lib/Event.js
 var require_Event = __commonJS({
-  "packages/qwik-dom/lib/Event.js"(exports, module2) {
+  "packages/qwik-dom/lib/Event.js"(exports2, module2) {
     "use strict";
     module2.exports = Event;
     Event.CAPTURING_PHASE = 1;
@@ -107,7 +107,7 @@ var require_Event = __commonJS({
 
 // packages/qwik-dom/lib/UIEvent.js
 var require_UIEvent = __commonJS({
-  "packages/qwik-dom/lib/UIEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/UIEvent.js"(exports2, module2) {
     "use strict";
     var Event = require_Event();
     module2.exports = UIEvent;
@@ -131,7 +131,7 @@ var require_UIEvent = __commonJS({
 
 // packages/qwik-dom/lib/MouseEvent.js
 var require_MouseEvent = __commonJS({
-  "packages/qwik-dom/lib/MouseEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/MouseEvent.js"(exports2, module2) {
     "use strict";
     var UIEvent = require_UIEvent();
     module2.exports = MouseEvent;
@@ -196,7 +196,7 @@ var require_MouseEvent = __commonJS({
 
 // packages/qwik-dom/lib/DOMException.js
 var require_DOMException = __commonJS({
-  "packages/qwik-dom/lib/DOMException.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMException.js"(exports2, module2) {
     "use strict";
     module2.exports = DOMException;
     var INDEX_SIZE_ERR = 1;
@@ -333,20 +333,20 @@ var require_DOMException = __commonJS({
 
 // packages/qwik-dom/lib/config.js
 var require_config = __commonJS({
-  "packages/qwik-dom/lib/config.js"(exports) {
+  "packages/qwik-dom/lib/config.js"(exports2) {
     "use strict";
-    exports.isApiWritable = !global.__domino_frozen__;
+    exports2.isApiWritable = !global.__domino_frozen__;
   }
 });
 
 // packages/qwik-dom/lib/utils.js
 var require_utils = __commonJS({
-  "packages/qwik-dom/lib/utils.js"(exports) {
+  "packages/qwik-dom/lib/utils.js"(exports2) {
     "use strict";
     var DOMException = require_DOMException();
     var ERR = DOMException;
     var isApiWritable = require_config().isApiWritable;
-    exports.NAMESPACE = {
+    exports2.NAMESPACE = {
       HTML: "http://www.w3.org/1999/xhtml",
       XML: "http://www.w3.org/XML/1998/namespace",
       XMLNS: "http://www.w3.org/2000/xmlns/",
@@ -354,102 +354,102 @@ var require_utils = __commonJS({
       SVG: "http://www.w3.org/2000/svg",
       XLINK: "http://www.w3.org/1999/xlink"
     };
-    exports.IndexSizeError = function() {
+    exports2.IndexSizeError = function() {
       throw new DOMException(ERR.INDEX_SIZE_ERR);
     };
-    exports.HierarchyRequestError = function() {
+    exports2.HierarchyRequestError = function() {
       throw new DOMException(ERR.HIERARCHY_REQUEST_ERR);
     };
-    exports.WrongDocumentError = function() {
+    exports2.WrongDocumentError = function() {
       throw new DOMException(ERR.WRONG_DOCUMENT_ERR);
     };
-    exports.InvalidCharacterError = function() {
+    exports2.InvalidCharacterError = function() {
       throw new DOMException(ERR.INVALID_CHARACTER_ERR);
     };
-    exports.NoModificationAllowedError = function() {
+    exports2.NoModificationAllowedError = function() {
       throw new DOMException(ERR.NO_MODIFICATION_ALLOWED_ERR);
     };
-    exports.NotFoundError = function() {
+    exports2.NotFoundError = function() {
       throw new DOMException(ERR.NOT_FOUND_ERR);
     };
-    exports.NotSupportedError = function() {
+    exports2.NotSupportedError = function() {
       throw new DOMException(ERR.NOT_SUPPORTED_ERR);
     };
-    exports.InvalidStateError = function() {
+    exports2.InvalidStateError = function() {
       throw new DOMException(ERR.INVALID_STATE_ERR);
     };
-    exports.SyntaxError = function() {
+    exports2.SyntaxError = function() {
       throw new DOMException(ERR.SYNTAX_ERR);
     };
-    exports.InvalidModificationError = function() {
+    exports2.InvalidModificationError = function() {
       throw new DOMException(ERR.INVALID_MODIFICATION_ERR);
     };
-    exports.NamespaceError = function() {
+    exports2.NamespaceError = function() {
       throw new DOMException(ERR.NAMESPACE_ERR);
     };
-    exports.InvalidAccessError = function() {
+    exports2.InvalidAccessError = function() {
       throw new DOMException(ERR.INVALID_ACCESS_ERR);
     };
-    exports.TypeMismatchError = function() {
+    exports2.TypeMismatchError = function() {
       throw new DOMException(ERR.TYPE_MISMATCH_ERR);
     };
-    exports.SecurityError = function() {
+    exports2.SecurityError = function() {
       throw new DOMException(ERR.SECURITY_ERR);
     };
-    exports.NetworkError = function() {
+    exports2.NetworkError = function() {
       throw new DOMException(ERR.NETWORK_ERR);
     };
-    exports.AbortError = function() {
+    exports2.AbortError = function() {
       throw new DOMException(ERR.ABORT_ERR);
     };
-    exports.UrlMismatchError = function() {
+    exports2.UrlMismatchError = function() {
       throw new DOMException(ERR.URL_MISMATCH_ERR);
     };
-    exports.QuotaExceededError = function() {
+    exports2.QuotaExceededError = function() {
       throw new DOMException(ERR.QUOTA_EXCEEDED_ERR);
     };
-    exports.TimeoutError = function() {
+    exports2.TimeoutError = function() {
       throw new DOMException(ERR.TIMEOUT_ERR);
     };
-    exports.InvalidNodeTypeError = function() {
+    exports2.InvalidNodeTypeError = function() {
       throw new DOMException(ERR.INVALID_NODE_TYPE_ERR);
     };
-    exports.DataCloneError = function() {
+    exports2.DataCloneError = function() {
       throw new DOMException(ERR.DATA_CLONE_ERR);
     };
-    exports.nyi = function() {
+    exports2.nyi = function() {
       throw new Error("NotYetImplemented");
     };
-    exports.shouldOverride = function() {
+    exports2.shouldOverride = function() {
       throw new Error("Abstract function; should be overriding in subclass.");
     };
-    exports.assert = function(expr, msg) {
+    exports2.assert = function(expr, msg) {
       if (!expr) {
         throw new Error("Assertion failed: " + (msg || "") + "\n" + new Error().stack);
       }
     };
-    exports.expose = function(src, c) {
+    exports2.expose = function(src, c) {
       for (var n in src) {
         Object.defineProperty(c.prototype, n, { value: src[n], writable: isApiWritable });
       }
     };
-    exports.merge = function(a, b) {
+    exports2.merge = function(a, b) {
       for (var n in b) {
         a[n] = b[n];
       }
     };
-    exports.escapeText = function(str) {
+    exports2.escapeText = function(str) {
       return str;
     };
-    exports.documentOrder = function(n, m) {
+    exports2.documentOrder = function(n, m) {
       return 3 - (n.compareDocumentPosition(m) & 6);
     };
-    exports.toASCIILowerCase = function(s) {
+    exports2.toASCIILowerCase = function(s) {
       return s.replace(/[A-Z]+/g, function(c) {
         return c.toLowerCase();
       });
     };
-    exports.toASCIIUpperCase = function(s) {
+    exports2.toASCIIUpperCase = function(s) {
       return s.replace(/[a-z]+/g, function(c) {
         return c.toUpperCase();
       });
@@ -459,7 +459,7 @@ var require_utils = __commonJS({
 
 // packages/qwik-dom/lib/EventTarget.js
 var require_EventTarget = __commonJS({
-  "packages/qwik-dom/lib/EventTarget.js"(exports, module2) {
+  "packages/qwik-dom/lib/EventTarget.js"(exports2, module2) {
     "use strict";
     var Event = require_Event();
     var MouseEvent = require_MouseEvent();
@@ -720,7 +720,7 @@ var require_EventTarget = __commonJS({
 
 // packages/qwik-dom/lib/LinkedList.js
 var require_LinkedList = __commonJS({
-  "packages/qwik-dom/lib/LinkedList.js"(exports, module2) {
+  "packages/qwik-dom/lib/LinkedList.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var LinkedList = module2.exports = {
@@ -770,7 +770,7 @@ var require_LinkedList = __commonJS({
 
 // packages/qwik-dom/lib/NodeUtils.js
 var require_NodeUtils = __commonJS({
-  "packages/qwik-dom/lib/NodeUtils.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeUtils.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       // NOTE: The `serializeOne()` function used to live on the `Node.prototype`
@@ -934,7 +934,7 @@ var require_NodeUtils = __commonJS({
 
 // packages/qwik-dom/lib/Node.js
 var require_Node = __commonJS({
-  "packages/qwik-dom/lib/Node.js"(exports, module2) {
+  "packages/qwik-dom/lib/Node.js"(exports2, module2) {
     "use strict";
     module2.exports = Node;
     var EventTarget = require_EventTarget();
@@ -1607,7 +1607,7 @@ var require_Node = __commonJS({
 
 // packages/qwik-dom/lib/NodeList.es6.js
 var require_NodeList_es6 = __commonJS({
-  "packages/qwik-dom/lib/NodeList.es6.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.es6.js"(exports2, module2) {
     "use strict";
     module2.exports = class NodeList extends Array {
       constructor(a) {
@@ -1627,7 +1627,7 @@ var require_NodeList_es6 = __commonJS({
 
 // packages/qwik-dom/lib/NodeList.es5.js
 var require_NodeList_es5 = __commonJS({
-  "packages/qwik-dom/lib/NodeList.es5.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.es5.js"(exports2, module2) {
     "use strict";
     function item(i) {
       return this[i] || null;
@@ -1644,7 +1644,7 @@ var require_NodeList_es5 = __commonJS({
 
 // packages/qwik-dom/lib/NodeList.js
 var require_NodeList = __commonJS({
-  "packages/qwik-dom/lib/NodeList.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeList.js"(exports2, module2) {
     "use strict";
     var NodeList;
     try {
@@ -1658,7 +1658,7 @@ var require_NodeList = __commonJS({
 
 // packages/qwik-dom/lib/ContainerNode.js
 var require_ContainerNode = __commonJS({
-  "packages/qwik-dom/lib/ContainerNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/ContainerNode.js"(exports2, module2) {
     "use strict";
     module2.exports = ContainerNode;
     var Node = require_Node();
@@ -1748,10 +1748,10 @@ var require_ContainerNode = __commonJS({
 
 // packages/qwik-dom/lib/xmlnames.js
 var require_xmlnames = __commonJS({
-  "packages/qwik-dom/lib/xmlnames.js"(exports) {
+  "packages/qwik-dom/lib/xmlnames.js"(exports2) {
     "use strict";
-    exports.isValidName = isValidName;
-    exports.isValidQName = isValidQName;
+    exports2.isValidName = isValidName;
+    exports2.isValidQName = isValidQName;
     var simplename = /^[_:A-Za-z][-.:\w]+$/;
     var simpleqname = /^([_A-Za-z][-.\w]+|[_A-Za-z][-.\w]+:[_A-Za-z][-.\w]+)$/;
     var ncnamestartchars = "_A-Za-z\xC0-\xD6\xD8-\xF6\xF8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD";
@@ -1800,10 +1800,10 @@ var require_xmlnames = __commonJS({
 
 // packages/qwik-dom/lib/attributes.js
 var require_attributes = __commonJS({
-  "packages/qwik-dom/lib/attributes.js"(exports) {
+  "packages/qwik-dom/lib/attributes.js"(exports2) {
     "use strict";
     var utils = require_utils();
-    exports.property = function(attr) {
+    exports2.property = function(attr) {
       if (Array.isArray(attr.type)) {
         var valid = /* @__PURE__ */ Object.create(null);
         attr.type.forEach(function(val) {
@@ -1927,7 +1927,7 @@ var require_attributes = __commonJS({
         }
       };
     }
-    exports.registerChangeHandler = function(c, name, handler) {
+    exports2.registerChangeHandler = function(c, name, handler) {
       var p = c.prototype;
       if (!Object.prototype.hasOwnProperty.call(p, "_attributeChangeHandlers")) {
         p._attributeChangeHandlers = Object.create(p._attributeChangeHandlers || null);
@@ -1939,7 +1939,7 @@ var require_attributes = __commonJS({
 
 // packages/qwik-dom/lib/FilteredElementList.js
 var require_FilteredElementList = __commonJS({
-  "packages/qwik-dom/lib/FilteredElementList.js"(exports, module2) {
+  "packages/qwik-dom/lib/FilteredElementList.js"(exports2, module2) {
     "use strict";
     module2.exports = FilteredElementList;
     var Node = require_Node();
@@ -2024,7 +2024,7 @@ var require_FilteredElementList = __commonJS({
 
 // packages/qwik-dom/lib/DOMTokenList.js
 var require_DOMTokenList = __commonJS({
-  "packages/qwik-dom/lib/DOMTokenList.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMTokenList.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = DOMTokenList;
@@ -2208,7 +2208,7 @@ var require_DOMTokenList = __commonJS({
 
 // packages/qwik-dom/lib/select.js
 var require_select = __commonJS({
-  "packages/qwik-dom/lib/select.js"(exports, module2) {
+  "packages/qwik-dom/lib/select.js"(exports2, module2) {
     "use strict";
     var window2 = Object.create(null, {
       location: {
@@ -2946,7 +2946,7 @@ var require_select = __commonJS({
       }
       return results;
     };
-    module2.exports = exports = function(sel, context) {
+    module2.exports = exports2 = function(sel, context) {
       var id, r;
       if (context.nodeType !== 11 && sel.indexOf(" ") === -1) {
         if (sel[0] === "#" && context.rooted && /^#[A-Z_][-A-Z0-9_]*$/i.test(sel)) {
@@ -2967,10 +2967,10 @@ var require_select = __commonJS({
       }
       return find(sel, context);
     };
-    exports.selectors = selectors;
-    exports.operators = operators;
-    exports.combinators = combinators;
-    exports.matches = function(el, sel) {
+    exports2.selectors = selectors;
+    exports2.operators = operators;
+    exports2.combinators = combinators;
+    exports2.matches = function(el, sel) {
       var test = { sel };
       do {
         test = compile(test.sel);
@@ -2985,7 +2985,7 @@ var require_select = __commonJS({
 
 // packages/qwik-dom/lib/ChildNode.js
 var require_ChildNode = __commonJS({
-  "packages/qwik-dom/lib/ChildNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/ChildNode.js"(exports2, module2) {
     "use strict";
     var Node = require_Node();
     var LinkedList = require_LinkedList();
@@ -3098,7 +3098,7 @@ var require_ChildNode = __commonJS({
 
 // packages/qwik-dom/lib/NonDocumentTypeChildNode.js
 var require_NonDocumentTypeChildNode = __commonJS({
-  "packages/qwik-dom/lib/NonDocumentTypeChildNode.js"(exports, module2) {
+  "packages/qwik-dom/lib/NonDocumentTypeChildNode.js"(exports2, module2) {
     "use strict";
     var Node = require_Node();
     var NonDocumentTypeChildNode = {
@@ -3131,7 +3131,7 @@ var require_NonDocumentTypeChildNode = __commonJS({
 
 // packages/qwik-dom/lib/NamedNodeMap.js
 var require_NamedNodeMap = __commonJS({
-  "packages/qwik-dom/lib/NamedNodeMap.js"(exports, module2) {
+  "packages/qwik-dom/lib/NamedNodeMap.js"(exports2, module2) {
     "use strict";
     module2.exports = NamedNodeMap;
     var utils = require_utils();
@@ -3179,7 +3179,7 @@ var require_NamedNodeMap = __commonJS({
 
 // packages/qwik-dom/lib/Element.js
 var require_Element = __commonJS({
-  "packages/qwik-dom/lib/Element.js"(exports, module2) {
+  "packages/qwik-dom/lib/Element.js"(exports2, module2) {
     "use strict";
     module2.exports = Element;
     var xml = require_xmlnames();
@@ -4338,7 +4338,7 @@ var require_Element = __commonJS({
 
 // packages/qwik-dom/lib/Leaf.js
 var require_Leaf = __commonJS({
-  "packages/qwik-dom/lib/Leaf.js"(exports, module2) {
+  "packages/qwik-dom/lib/Leaf.js"(exports2, module2) {
     "use strict";
     module2.exports = Leaf;
     var Node = require_Node();
@@ -4395,7 +4395,7 @@ var require_Leaf = __commonJS({
 
 // packages/qwik-dom/lib/CharacterData.js
 var require_CharacterData = __commonJS({
-  "packages/qwik-dom/lib/CharacterData.js"(exports, module2) {
+  "packages/qwik-dom/lib/CharacterData.js"(exports2, module2) {
     "use strict";
     module2.exports = CharacterData;
     var Leaf = require_Leaf();
@@ -4521,7 +4521,7 @@ var require_CharacterData = __commonJS({
 
 // packages/qwik-dom/lib/Text.js
 var require_Text = __commonJS({
-  "packages/qwik-dom/lib/Text.js"(exports, module2) {
+  "packages/qwik-dom/lib/Text.js"(exports2, module2) {
     "use strict";
     module2.exports = Text;
     var utils = require_utils();
@@ -4604,7 +4604,7 @@ var require_Text = __commonJS({
 
 // packages/qwik-dom/lib/Comment.js
 var require_Comment = __commonJS({
-  "packages/qwik-dom/lib/Comment.js"(exports, module2) {
+  "packages/qwik-dom/lib/Comment.js"(exports2, module2) {
     "use strict";
     module2.exports = Comment;
     var Node = require_Node();
@@ -4653,7 +4653,7 @@ var require_Comment = __commonJS({
 
 // packages/qwik-dom/lib/DocumentFragment.js
 var require_DocumentFragment = __commonJS({
-  "packages/qwik-dom/lib/DocumentFragment.js"(exports, module2) {
+  "packages/qwik-dom/lib/DocumentFragment.js"(exports2, module2) {
     "use strict";
     module2.exports = DocumentFragment;
     var Node = require_Node();
@@ -4727,7 +4727,7 @@ var require_DocumentFragment = __commonJS({
 
 // packages/qwik-dom/lib/ProcessingInstruction.js
 var require_ProcessingInstruction = __commonJS({
-  "packages/qwik-dom/lib/ProcessingInstruction.js"(exports, module2) {
+  "packages/qwik-dom/lib/ProcessingInstruction.js"(exports2, module2) {
     "use strict";
     module2.exports = ProcessingInstruction;
     var Node = require_Node();
@@ -4786,7 +4786,7 @@ var require_ProcessingInstruction = __commonJS({
 
 // packages/qwik-dom/lib/NodeFilter.js
 var require_NodeFilter = __commonJS({
-  "packages/qwik-dom/lib/NodeFilter.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeFilter.js"(exports2, module2) {
     "use strict";
     var NodeFilter = {
       // Constants for acceptNode()
@@ -4819,7 +4819,7 @@ var require_NodeFilter = __commonJS({
 
 // packages/qwik-dom/lib/NodeTraversal.js
 var require_NodeTraversal = __commonJS({
-  "packages/qwik-dom/lib/NodeTraversal.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeTraversal.js"(exports2, module2) {
     "use strict";
     var NodeTraversal = module2.exports = {
       nextSkippingChildren,
@@ -4886,7 +4886,7 @@ var require_NodeTraversal = __commonJS({
 
 // packages/qwik-dom/lib/TreeWalker.js
 var require_TreeWalker = __commonJS({
-  "packages/qwik-dom/lib/TreeWalker.js"(exports, module2) {
+  "packages/qwik-dom/lib/TreeWalker.js"(exports2, module2) {
     "use strict";
     module2.exports = TreeWalker;
     var Node = require_Node();
@@ -5191,7 +5191,7 @@ var require_TreeWalker = __commonJS({
 
 // packages/qwik-dom/lib/NodeIterator.js
 var require_NodeIterator = __commonJS({
-  "packages/qwik-dom/lib/NodeIterator.js"(exports, module2) {
+  "packages/qwik-dom/lib/NodeIterator.js"(exports2, module2) {
     "use strict";
     module2.exports = NodeIterator;
     var NodeFilter = require_NodeFilter();
@@ -5385,7 +5385,7 @@ var require_NodeIterator = __commonJS({
 
 // packages/qwik-dom/lib/URL.js
 var require_URL = __commonJS({
-  "packages/qwik-dom/lib/URL.js"(exports, module2) {
+  "packages/qwik-dom/lib/URL.js"(exports2, module2) {
     "use strict";
     module2.exports = URL2;
     function URL2(url) {
@@ -5564,7 +5564,7 @@ var require_URL = __commonJS({
 
 // packages/qwik-dom/lib/CustomEvent.js
 var require_CustomEvent = __commonJS({
-  "packages/qwik-dom/lib/CustomEvent.js"(exports, module2) {
+  "packages/qwik-dom/lib/CustomEvent.js"(exports2, module2) {
     "use strict";
     module2.exports = CustomEvent;
     var Event = require_Event();
@@ -5579,7 +5579,7 @@ var require_CustomEvent = __commonJS({
 
 // packages/qwik-dom/lib/events.js
 var require_events = __commonJS({
-  "packages/qwik-dom/lib/events.js"(exports, module2) {
+  "packages/qwik-dom/lib/events.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       Event: require_Event(),
@@ -5592,7 +5592,7 @@ var require_events = __commonJS({
 
 // packages/qwik-dom/lib/cssparser.js
 var require_cssparser = __commonJS({
-  "packages/qwik-dom/lib/cssparser.js"(exports) {
+  "packages/qwik-dom/lib/cssparser.js"(exports2) {
     "use strict";
     var parserlib = /* @__PURE__ */ Object.create(null);
     (function() {
@@ -9962,7 +9962,7 @@ var require_cssparser = __commonJS({
     })();
     (function() {
       for (var prop in parserlib) {
-        exports[prop] = parserlib[prop];
+        exports2[prop] = parserlib[prop];
       }
     })();
   }
@@ -9970,7 +9970,7 @@ var require_cssparser = __commonJS({
 
 // packages/qwik-dom/lib/CSSStyleDeclaration.js
 var require_CSSStyleDeclaration = __commonJS({
-  "packages/qwik-dom/lib/CSSStyleDeclaration.js"(exports, module2) {
+  "packages/qwik-dom/lib/CSSStyleDeclaration.js"(exports2, module2) {
     "use strict";
     var parserlib = require_cssparser();
     module2.exports = CSSStyleDeclaration;
@@ -10760,7 +10760,7 @@ var require_CSSStyleDeclaration = __commonJS({
 
 // packages/qwik-dom/lib/URLUtils.js
 var require_URLUtils = __commonJS({
-  "packages/qwik-dom/lib/URLUtils.js"(exports, module2) {
+  "packages/qwik-dom/lib/URLUtils.js"(exports2, module2) {
     "use strict";
     var URL2 = require_URL();
     module2.exports = URLUtils;
@@ -11016,7 +11016,7 @@ var require_URLUtils = __commonJS({
 
 // packages/qwik-dom/lib/defineElement.js
 var require_defineElement = __commonJS({
-  "packages/qwik-dom/lib/defineElement.js"(exports, module2) {
+  "packages/qwik-dom/lib/defineElement.js"(exports2, module2) {
     "use strict";
     var attributes = require_attributes();
     var isApiWritable = require_config().isApiWritable;
@@ -11082,7 +11082,7 @@ var require_defineElement = __commonJS({
 
 // packages/qwik-dom/lib/htmlelts.js
 var require_htmlelts = __commonJS({
-  "packages/qwik-dom/lib/htmlelts.js"(exports) {
+  "packages/qwik-dom/lib/htmlelts.js"(exports2) {
     "use strict";
     var Node = require_Node();
     var Element = require_Element();
@@ -11090,9 +11090,9 @@ var require_htmlelts = __commonJS({
     var utils = require_utils();
     var URLUtils = require_URLUtils();
     var defineElement = require_defineElement();
-    var htmlElements = exports.elements = {};
+    var htmlElements = exports2.elements = {};
     var htmlNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc, localName, prefix) {
       var impl = htmlNameToImpl[localName] || HTMLUnknownElement;
       return new impl(doc, localName, prefix);
     };
@@ -11162,7 +11162,7 @@ var require_htmlelts = __commonJS({
       HTMLElement.call(this, doc, localName, prefix);
       this._form = null;
     };
-    var HTMLElement = exports.HTMLElement = define({
+    var HTMLElement = exports2.HTMLElement = define({
       superclass: Element,
       name: "HTMLElement",
       ctor: function HTMLElement2(doc, localName, prefix) {
@@ -12738,15 +12738,15 @@ var require_htmlelts = __commonJS({
 
 // packages/qwik-dom/lib/svg.js
 var require_svg = __commonJS({
-  "packages/qwik-dom/lib/svg.js"(exports) {
+  "packages/qwik-dom/lib/svg.js"(exports2) {
     "use strict";
     var Element = require_Element();
     var defineElement = require_defineElement();
     var utils = require_utils();
     var CSSStyleDeclaration = require_CSSStyleDeclaration();
-    var svgElements = exports.elements = {};
+    var svgElements = exports2.elements = {};
     var svgNameToImpl = /* @__PURE__ */ Object.create(null);
-    exports.createElement = function(doc, localName, prefix) {
+    exports2.createElement = function(doc, localName, prefix) {
       var impl = svgNameToImpl[localName] || SVGElement;
       return new impl(doc, localName, prefix);
     };
@@ -12778,7 +12778,7 @@ var require_svg = __commonJS({
       props: {
         createSVGRect: {
           value: function() {
-            return exports.createElement(this.ownerDocument, "rect", null);
+            return exports2.createElement(this.ownerDocument, "rect", null);
           }
         }
       }
@@ -12871,7 +12871,7 @@ var require_svg = __commonJS({
 
 // packages/qwik-dom/lib/MutationConstants.js
 var require_MutationConstants = __commonJS({
-  "packages/qwik-dom/lib/MutationConstants.js"(exports, module2) {
+  "packages/qwik-dom/lib/MutationConstants.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       VALUE: 1,
@@ -12892,7 +12892,7 @@ var require_MutationConstants = __commonJS({
 
 // packages/qwik-dom/lib/Document.js
 var require_Document = __commonJS({
-  "packages/qwik-dom/lib/Document.js"(exports, module2) {
+  "packages/qwik-dom/lib/Document.js"(exports2, module2) {
     "use strict";
     module2.exports = Document;
     var Node = require_Node();
@@ -13787,7 +13787,7 @@ var require_Document = __commonJS({
 
 // packages/qwik-dom/lib/DocumentType.js
 var require_DocumentType = __commonJS({
-  "packages/qwik-dom/lib/DocumentType.js"(exports, module2) {
+  "packages/qwik-dom/lib/DocumentType.js"(exports2, module2) {
     "use strict";
     module2.exports = DocumentType;
     var Node = require_Node();
@@ -13832,7 +13832,7 @@ var require_DocumentType = __commonJS({
 
 // packages/qwik-dom/lib/HTMLParser.js
 var require_HTMLParser = __commonJS({
-  "packages/qwik-dom/lib/HTMLParser.js"(exports, module2) {
+  "packages/qwik-dom/lib/HTMLParser.js"(exports2, module2) {
     "use strict";
     module2.exports = HTMLParser;
     var Document = require_Document();
@@ -21949,7 +21949,7 @@ var require_HTMLParser = __commonJS({
 
 // packages/qwik-dom/lib/DOMImplementation.js
 var require_DOMImplementation = __commonJS({
-  "packages/qwik-dom/lib/DOMImplementation.js"(exports, module2) {
+  "packages/qwik-dom/lib/DOMImplementation.js"(exports2, module2) {
     "use strict";
     module2.exports = DOMImplementation;
     var Document = require_Document();
@@ -22030,7 +22030,7 @@ var require_DOMImplementation = __commonJS({
 
 // packages/qwik-dom/lib/Location.js
 var require_Location = __commonJS({
-  "packages/qwik-dom/lib/Location.js"(exports, module2) {
+  "packages/qwik-dom/lib/Location.js"(exports2, module2) {
     "use strict";
     var URL2 = require_URL();
     var URLUtils = require_URLUtils();
@@ -22078,7 +22078,7 @@ var require_Location = __commonJS({
 
 // packages/qwik-dom/lib/NavigatorID.js
 var require_NavigatorID = __commonJS({
-  "packages/qwik-dom/lib/NavigatorID.js"(exports, module2) {
+  "packages/qwik-dom/lib/NavigatorID.js"(exports2, module2) {
     "use strict";
     var NavigatorID = Object.create(null, {
       appCodeName: { value: "Mozilla" },
@@ -22102,7 +22102,7 @@ var require_NavigatorID = __commonJS({
 
 // packages/qwik-dom/lib/WindowTimers.js
 var require_WindowTimers = __commonJS({
-  "packages/qwik-dom/lib/WindowTimers.js"(exports, module2) {
+  "packages/qwik-dom/lib/WindowTimers.js"(exports2, module2) {
     "use strict";
     var WindowTimers = {
       setTimeout,
@@ -22116,10 +22116,10 @@ var require_WindowTimers = __commonJS({
 
 // packages/qwik-dom/lib/impl.js
 var require_impl = __commonJS({
-  "packages/qwik-dom/lib/impl.js"(exports, module2) {
+  "packages/qwik-dom/lib/impl.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
-    exports = module2.exports = {
+    exports2 = module2.exports = {
       CSSStyleDeclaration: require_CSSStyleDeclaration(),
       CharacterData: require_CharacterData(),
       Comment: require_Comment(),
@@ -22139,15 +22139,15 @@ var require_impl = __commonJS({
       Text: require_Text(),
       Window: require_Window()
     };
-    utils.merge(exports, require_events());
-    utils.merge(exports, require_htmlelts().elements);
-    utils.merge(exports, require_svg().elements);
+    utils.merge(exports2, require_events());
+    utils.merge(exports2, require_htmlelts().elements);
+    utils.merge(exports2, require_svg().elements);
   }
 });
 
 // packages/qwik-dom/lib/Window.js
 var require_Window = __commonJS({
-  "packages/qwik-dom/lib/Window.js"(exports, module2) {
+  "packages/qwik-dom/lib/Window.js"(exports2, module2) {
     "use strict";
     var DOMImplementation = require_DOMImplementation();
     var EventTarget = require_EventTarget();
@@ -22229,15 +22229,15 @@ var require_Window = __commonJS({
 
 // packages/qwik-dom/lib/index.js
 var require_lib = __commonJS({
-  "packages/qwik-dom/lib/index.js"(exports) {
+  "packages/qwik-dom/lib/index.js"(exports2) {
     "use strict";
     var DOMImplementation = require_DOMImplementation();
     var HTMLParser = require_HTMLParser();
     var Window = require_Window();
-    exports.createDOMImplementation = function() {
+    exports2.createDOMImplementation = function() {
       return new DOMImplementation(null);
     };
-    exports.createDocument = function(html, force) {
+    exports2.createDocument = function(html, force) {
       if (html || force) {
         var parser = new HTMLParser();
         parser.parse(html || "", true);
@@ -22245,7 +22245,7 @@ var require_lib = __commonJS({
       }
       return new DOMImplementation(null).createHTMLDocument("");
     };
-    exports.createIncrementalHTMLParser = function() {
+    exports2.createIncrementalHTMLParser = function() {
       var parser = new HTMLParser();
       return {
         /** Provide an additional chunk of text to be parsed. */
@@ -22298,7 +22298,7 @@ var require_lib = __commonJS({
         }
       };
     };
-    exports.impl = require_impl();
+    exports2.impl = require_impl();
   }
 });
 

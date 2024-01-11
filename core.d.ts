@@ -914,10 +914,18 @@ export declare const Fragment: FunctionComponent<{
     key?: string | number | null;
 }>;
 
-/** @public */
-export declare interface FunctionComponent<P extends Record<any, any> = Record<any, unknown>> {
-    (props: P, key: string | null, flags: number, dev?: DevJSX): JSXNode | null;
-}
+/**
+ * Any sync or async function that returns JSXOutput.
+ *
+ * Note that this includes QRLs.
+ *
+ * The `key`, `flags` and `dev` parameters are for internal use.
+ *
+ * @public
+ */
+export declare type FunctionComponent<P extends Record<any, any> = Record<any, any>> = {
+    renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput | Promise<JSXOutput>;
+}['renderFn'];
 
 /** @internal */
 export declare const _getContextElement: () => unknown;
@@ -1214,13 +1222,13 @@ export declare const _jsxBranch: <T>(input?: T | undefined) => T | undefined;
  *
  * Create a JSXNode for any tag, with possibly immutable props embedded in props
  */
-export declare const _jsxC: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
+export declare const _jsxC: <T extends string | FunctionComponent>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
 /** @public */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
 /** @public */
-export declare const jsxDEV: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, props: T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
+export declare const jsxDEV: <T extends string | FunctionComponent>(type: T, props: T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
 
 declare interface JsxDevOpts {
     fileName: string;
@@ -1238,6 +1246,13 @@ export declare interface JSXNode<T = string | FunctionComponent> {
     key: string | null;
     dev?: DevJSX;
 }
+
+/**
+ * Any valid output for a component
+ *
+ * @public
+ */
+export declare type JSXOutput = JSXNode | string | number | boolean | null | undefined | JSXOutput[];
 
 /**
  * @internal
@@ -1610,17 +1625,23 @@ export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
 };
 
 /**
- * Infers `Props` from the component.
+ * Infers `Props` from the component or tag.
  *
- * ```typescript
- * export const OtherComponent = component$(() => {
- *   return $(() => <Counter value={100} />);
+ * @example
+ *
+ * ```tsx
+ * const Desc = component$(({desc, ...props}: { desc: string } & PropsOf<'div'>) => {
+ *  return <div {...props}>{desc}</div>;
+ * });
+ *
+ * const TitleBox = component$(({title, ...props}: { title: string } & PropsOf<Box>) => {
+ *   return <Box {...props}><h1>{title}</h1></Box>;
  * });
  * ```
  *
  * @public
  */
-export declare type PropsOf<COMP> = COMP extends FunctionComponent<infer PROPS> ? NonNullable<PROPS> : COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : COMP extends string ? QwikIntrinsicElements['span'] : Record<string, unknown>;
+export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : QwikIntrinsicElements['span'] : NonNullable<COMP> extends never ? never : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PROPS> : Record<string, unknown>;
 
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing
@@ -1973,7 +1994,7 @@ export declare type QwikInvalidEvent<T = Element> = Event;
 export declare namespace QwikJSX {
     export interface Element extends JSXNode {
     }
-    export type ElementType = string | ((...args: any[]) => JSXNode | null);
+    export type ElementType = string | FunctionComponent;
     export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
     export interface ElementChildrenAttribute {
