@@ -4223,7 +4223,7 @@ const collectContext = (elCtx, collector) => {
     }
 };
 
-const escapeText = str => str.replace(/<(\/?script)/g, "\\x3C$1");
+const escapeText = str => str.replace(/<(\/?script)/gi, "\\x3C$1");
 
 const collectSubscriptions = (manager, collector, leaks) => {
     if (collector.$seen$.has(manager)) {
