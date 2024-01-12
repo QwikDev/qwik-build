@@ -12,7 +12,7 @@
                 let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;
                 while (script) {
                     if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {
-                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/g, "<$1"));
+                        containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/gi, "<$1"));
                         break;
                     }
                     script = script.previousElementSibling;

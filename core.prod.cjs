@@ -1235,7 +1235,7 @@
             }
         }
     };
-    const unescapeText = str => str.replace(/\\x3C(\/?script)/g, "<$1");
+    const unescapeText = str => str.replace(/\\x3C(\/?script)/gi, "<$1");
     const getQwikInlinedFuncs = containerEl => containerEl.qFuncs ?? EMPTY_ARRAY;
     const getQwikJSON = (parentElm, attribute) => {
         let child = parentElm.lastElementChild;
