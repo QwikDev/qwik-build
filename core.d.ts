@@ -488,7 +488,7 @@ export declare interface ColHTMLAttributes<T extends Element> extends Attrs<'col
  *
  * @public
  */
-export declare const component$: <PROPS extends Record<any, any>>(onMount: (props: PROPS) => JSXNode | null) => Component<PROPS>;
+export declare const component$: <PROPS = unknown>(onMount: OnRenderFn<PROPS>) => Component<PROPS>;
 
 /**
  * Type representing the Qwik component.
@@ -506,7 +506,7 @@ export declare const component$: <PROPS extends Record<any, any>>(onMount: (prop
  *
  * @public
  */
-export declare type Component<PROPS extends Record<any, any> = Record<string, unknown>> = FunctionComponent<PublicProps<PROPS>>;
+export declare type Component<PROPS = unknown> = FunctionComponent<PublicProps<PROPS>>;
 
 /** @public */
 export declare interface ComponentBaseProps {
@@ -514,7 +514,7 @@ export declare interface ComponentBaseProps {
     'q:slot'?: string;
 }
 
-declare type ComponentChildren<PROPS extends Record<any, any>> = PROPS extends {
+declare type ComponentChildren<PROPS> = PROPS extends {
     children: any;
 } ? never : {
     children?: JSXChildren;
@@ -923,7 +923,7 @@ export declare const Fragment: FunctionComponent<{
  *
  * @public
  */
-export declare type FunctionComponent<P extends Record<any, any> = Record<any, any>> = {
+export declare type FunctionComponent<P extends Record<any, any> = Record<any, unknown>> = {
     renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput | Promise<JSXOutput>;
 }['renderFn'];
 
@@ -1194,6 +1194,8 @@ declare type InvokeTuple = [Element, Event, URL?];
 
 declare type IsAcceptableDOMValue<T> = T extends boolean | number | string | null | undefined ? ((...args: any[]) => any) extends T ? false : true : false;
 
+declare type IsAny<T> = 0 extends T & 1 ? true : false;
+
 declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
     [Q in K]: T[K];
 }, {
@@ -1237,7 +1239,7 @@ declare interface JsxDevOpts {
 }
 
 /** @public */
-export declare interface JSXNode<T = string | FunctionComponent> {
+export declare interface JSXNode<T extends string | FunctionComponent | unknown = unknown> {
     type: T;
     props: T extends FunctionComponent<infer B> ? B : Record<any, unknown>;
     immutableProps: Record<any, unknown> | null;
@@ -1457,6 +1459,8 @@ export declare type Numberish = number | `${number}`;
 export declare interface ObjectHTMLAttributes<T extends Element> extends Attrs<'object', T> {
 }
 
+declare type ObjectProps<T> = IsAny<T> extends true ? any : unknown extends T ? never : T extends Record<any, any> ? T : never;
+
 declare type ObjToProxyMap = WeakMap<any, any>;
 
 /** @public */
@@ -1469,7 +1473,7 @@ export declare type _Only$<P> = {
 };
 
 /** @public */
-export declare type OnRenderFn<PROPS extends Record<any, any>> = (props: PROPS) => JSXNode | null;
+export declare type OnRenderFn<PROPS> = (props: PROPS) => JSXOutput;
 
 /** @public */
 export declare interface OnVisibleTaskOptions {
@@ -1619,7 +1623,7 @@ export declare type PropFnInterface<ARGS extends any[], RET> = {
 /** @public */
 export declare type PropFunction<T extends Function = (...args: any) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : never;
 
-/** @public */
+/** @public @deprecated Use `QRL<>` on your function props instead */
 export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
     [K in keyof PROPS]: PROPS[K] extends undefined ? PROPS[K] : PROPS[K] extends ((...args: infer ARGS) => infer RET) | undefined ? PropFnInterface<ARGS, Awaited<RET>> : PROPS[K];
 };
@@ -1641,7 +1645,7 @@ export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
  *
  * @public
  */
-export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : QwikIntrinsicElements['span'] : NonNullable<COMP> extends never ? never : COMP extends FunctionComponent<infer PROPS> ? NonNullable<PROPS> : Record<string, unknown>;
+export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : QwikIntrinsicElements['span'] : NonNullable<COMP> extends never ? never : COMP extends FunctionComponent<infer PROPS> ? PROPS extends Record<any, infer V> ? IsAny<V> extends true ? never : ObjectProps<PROPS> : COMP extends Component<infer OrigProps> ? ObjectProps<OrigProps> : PROPS : never;
 
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing
@@ -1649,7 +1653,7 @@ export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof Qwi
  *
  * @public
  */
-export declare type PublicProps<PROPS extends Record<any, any>> = Omit<PROPS, `${string}$`> & _Only$<PROPS> & ComponentBaseProps & ComponentChildren<PROPS>;
+export declare type PublicProps<PROPS> = (PROPS extends Record<any, any> ? Omit<PROPS, `${string}$`> & _Only$<PROPS> : unknown extends PROPS ? {} : PROPS) & ComponentBaseProps & ComponentChildren<PROPS>;
 
 /** Qwik Context of an element. */
 declare interface QContext {
@@ -1994,7 +1998,7 @@ export declare type QwikInvalidEvent<T = Element> = Event;
 export declare namespace QwikJSX {
     export interface Element extends JSXNode {
     }
-    export type ElementType = string | FunctionComponent;
+    export type ElementType = string | FunctionComponent<Record<any, any>>;
     export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
     export interface ElementChildrenAttribute {
@@ -3763,7 +3767,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.3.4
+ * 1.3.5
  *
  * @public
  */
