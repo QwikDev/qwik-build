@@ -10,7 +10,7 @@
   },
   "type": "module",
   "peerDependencies": {
-    "undici": "^5.14.0"
+    "undici": "*"
   },
   "dependencies": {
     "csstype": "^3.1.3",

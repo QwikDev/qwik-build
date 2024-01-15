@@ -2,6 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
+var _documentCurrentScript = typeof document !== 'undefined' ? document.currentScript : null;
 let wasm;
 
 const heap = new Array(128).fill(undefined);
@@ -457,7 +458,7 @@ function initSync(module) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('qwik_wasm_bg.wasm', (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (document.currentScript && document.currentScript.src || new URL('qwik.wasm.cjs', document.baseURI).href)));
+        input = new URL('qwik_wasm_bg.wasm', (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('qwik.wasm.cjs', document.baseURI).href)));
     }
     const imports = getImports();
 

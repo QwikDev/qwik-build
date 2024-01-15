@@ -7880,7 +7880,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         $serialize$: (v) => v,
         $prepare$: (data) => data,
     });
-    const serializers =  [
+    const serializers = [
         // NULL                       \u0000
         // UNDEFINED_PREFIX           \u0001
         QRLSerializer, ////////////// \u0002
