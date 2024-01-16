@@ -141,6 +141,7 @@
     "jsx-runtime.d.ts",
     "jsx-runtime.mjs",
     "jsx-runtime.mjs.map",
+    "jsx-runtime/index.d.ts",
     "jsx-runtime/package.json",
     "loader/index.cjs",
     "loader/index.d.ts",

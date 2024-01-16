@@ -1052,7 +1052,8 @@ declare interface HTMLAttributesBase extends AriaAttributes {
 /** @public */
 export declare type HTMLCrossOriginAttribute = 'anonymous' | 'use-credentials' | '' | undefined;
 
-declare interface HTMLElementAttrs extends HTMLAttributesBase, FilterBase<HTMLElement> {
+/** @public */
+export declare interface HTMLElementAttrs extends HTMLAttributesBase, FilterBase<HTMLElement> {
 }
 
 /** @public */
@@ -1900,8 +1901,8 @@ export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q
 /** @public @deprecated Use `AnimationEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikAnimationEvent<T = Element> = NativeAnimationEvent;
 
-/** The Qwik DOM attributes without plain handlers, for use as function parameters */
-declare interface QwikAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL, false> {
+/** The Qwik DOM attributes without plain handlers, for use as function parameters @public */
+export declare interface QwikAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL, false> {
     class?: ClassList | undefined;
 }
 
