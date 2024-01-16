@@ -977,17 +977,7 @@ declare namespace h {
     function h(type: any, data: any, text: string): JSXNode<any>;
     function h(type: any, data: any, children: Array<JSXNode<any> | undefined | null>): JSXNode<any>;
     function h(sel: any, data: any | null, children: JSXNode<any>): JSXNode<any>;
-    namespace JSX {
-        interface Element extends QwikJSX.Element {
-        }
-        interface IntrinsicAttributes extends QwikJSX.IntrinsicAttributes {
-        }
-        interface IntrinsicElements extends QwikJSX.IntrinsicElements {
-        }
-        interface ElementChildrenAttribute {
-            children?: any;
-        }
-    }
+        { JSX };
 }
 export { h as createElement }
 export { h }
@@ -1997,8 +1987,7 @@ export declare type QwikInvalidEvent<T = Element> = Event;
 
 /** @public */
 export declare namespace QwikJSX {
-    export interface Element extends JSXNode {
-    }
+    export type Element = JSXOutput;
     export type ElementType = string | FunctionComponent<Record<any, any>>;
     export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
@@ -2091,11 +2080,11 @@ export declare const _regSymbol: (symbol: any, hash: string) => any;
  *
  * @param parent - Element which will act as a parent to `jsxNode`. When possible the rendering will
  *   try to reuse existing nodes.
- * @param jsxNode - JSX to render
+ * @param jsxOutput - JSX to render
  * @returns An object containing a cleanup function.
  * @public
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXNode | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
+export declare const render: (parent: Element | Document, jsxOutput: JSXOutput | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
 
 /** @public */
 declare interface RenderContext {
@@ -2131,7 +2120,7 @@ export declare interface RenderResult {
 }
 
 /** @internal */
-export declare const _renderSSR: (node: JSXNode, opts: RenderSSROptions) => Promise<void>;
+export declare const _renderSSR: (node: JSXOutput, opts: RenderSSROptions) => Promise<void>;
 
 /** @public */
 export declare interface RenderSSROptions {
@@ -2209,7 +2198,7 @@ declare interface RenderStaticContext {
  * @see Resource
  * @see ResourceReturn
  */
-export declare const Resource: <T>(props: ResourceProps<T>) => JSXNode;
+export declare const Resource: <T>(props: ResourceProps<T>) => JSXOutput;
 
 /** @public */
 export declare interface ResourceCtx<T> {
@@ -2250,9 +2239,9 @@ export declare interface ResourcePending<T> {
 /** @public */
 export declare interface ResourceProps<T> {
     readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
-    onResolved: (value: T) => JSXNode;
-    onPending?: () => JSXNode;
-    onRejected?: (reason: Error) => JSXNode;
+    onResolved: (value: T) => JSXOutput;
+    onPending?: () => JSXOutput;
+    onRejected?: (reason: Error) => JSXOutput;
 }
 
 /** @public */

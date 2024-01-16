@@ -4310,10 +4310,10 @@
         return "string" == typeof type && !key && "dangerouslySetInnerHTML" in normalizedProps && (key = "innerhtml"), 
         jsx(type, normalizedProps, key);
     }
-    const renderRoot = async (rCtx, parent, jsxNode) => {
+    const renderRoot = async (rCtx, parent, jsxOutput) => {
         const staticCtx = rCtx.$static$;
         try {
-            const processedNodes = await processData(jsxNode);
+            const processedNodes = await processData(jsxOutput);
             const rootJsx = domToVnode(parent);
             await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);
         } catch (err) {
@@ -4654,8 +4654,9 @@
         };
         const children = "html" === root ? [ node ] : [ headNodes, node ];
         "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-        opts.serverData && (containerState.$serverData$ = opts.serverData), node = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null), 
-        containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts)));
+        opts.serverData && (containerState.$serverData$ = opts.serverData);
+        const rootNode = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
+        containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts)));
     }, exports._restProps = (props, omit) => {
         const rest = {};
         for (const key in props) {
@@ -4749,8 +4750,8 @@
     }, exports.jsxs = jsx, exports.noSerialize = noSerialize, exports.qrl = qrl, exports.qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         return newQrl.dev = opts, newQrl;
-    }, exports.render = async (parent, jsxNode, opts) => {
-        isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
+    }, exports.render = async (parent, jsxOutput, opts) => {
+        "function" == typeof jsxOutput && (jsxOutput = jsx(jsxOutput, null));
         const doc = getDocument(parent);
         const containerEl = getElement(parent);
         injectQContainer(containerEl);
@@ -4759,7 +4760,7 @@
         serverData && Object.assign(containerState.$serverData$, serverData);
         const rCtx = createRenderContext(doc, containerState);
         return containerState.$hostsRendering$ = new Set, containerState.$styleMoved$ = !0, 
-        await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
+        await renderRoot(rCtx, containerEl, jsxOutput, doc, containerState, containerEl), 
         await postRendering(containerState, rCtx), {
             cleanup() {
                 var renderCtx, container;

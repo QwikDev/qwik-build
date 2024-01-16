@@ -1294,9 +1294,9 @@ const _renderSSR = async (node, opts) => {
     if (opts.serverData) {
         containerState.$serverData$ = opts.serverData;
     }
-    node = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
+    const rootNode = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
     containerState.$hostsRendering$ = new Set();
-    await Promise.resolve().then(() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts));
+    await Promise.resolve().then(() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts));
 };
 const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
     const beforeClose = opts.beforeClose;
@@ -8833,14 +8833,14 @@ function h(type, props, ...children) {
  *
  * @param parent - Element which will act as a parent to `jsxNode`. When possible the rendering will
  *   try to reuse existing nodes.
- * @param jsxNode - JSX to render
+ * @param jsxOutput - JSX to render
  * @returns An object containing a cleanup function.
  * @public
  */
-const render = async (parent, jsxNode, opts) => {
-    // If input is not JSX, convert it
-    if (!isJSXNode(jsxNode)) {
-        jsxNode = jsx(jsxNode, null);
+const render = async (parent, jsxOutput, opts) => {
+    // If input is a component, convert it
+    if (typeof jsxOutput === 'function') {
+        jsxOutput = jsx(jsxOutput, null);
     }
     const doc = getDocument(parent);
     const containerEl = getElement(parent);
@@ -8861,7 +8861,7 @@ const render = async (parent, jsxNode, opts) => {
     const rCtx = createRenderContext(doc, containerState);
     containerState.$hostsRendering$ = new Set();
     containerState.$styleMoved$ = true;
-    await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl);
+    await renderRoot(rCtx, containerEl, jsxOutput, doc, containerState, containerEl);
     await postRendering(containerState, rCtx);
     return {
         cleanup() {
@@ -8869,10 +8869,10 @@ const render = async (parent, jsxNode, opts) => {
         },
     };
 };
-const renderRoot = async (rCtx, parent, jsxNode, doc, containerState, containerEl) => {
+const renderRoot = async (rCtx, parent, jsxOutput, doc, containerState, containerEl) => {
     const staticCtx = rCtx.$static$;
     try {
-        const processedNodes = await processData(jsxNode);
+        const processedNodes = await processData(jsxOutput);
         // const rootJsx = getVdom(parent);
         const rootJsx = domToVnode(parent);
         await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);

@@ -834,8 +834,9 @@ const _renderSSR = async (node, opts) => {
     };
     const children = "html" === root ? [ node ] : [ headNodes, node ];
     "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-    opts.serverData && (containerState.$serverData$ = opts.serverData), node = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null), 
-    containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(node, rCtx, ssrCtx, opts.stream, containerState, opts)));
+    opts.serverData && (containerState.$serverData$ = opts.serverData);
+    const rootNode = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
+    containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts)));
 };
 
 const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
@@ -5422,8 +5423,8 @@ function h(type, props, ...children) {
     jsx(type, normalizedProps, key);
 }
 
-const render = async (parent, jsxNode, opts) => {
-    isJSXNode(jsxNode) || (jsxNode = jsx(jsxNode, null));
+const render = async (parent, jsxOutput, opts) => {
+    "function" == typeof jsxOutput && (jsxOutput = jsx(jsxOutput, null));
     const doc = getDocument(parent);
     const containerEl = getElement(parent);
     injectQContainer(containerEl);
@@ -5432,7 +5433,7 @@ const render = async (parent, jsxNode, opts) => {
     serverData && Object.assign(containerState.$serverData$, serverData);
     const rCtx = createRenderContext(doc, containerState);
     return containerState.$hostsRendering$ = new Set, containerState.$styleMoved$ = !0, 
-    await renderRoot(rCtx, containerEl, jsxNode, doc, containerState, containerEl), 
+    await renderRoot(rCtx, containerEl, jsxOutput, doc, containerState, containerEl), 
     await postRendering(containerState, rCtx), {
         cleanup() {
             cleanupContainer(rCtx, containerEl);
@@ -5440,10 +5441,10 @@ const render = async (parent, jsxNode, opts) => {
     };
 };
 
-const renderRoot = async (rCtx, parent, jsxNode) => {
+const renderRoot = async (rCtx, parent, jsxOutput) => {
     const staticCtx = rCtx.$static$;
     try {
-        const processedNodes = await processData(jsxNode);
+        const processedNodes = await processData(jsxOutput);
         const rootJsx = domToVnode(parent);
         await smartUpdateChildren(rCtx, rootJsx, wrapJSX(parent, processedNodes), 0);
     } catch (err) {

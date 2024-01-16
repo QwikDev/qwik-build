@@ -1,4 +1,4 @@
-import type { JSXNode } from '../jsx-runtime';
+import type { JSXOutput } from '..';
 import { RenderResult } from '..';
 
 /**
@@ -9,7 +9,7 @@ import { RenderResult } from '..';
 export declare const createDOM: ({ html }?: {
     html?: string | undefined;
 }) => Promise<{
-    render: (jsxElement: JSXNode) => Promise<RenderResult>;
+    render: (jsxElement: JSXOutput) => Promise<RenderResult>;
     screen: HTMLElement;
     userEvent: (queryOrElement: string | Element | keyof HTMLElementTagNameMap | null, eventNameCamel: string | keyof WindowEventMap, eventPayload?: any) => Promise<void>;
 }>;
