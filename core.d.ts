@@ -1609,14 +1609,21 @@ declare type ProcessedJSXNodeType = '#text' | ':virtual' | ':signal' | typeof SK
 export declare interface ProgressHTMLAttributes<T extends Element> extends Attrs<'progress', T> {
 }
 
-/** @public */
+/**
+ * @deprecated Use `QRL<>` instead
+ * @public
+ */
 export declare type PropFnInterface<ARGS extends any[], RET> = {
     __qwik_serializable__?: any;
     (...args: ARGS): Promise<RET>;
 };
 
-/** @public */
-export declare type PropFunction<T extends Function = (...args: any) => any> = T extends (...args: infer ARGS) => infer RET ? PropFnInterface<ARGS, Awaited<RET>> : never;
+/**
+ * Alias for `QRL<T>`. Of historic relevance only.
+ *
+ * @public
+ */
+export declare type PropFunction<T> = QRL<T>;
 
 /** @public @deprecated Use `QRL<>` on your function props instead */
 export declare type PropFunctionProps<PROPS extends Record<any, any>> = {
