@@ -11,7 +11,7 @@
                     return currentRequestTask.$response$;
                 }
                 swState.$log$("CACHE HIT", url.pathname);
-                return swState.$cache$.match(url);
+                return (await swState.$cache$).match(url);
             }(swState, url)));
         }
     }
@@ -30,7 +30,7 @@
                     swState.$log$("already in queue", mode, state, url.pathname);
                 }
             } else {
-                if (!await swState.$cache$.match(url)) {
+                if (!await (await swState.$cache$).match(url)) {
                     swState.$log$("enqueue", mode, url.pathname);
                     task = {
                         $priority$: priority,
@@ -61,7 +61,7 @@
                 swState.$fetch$(task.$url$).then((async response => {
                     if (200 === response.status) {
                         swState.$log$("CACHED", task.$url$.pathname);
-                        await swState.$cache$.put(task.$url$, response.clone());
+                        await (await swState.$cache$).put(task.$url$, response.clone());
                     }
                     task.$resolveResponse$(response);
                 })).finally((() => {
@@ -121,12 +121,12 @@
         });
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
-            for (const request of await swState.$cache$.keys()) {
+            for (const request of await (await swState.$cache$).keys()) {
                 const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
                 const promises = [];
                 if (cacheBase === base && !bundles.has(filename)) {
                     swState.$log$("deleting", request.url);
-                    promises.push(swState.$cache$.delete(request));
+                    promises.push((await swState.$cache$).delete(request));
                 }
                 await Promise.all(promises);
             }
@@ -171,7 +171,7 @@
         swScope.addEventListener("install", (() => swScope.skipWaiting()));
         swScope.addEventListener("activate", (async event => {
             event.waitUntil(swScope.clients.claim());
-            swState.$cache$ = await swScope.caches.open("QwikBundles");
+            swState.$cache$ = swScope.caches.open("QwikBundles");
         }));
     })(globalThis);
 })();
