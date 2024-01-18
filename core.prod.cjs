@@ -3822,22 +3822,23 @@
         $test$: v => isJSXNode(v),
         $collect$: (node, collector, leaks) => {
             collectValue(node.children, collector, leaks), collectValue(node.props, collector, leaks), 
-            collectValue(node.immutableProps, collector, leaks);
+            collectValue(node.immutableProps, collector, leaks), collectValue(node.key, collector, leaks);
             let type = node.type;
             type === Slot ? type = ":slot" : type === Fragment && (type = ":fragment"), collectValue(type, collector, leaks);
         },
         $serialize$: (node, getObjID) => {
             let type = node.type;
             return type === Slot ? type = ":slot" : type === Fragment && (type = ":fragment"), 
-            `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.children)} ${node.flags}`;
+            `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.key)} ${getObjID(node.children)} ${node.flags}`;
         },
         $prepare$: data => {
-            const [type, props, immutableProps, children, flags] = data.split(" ");
-            return new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10));
+            const [type, props, immutableProps, key, children, flags] = data.split(" ");
+            return new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10), key);
         },
         $fill$: (node, getObject) => {
             node.type = getResolveJSXType(getObject(node.type)), node.props = getObject(node.props), 
-            node.immutableProps = getObject(node.immutableProps), node.children = getObject(node.children);
+            node.immutableProps = getObject(node.immutableProps), node.key = getObject(node.key), 
+            node.children = getObject(node.children);
         }
     });
     const BigIntSerializer = /*#__PURE__*/ serializer({

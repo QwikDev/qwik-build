@@ -7776,6 +7776,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             collectValue(node.children, collector, leaks);
             collectValue(node.props, collector, leaks);
             collectValue(node.immutableProps, collector, leaks);
+            collectValue(node.key, collector, leaks);
             let type = node.type;
             if (type === Slot) {
                 type = ':slot';
@@ -7793,17 +7794,18 @@ Task Symbol: ${task.$qrl$.$symbol$}
             else if (type === Fragment) {
                 type = ':fragment';
             }
-            return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.children)} ${node.flags}`;
+            return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(node.key)} ${getObjID(node.children)} ${node.flags}`;
         },
         $prepare$: (data) => {
-            const [type, props, immutableProps, children, flags] = data.split(' ');
-            const node = new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10));
+            const [type, props, immutableProps, key, children, flags] = data.split(' ');
+            const node = new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10), key);
             return node;
         },
         $fill$: (node, getObject) => {
             node.type = getResolveJSXType(getObject(node.type));
             node.props = getObject(node.props);
             node.immutableProps = getObject(node.immutableProps);
+            node.key = getObject(node.key);
             node.children = getObject(node.children);
         },
     });
