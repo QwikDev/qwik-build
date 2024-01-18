@@ -844,8 +844,12 @@ export declare interface DialogHTMLAttributes<T extends Element> extends Attrs<'
 }
 
 /** The Qwik-specific attributes that DOM elements accept @public */
-export declare interface DOMAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL> {
+export declare interface DOMAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL> {
     class?: ClassList | Signal<ClassList> | undefined;
+}
+
+declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAttributes, PreventDefault, RefAttr<EL> {
+    dangerouslySetInnerHTML?: string | undefined;
 }
 
 /** @public */
@@ -915,16 +919,14 @@ export declare const Fragment: FunctionComponent<{
 }>;
 
 /**
- * Any sync or async function that returns JSXOutput.
- *
- * Note that this includes QRLs.
+ * Any function taking a props object that returns JSXOutput.
  *
  * The `key`, `flags` and `dev` parameters are for internal use.
  *
  * @public
  */
-export declare type FunctionComponent<P extends Record<any, any> = Record<any, unknown>> = {
-    renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput | Promise<JSXOutput>;
+export declare type FunctionComponent<P = unknown> = {
+    renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput;
 }['renderFn'];
 
 /** @internal */
@@ -1203,7 +1205,7 @@ declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
 export declare const isSignal: <T = unknown>(obj: any) => obj is Signal<T>;
 
 /** @public */
-declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>, key?: string | number | null) => JSXNode<T>;
+declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxs }
 
@@ -1215,13 +1217,13 @@ export declare const _jsxBranch: <T>(input?: T | undefined) => T | undefined;
  *
  * Create a JSXNode for any tag, with possibly immutable props embedded in props
  */
-export declare const _jsxC: <T extends string | FunctionComponent>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
+export declare const _jsxC: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, mutableProps: (T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>) | null, flags: number, key: string | number | null, dev?: JsxDevOpts) => JSXNode<T>;
 
 /** @public */
 export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
 /** @public */
-export declare const jsxDEV: <T extends string | FunctionComponent>(type: T, props: T extends FunctionComponent<infer PROPS extends Record<any, any>> ? PROPS : Record<any, unknown>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
+export declare const jsxDEV: <T extends string | FunctionComponent<Record<any, unknown>>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
 
 declare interface JsxDevOpts {
     fileName: string;
@@ -1236,7 +1238,7 @@ declare interface JsxDevOpts {
  */
 export declare interface JSXNode<T extends string | FunctionComponent | unknown = unknown> {
     type: T;
-    props: T extends FunctionComponent<infer B> ? B : Record<any, unknown>;
+    props: T extends FunctionComponent<infer P> ? P : Record<any, unknown>;
     immutableProps: Record<any, unknown> | null;
     children: JSXChildren | null;
     flags: number;
@@ -1903,16 +1905,8 @@ export declare interface QuoteHTMLAttributes<T extends Element> extends Attrs<'q
 export declare type QwikAnimationEvent<T = Element> = NativeAnimationEvent;
 
 /** The Qwik DOM attributes without plain handlers, for use as function parameters @public */
-export declare interface QwikAttributes<EL extends Element> extends QwikAttributesBase, RefAttr<EL>, QwikEvents<EL, false> {
+export declare interface QwikAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL, false> {
     class?: ClassList | undefined;
-}
-
-declare interface QwikAttributesBase extends PreventDefault {
-    key?: string | number | null | undefined;
-    dangerouslySetInnerHTML?: string | undefined;
-    children?: JSXChildren;
-    /** Corresponding slot name used to project the element into. */
-    'q:slot'?: string;
 }
 
 /** @public @deprecated Use `Event` and use the second argument to the handler function for the current event target. Also note that in Qwik, onInput$ with the InputEvent is the event that behaves like onChange in React. */
@@ -1963,7 +1957,10 @@ export declare type QwikInitEvent = CustomEvent<{}>;
 
 /** @public */
 declare interface QwikIntrinsicAttributes {
-    key?: string | number | undefined | null;
+    key?: string | number | null | undefined;
+    children?: JSXChildren;
+    /** Corresponding slot name used to project the element into. */
+    'q:slot'?: string;
 }
 
 /**
@@ -2003,7 +2000,7 @@ export declare namespace QwikJSX {
     export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
     export interface ElementChildrenAttribute {
-        children: any;
+        children: JSXChildren;
     }
     export interface IntrinsicElements extends LenientQwikElements {
     }
