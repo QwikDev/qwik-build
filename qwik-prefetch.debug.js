@@ -11,7 +11,8 @@
                     return currentRequestTask.$response$;
                 }
                 swState.$log$("CACHE HIT", url.pathname);
-                return (await swState.$cache$).match(url);
+                !swState.$cache$ && await swState.$openCache$();
+                return swState.$cache$.match(url);
             }(swState, url)));
         }
     }
@@ -30,6 +31,7 @@
                     swState.$log$("already in queue", mode, state, url.pathname);
                 }
             } else {
+                !swState.$cache$ && await swState.$openCache$();
                 if (!await swState.$cache$.match(url)) {
                     swState.$log$("enqueue", mode, url.pathname);
                     task = {
@@ -129,6 +131,7 @@
         });
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
+            !swState.$cache$ && await swState.$openCache$();
             for (const request of await swState.$cache$.keys()) {
                 const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
                 const promises = [];
@@ -171,7 +174,7 @@
             if ("GET" === request.method) {
                 const previousCache = swState.$cache$;
                 try {
-                    !previousCache && swState.$openCache$();
+                    !previousCache && await swState.$openCache$();
                     const response = directFetch(swState, new URL(request.url));
                     response && ev.respondWith(response);
                 } finally {
