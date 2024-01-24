@@ -2077,6 +2077,30 @@ const executeTasksBefore = async (containerState, rCtx) => {
     }
 };
 
+const executeSSRTasks = (containerState, rCtx) => {
+    const containerEl = containerState.$containerEl$;
+    const staging = containerState.$taskStaging$;
+    if (!staging.size) {
+        return;
+    }
+    const taskPromises = [];
+    let tries = 20;
+    const runTasks = () => {
+        if (staging.forEach((task => {
+            console.error("task", task.$qrl$.$symbol$), isTask(task) && taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), (() => task)));
+        })), staging.clear(), taskPromises.length > 0) {
+            return Promise.all(taskPromises).then((async tasks => {
+                if (sortTasks(tasks), await Promise.all(tasks.map((task => runSubscriber(task, containerState, rCtx)))), 
+                taskPromises.length = 0, --tries && staging.size > 0) {
+                    return runTasks();
+                }
+                tries || logWarn(`Infinite task loop detected. Tasks:\n${Array.from(staging).map((task => `  ${task.$qrl$.$symbol$}`)).join("\n")}`);
+            }));
+        }
+    };
+    return runTasks();
+};
+
 const executeTasksAfter = async (containerState, rCtx, taskPred) => {
     const taskPromises = [];
     const containerEl = containerState.$containerEl$;
@@ -2709,7 +2733,7 @@ const unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "bor
 
 const isUnitlessNumber = name => unitlessNumbers.has(name);
 
-const executeComponent = (rCtx, elCtx) => {
+const executeComponent = (rCtx, elCtx, attempt) => {
     elCtx.$flags$ &= ~HOST_FLAG_DIRTY, elCtx.$flags$ |= HOST_FLAG_MOUNTED, elCtx.$slots$ = [], 
     elCtx.li.length = 0;
     const hostElement = elCtx.$element$;
@@ -2723,14 +2747,29 @@ const executeComponent = (rCtx, elCtx) => {
     newCtx.$cmpCtx$ = elCtx, newCtx.$slotCtx$ = void 0, iCtx.$subscriber$ = [ 0, hostElement ], 
     iCtx.$renderCtx$ = rCtx, componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(iCtx);
-    return safeCall((() => componentFn(props)), (jsxNode => maybeThen(promiseAllLazy(waitOn), (() => elCtx.$flags$ & HOST_FLAG_DIRTY ? executeComponent(rCtx, elCtx) : {
-        node: jsxNode,
-        rCtx: newCtx
-    }))), (err => err === SignalUnassignedException ? maybeThen(promiseAllLazy(waitOn), (() => executeComponent(rCtx, elCtx))) : (handleError(err, hostElement, rCtx), 
-    {
-        node: SkipRender,
-        rCtx: newCtx
-    })));
+    return safeCall((() => componentFn(props)), (jsxNode => maybeThen(isServerPlatform() ? maybeThen(promiseAllLazy(waitOn), (() => maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), (() => promiseAllLazy(waitOn))))) : promiseAllLazy(waitOn), (() => {
+        if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
+            if (!(attempt && attempt > 100)) {
+                return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
+            }
+            logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+        }
+        return {
+            node: jsxNode,
+            rCtx: newCtx
+        };
+    }))), (err => {
+        if (err === SignalUnassignedException) {
+            if (!(attempt && attempt > 100)) {
+                return maybeThen(promiseAllLazy(waitOn), (() => executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1)));
+            }
+            logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+        }
+        return handleError(err, hostElement, rCtx), {
+            node: SkipRender,
+            rCtx: newCtx
+        };
+    }));
 };
 
 const createRenderContext = (doc, containerState) => {
