@@ -389,6 +389,11 @@ declare interface QwikVitePluginCommonOptions {
          */
         clickToSource: string[] | false;
     };
+    /**
+     * Predicate function to filter out files from the optimizer. hook for resolveId, load, and
+     * transform
+     */
+    fileFilter?: (id: string, hook: string) => boolean;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {

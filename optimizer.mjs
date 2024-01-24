@@ -3220,6 +3220,7 @@ function qwikVite(qwikViteOpts = {}) {
   let srcDir = null;
   let rootDir = null;
   let ssrOutDir = null;
+  const fileFilter = qwikViteOpts.fileFilter || (() => true);
   const injections = [];
   const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
   async function loadQwikInsights(clientOutDir2) {
@@ -3429,7 +3430,7 @@ function qwikVite(qwikViteOpts = {}) {
       await qwikPlugin.buildStart(this);
     },
     resolveId(id, importer, resolveIdOpts) {
-      if (id.startsWith("\0")) {
+      if (id.startsWith("\0") || !fileFilter(id, "resolveId")) {
         return null;
       }
       if (isClientDevOnly && id === VITE_CLIENT_MODULE) {
@@ -3438,7 +3439,7 @@ function qwikVite(qwikViteOpts = {}) {
       return qwikPlugin.resolveId(this, id, importer, resolveIdOpts);
     },
     load(id, loadOpts) {
-      if (id.startsWith("\0")) {
+      if (id.startsWith("\0") || !fileFilter(id, "load")) {
         return null;
       }
       id = qwikPlugin.normalizePath(id);
@@ -3454,7 +3455,7 @@ function qwikVite(qwikViteOpts = {}) {
       return qwikPlugin.load(this, id, loadOpts);
     },
     transform(code, id, transformOpts) {
-      if (id.startsWith("\0")) {
+      if (id.startsWith("\0") || !fileFilter(id, "transform")) {
         return null;
       }
       if (isClientDevOnly) {

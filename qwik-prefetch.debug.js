@@ -30,7 +30,7 @@
                     swState.$log$("already in queue", mode, state, url.pathname);
                 }
             } else {
-                if (!await (await swState.$cache$).match(url)) {
+                if (!await swState.$cache$.match(url)) {
                     swState.$log$("enqueue", mode, url.pathname);
                     task = {
                         $priority$: priority,
@@ -60,8 +60,14 @@
                 swState.$log$(action, task.$url$.pathname);
                 swState.$fetch$(task.$url$).then((async response => {
                     if (200 === response.status) {
-                        swState.$log$("CACHED", task.$url$.pathname);
-                        await (await swState.$cache$).put(task.$url$, response.clone());
+                        const previousCache = swState.$cache$;
+                        try {
+                            !previousCache && swState.$openCache$();
+                            swState.$log$("CACHED", task.$url$.pathname);
+                            await swState.$cache$.put(task.$url$, response.clone());
+                        } finally {
+                            swState.$cache$ = previousCache;
+                        }
                     }
                     task.$resolveResponse$(response);
                 })).finally((() => {
@@ -98,6 +104,7 @@
     const processMessage = async (state, msg) => {
         const type = msg[0];
         state.$log$("received message:", type, msg[1], msg.slice(2));
+        await state.$openCache$();
         "graph" === type ? await processBundleGraph(state, msg[1], msg.slice(2), !0) : "graph-url" === type ? await async function(swState, base, graphPath) {
             await processBundleGraph(swState, base, [], !1);
             const response = await directFetch(swState, new URL(base + graphPath, swState.$url$));
@@ -110,6 +117,7 @@
             const base = swState.$bases$.find((base2 => basePath === base2.$path$));
             base ? processPrefetch(swState, basePath, base.$graph$.filter((item => "string" == typeof item))) : console.error(`Base path not found: ${basePath}, ignoring prefetch.`);
         }(state, msg[1]) : "ping" === type ? log("ping") : "verbose" === type ? (state.$log$ = log)("mode: verbose") : console.error("UNKNOWN MESSAGE:", msg);
+        state.$cache$ = null;
     };
     async function processBundleGraph(swState, base, graph, cleanup) {
         const existingBaseIndex = swState.$bases$.findIndex((base2 => base2 == base2));
@@ -121,12 +129,12 @@
         });
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
-            for (const request of await (await swState.$cache$).keys()) {
+            for (const request of await swState.$cache$.keys()) {
                 const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
                 const promises = [];
                 if (cacheBase === base && !bundles.has(filename)) {
                     swState.$log$("deleting", request.url);
-                    promises.push((await swState.$cache$).delete(request));
+                    promises.push(swState.$cache$.delete(request));
                 }
                 await Promise.all(promises);
             }
@@ -151,6 +159,7 @@
             $queue$: [],
             $bases$: [],
             $cache$: null,
+            $openCache$: null,
             $msgQueue$: [],
             $msgQueuePromise$: null,
             $maxPrefetchRequests$: 10,
@@ -160,8 +169,14 @@
         swScope.addEventListener("fetch", (async ev => {
             const request = ev.request;
             if ("GET" === request.method) {
-                const response = directFetch(swState, new URL(request.url));
-                response && ev.respondWith(response);
+                const previousCache = swState.$cache$;
+                try {
+                    !previousCache && swState.$openCache$();
+                    const response = directFetch(swState, new URL(request.url));
+                    response && ev.respondWith(response);
+                } finally {
+                    swState.$cache$ = previousCache;
+                }
             }
         }));
         swScope.addEventListener("message", (ev => {
@@ -171,7 +186,7 @@
         swScope.addEventListener("install", (() => swScope.skipWaiting()));
         swScope.addEventListener("activate", (async event => {
             event.waitUntil(swScope.clients.claim());
-            swState.$cache$ = swScope.caches.open("QwikBundles");
+            swState.$openCache$ = async () => swState.$cache$ = await swScope.caches.open("QwikBundles");
         }));
     })(globalThis);
 })();

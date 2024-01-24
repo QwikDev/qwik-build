@@ -3262,6 +3262,46 @@ const executeTasksBefore = async (containerState, rCtx) => {
         }
     }
 };
+/** Execute tasks that are dirty during SSR render */
+const executeSSRTasks = (containerState, rCtx) => {
+    const containerEl = containerState.$containerEl$;
+    const staging = containerState.$taskStaging$;
+    if (!staging.size) {
+        return;
+    }
+    const taskPromises = [];
+    let tries = 20;
+    const runTasks = () => {
+        // SSR dirty tasks are in taskStaging
+        staging.forEach((task) => {
+            console.error('task', task.$qrl$.$symbol$);
+            if (isTask(task)) {
+                taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
+            }
+            // We ignore other types of tasks, they are handled via waitOn
+        });
+        staging.clear();
+        // Wait for all promises
+        if (taskPromises.length > 0) {
+            return Promise.all(taskPromises).then(async (tasks) => {
+                sortTasks(tasks);
+                await Promise.all(tasks.map((task) => {
+                    return runSubscriber(task, containerState, rCtx);
+                }));
+                taskPromises.length = 0;
+                if (--tries && staging.size > 0) {
+                    return runTasks();
+                }
+                if (!tries) {
+                    logWarn(`Infinite task loop detected. Tasks:\n${Array.from(staging)
+                        .map((task) => `  ${task.$qrl$.$symbol$}`)
+                        .join('\n')}`);
+                }
+            });
+        }
+    };
+    return runTasks();
+};
 const executeTasksAfter = async (containerState, rCtx, taskPred) => {
     const taskPromises = [];
     const containerEl = containerState.$containerEl$;
@@ -4533,7 +4573,7 @@ const isUnitlessNumber = (name) => {
     return unitlessNumbers.has(name);
 };
 
-const executeComponent = (rCtx, elCtx) => {
+const executeComponent = (rCtx, elCtx, attempt) => {
     elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
     elCtx.$flags$ |= HOST_FLAG_MOUNTED;
     elCtx.$slots$ = [];
@@ -4556,9 +4596,18 @@ const executeComponent = (rCtx, elCtx) => {
     componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
     const componentFn = componentQRL.getFn(iCtx);
     return safeCall(() => componentFn(props), (jsxNode) => {
-        return maybeThen(promiseAllLazy(waitOn), () => {
+        return maybeThen(isServerPlatform()
+            ? maybeThen(promiseAllLazy(waitOn), () => 
+            // Run dirty tasks before SSR output is generated.
+            maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), () => promiseAllLazy(waitOn)))
+            : promiseAllLazy(waitOn), () => {
             if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-                return executeComponent(rCtx, elCtx);
+                if (attempt && attempt > 100) {
+                    logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+                }
+                else {
+                    return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
+                }
             }
             return {
                 node: jsxNode,
@@ -4567,9 +4616,14 @@ const executeComponent = (rCtx, elCtx) => {
         });
     }, (err) => {
         if (err === SignalUnassignedException) {
-            return maybeThen(promiseAllLazy(waitOn), () => {
-                return executeComponent(rCtx, elCtx);
-            });
+            if (attempt && attempt > 100) {
+                logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+            }
+            else {
+                return maybeThen(promiseAllLazy(waitOn), () => {
+                    return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
+                });
+            }
         }
         handleError(err, hostElement, rCtx);
         return {
