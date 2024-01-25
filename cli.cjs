@@ -1955,21 +1955,19 @@ async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
         } else if (destName === ".gitignore" || destName === ".prettierignore" || destName === ".eslintignore") {
           await mergeIgnoresFile(fileUpdates, srcChildPath, destChildPath);
         } else if (ext === ".css") {
-          await mergeCss(fileUpdates, srcChildPath, destChildPath);
+          await mergeCss(fileUpdates, srcChildPath, destChildPath, opts);
+        } else if (import_node_fs4.default.existsSync(destChildPath)) {
+          fileUpdates.files.push({
+            path: destChildPath,
+            content: await import_node_fs4.default.promises.readFile(srcChildPath),
+            type: "overwrite"
+          });
         } else {
-          if (import_node_fs4.default.existsSync(destChildPath)) {
-            fileUpdates.files.push({
-              path: destChildPath,
-              content: await import_node_fs4.default.promises.readFile(srcChildPath),
-              type: "overwrite"
-            });
-          } else {
-            fileUpdates.files.push({
-              path: destChildPath,
-              content: await import_node_fs4.default.promises.readFile(srcChildPath),
-              type: "create"
-            });
-          }
+          fileUpdates.files.push({
+            path: destChildPath,
+            content: await import_node_fs4.default.promises.readFile(srcChildPath),
+            type: "create"
+          });
         }
       }
     })
@@ -2086,15 +2084,16 @@ async function mergeIgnoresFile(fileUpdates, srcPath, destPath) {
     });
   }
 }
-async function mergeCss(fileUpdates, srcPath, destPath) {
+async function mergeCss(fileUpdates, srcPath, destPath, opts) {
   const srcContent = await import_node_fs4.default.promises.readFile(srcPath, "utf-8");
   try {
     const destContent = await import_node_fs4.default.promises.readFile(destPath, "utf-8");
     const mergedContent = srcContent.trim() + "\n\n" + destContent.trim() + "\n";
+    const isAddingLibrary = opts.installDeps === true;
     fileUpdates.files.push({
       path: destPath,
-      content: mergedContent,
-      type: "modify"
+      content: isAddingLibrary ? mergedContent : srcContent,
+      type: isAddingLibrary ? "modify" : "overwrite"
     });
   } catch (e2) {
     fileUpdates.files.push({

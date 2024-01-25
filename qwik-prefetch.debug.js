@@ -8,7 +8,7 @@
             return enqueueFileAndDependencies(swState, base, [ filename ], DIRECT_PRIORITY).then((() => function(swState, url) {
                 const currentRequestTask = swState.$queue$.find((task => task.$url$.pathname === url.pathname));
                 if (currentRequestTask) {
-                    return currentRequestTask.$response$;
+                    return currentRequestTask.$response$.then((response => response.clone()));
                 }
                 swState.$log$("CACHE HIT", url.pathname);
                 return swState.$match$(url);
@@ -146,28 +146,16 @@
             }));
         }
     }
-    var __defProp = Object.defineProperty;
-    var __publicField = (obj, key, value) => {
-        ((obj, key, value) => {
-            key in obj ? __defProp(obj, key, {
-                enumerable: !0,
-                configurable: !0,
-                writable: !0,
-                value: value
-            }) : obj[key] = value;
-        })(obj, "symbol" != typeof key ? key + "" : key, value);
-        return value;
-    };
     class SWStateImpl {
-        constructor($fetch$, $url$) {
+        constructor($fetch$, $url$, $maxPrefetchRequests$ = 10, $cache$ = null, $msgQueuePromise$ = null, $queue$ = [], $bases$ = [], $msgQueue$ = []) {
             this.$fetch$ = $fetch$;
             this.$url$ = $url$;
-            __publicField(this, "$queue$", []);
-            __publicField(this, "$bases$", []);
-            __publicField(this, "$cache$", null);
-            __publicField(this, "$msgQueue$", []);
-            __publicField(this, "$msgQueuePromise$", null);
-            __publicField(this, "$maxPrefetchRequests$", 10);
+            this.$maxPrefetchRequests$ = $maxPrefetchRequests$;
+            this.$cache$ = $cache$;
+            this.$msgQueuePromise$ = $msgQueuePromise$;
+            this.$queue$ = $queue$;
+            this.$bases$ = $bases$;
+            this.$msgQueue$ = $msgQueue$;
         }
         $getCache$() {
             return this.$cache$;
