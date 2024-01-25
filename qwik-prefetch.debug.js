@@ -5,14 +5,13 @@
         const base = swState.$bases$.find((base2 => basePath === base2.$path$));
         if (base) {
             swState.$log$("intercepting", url.pathname);
-            return enqueueFileAndDependencies(swState, base, [ filename ], DIRECT_PRIORITY).then((() => async function(swState, url) {
+            return enqueueFileAndDependencies(swState, base, [ filename ], DIRECT_PRIORITY).then((() => function(swState, url) {
                 const currentRequestTask = swState.$queue$.find((task => task.$url$.pathname === url.pathname));
                 if (currentRequestTask) {
                     return currentRequestTask.$response$;
                 }
                 swState.$log$("CACHE HIT", url.pathname);
-                !swState.$cache$ && await swState.$openCache$();
-                return swState.$cache$.match(url);
+                return swState.$match$(url);
             }(swState, url)));
         }
     }
@@ -31,8 +30,7 @@
                     swState.$log$("already in queue", mode, state, url.pathname);
                 }
             } else {
-                !swState.$cache$ && await swState.$openCache$();
-                if (!await swState.$cache$.match(url)) {
+                if (!await swState.$match$(url)) {
                     swState.$log$("enqueue", mode, url.pathname);
                     task = {
                         $priority$: priority,
@@ -61,17 +59,11 @@
                 const action = task.$priority$ >= DIRECT_PRIORITY ? "FETCH (CACHE MISS)" : "FETCH";
                 swState.$log$(action, task.$url$.pathname);
                 swState.$fetch$(task.$url$).then((async response => {
-                    if (200 === response.status) {
-                        const previousCache = swState.$cache$;
-                        try {
-                            !previousCache && await swState.$openCache$();
-                            swState.$log$("CACHED", task.$url$.pathname);
-                            await swState.$cache$.put(task.$url$, response.clone());
-                        } finally {
-                            swState.$cache$ = previousCache;
-                        }
-                    }
                     task.$resolveResponse$(response);
+                    if (200 === response.status) {
+                        swState.$log$("CACHED", task.$url$.pathname);
+                        await swState.$put$(task.$url$, response.clone());
+                    }
                 })).finally((() => {
                     swState.$log$("FETCH DONE", task.$url$.pathname);
                     swState.$queue$.splice(swState.$queue$.indexOf(task), 1);
@@ -106,7 +98,6 @@
     const processMessage = async (state, msg) => {
         const type = msg[0];
         state.$log$("received message:", type, msg[1], msg.slice(2));
-        await state.$openCache$();
         "graph" === type ? await processBundleGraph(state, msg[1], msg.slice(2), !0) : "graph-url" === type ? await async function(swState, base, graphPath) {
             await processBundleGraph(swState, base, [], !1);
             const response = await directFetch(swState, new URL(base + graphPath, swState.$url$));
@@ -119,7 +110,6 @@
             const base = swState.$bases$.find((base2 => basePath === base2.$path$));
             base ? processPrefetch(swState, basePath, base.$graph$.filter((item => "string" == typeof item))) : console.error(`Base path not found: ${basePath}, ignoring prefetch.`);
         }(state, msg[1]) : "ping" === type ? log("ping") : "verbose" === type ? (state.$log$ = log)("mode: verbose") : console.error("UNKNOWN MESSAGE:", msg);
-        state.$cache$ = null;
     };
     async function processBundleGraph(swState, base, graph, cleanup) {
         const existingBaseIndex = swState.$bases$.findIndex((base2 => base2 == base2));
@@ -131,13 +121,13 @@
         });
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
-            !swState.$cache$ && await swState.$openCache$();
-            for (const request of await swState.$cache$.keys()) {
+            const cache = await swState.$getCache$();
+            for (const request of await cache.keys()) {
                 const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
                 const promises = [];
                 if (cacheBase === base && !bundles.has(filename)) {
                     swState.$log$("deleting", request.url);
-                    promises.push(swState.$cache$.delete(request));
+                    promises.push(cache.delete(request));
                 }
                 await Promise.all(promises);
             }
@@ -156,30 +146,47 @@
             }));
         }
     }
+    var __defProp = Object.defineProperty;
+    var __publicField = (obj, key, value) => {
+        ((obj, key, value) => {
+            key in obj ? __defProp(obj, key, {
+                enumerable: !0,
+                configurable: !0,
+                writable: !0,
+                value: value
+            }) : obj[key] = value;
+        })(obj, "symbol" != typeof key ? key + "" : key, value);
+        return value;
+    };
+    class SWStateImpl {
+        constructor($fetch$, $url$) {
+            this.$fetch$ = $fetch$;
+            this.$url$ = $url$;
+            __publicField(this, "$queue$", []);
+            __publicField(this, "$bases$", []);
+            __publicField(this, "$cache$", null);
+            __publicField(this, "$msgQueue$", []);
+            __publicField(this, "$msgQueuePromise$", null);
+            __publicField(this, "$maxPrefetchRequests$", 10);
+        }
+        $getCache$() {
+            return this.$cache$;
+        }
+        async $put$(request, response) {
+            return (await this.$getCache$()).put(request, response);
+        }
+        async $match$(request) {
+            return (await this.$getCache$()).match(request);
+        }
+        $log$() {}
+    }
     (swScope => {
-        const swState = ((fetch, url) => ({
-            $fetch$: fetch,
-            $queue$: [],
-            $bases$: [],
-            $cache$: null,
-            $openCache$: null,
-            $msgQueue$: [],
-            $msgQueuePromise$: null,
-            $maxPrefetchRequests$: 10,
-            $url$: url,
-            $log$: (...args) => {}
-        }))(swScope.fetch.bind(swScope), new URL(swScope.location.href));
-        swScope.addEventListener("fetch", (async ev => {
+        const swState = ((fetch, url) => new SWStateImpl(fetch, url))(swScope.fetch.bind(swScope), new URL(swScope.location.href));
+        swScope.addEventListener("fetch", (ev => {
             const request = ev.request;
             if ("GET" === request.method) {
-                const previousCache = swState.$cache$;
-                try {
-                    !previousCache && await swState.$openCache$();
-                    const response = directFetch(swState, new URL(request.url));
-                    response && ev.respondWith(response);
-                } finally {
-                    swState.$cache$ = previousCache;
-                }
+                const response = directFetch(swState, new URL(request.url));
+                response && ev.respondWith(response);
             }
         }));
         swScope.addEventListener("message", (ev => {
@@ -187,9 +194,18 @@
             drainMsgQueue(swState);
         }));
         swScope.addEventListener("install", (() => swScope.skipWaiting()));
-        swScope.addEventListener("activate", (async event => {
+        swScope.addEventListener("activate", (event => {
+            swState.$getCache$ = () => {
+                if (swState.$cache$) {
+                    return swState.$cache$;
+                }
+                clearTimeout(undefined);
+                setTimeout((() => {
+                    swState.$cache$ = null;
+                }), 5e3);
+                return swScope.caches.open("QwikBundles");
+            };
             event.waitUntil(swScope.clients.claim());
-            swState.$openCache$ = async () => swState.$cache$ = await swScope.caches.open("QwikBundles");
         }));
     })(globalThis);
 })();
