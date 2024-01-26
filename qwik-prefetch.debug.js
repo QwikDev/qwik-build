@@ -166,9 +166,7 @@
         async $match$(request) {
             return (await this.$getCache$()).match(request);
         }
-        $log$(...msg) {
-            console.log("SW:", ...msg);
-        }
+        $log$() {}
     }
     (swScope => {
         const swState = ((fetch, url) => new SWStateImpl(fetch, url))(swScope.fetch.bind(swScope), new URL(swScope.location.href));
