@@ -170,6 +170,16 @@
     }
     (swScope => {
         const swState = ((fetch, url) => new SWStateImpl(fetch, url))(swScope.fetch.bind(swScope), new URL(swScope.location.href));
+        swState.$getCache$ = () => {
+            if (swState.$cache$) {
+                return swState.$cache$;
+            }
+            clearTimeout(undefined);
+            setTimeout((() => {
+                swState.$cache$ = null;
+            }), 5e3);
+            return swScope.caches.open("QwikBundles");
+        };
         swScope.addEventListener("fetch", (ev => {
             const request = ev.request;
             if ("GET" === request.method) {
@@ -181,7 +191,9 @@
             swState.$msgQueue$.push(ev.data);
             drainMsgQueue(swState);
         }));
-        swScope.addEventListener("install", (() => swScope.skipWaiting()));
+        swScope.addEventListener("install", (() => {
+            swScope.skipWaiting();
+        }));
         swScope.addEventListener("activate", (event => {
             swState.$getCache$ = () => {
                 if (swState.$cache$) {
