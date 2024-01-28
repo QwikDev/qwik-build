@@ -2455,6 +2455,9 @@ function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
       outputOpts.entryFileNames || (outputOpts.entryFileNames = "build/[name].js");
       outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "build/[name].js");
     }
+  } else if ("production" === opts.buildMode) {
+    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js");
+    outputOpts.assetFileNames || (outputOpts.assetFileNames = "assets/[hash].[ext]");
   }
   "client" === opts.target && (outputOpts.format = "es");
   outputOpts.dir || (outputOpts.dir = opts.outDir);
