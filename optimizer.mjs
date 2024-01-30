@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.4.2
+ * @builder.io/qwik/optimizer 1.4.3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1233,7 +1233,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.4.2"
+  qwik: "1.4.3"
 };
 
 async function getSystem() {
@@ -1417,7 +1417,7 @@ var transformFsAsync = async (sys, binding, fsOpts) => {
       rootDir: fsOpts.rootDir,
       entryStrategy: fsOpts.entryStrategy,
       minify: fsOpts.minify,
-      sourceMaps: fsOpts.sourceMaps,
+      sourceMaps: !!fsOpts.sourceMaps,
       transpileTs: fsOpts.transpileTs,
       transpileJsx: fsOpts.transpileJsx,
       explicitExtensions: fsOpts.explicitExtensions,
@@ -1758,6 +1758,7 @@ function createPlugin(optimizerOptions = {}) {
     entryStrategy: null,
     srcDir: null,
     srcInputs: null,
+    sourcemap: !!optimizerOptions.sourcemap,
     manifestInput: null,
     insightsManifest: null,
     manifestOutput: null,
@@ -1767,7 +1768,8 @@ function createPlugin(optimizerOptions = {}) {
     devTools: {
       clickToSource: [ "Alt" ]
     },
-    inlineStylesUpToBytes: null
+    inlineStylesUpToBytes: null,
+    lint: true
   };
   const init2 = async () => {
     internalOptimizer || (internalOptimizer = await createOptimizer(optimizerOptions));
@@ -1845,6 +1847,7 @@ function createPlugin(optimizerOptions = {}) {
     opts.csr = !!updatedOpts.csr;
     opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
     ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
+    "boolean" === typeof updatedOpts.lint && (opts.lint = updatedOpts.lint);
     return {
       ...opts
     };
@@ -1875,7 +1878,7 @@ function createPlugin(optimizerOptions = {}) {
   const buildStart = async ctx => {
     debug("buildStart()", opts.buildMode, opts.scope);
     const optimizer = getOptimizer();
-    if ("node" === optimizer.sys.env && "ssr" === opts.target) {
+    if ("node" === optimizer.sys.env && "ssr" === opts.target && opts.lint) {
       try {
         linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
       } catch (err) {}
@@ -1913,7 +1916,8 @@ function createPlugin(optimizerOptions = {}) {
         explicitExtensions: true,
         preserveFilenames: true,
         mode: mode,
-        scope: opts.scope ? opts.scope : void 0
+        scope: opts.scope ? opts.scope : void 0,
+        sourceMaps: opts.sourcemap
       };
       if ("client" === opts.target) {
         transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
@@ -2095,7 +2099,7 @@ function createPlugin(optimizerOptions = {}) {
         } ],
         entryStrategy: entryStrategy,
         minify: "simplify",
-        sourceMaps: "development" === opts.buildMode,
+        sourceMaps: opts.sourcemap || "development" === opts.buildMode,
         transpileTs: true,
         transpileJsx: true,
         explicitExtensions: true,
@@ -2146,7 +2150,7 @@ function createPlugin(optimizerOptions = {}) {
           } ],
           entryStrategy: opts.entryStrategy,
           minify: "simplify",
-          sourceMaps: "development" === opts.buildMode,
+          sourceMaps: opts.sourcemap || "development" === opts.buildMode,
           transpileTs: true,
           transpileJsx: true,
           explicitExtensions: true,
@@ -2252,6 +2256,9 @@ function createPlugin(optimizerOptions = {}) {
     const manifest = isSSR ? opts.manifestInput : null;
     return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
   }
+  function setSourceMapSupport(sourcemap) {
+    opts.sourcemap = sourcemap;
+  }
   return {
     buildStart: buildStart,
     createOutputAnalyzer: createOutputAnalyzer,
@@ -2270,7 +2277,8 @@ function createPlugin(optimizerOptions = {}) {
     onDiagnostics: onDiagnostics,
     resolveId: resolveId,
     transform: transform,
-    validateSource: validateSource
+    validateSource: validateSource,
+    setSourceMapSupport: setSourceMapSupport
   };
 }
 
@@ -2373,7 +2381,8 @@ function qwikRollup(qwikRollupOpts = {}) {
         manifestOutput: qwikRollupOpts.manifestOutput,
         manifestInput: qwikRollupOpts.manifestInput,
         transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
-        inlineStylesUpToBytes: qwikRollupOpts.optimizerOptions?.inlineStylesUpToBytes
+        inlineStylesUpToBytes: qwikRollupOpts.optimizerOptions?.inlineStylesUpToBytes,
+        lint: qwikRollupOpts.lint
       };
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       inputOpts.input || (inputOpts.input = opts.input);
@@ -3283,7 +3292,9 @@ function qwikVite(qwikViteOpts = {}) {
         transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
         vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
         outDir: viteConfig.build?.outDir,
-        devTools: qwikViteOpts.devTools
+        devTools: qwikViteOpts.devTools,
+        sourcemap: !!viteConfig.build?.sourcemap,
+        lint: qwikViteOpts.lint
       };
       if (!qwikViteOpts.csr) {
         if ("ssr" === target) {
@@ -3420,6 +3431,8 @@ function qwikVite(qwikViteOpts = {}) {
           entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
         } catch (e) {}
       }
+      const useSourcemap = !!config.build.sourcemap;
+      useSourcemap && void 0 === qwikViteOpts.optimizerOptions?.sourcemap && qwikPlugin.setSourceMapSupport(true);
     },
     async buildStart() {
       const resolver = this.resolve.bind(this);

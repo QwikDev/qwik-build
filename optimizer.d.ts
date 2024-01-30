@@ -103,7 +103,10 @@ export declare interface Optimizer {
 export declare interface OptimizerOptions {
     sys?: OptimizerSystem;
     binding?: any;
+    /** Inline the global styles if they're smaller than this */
     inlineStylesUpToBytes?: number;
+    /** Enable sourcemaps */
+    sourcemap?: boolean;
 }
 
 /** @public */
@@ -210,6 +213,7 @@ declare interface QwikPluginOptions {
     srcDir?: string | null;
     scope?: string | null;
     srcInputs?: TransformModuleInput[] | null;
+    sourcemap?: boolean;
     resolveQwikBuild?: boolean;
     target?: QwikBuildTarget;
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
@@ -220,6 +224,11 @@ declare interface QwikPluginOptions {
      * Default: 20kb (20,000bytes)
      */
     inlineStylesUpToBytes?: number;
+    /**
+     * Run eslint on the source files for the ssr build or dev server. This can slow down startup on
+     * large projects. Defaults to `true`
+     */
+    lint?: boolean;
 }
 
 /** @public */
@@ -293,6 +302,11 @@ export declare interface QwikRollupPluginOptions {
      * before bundling.
      */
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
+    /**
+     * Run eslint on the source files for the ssr build or dev server. This can slow down startup on
+     * large projects. Defaults to `true`
+     */
+    lint?: boolean;
 }
 
 /** @public */
@@ -394,6 +408,11 @@ declare interface QwikVitePluginCommonOptions {
      * transform
      */
     fileFilter?: (id: string, hook: string) => boolean;
+    /**
+     * Run eslint on the source files for the ssr build or dev server. This can slow down startup on
+     * large projects. Defaults to `true`
+     */
+    lint?: boolean;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
