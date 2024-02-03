@@ -551,77 +551,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return text.replace(/-./g, (x) => x[1].toUpperCase());
     };
 
-    const CONTAINER_STATE = Symbol('ContainerState');
-    /** @internal */
-    const _getContainerState = (containerEl) => {
-        let state = containerEl[CONTAINER_STATE];
-        if (!state) {
-            containerEl[CONTAINER_STATE] = state = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
-        }
-        return state;
-    };
-    const createContainerState = (containerEl, base) => {
-        const containerState = {
-            $containerEl$: containerEl,
-            $elementIndex$: 0,
-            $styleMoved$: false,
-            $proxyMap$: new WeakMap(),
-            $opsNext$: new Set(),
-            $taskNext$: new Set(),
-            $taskStaging$: new Set(),
-            $hostsNext$: new Set(),
-            $hostsStaging$: new Set(),
-            $styleIds$: new Set(),
-            $events$: new Set(),
-            $serverData$: {},
-            $base$: base,
-            $renderPromise$: undefined,
-            $hostsRendering$: undefined,
-            $pauseCtx$: undefined,
-            $subsManager$: null,
-            $inlineFns$: new Map(),
-        };
-        seal(containerState);
-        containerState.$subsManager$ = createSubscriptionManager(containerState);
-        return containerState;
-    };
-    const removeContainerState = (containerEl) => {
-        delete containerEl[CONTAINER_STATE];
-    };
-    const setRef = (value, elm) => {
-        if (isFunction(value)) {
-            return value(elm);
-        }
-        else if (isObject(value)) {
-            if ('value' in value) {
-                return (value.value = elm);
-            }
-        }
-        throw qError(QError_invalidRefValue, value);
-    };
-    const SHOW_ELEMENT = 1;
-    const SHOW_COMMENT$1 = 128;
-    const FILTER_REJECT$1 = 2;
-    const FILTER_SKIP = 3;
-    const isContainer$1 = (el) => {
-        return isElement$1(el) && el.hasAttribute(QContainerAttr);
-    };
-    const intToStr = (nu) => {
-        return nu.toString(36);
-    };
-    const strToInt = (nu) => {
-        return parseInt(nu, 36);
-    };
-    const getEventName = (attribute) => {
-        const colonPos = attribute.indexOf(':');
-        if (attribute) {
-            return fromKebabToCamelCase(attribute.slice(colonPos + 1));
-        }
-        else {
-            return attribute;
-        }
-    };
-
     const ON_PROP_REGEX = /^(on|window:|document:)/;
     const PREVENT_DEFAULT = 'preventdefault:';
     const isOnProp = (prop) => {
@@ -827,165 +756,6 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
                 }));
             }
         }
-    };
-
-    /** @internal */
-    const _fnSignal = (fn, args, fnStr) => {
-        return new SignalDerived(fn, args, fnStr);
-    };
-    const serializeDerivedSignalFunc = (signal) => {
-        const fnBody = qSerialize ? signal.$funcStr$ : 'null';
-        assertDefined(fnBody, 'If qSerialize is true then fnStr must be provided.');
-        let args = '';
-        for (let i = 0; i < signal.$args$.length; i++) {
-            args += `p${i},`;
-        }
-        return `(${args})=>(${fnBody})`;
-    };
-
-    var _a$1;
-    /** @internal */
-    const _createSignal = (value, containerState, flags, subscriptions) => {
-        const manager = containerState.$subsManager$.$createManager$(subscriptions);
-        const signal = new SignalImpl(value, manager, flags);
-        return signal;
-    };
-    const QObjectSignalFlags = Symbol('proxy manager');
-    const SIGNAL_IMMUTABLE = 1 << 0;
-    const SIGNAL_UNASSIGNED = 1 << 1;
-    const SignalUnassignedException = Symbol('unassigned signal');
-    class SignalBase {
-    }
-    class SignalImpl extends SignalBase {
-        constructor(v, manager, flags) {
-            super();
-            this[_a$1] = 0;
-            this.untrackedValue = v;
-            this[QObjectManagerSymbol] = manager;
-            this[QObjectSignalFlags] = flags;
-        }
-        // prevent accidental use as value
-        valueOf() {
-            if (qDev) {
-                throw new TypeError('Cannot coerce a Signal, use `.value` instead');
-            }
-        }
-        toString() {
-            return `[Signal ${String(this.value)}]`;
-        }
-        toJSON() {
-            return { value: this.value };
-        }
-        get value() {
-            if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
-                throw SignalUnassignedException;
-            }
-            const sub = tryGetInvokeContext()?.$subscriber$;
-            if (sub) {
-                this[QObjectManagerSymbol].$addSub$(sub);
-            }
-            return this.untrackedValue;
-        }
-        set value(v) {
-            if (qDev) {
-                if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
-                    throw new Error('Cannot mutate immutable signal');
-                }
-                if (qSerialize) {
-                    verifySerializable(v);
-                }
-                const invokeCtx = tryGetInvokeContext();
-                if (invokeCtx) {
-                    if (invokeCtx.$event$ === RenderEvent) {
-                        logWarn('State mutation inside render function. Use useTask$() instead.', invokeCtx.$hostElement$);
-                    }
-                    else if (invokeCtx.$event$ === ComputedEvent) {
-                        logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
-                    }
-                    else if (invokeCtx.$event$ === ResourceEvent) {
-                        logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
-                    }
-                }
-            }
-            const manager = this[QObjectManagerSymbol];
-            const oldValue = this.untrackedValue;
-            if (manager && oldValue !== v) {
-                this.untrackedValue = v;
-                manager.$notifySubs$();
-            }
-        }
-    }
-    _a$1 = QObjectSignalFlags;
-    class SignalDerived extends SignalBase {
-        constructor($func$, $args$, $funcStr$) {
-            super();
-            this.$func$ = $func$;
-            this.$args$ = $args$;
-            this.$funcStr$ = $funcStr$;
-        }
-        get value() {
-            return this.$func$.apply(undefined, this.$args$);
-        }
-    }
-    class SignalWrapper extends SignalBase {
-        constructor(ref, prop) {
-            super();
-            this.ref = ref;
-            this.prop = prop;
-        }
-        get [QObjectManagerSymbol]() {
-            return getSubscriptionManager(this.ref);
-        }
-        get value() {
-            return this.ref[this.prop];
-        }
-        set value(value) {
-            this.ref[this.prop] = value;
-        }
-    }
-    /**
-     * Checks if a given object is a `Signal`.
-     *
-     * @param obj - The object to check if `Signal`.
-     * @returns Boolean - True if the object is a `Signal`.
-     * @public
-     */
-    const isSignal = (obj) => {
-        return obj instanceof SignalBase;
-    };
-    /** @internal */
-    const _wrapProp = (obj, prop) => {
-        if (!isObject(obj)) {
-            return obj[prop];
-        }
-        if (obj instanceof SignalBase) {
-            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
-            return obj;
-        }
-        const target = getProxyTarget(obj);
-        if (target) {
-            const signal = target[_IMMUTABLE_PREFIX + prop];
-            if (signal) {
-                assertTrue(isSignal(signal), `${_IMMUTABLE_PREFIX} has to be a signal kind`);
-                return signal;
-            }
-            if (target[_IMMUTABLE]?.[prop] !== true) {
-                return new SignalWrapper(obj, prop);
-            }
-        }
-        const immutable = obj[_IMMUTABLE]?.[prop];
-        if (isSignal(immutable)) {
-            return immutable;
-        }
-        return _IMMUTABLE;
-    };
-    /** @internal */
-    const _wrapSignal = (obj, prop) => {
-        const r = _wrapProp(obj, prop);
-        if (r === _IMMUTABLE) {
-            return obj[prop];
-        }
-        return r;
     };
 
     /** Creates a proxy that notifies of any writes. */
@@ -1194,6 +964,579 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     };
 
     /**
+     * @internal
+     * The storage provider for hooks. Each invocation increases index i. Data is stored in an array.
+     */
+    const useSequentialScope = () => {
+        const iCtx = useInvokeContext();
+        const hostElement = iCtx.$hostElement$;
+        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+        const seq = (elCtx.$seq$ || (elCtx.$seq$ = []));
+        const i = iCtx.$i$++;
+        const set = (value) => {
+            if (qDev && qSerialize) {
+                verifySerializable(value);
+            }
+            return (seq[i] = value);
+        };
+        return {
+            val: seq[i],
+            set,
+            i,
+            iCtx,
+            elCtx,
+        };
+    };
+
+    // <docs markdown="../readme.md#createContextId">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#createContextId instead)
+    /**
+     * Create a context ID to be used in your application. The name should be written with no spaces.
+     *
+     * Context is a way to pass stores to the child components without prop-drilling.
+     *
+     * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier
+     * for the context. It is not the context value itself. See `useContextProvider()` and
+     * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
+     * track context providers and consumers in a way that survives resumability.
+     *
+     * ### Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContextId<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     *
+     * @param name - The name of the context.
+     * @public
+     */
+    // </docs>
+    const createContextId = (name) => {
+        assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
+        return /*#__PURE__*/ Object.freeze({
+            id: fromCamelToKebabCase(name),
+        });
+    };
+    // <docs markdown="../readme.md#useContextProvider">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useContextProvider instead)
+    /**
+     * Assign a value to a Context.
+     *
+     * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
+     * component's function. Once assigned, use `useContext()` in any child component to retrieve the
+     * value.
+     *
+     * Context is a way to pass stores to the child components without prop-drilling.
+     *
+     * ### Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContextId<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     *
+     * @param context - The context to assign a value to.
+     * @param value - The value to assign to the context.
+     * @public
+     */
+    // </docs>
+    const useContextProvider = (context, newValue) => {
+        const { val, set, elCtx } = useSequentialScope();
+        if (val !== undefined) {
+            return;
+        }
+        if (qDev) {
+            validateContext(context);
+        }
+        const contexts = (elCtx.$contexts$ || (elCtx.$contexts$ = new Map()));
+        if (qDev && qSerialize) {
+            verifySerializable(newValue);
+        }
+        contexts.set(context.id, newValue);
+        set(true);
+    };
+    // <docs markdown="../readme.md#useContext">
+    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
+    // (edit ../readme.md#useContext instead)
+    /**
+     * Retrieve Context value.
+     *
+     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a parent
+     * component needs to invoke `useContextProvider()` to assign a value.
+     *
+     * ### Example
+     *
+     * ```tsx
+     * // Declare the Context type.
+     * interface TodosStore {
+     *   items: string[];
+     * }
+     * // Create a Context ID (no data is saved here.)
+     * // You will use this ID to both create and retrieve the Context.
+     * export const TodosContext = createContextId<TodosStore>('Todos');
+     *
+     * // Example of providing context to child components.
+     * export const App = component$(() => {
+     *   useContextProvider(
+     *     TodosContext,
+     *     useStore<TodosStore>({
+     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
+     *     })
+     *   );
+     *
+     *   return <Items />;
+     * });
+     *
+     * // Example of retrieving the context provided by a parent component.
+     * export const Items = component$(() => {
+     *   const todos = useContext(TodosContext);
+     *   return (
+     *     <ul>
+     *       {todos.items.map((item) => (
+     *         <li>{item}</li>
+     *       ))}
+     *     </ul>
+     *   );
+     * });
+     *
+     * ```
+     *
+     * @param context - The context to retrieve a value from.
+     * @public
+     */
+    // </docs>
+    const useContext = (context, defaultValue) => {
+        const { val, set, iCtx, elCtx } = useSequentialScope();
+        if (val !== undefined) {
+            return val;
+        }
+        if (qDev) {
+            validateContext(context);
+        }
+        const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
+        if (typeof defaultValue === 'function') {
+            return set(invoke(undefined, defaultValue, value));
+        }
+        if (value !== undefined) {
+            return set(value);
+        }
+        if (defaultValue !== undefined) {
+            return set(defaultValue);
+        }
+        throw qError(QError_notFoundContext, context.id);
+    };
+    /** Find a wrapping Virtual component in the DOM */
+    const findParentCtx = (el, containerState) => {
+        let node = el;
+        let stack = 1;
+        while (node && !node.hasAttribute?.('q:container')) {
+            // Walk the siblings backwards, each comment might be the Virtual wrapper component
+            while ((node = node.previousSibling)) {
+                if (isComment(node)) {
+                    const virtual = node[VIRTUAL_SYMBOL];
+                    if (virtual) {
+                        const qtx = virtual[Q_CTX];
+                        if (node === virtual.open) {
+                            // We started inside this node so this is our parent
+                            return qtx ?? getContext(virtual, containerState);
+                        }
+                        // This is a sibling, check if it knows our parent
+                        if (qtx?.$parentCtx$) {
+                            return qtx.$parentCtx$;
+                        }
+                        // Skip over this entire virtual sibling
+                        node = virtual;
+                        continue;
+                    }
+                    if (node.data === '/qv') {
+                        stack++;
+                    }
+                    else if (node.data.startsWith('qv ')) {
+                        stack--;
+                        if (stack === 0) {
+                            return getContext(getVirtualElement(node), containerState);
+                        }
+                    }
+                }
+            }
+            // No more siblings, walk up the DOM tree. The parent will never be a Virtual component.
+            node = el.parentElement;
+            el = node;
+        }
+        return null;
+    };
+    const getParentProvider = (ctx, containerState) => {
+        // `null` means there's no parent, `undefined` means we don't know yet.
+        if (ctx.$parentCtx$ === undefined) {
+            // Not fully resumed container, find context from DOM
+            // We cannot recover $realParentCtx$ from this but that's fine because we don't need to pause on the client
+            ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState);
+        }
+        /**
+         * Note, the parentCtx is used during pause to to get the immediate parent, so we can't shortcut
+         * the search for $contexts$ here. If that turns out to be needed, it needs to be cached in a
+         * separate property.
+         */
+        return ctx.$parentCtx$;
+    };
+    const resolveContext = (context, hostCtx, containerState) => {
+        const contextID = context.id;
+        if (!hostCtx) {
+            return;
+        }
+        let ctx = hostCtx;
+        while (ctx) {
+            const found = ctx.$contexts$?.get(contextID);
+            if (found) {
+                return found;
+            }
+            ctx = getParentProvider(ctx, containerState);
+        }
+    };
+    const validateContext = (context) => {
+        if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
+            throw qError(QError_invalidContext, context);
+        }
+    };
+
+    const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
+    const handleError = (err, hostElement, rCtx) => {
+        const elCtx = tryGetContext(hostElement);
+        if (qDev) {
+            // Clean vdom
+            if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
+                // (hostElement as any).$vdom$ = null;
+                elCtx.$vdom$ = null;
+                const errorDiv = document.createElement('errored-host');
+                if (err && err instanceof Error) {
+                    errorDiv.props = { error: err };
+                }
+                errorDiv.setAttribute('q:key', '_error_');
+                errorDiv.append(...hostElement.childNodes);
+                hostElement.appendChild(errorDiv);
+            }
+            if (err && err instanceof Error) {
+                if (!('hostElement' in err)) {
+                    err['hostElement'] = hostElement;
+                }
+            }
+            if (!isRecoverable(err)) {
+                throw err;
+            }
+        }
+        if (isServerPlatform()) {
+            throw err;
+        }
+        else {
+            const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
+            if (errorStore === undefined) {
+                throw err;
+            }
+            errorStore.error = err;
+        }
+    };
+    const isRecoverable = (err) => {
+        if (err && err instanceof Error) {
+            if ('plugin' in err) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    /** CSS properties which accept numbers but are not in units of "px". */
+    const unitlessNumbers = new Set([
+        'animationIterationCount',
+        'aspectRatio',
+        'borderImageOutset',
+        'borderImageSlice',
+        'borderImageWidth',
+        'boxFlex',
+        'boxFlexGroup',
+        'boxOrdinalGroup',
+        'columnCount',
+        'columns',
+        'flex',
+        'flexGrow',
+        'flexShrink',
+        'gridArea',
+        'gridRow',
+        'gridRowEnd',
+        'gridRowStart',
+        'gridColumn',
+        'gridColumnEnd',
+        'gridColumnStart',
+        'fontWeight',
+        'lineClamp',
+        'lineHeight',
+        'opacity',
+        'order',
+        'orphans',
+        'scale',
+        'tabSize',
+        'widows',
+        'zIndex',
+        'zoom',
+        'MozAnimationIterationCount', // Known Prefixed Properties
+        'MozBoxFlex', // TODO: Remove these since they shouldn't be used in modern code
+        'msFlex',
+        'msFlexPositive',
+        'WebkitAnimationIterationCount',
+        'WebkitBoxFlex',
+        'WebkitBoxOrdinalGroup',
+        'WebkitColumnCount',
+        'WebkitColumns',
+        'WebkitFlex',
+        'WebkitFlexGrow',
+        'WebkitFlexShrink',
+        'WebkitLineClamp',
+    ]);
+    const isUnitlessNumber = (name) => {
+        return unitlessNumbers.has(name);
+    };
+
+    const executeComponent = (rCtx, elCtx, attempt) => {
+        elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
+        elCtx.$flags$ |= HOST_FLAG_MOUNTED;
+        elCtx.$slots$ = [];
+        elCtx.li.length = 0;
+        const hostElement = elCtx.$element$;
+        const componentQRL = elCtx.$componentQrl$;
+        const props = elCtx.$props$;
+        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
+        const waitOn = (iCtx.$waitOn$ = []);
+        assertDefined(componentQRL, `render: host element to render must have a $renderQrl$:`, elCtx);
+        assertDefined(props, `render: host element to render must have defined props`, elCtx);
+        // Set component context
+        const newCtx = pushRenderContext(rCtx);
+        newCtx.$cmpCtx$ = elCtx;
+        newCtx.$slotCtx$ = undefined;
+        // Invoke render hook
+        iCtx.$subscriber$ = [0, hostElement];
+        iCtx.$renderCtx$ = rCtx;
+        // Resolve render function
+        componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
+        const componentFn = componentQRL.getFn(iCtx);
+        return safeCall(() => componentFn(props), (jsxNode) => {
+            return maybeThen(isServerPlatform()
+                ? maybeThen(promiseAllLazy(waitOn), () => 
+                // Run dirty tasks before SSR output is generated.
+                maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), () => promiseAllLazy(waitOn)))
+                : promiseAllLazy(waitOn), () => {
+                if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
+                    if (attempt && attempt > 100) {
+                        logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+                    }
+                    else {
+                        return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
+                    }
+                }
+                return {
+                    node: jsxNode,
+                    rCtx: newCtx,
+                };
+            });
+        }, (err) => {
+            if (err === SignalUnassignedException) {
+                if (attempt && attempt > 100) {
+                    logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
+                }
+                else {
+                    return maybeThen(promiseAllLazy(waitOn), () => {
+                        return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
+                    });
+                }
+            }
+            handleError(err, hostElement, rCtx);
+            return {
+                node: SkipRender,
+                rCtx: newCtx,
+            };
+        });
+    };
+    const createRenderContext = (doc, containerState) => {
+        const ctx = {
+            $static$: {
+                $doc$: doc,
+                $locale$: containerState.$serverData$.locale,
+                $containerState$: containerState,
+                $hostElements$: new Set(),
+                $operations$: [],
+                $postOperations$: [],
+                $roots$: [],
+                $addSlots$: [],
+                $rmSlots$: [],
+                $visited$: [],
+            },
+            $cmpCtx$: null,
+            $slotCtx$: undefined,
+        };
+        seal(ctx);
+        seal(ctx.$static$);
+        return ctx;
+    };
+    const pushRenderContext = (ctx) => {
+        const newCtx = {
+            $static$: ctx.$static$,
+            $cmpCtx$: ctx.$cmpCtx$,
+            $slotCtx$: ctx.$slotCtx$,
+        };
+        return newCtx;
+    };
+    const serializeClassWithHost = (obj, hostCtx) => {
+        if (hostCtx?.$scopeIds$?.length) {
+            return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
+        }
+        return serializeClass(obj);
+    };
+    const serializeClass = (obj) => {
+        if (!obj) {
+            return '';
+        }
+        if (isString(obj)) {
+            return obj.trim();
+        }
+        const classes = [];
+        if (isArray(obj)) {
+            for (const o of obj) {
+                const classList = serializeClass(o);
+                if (classList) {
+                    classes.push(classList);
+                }
+            }
+        }
+        else {
+            for (const [key, value] of Object.entries(obj)) {
+                if (value) {
+                    classes.push(key.trim());
+                }
+            }
+        }
+        return classes.join(' ');
+    };
+    const stringifyStyle = (obj) => {
+        if (obj == null) {
+            return '';
+        }
+        if (typeof obj == 'object') {
+            if (isArray(obj)) {
+                throw qError(QError_stringifyClassOrStyle, obj, 'style');
+            }
+            else {
+                const chunks = [];
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const value = obj[key];
+                        if (value != null) {
+                            if (key.startsWith('--')) {
+                                chunks.push(key + ':' + value);
+                            }
+                            else {
+                                chunks.push(fromCamelToKebabCase(key) + ':' + setValueForStyle(key, value));
+                            }
+                        }
+                    }
+                }
+                return chunks.join(';');
+            }
+        }
+        return String(obj);
+    };
+    const setValueForStyle = (styleName, value) => {
+        if (typeof value === 'number' && value !== 0 && !isUnitlessNumber(styleName)) {
+            return value + 'px';
+        }
+        return value;
+    };
+    const getNextIndex = (ctx) => {
+        return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
+    };
+    const setQId = (rCtx, elCtx) => {
+        const id = getNextIndex(rCtx);
+        elCtx.$id$ = id;
+    };
+    const jsxToString = (data) => {
+        if (isSignal(data)) {
+            return jsxToString(data.value);
+        }
+        return data == null || typeof data === 'boolean' ? '' : String(data);
+    };
+    function isAriaAttribute(prop) {
+        return prop.startsWith('aria-');
+    }
+    const shouldWrapFunctional = (res, node) => {
+        if (node.key) {
+            return !isJSXNode(res) || (!isFunction(res.type) && res.key != node.key);
+        }
+        return false;
+    };
+    const static_listeners = 1 << 0;
+    const static_subtree = 1 << 1;
+    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
+
+    /**
      * QWIK_VERSION
      *
      * @public
@@ -1224,7 +1567,7 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return undefined;
     };
 
-    var _a;
+    var _a$1;
     const FLUSH_COMMENT = '<!--qkssr-f-->';
     const IS_HEAD$1 = 1 << 0;
     const IS_HTML = 1 << 2;
@@ -1239,11 +1582,11 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
     class MockElement {
         constructor(nodeType) {
             this.nodeType = nodeType;
-            this[_a] = null;
+            this[_a$1] = null;
             seal(this);
         }
     }
-    _a = Q_CTX;
+    _a$1 = Q_CTX;
     const createDocument = () => {
         return new MockElement(9);
     };
@@ -2133,6 +2476,20 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     };
     const normalizeInvisibleEvents = (eventName) => {
         return eventName === 'on:qvisible' ? 'on-document:qinit' : eventName;
+    };
+
+    /** @internal */
+    const _fnSignal = (fn, args, fnStr) => {
+        return new SignalDerived(fn, args, fnStr);
+    };
+    const serializeDerivedSignalFunc = (signal) => {
+        const fnBody = qSerialize ? signal.$funcStr$ : 'null';
+        assertDefined(fnBody, 'If qSerialize is true then fnStr must be provided.');
+        let args = '';
+        for (let i = 0; i < signal.$args$.length; i++) {
+            args += `p${i},`;
+        }
+        return `(${args})=>(${fnBody})`;
     };
 
     /**
@@ -3353,349 +3710,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         });
     };
 
-    /**
-     * @internal
-     * The storage provider for hooks. Each invocation increases index i. Data is stored in an array.
-     */
-    const useSequentialScope = () => {
-        const iCtx = useInvokeContext();
-        const hostElement = iCtx.$hostElement$;
-        const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
-        const seq = (elCtx.$seq$ || (elCtx.$seq$ = []));
-        const i = iCtx.$i$++;
-        const set = (value) => {
-            if (qDev && qSerialize) {
-                verifySerializable(value);
-            }
-            return (seq[i] = value);
-        };
-        return {
-            val: seq[i],
-            set,
-            i,
-            iCtx,
-            elCtx,
-        };
-    };
-
-    // <docs markdown="../readme.md#createContextId">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#createContextId instead)
-    /**
-     * Create a context ID to be used in your application. The name should be written with no spaces.
-     *
-     * Context is a way to pass stores to the child components without prop-drilling.
-     *
-     * Use `createContextId()` to create a `ContextId`. A `ContextId` is just a serializable identifier
-     * for the context. It is not the context value itself. See `useContextProvider()` and
-     * `useContext()` for the values. Qwik needs a serializable ID for the context so that the it can
-     * track context providers and consumers in a way that survives resumability.
-     *
-     * ### Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContextId<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     *
-     * @param name - The name of the context.
-     * @public
-     */
-    // </docs>
-    const createContextId = (name) => {
-        assertTrue(/^[\w/.-]+$/.test(name), 'Context name must only contain A-Z,a-z,0-9, _', name);
-        return /*#__PURE__*/ Object.freeze({
-            id: fromCamelToKebabCase(name),
-        });
-    };
-    // <docs markdown="../readme.md#useContextProvider">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContextProvider instead)
-    /**
-     * Assign a value to a Context.
-     *
-     * Use `useContextProvider()` to assign a value to a context. The assignment happens in the
-     * component's function. Once assigned, use `useContext()` in any child component to retrieve the
-     * value.
-     *
-     * Context is a way to pass stores to the child components without prop-drilling.
-     *
-     * ### Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContextId<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     *
-     * @param context - The context to assign a value to.
-     * @param value - The value to assign to the context.
-     * @public
-     */
-    // </docs>
-    const useContextProvider = (context, newValue) => {
-        const { val, set, elCtx } = useSequentialScope();
-        if (val !== undefined) {
-            return;
-        }
-        if (qDev) {
-            validateContext(context);
-        }
-        const contexts = (elCtx.$contexts$ || (elCtx.$contexts$ = new Map()));
-        if (qDev && qSerialize) {
-            verifySerializable(newValue);
-        }
-        contexts.set(context.id, newValue);
-        set(true);
-    };
-    // <docs markdown="../readme.md#useContext">
-    // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
-    // (edit ../readme.md#useContext instead)
-    /**
-     * Retrieve Context value.
-     *
-     * Use `useContext()` to retrieve the value of context in a component. To retrieve a value a parent
-     * component needs to invoke `useContextProvider()` to assign a value.
-     *
-     * ### Example
-     *
-     * ```tsx
-     * // Declare the Context type.
-     * interface TodosStore {
-     *   items: string[];
-     * }
-     * // Create a Context ID (no data is saved here.)
-     * // You will use this ID to both create and retrieve the Context.
-     * export const TodosContext = createContextId<TodosStore>('Todos');
-     *
-     * // Example of providing context to child components.
-     * export const App = component$(() => {
-     *   useContextProvider(
-     *     TodosContext,
-     *     useStore<TodosStore>({
-     *       items: ['Learn Qwik', 'Build Qwik app', 'Profit'],
-     *     })
-     *   );
-     *
-     *   return <Items />;
-     * });
-     *
-     * // Example of retrieving the context provided by a parent component.
-     * export const Items = component$(() => {
-     *   const todos = useContext(TodosContext);
-     *   return (
-     *     <ul>
-     *       {todos.items.map((item) => (
-     *         <li>{item}</li>
-     *       ))}
-     *     </ul>
-     *   );
-     * });
-     *
-     * ```
-     *
-     * @param context - The context to retrieve a value from.
-     * @public
-     */
-    // </docs>
-    const useContext = (context, defaultValue) => {
-        const { val, set, iCtx, elCtx } = useSequentialScope();
-        if (val !== undefined) {
-            return val;
-        }
-        if (qDev) {
-            validateContext(context);
-        }
-        const value = resolveContext(context, elCtx, iCtx.$renderCtx$.$static$.$containerState$);
-        if (typeof defaultValue === 'function') {
-            return set(invoke(undefined, defaultValue, value));
-        }
-        if (value !== undefined) {
-            return set(value);
-        }
-        if (defaultValue !== undefined) {
-            return set(defaultValue);
-        }
-        throw qError(QError_notFoundContext, context.id);
-    };
-    /** Find a wrapping Virtual component in the DOM */
-    const findParentCtx = (el, containerState) => {
-        let node = el;
-        let stack = 1;
-        while (node && !node.hasAttribute?.('q:container')) {
-            // Walk the siblings backwards, each comment might be the Virtual wrapper component
-            while ((node = node.previousSibling)) {
-                if (isComment(node)) {
-                    const virtual = node[VIRTUAL_SYMBOL];
-                    if (virtual) {
-                        const qtx = virtual[Q_CTX];
-                        if (node === virtual.open) {
-                            // We started inside this node so this is our parent
-                            return qtx ?? getContext(virtual, containerState);
-                        }
-                        // This is a sibling, check if it knows our parent
-                        if (qtx?.$parentCtx$) {
-                            return qtx.$parentCtx$;
-                        }
-                        // Skip over this entire virtual sibling
-                        node = virtual;
-                        continue;
-                    }
-                    if (node.data === '/qv') {
-                        stack++;
-                    }
-                    else if (node.data.startsWith('qv ')) {
-                        stack--;
-                        if (stack === 0) {
-                            return getContext(getVirtualElement(node), containerState);
-                        }
-                    }
-                }
-            }
-            // No more siblings, walk up the DOM tree. The parent will never be a Virtual component.
-            node = el.parentElement;
-            el = node;
-        }
-        return null;
-    };
-    const getParentProvider = (ctx, containerState) => {
-        // `null` means there's no parent, `undefined` means we don't know yet.
-        if (ctx.$parentCtx$ === undefined) {
-            // Not fully resumed container, find context from DOM
-            // We cannot recover $realParentCtx$ from this but that's fine because we don't need to pause on the client
-            ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState);
-        }
-        /**
-         * Note, the parentCtx is used during pause to to get the immediate parent, so we can't shortcut
-         * the search for $contexts$ here. If that turns out to be needed, it needs to be cached in a
-         * separate property.
-         */
-        return ctx.$parentCtx$;
-    };
-    const resolveContext = (context, hostCtx, containerState) => {
-        const contextID = context.id;
-        if (!hostCtx) {
-            return;
-        }
-        let ctx = hostCtx;
-        while (ctx) {
-            const found = ctx.$contexts$?.get(contextID);
-            if (found) {
-                return found;
-            }
-            ctx = getParentProvider(ctx, containerState);
-        }
-    };
-    const validateContext = (context) => {
-        if (!isObject(context) || typeof context.id !== 'string' || context.id.length === 0) {
-            throw qError(QError_invalidContext, context);
-        }
-    };
-
-    const ERROR_CONTEXT = /*#__PURE__*/ createContextId('qk-error');
-    const handleError = (err, hostElement, rCtx) => {
-        const elCtx = tryGetContext(hostElement);
-        if (qDev) {
-            // Clean vdom
-            if (!isServerPlatform() && typeof document !== 'undefined' && isVirtualElement(hostElement)) {
-                // (hostElement as any).$vdom$ = null;
-                elCtx.$vdom$ = null;
-                const errorDiv = document.createElement('errored-host');
-                if (err && err instanceof Error) {
-                    errorDiv.props = { error: err };
-                }
-                errorDiv.setAttribute('q:key', '_error_');
-                errorDiv.append(...hostElement.childNodes);
-                hostElement.appendChild(errorDiv);
-            }
-            if (err && err instanceof Error) {
-                if (!('hostElement' in err)) {
-                    err['hostElement'] = hostElement;
-                }
-            }
-            if (!isRecoverable(err)) {
-                throw err;
-            }
-        }
-        if (isServerPlatform()) {
-            throw err;
-        }
-        else {
-            const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
-            if (errorStore === undefined) {
-                throw err;
-            }
-            errorStore.error = err;
-        }
-    };
-    const isRecoverable = (err) => {
-        if (err && err instanceof Error) {
-            if ('plugin' in err) {
-                return false;
-            }
-        }
-        return true;
-    };
-
     const TaskFlagsIsVisibleTask = 1 << 0;
     const TaskFlagsIsTask = 1 << 1;
     const TaskFlagsIsResource = 1 << 2;
@@ -4526,235 +4540,226 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         return containerState.$renderPromise$ ?? Promise.resolve();
     };
 
-    /** CSS properties which accept numbers but are not in units of "px". */
-    const unitlessNumbers = new Set([
-        'animationIterationCount',
-        'aspectRatio',
-        'borderImageOutset',
-        'borderImageSlice',
-        'borderImageWidth',
-        'boxFlex',
-        'boxFlexGroup',
-        'boxOrdinalGroup',
-        'columnCount',
-        'columns',
-        'flex',
-        'flexGrow',
-        'flexShrink',
-        'gridArea',
-        'gridRow',
-        'gridRowEnd',
-        'gridRowStart',
-        'gridColumn',
-        'gridColumnEnd',
-        'gridColumnStart',
-        'fontWeight',
-        'lineClamp',
-        'lineHeight',
-        'opacity',
-        'order',
-        'orphans',
-        'scale',
-        'tabSize',
-        'widows',
-        'zIndex',
-        'zoom',
-        'MozAnimationIterationCount', // Known Prefixed Properties
-        'MozBoxFlex', // TODO: Remove these since they shouldn't be used in modern code
-        'msFlex',
-        'msFlexPositive',
-        'WebkitAnimationIterationCount',
-        'WebkitBoxFlex',
-        'WebkitBoxOrdinalGroup',
-        'WebkitColumnCount',
-        'WebkitColumns',
-        'WebkitFlex',
-        'WebkitFlexGrow',
-        'WebkitFlexShrink',
-        'WebkitLineClamp',
-    ]);
-    const isUnitlessNumber = (name) => {
-        return unitlessNumbers.has(name);
+    var _a;
+    /** @internal */
+    const _createSignal = (value, containerState, flags, subscriptions) => {
+        const manager = containerState.$subsManager$.$createManager$(subscriptions);
+        const signal = new SignalImpl(value, manager, flags);
+        return signal;
+    };
+    const QObjectSignalFlags = Symbol('proxy manager');
+    const SIGNAL_IMMUTABLE = 1 << 0;
+    const SIGNAL_UNASSIGNED = 1 << 1;
+    const SignalUnassignedException = Symbol('unassigned signal');
+    class SignalBase {
+    }
+    class SignalImpl extends SignalBase {
+        constructor(v, manager, flags) {
+            super();
+            this[_a] = 0;
+            this.untrackedValue = v;
+            this[QObjectManagerSymbol] = manager;
+            this[QObjectSignalFlags] = flags;
+        }
+        // prevent accidental use as value
+        valueOf() {
+            if (qDev) {
+                throw new TypeError('Cannot coerce a Signal, use `.value` instead');
+            }
+        }
+        toString() {
+            return `[Signal ${String(this.value)}]`;
+        }
+        toJSON() {
+            return { value: this.value };
+        }
+        get value() {
+            if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
+                throw SignalUnassignedException;
+            }
+            const sub = tryGetInvokeContext()?.$subscriber$;
+            if (sub) {
+                this[QObjectManagerSymbol].$addSub$(sub);
+            }
+            return this.untrackedValue;
+        }
+        set value(v) {
+            if (qDev) {
+                if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
+                    throw new Error('Cannot mutate immutable signal');
+                }
+                if (qSerialize) {
+                    verifySerializable(v);
+                }
+                const invokeCtx = tryGetInvokeContext();
+                if (invokeCtx) {
+                    if (invokeCtx.$event$ === RenderEvent) {
+                        logWarn('State mutation inside render function. Use useTask$() instead.', invokeCtx.$hostElement$);
+                    }
+                    else if (invokeCtx.$event$ === ComputedEvent) {
+                        logWarn('State mutation inside useComputed$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                    }
+                    else if (invokeCtx.$event$ === ResourceEvent) {
+                        logWarn('State mutation inside useResource$() is an antipattern. Use useTask$() instead', invokeCtx.$hostElement$);
+                    }
+                }
+            }
+            const manager = this[QObjectManagerSymbol];
+            const oldValue = this.untrackedValue;
+            if (manager && oldValue !== v) {
+                this.untrackedValue = v;
+                manager.$notifySubs$();
+            }
+        }
+    }
+    _a = QObjectSignalFlags;
+    class SignalDerived extends SignalBase {
+        constructor($func$, $args$, $funcStr$) {
+            super();
+            this.$func$ = $func$;
+            this.$args$ = $args$;
+            this.$funcStr$ = $funcStr$;
+        }
+        get value() {
+            return this.$func$.apply(undefined, this.$args$);
+        }
+    }
+    class SignalWrapper extends SignalBase {
+        constructor(ref, prop) {
+            super();
+            this.ref = ref;
+            this.prop = prop;
+        }
+        get [QObjectManagerSymbol]() {
+            return getSubscriptionManager(this.ref);
+        }
+        get value() {
+            return this.ref[this.prop];
+        }
+        set value(value) {
+            this.ref[this.prop] = value;
+        }
+    }
+    /**
+     * Checks if a given object is a `Signal`.
+     *
+     * @param obj - The object to check if `Signal`.
+     * @returns Boolean - True if the object is a `Signal`.
+     * @public
+     */
+    const isSignal = (obj) => {
+        return obj instanceof SignalBase;
+    };
+    /** @internal */
+    const _wrapProp = (obj, prop) => {
+        if (!isObject(obj)) {
+            return obj[prop];
+        }
+        if (obj instanceof SignalBase) {
+            assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
+            return obj;
+        }
+        const target = getProxyTarget(obj);
+        if (target) {
+            const signal = target[_IMMUTABLE_PREFIX + prop];
+            if (signal) {
+                assertTrue(isSignal(signal), `${_IMMUTABLE_PREFIX} has to be a signal kind`);
+                return signal;
+            }
+            if (target[_IMMUTABLE]?.[prop] !== true) {
+                return new SignalWrapper(obj, prop);
+            }
+        }
+        const immutable = obj[_IMMUTABLE]?.[prop];
+        if (isSignal(immutable)) {
+            return immutable;
+        }
+        return _IMMUTABLE;
+    };
+    /** @internal */
+    const _wrapSignal = (obj, prop) => {
+        const r = _wrapProp(obj, prop);
+        if (r === _IMMUTABLE) {
+            return obj[prop];
+        }
+        return r;
     };
 
-    const executeComponent = (rCtx, elCtx, attempt) => {
-        elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
-        elCtx.$flags$ |= HOST_FLAG_MOUNTED;
-        elCtx.$slots$ = [];
-        elCtx.li.length = 0;
-        const hostElement = elCtx.$element$;
-        const componentQRL = elCtx.$componentQrl$;
-        const props = elCtx.$props$;
-        const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, undefined, RenderEvent);
-        const waitOn = (iCtx.$waitOn$ = []);
-        assertDefined(componentQRL, `render: host element to render must have a $renderQrl$:`, elCtx);
-        assertDefined(props, `render: host element to render must have defined props`, elCtx);
-        // Set component context
-        const newCtx = pushRenderContext(rCtx);
-        newCtx.$cmpCtx$ = elCtx;
-        newCtx.$slotCtx$ = undefined;
-        // Invoke render hook
-        iCtx.$subscriber$ = [0, hostElement];
-        iCtx.$renderCtx$ = rCtx;
-        // Resolve render function
-        componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-        const componentFn = componentQRL.getFn(iCtx);
-        return safeCall(() => componentFn(props), (jsxNode) => {
-            return maybeThen(isServerPlatform()
-                ? maybeThen(promiseAllLazy(waitOn), () => 
-                // Run dirty tasks before SSR output is generated.
-                maybeThen(executeSSRTasks(rCtx.$static$.$containerState$, rCtx), () => promiseAllLazy(waitOn)))
-                : promiseAllLazy(waitOn), () => {
-                if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-                    if (attempt && attempt > 100) {
-                        logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
-                    }
-                    else {
-                        return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
-                    }
-                }
-                return {
-                    node: jsxNode,
-                    rCtx: newCtx,
-                };
-            });
-        }, (err) => {
-            if (err === SignalUnassignedException) {
-                if (attempt && attempt > 100) {
-                    logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
-                }
-                else {
-                    return maybeThen(promiseAllLazy(waitOn), () => {
-                        return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
-                    });
-                }
-            }
-            handleError(err, hostElement, rCtx);
-            return {
-                node: SkipRender,
-                rCtx: newCtx,
-            };
-        });
+    const CONTAINER_STATE = Symbol('ContainerState');
+    /** @internal */
+    const _getContainerState = (containerEl) => {
+        let state = containerEl[CONTAINER_STATE];
+        if (!state) {
+            containerEl[CONTAINER_STATE] = state = createContainerState(containerEl, directGetAttribute(containerEl, 'q:base') ?? '/');
+        }
+        return state;
     };
-    const createRenderContext = (doc, containerState) => {
-        const ctx = {
-            $static$: {
-                $doc$: doc,
-                $locale$: containerState.$serverData$.locale,
-                $containerState$: containerState,
-                $hostElements$: new Set(),
-                $operations$: [],
-                $postOperations$: [],
-                $roots$: [],
-                $addSlots$: [],
-                $rmSlots$: [],
-                $visited$: [],
-            },
-            $cmpCtx$: null,
-            $slotCtx$: undefined,
+    const createContainerState = (containerEl, base) => {
+        const containerState = {
+            $containerEl$: containerEl,
+            $elementIndex$: 0,
+            $styleMoved$: false,
+            $proxyMap$: new WeakMap(),
+            $opsNext$: new Set(),
+            $taskNext$: new Set(),
+            $taskStaging$: new Set(),
+            $hostsNext$: new Set(),
+            $hostsStaging$: new Set(),
+            $styleIds$: new Set(),
+            $events$: new Set(),
+            $serverData$: {},
+            $base$: base,
+            $renderPromise$: undefined,
+            $hostsRendering$: undefined,
+            $pauseCtx$: undefined,
+            $subsManager$: null,
+            $inlineFns$: new Map(),
         };
-        seal(ctx);
-        seal(ctx.$static$);
-        return ctx;
+        seal(containerState);
+        containerState.$subsManager$ = createSubscriptionManager(containerState);
+        return containerState;
     };
-    const pushRenderContext = (ctx) => {
-        const newCtx = {
-            $static$: ctx.$static$,
-            $cmpCtx$: ctx.$cmpCtx$,
-            $slotCtx$: ctx.$slotCtx$,
-        };
-        return newCtx;
+    const removeContainerState = (containerEl) => {
+        delete containerEl[CONTAINER_STATE];
     };
-    const serializeClassWithHost = (obj, hostCtx) => {
-        if (hostCtx?.$scopeIds$?.length) {
-            return hostCtx.$scopeIds$.join(' ') + ' ' + serializeClass(obj);
+    const setRef = (value, elm) => {
+        if (isFunction(value)) {
+            return value(elm);
         }
-        return serializeClass(obj);
-    };
-    const serializeClass = (obj) => {
-        if (!obj) {
-            return '';
-        }
-        if (isString(obj)) {
-            return obj.trim();
-        }
-        const classes = [];
-        if (isArray(obj)) {
-            for (const o of obj) {
-                const classList = serializeClass(o);
-                if (classList) {
-                    classes.push(classList);
-                }
-            }
-        }
-        else {
-            for (const [key, value] of Object.entries(obj)) {
-                if (value) {
-                    classes.push(key.trim());
-                }
-            }
-        }
-        return classes.join(' ');
-    };
-    const stringifyStyle = (obj) => {
-        if (obj == null) {
-            return '';
-        }
-        if (typeof obj == 'object') {
-            if (isArray(obj)) {
-                throw qError(QError_stringifyClassOrStyle, obj, 'style');
+        else if (isSignal(value)) {
+            if (isServerPlatform()) {
+                // During SSR, assigning a ref should not cause reactivity because
+                // the expectation is that the ref is filled in on the client
+                return (value.untrackedValue = elm);
             }
             else {
-                const chunks = [];
-                for (const key in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                        const value = obj[key];
-                        if (value != null) {
-                            if (key.startsWith('--')) {
-                                chunks.push(key + ':' + value);
-                            }
-                            else {
-                                chunks.push(fromCamelToKebabCase(key) + ':' + setValueForStyle(key, value));
-                            }
-                        }
-                    }
-                }
-                return chunks.join(';');
+                return (value.value = elm);
             }
         }
-        return String(obj);
+        throw qError(QError_invalidRefValue, value);
     };
-    const setValueForStyle = (styleName, value) => {
-        if (typeof value === 'number' && value !== 0 && !isUnitlessNumber(styleName)) {
-            return value + 'px';
+    const SHOW_ELEMENT = 1;
+    const SHOW_COMMENT$1 = 128;
+    const FILTER_REJECT$1 = 2;
+    const FILTER_SKIP = 3;
+    const isContainer$1 = (el) => {
+        return isElement$1(el) && el.hasAttribute(QContainerAttr);
+    };
+    const intToStr = (nu) => {
+        return nu.toString(36);
+    };
+    const strToInt = (nu) => {
+        return parseInt(nu, 36);
+    };
+    const getEventName = (attribute) => {
+        const colonPos = attribute.indexOf(':');
+        if (attribute) {
+            return fromKebabToCamelCase(attribute.slice(colonPos + 1));
         }
-        return value;
-    };
-    const getNextIndex = (ctx) => {
-        return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-    };
-    const setQId = (rCtx, elCtx) => {
-        const id = getNextIndex(rCtx);
-        elCtx.$id$ = id;
-    };
-    const jsxToString = (data) => {
-        if (isSignal(data)) {
-            return jsxToString(data.value);
+        else {
+            return attribute;
         }
-        return data == null || typeof data === 'boolean' ? '' : String(data);
     };
-    function isAriaAttribute(prop) {
-        return prop.startsWith('aria-');
-    }
-    const shouldWrapFunctional = (res, node) => {
-        if (node.key) {
-            return !isJSXNode(res) || (!isFunction(res.type) && res.key != node.key);
-        }
-        return false;
-    };
-    const static_listeners = 1 << 0;
-    const static_subtree = 1 << 1;
-    const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const IS_SVG = 1 << 0;
@@ -9321,7 +9326,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
             [ANY, DOT, elementClassIdSelector],
             [ANY, HASH, elementClassIdSelector],
             [ANY, AT, atRuleSelector, 'keyframe'],
-            [ANY, AT, atRuleBlock, 'media', 'supports'],
+            [ANY, AT, atRuleBlock, 'media', 'supports', 'container'],
             [ANY, AT, atRuleInert],
             [ANY, OPEN_BRACE, body],
             [FORWARD_SLASH, STAR, commentMultiline],
