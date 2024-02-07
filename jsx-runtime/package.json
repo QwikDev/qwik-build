@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/jsx-runtime",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "main": "../jsx-runtime.mjs",
   "module": "../jsx-runtime.mjs",
   "types": "../jsx-runtime.d.ts",
