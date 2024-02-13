@@ -3702,8 +3702,9 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         elements.sort((a, b) => a.$element$.compareDocumentPosition(getRootNode(b.$element$)) & 2 ? 1 : -1);
     };
     const sortTasks = (tasks) => {
+        const isServer = isServerPlatform();
         tasks.sort((a, b) => {
-            if (a.$el$ === b.$el$) {
+            if (isServer || a.$el$ === b.$el$) {
                 return a.$index$ < b.$index$ ? -1 : 1;
             }
             return (a.$el$.compareDocumentPosition(getRootNode(b.$el$)) & 2) !== 0 ? 1 : -1;

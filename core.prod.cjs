@@ -1593,7 +1593,8 @@
         elements.sort(((a, b) => 2 & a.$element$.compareDocumentPosition(getRootNode(b.$element$)) ? 1 : -1));
     };
     const sortTasks = tasks => {
-        tasks.sort(((a, b) => a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
+        const isServer = isServerPlatform();
+        tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
     };
     const TaskFlagsIsVisibleTask = 1;
     const TaskFlagsIsTask = 2;
