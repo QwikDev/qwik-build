@@ -117,7 +117,6 @@ declare interface QwikBundle {
 
 /** @public */
 export declare interface QwikLoaderOptions {
-    events?: string[];
     include?: 'always' | 'never' | 'auto';
     position?: 'top' | 'bottom';
 }

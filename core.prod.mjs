@@ -3946,7 +3946,7 @@ const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
     parentJSON.appendChild(qwikJson);
     const extraListeners = Array.from(containerState.$events$, (s => JSON.stringify(s)));
     const eventsScript = doc.createElement("script");
-    return eventsScript.textContent = `window.qwikevents||=[];window.qwikevents.push(${extraListeners.join(", ")})`, 
+    return eventsScript.textContent = `(window.qwikevents||=[]).push(${extraListeners.join(", ")})`, 
     parentJSON.appendChild(eventsScript), data;
 };
 

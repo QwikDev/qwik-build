@@ -1,17 +1,17 @@
 (() => {
     ((doc, hasInitialized) => {
+        const Q_CONTEXT = "__q_context__";
         const win = window;
         const events =  new Set;
         const querySelectorAll = query => doc.querySelectorAll(query);
         const broadcast = (infix, ev, type = ev.type) => {
-            querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((target => dispatch(target, infix, ev, type)));
+            querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((el => dispatch(el, infix, ev, type)));
         };
-        const getAttribute = (el, name) => el.getAttribute(name);
         const resolveContainer = containerEl => {
             if (void 0 === containerEl._qwikjson_) {
                 let script = (containerEl === doc.documentElement ? doc.body : containerEl).lastElementChild;
                 while (script) {
-                    if ("SCRIPT" === script.tagName && "qwik/json" === getAttribute(script, "type")) {
+                    if ("SCRIPT" === script.tagName && "qwik/json" === script.getAttribute("type")) {
                         containerEl._qwikjson_ = JSON.parse(script.textContent.replace(/\\x3C(\/?script)/gi, "<$1"));
                         break;
                     }
@@ -26,17 +26,17 @@
             const attrName = "on" + onPrefix + ":" + eventName;
             element.hasAttribute("preventdefault:" + eventName) && ev.preventDefault();
             const ctx = element._qc_;
-            const relevantListeners = null == ctx ? void 0 : ctx.li.filter((li => li[0] === attrName));
+            const relevantListeners = ctx && ctx.li.filter((li => li[0] === attrName));
             if (relevantListeners && relevantListeners.length > 0) {
                 for (const listener of relevantListeners) {
                     await listener[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
                 }
                 return;
             }
-            const attrValue = getAttribute(element, attrName);
+            const attrValue = element.getAttribute(attrName);
             if (attrValue) {
                 const container = element.closest("[q\\:container]");
-                const base = new URL(getAttribute(container, "q:base"), doc.baseURI);
+                const base = new URL(container.getAttribute("q:base"), doc.baseURI);
                 for (const qrl of attrValue.split("\n")) {
                     const url = new URL(qrl, base);
                     const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
@@ -52,10 +52,10 @@
                         resolveContainer(container);
                         handler = (await module)[symbolName];
                     }
-                    const previousCtx = doc.__q_context__;
+                    const previousCtx = doc[Q_CONTEXT];
                     if (element.isConnected) {
                         try {
-                            doc.__q_context__ = [ element, ev, url ];
+                            doc[Q_CONTEXT] = [ element, ev, url ];
                             isSync || emitEvent("qsymbol", {
                                 symbol: symbolName,
                                 element: element,
@@ -63,7 +63,7 @@
                             });
                             await handler(ev, element);
                         } finally {
-                            doc.__q_context__ = previousCtx;
+                            doc[Q_CONTEXT] = previousCtx;
                         }
                     }
                 }
@@ -119,7 +119,8 @@
                 }
             }
         };
-        if (!doc.qR) {
+        if (!(Q_CONTEXT in doc)) {
+            doc[Q_CONTEXT] = 0;
             const qwikevents = win.qwikevents;
             Array.isArray(qwikevents) && push(qwikevents);
             win.qwikevents = {
