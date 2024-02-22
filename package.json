@@ -160,8 +160,6 @@
     "qwik-prefetch.js",
     "qwikloader.debug.js",
     "qwikloader.js",
-    "qwikloader.optimize.debug.js",
-    "qwikloader.optimize.js",
     "server-modules.d.ts",
     "server.cjs",
     "server.d.ts",
