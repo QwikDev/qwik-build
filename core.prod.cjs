@@ -3888,6 +3888,27 @@
         $serialize$: v => v.toString(),
         $prepare$: data => BigInt(data)
     });
+    const Uint8ArraySerializer = /*#__PURE__*/ serializer({
+        $prefix$: "",
+        $test$: v => v instanceof Uint8Array,
+        $serialize$: v => {
+            let buf = "";
+            for (const c of v) {
+                buf += String.fromCharCode(c);
+            }
+            return btoa(buf).replace(/=+$/, "");
+        },
+        $prepare$: data => {
+            const buf = atob(data);
+            const bytes = new Uint8Array(buf.length);
+            let i = 0;
+            for (const s of buf) {
+                bytes[i++] = s.charCodeAt(0);
+            }
+            return bytes;
+        },
+        $fill$: void 0
+    });
     const DATA = Symbol();
     const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, /*#__PURE__*/ serializer({
         $prefix$: "",
@@ -3940,7 +3961,7 @@
         $test$: v => !!getSerializer(v) || v === UNDEFINED_PREFIX,
         $serialize$: v => v,
         $prepare$: data => data
-    }) ];
+    }), Uint8ArraySerializer ];
     const serializerByPrefix = /*#__PURE__*/ (() => {
         const serializerByPrefix = [];
         return serializers.forEach((s => {

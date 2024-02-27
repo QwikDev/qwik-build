@@ -4924,6 +4924,28 @@ const BigIntSerializer = /*#__PURE__*/ serializer({
     $prepare$: data => BigInt(data)
 });
 
+const Uint8ArraySerializer = /*#__PURE__*/ serializer({
+    $prefix$: "",
+    $test$: v => v instanceof Uint8Array,
+    $serialize$: v => {
+        let buf = "";
+        for (const c of v) {
+            buf += String.fromCharCode(c);
+        }
+        return btoa(buf).replace(/=+$/, "");
+    },
+    $prepare$: data => {
+        const buf = atob(data);
+        const bytes = new Uint8Array(buf.length);
+        let i = 0;
+        for (const s of buf) {
+            bytes[i++] = s.charCodeAt(0);
+        }
+        return bytes;
+    },
+    $fill$: void 0
+});
+
 const DATA = Symbol();
 
 const SetSerializer = /*#__PURE__*/ serializer({
@@ -4983,7 +5005,7 @@ const StringSerializer = /*#__PURE__*/ serializer({
     $prepare$: data => data
 });
 
-const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, SetSerializer, MapSerializer, StringSerializer ];
+const serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, SetSerializer, MapSerializer, StringSerializer, Uint8ArraySerializer ];
 
 const serializerByPrefix = /*#__PURE__*/ (() => {
     const serializerByPrefix = [];

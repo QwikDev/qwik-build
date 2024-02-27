@@ -7875,6 +7875,27 @@ const BigIntSerializer = /*#__PURE__*/ serializer({
         return BigInt(data);
     },
 });
+const Uint8ArraySerializer = /*#__PURE__*/ serializer({
+    $prefix$: '\u001c',
+    $test$: (v) => v instanceof Uint8Array,
+    $serialize$: (v) => {
+        let buf = '';
+        for (const c of v) {
+            buf += String.fromCharCode(c);
+        }
+        return btoa(buf).replace(/=+$/, '');
+    },
+    $prepare$: (data) => {
+        const buf = atob(data);
+        const bytes = new Uint8Array(buf.length);
+        let i = 0;
+        for (const s of buf) {
+            bytes[i++] = s.charCodeAt(0);
+        }
+        return bytes;
+    },
+    $fill$: undefined,
+});
 const DATA = Symbol();
 const SetSerializer = /*#__PURE__*/ serializer({
     $prefix$: '\u0019',
@@ -7967,6 +7988,7 @@ const serializers = [
     SetSerializer, ////////////// \u0019
     MapSerializer, ////////////// \u001a
     StringSerializer, /////////// \u001b
+    Uint8ArraySerializer, /////// \u001c
 ];
 const serializerByPrefix = /*#__PURE__*/ (() => {
     const serializerByPrefix = [];
