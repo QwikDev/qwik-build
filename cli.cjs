@@ -4603,7 +4603,7 @@ function execaCommand(command, options) {
   return execa(file, args, options);
 }
 
-// packages/qwik/src/cli/build/run-build-command.ts
+// packages/qwik/src/cli/utils/run-build-command.ts
 async function runBuildCommand(app) {
   const pkgJsonScripts = app.packageJson.scripts;
   if (!pkgJsonScripts) {
@@ -4686,7 +4686,7 @@ async function runBuildCommand(app) {
     }).then(() => ({
       title: "Type checked"
     })).catch((e2) => {
-      let out = e2.stdout;
+      let out = e2.stdout || "";
       if (out.startsWith("tsc")) {
         out = out.slice(3);
       }
