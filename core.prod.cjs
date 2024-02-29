@@ -73,11 +73,11 @@
     function assertElement() {
         qDev;
     }
+    const codeToText = code => `Code(${code}) https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
     const qError = (code, ...parts) => {
         const text = codeToText(code, ...parts);
         return logErrorAndStop(text, ...parts);
     };
-    const codeToText = code => `Code(${code}), see https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L44`;
     const createPlatform = () => ({
         isServer: build.isServer,
         importSymbol(containerEl, url, symbolName) {

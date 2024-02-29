@@ -235,32 +235,9 @@ function assertElement(el) {
     }
 }
 
-const QError_stringifyClassOrStyle = 0;
-const QError_verifySerializable = 3;
-const QError_cannotRenderOverExistingContainer = 5;
-const QError_setProperty = 6;
-const QError_qrlIsNotFunction = 10;
-const QError_dynamicImportFailed = 11;
-const QError_unknownTypeArgument = 12;
-const QError_notFoundContext = 13;
-const QError_useMethodOutsideContext = 14;
-const QError_immutableProps = 17;
-const QError_useInvokeContext = 20;
-const QError_containerAlreadyPaused = 21;
-const QError_invalidJsxNodeType = 25;
-const QError_trackUseStore = 26;
-const QError_missingObjectId = 27;
-const QError_invalidContext = 28;
-const QError_canNotRenderHTML = 29;
-const QError_qrlMissingContainer = 30;
-const QError_qrlMissingChunk = 31;
-const QError_invalidRefValue = 32;
-const qError = (code, ...parts) => {
-    const text = codeToText(code, ...parts);
-    return logErrorAndStop(text, ...parts);
-};
 const codeToText = (code, ...parts) => {
     if (qDev) {
+        // Keep one error, one line to make it easier to search for the error message.
         const MAP = [
             'Error while serializing class attribute', // 0
             'Can not serialize a HTML Node that is not an Element', // 1
@@ -282,8 +259,7 @@ const codeToText = (code, ...parts) => {
             'props are immutable', // 17
             '<div> component can only be used at the root of a Qwik component$()', // 18
             'Props are immutable by default.', // 19
-            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
-For more information see: https://qwik.builder.io/docs/components/tasks/#use-method-rules`, // 20
+            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.builder.io/docs/components/tasks/#use-method-rules`, // 20
             'Container is already paused. Skipping', // 21
             'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', // 22
             'When rendering directly on top of Document, the root node must be a <html>', // 23
@@ -310,8 +286,33 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
         return `Code(${code}): ${text}`;
     }
     else {
-        return `Code(${code}), see https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L44`;
+        // cute little hack to give roughly the correct line number. Update the line number if it shifts.
+        return `Code(${code}) https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
     }
+};
+const QError_stringifyClassOrStyle = 0;
+const QError_verifySerializable = 3;
+const QError_cannotRenderOverExistingContainer = 5;
+const QError_setProperty = 6;
+const QError_qrlIsNotFunction = 10;
+const QError_dynamicImportFailed = 11;
+const QError_unknownTypeArgument = 12;
+const QError_notFoundContext = 13;
+const QError_useMethodOutsideContext = 14;
+const QError_immutableProps = 17;
+const QError_useInvokeContext = 20;
+const QError_containerAlreadyPaused = 21;
+const QError_invalidJsxNodeType = 25;
+const QError_trackUseStore = 26;
+const QError_missingObjectId = 27;
+const QError_invalidContext = 28;
+const QError_canNotRenderHTML = 29;
+const QError_qrlMissingContainer = 30;
+const QError_qrlMissingChunk = 31;
+const QError_invalidRefValue = 32;
+const qError = (code, ...parts) => {
+    const text = codeToText(code, ...parts);
+    return logErrorAndStop(text, ...parts);
 };
 
 const createPlatform = () => {
