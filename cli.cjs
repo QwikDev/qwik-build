@@ -36,28 +36,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
 
 // node_modules/.pnpm/sisteransi@1.0.5/node_modules/sisteransi/src/index.js
 var require_src = __commonJS({
@@ -786,8 +764,8 @@ var bgCyan = init(46, 49);
 var bgWhite = init(47, 49);
 
 // packages/qwik/src/cli/utils/app-command.ts
-var import_node_fs = require("fs");
-var import_node_path = require("path");
+var import_node_fs = require("node:fs");
+var import_node_path = require("node:path");
 var AppCommand = class {
   constructor(opts) {
     this._rootDir = opts.rootDir;
@@ -842,10 +820,10 @@ var AppCommand = class {
 
 // node_modules/.pnpm/@clack+core@0.3.4/node_modules/@clack/core/dist/index.mjs
 var import_sisteransi = __toESM(require_src(), 1);
-var import_node_process = require("process");
-var f = __toESM(require("readline"), 1);
-var import_node_readline = __toESM(require("readline"), 1);
-var import_node_tty = require("tty");
+var import_node_process = require("node:process");
+var f = __toESM(require("node:readline"), 1);
+var import_node_readline = __toESM(require("node:readline"), 1);
+var import_node_tty = require("node:tty");
 var import_picocolors = __toESM(require_picocolors(), 1);
 function q({ onlyFirst: t = false } = {}) {
   const u = ["[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)", "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"].join("|");
@@ -1234,7 +1212,7 @@ function WD({ input: t = import_node_process.stdin, output: u = import_node_proc
 }
 
 // node_modules/.pnpm/@clack+prompts@0.7.0/node_modules/@clack/prompts/dist/index.mjs
-var import_node_process2 = __toESM(require("process"), 1);
+var import_node_process2 = __toESM(require("node:process"), 1);
 var import_picocolors2 = __toESM(require_picocolors(), 1);
 var import_sisteransi2 = __toESM(require_src(), 1);
 function q2() {
@@ -1404,13 +1382,13 @@ var de = () => {
 };
 
 // packages/qwik/src/cli/utils/integrations.ts
-var import_node_fs3 = __toESM(require("fs"), 1);
-var import_node_path3 = require("path");
+var import_node_fs3 = __toESM(require("node:fs"), 1);
+var import_node_path3 = require("node:path");
 
 // packages/qwik/src/cli/utils/utils.ts
 var import_which_pm_runs = __toESM(require_which_pm_runs(), 1);
-var import_node_fs2 = __toESM(require("fs"), 1);
-var import_node_path2 = require("path");
+var import_node_fs2 = __toESM(require("node:fs"), 1);
+var import_node_path2 = require("node:path");
 var import_cross_spawn = __toESM(require_cross_spawn(), 1);
 function runCommand(cmd, args, cwd) {
   let child;
@@ -1641,7 +1619,7 @@ async function loadIntegrations() {
 }
 
 // packages/qwik/src/cli/add/run-add-interactive.ts
-var import_node_path6 = require("path");
+var import_node_path6 = require("node:path");
 
 // packages/qwik/src/cli/utils/install-deps.ts
 function installDeps(pkgManager, dir) {
@@ -1664,12 +1642,12 @@ function logNextStep(nextSteps, packageManager) {
 }
 
 // packages/qwik/src/cli/add/update-app.ts
-var import_node_path5 = require("path");
-var import_node_fs5 = __toESM(require("fs"), 1);
+var import_node_path5 = require("node:path");
+var import_node_fs5 = __toESM(require("node:fs"), 1);
 
 // packages/qwik/src/cli/add/update-files.ts
-var import_node_fs4 = __toESM(require("fs"), 1);
-var import_node_path4 = require("path");
+var import_node_fs4 = __toESM(require("node:fs"), 1);
+var import_node_path4 = require("node:path");
 async function mergeIntegrationDir(fileUpdates, opts, srcDir, destDir) {
   const items = await import_node_fs4.default.promises.readdir(srcDir);
   await Promise.all(
@@ -2519,12 +2497,12 @@ async function runAddCommand(app) {
 }
 
 // packages/qwik/src/cli/new/run-new-command.ts
-var import_node_fs7 = __toESM(require("fs"), 1);
+var import_node_fs7 = __toESM(require("node:fs"), 1);
 var import_path2 = require("path");
 
 // packages/qwik/src/cli/utils/templates.ts
-var import_node_fs6 = __toESM(require("fs"), 1);
-var import_node_path7 = require("path");
+var import_node_fs6 = __toESM(require("node:fs"), 1);
+var import_node_path7 = require("node:path");
 var templates = null;
 async function loadTemplates() {
   if (!templates) {
@@ -2987,10 +2965,10 @@ ${punchline.trim()}`), "\u{1F648}");
 }
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/index.js
-var import_node_buffer2 = require("buffer");
-var import_node_path9 = __toESM(require("path"), 1);
-var import_node_child_process3 = __toESM(require("child_process"), 1);
-var import_node_process6 = __toESM(require("process"), 1);
+var import_node_buffer2 = require("node:buffer");
+var import_node_path9 = __toESM(require("node:path"), 1);
+var import_node_child_process3 = __toESM(require("node:child_process"), 1);
+var import_node_process6 = __toESM(require("node:process"), 1);
 var import_cross_spawn2 = __toESM(require_cross_spawn(), 1);
 
 // node_modules/.pnpm/strip-final-newline@3.0.0/node_modules/strip-final-newline/index.js
@@ -3007,9 +2985,9 @@ function stripFinalNewline(input) {
 }
 
 // node_modules/.pnpm/npm-run-path@5.3.0/node_modules/npm-run-path/index.js
-var import_node_process3 = __toESM(require("process"), 1);
-var import_node_path8 = __toESM(require("path"), 1);
-var import_node_url = require("url");
+var import_node_process3 = __toESM(require("node:process"), 1);
+var import_node_path8 = __toESM(require("node:path"), 1);
+var import_node_url = require("node:url");
 
 // node_modules/.pnpm/path-key@4.0.0/node_modules/path-key/index.js
 function pathKey(options = {}) {
@@ -3139,10 +3117,10 @@ onetime.callCount = (function_) => {
 var onetime_default = onetime;
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/error.js
-var import_node_process4 = __toESM(require("process"), 1);
+var import_node_process4 = __toESM(require("node:process"), 1);
 
 // node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals/build/src/main.js
-var import_node_os2 = require("os");
+var import_node_os2 = require("node:os");
 
 // node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals/build/src/realtime.js
 var getRealtimeSignals = () => {
@@ -3160,7 +3138,7 @@ var SIGRTMIN = 34;
 var SIGRTMAX = 64;
 
 // node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals/build/src/signals.js
-var import_node_os = require("os");
+var import_node_os = require("node:os");
 
 // node_modules/.pnpm/human-signals@5.0.0/node_modules/human-signals/build/src/core.js
 var SIGNALS = [
@@ -3604,7 +3582,7 @@ var normalizeStdio = (options) => {
 };
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/kill.js
-var import_node_os3 = __toESM(require("os"), 1);
+var import_node_os3 = __toESM(require("node:os"), 1);
 
 // node_modules/.pnpm/signal-exit@4.1.0/node_modules/signal-exit/dist/mjs/signals.js
 var signals = [];
@@ -3712,131 +3690,119 @@ var SignalExitFallback = class extends SignalExitBase {
   unload() {
   }
 };
-var _hupSig, _emitter, _process, _originalProcessEmit, _originalProcessReallyExit, _sigListeners, _loaded, _processReallyExit, processReallyExit_fn, _processEmit, processEmit_fn;
 var SignalExit = class extends SignalExitBase {
+  // "SIGHUP" throws an `ENOSYS` error on Windows,
+  // so use a supported signal instead
+  /* c8 ignore start */
+  #hupSig = process4.platform === "win32" ? "SIGINT" : "SIGHUP";
+  /* c8 ignore stop */
+  #emitter = new Emitter();
+  #process;
+  #originalProcessEmit;
+  #originalProcessReallyExit;
+  #sigListeners = {};
+  #loaded = false;
   constructor(process7) {
     super();
-    __privateAdd(this, _processReallyExit);
-    __privateAdd(this, _processEmit);
-    // "SIGHUP" throws an `ENOSYS` error on Windows,
-    // so use a supported signal instead
-    /* c8 ignore start */
-    __privateAdd(this, _hupSig, process4.platform === "win32" ? "SIGINT" : "SIGHUP");
-    /* c8 ignore stop */
-    __privateAdd(this, _emitter, new Emitter());
-    __privateAdd(this, _process, void 0);
-    __privateAdd(this, _originalProcessEmit, void 0);
-    __privateAdd(this, _originalProcessReallyExit, void 0);
-    __privateAdd(this, _sigListeners, {});
-    __privateAdd(this, _loaded, false);
-    __privateSet(this, _process, process7);
-    __privateSet(this, _sigListeners, {});
+    this.#process = process7;
+    this.#sigListeners = {};
     for (const sig of signals) {
-      __privateGet(this, _sigListeners)[sig] = () => {
-        const listeners = __privateGet(this, _process).listeners(sig);
-        let { count } = __privateGet(this, _emitter);
+      this.#sigListeners[sig] = () => {
+        const listeners = this.#process.listeners(sig);
+        let { count } = this.#emitter;
         const p = process7;
         if (typeof p.__signal_exit_emitter__ === "object" && typeof p.__signal_exit_emitter__.count === "number") {
           count += p.__signal_exit_emitter__.count;
         }
         if (listeners.length === count) {
           this.unload();
-          const ret = __privateGet(this, _emitter).emit("exit", null, sig);
-          const s2 = sig === "SIGHUP" ? __privateGet(this, _hupSig) : sig;
+          const ret = this.#emitter.emit("exit", null, sig);
+          const s2 = sig === "SIGHUP" ? this.#hupSig : sig;
           if (!ret)
             process7.kill(process7.pid, s2);
         }
       };
     }
-    __privateSet(this, _originalProcessReallyExit, process7.reallyExit);
-    __privateSet(this, _originalProcessEmit, process7.emit);
+    this.#originalProcessReallyExit = process7.reallyExit;
+    this.#originalProcessEmit = process7.emit;
   }
   onExit(cb, opts) {
-    if (!processOk(__privateGet(this, _process))) {
+    if (!processOk(this.#process)) {
       return () => {
       };
     }
-    if (__privateGet(this, _loaded) === false) {
+    if (this.#loaded === false) {
       this.load();
     }
     const ev = (opts == null ? void 0 : opts.alwaysLast) ? "afterExit" : "exit";
-    __privateGet(this, _emitter).on(ev, cb);
+    this.#emitter.on(ev, cb);
     return () => {
-      __privateGet(this, _emitter).removeListener(ev, cb);
-      if (__privateGet(this, _emitter).listeners["exit"].length === 0 && __privateGet(this, _emitter).listeners["afterExit"].length === 0) {
+      this.#emitter.removeListener(ev, cb);
+      if (this.#emitter.listeners["exit"].length === 0 && this.#emitter.listeners["afterExit"].length === 0) {
         this.unload();
       }
     };
   }
   load() {
-    if (__privateGet(this, _loaded)) {
+    if (this.#loaded) {
       return;
     }
-    __privateSet(this, _loaded, true);
-    __privateGet(this, _emitter).count += 1;
+    this.#loaded = true;
+    this.#emitter.count += 1;
     for (const sig of signals) {
       try {
-        const fn = __privateGet(this, _sigListeners)[sig];
+        const fn = this.#sigListeners[sig];
         if (fn)
-          __privateGet(this, _process).on(sig, fn);
+          this.#process.on(sig, fn);
       } catch (_3) {
       }
     }
-    __privateGet(this, _process).emit = (ev, ...a3) => {
-      return __privateMethod(this, _processEmit, processEmit_fn).call(this, ev, ...a3);
+    this.#process.emit = (ev, ...a3) => {
+      return this.#processEmit(ev, ...a3);
     };
-    __privateGet(this, _process).reallyExit = (code) => {
-      return __privateMethod(this, _processReallyExit, processReallyExit_fn).call(this, code);
+    this.#process.reallyExit = (code) => {
+      return this.#processReallyExit(code);
     };
   }
   unload() {
-    if (!__privateGet(this, _loaded)) {
+    if (!this.#loaded) {
       return;
     }
-    __privateSet(this, _loaded, false);
+    this.#loaded = false;
     signals.forEach((sig) => {
-      const listener = __privateGet(this, _sigListeners)[sig];
+      const listener = this.#sigListeners[sig];
       if (!listener) {
         throw new Error("Listener not defined for signal: " + sig);
       }
       try {
-        __privateGet(this, _process).removeListener(sig, listener);
+        this.#process.removeListener(sig, listener);
       } catch (_3) {
       }
     });
-    __privateGet(this, _process).emit = __privateGet(this, _originalProcessEmit);
-    __privateGet(this, _process).reallyExit = __privateGet(this, _originalProcessReallyExit);
-    __privateGet(this, _emitter).count -= 1;
+    this.#process.emit = this.#originalProcessEmit;
+    this.#process.reallyExit = this.#originalProcessReallyExit;
+    this.#emitter.count -= 1;
   }
-};
-_hupSig = new WeakMap();
-_emitter = new WeakMap();
-_process = new WeakMap();
-_originalProcessEmit = new WeakMap();
-_originalProcessReallyExit = new WeakMap();
-_sigListeners = new WeakMap();
-_loaded = new WeakMap();
-_processReallyExit = new WeakSet();
-processReallyExit_fn = function(code) {
-  if (!processOk(__privateGet(this, _process))) {
-    return 0;
-  }
-  __privateGet(this, _process).exitCode = code || 0;
-  __privateGet(this, _emitter).emit("exit", __privateGet(this, _process).exitCode, null);
-  return __privateGet(this, _originalProcessReallyExit).call(__privateGet(this, _process), __privateGet(this, _process).exitCode);
-};
-_processEmit = new WeakSet();
-processEmit_fn = function(ev, ...args) {
-  const og = __privateGet(this, _originalProcessEmit);
-  if (ev === "exit" && processOk(__privateGet(this, _process))) {
-    if (typeof args[0] === "number") {
-      __privateGet(this, _process).exitCode = args[0];
+  #processReallyExit(code) {
+    if (!processOk(this.#process)) {
+      return 0;
     }
-    const ret = og.call(__privateGet(this, _process), ev, ...args);
-    __privateGet(this, _emitter).emit("exit", __privateGet(this, _process).exitCode, null);
-    return ret;
-  } else {
-    return og.call(__privateGet(this, _process), ev, ...args);
+    this.#process.exitCode = code || 0;
+    this.#emitter.emit("exit", this.#process.exitCode, null);
+    return this.#originalProcessReallyExit.call(this.#process, this.#process.exitCode);
+  }
+  #processEmit(ev, ...args) {
+    const og = this.#originalProcessEmit;
+    if (ev === "exit" && processOk(this.#process)) {
+      if (typeof args[0] === "number") {
+        this.#process.exitCode = args[0];
+      }
+      const ret = og.call(this.#process, ev, ...args);
+      this.#emitter.emit("exit", this.#process.exitCode, null);
+      return ret;
+    } else {
+      return og.call(this.#process, ev, ...args);
+    }
   }
 };
 var process4 = globalThis.process;
@@ -3942,8 +3908,8 @@ var setExitHandler = async (spawned, { cleanup, detached }, timedPromise) => {
 };
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/pipe.js
-var import_node_fs8 = require("fs");
-var import_node_child_process = require("child_process");
+var import_node_fs8 = require("node:fs");
+var import_node_child_process = require("node:child_process");
 
 // node_modules/.pnpm/is-stream@3.0.0/node_modules/is-stream/index.js
 function isStream(stream) {
@@ -3986,8 +3952,8 @@ var addPipeMethods = (spawned) => {
 };
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/stream.js
-var import_node_fs9 = require("fs");
-var import_promises = require("timers/promises");
+var import_node_fs9 = require("node:fs");
+var import_promises = require("node:timers/promises");
 
 // node_modules/.pnpm/get-stream@8.0.1/node_modules/get-stream/source/contents.js
 var getStreamContents = async (stream, { init: init2, convertChunk, getSize, truncateChunk, addChunk, getFinalChunk, finalize }, { maxBuffer = Number.POSITIVE_INFINITY } = {}) => {
@@ -4296,8 +4262,8 @@ var getSpawnedPromise = (spawned) => new Promise((resolve2, reject) => {
 });
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/command.js
-var import_node_buffer = require("buffer");
-var import_node_child_process2 = require("child_process");
+var import_node_buffer = require("node:buffer");
+var import_node_child_process2 = require("node:child_process");
 var normalizeArgs = (file, args = []) => {
   if (!Array.isArray(args)) {
     return [file];
@@ -4379,8 +4345,8 @@ var parseTemplates = (templates2, expressions) => {
 };
 
 // node_modules/.pnpm/execa@8.0.1/node_modules/execa/lib/verbose.js
-var import_node_util = require("util");
-var import_node_process5 = __toESM(require("process"), 1);
+var import_node_util = require("node:util");
+var import_node_process5 = __toESM(require("node:process"), 1);
 var verboseDefault = (0, import_node_util.debuglog)("execa").enabled;
 var padField = (field, padding) => String(field).padStart(padding, "0");
 var getTimestamp = () => {

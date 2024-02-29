@@ -472,7 +472,7 @@ async function renderToStream(rootNode, opts) {
       stream = {
         write(chunk) {
           if (chunk === "<!--qkssr-f-->") {
-            forceFlush || (forceFlush = true);
+            forceFlush ||= true;
           } else if (chunk === "<!--qkssr-pu-->") {
             count++;
           } else if (chunk === "<!--qkssr-po-->") {

@@ -22504,8 +22504,8 @@ var noop = () => {
 var QWIK_DOC = Symbol();
 
 // packages/qwik/src/testing/platform.ts
-var import_node_fs = require("fs");
-var import_node_url = require("url");
+var import_node_fs = require("node:fs");
+var import_node_url = require("node:url");
 function createPlatform() {
   let render = null;
   const moduleCache = /* @__PURE__ */ new Map();
