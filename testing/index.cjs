@@ -22359,8 +22359,7 @@ var printElement = (el) => {
 };
 var createAndLogError = (asyncThrow, message, ...optionalParams) => {
   const err = message instanceof Error ? message : new Error(message);
-  const messageStr = err.stack || err.message;
-  console.error("%cQWIK ERROR", STYLE, messageStr, ...printParams(optionalParams));
+  console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
   asyncThrow && !qTest && setTimeout(() => {
     throw err;
   }, 0);

@@ -51,7 +51,7 @@ const isComment = value => 8 === value.nodeType;
 
 const STYLE = "";
 
-const logError = (message, ...optionalParams) => createAndLogError(!0, message, ...optionalParams);
+const logError = (message, ...optionalParams) => createAndLogError(!1, message, ...optionalParams);
 
 const throwErrorAndStop = (message, ...optionalParams) => {
     throw createAndLogError(!1, message, ...optionalParams);
@@ -90,7 +90,7 @@ const printElement = el => {
 
 const createAndLogError = (asyncThrow, message, ...optionalParams) => {
     const err = message instanceof Error ? message : new Error(message);
-    return console.error("%cQWIK ERROR", "", err.stack || err.message, ...printParams(optionalParams)), 
+    return console.error("%cQWIK ERROR", "", err.message, ...printParams(optionalParams), err.stack), 
     asyncThrow && setTimeout((() => {
         throw err;
     }), 0), err;
@@ -171,11 +171,11 @@ const QError_qrlMissingChunk = 31;
 const QError_invalidRefValue = 32;
 
 const qError = (code, ...parts) => {
-    const text = codeToText(code);
+    const text = codeToText(code, ...parts);
     return logErrorAndStop(text, ...parts);
 };
 
-const codeToText = code => `Code(${code})`;
+const codeToText = code => `Code(${code}), see https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L44`;
 
 const createPlatform = () => ({
     isServer,
@@ -3507,9 +3507,8 @@ const _setProperty = (node, key, value) => {
     try {
         node[key] = null == value ? "" : value, null == value && isNode$1(node) && isElement$1(node) && node.removeAttribute(key);
     } catch (err) {
-        logError(codeToText(6), {
+        logError(codeToText(6), key, {
             node,
-            key,
             value
         }, err);
     }

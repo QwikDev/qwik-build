@@ -3226,6 +3226,7 @@ globalThis.qwikOptimizer = function(module) {
         const vendorIds = vendorRoots.map((v => v.id));
         const isDevelopment = "development" === buildMode;
         const qDevKey = "globalThis.qDev";
+        const qTestKey = "globalThis.qTest";
         const qInspectorKey = "globalThis.qInspector";
         const qSerializeKey = "globalThis.qSerialize";
         const qDev = (null == (_p = null == viteConfig ? void 0 : viteConfig.define) ? void 0 : _p[qDevKey]) ?? isDevelopment;
@@ -3256,7 +3257,8 @@ globalThis.qwikOptimizer = function(module) {
           define: {
             [qDevKey]: qDev,
             [qInspectorKey]: qInspector,
-            [qSerializeKey]: qSerialize
+            [qSerializeKey]: qSerialize,
+            [qTestKey]: JSON.stringify("test" === process.env.NODE_ENV)
           }
         };
         if (!qwikViteOpts.csr) {
@@ -3283,21 +3285,15 @@ globalThis.qwikOptimizer = function(module) {
               updatedViteConfig.build.ssr = true;
               null == (null == (_u = viteConfig.build) ? void 0 : _u.minify) && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
             }
-          } else if ("client" === opts.target) {
-            isClientDevOnly && !opts.csr && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
-          } else if ("lib" === opts.target) {
-            updatedViteConfig.build.minify = false;
           } else {
-            const qDevKey2 = "globalThis.qDev";
-            const qTestKey = "globalThis.qTest";
-            const qInspectorKey2 = "globalThis.qInspector";
-            updatedViteConfig.define = {
-              [qDevKey2]: true,
+            "client" === opts.target ? isClientDevOnly && !opts.csr && (updatedViteConfig.build.rollupOptions.input = clientDevInput) : "lib" === opts.target ? updatedViteConfig.build.minify = false : updatedViteConfig.define = {
+              [qDevKey]: true,
               [qTestKey]: true,
-              [qInspectorKey2]: false
+              [qInspectorKey]: false
             };
           }
           globalThis.qDev = qDev;
+          globalThis.qTest = true;
           globalThis.qInspector = qInspector;
         }
         return updatedViteConfig;

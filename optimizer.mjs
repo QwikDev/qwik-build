@@ -3346,6 +3346,7 @@ function qwikVite(qwikViteOpts = {}) {
       const vendorIds = vendorRoots.map((v => v.id));
       const isDevelopment = "development" === buildMode;
       const qDevKey = "globalThis.qDev";
+      const qTestKey = "globalThis.qTest";
       const qInspectorKey = "globalThis.qInspector";
       const qSerializeKey = "globalThis.qSerialize";
       const qDev = viteConfig?.define?.[qDevKey] ?? isDevelopment;
@@ -3376,7 +3377,8 @@ function qwikVite(qwikViteOpts = {}) {
         define: {
           [qDevKey]: qDev,
           [qInspectorKey]: qInspector,
-          [qSerializeKey]: qSerialize
+          [qSerializeKey]: qSerialize,
+          [qTestKey]: JSON.stringify("test" === process.env.NODE_ENV)
         }
       };
       if (!qwikViteOpts.csr) {
@@ -3403,21 +3405,15 @@ function qwikVite(qwikViteOpts = {}) {
             updatedViteConfig.build.ssr = true;
             null == viteConfig.build?.minify && "production" === buildMode && (updatedViteConfig.build.minify = "esbuild");
           }
-        } else if ("client" === opts.target) {
-          isClientDevOnly && !opts.csr && (updatedViteConfig.build.rollupOptions.input = clientDevInput);
-        } else if ("lib" === opts.target) {
-          updatedViteConfig.build.minify = false;
         } else {
-          const qDevKey2 = "globalThis.qDev";
-          const qTestKey = "globalThis.qTest";
-          const qInspectorKey2 = "globalThis.qInspector";
-          updatedViteConfig.define = {
-            [qDevKey2]: true,
+          "client" === opts.target ? isClientDevOnly && !opts.csr && (updatedViteConfig.build.rollupOptions.input = clientDevInput) : "lib" === opts.target ? updatedViteConfig.build.minify = false : updatedViteConfig.define = {
+            [qDevKey]: true,
             [qTestKey]: true,
-            [qInspectorKey2]: false
+            [qInspectorKey]: false
           };
         }
         globalThis.qDev = qDev;
+        globalThis.qTest = true;
         globalThis.qInspector = qInspector;
       }
       return updatedViteConfig;

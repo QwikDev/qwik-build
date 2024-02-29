@@ -96,7 +96,7 @@ const STYLE = qDev
     ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;`
     : '';
 const logError = (message, ...optionalParams) => {
-    return createAndLogError(true, message, ...optionalParams);
+    return createAndLogError(false, message, ...optionalParams);
 };
 const throwErrorAndStop = (message, ...optionalParams) => {
     const error = createAndLogError(false, message, ...optionalParams);
@@ -157,8 +157,10 @@ const printElement = (el) => {
 };
 const createAndLogError = (asyncThrow, message, ...optionalParams) => {
     const err = message instanceof Error ? message : new Error(message);
-    const messageStr = err.stack || err.message;
-    console.error('%cQWIK ERROR', STYLE, messageStr, ...printParams(optionalParams));
+    // display the error message first, then the optional params, and finally the stack trace
+    // the stack needs to be displayed last because the given params will be lost among large stack traces so it will
+    // provide a bad developer experience
+    console.error('%cQWIK ERROR', STYLE, err.message, ...printParams(optionalParams), err.stack);
     asyncThrow &&
         !qTest &&
         setTimeout(() => {
@@ -234,9 +236,9 @@ function assertElement(el) {
 }
 
 const QError_stringifyClassOrStyle = 0;
-const QError_verifySerializable = 3; // 'Only primitive and object literals can be serialized', value,
-const QError_cannotRenderOverExistingContainer = 5; //'You can render over a existing q:container. Skipping render().'
-const QError_setProperty = 6; //'Set property'
+const QError_verifySerializable = 3;
+const QError_cannotRenderOverExistingContainer = 5;
+const QError_setProperty = 6;
 const QError_qrlIsNotFunction = 10;
 const QError_dynamicImportFailed = 11;
 const QError_unknownTypeArgument = 12;
@@ -254,10 +256,10 @@ const QError_qrlMissingContainer = 30;
 const QError_qrlMissingChunk = 31;
 const QError_invalidRefValue = 32;
 const qError = (code, ...parts) => {
-    const text = codeToText(code);
+    const text = codeToText(code, ...parts);
     return logErrorAndStop(text, ...parts);
 };
-const codeToText = (code) => {
+const codeToText = (code, ...parts) => {
     if (qDev) {
         const MAP = [
             'Error while serializing class attribute', // 0
@@ -266,14 +268,14 @@ const codeToText = (code) => {
             'Only primitive and object literals can be serialized', // 3
             'Crash while rendering', // 4
             'You can render over a existing q:container. Skipping render().', // 5
-            'Set property', // 6
+            'Set property {{0}}', // 6
             "Only function's and 'string's are supported.", // 7
             "Only objects can be wrapped in 'QObject'", // 8
             `Only objects literals can be wrapped in 'QObject'`, // 9
             'QRL is not a function', // 10
             'Dynamic import not found', // 11
             'Unknown type argument', // 12
-            'Actual value for useContext() can not be found, make sure some ancestor component has set a value using useContextProvider()', // 13
+            `Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.`, // 13
             "Invoking 'use*()' method outside of invocation context.", // 14
             'Cant access renderCtx for existing context', // 15
             'Cant access document for existing context', // 16
@@ -286,19 +288,29 @@ For more information see: https://qwik.builder.io/docs/components/tasks/#use-met
             'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', // 22
             'When rendering directly on top of Document, the root node must be a <html>', // 23
             'A <html> node must have 2 children. The first one <head> and the second one a <body>', // 24
-            'Invalid JSXNode type. It must be either a function or a string. Found:', // 25
+            'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', // 25
             'Tracking value changes can only be done to useStore() objects and component props', // 26
             'Missing Object ID for captured object', // 27
-            'The provided Context reference is not a valid context created by createContextId()', // 28
+            'The provided Context reference "{{0}}" is not a valid context created by createContextId()', // 28
             '<html> is the root container, it can not be rendered inside a component', // 29
             'QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.', // 30
             'QRLs can not be dynamically resolved, because it does not have a chunk path', // 31
             'The JSX ref attribute must be a Signal', // 32
         ];
-        return `Code(${code}): ${MAP[code] ?? ''}`;
+        let text = MAP[code] ?? '';
+        if (parts.length) {
+            text = text.replaceAll(/{{(\d+)}}/g, (_, index) => {
+                let v = parts[index];
+                if (v && typeof v === 'object' && v.constructor === Object) {
+                    v = JSON.stringify(v).slice(0, 50);
+                }
+                return v;
+            });
+        }
+        return `Code(${code}): ${text}`;
     }
     else {
-        return `Code(${code})`;
+        return `Code(${code}), see https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L44`;
     }
 };
 
@@ -1054,7 +1066,8 @@ const createContextId = (name) => {
  * component's function. Once assigned, use `useContext()` in any child component to retrieve the
  * value.
  *
- * Context is a way to pass stores to the child components without prop-drilling.
+ * Context is a way to pass stores to the child components without prop-drilling. Note that scalar
+ * values are allowed, but for reactivity you need signals or stores.
  *
  * ### Example
  *
@@ -5732,7 +5745,7 @@ const _setProperty = (node, key, value) => {
         }
     }
     catch (err) {
-        logError(codeToText(QError_setProperty), { node, key, value }, err);
+        logError(codeToText(QError_setProperty), key, { node, value }, err);
     }
 };
 const createElement = (doc, expectTag, isSvg) => {

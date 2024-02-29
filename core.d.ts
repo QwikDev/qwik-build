@@ -3109,9 +3109,9 @@ export declare const useComputed$: Computed;
 export declare const useComputedQrl: ComputedQRL;
 
 declare interface UseContext {
-    <STATE extends object, T>(context: ContextId<STATE>, transformer: (value: STATE) => T): T;
-    <STATE extends object, T>(context: ContextId<STATE>, defaultValue: T): STATE | T;
-    <STATE extends object>(context: ContextId<STATE>): STATE;
+    <STATE, T>(context: ContextId<STATE>, transformer: (value: STATE) => T): T;
+    <STATE, T>(context: ContextId<STATE>, defaultValue: T): STATE | T;
+    <STATE>(context: ContextId<STATE>): STATE;
 }
 
 /**
@@ -3169,7 +3169,8 @@ export declare const useContext: UseContext;
  * component's function. Once assigned, use `useContext()` in any child component to retrieve the
  * value.
  *
- * Context is a way to pass stores to the child components without prop-drilling.
+ * Context is a way to pass stores to the child components without prop-drilling. Note that scalar
+ * values are allowed, but for reactivity you need signals or stores.
  *
  * ### Example
  *
@@ -3212,7 +3213,7 @@ export declare const useContext: UseContext;
  * @param value - The value to assign to the context.
  * @public
  */
-export declare const useContextProvider: <STATE extends object>(context: ContextId<STATE>, newValue: STATE) => void;
+export declare const useContextProvider: <STATE>(context: ContextId<STATE>, newValue: STATE) => void;
 
 /** @public */
 export declare const useErrorBoundary: () => Readonly<ErrorBoundaryStore>;
