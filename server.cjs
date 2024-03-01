@@ -419,7 +419,7 @@ var PrefetchImplementationDefault = {
 // packages/qwik/src/server/render.ts
 var DOCTYPE = "<!DOCTYPE html>";
 async function renderToStream(rootNode, opts) {
-  var _a;
+  var _a, _b, _c;
   let stream = opts.stream;
   let bufferSize = 0;
   let totalSize = 0;
@@ -522,7 +522,25 @@ async function renderToStream(rootNode, opts) {
   }
   await setServerPlatform(opts, resolvedManifest);
   const injections = resolvedManifest == null ? void 0 : resolvedManifest.manifest.injections;
-  const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? {})) : void 0;
+  const beforeContent = injections ? injections.map((injection) => (0, import_qwik3.jsx)(injection.tag, injection.attributes ?? {})) : [];
+  const includeMode = ((_b = opts.qwikLoader) == null ? void 0 : _b.include) ?? "auto";
+  const positionMode = ((_c = opts.qwikLoader) == null ? void 0 : _c.position) ?? "bottom";
+  if (positionMode === "top" && includeMode !== "never") {
+    const qwikLoaderScript = getQwikLoaderScript({
+      debug: opts.debug
+    });
+    beforeContent.push(
+      (0, import_qwik3.jsx)("script", {
+        id: "qwikloader",
+        dangerouslySetInnerHTML: qwikLoaderScript
+      })
+    );
+    beforeContent.push(
+      (0, import_qwik3.jsx)("script", {
+        dangerouslySetInnerHTML: `window.qwikevents.push('click')`
+      })
+    );
+  }
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -535,7 +553,7 @@ async function renderToStream(rootNode, opts) {
     base: buildBase,
     beforeContent,
     beforeClose: async (contexts, containerState, _dynamic, textNodes) => {
-      var _a2, _b, _c, _d, _e, _f;
+      var _a2, _b2, _c2, _d, _e;
       renderTime = renderTimer();
       const snapshotTimer = createTimer();
       snapshotResult = await (0, import_qwik3._pauseFromContexts)(contexts, containerState, void 0, textNodes);
@@ -558,7 +576,7 @@ async function renderToStream(rootNode, opts) {
         (0, import_qwik3.jsx)("script", {
           type: "qwik/json",
           dangerouslySetInnerHTML: escapeText(jsonData),
-          nonce: (_b = opts.serverData) == null ? void 0 : _b.nonce
+          nonce: (_b2 = opts.serverData) == null ? void 0 : _b2.nonce
         })
       );
       if (snapshotResult.funcs.length > 0) {
@@ -566,12 +584,11 @@ async function renderToStream(rootNode, opts) {
           (0, import_qwik3.jsx)("script", {
             "q:func": "qwik/json",
             dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
-            nonce: (_c = opts.serverData) == null ? void 0 : _c.nonce
+            nonce: (_c2 = opts.serverData) == null ? void 0 : _c2.nonce
           })
         );
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeMode = ((_d = opts.qwikLoader) == null ? void 0 : _d.include) ?? "auto";
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
@@ -581,7 +598,7 @@ async function renderToStream(rootNode, opts) {
           (0, import_qwik3.jsx)("script", {
             id: "qwikloader",
             dangerouslySetInnerHTML: qwikLoaderScript,
-            nonce: (_e = opts.serverData) == null ? void 0 : _e.nonce
+            nonce: (_d = opts.serverData) == null ? void 0 : _d.nonce
           })
         );
       }
@@ -591,7 +608,7 @@ async function renderToStream(rootNode, opts) {
         children.push(
           (0, import_qwik3.jsx)("script", {
             dangerouslySetInnerHTML: content,
-            nonce: (_f = opts.serverData) == null ? void 0 : _f.nonce
+            nonce: (_e = opts.serverData) == null ? void 0 : _e.nonce
           })
         );
       }

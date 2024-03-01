@@ -13,7 +13,6 @@ import type { SymbolMapperFn } from './optimizer';
  * @public
  */
 export declare function getQwikLoaderScript(opts?: {
-    events?: string[];
     debug?: boolean;
 }): string;
 

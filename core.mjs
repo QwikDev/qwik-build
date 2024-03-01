@@ -4481,6 +4481,8 @@ const newInvokeContextFromTuple = ([element, event, url]) => {
 };
 // TODO how about putting url and locale (and event/custom?) in to a "static" object
 const newInvokeContext = (locale, hostElement, element, event, url) => {
+    // ServerRequestEvent has .locale, but it's not always defined.
+    const $locale$ = locale || (typeof event === 'object' && event && 'locale' in event ? event.locale : undefined);
     const ctx = {
         $url$: url,
         $i$: 0,
@@ -4491,7 +4493,7 @@ const newInvokeContext = (locale, hostElement, element, event, url) => {
         $waitOn$: undefined,
         $subscriber$: undefined,
         $renderCtx$: undefined,
-        $locale$: locale,
+        $locale$,
     };
     seal(ctx);
     return ctx;

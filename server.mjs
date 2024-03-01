@@ -477,7 +477,25 @@ async function renderToStream(rootNode, opts) {
   }
   await setServerPlatform(opts, resolvedManifest);
   const injections = resolvedManifest?.manifest.injections;
-  const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? {})) : void 0;
+  const beforeContent = injections ? injections.map((injection) => jsx2(injection.tag, injection.attributes ?? {})) : [];
+  const includeMode = opts.qwikLoader?.include ?? "auto";
+  const positionMode = opts.qwikLoader?.position ?? "bottom";
+  if (positionMode === "top" && includeMode !== "never") {
+    const qwikLoaderScript = getQwikLoaderScript({
+      debug: opts.debug
+    });
+    beforeContent.push(
+      jsx2("script", {
+        id: "qwikloader",
+        dangerouslySetInnerHTML: qwikLoaderScript
+      })
+    );
+    beforeContent.push(
+      jsx2("script", {
+        dangerouslySetInnerHTML: `window.qwikevents.push('click')`
+      })
+    );
+  }
   const renderTimer = createTimer();
   const renderSymbols = [];
   let renderTime = 0;
@@ -525,7 +543,6 @@ async function renderToStream(rootNode, opts) {
         );
       }
       const needLoader = !snapshotResult || snapshotResult.mode !== "static";
-      const includeMode = opts.qwikLoader?.include ?? "auto";
       const includeLoader = includeMode === "always" || includeMode === "auto" && needLoader;
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({

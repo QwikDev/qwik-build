@@ -2483,53 +2483,47 @@ globalThis.qwikOptimizer = function(module) {
     66: "bmp",
     68: "dds",
     71: "gif",
-    73: "tiff",
-    77: "tiff",
     82: "webp",
     105: "icns",
     137: "png",
     255: "jpg"
   };
   var types = {
+    webp: import_webp.default.WEBP,
+    jpg: import_jpg.default.JPG,
+    png: import_png.default.PNG,
+    svg: import_svg.default.SVG,
+    gif: import_gif.default.GIF,
     bmp: import_bmp.default.BMP,
     cur: import_cur.default.CUR,
     dds: import_dds.default.DDS,
-    gif: import_gif.default.GIF,
     icns: import_icns.default.ICNS,
     ico: import_ico.default.ICO,
     j2c: import_j2c.default.J2C,
     jp2: import_jp2.default.JP2,
-    jpg: import_jpg.default.JPG,
     ktx: import_ktx.default.KTX,
-    png: import_png.default.PNG,
     pnm: import_pnm.default.PNM,
     psd: import_psd.default.PSD,
-    svg: import_svg.default.SVG,
-    tga: import_tga.default.TGA,
-    webp: import_webp.default.WEBP
+    tga: import_tga.default.TGA
   };
   var keys = Object.keys(types);
   function detector(buffer) {
     const byte = buffer[0];
-    if (byte in firstBytes) {
-      const type = firstBytes[byte];
-      if (type && types[type].validate(buffer)) {
-        return type;
-      }
+    const type = firstBytes[byte];
+    if (type && types[type].validate(buffer)) {
+      return type;
     }
-    const finder = key => types[key].validate(buffer);
-    return keys.find(finder);
+    return keys.find((key => types[key].validate(buffer)));
   }
   function lookup(buffer) {
     const type = detector(buffer);
-    if ("undefined" !== typeof type && type in types) {
+    if ("undefined" !== typeof type) {
       const size = types[type].calculate(buffer);
       if (void 0 !== size) {
         size.type = type;
         return size;
       }
     }
-    throw new TypeError("unsupported file type: " + type);
   }
   async function getInfoForSrc(src) {
     try {

@@ -1955,7 +1955,7 @@
             $waitOn$: void 0,
             $subscriber$: void 0,
             $renderCtx$: void 0,
-            $locale$: locale
+            $locale$: locale || ("object" == typeof event && event && "locale" in event ? event.locale : void 0)
         };
         return seal(), ctx;
     };
