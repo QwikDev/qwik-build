@@ -53,7 +53,7 @@
         for (const task of swState.$queue$) {
             if (task.$isFetching$) {
                 outstandingRequests++;
-            } else if (outstandingRequests < swState.$maxPrefetchRequests$ || task.$priority$ >= DIRECT_PRIORITY) {
+            } else if (swState.$getCache$() && (outstandingRequests < swState.$maxPrefetchRequests$ || task.$priority$ >= DIRECT_PRIORITY)) {
                 task.$isFetching$ = !0;
                 outstandingRequests++;
                 const action = task.$priority$ >= DIRECT_PRIORITY ? "FETCH (CACHE MISS)" : "FETCH";
@@ -122,14 +122,16 @@
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
             const cache = await swState.$getCache$();
-            for (const request of await cache.keys()) {
-                const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
-                const promises = [];
-                if (cacheBase === base && !bundles.has(filename)) {
-                    swState.$log$("deleting", request.url);
-                    promises.push(cache.delete(request));
+            if (cache) {
+                for (const request of await cache.keys()) {
+                    const [cacheBase, filename] = parseBaseFilename(new URL(request.url));
+                    const promises = [];
+                    if (cacheBase === base && !bundles.has(filename)) {
+                        swState.$log$("deleting", request.url);
+                        promises.push(cache.delete(request));
+                    }
+                    await Promise.all(promises);
                 }
-                await Promise.all(promises);
             }
         }
     }
@@ -161,10 +163,12 @@
             return this.$cache$;
         }
         async $put$(request, response) {
-            return (await this.$getCache$()).put(request, response);
+            const cache = await this.$getCache$();
+            return null == cache ? void 0 : cache.put(request, response);
         }
         async $match$(request) {
-            return (await this.$getCache$()).match(request);
+            const cache = await this.$getCache$();
+            return null == cache ? void 0 : cache.match(request);
         }
         $log$() {}
     }
