@@ -1204,7 +1204,11 @@ declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
  */
 export declare const isSignal: <T = unknown>(obj: any) => obj is Signal<T>;
 
-/** @public */
+/**
+ * @public
+ * Used by the JSX transpilers to create a JSXNode.
+ * Note that the optimizer will not use this, instead using _jsxQ, _jsxS, and _jsxC directly.
+ */
 declare const jsx: <T extends string | FunctionComponent<any>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Record<any, unknown>, key?: string | number | null) => JSXNode<T>;
 export { jsx }
 export { jsx as jsxs }
@@ -1263,7 +1267,7 @@ export declare const _jsxQ: <T extends string>(type: T, mutableProps: Record<any
 /**
  * @internal
  *
- * Create a JSXNode for a string tag, with the children extracted from the mutableProps
+ * A string tag with dynamic props, possibly containing children
  */
 export declare const _jsxS: <T extends string>(type: T, mutableProps: Record<any, unknown> | null, immutableProps: Record<any, unknown> | null, flags: number, key: string | number | null, dev?: DevJSX) => JSXNode<T>;
 
@@ -3766,7 +3770,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.1-dev20240311154048
+ * 1.5.1-dev20240312174033
  *
  * @public
  */

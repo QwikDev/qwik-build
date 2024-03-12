@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240311154048
+ * @builder.io/qwik 1.5.1-dev20240312174033
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.1-dev20240311154048";
+    const version = "1.5.1-dev20240312174033";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -1901,7 +1901,7 @@
         if (typeof tagName === 'string') {
             const key = node.key;
             const props = node.props;
-            const immutable = node.immutableProps;
+            const immutable = node.immutableProps || EMPTY_OBJ;
             const elCtx = createMockQContext(1);
             const elm = elCtx.$element$;
             const isHead = tagName === 'head';
@@ -1910,9 +1910,6 @@
             let hasRef = false;
             let classStr = '';
             let htmlStr = null;
-            if (qDev && props.class && props.className) {
-                throw new TypeError('Can only have one of class or className');
-            }
             const handleProp = (rawProp, value, isImmutable) => {
                 if (rawProp === 'ref') {
                     if (value !== undefined) {
@@ -1944,7 +1941,7 @@
                 }
                 let attrValue;
                 const prop = rawProp === 'htmlFor' ? 'for' : rawProp;
-                if (prop === 'class') {
+                if (prop === 'class' || prop === 'className') {
                     classStr = serializeClass(value);
                 }
                 else if (prop === 'style') {
@@ -1975,13 +1972,29 @@
                     }
                 }
             };
-            if (immutable) {
-                for (const prop in immutable) {
-                    handleProp(prop, immutable[prop], true);
-                }
-            }
             for (const prop in props) {
-                handleProp(prop, props[prop], false);
+                let isImmutable = false;
+                let value;
+                if (prop in immutable) {
+                    isImmutable = true;
+                    value = immutable[prop];
+                    if (value === _IMMUTABLE) {
+                        value = props[prop];
+                    }
+                }
+                else {
+                    value = props[prop];
+                }
+                handleProp(prop, value, isImmutable);
+            }
+            for (const prop in immutable) {
+                if (prop in props) {
+                    continue;
+                }
+                const value = immutable[prop];
+                if (value !== _IMMUTABLE) {
+                    handleProp(prop, value, true);
+                }
             }
             const listeners = elCtx.li;
             if (hostCtx) {
@@ -2528,7 +2541,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     /**
      * @internal
      *
-     * Create a JSXNode for a string tag, with the children extracted from the mutableProps
+     * A string tag with dynamic props, possibly containing children
      */
     const _jsxS = (type, mutableProps, immutableProps, flags, key, dev) => {
         let children = null;
@@ -2575,7 +2588,11 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         seal(node);
         return node;
     };
-    /** @public */
+    /**
+     * @public
+     * Used by the JSX transpilers to create a JSXNode.
+     * Note that the optimizer will not use this, instead using _jsxQ, _jsxS, and _jsxC directly.
+     */
     const jsx = (type, props, key) => {
         const processed = key == null ? null : String(key);
         const children = untrack(() => {
@@ -5308,11 +5325,20 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
                 }
             }
             if (vnode.$immutableProps$) {
-                setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, true);
+                const immProps = props !== EMPTY_OBJ
+                    ? Object.fromEntries(Object.entries(vnode.$immutableProps$).map(([k, v]) => [
+                        k,
+                        v === _IMMUTABLE ? props[k] : v,
+                    ]))
+                    : vnode.$immutableProps$;
+                setProperties(staticCtx, elCtx, currentComponent, immProps, isSvg, true);
             }
             if (props !== EMPTY_OBJ) {
                 elCtx.$vdom$ = vnode;
-                vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, false);
+                const p = vnode.$immutableProps$
+                    ? Object.fromEntries(Object.entries(props).filter(([k]) => !(k in vnode.$immutableProps$)))
+                    : props;
+                vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, p, isSvg, false);
             }
             if (isSvg && tag === 'foreignObject') {
                 isSvg = false;
@@ -5483,7 +5509,11 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         if (prop in elm) {
             // a selected <option> is different from a selected <option value> (innerText vs '')
             if (elm[prop] !== newValue || (prop === 'value' && !elm.hasAttribute(prop))) {
-                if (elm.tagName === 'SELECT') {
+                if (
+                // we must set value last so that it adheres to min,max,step
+                prop === 'value' &&
+                    // but we must also set options first so they are present before updating select
+                    elm.tagName !== 'OPTION') {
                     setPropertyPost(ctx, elm, prop, newValue);
                 }
                 else {
@@ -5508,6 +5538,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const PROP_HANDLER_MAP = {
         style: handleStyle,
         class: handleClass,
+        className: handleClass,
         value: checkBeforeAssign,
         checked: checkBeforeAssign,
         href: forceAttribute,

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240311154048
+ * @builder.io/qwik 1.5.1-dev20240312174033
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.1-dev20240311154048";
+const version = "1.5.1-dev20240312174033";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -1117,7 +1117,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
     if ("string" == typeof tagName) {
         const key = node.key;
         const props = node.props;
-        const immutable = node.immutableProps;
+        const immutable = node.immutableProps || EMPTY_OBJ;
         const elCtx = createMockQContext(1);
         const elm = elCtx.$element$;
         const isHead = "head" === tagName;
@@ -1126,7 +1126,6 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         let hasRef = !1;
         let classStr = "";
         let htmlStr = null;
-        qDev;
         const handleProp = (rawProp, value, isImmutable) => {
             if ("ref" === rawProp) {
                 return void (void 0 !== value && (setRef(value, elm), hasRef = !0));
@@ -1142,17 +1141,22 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             let attrValue;
             rawProp.startsWith(PREVENT_DEFAULT) && registerQwikEvent$1(rawProp.slice(15), rCtx.$static$.$containerState$);
             const prop = "htmlFor" === rawProp ? "for" : rawProp;
-            "class" === prop ? classStr = serializeClass(value) : "style" === prop ? attrValue = stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? (attrValue = null != value ? String(value) : null, 
+            "class" === prop || "className" === prop ? classStr = serializeClass(value) : "style" === prop ? attrValue = stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? (attrValue = null != value ? String(value) : null, 
             value = attrValue) : attrValue = !1 === value || null == value ? null : String(value), 
             null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + (!0 === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
         };
-        if (immutable) {
-            for (const prop in immutable) {
-                handleProp(prop, immutable[prop], !0);
-            }
-        }
         for (const prop in props) {
-            handleProp(prop, props[prop], !1);
+            let isImmutable = !1;
+            let value;
+            prop in immutable ? (isImmutable = !0, value = immutable[prop], value === _IMMUTABLE && (value = props[prop])) : value = props[prop], 
+            handleProp(prop, value, isImmutable);
+        }
+        for (const prop in immutable) {
+            if (prop in props) {
+                continue;
+            }
+            const value = immutable[prop];
+            value !== _IMMUTABLE && handleProp(prop, value, !0);
         }
         const listeners = elCtx.li;
         if (hostCtx) {
@@ -3259,9 +3263,16 @@ const createElm = (rCtx, vnode, flags, promises) => {
             elm;
         }
     } else {
-        if (vnode.$immutableProps$ && setProperties(staticCtx, elCtx, currentComponent, vnode.$immutableProps$, isSvg, !0), 
-        props !== EMPTY_OBJ && (elCtx.$vdom$ = vnode, vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg, !1)), 
-        isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG), currentComponent) {
+        if (vnode.$immutableProps$) {
+            const immProps = props !== EMPTY_OBJ ? Object.fromEntries(Object.entries(vnode.$immutableProps$).map((([k, v]) => [ k, v === _IMMUTABLE ? props[k] : v ]))) : vnode.$immutableProps$;
+            setProperties(staticCtx, elCtx, currentComponent, immProps, isSvg, !0);
+        }
+        if (props !== EMPTY_OBJ) {
+            elCtx.$vdom$ = vnode;
+            const p = vnode.$immutableProps$ ? Object.fromEntries(Object.entries(props).filter((([k]) => !(k in vnode.$immutableProps$)))) : props;
+            vnode.$props$ = setProperties(staticCtx, elCtx, currentComponent, p, isSvg, !1);
+        }
+        if (isSvg && "foreignObject" === tag && (isSvg = !1, flags &= ~IS_SVG), currentComponent) {
             const scopedIds = currentComponent.$scopeIds$;
             scopedIds && scopedIds.forEach((styleId => {
                 elm.classList.add(styleId);
@@ -3327,7 +3338,7 @@ const handleClass = (ctx, elm, newValue) => (assertTrue(null == newValue || "str
 elm.namespaceURI === SVG_NS ? setAttribute(ctx, elm, "class", newValue) : setProperty(ctx, elm, "className", newValue), 
 !0);
 
-const checkBeforeAssign = (ctx, elm, newValue, prop) => prop in elm && ((elm[prop] !== newValue || "value" === prop && !elm.hasAttribute(prop)) && ("SELECT" === elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
+const checkBeforeAssign = (ctx, elm, newValue, prop) => prop in elm && ((elm[prop] !== newValue || "value" === prop && !elm.hasAttribute(prop)) && ("value" === prop && "OPTION" !== elm.tagName ? setPropertyPost(ctx, elm, prop, newValue) : setProperty(ctx, elm, prop, newValue)), 
 !0);
 
 const forceAttribute = (ctx, elm, newValue, prop) => (setAttribute(ctx, elm, prop.toLowerCase(), newValue), 
@@ -3341,6 +3352,7 @@ const noop = () => !0;
 const PROP_HANDLER_MAP = {
     style: handleStyle,
     class: handleClass,
+    className: handleClass,
     value: checkBeforeAssign,
     checked: checkBeforeAssign,
     href: forceAttribute,
