@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240317090214
+ * @builder.io/qwik 1.5.1-dev20240320104648
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -492,11 +492,11 @@ class ReadWriteProxyHandler {
         const flags = target[QObjectFlagsSymbol] ?? 0;
         assertNumber(flags, "flags must be an number");
         const invokeCtx = tryGetInvokeContext();
-        const recursive = 0 != (1 & flags);
+        const recursive = !!(1 & flags);
         const hiddenSignal = target["$$" + prop];
         let subscriber;
         let value;
-        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), !(0 != (2 & flags)) || prop in target && !immutableValue(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
+        if (invokeCtx && (subscriber = invokeCtx.$subscriber$), !!!(2 & flags) || prop in target && !immutableValue(target[_IMMUTABLE]?.[prop]) || (subscriber = null), 
         hiddenSignal ? (assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal"), 
         value = hiddenSignal.value, subscriber = null) : value = target[prop], subscriber) {
             const isA = isArray(target);
@@ -510,10 +510,10 @@ class ReadWriteProxyHandler {
         }
         const flags = target[QObjectFlagsSymbol] ?? 0;
         assertNumber(flags, "flags must be an number");
-        if (0 != (2 & flags)) {
+        if (!!(2 & flags)) {
             throw qError(17);
         }
-        const unwrappedNewValue = 0 != (1 & flags) ? unwrapProxy(newValue) : newValue;
+        const unwrappedNewValue = !!(1 & flags) ? unwrapProxy(newValue) : newValue;
         if (isArray(target)) {
             return target[prop] = unwrappedNewValue, this.$manager$.$notifySubs$(), !0;
         }
@@ -531,7 +531,7 @@ class ReadWriteProxyHandler {
     ownKeys(target) {
         const flags = target[QObjectFlagsSymbol] ?? 0;
         assertNumber(flags, "flags must be an number");
-        if (!(0 != (2 & flags))) {
+        if (!!!(2 & flags)) {
             let subscriber = null;
             const invokeCtx = tryGetInvokeContext();
             invokeCtx && (subscriber = invokeCtx.$subscriber$), subscriber && this.$manager$.$addSub$(subscriber);
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.1-dev20240317090214";
+const version = "1.5.1-dev20240320104648";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -1170,7 +1170,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
         if (isHead && (flags |= 1), tagName in invisibleElements && (flags |= 16), tagName in textOnlyElements && (flags |= 8), 
         classStr && (openingElement += ' class="' + escapeAttr(classStr) + '"'), listeners.length > 0) {
             const groups = groupListeners(listeners);
-            const isInvisible = 0 != (16 & flags);
+            const isInvisible = !!(16 & flags);
             for (const listener of groups) {
                 const eventName = isInvisible ? normalizeInvisibleEvents(listener[0]) : listener[0];
                 openingElement += " " + eventName + '="' + serializeQRLs(listener[1], rCtx.$static$.$containerState$, elCtx) + '"', 
@@ -2130,7 +2130,7 @@ const getFlags = el => {
 
 const postRendering = async (containerState, rCtx) => {
     const hostElements = rCtx.$static$.$hostElements$;
-    await executeTasksAfter(containerState, rCtx, ((task, stage) => 0 != (task.$flags$ & TaskFlagsIsVisibleTask) && (!stage || hostElements.has(task.$el$)))), 
+    await executeTasksAfter(containerState, rCtx, ((task, stage) => !!(task.$flags$ & TaskFlagsIsVisibleTask) && (!stage || hostElements.has(task.$el$)))), 
     containerState.$hostsStaging$.forEach((el => {
         containerState.$hostsNext$.add(el);
     })), containerState.$hostsStaging$.clear(), containerState.$hostsRendering$ = void 0, 
@@ -2138,9 +2138,9 @@ const postRendering = async (containerState, rCtx) => {
     containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size > 0 && (containerState.$renderPromise$ = renderMarked(containerState));
 };
 
-const isTask = task => 0 != (task.$flags$ & TaskFlagsIsTask);
+const isTask = task => !!(task.$flags$ & TaskFlagsIsTask);
 
-const isResourceTask$1 = task => 0 != (task.$flags$ & TaskFlagsIsResource);
+const isResourceTask$1 = task => !!(task.$flags$ & TaskFlagsIsResource);
 
 const executeTasksBefore = async (containerState, rCtx) => {
     const containerEl = containerState.$containerEl$;
@@ -2220,7 +2220,7 @@ const sortNodes = elements => {
 
 const sortTasks = tasks => {
     const isServer = isServerPlatform();
-    tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 0 != (2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$))) ? 1 : -1));
+    tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$)) ? 1 : -1));
 };
 
 const TaskFlagsIsVisibleTask = 1;
@@ -2281,9 +2281,9 @@ const useVisibleTaskQrl = (qrl, opts) => {
 
 const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
 
-const isResourceTask = task => 0 != (task.$flags$ & TaskFlagsIsResource);
+const isResourceTask = task => !!(task.$flags$ & TaskFlagsIsResource);
 
-const isComputedTask = task => 0 != (8 & task.$flags$);
+const isComputedTask = task => !!(8 & task.$flags$);
 
 const runSubscriber = async (task, containerState, rCtx) => (assertEqual(!!(task.$flags$ & TaskFlagsIsDirty), !0, "Resource is not dirty", task), 
 isResourceTask(task) ? runResource(task, containerState, rCtx) : isComputedTask(task) ? runComputed(task, containerState, rCtx) : runTask(task, containerState, rCtx));
@@ -3044,9 +3044,9 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     const vnodeFlags = newVnode.$flags$;
     const elCtx = getContext(elm, containerState);
     if (tag !== VIRTUAL) {
-        let isSvg = 0 != (flags & IS_SVG);
+        let isSvg = !!(flags & IS_SVG);
         if (isSvg || "svg" !== tag || (flags |= IS_SVG, isSvg = !0), props !== EMPTY_OBJ) {
-            0 == (1 & vnodeFlags) && (elCtx.li.length = 0);
+            1 & vnodeFlags || (elCtx.li.length = 0);
             const values = oldVnode.$props$;
             newVnode.$props$ = values;
             for (const prop in props) {
@@ -4321,7 +4321,7 @@ const collectValue = (obj, collector, leaks) => {
                 const input = obj;
                 const target = getProxyTarget(obj);
                 if (target) {
-                    const mutable = 0 == (2 & getProxyFlags(obj = target));
+                    const mutable = !(2 & getProxyFlags(obj = target));
                     if (leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks), 
                     fastWeakSerialize(input)) {
                         return void collector.$objSet$.add(obj);
@@ -4837,7 +4837,7 @@ const SignalSerializer = /*#__PURE__*/ serializer({
     $test$: v => v instanceof SignalImpl,
     $collect$: (obj, collector, leaks) => {
         collectValue(obj.untrackedValue, collector, leaks);
-        return !0 === leaks && 0 == (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
+        return !0 === leaks && !(obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) && collectSubscriptions(obj[QObjectManagerSymbol], collector, !0), 
         obj;
     },
     $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
@@ -5162,10 +5162,10 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
         let message = "";
         if (message = preMessage || "Value cannot be serialized", "_" !== ctx && (message += ` in ${ctx},`), 
         "object" === typeObj) {
-            message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.builder.io/docs/advanced/dollar/`;
+            message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.dev/docs/advanced/dollar/`;
         } else if ("function" === typeObj) {
             const fnName = value.name;
-            message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
+            message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
         }
         console.error("Trying to serialize", value), throwErrorAndStop(message);
     }

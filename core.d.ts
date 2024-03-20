@@ -1447,7 +1447,7 @@ export declare type NoSerialize<T> = (T & {
  * resumed, the value of this object will be `undefined`. You will be responsible for recovering
  * from this.
  *
- * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
+ * See: [noSerialize Tutorial](http://qwik.dev/tutorial/store/no-serialize)
  *
  * @public
  */
@@ -3770,7 +3770,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.1-dev20240317090214
+ * 1.5.1-dev20240320104648
  *
  * @public
  */

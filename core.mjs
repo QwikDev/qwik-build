@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240317090214
+ * @builder.io/qwik 1.5.1-dev20240320104648
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -259,7 +259,7 @@ const codeToText = (code, ...parts) => {
             'props are immutable', // 17
             '<div> component can only be used at the root of a Qwik component$()', // 18
             'Props are immutable by default.', // 19
-            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.builder.io/docs/components/tasks/#use-method-rules`, // 20
+            `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules`, // 20
             'Container is already paused. Skipping', // 21
             'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', // 22
             'When rendering directly on top of Document, the root node must be a <html>', // 23
@@ -1551,7 +1551,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.1-dev20240317090214";
+const version = "1.5.1-dev20240320104648";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -2718,7 +2718,7 @@ const validateJSXNode = (node) => {
 In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
 
 However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.builder.io/docs/components/styles/#usestyles for more information.`);
+See https://qwik.dev/docs/components/styles/#usestyles for more information.`);
                     }
                 }
                 if (type === 'script') {
@@ -8222,11 +8222,11 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
             message += ` in ${ctx},`;
         }
         if (typeObj === 'object') {
-            message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.builder.io/docs/advanced/dollar/`;
+            message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.dev/docs/advanced/dollar/`;
         }
         else if (typeObj === 'function') {
             const fnName = value.name;
-            message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.builder.io/docs/advanced/qrl/ for more information.`;
+            message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
         }
         console.error('Trying to serialize', value);
         throwErrorAndStop(message);
@@ -8262,7 +8262,7 @@ const fastWeakSerialize = (obj) => {
  * resumed, the value of this object will be `undefined`. You will be responsible for recovering
  * from this.
  *
- * See: [noSerialize Tutorial](http://qwik.builder.io/tutorial/store/no-serialize)
+ * See: [noSerialize Tutorial](http://qwik.dev/tutorial/store/no-serialize)
  *
  * @public
  */
