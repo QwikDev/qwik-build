@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.1-dev20240322190151
+ * @builder.io/qwik/optimizer 1.5.1-dev20240327212830
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -1209,7 +1209,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.1-dev20240322190151"
+    qwik: "1.5.1-dev20240327212830"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2909,7 +2909,7 @@ globalThis.qwikOptimizer = function(module) {
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 hook && (manifest.mapping[hook.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
-                if ("" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext)))) {
+                if ("" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext)))) {
                   added.add(v.url);
                   manifest.injections.push({
                     tag: "link",
@@ -2955,7 +2955,7 @@ globalThis.qwikOptimizer = function(module) {
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 const {pathId: pathId, query: query} = parseId(v.url);
-                !added.has(v.url) && "" === query && [ ".css", ".scss", ".sass" ].some((ext => pathId.endsWith(ext))) && res.write(`<link rel="stylesheet" href="${v.url}">`);
+                !added.has(v.url) && "" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext))) && res.write(`<link rel="stylesheet" href="${v.url}">`);
               }));
             }));
             "html" in result && res.write(result.html);
@@ -3091,7 +3091,7 @@ globalThis.qwikOptimizer = function(module) {
     return symbolName;
   };
   var DEDUPE = [ QWIK_CORE_ID, QWIK_JSX_RUNTIME_ID, QWIK_JSX_DEV_RUNTIME_ID ];
-  var STYLING = [ ".css", ".scss", ".sass", ".less" ];
+  var STYLING = [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ];
   var FONTS = [ ".woff", ".woff2", ".ttf" ];
   function qwikVite(qwikViteOpts = {}) {
     let isClientDevOnly = false;
