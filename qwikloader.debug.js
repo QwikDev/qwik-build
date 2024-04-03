@@ -114,7 +114,7 @@
             for (const eventName of eventNames) {
                 if (!events.has(eventName)) {
                     addEventListener(doc, eventName, processDocumentEvent, !0);
-                    addEventListener(win, eventName, processWindowEvent);
+                    addEventListener(win, eventName, processWindowEvent, !0);
                     events.add(eventName);
                 }
             }
