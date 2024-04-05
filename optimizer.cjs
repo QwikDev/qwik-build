@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.1-dev20240403182701
+ * @builder.io/qwik/optimizer 1.5.1-dev20240405231233
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -777,6 +777,45 @@ globalThis.qwikOptimizer = function(module) {
       };
     }
   });
+  var require_heif = __commonJS({
+    "node_modules/.pnpm/image-size@1.1.1/node_modules/image-size/dist/types/heif.js"(exports2) {
+      Object.defineProperty(exports2, "__esModule", {
+        value: true
+      });
+      exports2.HEIF = void 0;
+      var utils_1 = require_utils();
+      var brandMap = {
+        avif: "avif",
+        mif1: "heif",
+        msf1: "heif",
+        heic: "heic",
+        heix: "heic",
+        hevc: "heic",
+        hevx: "heic"
+      };
+      exports2.HEIF = {
+        validate(buffer) {
+          const ftype = (0, utils_1.toUTF8String)(buffer, 4, 8);
+          const brand = (0, utils_1.toUTF8String)(buffer, 8, 12);
+          return "ftyp" === ftype && brand in brandMap;
+        },
+        calculate(buffer) {
+          const metaBox = (0, utils_1.findBox)(buffer, "meta", 0);
+          const iprpBox = metaBox && (0, utils_1.findBox)(buffer, "iprp", metaBox.offset + 12);
+          const ipcoBox = iprpBox && (0, utils_1.findBox)(buffer, "ipco", iprpBox.offset + 8);
+          const ispeBox = ipcoBox && (0, utils_1.findBox)(buffer, "ispe", ipcoBox.offset + 8);
+          if (ispeBox) {
+            return {
+              height: (0, utils_1.readUInt32BE)(buffer, ispeBox.offset + 16),
+              width: (0, utils_1.readUInt32BE)(buffer, ispeBox.offset + 12),
+              type: (0, utils_1.toUTF8String)(buffer, 8, 12)
+            };
+          }
+          throw new TypeError("Invalid HEIF, no size found");
+        }
+      };
+    }
+  });
   var src_exports = {};
   __export(src_exports, {
     createOptimizer: () => createOptimizer,
@@ -1209,7 +1248,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.1-dev20240403182701"
+    qwik: "1.5.1-dev20240405231233"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2478,6 +2517,7 @@ globalThis.qwikOptimizer = function(module) {
   var import_svg = __toESM(require_svg(), 1);
   var import_tga = __toESM(require_tga(), 1);
   var import_webp = __toESM(require_webp(), 1);
+  var import_heif = __toESM(require_heif(), 1);
   var firstBytes = {
     56: "psd",
     66: "bmp",
@@ -2494,6 +2534,7 @@ globalThis.qwikOptimizer = function(module) {
     png: import_png.default.PNG,
     svg: import_svg.default.SVG,
     gif: import_gif.default.GIF,
+    avif: import_heif.default.HEIF,
     bmp: import_bmp.default.BMP,
     cur: import_cur.default.CUR,
     dds: import_dds.default.DDS,
