@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.5.1-dev20240406082419
+ * @builder.io/qwik/cli 1.5.1-dev20240409005710
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
@@ -2313,7 +2313,6 @@ async function runAddInteractive(app, id) {
   const pkgManager = getPackageManager();
   const integrations2 = await loadIntegrations();
   let integration;
-  console.clear();
   printHeader();
   if (typeof id === "string") {
     integration = integrations2.find((i) => i.id === id);
@@ -4909,7 +4908,6 @@ var COMMANDS = [
   }
 ];
 async function runCli() {
-  console.clear();
   printHeader();
   try {
     const app = new AppCommand({
@@ -4986,7 +4984,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.5.1-dev20240406082419");
+  console.log("1.5.1-dev20240409005710");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
