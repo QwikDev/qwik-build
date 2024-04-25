@@ -848,7 +848,7 @@ export declare interface DOMAttributes<EL extends Element> extends DOMAttributes
     class?: ClassList | Signal<ClassList> | undefined;
 }
 
-declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAttributes, PreventDefault, RefAttr<EL> {
+declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAttributes, PreventDefault, StopPropagation, RefAttr<EL> {
     dangerouslySetInnerHTML?: string | undefined;
 }
 
@@ -1120,7 +1120,7 @@ export declare const _IMMUTABLE: unique symbol;
  * @param fn - A function that should have its first argument automatically `$`.
  * @public
  */
-export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => (first: FIRST, ...rest: REST) => RET;
+export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => ((first: FIRST, ...rest: REST) => RET);
 
 /** @internal */
 export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
@@ -1214,7 +1214,7 @@ export { jsx }
 export { jsx as jsxs }
 
 /** @internal */
-export declare const _jsxBranch: <T>(input?: T | undefined) => T | undefined;
+export declare const _jsxBranch: <T>(input?: T) => T | undefined;
 
 /**
  * @internal
@@ -1998,17 +1998,19 @@ export declare interface QwikIntrinsicElements extends QwikHTMLElements, QwikSVG
 export declare type QwikInvalidEvent<T = Element> = Event;
 
 /** @public */
-export declare namespace QwikJSX {
-    export type Element = JSXOutput;
-    export type ElementType = string | FunctionComponent<Record<any, any>>;
-    export interface IntrinsicAttributes extends QwikIntrinsicAttributes {
+declare namespace QwikJSX {
+    type Element = JSXOutput;
+    type ElementType = string | FunctionComponent<Record<any, any>>;
+    interface IntrinsicAttributes extends QwikIntrinsicAttributes {
     }
-    export interface ElementChildrenAttribute {
+    interface ElementChildrenAttribute {
         children: JSXChildren;
     }
-    export interface IntrinsicElements extends LenientQwikElements {
+    interface IntrinsicElements extends LenientQwikElements {
     }
 }
+export { QwikJSX as JSX }
+export { QwikJSX }
 
 /** @public @deprecated Use `KeyboardEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikKeyboardEvent<T = Element> = NativeKeyboardEvent;
@@ -2631,6 +2633,10 @@ export declare type SSRStreamProps = {
     children: AsyncGenerator<JSXChildren, void, any> | ((stream: StreamWriter) => Promise<void>) | (() => AsyncGenerator<JSXChildren, void, any>);
 };
 
+declare type StopPropagation = {
+    [K in keyof HTMLElementEventMap as `stoppropagation:${K}`]?: boolean;
+};
+
 /** @public */
 export declare type StreamWriter = {
     write: (chunk: string) => void;
@@ -2962,7 +2968,8 @@ export declare interface SVGProps<T extends Element> extends SVGAttributes, Qwik
  */
 export declare const sync$: <T extends Function>(fn: T) => SyncQRL<T>;
 
-declare interface SyncQRL<TYPE extends Function = any> extends QRL<TYPE> {
+/** @alpha */
+export declare interface SyncQRL<TYPE extends Function = any> extends QRL<TYPE> {
     __brand__SyncQRL__: TYPE;
     /**
      * Resolve the QRL of closure and invoke it.
@@ -3770,7 +3777,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.1-dev20240409211630
+ * 1.5.2-dev20240424223831
  *
  * @public
  */

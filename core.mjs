@@ -1,9 +1,9 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240409211630
+ * @builder.io/qwik 1.5.2-dev20240424223831
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from '@builder.io/qwik/build';
 
@@ -287,7 +287,7 @@ const codeToText = (code, ...parts) => {
     }
     else {
         // cute little hack to give roughly the correct line number. Update the line number if it shifts.
-        return `Code(${code}) https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
+        return `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
     }
 };
 const QError_stringifyClassOrStyle = 0;
@@ -1551,7 +1551,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.1-dev20240409211630";
+const version = "1.5.2-dev20240424223831";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -6530,7 +6530,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const key = getObjId(obj);
         if (key === null) {
             // TODO(mhevery): this is a hack as we should never get here.
-            // This as a workaround for https://github.com/BuilderIO/qwik/issues/4979
+            // This as a workaround for https://github.com/QwikDev/qwik/issues/4979
             if (isQrl(obj)) {
                 const id = intToStr(objToId.size);
                 objToId.set(obj, id);
@@ -6924,7 +6924,7 @@ const collectValue = (obj, collector, leaks) => {
                     // but that would not work as it is possible for the `target` object
                     // to already be in `seen` set if it was passed in directly, so
                     // we can't short circuit and need to do the work.
-                    // Issue: https://github.com/BuilderIO/qwik/issues/5001
+                    // Issue: https://github.com/QwikDev/qwik/issues/5001
                     const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
                     if (leaks && mutable) {
                         collectSubscriptions(getSubscriptionManager(input), collector, leaks);

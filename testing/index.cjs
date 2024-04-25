@@ -1,9 +1,9 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.5.1-dev20240409211630
+ * @builder.io/qwik/testing 1.5.2-dev20240424223831
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 "use strict";
 var __create = Object.create;
@@ -22638,15 +22638,21 @@ async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) 
   await getTestPlatform().flush();
 }
 var PREVENT_DEFAULT = "preventdefault:";
+var STOP_PROPAGATION = "stoppropagation:";
 var Q_FUNCS_PREFIX = 'document.currentScript.closest("[q\\\\:container]").qFuncs=';
 var QContainerSelector2 = "[q\\:container]";
 var dispatch = async (element, attrName, event) => {
   const preventAttributeName = PREVENT_DEFAULT + event.type;
+  const stopPropagationName = STOP_PROPAGATION + event.type;
   const collectListeners = [];
   while (element) {
     const preventDefault = element.hasAttribute(preventAttributeName);
+    const stopPropagation = element.hasAttribute(stopPropagationName);
     if (preventDefault) {
       event.preventDefault();
+    }
+    if (stopPropagation) {
+      event.stopPropagation();
     }
     const ctx = tryGetContext2(element);
     if (ctx) {

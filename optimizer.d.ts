@@ -382,6 +382,11 @@ declare interface QwikVitePluginCommonOptions {
      */
     vendorRoots?: string[];
     /**
+     * Disables the automatic vendor roots scan. This is useful when you want to manually specify the
+     * vendor roots.
+     */
+    disableVendorScan?: boolean;
+    /**
      * Options for the Qwik optimizer.
      *
      * Default `undefined`
@@ -418,6 +423,8 @@ declare interface QwikVitePluginCommonOptions {
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
     /** Client Side Rendering (CSR) mode. It will not support SSR, default to Vite's `index.html` file. */
     csr: true;
+    ssr: never;
+    client: never;
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {

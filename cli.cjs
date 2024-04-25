@@ -1,9 +1,9 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.5.1-dev20240409211630
+ * @builder.io/qwik/cli 1.5.2-dev20240424223831
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 "use strict";
 var __create = Object.create;
@@ -2204,7 +2204,13 @@ async function updateViteConfigs(fileUpdates, integration, rootDir) {
   try {
     const viteConfig = (_a = integration.pkgJson.__qwik__) == null ? void 0 : _a.viteConfig;
     if (viteConfig) {
-      const viteConfigPath = (0, import_path.join)(rootDir, "vite.config.ts");
+      let viteConfigPath = (0, import_path.join)(rootDir, "vite.config.ts");
+      if (!import_fs.default.existsSync(viteConfigPath)) {
+        viteConfigPath = (0, import_path.join)(rootDir, "vite.config.mts");
+      }
+      if (!import_fs.default.existsSync(viteConfigPath)) {
+        throw new Error(`Could not find vite.config.ts or vite.config.mts in ${rootDir}`);
+      }
       const destContent = await import_fs.default.promises.readFile(viteConfigPath, "utf-8");
       const ts = (await import("typescript")).default;
       let updatedContent = updateViteConfig(ts, destContent, viteConfig);
@@ -4984,7 +4990,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.5.1-dev20240409211630");
+  console.log("1.5.2-dev20240424223831");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

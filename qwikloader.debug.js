@@ -4,6 +4,7 @@
         const win = window;
         const events =  new Set;
         const querySelectorAll = query => doc.querySelectorAll(query);
+        const isPromise = promise => promise && "function" == typeof promise.then;
         const broadcast = (infix, ev, type = ev.type) => {
             querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((el => dispatch(el, infix, ev, type)));
         };
@@ -29,7 +30,10 @@
             const relevantListeners = ctx && ctx.li.filter((li => li[0] === attrName));
             if (relevantListeners && relevantListeners.length > 0) {
                 for (const listener of relevantListeners) {
-                    await listener[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
+                    const results = listener[1].getFn([ element, ev ], (() => element.isConnected))(ev, element);
+                    const cancelBubble = ev.cancelBubble;
+                    isPromise(results) && await results;
+                    cancelBubble && ev.stopPropagation();
                 }
                 return;
             }
@@ -61,7 +65,8 @@
                                 element: element,
                                 reqTime: reqTime
                             });
-                            await handler(ev, element);
+                            const results = handler(ev, element);
+                            isPromise(results) && await results;
                         } finally {
                             doc[Q_CONTEXT] = previousCtx;
                         }
@@ -78,8 +83,11 @@
             let element = ev.target;
             broadcast("-document", ev, type);
             while (element && element.getAttribute) {
-                await dispatch(element, "", ev, type);
-                element = ev.bubbles && !0 !== ev.cancelBubble ? element.parentElement : null;
+                const results = dispatch(element, "", ev, type);
+                let cancelBubble = ev.cancelBubble;
+                isPromise(results) && await results;
+                cancelBubble = cancelBubble || ev.cancelBubble || element.hasAttribute("stoppropagation:" + ev.type);
+                element = ev.bubbles && !0 !== cancelBubble ? element.parentElement : null;
             }
         };
         const processWindowEvent = ev => {

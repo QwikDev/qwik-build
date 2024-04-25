@@ -1,5 +1,5 @@
 import type { JSXOutput } from '..';
-import { RenderResult } from '..';
+import { RenderResult } from '../jsx-runtime';
 
 /**
  * CreatePlatform and CreateDocument
@@ -7,7 +7,7 @@ import { RenderResult } from '..';
  * @public
  */
 export declare const createDOM: ({ html }?: {
-    html?: string | undefined;
+    html?: string;
 }) => Promise<{
     render: (jsxElement: JSXOutput) => Promise<RenderResult>;
     screen: HTMLElement;

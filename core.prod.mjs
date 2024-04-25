@@ -1,9 +1,9 @@
 /**
  * @license
- * @builder.io/qwik 1.5.1-dev20240409211630
+ * @builder.io/qwik 1.5.2-dev20240424223831
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://github.com/BuilderIO/qwik/blob/main/LICENSE
+ * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
  */
 import { isServer, isBrowser, isDev } from "@builder.io/qwik/build";
 
@@ -130,7 +130,7 @@ function assertElement() {
     qDev;
 }
 
-const codeToText = code => `Code(${code}) https://github.com/BuilderIO/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
+const codeToText = code => `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
 
 const QError_stringifyClassOrStyle = 0;
 
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.1-dev20240409211630";
+const version = "1.5.2-dev20240424223831";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -1049,8 +1049,8 @@ maybeThen(executeComponent(rCtx, elCtx), (res => {
     const newID = getNextIndex(rCtx);
     const scopeId = elCtx.$scopeIds$ ? serializeSStyle(elCtx.$scopeIds$) : void 0;
     const processedNode = _jsxC(node.type, {
-        "q:sstyle": scopeId,
-        "q:id": newID,
+        [QScopedStyle]: scopeId,
+        [ELEMENT_ID]: newID,
         children: res.node
     }, 0, node.key);
     return elCtx.$id$ = newID, ssrCtx.$static$.$contexts$.push(elCtx), renderNodeVirtual(processedNode, elCtx, extraNodes, newRCtx, newSSrContext, stream, flags, (stream => {
@@ -3014,7 +3014,7 @@ const splitChildren = input => {
     for (const item of input) {
         const key = getSlotName(item);
         (output[key] ?? (output[key] = new ProcessedJSXNodeImpl(VIRTUAL, {
-            "q:s": ""
+            [QSlotS]: ""
         }, null, [], 0, key))).$children$.push(item);
     }
     return output;
@@ -4670,7 +4670,7 @@ const parseResourceReturn = data => {
 };
 
 const Slot = props => _jsxC(Virtual, {
-    "q:s": ""
+    [QSlotS]: ""
 }, 0, props.name ?? "");
 
 const UNDEFINED_PREFIX = "";
@@ -5461,14 +5461,14 @@ const _qrlSync = function(fn, serializedFn) {
 const componentQrl = componentQrl => {
     function QwikComponent(props, key, flags) {
         assertQrl(componentQrl), assertNumber(flags, "The Qwik Component was not invoked correctly");
-        const hash = componentQrl.$hash$.slice(0, 4);
+        const finalKey = componentQrl.$hash$.slice(0, 4) + ":" + (key || "");
         return _jsxC(Virtual, {
-            "q:renderFn": componentQrl,
+            [OnRenderProp]: componentQrl,
             [QSlot]: props[QSlot],
             [_IMMUTABLE]: props[_IMMUTABLE],
             children: props.children,
             props
-        }, flags, hash + ":" + (key || ""));
+        }, flags, finalKey);
     }
     return QwikComponent[SERIALIZABLE_STATE] = [ componentQrl ], QwikComponent;
 };
