@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.2-dev20240426012802
+ * @builder.io/qwik/optimizer 1.5.2-dev20240430170648
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.2-dev20240426012802"
+  qwik: "1.5.2-dev20240430170648"
 };
 
 async function getSystem() {
@@ -1876,7 +1876,7 @@ function createPlugin(optimizerOptions = {}) {
       i.path = normalizePath(path.resolve(opts.rootDir, i.path));
     })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
     if (!updatedOpts.csr) {
-      Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr.tsx") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root.tsx") ] : "lib" === opts.target ? opts.input = [ path.resolve(srcDir, "index.ts") ] : opts.input = [];
+      Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root") ] : "lib" === opts.target ? opts.input = [ path.resolve(srcDir, "index.ts") ] : opts.input = [];
       opts.input = opts.input.reduce(((inputs, i) => {
         let input = i;
         i.startsWith("@") || i.startsWith("~") || (input = normalizePath(path.resolve(opts.rootDir, i)));
@@ -3787,7 +3787,7 @@ var isNotNullable = v => null != v;
 
 var VITE_CLIENT_MODULE = "@builder.io/qwik/vite-client";
 
-var CLIENT_DEV_INPUT = "entry.dev.tsx";
+var CLIENT_DEV_INPUT = "entry.dev";
 
 function absolutePathAwareJoin(path, ...segments) {
   for (let i = segments.length - 1; i >= 0; --i) {
