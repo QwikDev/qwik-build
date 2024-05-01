@@ -1,16 +1,16 @@
 {
   "name": "@builder.io/qwik/jsx-runtime",
-  "version": "1.5.2-dev20240501064550",
-  "main": "../jsx-runtime.mjs",
-  "module": "../jsx-runtime.mjs",
+  "version": "1.5.2-dev20240501155232",
+  "main": "../core.mjs",
+  "module": "../core.mjs",
   "types": "../jsx-runtime.d.ts",
   "type": "module",
   "private": true,
   "exports": {
     ".": {
       "types": "../jsx-runtime.d.ts",
-      "require": "../jsx-runtime.cjs",
-      "import": "../jsx-runtime.mjs"
+      "require": "../core.cjs",
+      "import": "../core.mjs"
     }
   }
 }
