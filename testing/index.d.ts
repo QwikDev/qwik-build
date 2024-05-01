@@ -1,5 +1,5 @@
 import type { JSXOutput } from '..';
-import { RenderResult } from '../jsx-runtime';
+import { RenderResult } from '..';
 
 /**
  * CreatePlatform and CreateDocument
