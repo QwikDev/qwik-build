@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.2-dev20240430170648
+ * @builder.io/qwik/optimizer 1.5.2-dev20240501000720
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.2-dev20240430170648"
+    qwik: "1.5.2-dev20240501000720"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1864,13 +1864,40 @@ globalThis.qwikOptimizer = function(module) {
         i.path = normalizePath(path.resolve(opts.rootDir, i.path));
       })) : "string" === typeof opts.srcDir && (opts.srcDir = normalizePath(path.resolve(opts.rootDir, normalizePath(opts.srcDir))));
       if (!updatedOpts.csr) {
-        Array.isArray(updatedOpts.input) ? opts.input = [ ...updatedOpts.input ] : "string" === typeof updatedOpts.input ? opts.input = [ updatedOpts.input ] : "ssr" === opts.target ? opts.input = [ path.resolve(srcDir, "entry.ssr") ] : "client" === opts.target ? opts.input = [ path.resolve(srcDir, "root") ] : "lib" === opts.target ? opts.input = [ path.resolve(srcDir, "index.ts") ] : opts.input = [];
-        opts.input = opts.input.reduce(((inputs, i) => {
+        if (Array.isArray(updatedOpts.input)) {
+          opts.input = [ ...updatedOpts.input ];
+        } else if ("string" === typeof updatedOpts.input) {
+          opts.input = [ updatedOpts.input ];
+        } else if ("ssr" === opts.target) {
+          opts.input = [ path.resolve(srcDir, "entry.ssr") ];
+        } else if ("client" === opts.target) {
+          opts.input = [ path.resolve(srcDir, "root") ];
+        } else if ("lib" === opts.target) {
+          if ("object" === typeof updatedOpts.input) {
+            for (const key in updatedOpts.input) {
+              const resolvedPaths = {};
+              if (Object.hasOwnProperty.call(updatedOpts.input, key)) {
+                const relativePath = updatedOpts.input[key];
+                const absolutePath = path.resolve(opts.rootDir, relativePath);
+                resolvedPaths[key] = absolutePath;
+              }
+              opts.input = {
+                ...opts.input,
+                ...resolvedPaths
+              };
+            }
+          } else {
+            opts.input = [ path.resolve(srcDir, "index.ts") ];
+          }
+        } else {
+          opts.input = [];
+        }
+        opts.input = Array.isArray(opts.input) ? opts.input.reduce(((inputs, i) => {
           let input = i;
-          i.startsWith("@") || i.startsWith("~") || (input = normalizePath(path.resolve(opts.rootDir, i)));
+          i.startsWith("@") || i.startsWith("~") || i.startsWith("#") || (input = normalizePath(path.resolve(opts.rootDir, i)));
           inputs.includes(input) || inputs.push(input);
           return inputs;
-        }), []);
+        }), []) : opts.input;
         "string" === typeof updatedOpts.outDir ? opts.outDir = normalizePath(path.resolve(opts.rootDir, normalizePath(updatedOpts.outDir))) : "ssr" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, SSR_OUT_DIR)) : "lib" === opts.target ? opts.outDir = normalizePath(path.resolve(opts.rootDir, LIB_OUT_DIR)) : opts.outDir = normalizePath(path.resolve(opts.rootDir, CLIENT_OUT_DIR));
       }
       "function" === typeof updatedOpts.manifestOutput && (opts.manifestOutput = updatedOpts.manifestOutput);
@@ -1902,8 +1929,7 @@ globalThis.qwikOptimizer = function(module) {
           if ("string" === typeof opts.srcDir && !fs.existsSync(opts.srcDir)) {
             throw new Error(`Qwik srcDir "${opts.srcDir}" not found.`);
           }
-          for (const alias in opts.input) {
-            const input = opts.input[alias];
+          for (const [_, input] of Object.entries(opts.input)) {
             const resolved = await resolver(input);
             if (!resolved) {
               throw new Error(`Qwik input "${input}" not found.`);
@@ -2015,8 +2041,10 @@ globalThis.qwikOptimizer = function(module) {
             moduleSideEffects: false
           };
         }
+        let firstInput;
+        firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
         return {
-          id: normalizePath(getPath().resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID)),
+          id: normalizePath(getPath().resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)),
           moduleSideEffects: false
         };
       }
@@ -2093,7 +2121,9 @@ globalThis.qwikOptimizer = function(module) {
       if (transformedModule) {
         debug("load()", "Found", id2);
         let code = transformedModule[0].code;
-        "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(opts.input[0], QWIK_CLIENT_MANIFEST_ID))));
+        let firstInput;
+        firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
+        "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID))));
         return {
           code: code,
           map: transformedModule[0].map,
@@ -2938,7 +2968,9 @@ globalThis.qwikOptimizer = function(module) {
             res.end(html);
             return;
           }
-          const ssrModule = await server.ssrLoadModule(opts.input[0]);
+          let firstInput;
+          firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
+          const ssrModule = await server.ssrLoadModule(firstInput);
           const render = ssrModule.default ?? ssrModule.render;
           if ("function" === typeof render) {
             const manifest = {

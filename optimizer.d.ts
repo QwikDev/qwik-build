@@ -82,7 +82,9 @@ export declare interface InsightManifest {
 export declare type MinifyMode = 'simplify' | 'none';
 
 declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
-    input: string[];
+    input: string[] | {
+        [entry: string]: string;
+    };
 }
 
 /** @public */
