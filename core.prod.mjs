@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.2-dev20240501000913
+ * @builder.io/qwik 1.5.2-dev20240501064550
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.2-dev20240501000913";
+const version = "1.5.2-dev20240501064550";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -3926,14 +3926,14 @@ const _serializeData = async data => {
     });
 };
 
-const pauseContainer = async (elmOrDoc, defaultParentJSON) => {
+const pauseContainer = async elmOrDoc => {
     const doc = getDocument(elmOrDoc);
     const documentElement = doc.documentElement;
     const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
     if ("paused" === directGetAttribute(containerEl, "q:container")) {
         throw qError(21);
     }
-    const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
+    const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
     const containerState = _getContainerState(containerEl);
     const contexts = getNodesInScope(containerEl, hasContext);
     directSetAttribute(containerEl, "q:container", "paused");
