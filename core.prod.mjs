@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.2-dev20240501162837
+ * @builder.io/qwik 1.5.3-dev20240503043404
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.2-dev20240501162837";
+const version = "1.5.3-dev20240503043404";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -5356,7 +5356,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     const resolve = async containerEl => {
         if (containerEl && setContainer(containerEl), "" == chunk) {
             assertDefined(_containerEl, "Sync QRL must have container element");
-            symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
+            qrl.resolved = symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
         }
         if (null !== symbolRef) {
             return symbolRef;
@@ -5408,8 +5408,9 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         $capture$: capture,
         $captureRef$: captureRef,
         dev: null,
-        resolved: "<sync>" == symbol ? symbolRef : void 0
-    }), qrl;
+        resolved: void 0
+    }), symbolRef && maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = resolved)), 
+    qrl;
 };
 
 const getSymbolHash = symbolName => {
