@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/core",
-  "version": "1.5.3-dev20240505191245",
+  "version": "1.5.3-dev20240506000917",
   "main": "../core.mjs",
   "module": "../core.mjs",
   "types": "../core.d.ts",
