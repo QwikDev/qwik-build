@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.3-dev20240507041717
+ * @builder.io/qwik 1.5.3-dev20240507043257
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.3-dev20240507041717";
+const version = "1.5.3-dev20240507043257";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -3885,7 +3885,11 @@ const _serializeData = async data => {
     const collector = createCollector(containerState);
     let promises;
     for (collectValue(data, collector, !1); (promises = collector.$promises$).length > 0; ) {
-        collector.$promises$ = [], await Promise.all(promises);
+        collector.$promises$ = [];
+        const results = await Promise.allSettled(promises);
+        for (const result of results) {
+            "rejected" === result.status && console.error(result.reason);
+        }
     }
     const objs = Array.from(collector.$objSet$.keys());
     let count = 0;
