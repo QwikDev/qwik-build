@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.3-dev20240507153742
+ * @builder.io/qwik 1.5.4-dev20240507203751
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.3-dev20240507153742";
+    const version = "1.5.4-dev20240507203751";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
