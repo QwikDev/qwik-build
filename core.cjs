@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.3-dev20240507012937
+ * @builder.io/qwik 1.5.3-dev20240507035353
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.3-dev20240507012937";
+    const version = "1.5.3-dev20240507035353";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -2110,7 +2110,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
             if (qDev && qInspector && node.dev && !(flags & IS_HEAD$1)) {
                 const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
-                if (sanitizedFileName) {
+                if (sanitizedFileName && !/data-qwik-inspector/.test(openingElement)) {
                     openingElement += ` data-qwik-inspector="${escapeAttr(`${sanitizedFileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`)}"`;
                 }
             }
