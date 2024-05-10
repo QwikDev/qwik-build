@@ -1,4 +1,25 @@
 (() => {
+    var __defProp = Object.defineProperty;
+    var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+    var __hasOwnProp = Object.prototype.hasOwnProperty;
+    var __propIsEnum = Object.prototype.propertyIsEnumerable;
+    var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, {
+        enumerable: !0,
+        configurable: !0,
+        writable: !0,
+        value: value
+    }) : obj[key] = value;
+    var __spreadValues = (a, b) => {
+        for (var prop in b || (b = {})) {
+            __hasOwnProp.call(b, prop) && __defNormalProp(a, prop, b[prop]);
+        }
+        if (__getOwnPropSymbols) {
+            for (var prop of __getOwnPropSymbols(b)) {
+                __propIsEnum.call(b, prop) && __defNormalProp(a, prop, b[prop]);
+            }
+        }
+        return a;
+    };
     ((doc, hasInitialized) => {
         const Q_CONTEXT = "__q_context__";
         const win = window;
@@ -43,30 +64,45 @@
                 const base = new URL(container.getAttribute("q:base"), doc.baseURI);
                 for (const qrl of attrValue.split("\n")) {
                     const url = new URL(qrl, base);
-                    const symbolName = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
+                    const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
                     const reqTime = performance.now();
                     let handler;
                     const isSync = qrl.startsWith("#");
                     if (isSync) {
-                        handler = (container.qFuncs || [])[Number.parseInt(symbolName)];
+                        handler = (container.qFuncs || [])[Number.parseInt(symbol)];
                     } else {
-                        const module = import(
-                        /* @vite-ignore */
-                        url.href.split("#")[0]);
-                        resolveContainer(container);
-                        handler = (await module)[symbolName];
+                        const uri = url.href.split("#")[0];
+                        try {
+                            const module = import(
+                            /* @vite-ignore */
+                            uri);
+                            resolveContainer(container);
+                            handler = (await module)[symbol];
+                        } catch (error) {
+                            emitEvent("qerror", {
+                                importError: !0,
+                                error: error,
+                                symbol: symbol,
+                                uri: uri
+                            });
+                        }
                     }
                     const previousCtx = doc[Q_CONTEXT];
                     if (element.isConnected) {
+                        const eventData = {
+                            symbol: symbol,
+                            element: element,
+                            reqTime: reqTime
+                        };
                         try {
                             doc[Q_CONTEXT] = [ element, ev, url ];
-                            isSync || emitEvent("qsymbol", {
-                                symbol: symbolName,
-                                element: element,
-                                reqTime: reqTime
-                            });
+                            isSync || emitEvent("qsymbol", eventData);
                             const results = handler(ev, element);
                             isPromise(results) && await results;
+                        } catch (error) {
+                            emitEvent("qerror", __spreadValues({
+                                error: error
+                            }, eventData));
                         } finally {
                             doc[Q_CONTEXT] = previousCtx;
                         }
