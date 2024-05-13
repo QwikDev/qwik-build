@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik",
-  "version": "1.5.4-dev20240510224927",
+  "version": "1.5.4-dev20240513150943",
   "description": "An Open-Source sub-framework designed with a focus on server-side-rendering, lazy-loading, and styling/animation.",
   "license": "MIT",
   "main": "./core.mjs",
