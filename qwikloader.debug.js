@@ -61,15 +61,34 @@
             const attrValue = element.getAttribute(attrName);
             if (attrValue) {
                 const container = element.closest("[q\\:container]");
-                const base = new URL(container.getAttribute("q:base"), doc.baseURI);
+                const qBase = container.getAttribute("q:base");
+                const qVersion = container.getAttribute("q:version") || "unknown";
+                const qManifest = container.getAttribute("q:manifest-hash") || "dev";
+                const base = new URL(qBase, doc.baseURI);
                 for (const qrl of attrValue.split("\n")) {
                     const url = new URL(qrl, base);
+                    const href = url.href;
                     const symbol = url.hash.replace(/^#?([^?[|]*).*$/, "$1") || "default";
                     const reqTime = performance.now();
                     let handler;
+                    let importError;
+                    let error;
                     const isSync = qrl.startsWith("#");
+                    const eventData = {
+                        qBase: qBase,
+                        qManifest: qManifest,
+                        qVersion: qVersion,
+                        href: href,
+                        symbol: symbol,
+                        element: element,
+                        reqTime: reqTime
+                    };
                     if (isSync) {
                         handler = (container.qFuncs || [])[Number.parseInt(symbol)];
+                        if (!handler) {
+                            importError = "sync";
+                            error = new Error("sync handler error for symbol: " + symbol);
+                        }
                     } else {
                         const uri = url.href.split("#")[0];
                         try {
@@ -78,30 +97,28 @@
                             uri);
                             resolveContainer(container);
                             handler = (await module)[symbol];
-                        } catch (error) {
-                            emitEvent("qerror", {
-                                importError: !0,
-                                error: error,
-                                symbol: symbol,
-                                uri: uri
-                            });
+                        } catch (err) {
+                            importError = "async";
+                            error = err;
                         }
+                    }
+                    if (!handler) {
+                        emitEvent("qerror", __spreadValues({
+                            importError: importError,
+                            error: error
+                        }, eventData));
+                        break;
                     }
                     const previousCtx = doc[Q_CONTEXT];
                     if (element.isConnected) {
-                        const eventData = {
-                            symbol: symbol,
-                            element: element,
-                            reqTime: reqTime
-                        };
                         try {
                             doc[Q_CONTEXT] = [ element, ev, url ];
-                            isSync || emitEvent("qsymbol", eventData);
+                            isSync || emitEvent("qsymbol", __spreadValues({}, eventData));
                             const results = handler(ev, element);
                             isPromise(results) && await results;
-                        } catch (error) {
+                        } catch (error2) {
                             emitEvent("qerror", __spreadValues({
-                                error: error
+                                error: error2
                             }, eventData));
                         } finally {
                             doc[Q_CONTEXT] = previousCtx;
