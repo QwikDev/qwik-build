@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.4-dev20240515111018
+ * @builder.io/qwik 1.5.4-dev20240515210402
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -539,7 +539,7 @@
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-    const version = "1.5.4-dev20240515111018";
+    const version = "1.5.4-dev20240515210402";
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
             hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
@@ -4593,7 +4593,8 @@
         let code = PREFETCH_GRAPH_CODE;
         build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), JSON.stringify(resolvedOpts.manifestURL) ].join(","), ");" ].join("")
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), JSON.stringify(resolvedOpts.manifestURL) ].join(","), ");" ].join(""),
+            nonce: opts.nonce
         };
         return _jsxC("script", props, 0, "prefetch-graph");
     }, exports.PrefetchServiceWorker = opts => {
@@ -4606,7 +4607,8 @@
         let code = PREFETCH_CODE.replace("URL", resolvedOpts.base + resolvedOpts.path).replace("SCOPE", resolvedOpts.base);
         build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join("")
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
+            nonce: opts.nonce
         };
         return _jsxC("script", props, 0, "prefetch-service-worker");
     }, exports.RenderOnce = RenderOnce, exports.Resource = props => {

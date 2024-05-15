@@ -1562,6 +1562,7 @@ export declare const PrefetchGraph: (opts?: {
     base?: string;
     manifestHash?: string;
     manifestURL?: string;
+    nonce?: string;
 }) => JSXNode_2<"script">;
 
 /**
@@ -1582,6 +1583,7 @@ export declare const PrefetchServiceWorker: (opts: {
     path?: string;
     verbose?: boolean;
     fetchBundleGraph?: boolean;
+    nonce?: string;
 }) => JSXNode_2<"script">;
 
 declare type Prettify<T> = {} & {
@@ -3777,7 +3779,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.4-dev20240515111018
+ * 1.5.4-dev20240515210402
  *
  * @public
  */
