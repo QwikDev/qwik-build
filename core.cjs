@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.4-dev20240514002942
+ * @builder.io/qwik 1.5.4-dev20240515111018
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.4-dev20240514002942";
+    const version = "1.5.4-dev20240515111018";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -9677,7 +9677,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
      */
     const PrefetchServiceWorker = (opts) => {
         const resolvedOpts = {
-            base: '/',
+            base: undefined.BASE_URL,
             verbose: false,
             path: 'qwik-prefetch-service-worker.js',
             ...opts,
@@ -9734,7 +9734,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
      */
     const PrefetchGraph = (opts = {}) => {
         const resolvedOpts = {
-            base: '/build/',
+            base: `${undefined.BASE_URL}build/`,
             manifestHash: null,
             manifestURL: null,
             ...opts,

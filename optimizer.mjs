@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.4-dev20240514002942
+ * @builder.io/qwik/optimizer 1.5.4-dev20240515111018
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.4-dev20240514002942"
+  qwik: "1.5.4-dev20240515111018"
 };
 
 async function getSystem() {
@@ -3498,6 +3498,10 @@ function qwikVite(qwikViteOpts = {}) {
     },
     async configResolved(config) {
       basePathname = config.base;
+      if (!(basePathname.startsWith("/") && basePathname.endsWith("/"))) {
+        console.error("warning: vite's config.base must begin and end with /. This will be an error in v2. If you have a valid use case, please open an issue.");
+        basePathname.endsWith("/") || (basePathname += "/");
+      }
       const sys = qwikPlugin.getSys();
       if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
         try {
