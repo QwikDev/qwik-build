@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.5.4-dev20240519030405
+ * @builder.io/qwik/server 1.5.4-dev20240520071843
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -156,7 +156,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.5.4-dev20240519030405",
+  qwik: "1.5.4-dev20240520071843",
   qwikDom: "2.1.19"
 };
 
