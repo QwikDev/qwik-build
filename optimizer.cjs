@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.4-dev20240521034851
+ * @builder.io/qwik/optimizer 1.5.5-dev20240521180441
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.4-dev20240521034851"
+    qwik: "1.5.5-dev20240521180441"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1274,7 +1274,7 @@ globalThis.qwikOptimizer = function(module) {
     };
     sys.path = createPath(sys);
     false;
-    if ("node" === sysEnv) {
+    if ("node" === sysEnv || "bun" === sysEnv) {
       sys.dynamicImport = path => require(path);
       sys.strictDynamicImport = path => import(path);
       if ("undefined" === typeof TextEncoder) {
@@ -1295,7 +1295,7 @@ globalThis.qwikOptimizer = function(module) {
         return cjsModule.exports;
       };
     }
-    if ("node" === sysEnv) {
+    if ("node" === sysEnv || "bun" === sysEnv) {
       sys.path = await sys.dynamicImport("node:path");
       sys.cwd = () => process.cwd();
       sys.os = process.platform;
@@ -1350,7 +1350,7 @@ globalThis.qwikOptimizer = function(module) {
   };
   async function loadPlatformBinding(sys) {
     const sysEnv = getEnv();
-    if ("node" === sysEnv) {
+    if ("node" === sysEnv || "bun" === sysEnv) {
       const platform = QWIK_BINDING_MAP[process.platform];
       if (platform) {
         const triples = platform[process.arch];
@@ -1367,7 +1367,7 @@ globalThis.qwikOptimizer = function(module) {
         }
       }
     }
-    if ("node" === sysEnv) {
+    if ("node" === sysEnv || "bun" === sysEnv) {
       const wasmPath = sys.path.join(__dirname, "bindings", "qwik_wasm_bg.wasm");
       const mod = await sys.dynamicImport("./bindings/qwik.wasm.cjs");
       const fs = await sys.dynamicImport("node:fs");

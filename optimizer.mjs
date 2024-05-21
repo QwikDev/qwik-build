@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.4-dev20240521034851
+ * @builder.io/qwik/optimizer 1.5.5-dev20240521180441
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.4-dev20240521034851"
+  qwik: "1.5.5-dev20240521180441"
 };
 
 async function getSystem() {
@@ -1302,7 +1302,7 @@ async function getSystem() {
   sys.path = createPath(sys);
   sys.strictDynamicImport = sys.dynamicImport = path => import(path);
   false;
-  if ("node" === sysEnv) {
+  if ("node" === sysEnv || "bun" === sysEnv) {
     sys.path = await sys.dynamicImport("node:path");
     sys.cwd = () => process.cwd();
     sys.os = process.platform;
@@ -1359,7 +1359,7 @@ var getPlatformInputFiles = async sys => {
 
 async function loadPlatformBinding(sys) {
   const sysEnv = getEnv();
-  if ("node" === sysEnv) {
+  if ("node" === sysEnv || "bun" === sysEnv) {
     const platform = QWIK_BINDING_MAP[process.platform];
     if (platform) {
       const triples = platform[process.arch];
@@ -1379,7 +1379,7 @@ async function loadPlatformBinding(sys) {
     }
   }
   false;
-  if ("node" === sysEnv) {
+  if ("node" === sysEnv || "bun" === sysEnv) {
     const url = await sys.dynamicImport("node:url");
     const __dirname2 = sys.path.dirname(url.fileURLToPath(import.meta.url));
     const wasmPath = sys.path.join(__dirname2, "bindings", "qwik_wasm_bg.wasm");
