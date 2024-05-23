@@ -2512,7 +2512,7 @@ declare type SpecialAttrs = {
         children?: undefined;
     };
     meta: {
-        charset?: 'UTF-8' | undefined;
+        charset?: 'utf-8' | undefined;
         children?: undefined;
     };
     meter: {
@@ -3779,7 +3779,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240522093807
+ * 1.5.5-dev20240523034430
  *
  * @public
  */
