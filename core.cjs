@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240523034430
+ * @builder.io/qwik 1.5.5-dev20240523051034
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.5-dev20240523034430";
+    const version = "1.5.5-dev20240523051034";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -9670,19 +9670,54 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * @param opts - Options for the prefetch service worker.
      *
-     *   - `base` - Base URL for the service worker.
-     *   - `path` - Path to the service worker.
+     *   - `base` - Base URL for the service worker `import.meta.env.BASE_URL` or `/`. Default is
+     *       `import.meta.env.BASE_URL`
+     *   - `scope` - Base URL for when the service-worker will activate. Default is `/`
+     *   - `path` - Path to the service worker. Default is `qwik-prefetch-service-worker.js` unless you pass
+     *       a path that starts with a `/` then the base is ignored. Default is
+     *       `qwik-prefetch-service-worker.js`
+     *   - `verbose` - Verbose logging for the service worker installation. Default is `false`
+     *   - `nonce` - Optional nonce value for security purposes, defaults to `undefined`.
      *
      * @alpha
      */
     const PrefetchServiceWorker = (opts) => {
         const resolvedOpts = {
-            base: undefined.BASE_URL,
+            base: undefined.BASE_URL || '/',
+            scope: '/',
             verbose: false,
             path: 'qwik-prefetch-service-worker.js',
             ...opts,
         };
-        let code = PREFETCH_CODE.replace('URL', resolvedOpts.base + resolvedOpts.path).replace('SCOPE', resolvedOpts.base);
+        if (opts?.path?.startsWith?.('/')) {
+            // allow different path and base
+            resolvedOpts.path = opts.path;
+        }
+        else {
+            // base: '/'
+            // path: 'qwik-prefetch-service-worker.js
+            resolvedOpts.path = resolvedOpts.base + resolvedOpts.path;
+        }
+        // dev only errors
+        if (build.isDev) {
+            // Check if base ends with a '/'
+            if (!resolvedOpts.base.endsWith('/')) {
+                throw new Error(`The 'base' option should always end with a '/'. Received: ${resolvedOpts.base}`);
+            }
+            // Check if path does not start with a '/' and ends with '.js'
+            if (!resolvedOpts.path.endsWith('.js')) {
+                throw new Error(`The 'path' option must end with '.js'. Received: ${resolvedOpts.path}`);
+            }
+            // Validate service worker scope (must start with a '/' and not contain spaces)
+            if (!resolvedOpts.scope.startsWith('/') || /\s/.test(resolvedOpts.scope)) {
+                throw new Error(`Invalid 'scope' option for service worker. It must start with '/' and contain no spaces. Received: ${resolvedOpts.scope}`);
+            }
+            if (resolvedOpts.verbose) {
+                // eslint-disable-next-line no-console
+                console.log('Installing <PrefetchServiceWorker /> service-worker with options:', resolvedOpts);
+            }
+        }
+        let code = PREFETCH_CODE.replace('URL', resolvedOpts.path).replace('SCOPE', resolvedOpts.scope);
         if (!build.isDev) {
             code = code.replaceAll(/\s+/gm, '');
         }
@@ -9697,7 +9732,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 ].join(','),
                 ');',
             ].join(''),
-            nonce: opts.nonce,
+            nonce: resolvedOpts.nonce,
         };
         return _jsxC('script', props, 0, 'prefetch-service-worker');
     };

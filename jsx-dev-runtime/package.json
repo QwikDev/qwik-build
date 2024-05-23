@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/jsx-dev-runtime",
-  "version": "1.5.5-dev20240523034430",
+  "version": "1.5.5-dev20240523051034",
   "main": "../core.mjs",
   "module": "../core.mjs",
   "types": "../jsx-runtime.d.ts",

@@ -1573,13 +1573,20 @@ export declare const PrefetchGraph: (opts?: {
  *
  * @param opts - Options for the prefetch service worker.
  *
- *   - `base` - Base URL for the service worker.
- *   - `path` - Path to the service worker.
+ *   - `base` - Base URL for the service worker `import.meta.env.BASE_URL` or `/`. Default is
+ *       `import.meta.env.BASE_URL`
+ *   - `scope` - Base URL for when the service-worker will activate. Default is `/`
+ *   - `path` - Path to the service worker. Default is `qwik-prefetch-service-worker.js` unless you pass
+ *       a path that starts with a `/` then the base is ignored. Default is
+ *       `qwik-prefetch-service-worker.js`
+ *   - `verbose` - Verbose logging for the service worker installation. Default is `false`
+ *   - `nonce` - Optional nonce value for security purposes, defaults to `undefined`.
  *
  * @alpha
  */
 export declare const PrefetchServiceWorker: (opts: {
     base?: string;
+    scope?: string;
     path?: string;
     verbose?: boolean;
     fetchBundleGraph?: boolean;
@@ -3779,7 +3786,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240523034430
+ * 1.5.5-dev20240523051034
  *
  * @public
  */
