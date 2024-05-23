@@ -1,5 +1,5 @@
 import * as CSS_2 from 'csstype';
-import { JSXNode as JSXNode_2 } from './jsx-runtime';
+import type { JSXNode as JSXNode_2 } from './jsx-runtime';
 
 /**
  * Qwik Optimizer marker function.
@@ -1591,7 +1591,7 @@ export declare const PrefetchServiceWorker: (opts: {
     verbose?: boolean;
     fetchBundleGraph?: boolean;
     nonce?: string;
-}) => JSXNode_2<"script">;
+}) => JSXNode_2<'script'>;
 
 declare type Prettify<T> = {} & {
     [K in keyof T]: T[K];
@@ -3786,7 +3786,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240523051034
+ * 1.5.5-dev20240523064535
  *
  * @public
  */
