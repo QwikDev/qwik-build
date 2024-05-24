@@ -3503,7 +3503,7 @@ export declare const useStore: <STATE extends object>(initialState: STATE | (() 
 
 /** @public */
 export declare interface UseStoreOptions {
-    /** If `true` then all nested objects and arrays will be tracked as well. Default is `false`. */
+    /** If `true` then all nested objects and arrays will be tracked as well. Default is `true`. */
     deep?: boolean;
     /** If `false` then the object will not be tracked for changes. Default is `true`. */
     reactive?: boolean;
@@ -3786,7 +3786,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240524001806
+ * 1.5.5-dev20240524204316
  *
  * @public
  */
