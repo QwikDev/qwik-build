@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240527041534
+ * @builder.io/qwik 1.5.5-dev20240527163437
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -539,7 +539,7 @@
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-    const version = "1.5.5-dev20240527041534";
+    const version = "1.5.5-dev20240527163437";
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
             hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
@@ -1607,6 +1607,15 @@
         const isServer = isServerPlatform();
         tasks.sort(((a, b) => isServer || a.$el$ === b.$el$ ? a.$index$ < b.$index$ ? -1 : 1 : 2 & a.$el$.compareDocumentPosition(getRootNode(b.$el$)) ? 1 : -1));
     };
+    const createSignal = initialState => {
+        const containerState = useContainerState();
+        const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
+        return _createSignal(value, containerState, 0);
+    };
+    const useConstant = value => {
+        const {val, set} = useSequentialScope();
+        return null != val ? val : set(value = isFunction(value) && !isQwikComponent(value) ? value() : value);
+    };
     const TaskFlagsIsVisibleTask = 1;
     const TaskFlagsIsTask = 2;
     const TaskFlagsIsResource = 4;
@@ -1623,20 +1632,19 @@
         elCtx.$tasks$.push(task), waitAndRun(iCtx, (() => runTask(task, containerState, iCtx.$renderCtx$))), 
         isServerPlatform() && useRunTask(task, opts?.eagerness);
     };
-    const useComputedQrl = qrl => {
-        const {val, set, iCtx, i, elCtx} = useSequentialScope();
-        if (val) {
-            return val;
-        }
+    const createComputedQrl = qrl => {
         assertQrl(qrl);
+        const iCtx = useInvokeContext();
         const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+        const elCtx = getContext(iCtx.$hostElement$, containerState);
         const signal = _createSignal(void 0, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, void 0);
-        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | 8, i, elCtx.$element$, qrl, signal);
-        return qrl.$resolveLazy$(containerState.$containerEl$), elCtx.$tasks$ || (elCtx.$tasks$ = []), 
-        elCtx.$tasks$.push(task), waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$))), 
-        set(signal);
+        const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | 8, 0, elCtx.$element$, qrl, signal);
+        return qrl.$resolveLazy$(containerState.$containerEl$), (elCtx.$tasks$ || (elCtx.$tasks$ = [])).push(task), 
+        waitAndRun(iCtx, (() => runComputed(task, containerState, iCtx.$renderCtx$))), signal;
     };
+    const useComputedQrl = qrl => useConstant((() => createComputedQrl(qrl)));
     const useComputed$ = implicit$FirstArg(useComputedQrl);
+    const createComputed$ = implicit$FirstArg(createComputedQrl);
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
     const useVisibleTaskQrl = (qrl, opts) => {
         const {val, set, i, iCtx, elCtx} = useSequentialScope();
@@ -1917,6 +1925,7 @@
         }
         return assertDefined(), assertDefined(), assertDefined(), assertDefined(), ctx;
     };
+    const useContainerState = () => useInvokeContext().$renderCtx$.$static$.$containerState$;
     function useBindInvokeContext(fn) {
         if (null == fn) {
             return fn;
@@ -4821,8 +4830,9 @@
         const r = _wrapProp(obj, prop);
         return r === _IMMUTABLE ? obj[prop] : r;
     }, exports.component$ = onMount => componentQrl($(onMount)), exports.componentQrl = componentQrl, 
-    exports.createContextId = createContextId, exports.createElement = h, exports.event$ = event$, 
-    exports.eventQrl = eventQrl, exports.getLocale = function(defaultLocale) {
+    exports.createComputed$ = createComputed$, exports.createComputedQrl = createComputedQrl, 
+    exports.createContextId = createContextId, exports.createElement = h, exports.createSignal = createSignal, 
+    exports.event$ = event$, exports.eventQrl = eventQrl, exports.getLocale = function(defaultLocale) {
         if (void 0 === _locale) {
             const ctx = tryGetInvokeContext();
             if (ctx && ctx.$locale$) {
@@ -4876,7 +4886,7 @@
         };
     }, exports.setPlatform = plt => _platform = plt, exports.sync$ = fn => createQRL("", "<sync>", fn, null, null, null, null), 
     exports.untrack = untrack, exports.useComputed$ = useComputed$, exports.useComputedQrl = useComputedQrl, 
-    exports.useContext = (context, defaultValue) => {
+    exports.useConstant = useConstant, exports.useContext = (context, defaultValue) => {
         const {val, set, iCtx, elCtx} = useSequentialScope();
         if (void 0 !== val) {
             return val;
@@ -4912,15 +4922,8 @@
     exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
         const ctx = tryGetInvokeContext();
         return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }, exports.useSignal = initialState => {
-        const {val, set, iCtx} = useSequentialScope();
-        if (null != val) {
-            return val;
-        }
-        const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-        const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
-        return set(_createSignal(value, containerState, 0, void 0));
-    }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
+    }, exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
+    exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
     exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = version, exports.withLocale = function(locale, fn) {

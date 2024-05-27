@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240527041534
+ * @builder.io/qwik 1.5.5-dev20240527163437
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1551,7 +1551,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.5-dev20240527041534";
+const version = "1.5.5-dev20240527163437";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -3738,6 +3738,46 @@ const sortTasks = (tasks) => {
     });
 };
 
+/**
+ * Creates a signal.
+ *
+ * If the initial state is a function, the function is invoked to calculate the actual initial
+ * state.
+ *
+ * @public
+ */
+const createSignal = (initialState) => {
+    const containerState = useContainerState();
+    const value = isFunction(initialState) && !isQwikComponent(initialState)
+        ? invoke(undefined, initialState)
+        : initialState;
+    return _createSignal(value, containerState, 0);
+};
+/**
+ * Stores a value which is retained for the lifetime of the component.
+ *
+ * If the value is a function, the function is invoked to calculate the actual value.
+ *
+ * @public
+ */
+const useConstant = (value) => {
+    const { val, set } = useSequentialScope();
+    if (val != null) {
+        return val;
+    }
+    // Note: We are not using `invoke` here because we don't want to clear the context
+    value = isFunction(value) && !isQwikComponent(value) ? value() : value;
+    return set(value);
+};
+/**
+ * Hook that creates a signal that is retained for the lifetime of the component.
+ *
+ * @public
+ */
+const useSignal = (initialState) => {
+    return useConstant(() => createSignal(initialState));
+};
+
 const TaskFlagsIsVisibleTask = 1 << 0;
 const TaskFlagsIsTask = 1 << 1;
 const TaskFlagsIsResource = 1 << 2;
@@ -3825,25 +3865,38 @@ const useTaskQrl = (qrl, opts) => {
     }
 };
 /** @public */
-const useComputedQrl = (qrl) => {
-    const { val, set, iCtx, i, elCtx } = useSequentialScope();
-    if (val) {
-        return val;
-    }
+const createComputedQrl = (qrl) => {
     assertQrl(qrl);
+    const iCtx = useInvokeContext();
+    const hostElement = iCtx.$hostElement$;
     const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+    const elCtx = getContext(hostElement, containerState);
     const signal = _createSignal(undefined, containerState, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, undefined);
-    const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | TaskFlagsIsComputed, i, elCtx.$element$, qrl, signal);
+    const task = new Task(TaskFlagsIsDirty | TaskFlagsIsTask | TaskFlagsIsComputed, 
+    // Computed signals should update immediately
+    0, elCtx.$element$, qrl, signal);
     qrl.$resolveLazy$(containerState.$containerEl$);
-    if (!elCtx.$tasks$) {
-        elCtx.$tasks$ = [];
-    }
-    elCtx.$tasks$.push(task);
+    (elCtx.$tasks$ || (elCtx.$tasks$ = [])).push(task);
     waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
-    return set(signal);
+    return signal;
 };
 /** @public */
+const useComputedQrl = (qrl) => {
+    return useConstant(() => createComputedQrl(qrl));
+};
+/**
+ * Hook that returns a read-only signal that updates when signals used in the `ComputedFn` change.
+ *
+ * @public
+ */
 const useComputed$ = implicit$FirstArg(useComputedQrl);
+/**
+ * Returns read-only signal that updates when signals used in the `ComputedFn` change. Unlike
+ * useComputed$, this is not a hook and it always creates a new signal.
+ *
+ * @public
+ */
+const createComputed$ = implicit$FirstArg(createComputedQrl);
 // <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!
 // (edit ../readme.md#useTask instead)
@@ -4451,6 +4504,10 @@ const useInvokeContext = () => {
     assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
     assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
     return ctx;
+};
+const useContainerState = () => {
+    const ctx = useInvokeContext();
+    return ctx.$renderCtx$.$static$.$containerState$;
 };
 function useBindInvokeContext(fn) {
     if (fn == null) {
@@ -9638,20 +9695,6 @@ const _useStyles = (styleQrl, transform, scoped) => {
 };
 
 /** @public */
-const useSignal = (initialState) => {
-    const { val, set, iCtx } = useSequentialScope();
-    if (val != null) {
-        return val;
-    }
-    const containerState = iCtx.$renderCtx$.$static$.$containerState$;
-    const value = isFunction(initialState) && !isQwikComponent(initialState)
-        ? invoke(undefined, initialState)
-        : initialState;
-    const signal = _createSignal(value, containerState, 0, undefined);
-    return set(signal);
-};
-
-/** @public */
 const useErrorBoundary = () => {
     const store = useStore({
         error: undefined,
@@ -9803,5 +9846,5 @@ u // Manifest URL
     q.push(['graph-url', b, u || `q-bundle-graph-${h || qc.getAttribute('q:manifest-hash')}.json`]);
 }).toString();
 
-export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createContextId, h as createElement, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

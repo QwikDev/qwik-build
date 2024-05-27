@@ -572,21 +572,13 @@ declare type ComponentChildren<PROPS> = PROPS extends {
  */
 export declare const componentQrl: <PROPS extends Record<any, any>>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
-declare interface Computed {
-    <T>(qrl: ComputedFn<T>): ReadonlySignal<Awaited<T>>;
-}
-
 declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, Signal<T>> {
 }
 
 declare const ComputedEvent = "qComputed";
 
 /** @public */
-declare type ComputedFn<T> = () => T;
-
-declare interface ComputedQRL {
-    <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<Awaited<T>>;
-}
+export declare type ComputedFn<T> = () => T;
 
 /** @public */
 declare interface ContainerState {
@@ -743,6 +735,17 @@ export declare interface CorrectedToggleEvent extends Event {
 }
 
 /**
+ * Returns read-only signal that updates when signals used in the `ComputedFn` change. Unlike
+ * useComputed$, this is not a hook and it always creates a new signal.
+ *
+ * @public
+ */
+export declare const createComputed$: <T>(qrl: ComputedFn<T>) => Signal<Awaited<T>>;
+
+/** @public */
+export declare const createComputedQrl: <T>(qrl: QRL<ComputedFn<T>>) => Signal<Awaited<T>>;
+
+/**
  * Create a context ID to be used in your application. The name should be written with no spaces.
  *
  * Context is a way to pass stores to the child components without prop-drilling.
@@ -793,6 +796,16 @@ export declare interface CorrectedToggleEvent extends Event {
  * @public
  */
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
+
+/**
+ * Creates a signal.
+ *
+ * If the initial state is a function, the function is invoked to calculate the actual initial
+ * state.
+ *
+ * @public
+ */
+export declare const createSignal: UseSignal;
 
 /** @public */
 export declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2.PropertiesHyphen<string | number> {
@@ -865,7 +878,7 @@ export declare interface ErrorBoundaryStore {
 }
 
 /** @public */
-export declare const event$: <T>(first: T) => QRL<T>;
+export declare const event$: <T>(qrl: T) => QRL<T>;
 
 declare type EventCorrectionMap = {
     auxclick: PointerEvent;
@@ -1120,7 +1133,7 @@ export declare const _IMMUTABLE: unique symbol;
  * @param fn - A function that should have its first argument automatically `$`.
  * @public
  */
-export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (first: QRL<FIRST>, ...rest: REST) => RET) => ((first: FIRST, ...rest: REST) => RET);
+export declare const implicit$FirstArg: <FIRST, REST extends any[], RET>(fn: (qrl: QRL<FIRST>, ...rest: REST) => RET) => ((qrl: FIRST, ...rest: REST) => RET);
 
 /** @internal */
 export declare const inlinedQrl: <T>(symbol: T, symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
@@ -2319,7 +2332,18 @@ export declare const _serializeData: (data: any, pureQRL?: boolean) => Promise<s
  */
 export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 
-/** @public */
+/**
+ * A signal is a reactive value which can be read and written. When the signal is written, all tasks
+ * which are tracking the signal will be re-run and all components that read the signal will be
+ * re-rendered.
+ *
+ * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
+ * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
+ * will update the `title` attribute when the signal changes without having to re-render the
+ * component.
+ *
+ * @public
+ */
 export declare interface Signal<T = any> {
     value: T;
 }
@@ -3122,11 +3146,24 @@ export declare const untrack: <T>(fn: () => T) => T;
 
 declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
-/** @public */
-export declare const useComputed$: Computed;
+/**
+ * Hook that returns a read-only signal that updates when signals used in the `ComputedFn` change.
+ *
+ * @public
+ */
+export declare const useComputed$: <T>(qrl: ComputedFn<T>) => Signal<Awaited<T>>;
 
 /** @public */
-export declare const useComputedQrl: ComputedQRL;
+export declare const useComputedQrl: <T>(qrl: QRL<ComputedFn<T>>) => Signal<Awaited<T>>;
+
+/**
+ * Stores a value which is retained for the lifetime of the component.
+ *
+ * If the value is a function, the function is invoked to calculate the actual value.
+ *
+ * @public
+ */
+export declare const useConstant: <T>(value: (() => T) | T) => T;
 
 declare interface UseContext {
     <STATE, T>(context: ContextId<STATE>, transformer: (value: STATE) => T): T;
@@ -3440,7 +3477,11 @@ export declare interface UseSignal {
     <T>(value: T | (() => T)): Signal<T>;
 }
 
-/** @public */
+/**
+ * Hook that creates a signal that is retained for the lifetime of the component.
+ *
+ * @public
+ */
 export declare const useSignal: UseSignal;
 
 /**
@@ -3531,7 +3572,7 @@ export declare interface UseStoreOptions {
  * @public
  * @see `useStylesScoped`
  */
-export declare const useStyles$: (first: string) => void;
+export declare const useStyles$: (qrl: string) => void;
 
 /**
  * A lazy-loadable reference to a component's styles.
@@ -3573,7 +3614,7 @@ export declare const useStylesQrl: (styles: QRL<string>) => void;
  * @public
  * @see `useStyles`
  */
-export declare const useStylesScoped$: (first: string) => UseStylesScoped;
+export declare const useStylesScoped$: (qrl: string) => UseStylesScoped;
 
 /** @public */
 export declare interface UseStylesScoped {
@@ -3658,7 +3699,7 @@ export declare const useStylesScopedQrl: (styles: QRL<string>) => UseStylesScope
  * @public
  * @see `Tracker`
  */
-export declare const useTask$: (first: TaskFn, opts?: UseTaskOptions | undefined) => void;
+export declare const useTask$: (qrl: TaskFn, opts?: UseTaskOptions | undefined) => void;
 
 /** @public */
 export declare interface UseTaskOptions {
@@ -3751,7 +3792,7 @@ export declare const useTaskQrl: (qrl: QRL<TaskFn>, opts?: UseTaskOptions) => vo
  *
  * @public
  */
-export declare const useVisibleTask$: (first: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
+export declare const useVisibleTask$: (qrl: TaskFn, opts?: OnVisibleTaskOptions | undefined) => void;
 
 /**
  * ```tsx
@@ -3789,7 +3830,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240527041534
+ * 1.5.5-dev20240527163437
  *
  * @public
  */
