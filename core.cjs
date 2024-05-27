@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240524204316
+ * @builder.io/qwik 1.5.5-dev20240527041534
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.5-dev20240524204316";
+    const version = "1.5.5-dev20240527041534";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -7302,9 +7302,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
      *
      * The status can be one of the following:
      *
-     * - 'pending' - the data is not yet available.
-     * - 'resolved' - the data is available.
-     * - 'rejected' - the data is not available due to an error or timeout.
+     * - `pending` - the data is not yet available.
+     * - `resolved` - the data is available.
+     * - `rejected` - the data is not available due to an error or timeout.
+     *
+     * Avoid using a `try/catch` statement in `useResource$`. If you catch the error instead of passing
+     * it, the resource status will never be `rejected`.
      *
      * ### Example
      *

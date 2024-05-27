@@ -3381,9 +3381,12 @@ export declare const useResource$: <T>(generatorFn: ResourceFn<T>, opts?: Resour
  *
  * The status can be one of the following:
  *
- * - 'pending' - the data is not yet available.
- * - 'resolved' - the data is available.
- * - 'rejected' - the data is not available due to an error or timeout.
+ * - `pending` - the data is not yet available.
+ * - `resolved` - the data is available.
+ * - `rejected` - the data is not available due to an error or timeout.
+ *
+ * Avoid using a `try/catch` statement in `useResource$`. If you catch the error instead of passing
+ * it, the resource status will never be `rejected`.
  *
  * ### Example
  *
@@ -3786,7 +3789,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240524204316
+ * 1.5.5-dev20240527041534
  *
  * @public
  */

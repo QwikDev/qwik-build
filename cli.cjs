@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.5.5-dev20240524204316
+ * @builder.io/qwik/cli 1.5.5-dev20240527041534
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2953,7 +2953,10 @@ var jokes_default = [
     "Knock knock. \n Who's there? \n Opportunity.",
     "That is impossible. Opportunity doesn\u2019t come knocking twice!"
   ],
-  ["Knock knock. \n Who's there? \n Hatch. \n Hatch who?", "Bless you!"]
+  ["Knock knock. \n Who's there? \n Hatch. \n Hatch who?", "Bless you!"],
+  ["Man said: I changed my Mind, Machine replied: I changed my CPU"],
+  ["Man said: I dreamed of God, Machine replied: I dreamed of Rust"],
+  ["Person: give me just a second, Programmer: give me just a 100 milliseconds"]
 ];
 
 // packages/create-qwik/src/helpers/jokes.ts
@@ -4990,7 +4993,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.5.5-dev20240524204316");
+  console.log("1.5.5-dev20240527041534");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
