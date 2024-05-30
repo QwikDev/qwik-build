@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.5-dev20240529210828
+ * @builder.io/qwik/optimizer 1.5.5-dev20240530121722
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.5-dev20240529210828"
+  qwik: "1.5.5-dev20240530121722"
 };
 
 async function getSystem() {
@@ -1372,7 +1372,7 @@ async function loadPlatformBinding(sys) {
               return mod2;
             }
           } catch (e) {
-            console.warn(e);
+            console.warn(`Unable to load native binding ${triple.platformArchABI}. Falling back to wasm build.`, e?.message);
           }
         }
       }
@@ -1923,7 +1923,7 @@ function createPlugin(optimizerOptions = {}) {
     opts.csr = !!updatedOpts.csr;
     opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
     ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
-    "boolean" === typeof updatedOpts.lint && (opts.lint = updatedOpts.lint);
+    "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
     return {
       ...opts
     };

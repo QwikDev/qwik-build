@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240529210828
+ * @builder.io/qwik 1.5.5-dev20240530121722
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1551,7 +1551,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.5-dev20240529210828";
+const version = "1.5.5-dev20240530121722";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -3744,6 +3744,7 @@ const sortTasks = (tasks) => {
  * If the initial state is a function, the function is invoked to calculate the actual initial
  * state.
  *
+ * @deprecated This is a technology preview
  * @public
  */
 const createSignal = (initialState) => {
@@ -3758,6 +3759,7 @@ const createSignal = (initialState) => {
  *
  * If the value is a function, the function is invoked to calculate the actual value.
  *
+ * @deprecated This is a technology preview
  * @public
  */
 const useConstant = (value) => {

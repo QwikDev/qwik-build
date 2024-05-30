@@ -803,6 +803,7 @@ export declare const createContextId: <STATE = unknown>(name: string) => Context
  * If the initial state is a function, the function is invoked to calculate the actual initial
  * state.
  *
+ * @deprecated This is a technology preview
  * @public
  */
 export declare const createSignal: UseSignal;
@@ -2539,10 +2540,15 @@ declare type SpecialAttrs = {
         referrerPolicy?: HTMLAttributeReferrerPolicy | undefined;
         sizes?: string | undefined;
         type?: string | undefined;
+        /** @deprecated Use `charset` instead */
         charSet?: string | undefined;
+        charset?: string | undefined;
         children?: undefined;
     };
     meta: {
+        /** @deprecated Use `charset` instead */
+        charSet?: 'utf-8' | undefined;
+        /** Qwik only supports utf-8 */
         charset?: 'utf-8' | undefined;
         children?: undefined;
     };
@@ -3161,6 +3167,7 @@ export declare const useComputedQrl: <T>(qrl: QRL<ComputedFn<T>>) => Signal<Awai
  *
  * If the value is a function, the function is invoked to calculate the actual value.
  *
+ * @deprecated This is a technology preview
  * @public
  */
 export declare const useConstant: <T>(value: (() => T) | T) => T;
@@ -3830,7 +3837,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240529210828
+ * 1.5.5-dev20240530121722
  *
  * @public
  */

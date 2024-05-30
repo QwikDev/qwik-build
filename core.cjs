@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240529210828
+ * @builder.io/qwik 1.5.5-dev20240530121722
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.5-dev20240529210828";
+    const version = "1.5.5-dev20240530121722";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -3748,6 +3748,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * If the initial state is a function, the function is invoked to calculate the actual initial
      * state.
      *
+     * @deprecated This is a technology preview
      * @public
      */
     const createSignal = (initialState) => {
@@ -3762,6 +3763,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      *
      * If the value is a function, the function is invoked to calculate the actual value.
      *
+     * @deprecated This is a technology preview
      * @public
      */
     const useConstant = (value) => {
@@ -9729,7 +9731,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
      */
     const PrefetchServiceWorker = (opts) => {
         const resolvedOpts = {
-            base: undefined.BASE_URL || '/',
+            base: globalThis.BASE_URL||"/" || '/',
             scope: '/',
             verbose: false,
             path: 'qwik-prefetch-service-worker.js',
@@ -9816,7 +9818,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
      */
     const PrefetchGraph = (opts = {}) => {
         const resolvedOpts = {
-            base: `${undefined.BASE_URL}build/`,
+            base: `${globalThis.BASE_URL||"/"}build/`,
             manifestHash: null,
             manifestURL: null,
             ...opts,
