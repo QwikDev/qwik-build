@@ -2491,8 +2491,17 @@ declare type SpecialAttrs = {
         children?: undefined;
     };
     input: {
+        /**
+         * For type: HTMLInputTypeAttribute, excluding 'button' | 'color' | 'file' | 'hidden' | 'image'|
+         * 'range' | 'reset' | 'submit' | 'checkbox' | 'radio'
+         */
         autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
+        /** For type: 'checkbox' | 'radio' */
         'bind:checked'?: Signal<boolean | undefined>;
+        /**
+         * For type: HTMLInputTypeAttribute, excluding 'button' | 'reset' | 'submit' | 'checkbox' |
+         * 'radio'
+         */
         'bind:value'?: Signal<string | undefined>;
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         height?: Size | undefined;
@@ -2505,27 +2514,10 @@ declare type SpecialAttrs = {
         value?: string | ReadonlyArray<string> | number | undefined | null | FormDataEntryValue;
         width?: Size | undefined;
         children?: undefined;
-    } & ({
-        type?: Exclude<HTMLInputTypeAttribute, 'button' | 'reset' | 'submit' | 'checkbox' | 'radio'> | undefined;
-        'bind:checked'?: undefined;
-    } | {
-        type: 'button' | 'reset' | 'submit';
-        'bind:value'?: undefined;
-        'bind:checked'?: undefined;
-        autoComplete?: undefined;
-    } | {
-        type: 'checkbox' | 'radio';
-        'bind:value'?: undefined;
-        autoComplete?: undefined;
-    }) & ({
-        type?: Exclude<HTMLInputTypeAttribute, 'button'> | undefined;
-        popovertarget?: undefined;
-        popovertargetaction?: undefined;
-    } | {
-        type: 'button';
+        /** For type: 'button' */
         popovertarget?: string | undefined;
         popovertargetaction?: PopoverTargetAction | undefined;
-    });
+    };
     label: {
         form?: string | undefined;
         for?: string | undefined;
@@ -3837,7 +3829,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240602115004
+ * 1.5.5-dev20240607001852
  *
  * @public
  */
