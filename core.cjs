@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.5-dev20240608003921
+ * @builder.io/qwik 1.5.6-dev20240609133834
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1555,7 +1555,7 @@
      *
      * @public
      */
-    const version = "1.5.5-dev20240608003921";
+    const version = "1.5.6-dev20240609133834";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -3900,6 +3900,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
      * Returns read-only signal that updates when signals used in the `ComputedFn` change. Unlike
      * useComputed$, this is not a hook and it always creates a new signal.
      *
+     * @deprecated This is a technology preview
      * @public
      */
     const createComputed$ = implicit$FirstArg(createComputedQrl);

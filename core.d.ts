@@ -738,6 +738,7 @@ export declare interface CorrectedToggleEvent extends Event {
  * Returns read-only signal that updates when signals used in the `ComputedFn` change. Unlike
  * useComputed$, this is not a hook and it always creates a new signal.
  *
+ * @deprecated This is a technology preview
  * @public
  */
 export declare const createComputed$: <T>(qrl: ComputedFn<T>) => Signal<Awaited<T>>;
@@ -3829,7 +3830,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.5-dev20240608003921
+ * 1.5.6-dev20240609133834
  *
  * @public
  */
