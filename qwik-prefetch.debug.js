@@ -112,7 +112,7 @@
         }(state, msg[1]) : "ping" === type ? log("ping") : "verbose" === type ? (state.$log$ = log)("mode: verbose") : console.error("UNKNOWN MESSAGE:", msg);
     };
     async function processBundleGraph(swState, base, graph, cleanup) {
-        const existingBaseIndex = swState.$bases$.findIndex((base2 => base2 == base2));
+        const existingBaseIndex = swState.$bases$.findIndex((b => b.$path$ === base));
         -1 !== existingBaseIndex && swState.$bases$.splice(existingBaseIndex, 1);
         swState.$log$("adding base:", base);
         swState.$bases$.push({
@@ -143,6 +143,7 @@
         if (!swState.$msgQueuePromise$ && swState.$msgQueue$.length) {
             const top = swState.$msgQueue$.shift();
             swState.$msgQueuePromise$ = processMessage(swState, top).then((() => {
+                swState.$msgQueuePromise$ = null;
                 drainMsgQueue(swState);
             }));
         }

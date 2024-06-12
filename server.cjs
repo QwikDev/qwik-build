@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.5.6-dev20240612104725
+ * @builder.io/qwik/server 1.5.6-dev20240612120028
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -156,7 +156,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.5.6-dev20240612104725",
+  qwik: "1.5.6-dev20240612120028",
   qwikDom: "2.1.19"
 };
 
@@ -260,8 +260,15 @@ function prefetchUrlsEventScript(prefetchResources) {
   const data = {
     bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split("/").pop())
   };
-  return `document.dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
+  return `(${PREFETCH_BUNDLES_CODE})(
+    document.currentScript.closest('[q\\\\:container]'),
+    window.qwikPrefetchSW||(window.qwikPrefetchSW=[]),
+    ${JSON.stringify(data.bundles)}
+  );`;
 }
+var PREFETCH_BUNDLES_CODE = /* @__PURE__ */ ((qc, q, bundles) => {
+  q.push(["prefetch", qc.getAttribute("q:base"), ...bundles]);
+}).toString();
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];
   const addPrefetchResource = (prefetchResources2) => {
@@ -338,7 +345,7 @@ function prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce) {
   prefetchNodes.push(
     (0, import_qwik2.jsx)("script", {
       "q:type": "prefetch-bundles",
-      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources) + `;document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
+      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources) + `document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
       nonce
     })
   );
