@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.6-dev20240612120028
+ * @builder.io/qwik/optimizer 1.5.7-dev20240612162007
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.6-dev20240612120028"
+    qwik: "1.5.7-dev20240612162007"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3246,7 +3246,7 @@ globalThis.qwikOptimizer = function(module) {
           resolveQwikBuild: true,
           transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
           vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
-          outDir: (null == (_b = viteConfig.build) ? void 0 : _b.assetsDir) ? ((null == (_c = viteConfig.build) ? void 0 : _c.outDir) || CLIENT_OUT_DIR + "/") + (null == (_d = viteConfig.build) ? void 0 : _d.assetsDir) : null == (_e = viteConfig.build) ? void 0 : _e.outDir,
+          outDir: (null == (_b = viteConfig.build) ? void 0 : _b.assetsDir) ? path.join((null == (_c = viteConfig.build) ? void 0 : _c.outDir) || CLIENT_OUT_DIR, null == (_d = viteConfig.build) ? void 0 : _d.assetsDir) : null == (_e = viteConfig.build) ? void 0 : _e.outDir,
           devTools: qwikViteOpts.devTools,
           sourcemap: !!(null == (_f = viteConfig.build) ? void 0 : _f.sourcemap),
           lint: qwikViteOpts.lint
