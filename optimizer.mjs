@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240614075406
+ * @builder.io/qwik/optimizer 1.5.7-dev20240614082251
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.7-dev20240614075406"
+  qwik: "1.5.7-dev20240614082251"
 };
 
 async function getSystem() {
@@ -2455,7 +2455,7 @@ function qwikRollup(qwikRollupOpts = {}) {
       inputOpts.input || (inputOpts.input = opts.input);
       return inputOpts;
     },
-    outputOptions: rollupOutputOpts => normalizeRollupOutputOptions(qwikPlugin.getPath(), qwikPlugin.getOptions(), rollupOutputOpts),
+    outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getPath(), qwikPlugin.getOptions(), rollupOutputOpts),
     async buildStart() {
       qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
         diagnostics.forEach((d => {
@@ -2520,8 +2520,15 @@ function qwikRollup(qwikRollupOpts = {}) {
 }
 
 function normalizeRollupOutputOptions(path, opts, rollupOutputOpts) {
-  const outputOpts = {};
-  rollupOutputOpts && !Array.isArray(rollupOutputOpts) && Object.assign(outputOpts, rollupOutputOpts);
+  const outputOpts = Array.isArray(rollupOutputOpts) ? [ ...rollupOutputOpts ] : [ rollupOutputOpts || {} ];
+  outputOpts.length || outputOpts.push({});
+  return outputOpts.map((outputOptsObj => normalizeRollupOutputOptionsObject(path, opts, outputOptsObj)));
+}
+
+function normalizeRollupOutputOptionsObject(path, opts, rollupOutputOptsObj) {
+  const outputOpts = {
+    ...rollupOutputOptsObj
+  };
   outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]");
   if ("client" === opts.target) {
     if ("production" === opts.buildMode) {
@@ -3456,10 +3463,10 @@ function qwikVite(qwikViteOpts = {}) {
         updatedViteConfig.build.outDir = buildOutputDir;
         updatedViteConfig.build.rollupOptions = {
           input: opts.input,
-          output: {
-            ...normalizeRollupOutputOptions(path, opts, viteConfig.build?.rollupOptions?.output),
-            dir: buildOutputDir
-          },
+          output: normalizeRollupOutputOptions(path, opts, viteConfig.build?.rollupOptions?.output).map((outputOptsObj => {
+            outputOptsObj.dir = buildOutputDir;
+            return outputOptsObj;
+          })),
           preserveEntrySignatures: "exports-only",
           onwarn: (warning, warn) => {
             if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
