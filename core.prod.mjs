@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240614063244
+ * @builder.io/qwik 1.5.7-dev20240614075406
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -823,7 +823,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.7-dev20240614063244";
+const version = "1.5.7-dev20240614075406";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -5374,19 +5374,19 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
     };
     const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
     const resolve = async containerEl => {
-        if (containerEl && setContainer(containerEl), "" == chunk) {
-            assertDefined(_containerEl, "Sync QRL must have container element");
-            qrl.resolved = symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
-        }
         if (null !== symbolRef) {
             return symbolRef;
+        }
+        if (containerEl && setContainer(containerEl), "" === chunk) {
+            assertDefined(_containerEl, "Sync QRL must have container element");
+            return qrl.resolved = symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
         }
         if (null !== symbolFn) {
             return symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = module[symbol]));
         }
         {
-            const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
-            return symbolRef = maybeThen(symbol2, (ref => qrl.resolved = symbolRef = ref));
+            const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
+            return symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = ref));
         }
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);

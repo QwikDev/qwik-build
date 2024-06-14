@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240614063244
+ * @builder.io/qwik 1.5.7-dev20240614075406
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -261,7 +261,7 @@ const codeToText = (code, ...parts) => {
             'Props are immutable by default.', // 19
             `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules`, // 20
             'Container is already paused. Skipping', // 21
-            'Components using useServerMount() can only be mounted in the server, if you need your component to be mounted in the client, use "useMount$()" instead', // 22
+            '', // 22 -- unused
             'When rendering directly on top of Document, the root node must be a <html>', // 23
             'A <html> node must have 2 children. The first one <head> and the second one a <body>', // 24
             'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', // 25
@@ -1551,7 +1551,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.7-dev20240614063244";
+const version = "1.5.7-dev20240614075406";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -8591,24 +8591,25 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         return _containerEl;
     };
     const resolve = async (containerEl) => {
+        if (symbolRef !== null) {
+            // Resolving (Promise) or already resolved (value)
+            return symbolRef;
+        }
         if (containerEl) {
             setContainer(containerEl);
         }
-        if (chunk == '') {
+        if (chunk === '') {
             // Sync QRL
             assertDefined(_containerEl, 'Sync QRL must have container element');
             const qFuncs = _containerEl.qFuncs || [];
-            qrl.resolved = symbolRef = qFuncs[Number(symbol)];
-        }
-        if (symbolRef !== null) {
-            return symbolRef;
+            return (qrl.resolved = symbolRef = qFuncs[Number(symbol)]);
         }
         if (symbolFn !== null) {
             return (symbolRef = symbolFn().then((module) => (qrl.resolved = symbolRef = module[symbol])));
         }
         else {
-            const symbol2 = getPlatform().importSymbol(_containerEl, chunk, symbol);
-            return (symbolRef = maybeThen(symbol2, (ref) => {
+            const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
+            return (symbolRef = maybeThen(imported, (ref) => {
                 return (qrl.resolved = symbolRef = ref);
             }));
         }

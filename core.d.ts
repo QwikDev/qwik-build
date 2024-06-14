@@ -1889,7 +1889,7 @@ export declare const qrlDEV: <T = any>(chunkOrFn: string | (() => Promise<any>),
  *
  * @beta
  */
-export declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[];
+export declare type QRLEventHandlerMulti<EV extends Event, EL> = QRL<EventHandler<EV, EL>> | undefined | null | QRLEventHandlerMulti<EV, EL>[] | EventHandler<EV, EL>;
 
 declare type QRLInternal<TYPE = unknown> = QRL<TYPE> & QRLInternalMethods<TYPE>;
 
@@ -3831,7 +3831,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.7-dev20240614063244
+ * 1.5.7-dev20240614075406
  *
  * @public
  */

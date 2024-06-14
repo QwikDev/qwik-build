@@ -97,8 +97,12 @@
                             uri);
                             resolveContainer(container);
                             handler = (await module)[symbol];
+                            if (!handler) {
+                                importError = "no-symbol";
+                                error = new Error(`${symbol} not in ${uri}`);
+                            }
                         } catch (err) {
-                            importError = "async";
+                            importError || (importError = "async");
                             error = err;
                         }
                     }
@@ -107,6 +111,7 @@
                             importError: importError,
                             error: error
                         }, eventData));
+                        console.error(error);
                         break;
                     }
                     const previousCtx = doc[Q_CONTEXT];
