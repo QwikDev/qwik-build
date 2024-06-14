@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240614052229
+ * @builder.io/qwik/optimizer 1.5.7-dev20240614063244
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.7-dev20240614052229"
+    qwik: "1.5.7-dev20240614063244"
   };
   async function getSystem() {
     const sysEnv = getEnv();
