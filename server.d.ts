@@ -120,18 +120,27 @@ export declare interface QwikLoaderOptions {
     position?: 'top' | 'bottom';
 }
 
-/** @public */
+/**
+ * The metadata of the build. One of its uses is storing where QRL symbols are located.
+ *
+ * @public
+ */
 declare interface QwikManifest_2 {
+    /** Content hash of the manifest, if this changes, the code changed */
     manifestHash: string;
+    /** QRL symbols */
     symbols: {
         [symbolName: string]: QwikSymbol;
     };
+    /** Where QRLs are located */
     mapping: {
         [symbolName: string]: string;
     };
+    /** All code bundles, used to know the import graph */
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     version: string;
     options?: {

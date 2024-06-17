@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240617024426
+ * @builder.io/qwik 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -829,7 +829,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.7-dev20240617024426";
+const version = "1.5.7-dev20240617202442";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -2448,7 +2448,8 @@ const useRunTask = (task, eagerness) => {
 
 const getTaskHandlerQrl = task => {
     const taskQrl = task.$qrl$;
-    return createQRL(taskQrl.$chunk$, "_hW", _hW, null, null, [ task ], taskQrl.$symbol$);
+    const taskHandler = createQRL(taskQrl.$chunk$, "_hW", _hW, null, null, [ task ], taskQrl.$symbol$);
+    return taskQrl.dev && (taskHandler.dev = taskQrl.dev), taskHandler;
 };
 
 const isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Task;
@@ -4539,6 +4540,11 @@ const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => cr
 
 const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
 
+const _noopQrlDEV = (symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    const newQrl = _noopQrl(symbolName, lexicalScopeCapture);
+    return newQrl.dev = opts, newQrl;
+};
+
 const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
     const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
     return newQrl.dev = opts, newQrl;
@@ -4556,8 +4562,8 @@ const serializeQRL = (qrl, opts = {}) => {
     const refSymbol = qrl.$refSymbol$ ?? symbol;
     const platform = getPlatform();
     if (platform) {
-        const result = platform.chunkForSymbol(refSymbol, chunk);
-        result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
+        const result = platform.chunkForSymbol(refSymbol, chunk, qrl.dev?.file);
+        result ? (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0])) : console.error("serializeQRL: Cannot resolve symbol", symbol, "in", chunk, qrl.dev?.file);
     }
     if (null == chunk) {
         throw qError(31, qrl.$symbol$);
@@ -4573,7 +4579,7 @@ const serializeQRL = (qrl, opts = {}) => {
             throwErrorAndStop("Sync QRL without containerState");
         }
     }
-    let output = `${chunk}#${symbol}`;
+    let output = `${encodeURI(chunk)}#${symbol}`;
     const capture = qrl.$capture$;
     const captureRef = qrl.$captureRef$;
     return captureRef && captureRef.length ? opts.$getObjId$ ? output += `[${mapJoin(captureRef, opts.$getObjId$, " ")}]` : opts.$addRefMap$ && (output += `[${mapJoin(captureRef, opts.$addRefMap$, " ")}]`) : capture && capture.length > 0 && (output += `[${capture.join(" ")}]`), 
@@ -5916,4 +5922,4 @@ const PrefetchGraph = (opts = {}) => {
     }, 0, "prefetch-graph");
 };
 
-export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

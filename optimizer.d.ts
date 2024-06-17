@@ -167,18 +167,27 @@ export declare interface QwikBundle {
     origins?: string[];
 }
 
-/** @public */
+/**
+ * The metadata of the build. One of its uses is storing where QRL symbols are located.
+ *
+ * @public
+ */
 export declare interface QwikManifest {
+    /** Content hash of the manifest, if this changes, the code changed */
     manifestHash: string;
+    /** QRL symbols */
     symbols: {
         [symbolName: string]: QwikSymbol;
     };
+    /** Where QRLs are located */
     mapping: {
         [symbolName: string]: string;
     };
+    /** All code bundles, used to know the import graph */
     bundles: {
         [fileName: string]: QwikBundle;
     };
+    /** CSS etc to inject in the document head */
     injections?: GlobalInjections[];
     version: string;
     options?: {
@@ -550,7 +559,7 @@ export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 export declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
 /** @public */
-export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined) => readonly [symbol: string, chunk: string] | undefined;
+export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined, parent?: string) => readonly [symbol: string, chunk: string] | undefined;
 
 /** @public */
 export declare type SystemEnvironment = 'node' | 'deno' | 'bun' | 'webworker' | 'browsermain' | 'unknown';

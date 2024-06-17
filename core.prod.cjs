@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240617024426
+ * @builder.io/qwik 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -540,7 +540,7 @@
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-    const version = "1.5.7-dev20240617024426";
+    const version = "1.5.7-dev20240617202442";
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
             hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
@@ -1792,7 +1792,8 @@
     };
     const getTaskHandlerQrl = task => {
         const taskQrl = task.$qrl$;
-        return createQRL(taskQrl.$chunk$, "_hW", _hW, null, null, [ task ], taskQrl.$symbol$);
+        const taskHandler = createQRL(taskQrl.$chunk$, "_hW", _hW, null, null, [ task ], taskQrl.$symbol$);
+        return taskQrl.dev && (taskHandler.dev = taskQrl.dev), taskHandler;
     };
     const isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Task;
     class Task {
@@ -3569,6 +3570,7 @@
         })), createQRL(chunk, symbol, null, symbolFn, null, lexicalScopeCapture, null);
     };
     const inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
+    const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
     const serializeQRL = (qrl, opts = {}) => {
         assertTrue(), assertQrl(qrl);
         let symbol = qrl.$symbol$;
@@ -3576,8 +3578,8 @@
         const refSymbol = qrl.$refSymbol$ ?? symbol;
         const platform = getPlatform();
         if (platform) {
-            const result = platform.chunkForSymbol(refSymbol, chunk);
-            result && (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0]));
+            const result = platform.chunkForSymbol(refSymbol, chunk, qrl.dev?.file);
+            result ? (chunk = result[1], qrl.$refSymbol$ || (symbol = result[0])) : console.error("serializeQRL: Cannot resolve symbol", symbol, "in", chunk, qrl.dev?.file);
         }
         if (null == chunk) {
             throw qError(31, qrl.$symbol$);
@@ -3593,7 +3595,7 @@
                 throwErrorAndStop("Sync QRL without containerState");
             }
         }
-        let output = `${chunk}#${symbol}`;
+        let output = `${encodeURI(chunk)}#${symbol}`;
         const capture = qrl.$capture$;
         const captureRef = qrl.$captureRef$;
         return captureRef && captureRef.length ? opts.$getObjId$ ? output += `[${mapJoin(captureRef, opts.$getObjId$, " ")}]` : opts.$addRefMap$ && (output += `[${mapJoin(captureRef, opts.$addRefMap$, " ")}]`) : capture && capture.length > 0 && (output += `[${capture.join(" ")}]`), 
@@ -4745,8 +4747,10 @@
         let children = null;
         return mutableProps && "children" in mutableProps && (children = mutableProps.children, 
         delete mutableProps.children), _jsxQ(type, mutableProps, immutableProps, children, flags, key, dev);
-    }, exports._noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null), 
-    exports._pauseFromContexts = _pauseFromContexts, exports._qrlSync = function(fn, serializedFn) {
+    }, exports._noopQrl = _noopQrl, exports._noopQrlDEV = (symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+        const newQrl = _noopQrl(symbolName, lexicalScopeCapture);
+        return newQrl.dev = opts, newQrl;
+    }, exports._pauseFromContexts = _pauseFromContexts, exports._qrlSync = function(fn, serializedFn) {
         return void 0 === serializedFn && (serializedFn = fn.toString()), createQRL("", "<sync>", fn, null, null, null, null);
     }, exports._regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols && (globalThis.__qwik_reg_symbols = new Map), 
     globalThis.__qwik_reg_symbols.set(hash, symbol), symbol), exports._renderSSR = async (node, opts) => {

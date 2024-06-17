@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240617024426
+ * @builder.io/qwik 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1560,7 +1560,7 @@
      *
      * @public
      */
-    const version = "1.5.7-dev20240617024426";
+    const version = "1.5.7-dev20240617202442";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -4290,6 +4290,10 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
     const getTaskHandlerQrl = (task) => {
         const taskQrl = task.$qrl$;
         const taskHandler = createQRL(taskQrl.$chunk$, '_hW', _hW, null, null, [task], taskQrl.$symbol$);
+        // Needed for chunk lookup in dev mode
+        if (taskQrl.dev) {
+            taskHandler.dev = taskQrl.dev;
+        }
         return taskHandler;
     };
     const isSubscriberDescriptor = (obj) => {
@@ -7241,6 +7245,12 @@ Task Symbol: ${task.$qrl$.$symbol$}
         return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
     };
     /** @internal */
+    const _noopQrlDEV = (symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+        const newQrl = _noopQrl(symbolName, lexicalScopeCapture);
+        newQrl.dev = opts;
+        return newQrl;
+    };
+    /** @internal */
     const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
         const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
         newQrl.dev = opts;
@@ -7260,12 +7270,15 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const refSymbol = qrl.$refSymbol$ ?? symbol;
         const platform = getPlatform();
         if (platform) {
-            const result = platform.chunkForSymbol(refSymbol, chunk);
+            const result = platform.chunkForSymbol(refSymbol, chunk, qrl.dev?.file);
             if (result) {
                 chunk = result[1];
                 if (!qrl.$refSymbol$) {
                     symbol = result[0];
                 }
+            }
+            else {
+                console.error('serializeQRL: Cannot resolve symbol', symbol, 'in', chunk, qrl.dev?.file);
             }
         }
         if (qRuntimeQrl && chunk == null) {
@@ -7294,7 +7307,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 throwErrorAndStop('Sync QRL without containerState');
             }
         }
-        let output = `${chunk}#${symbol}`;
+        let output = `${encodeURI(chunk)}#${symbol}`;
         const capture = qrl.$capture$;
         const captureRef = qrl.$captureRef$;
         if (captureRef && captureRef.length) {
@@ -9892,6 +9905,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports._jsxQ = _jsxQ;
     exports._jsxS = _jsxS;
     exports._noopQrl = _noopQrl;
+    exports._noopQrlDEV = _noopQrlDEV;
     exports._pauseFromContexts = _pauseFromContexts;
     exports._qrlSync = _qrlSync;
     exports._regSymbol = _regSymbol;

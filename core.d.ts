@@ -725,7 +725,7 @@ export declare interface CorePlatform {
      * @param symbolName - Resolve `symbolName` against the manifest and return the chunk that
      *   contains the symbol.
      */
-    chunkForSymbol: (symbolName: string, chunk: string | null) => readonly [symbol: string, chunk: string] | undefined;
+    chunkForSymbol: (symbolName: string, chunk: string | null, parent?: string) => readonly [symbol: string, chunk: string] | undefined;
 }
 
 /** This corrects the TS definition for ToggleEvent @public */
@@ -1439,6 +1439,9 @@ export declare type NativeWheelEvent = WheelEvent;
 
 /** @internal */
 export declare const _noopQrl: <T>(symbolName: string, lexicalScopeCapture?: any[]) => QRL<T>;
+
+/** @internal */
+export declare const _noopQrlDEV: <T>(symbolName: string, opts: QRLDev, lexicalScopeCapture?: any[]) => QRL<T>;
 
 /**
  * Returned type of the `noSerialize()` function. It will be TYPE or undefined.
@@ -3831,7 +3834,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.7-dev20240617024426
+ * 1.5.7-dev20240617202442
  *
  * @public
  */

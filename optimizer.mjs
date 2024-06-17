@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240617024426
+ * @builder.io/qwik/optimizer 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.7-dev20240617024426"
+  qwik: "1.5.7-dev20240617202442"
 };
 
 async function getSystem() {
@@ -1642,6 +1642,7 @@ function getValidManifest(manifest) {
 }
 
 function generateManifestFromBundles(path, hooks, injections, outputBundles, opts) {
+  var _a;
   const manifest = {
     manifestHash: "",
     symbols: {},
@@ -1655,48 +1656,49 @@ function generateManifestFromBundles(path, hooks, injections, outputBundles, opt
       entryStrategy: opts.entryStrategy
     }
   };
-  for (const hook of hooks) {
-    const buildFilePath = `${hook.canonicalFilename}.${hook.extension}`;
-    const outputBundle = outputBundles.find((b => Object.keys(b.modules).find((f => f.endsWith(buildFilePath)))));
-    if (outputBundle) {
-      const symbolName = hook.name;
-      const bundleFileName = path.basename(outputBundle.fileName);
-      manifest.mapping[symbolName] = bundleFileName;
-      manifest.symbols[symbolName] = {
-        origin: hook.origin,
-        displayName: hook.displayName,
-        canonicalFilename: hook.canonicalFilename,
-        hash: hook.hash,
-        ctxKind: hook.ctxKind,
-        ctxName: hook.ctxName,
-        captures: hook.captures,
-        parent: hook.parent,
-        loc: hook.loc
-      };
-      addBundleToManifest(path, manifest, outputBundle, bundleFileName);
+  const qrlNames = new Set([ ...hooks.map((h => h.name)) ]);
+  for (const [fileName, outputBundle] of Object.entries(outputBundles)) {
+    if ("chunk" !== outputBundle.type) {
+      continue;
     }
-  }
-  for (const outputBundle of outputBundles) {
-    const bundleFileName = path.basename(outputBundle.fileName);
-    addBundleToManifest(path, manifest, outputBundle, bundleFileName);
-  }
-  return updateSortAndPriorities(manifest);
-}
-
-function addBundleToManifest(path, manifest, outputBundle, bundleFileName) {
-  if (!manifest.bundles[bundleFileName]) {
+    const bundleFileName = path.basename(fileName);
     const buildDirName = path.dirname(outputBundle.fileName);
     const bundle = {
-      size: outputBundle.size
+      size: outputBundle.code.length
     };
+    for (const symbol of outputBundle.exports) {
+      qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
+    }
     const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
     bundleImports.length > 0 && (bundle.imports = bundleImports);
     const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, i)));
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
-    const modulePaths = Object.keys(outputBundle.modules).filter((m => !m.startsWith("\0")));
+    const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
+    const modulePaths = ids.filter((m => !m.startsWith("\0")));
     modulePaths.length > 0 && (bundle.origins = modulePaths);
     manifest.bundles[bundleFileName] = bundle;
   }
+  for (const hook of hooks) {
+    const symbol = hook.name;
+    const bundle = manifest.mapping[symbol];
+    if (!bundle) {
+      console.error(`Unable to find bundle for hook: ${hook.name}`, manifest);
+      throw new Error(`Unable to find bundle for hook: ${hook.hash}`);
+    }
+    ((_a = manifest.bundles[bundle]).symbols || (_a.symbols = [])).push(symbol);
+    manifest.symbols[symbol] = {
+      origin: hook.origin,
+      displayName: hook.displayName,
+      canonicalFilename: hook.canonicalFilename,
+      hash: hook.hash,
+      ctxKind: hook.ctxKind,
+      ctxName: hook.ctxName,
+      captures: hook.captures,
+      parent: hook.parent,
+      loc: hook.loc
+    };
+  }
+  return updateSortAndPriorities(manifest);
 }
 
 async function createLinter(sys, rootDir, tsconfigFileNames) {
@@ -1790,9 +1792,9 @@ function createPlugin(optimizerOptions = {}) {
   const transformedOutputs = new Map;
   const ssrResults = new Map;
   const ssrTransformedOutputs = new Map;
+  const foundQrls = new Map;
   let internalOptimizer = null;
   let linter;
-  const hookManifest = {};
   let diagnosticsCallback = () => {};
   const opts = {
     csr: false,
@@ -1955,7 +1957,7 @@ function createPlugin(optimizerOptions = {}) {
     }
   };
   const buildStart = async ctx => {
-    debug("buildStart()", opts.buildMode, opts.scope);
+    debug("buildStart()", opts.buildMode, opts.scope, opts.target);
     const optimizer = getOptimizer();
     if ("node" === optimizer.sys.env && "ssr" === opts.target && opts.lint) {
       try {
@@ -2014,9 +2016,10 @@ function createPlugin(optimizerOptions = {}) {
         debug("buildStart() add transformedOutput", key, output.hook?.displayName);
         transformedOutputs.set(key, [ output, key ]);
         ssrTransformedOutputs.set(key, [ output, key ]);
-        output.hook ? hookManifest[output.hook.hash] = key : output.isEntry && ctx.emitFile({
+        "client" === opts.target && output.isEntry && ctx.emitFile({
           id: key,
-          type: "chunk"
+          type: "chunk",
+          preserveSignature: "allow-extension"
         });
       }
       diagnosticsCallback(result.diagnostics, optimizer, srcDir);
@@ -2024,8 +2027,8 @@ function createPlugin(optimizerOptions = {}) {
       ssrResults.set("@buildStart", result);
     }
   };
-  const resolveId = async (ctx, id2, importer, ssrOpts) => {
-    debug("resolveId()", "Start", id2, importer);
+  const resolveId = async (ctx, id2, importer, resolveOpts) => {
+    debug("resolveId()", "Start", id2, importer, resolveOpts, opts.target);
     if (id2.startsWith("\0") || id2.startsWith("/@fs")) {
       return;
     }
@@ -2051,18 +2054,31 @@ function createPlugin(optimizerOptions = {}) {
           moduleSideEffects: false
         };
       }
-      let firstInput;
-      firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
+      const firstInput = Object.values(opts.input)[0];
       return {
         id: normalizePath(getPath().resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)),
         moduleSideEffects: false
       };
     }
     const path = getPath();
-    const isSSR = ssrOpts?.ssr ?? "ssr" === opts.target;
+    const isSSR = !!resolveOpts?.ssr;
     if (importer) {
       if (!(id2.startsWith(".") || path.isAbsolute(id2))) {
         return;
+      }
+      if ("ssr" === opts.target) {
+        const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(id2);
+        if (match) {
+          let [, qrlId, parentId] = match;
+          parentId.startsWith(opts.rootDir) && (qrlId = `${opts.rootDir}${qrlId}`);
+          if (!transformedOutputs.has(qrlId)) {
+            return null;
+          }
+          debug("resolveId()", "Resolved", qrlId);
+          return {
+            id: qrlId
+          };
+        }
       }
       const parsedId = parseId(id2);
       let importeePathId = normalizePath(parsedId.pathId);
@@ -2096,13 +2112,14 @@ function createPlugin(optimizerOptions = {}) {
         }
       }
     }
+    debug("resolveId()", "Not resolved", id2, importer, resolveOpts);
     return null;
   };
-  const load = async (_ctx, id2, ssrOpts = {}) => {
+  const load = async (ctx, id2, loadOpts) => {
     if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
       return;
     }
-    const isSSR = ssrOpts?.ssr ?? "ssr" === opts.target;
+    const isSSR = !!loadOpts?.ssr;
     if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
       debug("load()", QWIK_BUILD_ID, opts.buildMode);
       return {
@@ -2123,25 +2140,28 @@ function createPlugin(optimizerOptions = {}) {
     const transformedModule = isSSR ? ssrTransformedOutputs.get(id2) : transformedOutputs.get(id2);
     if (transformedModule) {
       debug("load()", "Found", id2);
-      let code = transformedModule[0].code;
-      let firstInput;
-      firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
-      "ssr" === opts.target && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID))));
+      let {code: code} = transformedModule[0];
+      const {map: map, hook: hook} = transformedModule[0];
+      if ("ssr" === opts.target) {
+        const firstInput = Object.values(opts.input)[0];
+        code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)));
+      }
       return {
         code: code,
-        map: transformedModule[0].map,
+        map: map,
         meta: {
-          hook: transformedModule[0].hook
+          hook: hook
         }
       };
     }
+    debug("load()", "Not found", id2, parsedId);
     return null;
   };
-  const transform = async function(ctx, code, id2, ssrOpts = {}) {
+  const transform = async function(ctx, code, id2, transformOpts = {}) {
     if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
       return;
     }
-    const isSSR = ssrOpts.ssr ?? "ssr" === opts.target;
+    const isSSR = !!transformOpts.ssr;
     const currentOutputs = isSSR ? ssrTransformedOutputs : transformedOutputs;
     if (currentOutputs.has(id2)) {
       return;
@@ -2156,14 +2176,21 @@ function createPlugin(optimizerOptions = {}) {
     if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
       const strip = "client" === opts.target || "ssr" === opts.target;
       const normalizedID = normalizePath(pathId);
-      debug("transform()", "Transforming", pathId);
+      debug("transform()", "Transforming", {
+        pathId: pathId,
+        id: id2,
+        parsedPathId: parsedPathId,
+        strip: strip,
+        isSSR: isSSR,
+        target: opts.target
+      });
       let filePath = base;
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
       filePath = normalizePath(filePath);
       const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
       const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
       const entryStrategy = opts.entryStrategy;
-      const transformOpts = {
+      const transformOpts2 = {
         input: [ {
           code: code,
           path: filePath
@@ -2178,26 +2205,32 @@ function createPlugin(optimizerOptions = {}) {
         srcDir: srcDir,
         rootDir: opts.rootDir,
         mode: mode,
-        scope: opts.scope ? opts.scope : void 0
+        scope: opts.scope || void 0
       };
       if (isSSR) {
-        transformOpts.isServer = isSSR;
-        transformOpts.entryStrategy = {
+        transformOpts2.isServer = true;
+        transformOpts2.entryStrategy = {
           type: "hoist"
         };
       }
       if (strip) {
-        transformOpts.isServer = isSSR;
         if (isSSR) {
-          transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
-          transformOpts.stripEventHandlers = true;
-          transformOpts.regCtxName = REG_CTX_NAME;
+          transformOpts2.stripCtxName = CLIENT_STRIP_CTX_NAME;
+          transformOpts2.stripEventHandlers = true;
+          transformOpts2.regCtxName = REG_CTX_NAME;
         } else {
-          transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
-          transformOpts.stripExports = SERVER_STRIP_EXPORTS;
+          transformOpts2.stripCtxName = SERVER_STRIP_CTX_NAME;
+          transformOpts2.stripExports = SERVER_STRIP_EXPORTS;
         }
       }
-      const newOutput = optimizer.transformModulesSync(transformOpts);
+      const newOutput = optimizer.transformModulesSync(transformOpts2);
+      const module = newOutput.modules.find((mod => !isAdditionalFile(mod)));
+      if ("ssr" === opts.target) {
+        const matches = module.code.matchAll(/_([a-zA-Z0-9]{11,11})['"][,)]/g);
+        for (const [, symbol] of matches) {
+          foundQrls.set(symbol, id2);
+        }
+      }
       diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
       if (isSSR) {
         0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
@@ -2207,43 +2240,16 @@ function createPlugin(optimizerOptions = {}) {
       }
       const deps = new Set;
       for (const mod of newOutput.modules) {
-        if (isTransformedFile(mod)) {
+        if (mod !== module) {
           const key = normalizePath(path.join(srcDir, mod.path));
           currentOutputs.set(key, [ mod, id2 ]);
           deps.add(key);
-        }
-      }
-      if (isSSR && strip) {
-        const clientTransformOpts = {
-          input: [ {
-            code: code,
-            path: filePath
-          } ],
-          entryStrategy: opts.entryStrategy,
-          minify: "simplify",
-          sourceMaps: opts.sourcemap || "development" === opts.buildMode,
-          transpileTs: true,
-          transpileJsx: true,
-          explicitExtensions: true,
-          preserveFilenames: true,
-          srcDir: srcDir,
-          rootDir: opts.rootDir,
-          mode: mode,
-          scope: opts.scope ? opts.scope : void 0
-        };
-        clientTransformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
-        clientTransformOpts.stripExports = SERVER_STRIP_EXPORTS;
-        clientTransformOpts.isServer = false;
-        const clientNewOutput = optimizer.transformModulesSync(clientTransformOpts);
-        diagnosticsCallback(clientNewOutput.diagnostics, optimizer, srcDir);
-        results.set(normalizedID, clientNewOutput);
-        for (const mod of clientNewOutput.modules) {
-          if (isTransformedFile(mod)) {
-            const key = normalizePath(path.join(srcDir, mod.path));
-            ctx.addWatchFile(key);
-            transformedOutputs.set(key, [ mod, id2 ]);
-            deps.add(key);
-          }
+          "client" === opts.target && mod.isEntry && ctx.emitFile({
+            id: key,
+            type: "chunk",
+            preserveSignature: "allow-extension"
+          });
+          ctx.addWatchFile(key);
         }
       }
       for (const id3 of deps.values()) {
@@ -2251,7 +2257,6 @@ function createPlugin(optimizerOptions = {}) {
           id: id3
         });
       }
-      const module = newOutput.modules.find((mod => !isTransformedFile(mod)));
       return {
         code: module.code,
         map: module.map,
@@ -2261,19 +2266,17 @@ function createPlugin(optimizerOptions = {}) {
         }
       };
     }
-    debug("transform()", "No Transforming", id2);
+    debug("transform()", "Not transforming", id2);
     return null;
   };
-  const createOutputAnalyzer = () => {
-    const outputBundles = [];
+  const createOutputAnalyzer = rollupBundle => {
     const injections = [];
-    const addBundle = b => outputBundles.push(b);
     const addInjection = b => injections.push(b);
     const generateManifest = async () => {
       const optimizer = getOptimizer();
       const path = optimizer.sys.path;
       const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-      const manifest = generateManifestFromBundles(path, hooks, injections, outputBundles, opts);
+      const manifest = generateManifestFromBundles(path, hooks, injections, rollupBundle, opts);
       for (const symbol of Object.values(manifest.symbols)) {
         symbol.origin && (symbol.origin = normalizePath(symbol.origin));
       }
@@ -2287,7 +2290,6 @@ function createPlugin(optimizerOptions = {}) {
       return manifest;
     };
     return {
-      addBundle: addBundle,
       addInjection: addInjection,
       generateManifest: generateManifest
     };
@@ -2349,7 +2351,8 @@ function createPlugin(optimizerOptions = {}) {
     resolveId: resolveId,
     transform: transform,
     validateSource: validateSource,
-    setSourceMapSupport: setSourceMapSupport
+    setSourceMapSupport: setSourceMapSupport,
+    foundQrls: foundQrls
   };
 }
 
@@ -2368,7 +2371,7 @@ var insideRoots = (ext, dir, srcDir, vendorRoots) => {
   return false;
 };
 
-function isTransformedFile(mod) {
+function isAdditionalFile(mod) {
   return mod.isEntry || mod.hook;
 }
 
@@ -2490,18 +2493,8 @@ function qwikRollup(qwikRollupOpts = {}) {
     async generateBundle(_, rollupBundle) {
       const opts = qwikPlugin.getOptions();
       if ("client" === opts.target) {
-        const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
-        for (const fileName in rollupBundle) {
-          const b = rollupBundle[fileName];
-          "chunk" === b.type && outputAnalyzer.addBundle({
-            fileName: fileName,
-            modules: b.modules,
-            imports: b.imports,
-            dynamicImports: b.dynamicImports,
-            size: b.code.length
-          });
-        }
         const optimizer = qwikPlugin.getOptimizer();
+        const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
         const manifest = await outputAnalyzer.generateManifest();
         manifest.platform = {
           ...versions,
@@ -3037,7 +3030,7 @@ function getOrigin(req) {
   return `${protocol}://${host}`;
 }
 
-async function configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput) {
+async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, foundQrls) {
   if ("function" !== typeof fetch && "node" === sys.env) {
     try {
       if (!globalThis.fetch) {
@@ -3076,8 +3069,7 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
           res.end(html);
           return;
         }
-        let firstInput;
-        firstInput = Array.isArray(opts.input) ? opts.input[0] : Object.values(opts.input)[0];
+        const firstInput = Object.values(opts.input)[0];
         const ssrModule = await server.ssrLoadModule(firstInput);
         const render = ssrModule.default ?? ssrModule.render;
         if ("function" === typeof render) {
@@ -3110,23 +3102,29 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
               }
             }));
           }));
-          const srcBase = opts.srcDir ? path.relative(opts.rootDir, opts.srcDir).replace(/\\/g, "/") : "src";
           const renderOpts = {
             debug: true,
             locale: serverData.locale,
             stream: res,
             snapshot: !isClientDevOnly,
             manifest: isClientDevOnly ? void 0 : manifest,
-            symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper) => {
+            symbolMapper: isClientDevOnly ? void 0 : (symbolName, mapper, parent) => {
               if (symbolName === SYNC_QRL) {
                 return [ symbolName, "" ];
               }
-              const defaultChunk = [ symbolName, `/${srcBase}/${symbolName.toLowerCase()}.js` ];
-              if (mapper) {
-                const hash = getSymbolHash(symbolName);
-                return mapper[hash] ?? defaultChunk;
+              const chunk = mapper && mapper[getSymbolHash(symbolName)];
+              if (chunk) {
+                return chunk;
               }
-              return defaultChunk;
+              parent || (parent = foundQrls.get(symbolName));
+              if (!parent) {
+                console.error("qwik vite-dev-server: unknown qrl requested without parent:", symbolName);
+                return [ symbolName, `${base}${symbolName.toLowerCase()}.js` ];
+              }
+              const parentPath = path.dirname(parent);
+              const qrlPath = parentPath.startsWith(opts.rootDir) ? path.relative(opts.rootDir, parentPath) : parentPath;
+              const qrlFile = `${qrlPath}/${symbolName.toLowerCase()}.js?_qrl_parent=${parent}`;
+              return [ symbolName, `${base}${qrlFile}` ];
             },
             prefetchStrategy: null,
             serverData: serverData,
@@ -3153,6 +3151,16 @@ async function configureDevServer(server, opts, sys, path, isClientDevOnly, clie
           next();
         }
       } else {
+        const parent = url.searchParams.get("_qrl_parent");
+        if (parent && url.pathname.endsWith(".js")) {
+          await server.transformRequest(parent);
+          const result = await server.transformRequest(url.pathname);
+          if (result) {
+            res.setHeader("content-type", "application/javascript");
+            res.write(result.code);
+            res.end();
+          }
+        }
         next();
       }
     } catch (e) {
@@ -3569,17 +3577,9 @@ function qwikVite(qwikViteOpts = {}) {
       async handler(_, rollupBundle) {
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
-          const outputAnalyzer = qwikPlugin.createOutputAnalyzer();
+          const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
           for (const [fileName, b] of Object.entries(rollupBundle)) {
-            if ("chunk" === b.type) {
-              outputAnalyzer.addBundle({
-                fileName: fileName,
-                modules: b.modules,
-                imports: b.imports,
-                dynamicImports: b.dynamicImports,
-                size: b.code.length
-              });
-            } else {
+            if ("asset" === b.type) {
               const baseFilename = basePathname + fileName;
               if (STYLING.some((ext => fileName.endsWith(ext)))) {
                 "string" === typeof b.source && b.source.length < opts.inlineStylesUpToBytes ? injections.push({
@@ -3698,7 +3698,7 @@ function qwikVite(qwikViteOpts = {}) {
           const opts = qwikPlugin.getOptions();
           const sys = qwikPlugin.getSys();
           const path = qwikPlugin.getPath();
-          await configureDevServer(server, opts, sys, path, isClientDevOnly, clientDevInput);
+          await configureDevServer(basePathname, server, opts, sys, path, isClientDevOnly, clientDevInput, qwikPlugin.foundQrls);
         };
         const isNEW = true === globalThis.__qwikCityNew;
         return isNEW ? plugin : plugin();

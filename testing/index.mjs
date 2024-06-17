@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.5.7-dev20240617024426
+ * @builder.io/qwik/testing 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22507,10 +22507,16 @@ function createPlatform() {
       const importPath = toPath(urlDoc);
       const mod = moduleCache.get(importPath);
       if (mod) {
+        if (!mod || !(symbolName in mod)) {
+          throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${url}'.`);
+        }
         return mod[symbolName];
       }
       return import(importPath).then((mod2) => {
         moduleCache.set(importPath, mod2);
+        if (!mod2 || !(symbolName in mod2)) {
+          throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${url}'.`);
+        }
         return mod2[symbolName];
       });
     },

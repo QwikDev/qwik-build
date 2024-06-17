@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240617024426
+ * @builder.io/qwik 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1556,7 +1556,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.7-dev20240617024426";
+const version = "1.5.7-dev20240617202442";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -4286,6 +4286,10 @@ const useRunTask = (task, eagerness) => {
 const getTaskHandlerQrl = (task) => {
     const taskQrl = task.$qrl$;
     const taskHandler = createQRL(taskQrl.$chunk$, '_hW', _hW, null, null, [task], taskQrl.$symbol$);
+    // Needed for chunk lookup in dev mode
+    if (taskQrl.dev) {
+        taskHandler.dev = taskQrl.dev;
+    }
     return taskHandler;
 };
 const isSubscriberDescriptor = (obj) => {
@@ -7237,6 +7241,12 @@ const _noopQrl = (symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
     return createQRL(null, symbolName, null, null, null, lexicalScopeCapture, null);
 };
 /** @internal */
+const _noopQrlDEV = (symbolName, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
+    const newQrl = _noopQrl(symbolName, lexicalScopeCapture);
+    newQrl.dev = opts;
+    return newQrl;
+};
+/** @internal */
 const qrlDEV = (chunkOrFn, symbol, opts, lexicalScopeCapture = EMPTY_ARRAY) => {
     const newQrl = qrl(chunkOrFn, symbol, lexicalScopeCapture, 1);
     newQrl.dev = opts;
@@ -7256,12 +7266,15 @@ const serializeQRL = (qrl, opts = {}) => {
     const refSymbol = qrl.$refSymbol$ ?? symbol;
     const platform = getPlatform();
     if (platform) {
-        const result = platform.chunkForSymbol(refSymbol, chunk);
+        const result = platform.chunkForSymbol(refSymbol, chunk, qrl.dev?.file);
         if (result) {
             chunk = result[1];
             if (!qrl.$refSymbol$) {
                 symbol = result[0];
             }
+        }
+        else {
+            console.error('serializeQRL: Cannot resolve symbol', symbol, 'in', chunk, qrl.dev?.file);
         }
     }
     if (qRuntimeQrl && chunk == null) {
@@ -7290,7 +7303,7 @@ const serializeQRL = (qrl, opts = {}) => {
             throwErrorAndStop('Sync QRL without containerState');
         }
     }
-    let output = `${chunk}#${symbol}`;
+    let output = `${encodeURI(chunk)}#${symbol}`;
     const capture = qrl.$capture$;
     const captureRef = qrl.$captureRef$;
     if (captureRef && captureRef.length) {
@@ -9863,5 +9876,5 @@ const PrefetchGraph = (opts = {}) => {
     return _jsxC('script', props, 0, 'prefetch-graph');
 };
 
-export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, HTMLFragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRHint, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, _IMMUTABLE, _deserializeData, _fnSignal, _getContextElement, _getContextEvent, _hW, _jsxBranch, _jsxC, _jsxQ, _jsxS, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serializeData, verifySerializable as _verifySerializable, _waitUntilRendered, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
 //# sourceMappingURL=core.mjs.map

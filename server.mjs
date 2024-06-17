@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.5.7-dev20240617024426
+ * @builder.io/qwik/server 1.5.7-dev20240617202442
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -21,7 +21,7 @@ import { setPlatform } from "@builder.io/qwik";
 var SYNC_QRL = "<sync>";
 function createPlatform(opts, resolvedManifest) {
   const mapper = resolvedManifest?.mapper;
-  const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName) => {
+  const mapperFn = opts.symbolMapper ? opts.symbolMapper : (symbolName, _chunk, parent) => {
     if (mapper) {
       const hash2 = getSymbolHash(symbolName);
       const result = mapper[hash2];
@@ -33,7 +33,10 @@ function createPlatform(opts, resolvedManifest) {
         if (isRegistered) {
           return [symbolName, "_"];
         }
-        console.error("Cannot resolve symbol", symbolName, "in", mapper);
+        if (parent) {
+          return [symbolName, `${parent}?qrl=${symbolName}`];
+        }
+        console.error("Cannot resolve symbol", symbolName, "in", mapper, parent);
       }
       return result;
     }
@@ -67,8 +70,8 @@ function createPlatform(opts, resolvedManifest) {
         });
       });
     },
-    chunkForSymbol(symbolName) {
-      return mapperFn(symbolName, mapper);
+    chunkForSymbol(symbolName, _chunk, parent) {
+      return mapperFn(symbolName, mapper, parent);
     }
   };
   return serverPlatform;
@@ -111,7 +114,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.5.7-dev20240617024426",
+  qwik: "1.5.7-dev20240617202442",
   qwikDom: "2.1.19"
 };
 
