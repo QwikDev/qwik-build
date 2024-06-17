@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240614082251
+ * @builder.io/qwik 1.5.7-dev20240617024426
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -160,6 +160,7 @@
     const QSlotS = "q:s";
     const QStyle = "q:style";
     const QScopedStyle = "q:sstyle";
+    const getQFuncs = (document, hash) => document["qFuncs_" + hash] || [];
     const ELEMENT_ID = "q:id";
     const QOjectTargetSymbol = Symbol("proxy target");
     const QObjectFlagsSymbol = Symbol("proxy flags");
@@ -539,7 +540,7 @@
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-    const version = "1.5.7-dev20240614082251";
+    const version = "1.5.7-dev20240617024426";
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
             hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
@@ -559,6 +560,7 @@
         }
     }
     _a$1 = "_qc_";
+    const hash = () => Math.random().toString(36).slice(2);
     const renderRoot$1 = async (node, rCtx, ssrCtx, stream, containerState, opts) => {
         const beforeClose = opts.beforeClose;
         return await renderNode(node, rCtx, ssrCtx, stream, 0, beforeClose ? stream => {
@@ -1190,7 +1192,8 @@
             return void logWarn("Skipping resuming qwik/json metadata was not found.");
         }
         const doc = getDocument(containerEl);
-        const inlinedFunctions = getQwikInlinedFuncs(containerEl);
+        const hash = containerEl.getAttribute("q:instance");
+        const inlinedFunctions = getQFuncs(doc, hash);
         const containerState = _getContainerState(containerEl);
         const elements = new Map;
         const text = new Map;
@@ -1317,7 +1320,6 @@
         }
     };
     const unescapeText = str => str.replace(/\\x3C(\/?script)/gi, "<$1");
-    const getQwikInlinedFuncs = containerEl => containerEl.qFuncs ?? EMPTY_ARRAY;
     const getQwikJSON = (parentElm, attribute) => {
         let child = parentElm.lastElementChild;
         for (;child; ) {
@@ -2072,6 +2074,16 @@
         state;
     };
     const createContainerState = (containerEl, base) => {
+        const containerAttributes = {};
+        if (containerEl) {
+            const attrs = containerEl.attributes;
+            if (attrs) {
+                for (let index = 0; index < attrs.length; index++) {
+                    const attr = attrs[index];
+                    containerAttributes[attr.name] = attr.value;
+                }
+            }
+        }
         const containerState = {
             $containerEl$: containerEl,
             $elementIndex$: 0,
@@ -2084,7 +2096,9 @@
             $hostsStaging$: new Set,
             $styleIds$: new Set,
             $events$: new Set,
-            $serverData$: {},
+            $serverData$: {
+                containerAttributes
+            },
             $base$: base,
             $renderPromise$: void 0,
             $hostsRendering$: void 0,
@@ -4289,7 +4303,9 @@
             }
             if (containerEl && setContainer(containerEl), "" === chunk) {
                 assertDefined();
-                return qrl.resolved = symbolRef = (_containerEl.qFuncs || [])[Number(symbol)];
+                const hash = _containerEl.getAttribute("q:instance");
+                const qFuncs = getQFuncs(_containerEl.ownerDocument, hash);
+                return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
             }
             if (null !== symbolFn) {
                 return symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = module[symbol]));
@@ -4433,6 +4449,10 @@
             return set(newStore), newStore;
         }
     };
+    function useServerData(key, defaultValue) {
+        const ctx = tryGetInvokeContext();
+        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
+    }
     const STYLE_CACHE = /*#__PURE__*/ new Map;
     const getScopedStyles = (css, scopeId) => {
         let styleCss = STYLE_CACHE.get(scopeId);
@@ -4581,34 +4601,34 @@
         return isPromise(value) ? iCtx.$waitOn$.push(value.then(appendStyle)) : appendStyle(value), 
         styleId;
     };
-    const PREFETCH_CODE = /*#__PURE__*/ ((qc, c, q, v, b) => {
-        b = qc.getAttribute("q:base"), qc.getAttribute("q:manifest-hash"), c.register("URL", {
+    const PREFETCH_CODE = /*#__PURE__*/ ((b, h, c, q, v) => {
+        c.register("URL", {
             scope: "SCOPE"
         }).then(((sw, onReady) => {
             onReady = () => q.forEach(q.push = v => sw.active.postMessage(v)), sw.installing ? sw.installing.addEventListener("statechange", (e => "activated" == e.target.state && onReady())) : onReady();
         })), v && q.push([ "verbose" ]), document.addEventListener("qprefetch", (e => e.detail.bundles && q.push([ "prefetch", b, ...e.detail.bundles ])));
     }).toString();
-    const PREFETCH_GRAPH_CODE = /*#__PURE__*/ ((qc, q, b, h, u) => {
-        q.push([ "graph-url", b, u || `q-bundle-graph-${h || qc.getAttribute("q:manifest-hash")}.json` ]);
-    }).toString();
     exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
     exports.PrefetchGraph = (opts = {}) => {
+        const serverData = useServerData("containerAttributes", {});
         const resolvedOpts = {
-            base: `${globalThis.BASE_URL || "/"}build/`,
-            manifestHash: null,
-            manifestURL: null,
+            base: serverData["q:base"],
+            manifestHash: serverData["q:manifest-hash"],
+            scope: "/",
+            verbose: !1,
+            path: "qwik-prefetch-service-worker.js",
             ...opts
         };
-        let code = PREFETCH_GRAPH_CODE;
-        build.isDev || (code = code.replaceAll(/\s+/gm, ""));
-        const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), JSON.stringify(resolvedOpts.manifestURL) ].join(","), ");" ].join(""),
+        const args = [ "graph-url", resolvedOpts.base, resolvedOpts.base + `q-bundle-graph-${resolvedOpts.manifestHash}.json` ].map((x => JSON.stringify(x))).join(",");
+        return _jsxC("script", {
+            dangerouslySetInnerHTML: `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`,
             nonce: opts.nonce
-        };
-        return _jsxC("script", props, 0, "prefetch-graph");
+        }, 0, "prefetch-graph");
     }, exports.PrefetchServiceWorker = opts => {
+        const serverData = useServerData("containerAttributes", {});
         const resolvedOpts = {
-            base: globalThis.BASE_URL || "/",
+            base: serverData["q:base"],
+            manifestHash: serverData["q:manifest-hash"],
             scope: "/",
             verbose: !1,
             path: "qwik-prefetch-service-worker.js",
@@ -4630,7 +4650,7 @@
         let code = PREFETCH_CODE.replace("URL", resolvedOpts.path).replace("SCOPE", resolvedOpts.scope);
         build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
-            dangerouslySetInnerHTML: [ "(" + code + ")(", [ "document.currentScript.closest('[q\\\\:container]')", "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
+            dangerouslySetInnerHTML: [ "(" + code + ")(", [ JSON.stringify(resolvedOpts.base), JSON.stringify(resolvedOpts.manifestHash), "navigator.serviceWorker", "window.qwikPrefetchSW||(window.qwikPrefetchSW=[])", resolvedOpts.verbose ].join(","), ");" ].join(""),
             nonce: resolvedOpts.nonce
         };
         return _jsxC("script", props, 0, "prefetch-service-worker");
@@ -4749,20 +4769,24 @@
             $invocationContext$: void 0
         };
         seal();
-        let qRender = "ssr";
-        opts.containerAttributes["q:render"] && (qRender = `${opts.containerAttributes["q:render"]}-${qRender}`);
-        const containerAttributes = {
-            ...opts.containerAttributes,
-            "q:container": "paused",
-            "q:version": version ?? "dev",
-            "q:render": qRender,
-            "q:base": opts.base,
-            "q:locale": opts.serverData?.locale,
-            "q:manifest-hash": opts.manifestHash
-        };
+        const locale = opts.serverData?.locale;
+        const containerAttributes = opts.containerAttributes;
+        const qRender = containerAttributes["q:render"];
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = version ?? "dev", 
+        containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
+        containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
+        containerAttributes["q:instance"] = hash();
         const children = "html" === root ? [ node ] : [ headNodes, node ];
-        "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : "")), 
-        opts.serverData && (containerState.$serverData$ = opts.serverData);
+        "html" !== root && (containerAttributes.class = "qc📦" + (containerAttributes.class ? " " + containerAttributes.class : ""));
+        const serverData = containerState.$serverData$ = {
+            ...containerState.$serverData$,
+            ...opts.serverData
+        };
+        serverData.containerAttributes = {
+            ...serverData.containerAttributes,
+            ...containerAttributes
+        };
+        (ssrCtx.$invocationContext$ = newInvokeContext(locale)).$renderCtx$ = rCtx;
         const rootNode = _jsxQ(root, null, containerAttributes, children, HOST_FLAG_DIRTY | HOST_FLAG_NEED_ATTACH_LISTENER, null);
         containerState.$hostsRendering$ = new Set, await Promise.resolve().then((() => renderRoot$1(rootNode, rCtx, ssrCtx, opts.stream, containerState, opts)));
     }, exports._restProps = (props, omit) => {
@@ -4919,10 +4943,8 @@
     exports.useOnWindow = (event, eventQrl) => {
         _useOn(createEventName(event, "window"), eventQrl);
     }, exports.useResource$ = (generatorFn, opts) => useResourceQrl($(generatorFn), opts), 
-    exports.useResourceQrl = useResourceQrl, exports.useServerData = function(key, defaultValue) {
-        const ctx = tryGetInvokeContext();
-        return ctx?.$renderCtx$?.$static$.$containerState$.$serverData$[key] ?? defaultValue;
-    }, exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
+    exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
+    exports.useSignal = initialState => useConstant((() => createSignal(initialState))), 
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 

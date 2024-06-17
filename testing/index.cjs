@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.5.7-dev20240614082251
+ * @builder.io/qwik/testing 1.5.7-dev20240617024426
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -16733,7 +16733,7 @@ var require_HTMLParser = __commonJS({
       for (var i = this.list.length - 1; i >= 0; i--) {
         if (this.list[i] === this.MARKER)
           break;
-        if (equal(elt, this.list[i], this.attrs[i])) {
+        if (equal2(elt, this.list[i], this.attrs[i])) {
           count++;
           if (count === 3) {
             this.list.splice(i, 1);
@@ -16748,7 +16748,7 @@ var require_HTMLParser = __commonJS({
         attrcopy[ii] = attrs[ii];
       }
       this.attrs.push(attrcopy);
-      function equal(newelt, oldelt, oldattrs) {
+      function equal2(newelt, oldelt, oldattrs) {
         if (newelt.localName !== oldelt.localName)
           return false;
         if (newelt._numattrs !== oldattrs.length)
@@ -22610,8 +22610,9 @@ var ElementFixture = class {
       assertDefined(this.host, "host element must be defined");
       this.host.querySelectorAll('script[q\\:func="qwik/json"]').forEach((script) => {
         const code = script.textContent;
-        if (code == null ? void 0 : code.startsWith(Q_FUNCS_PREFIX)) {
-          const qFuncs = eval(code.substring(Q_FUNCS_PREFIX.length));
+        if (code == null ? void 0 : code.match(Q_FUNCS_PREFIX)) {
+          const equal = code.indexOf("=");
+          const qFuncs = eval(code.substring(equal + 1));
           const container = this.host.closest(QContainerSelector2);
           container.qFuncs = qFuncs;
         }
@@ -22639,7 +22640,7 @@ async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) 
 }
 var PREVENT_DEFAULT = "preventdefault:";
 var STOP_PROPAGATION = "stoppropagation:";
-var Q_FUNCS_PREFIX = 'document.currentScript.closest("[q\\\\:container]").qFuncs=';
+var Q_FUNCS_PREFIX = /document.qdata\["qFuncs_(.+)"\]=/;
 var QContainerSelector2 = "[q\\:container]";
 var dispatch = async (element, attrName, event) => {
   const preventAttributeName = PREVENT_DEFAULT + event.type;

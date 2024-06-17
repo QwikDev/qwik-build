@@ -1908,7 +1908,7 @@ declare type QRLInternalMethods<TYPE> = {
     getCaptured(): unknown[] | null;
     getFn(currentCtx?: InvokeContext | InvokeTuple, beforeFn?: () => void): TYPE extends (...args: any) => any ? (...args: Parameters<TYPE>) => ValueOrPromise<ReturnType<TYPE>> : unknown;
     $setContainer$(containerEl: Element | undefined): Element | undefined;
-    $resolveLazy$(containerEl?: Element): ValueOrPromise<TYPE>;
+    $resolveLazy$(containerEl: Element): ValueOrPromise<TYPE>;
 };
 
 declare type QrlReturn<T> = T extends (...args: any) => infer R ? Awaited<R> : unknown;
@@ -3831,7 +3831,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.7-dev20240614082251
+ * 1.5.7-dev20240617024426
  *
  * @public
  */

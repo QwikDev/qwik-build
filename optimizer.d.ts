@@ -194,6 +194,7 @@ export declare interface QwikManifest {
 }
 
 declare interface QwikPluginDevTools {
+    imageDevTools?: boolean | true;
     clickToSource?: string[] | false;
 }
 
@@ -401,6 +402,13 @@ declare interface QwikVitePluginCommonOptions {
     transformedModuleOutput?: ((transformedModules: TransformModule[]) => Promise<void> | void) | null;
     devTools?: {
         /**
+         * Validates image sizes for CLS issues during development. In case of issues, provides you with
+         * a correct image size resolutions. If set to `false`, image dev tool will be disabled.
+         *
+         * Default `true`
+         */
+        imageDevTools?: boolean | true;
+        /**
          * Press-hold the defined keys to enable qwik dev inspector. By default the behavior is
          * activated by pressing the left or right `Alt` key. If set to `false`, qwik dev inspector will
          * be disabled.
@@ -408,7 +416,7 @@ declare interface QwikVitePluginCommonOptions {
          * Valid values are `KeyboardEvent.code` values. Please note that the 'Left' and 'Right'
          * suffixes are ignored.
          */
-        clickToSource: string[] | false;
+        clickToSource?: string[] | false;
     };
     /**
      * Predicate function to filter out files from the optimizer. hook for resolveId, load, and
