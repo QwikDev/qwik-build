@@ -1992,6 +1992,7 @@ declare interface QwikIntrinsicAttributes {
     children?: JSXChildren;
     /** Corresponding slot name used to project the element into. */
     'q:slot'?: string;
+    'q:shadowRoot'?: boolean;
     fetchPriority?: 'auto' | 'high' | 'low';
 }
 
@@ -3834,7 +3835,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.7-dev20240617202442
+ * 1.5.7-dev20240619180045
  *
  * @public
  */

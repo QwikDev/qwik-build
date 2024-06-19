@@ -24,7 +24,20 @@
         const Q_CONTEXT = "__q_context__";
         const win = window;
         const events =  new Set;
-        const querySelectorAll = query => doc.querySelectorAll(query);
+        const roots =  new Set([ doc ]);
+        const nativeQuerySelectorAll = (root, selector) => Array.from(root.querySelectorAll(selector));
+        const querySelectorAll = query => {
+            const elements = [];
+            roots.forEach((root => elements.push(...nativeQuerySelectorAll(root, query))));
+            return elements;
+        };
+        const findShadowRoots = fragment => {
+            processEventOrNode(fragment);
+            nativeQuerySelectorAll(fragment, "[q\\:shadowroot]").forEach((parent => {
+                const shadowRoot = parent.shadowRoot;
+                shadowRoot && findShadowRoots(shadowRoot);
+            }));
+        };
         const isPromise = promise => promise && "function" == typeof promise.then;
         const broadcast = (infix, ev, type = ev.type) => {
             querySelectorAll("[on" + infix + "\\:" + type + "]").forEach((el => dispatch(el, infix, ev, type)));
@@ -156,6 +169,7 @@
             var _a;
             const readyState = doc.readyState;
             if (!hasInitialized && ("interactive" == readyState || "complete" == readyState)) {
+                roots.forEach(findShadowRoots);
                 hasInitialized = 1;
                 emitEvent("qinit");
                 (null != (_a = win.requestIdleCallback) ? _a : win.setTimeout).bind(win)((() => emitEvent("qidle")));
@@ -177,21 +191,28 @@
             capture: capture,
             passive: !1
         });
-        const push = eventNames => {
-            for (const eventName of eventNames) {
-                if (!events.has(eventName)) {
-                    addEventListener(doc, eventName, processDocumentEvent, !0);
-                    addEventListener(win, eventName, processWindowEvent, !0);
-                    events.add(eventName);
+        const processEventOrNode = (...eventNames) => {
+            for (const eventNameOrNode of eventNames) {
+                if ("string" == typeof eventNameOrNode) {
+                    if (!events.has(eventNameOrNode)) {
+                        roots.forEach((root => addEventListener(root, eventNameOrNode, processDocumentEvent, !0)));
+                        addEventListener(win, eventNameOrNode, processWindowEvent, !0);
+                        events.add(eventNameOrNode);
+                    }
+                } else if (!roots.has(eventNameOrNode)) {
+                    events.forEach((eventName => addEventListener(eventNameOrNode, eventName, processDocumentEvent, !0)));
+                    roots.add(eventNameOrNode);
                 }
             }
         };
         if (!(Q_CONTEXT in doc)) {
             doc[Q_CONTEXT] = 0;
             const qwikevents = win.qwikevents;
-            Array.isArray(qwikevents) && push(qwikevents);
+            Array.isArray(qwikevents) && processEventOrNode(...qwikevents);
             win.qwikevents = {
-                push: (...e) => push(e)
+                events: events,
+                roots: roots,
+                push: processEventOrNode
             };
             addEventListener(doc, "readystatechange", processReadyStateChange);
             processReadyStateChange();
