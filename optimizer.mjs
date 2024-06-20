@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240620132229
+ * @builder.io/qwik/optimizer 1.5.7-dev20240620165226
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.7-dev20240620132229"
+  qwik: "1.5.7-dev20240620165226"
 };
 
 async function getSystem() {
@@ -3381,7 +3381,7 @@ function qwikVite(qwikViteOpts = {}) {
         resolveQwikBuild: true,
         transformedModuleOutput: qwikViteOpts.transformedModuleOutput,
         vendorRoots: [ ...qwikViteOpts.vendorRoots ?? [], ...vendorRoots.map((v => v.path)) ],
-        outDir: viteConfig.build?.assetsDir ? path.join(viteConfig.build?.outDir || CLIENT_OUT_DIR, viteConfig.build?.assetsDir) : viteConfig.build?.outDir,
+        outDir: viteConfig.build?.outDir,
         devTools: qwikViteOpts.devTools,
         sourcemap: !!viteConfig.build?.sourcemap,
         lint: qwikViteOpts.lint
