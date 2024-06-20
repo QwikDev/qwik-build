@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240620165226
+ * @builder.io/qwik/optimizer 1.5.7-dev20240620231808
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.7-dev20240620165226"
+    qwik: "1.5.7-dev20240620231808"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2055,11 +2055,10 @@ globalThis.qwikOptimizer = function(module) {
         if (!(id2.startsWith(".") || path.isAbsolute(id2))) {
           return;
         }
-        if ("ssr" === opts.target) {
-          const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(id2);
+        if ("ssr" === opts.target && !isSSR) {
+          const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(decodeURIComponent(id2));
           if (match) {
             let [, qrlId, parentId] = match;
-            parentId = decodeURIComponent(parentId);
             parentId.startsWith(opts.rootDir) && (qrlId = `${opts.rootDir}${qrlId}`);
             if (!transformedOutputs.has(qrlId)) {
               return null;
@@ -2148,7 +2147,7 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const transform = async function(ctx, code, id2, transformOpts = {}) {
-      if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
+      if (id2.startsWith("\0")) {
         return;
       }
       const isSSR = !!transformOpts.ssr;
