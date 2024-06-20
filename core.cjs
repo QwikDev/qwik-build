@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240620004924
+ * @builder.io/qwik 1.5.7-dev20240620045207
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1560,7 +1560,7 @@
      *
      * @public
      */
-    const version = "1.5.7-dev20240620004924";
+    const version = "1.5.7-dev20240620045207";
 
     const hashCode = (text, hash = 0) => {
         for (let i = 0; i < text.length; i++) {
@@ -8627,6 +8627,35 @@ Task Symbol: ${task.$qrl$.$symbol$}
             }
             return _containerEl;
         };
+        // Wrap functions to provide their lexical scope
+        const wrapFn = (fn) => {
+            if (typeof fn !== 'function' || (!capture?.length && !captureRef?.length)) {
+                return fn;
+            }
+            return function (...args) {
+                let context = tryGetInvokeContext();
+                if (context) {
+                    const prevQrl = context.$qrl$;
+                    context.$qrl$ = qrl;
+                    const prevEvent = context.$event$;
+                    if (context.$event$ === undefined) {
+                        context.$event$ = this;
+                    }
+                    // const result = invoke.call(this, context, f, ...(args as Parameters<typeof f>));
+                    try {
+                        return fn.apply(this, args);
+                    }
+                    finally {
+                        context.$qrl$ = prevQrl;
+                        context.$event$ = prevEvent;
+                    }
+                }
+                context = newInvokeContext();
+                context.$qrl$ = qrl;
+                context.$event$ = this;
+                return invoke.call(this, context, fn, ...args);
+            };
+        };
         const resolve = async (containerEl) => {
             if (symbolRef !== null) {
                 // Resolving (Promise) or already resolved (value)
@@ -8641,44 +8670,36 @@ Task Symbol: ${task.$qrl$.$symbol$}
                 const hash = _containerEl.getAttribute(QInstance);
                 const doc = _containerEl.ownerDocument;
                 const qFuncs = getQFuncs(doc, hash);
+                // No need to wrap, syncQRLs can't have captured scope
                 return (qrl.resolved = symbolRef = qFuncs[Number(symbol)]);
             }
+            const start = now();
+            const ctx = tryGetInvokeContext();
             if (symbolFn !== null) {
-                return (symbolRef = symbolFn().then((module) => (qrl.resolved = symbolRef = module[symbol])));
+                symbolRef = symbolFn().then((module) => (qrl.resolved = symbolRef = wrapFn(module[symbol])));
             }
             else {
                 const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
-                return (symbolRef = maybeThen(imported, (ref) => {
-                    return (qrl.resolved = symbolRef = ref);
-                }));
+                symbolRef = maybeThen(imported, (ref) => (qrl.resolved = symbolRef = wrapFn(ref)));
             }
+            symbolRef.finally(() => emitUsedSymbol(symbol, ctx?.$element$, start));
+            return symbolRef;
         };
         const resolveLazy = (containerEl) => {
             return symbolRef !== null ? symbolRef : resolve(containerEl);
         };
         function invokeFn(currentCtx, beforeFn) {
-            return (...args) => {
-                const start = now();
-                const fn = resolveLazy();
-                return maybeThen(fn, (f) => {
-                    if (isFunction(f)) {
-                        if (beforeFn && beforeFn() === false) {
-                            return;
-                        }
-                        const baseContext = createOrReuseInvocationContext(currentCtx);
-                        const context = {
-                            ...baseContext,
-                            $qrl$: qrl,
-                        };
-                        if (context.$event$ === undefined) {
-                            context.$event$ = this;
-                        }
-                        emitUsedSymbol(symbol, context.$element$, start);
-                        return invoke.call(this, context, f, ...args);
-                    }
+            // Note that we bind the current `this`
+            return (...args) => maybeThen(resolveLazy(), (f) => {
+                if (!isFunction(f)) {
                     throw qError(QError_qrlIsNotFunction);
-                });
-            };
+                }
+                if (beforeFn && beforeFn() === false) {
+                    return;
+                }
+                const context = createOrReuseInvocationContext(currentCtx);
+                return invoke.call(this, context, f, ...args);
+            });
         }
         const createOrReuseInvocationContext = (invoke) => {
             if (invoke == null) {
@@ -8711,7 +8732,8 @@ Task Symbol: ${task.$qrl$.$symbol$}
             resolved: undefined,
         });
         if (symbolRef) {
-            maybeThen(symbolRef, (resolved) => (qrl.resolved = symbolRef = resolved));
+            // Replace symbolRef with (a promise for) the value or wrapped function
+            symbolRef = maybeThen(symbolRef, (resolved) => (qrl.resolved = symbolRef = wrapFn(resolved)));
         }
         if (qDev) {
             seal(qrl);

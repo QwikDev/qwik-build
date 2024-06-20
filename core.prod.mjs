@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240620004924
+ * @builder.io/qwik 1.5.7-dev20240620045207
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -829,7 +829,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.7-dev20240620004924";
+const version = "1.5.7-dev20240620045207";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -5402,6 +5402,22 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         return await fn(...args);
     };
     const setContainer = el => (_containerEl || (_containerEl = el), _containerEl);
+    const wrapFn = fn => "function" != typeof fn || !capture?.length && !captureRef?.length ? fn : function(...args) {
+        let context = tryGetInvokeContext();
+        if (context) {
+            const prevQrl = context.$qrl$;
+            context.$qrl$ = qrl;
+            const prevEvent = context.$event$;
+            void 0 === context.$event$ && (context.$event$ = this);
+            try {
+                return fn.apply(this, args);
+            } finally {
+                context.$qrl$ = prevQrl, context.$event$ = prevEvent;
+            }
+        }
+        return context = newInvokeContext(), context.$qrl$ = qrl, context.$event$ = this, 
+        invoke.call(this, context, fn, ...args);
+    };
     const resolve = async containerEl => {
         if (null !== symbolRef) {
             return symbolRef;
@@ -5412,34 +5428,29 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
             const qFuncs = getQFuncs(_containerEl.ownerDocument, hash);
             return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
         }
+        const start = now();
+        const ctx = tryGetInvokeContext();
         if (null !== symbolFn) {
-            return symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = module[symbol]));
-        }
-        {
+            symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = wrapFn(module[symbol])));
+        } else {
             const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
-            return symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = ref));
+            symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
         }
+        return symbolRef.finally((() => emitUsedSymbol(symbol, ctx?.$element$, start))), 
+        symbolRef;
     };
     const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
     function invokeFn(currentCtx, beforeFn) {
-        return (...args) => {
-            const start = now();
-            const fn = resolveLazy();
-            return maybeThen(fn, (f => {
-                if (isFunction(f)) {
-                    if (beforeFn && !1 === beforeFn()) {
-                        return;
-                    }
-                    const context = {
-                        ...createOrReuseInvocationContext(currentCtx),
-                        $qrl$: qrl
-                    };
-                    return void 0 === context.$event$ && (context.$event$ = this), emitUsedSymbol(symbol, context.$element$, start), 
-                    invoke.call(this, context, f, ...args);
-                }
+        return (...args) => maybeThen(resolveLazy(), (f => {
+            if (!isFunction(f)) {
                 throw qError(10);
-            }));
-        };
+            }
+            if (beforeFn && !1 === beforeFn()) {
+                return;
+            }
+            const context = createOrReuseInvocationContext(currentCtx);
+            return invoke.call(this, context, f, ...args);
+        }));
     }
     const createOrReuseInvocationContext = invoke => null == invoke ? newInvokeContext() : isArray(invoke) ? newInvokeContextFromTuple(invoke) : invoke;
     const resolvedSymbol = refSymbol ?? symbol;
@@ -5460,7 +5471,7 @@ const createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refS
         $captureRef$: captureRef,
         dev: null,
         resolved: void 0
-    }), symbolRef && maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = resolved)), 
+    }), symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved)))), 
     qrl;
 };
 
