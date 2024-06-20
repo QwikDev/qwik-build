@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240619180045
+ * @builder.io/qwik/optimizer 1.5.7-dev20240620004924
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.5.7-dev20240619180045"
+  qwik: "1.5.7-dev20240620004924"
 };
 
 async function getSystem() {
@@ -2070,6 +2070,7 @@ function createPlugin(optimizerOptions = {}) {
         const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(id2);
         if (match) {
           let [, qrlId, parentId] = match;
+          parentId = decodeURIComponent(parentId);
           parentId.startsWith(opts.rootDir) && (qrlId = `${opts.rootDir}${qrlId}`);
           if (!transformedOutputs.has(qrlId)) {
             return null;
@@ -3102,6 +3103,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
               }
             }));
           }));
+          const encode = url2 => encodeURIComponent(url2).replaceAll("%2F", "/");
           const renderOpts = {
             debug: true,
             locale: serverData.locale,
@@ -3114,7 +3116,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
               }
               const chunk = mapper && mapper[getSymbolHash(symbolName)];
               if (chunk) {
-                return chunk;
+                return [ chunk[0], encode(chunk[1]) ];
               }
               parent || (parent = foundQrls.get(symbolName));
               if (!parent) {
@@ -3123,7 +3125,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
               }
               const parentPath = path.dirname(parent);
               const qrlPath = parentPath.startsWith(opts.rootDir) ? path.relative(opts.rootDir, parentPath) : parentPath;
-              const qrlFile = `${qrlPath}/${symbolName.toLowerCase()}.js?_qrl_parent=${parent}`;
+              const qrlFile = `${encode(qrlPath)}/${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parent)}`;
               return [ symbolName, `${base}${qrlFile}` ];
             },
             prefetchStrategy: null,
