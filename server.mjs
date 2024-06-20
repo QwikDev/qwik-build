@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.5.7-dev20240620045207
+ * @builder.io/qwik/server 1.5.7-dev20240620102503
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -114,7 +114,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "1.5.7-dev20240620045207",
+  qwik: "1.5.7-dev20240620102503",
   qwikDom: "2.1.19"
 };
 
@@ -218,8 +218,8 @@ function prefetchUrlsEventScript(base, prefetchResources) {
   const data = {
     bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split("/").pop())
   };
-  const args = ["prefetch", base, data.bundles].map((x) => JSON.stringify(x)).join(",");
-  return `window.qwikPrefetchSW||(window.qwikPrefetchSW=[]).push(${args});`;
+  const args = JSON.stringify(["prefetch", base, ...data.bundles]);
+  return `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args});`;
 }
 function flattenPrefetchResources(prefetchResources) {
   const urls = [];

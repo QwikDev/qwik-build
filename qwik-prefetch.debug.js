@@ -136,7 +136,8 @@
         }
     }
     function processPrefetch(swState, basePath, bundles) {
-        const base = swState.$bases$.find((base2 => basePath === base2.$path$));
+        let base = swState.$bases$.find((base2 => base2.$graph$.includes(bundles[0].replace("./", ""))));
+        base || (base = swState.$bases$.find((base2 => basePath === base2.$path$)));
         base ? enqueueFileAndDependencies(swState, base, bundles, 0) : console.error(`Base path not found: ${basePath}, ignoring prefetch.`);
     }
     function drainMsgQueue(swState) {

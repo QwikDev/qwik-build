@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240620045207
+ * @builder.io/qwik 1.5.7-dev20240620102503
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1556,7 +1556,7 @@ const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
  *
  * @public
  */
-const version = "1.5.7-dev20240620045207";
+const version = "1.5.7-dev20240620102503";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -9786,6 +9786,9 @@ const useErrorBoundary = () => {
  */
 const PrefetchServiceWorker = (opts) => {
     const serverData = useServerData('containerAttributes', {});
+    // if an MFE app has a custom BASE_URL then this will be the correct value
+    // if you're not using MFE from another codebase then you want to override this value to your custom setup
+    const baseUrl = import.meta.env.BASE_URL || '/';
     const resolvedOpts = {
         base: serverData['q:base'],
         manifestHash: serverData['q:manifest-hash'],
@@ -9799,9 +9802,10 @@ const PrefetchServiceWorker = (opts) => {
         resolvedOpts.path = opts.path;
     }
     else {
-        // base: '/'
-        // path: 'qwik-prefetch-service-worker.js
-        resolvedOpts.path = resolvedOpts.base + resolvedOpts.path;
+        // baseUrl: '/'
+        // path: 'qwik-prefetch-service-worker.js'
+        // the file 'qwik-prefetch-service-worker.js' is not located in /build/
+        resolvedOpts.path = baseUrl + resolvedOpts.path;
     }
     // dev only errors
     if (isDev) {
@@ -9864,8 +9868,9 @@ v // Verbose mode
  *
  * @param opts - Options for the loading prefetch graph.
  *
- *   - `base` - Base of the graph. For a default installation this will default to `/build/`. But if
- *       more than one MFE is installed on the page, then each MFE needs to have its own base.
+ *   - `base` - Base of the graph. For a default installation this will default to the q:base value
+ *       `/build/`. But if more than one MFE is installed on the page, then each MFE needs to have
+ *       its own base.
  *   - `manifestHash` - Hash of the manifest file to load. If not provided the hash will be extracted
  *       from the container attribute `q:manifest-hash` and assume the default build file
  *       `${base}/q-bundle-graph-${manifestHash}.json`.
@@ -9876,6 +9881,7 @@ v // Verbose mode
 const PrefetchGraph = (opts = {}) => {
     const serverData = useServerData('containerAttributes', {});
     const resolvedOpts = {
+        // /build/q-bundle-graph-${manifestHash}.json is always within the q:base location /build/
         base: serverData['q:base'],
         manifestHash: serverData['q:manifest-hash'],
         scope: '/',
@@ -9883,13 +9889,11 @@ const PrefetchGraph = (opts = {}) => {
         path: 'qwik-prefetch-service-worker.js',
         ...opts,
     };
-    const args = [
+    const args = JSON.stringify([
         'graph-url',
         resolvedOpts.base,
-        resolvedOpts.base + `q-bundle-graph-${resolvedOpts.manifestHash}.json`,
-    ]
-        .map((x) => JSON.stringify(x))
-        .join(',');
+        `q-bundle-graph-${resolvedOpts.manifestHash}.json`,
+    ]);
     const code = `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`;
     const props = {
         dangerouslySetInnerHTML: code,

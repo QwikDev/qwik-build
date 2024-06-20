@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240620045207
+ * @builder.io/qwik 1.5.7-dev20240620102503
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -829,7 +829,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.7-dev20240620045207";
+const version = "1.5.7-dev20240620102503";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {
@@ -5878,6 +5878,7 @@ const useErrorBoundary = () => {
 
 const PrefetchServiceWorker = opts => {
     const serverData = useServerData("containerAttributes", {});
+    const baseUrl = import.meta.env.BASE_URL || "/";
     const resolvedOpts = {
         base: serverData["q:base"],
         manifestHash: serverData["q:manifest-hash"],
@@ -5886,7 +5887,7 @@ const PrefetchServiceWorker = opts => {
         path: "qwik-prefetch-service-worker.js",
         ...opts
     };
-    if (resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : resolvedOpts.base + resolvedOpts.path, 
+    if (resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path, 
     isDev) {
         if (!resolvedOpts.base.endsWith("/")) {
             throw new Error(`The 'base' option should always end with a '/'. Received: ${resolvedOpts.base}`);
@@ -5926,7 +5927,7 @@ const PrefetchGraph = (opts = {}) => {
         path: "qwik-prefetch-service-worker.js",
         ...opts
     };
-    const args = [ "graph-url", resolvedOpts.base, resolvedOpts.base + `q-bundle-graph-${resolvedOpts.manifestHash}.json` ].map((x => JSON.stringify(x))).join(",");
+    const args = JSON.stringify([ "graph-url", resolvedOpts.base, `q-bundle-graph-${resolvedOpts.manifestHash}.json` ]);
     return _jsxC("script", {
         dangerouslySetInnerHTML: `(window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args})`,
         nonce: opts.nonce

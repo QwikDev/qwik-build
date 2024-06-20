@@ -1567,8 +1567,9 @@ declare type PossibleEvents = Event | SimplifiedServerRequestEvent | typeof Task
  *
  * @param opts - Options for the loading prefetch graph.
  *
- *   - `base` - Base of the graph. For a default installation this will default to `/build/`. But if
- *       more than one MFE is installed on the page, then each MFE needs to have its own base.
+ *   - `base` - Base of the graph. For a default installation this will default to the q:base value
+ *       `/build/`. But if more than one MFE is installed on the page, then each MFE needs to have
+ *       its own base.
  *   - `manifestHash` - Hash of the manifest file to load. If not provided the hash will be extracted
  *       from the container attribute `q:manifest-hash` and assume the default build file
  *       `${base}/q-bundle-graph-${manifestHash}.json`.
@@ -3835,7 +3836,7 @@ export declare type ValueOrPromise<T> = T | Promise<T>;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 1.5.7-dev20240620045207
+ * 1.5.7-dev20240620102503
  *
  * @public
  */
