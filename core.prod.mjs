@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240621165215
+ * @builder.io/qwik 1.5.7-dev20240622232135
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -195,7 +195,7 @@ const createPlatform = () => ({
         }
         const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
         const urlCopy = new URL(urlDoc);
-        urlCopy.hash = "", urlCopy.search = "";
+        urlCopy.hash = "";
         return import(urlCopy.href).then((mod => mod[symbolName]));
     },
     raf: fn => new Promise((resolve => {
@@ -829,7 +829,7 @@ const static_subtree = 2;
 
 const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
-const version = "1.5.7-dev20240621165215";
+const version = "1.5.7-dev20240622232135";
 
 const hashCode = (text, hash = 0) => {
     for (let i = 0; i < text.length; i++) {

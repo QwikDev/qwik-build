@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240621165215
+ * @builder.io/qwik/optimizer 1.5.7-dev20240622232135
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.7-dev20240621165215"
+    qwik: "1.5.7-dev20240622232135"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1776,9 +1776,9 @@ globalThis.qwikOptimizer = function(module) {
   var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
-    const results = new Map;
+    const clientResults = new Map;
     const clientTransformedOutputs = new Map;
-    const ssrResults = new Map;
+    const serverResults = new Map;
     const serverTransformedOutputs = new Map;
     const foundQrls = new Map;
     let internalOptimizer = null;
@@ -1827,6 +1827,10 @@ globalThis.qwikOptimizer = function(module) {
     const getPath = () => {
       const optimizer = getOptimizer();
       return optimizer.sys.path;
+    };
+    let server;
+    const configureServer = devServer => {
+      server = devServer;
     };
     const normalizeOptions = inputOpts => {
       const updatedOpts = Object.assign({}, inputOpts);
@@ -2012,8 +2016,8 @@ globalThis.qwikOptimizer = function(module) {
           });
         }
         diagnosticsCallback(result.diagnostics, optimizer, srcDir);
-        results.set("@buildStart", result);
-        ssrResults.set("@buildStart", result);
+        clientResults.set("@buildStart", result);
+        serverResults.set("@buildStart", result);
       }
     };
     const resolveId = async (ctx, id2, importerId, resolveOpts) => {
@@ -2053,45 +2057,56 @@ globalThis.qwikOptimizer = function(module) {
       const isSSR = !!(null == resolveOpts ? void 0 : resolveOpts.ssr);
       const transformedOutputs = isSSR ? serverTransformedOutputs : clientTransformedOutputs;
       if (importerId) {
-        if (!(id2.startsWith(".") || path.isAbsolute(id2))) {
-          const mod = transformedOutputs.get(importerId);
-          if (mod) {
-            const parentId = mod[1];
+        const looksLikePath = id2.startsWith(".") || id2.startsWith("/");
+        if (!looksLikePath) {
+          const segment = transformedOutputs.get(importerId);
+          if (segment) {
+            const parentId = segment[1];
             return ctx.resolve(id2, parentId, {
               skipSelf: true
             });
           }
           return;
         }
-        if ("ssr" === opts.target && !isSSR) {
-          const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(decodeURIComponent(id2));
+        let isAbsoluteDevFile;
+        if ("ssr" === opts.target && !isSSR && importerId.endsWith(".html") && server) {
+          id2 = decodeURIComponent(id2);
+          const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(id2);
           if (match) {
-            let [, qrlId, parentId] = match;
-            parentId.startsWith(opts.rootDir) && (qrlId = `${opts.rootDir}${qrlId}`);
-            if (!clientTransformedOutputs.has(qrlId)) {
-              return null;
+            id2 = match[1];
+            const parentId = match[2];
+            if (!clientResults.has(parentId)) {
+              debug("resolveId()", "transforming QRL parent", parentId);
+              await server.transformRequest(parentId);
             }
-            debug("resolveId()", "Resolved", qrlId);
-            return {
-              id: qrlId
-            };
           }
+          isAbsoluteDevFile = id2.startsWith("/@fs/");
+          isAbsoluteDevFile && (id2 = id2.slice(4));
         }
         const parsedId = parseId(id2);
         let importeePathId = normalizePath(parsedId.pathId);
-        const ext = path.extname(importeePathId).toLowerCase();
-        if (ext in RESOLVE_EXTS) {
-          importerId = normalizePath(importerId);
-          debug(`resolveId("${importeePathId}", "${importerId}")`);
-          const parsedImporterId = parseId(importerId);
-          const dir = path.dirname(parsedImporterId.pathId);
-          importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(path.join(dir, importeePathId)) : normalizePath(path.resolve(dir, importeePathId));
-          const transformedOutput = transformedOutputs.get(importeePathId);
-          if (transformedOutput) {
+        if (isAbsoluteDevFile) {
+          if (transformedOutputs.has(importeePathId)) {
             debug(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
             return {
               id: importeePathId + parsedId.query
             };
+          }
+        } else {
+          const ext = path.extname(importeePathId).toLowerCase();
+          if (ext in RESOLVE_EXTS) {
+            importerId = normalizePath(importerId);
+            debug(`resolveId("${importeePathId}", "${importerId}")`);
+            const parsedImporterId = parseId(importerId);
+            const dir = path.dirname(parsedImporterId.pathId);
+            importeePathId = parsedImporterId.pathId.endsWith(".html") && !importeePathId.endsWith(".html") ? normalizePath(path.join(dir, importeePathId)) : normalizePath(path.resolve(dir, importeePathId));
+            const transformedOutput = transformedOutputs.get(importeePathId);
+            if (transformedOutput) {
+              debug(`resolveId() Resolved ${importeePathId} from transformedOutputs`);
+              return {
+                id: importeePathId + parsedId.query
+              };
+            }
           }
         }
       } else if (path.isAbsolute(id2)) {
@@ -2231,9 +2246,9 @@ globalThis.qwikOptimizer = function(module) {
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
         if (isSSR) {
           0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
-          ssrResults.set(normalizedID, newOutput);
+          serverResults.set(normalizedID, newOutput);
         } else {
-          results.set(normalizedID, newOutput);
+          clientResults.set(normalizedID, newOutput);
         }
         const deps = new Set;
         for (const mod of newOutput.modules) {
@@ -2272,7 +2287,7 @@ globalThis.qwikOptimizer = function(module) {
       const generateManifest = async () => {
         const optimizer = getOptimizer();
         const path = optimizer.sys.path;
-        const hooks = Array.from(results.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
+        const hooks = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
         const manifest = generateManifestFromBundles(path, hooks, injections, rollupBundle, opts);
         for (const symbol of Object.values(manifest.symbols)) {
           symbol.origin && (symbol.origin = normalizePath(symbol.origin));
@@ -2349,7 +2364,8 @@ globalThis.qwikOptimizer = function(module) {
       transform: transform,
       validateSource: validateSource,
       setSourceMapSupport: setSourceMapSupport,
-      foundQrls: foundQrls
+      foundQrls: foundQrls,
+      configureServer: configureServer
     };
   }
   var insideRoots = (ext, dir, srcDir, vendorRoots) => {
@@ -3015,17 +3031,18 @@ globalThis.qwikOptimizer = function(module) {
                 if (symbolName === SYNC_QRL) {
                   return [ symbolName, "" ];
                 }
-                const chunk = mapper && mapper[getSymbolHash(symbolName)];
+                const hash = getSymbolHash(symbolName);
+                const chunk = mapper && mapper[hash];
                 if (chunk) {
                   return [ chunk[0], encode(chunk[1]) ];
                 }
-                parent ||= foundQrls.get(symbolName);
+                parent ||= foundQrls.get(hash);
                 if (!parent) {
-                  console.error("qwik vite-dev-server: unknown qrl requested without parent:", symbolName);
+                  console.error("qwik vite-dev-server symbolMapper: unknown qrl requested without parent:", symbolName);
                   return [ symbolName, `${base}${symbolName.toLowerCase()}.js` ];
                 }
                 const parentPath = path.dirname(parent);
-                const qrlPath = parentPath.startsWith(opts.rootDir) ? path.relative(opts.rootDir, parentPath) : parentPath;
+                const qrlPath = parentPath.startsWith(opts.rootDir) ? path.relative(opts.rootDir, parentPath) : `/@fs/${parentPath}`;
                 const qrlFile = `${encode(qrlPath)}/${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parent)}`;
                 return [ symbolName, `${base}${qrlFile}` ];
               },
@@ -3054,16 +3071,6 @@ globalThis.qwikOptimizer = function(module) {
             next();
           }
         } else {
-          const parent = url.searchParams.get("_qrl_parent");
-          if (parent && url.pathname.endsWith(".js")) {
-            await server.transformRequest(parent);
-            const result = await server.transformRequest(url.pathname);
-            if (result) {
-              res.setHeader("content-type", "application/javascript");
-              res.write(result.code);
-              res.end();
-            }
-          }
           next();
         }
       } catch (e) {
@@ -3577,6 +3584,7 @@ globalThis.qwikOptimizer = function(module) {
         }
       },
       configureServer(server) {
+        qwikPlugin.configureServer(server);
         const devSsrServer = !("devSsrServer" in qwikViteOpts) || qwikViteOpts.devSsrServer;
         const imageDevTools = !qwikViteOpts.devTools || !("imageDevTools" in qwikViteOpts.devTools) || qwikViteOpts.devTools.imageDevTools;
         imageDevTools && server.middlewares.use(getImageSizeServer(qwikPlugin.getSys(), rootDir, srcDir));
