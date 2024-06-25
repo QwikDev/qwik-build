@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240622232135
+ * @builder.io/qwik 1.5.7-dev20240625201512
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -976,6 +976,37 @@ const wrap = (value, containerState) => {
     return value;
 };
 
+const hashCode = (text, hash = 0) => {
+    for (let i = 0; i < text.length; i++) {
+        const chr = text.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Number(Math.abs(hash)).toString(36);
+};
+
+const styleKey = (qStyles, index) => {
+    assertQrl(qStyles);
+    return `${hashCode(qStyles.$hash$)}-${index}`;
+};
+const styleContent = (styleId) => {
+    return ComponentStylesPrefixContent + styleId;
+};
+const serializeSStyle = (scopeIds) => {
+    const value = scopeIds.join('|');
+    if (value.length > 0) {
+        return value;
+    }
+    return undefined;
+};
+
+/**
+ * QWIK_VERSION
+ *
+ * @public
+ */
+const version = "1.5.7-dev20240625201512";
+
 /**
  * @internal
  * The storage provider for hooks. Each invocation increases index i. Data is stored in an array.
@@ -1550,37 +1581,6 @@ const static_listeners = 1 << 0;
 const static_subtree = 1 << 1;
 const dangerouslySetInnerHTML = 'dangerouslySetInnerHTML';
 
-/**
- * QWIK_VERSION
- *
- * @public
- */
-const version = "1.5.7-dev20240622232135";
-
-const hashCode = (text, hash = 0) => {
-    for (let i = 0; i < text.length; i++) {
-        const chr = text.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return Number(Math.abs(hash)).toString(36);
-};
-
-const styleKey = (qStyles, index) => {
-    assertQrl(qStyles);
-    return `${hashCode(qStyles.$hash$)}-${index}`;
-};
-const styleContent = (styleId) => {
-    return ComponentStylesPrefixContent + styleId;
-};
-const serializeSStyle = (scopeIds) => {
-    const value = scopeIds.join('|');
-    if (value.length > 0) {
-        return value;
-    }
-    return undefined;
-};
-
 var _a$1;
 const FLUSH_COMMENT = '<!--qkssr-f-->';
 const IS_HEAD$1 = 1 << 0;
@@ -1974,7 +1974,7 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
                 }
                 else {
                     openingElement +=
-                        ' ' + (value === true ? prop : prop + '="' + escapeAttr(attrValue) + '"');
+                        ' ' + (value === true ? prop : prop + '="' + escapeHtml(attrValue) + '"');
                 }
             }
         };
@@ -2084,7 +2084,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             flags |= IS_TEXT;
         }
         if (classStr) {
-            openingElement += ' class="' + escapeAttr(classStr) + '"';
+            openingElement += ' class="' + escapeHtml(classStr) + '"';
         }
         if (listeners.length > 0) {
             const groups = groupListeners(listeners);
@@ -2101,7 +2101,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
         }
         if (key != null) {
-            openingElement += ' q:key="' + escapeAttr(key) + '"';
+            openingElement += ' q:key="' + escapeHtml(key) + '"';
         }
         if (hasRef || useSignal || listeners.length > 0) {
             if (hasRef || useSignal || listenersNeedId(listeners)) {
@@ -2117,7 +2117,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
         if (qDev && qInspector && node.dev && !(flags & IS_HEAD$1)) {
             const sanitizedFileName = node?.dev?.fileName?.replace(/\\/g, '/');
             if (sanitizedFileName && !/data-qwik-inspector/.test(openingElement)) {
-                openingElement += ` data-qwik-inspector="${escapeAttr(`${sanitizedFileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`)}"`;
+                openingElement += ` data-qwik-inspector="${escapeHtml(`${sanitizedFileName}:${node.dev.lineNumber}:${node.dev.columnNumber}`)}"`;
             }
         }
         openingElement += '>';
@@ -2462,8 +2462,7 @@ const phasingContent = {
     video: true,
     wbr: true,
 };
-const ESCAPE_HTML = /[&<>]/g;
-const ESCAPE_ATTRIBUTES = /[&"]/g;
+const ESCAPE_HTML = /[&<>'"]/g;
 const registerQwikEvent$1 = (prop, containerState) => {
     containerState.$events$.add(getEventName(prop));
 };
@@ -2476,18 +2475,10 @@ const escapeHtml = (s) => {
                 return '&lt;';
             case '>':
                 return '&gt;';
-            default:
-                return '';
-        }
-    });
-};
-const escapeAttr = (s) => {
-    return s.replace(ESCAPE_ATTRIBUTES, (c) => {
-        switch (c) {
-            case '&':
-                return '&amp;';
             case '"':
                 return '&quot;';
+            case "'":
+                return '&#39;';
             default:
                 return '';
         }

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240622232135
+ * @builder.io/qwik 1.5.7-dev20240625201512
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -343,6 +343,19 @@
         }
         return value;
     };
+    const hashCode = (text, hash = 0) => {
+        for (let i = 0; i < text.length; i++) {
+            hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
+        }
+        return Number(Math.abs(hash)).toString(36);
+    };
+    const serializeSStyle = scopeIds => {
+        const value = scopeIds.join("|");
+        if (value.length > 0) {
+            return value;
+        }
+    };
+    const version = "1.5.7-dev20240625201512";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -540,19 +553,6 @@
     }
     const shouldWrapFunctional = (res, node) => !!node.key && (!isJSXNode(res) || !isFunction(res.type) && res.key != node.key);
     const dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-    const version = "1.5.7-dev20240622232135";
-    const hashCode = (text, hash = 0) => {
-        for (let i = 0; i < text.length; i++) {
-            hash = (hash << 5) - hash + text.charCodeAt(i), hash |= 0;
-        }
-        return Number(Math.abs(hash)).toString(36);
-    };
-    const serializeSStyle = scopeIds => {
-        const value = scopeIds.join("|");
-        if (value.length > 0) {
-            return value;
-        }
-    };
     var _a$1;
     class MockElement {
         constructor(nodeType) {
@@ -756,7 +756,7 @@
                 const prop = "htmlFor" === rawProp ? "for" : rawProp;
                 "class" === prop || "className" === prop ? classStr = serializeClass(value) : "style" === prop ? attrValue = stringifyStyle(value) : isAriaAttribute(prop) || "draggable" === prop || "spellcheck" === prop ? (attrValue = null != value ? String(value) : null, 
                 value = attrValue) : attrValue = !1 === value || null == value ? null : String(value), 
-                null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + (!0 === value ? prop : prop + '="' + escapeAttr(attrValue) + '"')));
+                null != attrValue && ("value" === prop && "textarea" === tagName ? htmlStr = escapeHtml(attrValue) : isSSRUnsafeAttr(prop) || (openingElement += " " + (!0 === value ? prop : prop + '="' + escapeHtml(attrValue) + '"')));
             };
             for (const prop in props) {
                 let isImmutable = !1;
@@ -781,7 +781,7 @@
                 hostCtx.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER);
             }
             if (isHead && (flags |= 1), tagName in invisibleElements && (flags |= 16), tagName in textOnlyElements && (flags |= 8), 
-            classStr && (openingElement += ' class="' + escapeAttr(classStr) + '"'), listeners.length > 0) {
+            classStr && (openingElement += ' class="' + escapeHtml(classStr) + '"'), listeners.length > 0) {
                 const groups = groupListeners(listeners);
                 const isInvisible = !!(16 & flags);
                 for (const listener of groups) {
@@ -790,7 +790,7 @@
                     registerQwikEvent$1(eventName, rCtx.$static$.$containerState$);
                 }
             }
-            if (null != key && (openingElement += ' q:key="' + escapeAttr(key) + '"'), hasRef || useSignal || listeners.length > 0) {
+            if (null != key && (openingElement += ' q:key="' + escapeHtml(key) + '"'), hasRef || useSignal || listeners.length > 0) {
                 if (hasRef || useSignal || listenersNeedId(listeners)) {
                     const newID = getNextIndex(rCtx);
                     openingElement += ' q:id="' + newID + '"', elCtx.$id$ = newID;
@@ -990,8 +990,7 @@
         track: !0,
         wbr: !0
     };
-    const ESCAPE_HTML = /[&<>]/g;
-    const ESCAPE_ATTRIBUTES = /[&"]/g;
+    const ESCAPE_HTML = /[&<>'"]/g;
     const registerQwikEvent$1 = (prop, containerState) => {
         containerState.$events$.add(getEventName(prop));
     };
@@ -1006,17 +1005,11 @@
           case ">":
             return "&gt;";
 
-          default:
-            return "";
-        }
-    }));
-    const escapeAttr = s => s.replace(ESCAPE_ATTRIBUTES, (c => {
-        switch (c) {
-          case "&":
-            return "&amp;";
-
           case '"':
             return "&quot;";
+
+          case "'":
+            return "&#39;";
 
           default:
             return "";

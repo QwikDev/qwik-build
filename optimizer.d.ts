@@ -222,6 +222,7 @@ declare interface QwikPluginOptions {
         [entry: string]: string;
     };
     outDir?: string;
+    assetsDir?: string;
     srcDir?: string | null;
     scope?: string | null;
     srcInputs?: TransformModuleInput[] | null;
@@ -358,6 +359,7 @@ export declare interface QwikVitePluginApi {
     getRootDir: () => string | null;
     getClientOutDir: () => string | null;
     getClientPublicOutDir: () => string | null;
+    getAssetsDir: () => string | undefined;
 }
 
 declare interface QwikVitePluginCommonOptions {
