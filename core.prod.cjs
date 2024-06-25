@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240625201512
+ * @builder.io/qwik 1.5.7-dev20240625201602
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.5.7-dev20240625201512";
+    const version = "1.5.7-dev20240625201602";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4616,6 +4616,12 @@
     }).toString();
     exports.$ = $, exports.Fragment = Fragment, exports.HTMLFragment = props => jsx(Virtual, props), 
     exports.PrefetchGraph = (opts = {}) => {
+        const isTest = (void 0).TEST;
+        if (build.isDev && !isTest) {
+            return _jsxC("script", {
+                dangerouslySetInnerHTML: "\x3c!-- PrefetchGraph is disabled in dev mode. --\x3e"
+            }, 0, "prefetch-graph");
+        }
         const serverData = useServerData("containerAttributes", {});
         const resolvedOpts = {
             base: serverData["q:base"],

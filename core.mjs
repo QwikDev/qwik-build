@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240625201512
+ * @builder.io/qwik 1.5.7-dev20240625201602
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.5.7-dev20240625201512";
+const version = "1.5.7-dev20240625201602";
 
 /**
  * @internal
@@ -9869,6 +9869,13 @@ v // Verbose mode
  * @alpha
  */
 const PrefetchGraph = (opts = {}) => {
+    const isTest = import.meta.env.TEST;
+    if (isDev && !isTest) {
+        const props = {
+            dangerouslySetInnerHTML: '<!-- PrefetchGraph is disabled in dev mode. -->',
+        };
+        return _jsxC('script', props, 0, 'prefetch-graph');
+    }
     const serverData = useServerData('containerAttributes', {});
     const resolvedOpts = {
         // /build/q-bundle-graph-${manifestHash}.json is always within the q:base location /build/
