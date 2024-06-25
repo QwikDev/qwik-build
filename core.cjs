@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240625201602
+ * @builder.io/qwik 1.5.7-dev20240625201829
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@
      *
      * @public
      */
-    const version = "1.5.7-dev20240625201602";
+    const version = "1.5.7-dev20240625201829";
 
     /**
      * @internal
@@ -9779,6 +9779,13 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * @alpha
      */
     const PrefetchServiceWorker = (opts) => {
+        const isTest = undefined.TEST;
+        if (build.isDev && !isTest) {
+            const props = {
+                dangerouslySetInnerHTML: '<!-- PrefetchServiceWorker is disabled in dev mode. -->',
+            };
+            return _jsxC('script', props, 0, 'prefetch-service-worker');
+        }
         const serverData = useServerData('containerAttributes', {});
         // if an MFE app has a custom BASE_URL then this will be the correct value
         // if you're not using MFE from another codebase then you want to override this value to your custom setup
@@ -9800,25 +9807,6 @@ Task Symbol: ${task.$qrl$.$symbol$}
             // path: 'qwik-prefetch-service-worker.js'
             // the file 'qwik-prefetch-service-worker.js' is not located in /build/
             resolvedOpts.path = baseUrl + resolvedOpts.path;
-        }
-        // dev only errors
-        if (build.isDev) {
-            // Check if base ends with a '/'
-            if (!resolvedOpts.base.endsWith('/')) {
-                throw new Error(`The 'base' option should always end with a '/'. Received: ${resolvedOpts.base}`);
-            }
-            // Check if path does not start with a '/' and ends with '.js'
-            if (!resolvedOpts.path.endsWith('.js')) {
-                throw new Error(`The 'path' option must end with '.js'. Received: ${resolvedOpts.path}`);
-            }
-            // Validate service worker scope (must start with a '/' and not contain spaces)
-            if (!resolvedOpts.scope.startsWith('/') || /\s/.test(resolvedOpts.scope)) {
-                throw new Error(`Invalid 'scope' option for service worker. It must start with '/' and contain no spaces. Received: ${resolvedOpts.scope}`);
-            }
-            if (resolvedOpts.verbose) {
-                // eslint-disable-next-line no-console
-                console.log('Installing <PrefetchServiceWorker /> service-worker with options:', resolvedOpts);
-            }
         }
         let code = PREFETCH_CODE.replace('URL', resolvedOpts.path).replace('SCOPE', resolvedOpts.scope);
         if (!build.isDev) {

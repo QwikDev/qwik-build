@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.5.7-dev20240625201602
+ * @builder.io/qwik 1.5.7-dev20240625201829
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.5.7-dev20240625201602";
+    const version = "1.5.7-dev20240625201829";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4637,6 +4637,12 @@
             nonce: opts.nonce
         }, 0, "prefetch-graph");
     }, exports.PrefetchServiceWorker = opts => {
+        const isTest = (void 0).TEST;
+        if (build.isDev && !isTest) {
+            return _jsxC("script", {
+                dangerouslySetInnerHTML: "\x3c!-- PrefetchServiceWorker is disabled in dev mode. --\x3e"
+            }, 0, "prefetch-service-worker");
+        }
         const serverData = useServerData("containerAttributes", {});
         const baseUrl = globalThis.BASE_URL || "/";
         const resolvedOpts = {
@@ -4647,19 +4653,7 @@
             path: "qwik-prefetch-service-worker.js",
             ...opts
         };
-        if (resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path, 
-        build.isDev) {
-            if (!resolvedOpts.base.endsWith("/")) {
-                throw new Error(`The 'base' option should always end with a '/'. Received: ${resolvedOpts.base}`);
-            }
-            if (!resolvedOpts.path.endsWith(".js")) {
-                throw new Error(`The 'path' option must end with '.js'. Received: ${resolvedOpts.path}`);
-            }
-            if (!resolvedOpts.scope.startsWith("/") || /\s/.test(resolvedOpts.scope)) {
-                throw new Error(`Invalid 'scope' option for service worker. It must start with '/' and contain no spaces. Received: ${resolvedOpts.scope}`);
-            }
-            resolvedOpts.verbose && console.log("Installing <PrefetchServiceWorker /> service-worker with options:", resolvedOpts);
-        }
+        resolvedOpts.path = opts?.path?.startsWith?.("/") ? opts.path : baseUrl + resolvedOpts.path;
         let code = PREFETCH_CODE.replace("URL", resolvedOpts.path).replace("SCOPE", resolvedOpts.scope);
         build.isDev || (code = code.replaceAll(/\s+/gm, ""));
         const props = {
