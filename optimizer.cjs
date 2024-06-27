@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.5.7-dev20240627113350
+ * @builder.io/qwik/optimizer 1.5.7-dev20240627170608
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.5.7-dev20240627113350"
+    qwik: "1.5.7-dev20240627170608"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1941,7 +1941,7 @@ globalThis.qwikOptimizer = function(module) {
           if ("string" === typeof opts.srcDir && !fs.existsSync(opts.srcDir)) {
             throw new Error(`Qwik srcDir "${opts.srcDir}" not found.`);
           }
-          for (const [_, input] of Object.entries(opts.input)) {
+          for (const [_, input] of Object.entries(opts.input || {})) {
             const resolved = await resolver(input);
             if (!resolved) {
               throw new Error(`Qwik input "${input}" not found.`);
