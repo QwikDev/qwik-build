@@ -1,0 +1,16 @@
+{
+  "name": "@builder.io/qwik/jsx-runtime",
+  "version": "1.6.0-dev20240703040019",
+  "main": "../core.mjs",
+  "module": "../core.mjs",
+  "types": "../jsx-runtime.d.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": {
+      "types": "../jsx-runtime.d.ts",
+      "require": "../core.cjs",
+      "import": "../core.mjs"
+    }
+  }
+}
