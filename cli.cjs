@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.6.0-dev20240702032412
+ * @builder.io/qwik/cli 1.6.0-dev20240703033332
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4889,7 +4889,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.6.0-dev20240702032412");
+  console.log("1.6.0-dev20240703033332");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
