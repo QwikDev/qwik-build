@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.6.0-dev20240703033332
+ * @builder.io/qwik/testing 1.6.0-dev20240705183439
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22455,47 +22455,47 @@ function createDocument(opts) {
   return doc;
 }
 function createWindow(opts = {}) {
-  const win = createDocument(opts).defaultView;
-  return win;
+  return createDocument(opts).defaultView;
 }
 function ensureGlobals(doc, opts) {
-  if (!doc[QWIK_DOC]) {
-    if (!doc || doc.nodeType !== 9) {
-      throw new Error(`Invalid document`);
-    }
-    doc[QWIK_DOC] = true;
-    const loc = normalizeUrl(opts == null ? void 0 : opts.url);
-    Object.defineProperty(doc, "baseURI", {
-      get: () => loc.href,
-      set: (url) => loc.href = normalizeUrl(url).href
-    });
-    doc.defaultView = {
-      get document() {
-        return doc;
-      },
-      get location() {
-        return loc;
-      },
-      get origin() {
-        return loc.origin;
-      },
-      addEventListener: noop,
-      removeEventListener: noop,
-      history: {
-        pushState: noop,
-        replaceState: noop,
-        go: noop,
-        back: noop,
-        forward: noop
-      },
-      CustomEvent: class CustomEvent {
-        constructor(type, details) {
-          Object.assign(this, details);
-          this.type = type;
-        }
-      }
-    };
+  if (doc && doc[QWIK_DOC]) {
+    return doc.defaultView;
   }
+  if (!doc || doc.nodeType !== 9) {
+    throw new Error(`Invalid document`);
+  }
+  doc[QWIK_DOC] = true;
+  const loc = normalizeUrl(opts == null ? void 0 : opts.url);
+  Object.defineProperty(doc, "baseURI", {
+    get: () => loc.href,
+    set: (url) => loc.href = normalizeUrl(url).href
+  });
+  doc.defaultView = {
+    get document() {
+      return doc;
+    },
+    get location() {
+      return loc;
+    },
+    get origin() {
+      return loc.origin;
+    },
+    addEventListener: noop,
+    removeEventListener: noop,
+    history: {
+      pushState: noop,
+      replaceState: noop,
+      go: noop,
+      back: noop,
+      forward: noop
+    },
+    CustomEvent: class CustomEvent {
+      constructor(type, details) {
+        Object.assign(this, details);
+        this.type = type;
+      }
+    }
+  };
   return doc.defaultView;
 }
 var noop = () => {
