@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.6.0-dev20240705183439
+ * @builder.io/qwik/optimizer 1.6.0-dev20240708215852
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1256,7 +1256,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.6.0-dev20240705183439"
+    qwik: "1.6.0-dev20240708215852"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3556,9 +3556,12 @@ globalThis.qwikOptimizer = function(module) {
             const fs = await sys.dynamicImport("node:fs");
             const workerScriptPath = (await this.resolve("@builder.io/qwik/qwik-prefetch.js")).id;
             const workerScript = await fs.promises.readFile(workerScriptPath, "utf-8");
+            const assetsDir = qwikPlugin.getOptions().assetsDir || "";
+            const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
+            const qwikPrefetchServiceWorkerFile = "qwik-prefetch-service-worker.js";
             this.emitFile({
               type: "asset",
-              fileName: "qwik-prefetch-service-worker.js",
+              fileName: useAssetsDir ? sys.path.join(filePath, qwikPrefetchServiceWorkerFile) : qwikPrefetchServiceWorkerFile,
               source: workerScript
             });
             "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);

@@ -44,7 +44,7 @@
                 }
             }
             return task;
-        }(swState, new URL(base.$path$ + filename, swState.$url$), priority))));
+        }(swState, new URL(base.$path$ + filename, swState.$url$.origin), priority))));
         taskTick(swState);
     }
     function taskTick(swState) {
@@ -100,7 +100,7 @@
         state.$log$("received message:", type, msg[1], msg.slice(2));
         "graph" === type ? await processBundleGraph(state, msg[1], msg.slice(2), !0) : "graph-url" === type ? await async function(swState, base, graphPath) {
             await processBundleGraph(swState, base, [], !1);
-            const response = await directFetch(swState, new URL(base + graphPath, swState.$url$));
+            const response = await directFetch(swState, new URL(base + graphPath, swState.$url$.origin));
             if (response && 200 === response.status) {
                 const graph = await response.json();
                 graph.push(graphPath);
