@@ -7,6 +7,8 @@ export declare interface ComponentEntryStrategy {
 /** @public */
 export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
+declare function createSymbolMapper(base: string, opts: NormalizedQwikPluginOptions, foundQrls: Map<string, string>, path: Path, sys: OptimizerSystem): SymbolMapperFn;
+
 /** @public */
 export declare interface Diagnostic {
     scope: string;
@@ -559,6 +561,16 @@ export declare type SourceMapsOption = 'external' | 'inline' | undefined | null;
 
 /** @public */
 export declare type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
+
+/**
+ * @alpha
+ *   For a given symbol (QRL such as `onKeydown$`) the server needs to know which bundle the symbol is in.
+ *
+ *   Normally this is provided by Qwik's `q-manifest` . But `q-manifest` only exists after a full client build.
+ *
+ *   This would be a problem in dev mode. So in dev mode the symbol is mapped to the expected URL using the symbolMapper function below. For Vite the given path is fixed for a given symbol.
+ */
+export declare let symbolMapper: ReturnType<typeof createSymbolMapper>;
 
 /** @public */
 export declare type SymbolMapperFn = (symbolName: string, mapper: SymbolMapper | undefined, parent?: string) => readonly [symbol: string, chunk: string] | undefined;
