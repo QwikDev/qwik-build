@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.7.0-dev20240709214526
+ * @builder.io/qwik 1.7.0-dev20240709214651
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@
      *
      * @public
      */
-    const version = "1.7.0-dev20240709214526";
+    const version = "1.7.0-dev20240709214651";
 
     /**
      * @internal
@@ -3665,7 +3665,6 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         const runTasks = () => {
             // SSR dirty tasks are in taskStaging
             staging.forEach((task) => {
-                console.error('task', task.$qrl$.$symbol$);
                 if (isTask(task)) {
                     taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
                 }
