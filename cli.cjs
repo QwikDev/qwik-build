@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.7.0-dev20240710213122
+ * @builder.io/qwik/cli 1.7.1-dev20240711225950
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2819,7 +2819,6 @@ var jokes_default = [
   ["Why don't programmers like nature?", "It has too many bugs."],
   ["Why was the computer freezing?", "It left its Windows open!"],
   ["What did the Java code say to the C code?", "You've got no class."],
-  ["Why did the programmer always carry a pencil?", "In case he needed to draw bugs."],
   ["Why do programmers prefer the outdoors?", "Because it's free of bugs."],
   ["Why do programmers love movies?", "Because they can 'script' the ending."],
   ["why do desert animals hate Qwik?", "Because there's no hydration...."],
@@ -4889,7 +4888,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.7.0-dev20240710213122");
+  console.log("1.7.1-dev20240711225950");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

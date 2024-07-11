@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.7.0-dev20240710213122
+ * @builder.io/qwik/optimizer 1.7.1-dev20240711225950
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1282,7 +1282,7 @@ var QWIK_BINDING_MAP = {
 };
 
 var versions = {
-  qwik: "1.7.0-dev20240710213122"
+  qwik: "1.7.1-dev20240711225950"
 };
 
 async function getSystem() {
@@ -1845,9 +1845,9 @@ function createPlugin(optimizerOptions = {}) {
     const optimizer = getOptimizer();
     return optimizer.sys.path;
   };
-  let server;
-  const configureServer = devServer => {
-    server = devServer;
+  let devServer;
+  const configureServer = server => {
+    devServer = server;
   };
   const normalizeOptions = inputOpts => {
     const updatedOpts = Object.assign({}, inputOpts);
@@ -1855,7 +1855,6 @@ function createPlugin(optimizerOptions = {}) {
     const path = optimizer.sys.path;
     opts.debug = !!updatedOpts.debug;
     updatedOpts.assetsDir && (opts.assetsDir = updatedOpts.assetsDir);
-    updatedOpts.target;
     "ssr" === updatedOpts.target || "client" === updatedOpts.target || "lib" === updatedOpts.target || "test" === updatedOpts.target ? opts.target = updatedOpts.target : opts.target = "client";
     "lib" === opts.target ? opts.buildMode = "development" : "production" === updatedOpts.buildMode || "development" === updatedOpts.buildMode ? opts.buildMode = updatedOpts.buildMode : opts.buildMode = "development";
     updatedOpts.entryStrategy && "object" === typeof updatedOpts.entryStrategy && (opts.entryStrategy = {
@@ -2010,22 +2009,23 @@ function createPlugin(optimizerOptions = {}) {
         scope: opts.scope ? opts.scope : void 0,
         sourceMaps: opts.sourcemap
       };
+      let outputs = clientTransformedOutputs;
       if ("client" === opts.target) {
         transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
         transformOpts.stripExports = SERVER_STRIP_EXPORTS;
         transformOpts.isServer = false;
-      } else if ("ssr" === opts.target) {
+      } else if ("ssr" === opts.target && !devServer) {
         transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
         transformOpts.stripEventHandlers = true;
         transformOpts.isServer = true;
         transformOpts.regCtxName = REG_CTX_NAME;
+        outputs = serverTransformedOutputs;
       }
       const result = await optimizer.transformFs(transformOpts);
       for (const output of result.modules) {
         const key = normalizePath(path.join(srcDir, output.path));
         debug("buildStart() add transformedOutput", key, output.hook?.displayName);
-        clientTransformedOutputs.set(key, [ output, key ]);
-        serverTransformedOutputs.set(key, [ output, key ]);
+        outputs.set(key, [ output, key ]);
         "client" === opts.target && output.isEntry && ctx.emitFile({
           id: key,
           type: "chunk",
@@ -2037,8 +2037,9 @@ function createPlugin(optimizerOptions = {}) {
       serverResults.set("@buildStart", result);
     }
   };
-  const getParentId = (id2, isSSR) => {
-    const transformedOutputs = isSSR ? serverTransformedOutputs : clientTransformedOutputs;
+  const getIsServer = viteOpts => devServer ? !!viteOpts?.ssr : "ssr" === opts.target || "test" === opts.target;
+  const getParentId = (id2, isServer) => {
+    const transformedOutputs = isServer ? serverTransformedOutputs : clientTransformedOutputs;
     const segment = transformedOutputs.get(id2);
     if (segment) {
       return segment[1];
@@ -2049,10 +2050,10 @@ function createPlugin(optimizerOptions = {}) {
   let resolveIdCount = 0;
   const resolveId = async (ctx, id2, importerId, resolveOpts) => {
     const count = resolveIdCount++;
-    const isSSR = !!resolveOpts?.ssr;
+    const isServer = getIsServer(resolveOpts);
     debug(`resolveId(${count})`, "Start", id2, {
       from: importerId,
-      for: isSSR ? "server" : "client"
+      for: isServer ? "server" : "client"
     });
     if (id2.startsWith("\0")) {
       return;
@@ -2090,7 +2091,7 @@ function createPlugin(optimizerOptions = {}) {
       const looksLikePath = id2.startsWith(".") || id2.startsWith("/");
       if (!looksLikePath) {
         debug(`resolveId(${count})`, "falling back to default resolver");
-        const parentId = getParentId(importerId, isSSR);
+        const parentId = getParentId(importerId, isServer);
         if (parentId) {
           return ctx.resolve(id2, parentId, {
             skipSelf: true
@@ -2101,9 +2102,10 @@ function createPlugin(optimizerOptions = {}) {
       importerId = normalizePath(importerId);
       const parsedImporterId = parseId(importerId);
       const dir = path.dirname(parsedImporterId.pathId);
-      if ("ssr" === opts.target && !isSSR && importerId.endsWith(".html") && server && id2.startsWith("/")) {
+      const outputs = isServer ? serverTransformedOutputs : clientTransformedOutputs;
+      if (devServer && !isServer && importerId.endsWith(".html") && id2.startsWith("/") && !outputs.has(id2)) {
         id2 = decodeURIComponent(id2);
-        id2 = id2.startsWith("/@fs/") ? id2.slice(4) : path.join(dir, id2);
+        id2.startsWith("/@fs/") ? id2 = id2.slice(4) : id2.startsWith(dir.slice(0, dir.indexOf("/", 1))) || (id2 = path.join(dir, id2));
         id2 = normalizePath(id2);
         const match = /^([^?]*)\?_qrl_parent=(.*)/.exec(id2);
         if (match) {
@@ -2118,7 +2120,7 @@ function createPlugin(optimizerOptions = {}) {
       const ext = path.extname(importeePathId).toLowerCase();
       if (ext in RESOLVE_EXTS) {
         importeePathId = normalizePath(path.resolve(dir, importeePathId));
-        const parentId = getParentId(importeePathId, isSSR);
+        const parentId = getParentId(importeePathId, isServer);
         if (parentId) {
           debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs`);
           return {
@@ -2130,7 +2132,7 @@ function createPlugin(optimizerOptions = {}) {
       const parsedId = parseId(id2);
       const importeePathId = normalizePath(parsedId.pathId);
       const ext = path.extname(importeePathId).toLowerCase();
-      if (ext in RESOLVE_EXTS && getParentId(importeePathId, isSSR)) {
+      if (ext in RESOLVE_EXTS && getParentId(importeePathId, isServer)) {
         debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
         return {
           id: importeePathId + parsedId.query
@@ -2144,30 +2146,30 @@ function createPlugin(optimizerOptions = {}) {
     if (id2.startsWith("\0") || id2.startsWith("/@fs/")) {
       return;
     }
-    const isSSR = !!loadOpts?.ssr;
+    const isServer = getIsServer(loadOpts);
     if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
       debug("load()", QWIK_BUILD_ID, opts.buildMode);
       return {
         moduleSideEffects: false,
-        code: getQwikBuildModule(isSSR, opts.target)
+        code: getQwikBuildModule(isServer, opts.target)
       };
     }
     if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
       debug("load()", QWIK_CLIENT_MANIFEST_ID, opts.buildMode);
       return {
         moduleSideEffects: false,
-        code: await getQwikServerManifestModule(isSSR)
+        code: await getQwikServerManifestModule(isServer)
       };
     }
     const parsedId = parseId(id2);
     const path = getPath();
     id2 = normalizePath(parsedId.pathId);
-    const outputs = isSSR ? serverTransformedOutputs : clientTransformedOutputs;
-    if (server && !outputs.has(id2)) {
-      const parentId = getParentId(id2, isSSR);
+    const outputs = isServer ? serverTransformedOutputs : clientTransformedOutputs;
+    if (devServer && !outputs.has(id2)) {
+      const parentId = getParentId(id2, isServer);
       if (parentId) {
         debug("load()", "transforming QRL parent", parentId);
-        await server.transformRequest(parentId);
+        await devServer.transformRequest(`/@fs${parentId.startsWith("/") ? "" : "/"}${parentId}`);
       }
     }
     const transformedModule = outputs.get(id2);
@@ -2175,7 +2177,7 @@ function createPlugin(optimizerOptions = {}) {
       debug("load()", "Found", id2);
       let {code: code} = transformedModule[0];
       const {map: map, hook: hook} = transformedModule[0];
-      if ("ssr" === opts.target) {
+      if (devServer) {
         const firstInput = Object.values(opts.input)[0];
         code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)));
       }
@@ -2194,8 +2196,8 @@ function createPlugin(optimizerOptions = {}) {
     if (id2.startsWith("\0")) {
       return;
     }
-    const isSSR = !!transformOpts.ssr;
-    const currentOutputs = isSSR ? serverTransformedOutputs : clientTransformedOutputs;
+    const isServer = getIsServer(transformOpts);
+    const currentOutputs = isServer ? serverTransformedOutputs : clientTransformedOutputs;
     if (currentOutputs.has(id2)) {
       return;
     }
@@ -2209,7 +2211,7 @@ function createPlugin(optimizerOptions = {}) {
     if (ext in TRANSFORM_EXTS || TRANSFORM_REGEX.test(pathId) || insideRoots(ext, dir, opts.srcDir, opts.vendorRoots)) {
       const strip = "client" === opts.target || "ssr" === opts.target;
       const normalizedID = normalizePath(pathId);
-      debug("transform()", `Transforming ${id2} (for: ${isSSR ? "server" : "client"}${strip ? ", strip" : ""})`);
+      debug("transform()", `Transforming ${id2} (for: ${isServer ? "server" : "client"}${strip ? ", strip" : ""})`);
       let filePath = base;
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
       filePath = normalizePath(filePath);
@@ -2221,7 +2223,9 @@ function createPlugin(optimizerOptions = {}) {
           code: code,
           path: filePath
         } ],
-        entryStrategy: entryStrategy,
+        entryStrategy: isServer ? {
+          type: "hoist"
+        } : entryStrategy,
         minify: "simplify",
         sourceMaps: opts.sourcemap || "development" === opts.buildMode,
         transpileTs: true,
@@ -2231,16 +2235,11 @@ function createPlugin(optimizerOptions = {}) {
         srcDir: srcDir,
         rootDir: opts.rootDir,
         mode: mode,
-        scope: opts.scope || void 0
+        scope: opts.scope || void 0,
+        isServer: isServer
       };
-      if (isSSR) {
-        transformOpts2.isServer = true;
-        transformOpts2.entryStrategy = {
-          type: "hoist"
-        };
-      }
       if (strip) {
-        if (isSSR) {
+        if (isServer) {
           transformOpts2.stripCtxName = CLIENT_STRIP_CTX_NAME;
           transformOpts2.stripEventHandlers = true;
           transformOpts2.regCtxName = REG_CTX_NAME;
@@ -2251,14 +2250,14 @@ function createPlugin(optimizerOptions = {}) {
       }
       const newOutput = optimizer.transformModulesSync(transformOpts2);
       const module = newOutput.modules.find((mod => !isAdditionalFile(mod)));
-      if ("ssr" === opts.target) {
+      if (devServer && isServer) {
         const matches = module.code.matchAll(/_([a-zA-Z0-9]{11,11})['"][,)]/g);
         for (const [, symbol] of matches) {
           foundQrls.set(symbol, id2);
         }
       }
       diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
-      if (isSSR) {
+      if (isServer) {
         0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
         serverResults.set(normalizedID, newOutput);
       } else {
@@ -2333,13 +2332,12 @@ function createPlugin(optimizerOptions = {}) {
     diagnosticsCallback = cb;
   };
   const normalizePath = id2 => lazyNormalizePath(id2);
-  function getQwikBuildModule(isSSR, target) {
-    const isServer = isSSR || "test" === target;
+  function getQwikBuildModule(isServer, target) {
     const isDev = "development" === opts.buildMode;
     return `// @builder.io/qwik/build\nexport const isServer = ${JSON.stringify(isServer)};\nexport const isBrowser = ${JSON.stringify(!isServer)};\nexport const isDev = ${JSON.stringify(isDev)};\n`;
   }
-  async function getQwikServerManifestModule(isSSR) {
-    const manifest = isSSR ? opts.manifestInput : null;
+  async function getQwikServerManifestModule(isServer) {
+    const manifest = isServer ? opts.manifestInput : null;
     return `// @qwik-client-manifest\nexport const manifest = ${JSON.stringify(manifest)};\n`;
   }
   function setSourceMapSupport(sourcemap) {
@@ -3130,12 +3128,17 @@ function createSymbolMapper(base, opts, foundQrls, path, sys) {
   };
 }
 
+var lazySymbolMapper = null;
+
 var symbolMapper = (symbolName, mapper, parent) => {
+  if (lazySymbolMapper) {
+    return lazySymbolMapper(symbolName, mapper, parent);
+  }
   throw new Error("symbolMapper not initialized");
 };
 
 async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, foundQrls, devSsrServer) {
-  symbolMapper = createSymbolMapper(base, opts, foundQrls, path, sys);
+  symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, foundQrls, path, sys);
   if ("function" !== typeof fetch && "node" === sys.env) {
     try {
       if (!globalThis.fetch) {
@@ -3710,22 +3713,21 @@ function qwikVite(qwikViteOpts = {}) {
             fileName: Q_MANIFEST_FILENAME,
             source: clientManifestStr
           });
+          const assetsDir = qwikPlugin.getOptions().assetsDir || "";
+          const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
           const sys = qwikPlugin.getSys();
-          const filePath = sys.path.dirname(_.chunkFileNames);
           this.emitFile({
             type: "asset",
-            fileName: sys.path.join(filePath, `q-bundle-graph-${manifest.manifestHash}.json`),
+            fileName: sys.path.join(useAssetsDir ? assetsDir : "", "build", `q-bundle-graph-${manifest.manifestHash}.json`),
             source: JSON.stringify(convertManifestToBundleGraph(manifest))
           });
           const fs = await sys.dynamicImport("node:fs");
           const workerScriptPath = (await this.resolve("@builder.io/qwik/qwik-prefetch.js")).id;
           const workerScript = await fs.promises.readFile(workerScriptPath, "utf-8");
-          const assetsDir = qwikPlugin.getOptions().assetsDir || "";
-          const useAssetsDir = !!assetsDir && "_astro" !== assetsDir;
           const qwikPrefetchServiceWorkerFile = "qwik-prefetch-service-worker.js";
           this.emitFile({
             type: "asset",
-            fileName: useAssetsDir ? sys.path.join(filePath, qwikPrefetchServiceWorkerFile) : qwikPrefetchServiceWorkerFile,
+            fileName: useAssetsDir ? sys.path.join(assetsDir, "build", qwikPrefetchServiceWorkerFile) : qwikPrefetchServiceWorkerFile,
             source: workerScript
           });
           "function" === typeof opts.manifestOutput && await opts.manifestOutput(manifest);
