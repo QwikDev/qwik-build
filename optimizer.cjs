@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.7.1-dev20240711225950
+ * @builder.io/qwik/optimizer 1.7.1-dev20240712123959
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1257,7 +1257,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "1.7.1-dev20240711225950"
+    qwik: "1.7.1-dev20240712123959"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2261,7 +2261,7 @@ globalThis.qwikOptimizer = function(module) {
             debug("transform()", `segment ${key}`, null == (_a = mod.hook) ? void 0 : _a.displayName);
             currentOutputs.set(key, [ mod, id2 ]);
             deps.add(key);
-            "client" === opts.target && mod.isEntry && ctx.emitFile({
+            devServer || "client" !== opts.target || ctx.emitFile({
               id: key,
               type: "chunk",
               preserveSignature: "allow-extension"
