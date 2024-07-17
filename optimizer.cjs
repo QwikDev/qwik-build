@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 0.0.0-dev20240716132431
+ * @builder.io/qwik/optimizer 0.0.0-dev20240717190632
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1257,7 +1257,7 @@ globalThis.qwikOptimizer = function(module) {
     }
   };
   var versions = {
-    qwik: "0.0.0-dev20240716132431"
+    qwik: "0.0.0-dev20240717190632"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1379,12 +1379,13 @@ globalThis.qwikOptimizer = function(module) {
       })).then((buf => WebAssembly.compile(buf))).then((wasm => mod.default(wasm))).then((() => mod));
     }
     if ("webworker" === sysEnv || "browsermain" === sysEnv) {
-      const version = versions.qwik.split("-dev")[0];
+      let version = versions.qwik;
       const cachedCjsCode = `qwikWasmCjs${version}`;
       const cachedWasmRsp = `qwikWasmRsp${version}`;
       let cjsCode = globalThis[cachedCjsCode];
       let wasmRsp = globalThis[cachedWasmRsp];
       if (!cjsCode || !wasmRsp) {
+        version = versions.qwik.split("-dev")[0];
         const cdnUrl = `https://cdn.jsdelivr.net/npm/@builder.io/qwik@${version}/bindings/`;
         const cjsModuleUrl = new URL("./qwik.wasm.cjs", cdnUrl).href;
         const wasmUrl = new URL("./qwik_wasm_bg.wasm", cdnUrl).href;
