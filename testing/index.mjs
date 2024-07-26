@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.7.1-dev20240721121806
+ * @builder.io/qwik/testing 1.7.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -539,7 +539,7 @@ var require_EventTarget = __commonJS({
       _dispatchEvent: function _dispatchEvent(event, trusted) {
         if (typeof trusted !== "boolean")
           trusted = false;
-        function invoke(target, event2) {
+        function invoke2(target, event2) {
           var type = event2.type, phase = event2.eventPhase;
           event2.currentTarget = target;
           if (phase !== Event.CAPTURING_PHASE && target._handlers && target._handlers[type]) {
@@ -597,18 +597,18 @@ var require_EventTarget = __commonJS({
           ancestors.push(n);
         event.eventPhase = Event.CAPTURING_PHASE;
         for (var i = ancestors.length - 1; i >= 0; i--) {
-          invoke(ancestors[i], event);
+          invoke2(ancestors[i], event);
           if (event._propagationStopped)
             break;
         }
         if (!event._propagationStopped) {
           event.eventPhase = Event.AT_TARGET;
-          invoke(this, event);
+          invoke2(this, event);
         }
         if (event.bubbles && !event._propagationStopped) {
           event.eventPhase = Event.BUBBLING_PHASE;
           for (var ii = 0, nn = ancestors.length; ii < nn; ii++) {
-            invoke(ancestors[ii], event);
+            invoke2(ancestors[ii], event);
             if (event._propagationStopped)
               break;
           }
@@ -817,7 +817,7 @@ var require_NodeUtils = __commonJS({
       listing: true
       */
     };
-    function escape(s) {
+    function escape2(s) {
       return s.replace(/[&<>\u00A0]/g, function(c) {
         switch (c) {
           case "&":
@@ -897,7 +897,7 @@ var require_NodeUtils = __commonJS({
           if (hasRawContent[parenttag] || parenttag === "NOSCRIPT" && parent.ownerDocument._scripting_enabled) {
             s += kid.data;
           } else {
-            s += escape(kid.data);
+            s += escape2(kid.data);
           }
           break;
         case 8:
@@ -1136,7 +1136,7 @@ var require_Node = __commonJS({
         }
       },
       insertBefore: {
-        value: function insertBefore(node, child) {
+        value: function insertBefore2(node, child) {
           var parent = this;
           parent._ensureInsertValid(node, child, true);
           var refChild = child;
@@ -2291,7 +2291,7 @@ var require_select = __commonJS({
         );
       });
     };
-    var indexOf = function() {
+    var indexOf2 = function() {
       if (Array.prototype.indexOf) {
         return Array.prototype.indexOf;
       }
@@ -2931,7 +2931,7 @@ var require_select = __commonJS({
           scope = node.getElementsByTagName(test.qname);
           i = 0;
           while (el = scope[i++]) {
-            if (test(el) && indexOf.call(results, el) === -1) {
+            if (test(el) && indexOf2.call(results, el) === -1) {
               results.push(el);
             }
           }
@@ -2987,8 +2987,8 @@ var require_ChildNode = __commonJS({
       var docFrag = document2.createDocumentFragment();
       for (var i = 0; i < args.length; i++) {
         var argItem = args[i];
-        var isNode2 = argItem instanceof Node;
-        docFrag.appendChild(isNode2 ? argItem : document2.createTextNode(String(argItem)));
+        var isNode3 = argItem instanceof Node;
+        docFrag.appendChild(isNode3 ? argItem : document2.createTextNode(String(argItem)));
       }
       return docFrag;
     };
@@ -3722,7 +3722,7 @@ var require_Element = __commonJS({
       },
       // Set the attribute without error checking. The parser uses this.
       _setAttribute: {
-        value: function _setAttribute(qname, value) {
+        value: function _setAttribute2(qname, value) {
           var attr = this._attrsByQName[qname];
           var isnew;
           if (!attr) {
@@ -3741,7 +3741,7 @@ var require_Element = __commonJS({
       },
       // Check for errors, and then set the attribute
       setAttribute: {
-        value: function setAttribute(qname, value) {
+        value: function setAttribute2(qname, value) {
           qname = String(qname);
           if (!xml.isValidName(qname))
             utils.InvalidCharacterError();
@@ -5560,13 +5560,13 @@ var require_URL = __commonJS({
 var require_CustomEvent = __commonJS({
   "packages/qwik-dom/lib/CustomEvent.js"(exports, module) {
     "use strict";
-    module.exports = CustomEvent;
+    module.exports = CustomEvent2;
     var Event = require_Event();
-    function CustomEvent(type, dictionary) {
+    function CustomEvent2(type, dictionary) {
       Event.call(this, type, dictionary);
     }
-    CustomEvent.prototype = Object.create(Event.prototype, {
-      constructor: { value: CustomEvent }
+    CustomEvent2.prototype = Object.create(Event.prototype, {
+      constructor: { value: CustomEvent2 }
     });
   }
 });
@@ -13190,7 +13190,7 @@ var require_Document = __commonJS({
         }
       },
       insertBefore: {
-        value: function insertBefore(child, refChild) {
+        value: function insertBefore2(child, refChild) {
           Node.prototype.insertBefore.call(this, child, refChild);
           this._updateDocTypeElement();
           return child;
@@ -21965,9 +21965,9 @@ var require_DOMImplementation = __commonJS({
       // HTML
     };
     DOMImplementation.prototype = {
-      hasFeature: function hasFeature(feature, version) {
+      hasFeature: function hasFeature(feature, version2) {
         var f = supportedFeatures[(feature || "").toLowerCase()];
-        return f && f[version || ""] || false;
+        return f && f[version2 || ""] || false;
       },
       createDocumentType: function createDocumentType(qualifiedName, publicId, systemId) {
         if (!xml.isValidQName(qualifiedName))
@@ -22300,8 +22300,25 @@ var require_lib = __commonJS({
 var isNode = (value) => {
   return value && typeof value.nodeType === "number";
 };
+var isDocument = (value) => {
+  return value.nodeType === 9;
+};
 var isElement = (value) => {
   return value.nodeType === 1;
+};
+var isQwikElement = (value) => {
+  const nodeType = value.nodeType;
+  return nodeType === 1 || nodeType === 111;
+};
+var isNodeElement = (value) => {
+  const nodeType = value.nodeType;
+  return nodeType === 1 || nodeType === 111 || nodeType === 3;
+};
+var isVirtualElement = (value) => {
+  return value.nodeType === 111;
+};
+var isComment = (value) => {
+  return value.nodeType === 8;
 };
 
 // packages/qwik/src/core/util/qdev.ts
@@ -22311,13 +22328,41 @@ var qSerialize = globalThis.qSerialize !== false;
 var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
 var qTest = globalThis.qTest === true;
 var qRuntimeQrl = globalThis.qRuntimeQrl === true;
+var seal = (obj) => {
+  if (qDev) {
+    Object.seal(obj);
+  }
+};
 
 // packages/qwik/src/core/util/log.ts
 var STYLE = qDev ? `background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;` : "";
+var logError = (message, ...optionalParams) => {
+  return createAndLogError(false, message, ...optionalParams);
+};
 var throwErrorAndStop = (message, ...optionalParams) => {
   const error = createAndLogError(false, message, ...optionalParams);
   debugger;
   throw error;
+};
+var logErrorAndStop = (message, ...optionalParams) => {
+  const err = createAndLogError(true, message, ...optionalParams);
+  debugger;
+  return err;
+};
+var _printed = /* @__PURE__ */ new Set();
+var logOnceWarn = (message, ...optionalParams) => {
+  if (qDev) {
+    const key = "warn" + String(message);
+    if (!_printed.has(key)) {
+      _printed.add(key);
+      logWarn(message, ...optionalParams);
+    }
+  }
+};
+var logWarn = (message, ...optionalParams) => {
+  if (qDev) {
+    console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
+  }
 };
 var tryGetContext = (element) => {
   return element["_qc_"];
@@ -22335,12 +22380,12 @@ var printParams = (optionalParams) => {
 };
 var printElement = (el) => {
   const ctx = tryGetContext(el);
-  const isServer = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
+  const isServer2 = /* @__PURE__ */ (() => typeof process !== "undefined" && !!process.versions && !!process.versions.node)();
   return {
     tagName: el.tagName,
     renderQRL: ctx?.$componentQrl$?.getSymbol(),
-    element: isServer ? void 0 : el,
-    ctx: isServer ? void 0 : ctx
+    element: isServer2 ? void 0 : el,
+    ctx: isServer2 ? void 0 : ctx
   };
 };
 var createAndLogError = (asyncThrow, message, ...optionalParams) => {
@@ -22362,6 +22407,168 @@ function assertDefined(value, text, ...parts) {
     throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
   }
 }
+function assertEqual(value1, value2, text, ...parts) {
+  if (qDev) {
+    if (value1 === value2) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+function assertFail(text, ...parts) {
+  if (qDev) {
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+function assertTrue(value1, text, ...parts) {
+  if (qDev) {
+    if (value1 === true) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+function assertNumber(value1, text, ...parts) {
+  if (qDev) {
+    if (typeof value1 === "number") {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+function assertString(value1, text, ...parts) {
+  if (qDev) {
+    if (typeof value1 === "string") {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+function assertQwikElement(el) {
+  if (qDev) {
+    if (!isQwikElement(el)) {
+      console.error("Not a Qwik Element, got", el);
+      throwErrorAndStop(ASSERT_DISCLAIMER + "Not a Qwik Element");
+    }
+  }
+}
+
+// packages/qwik/src/core/error/error.ts
+var codeToText = (code2, ...parts) => {
+  if (qDev) {
+    const MAP = [
+      "Error while serializing class attribute",
+      // 0
+      "Can not serialize a HTML Node that is not an Element",
+      // 1
+      "Runtime but no instance found on element.",
+      // 2
+      "Only primitive and object literals can be serialized",
+      // 3
+      "Crash while rendering",
+      // 4
+      "You can render over a existing q:container. Skipping render().",
+      // 5
+      "Set property {{0}}",
+      // 6
+      "Only function's and 'string's are supported.",
+      // 7
+      "Only objects can be wrapped in 'QObject'",
+      // 8
+      `Only objects literals can be wrapped in 'QObject'`,
+      // 9
+      "QRL is not a function",
+      // 10
+      "Dynamic import not found",
+      // 11
+      "Unknown type argument",
+      // 12
+      `Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.`,
+      // 13
+      "Invoking 'use*()' method outside of invocation context.",
+      // 14
+      "Cant access renderCtx for existing context",
+      // 15
+      "Cant access document for existing context",
+      // 16
+      "props are immutable",
+      // 17
+      "<div> component can only be used at the root of a Qwik component$()",
+      // 18
+      "Props are immutable by default.",
+      // 19
+      `Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.
+See https://qwik.dev/docs/components/tasks/#use-method-rules`,
+      // 20
+      "Container is already paused. Skipping",
+      // 21
+      "",
+      // 22 -- unused
+      "When rendering directly on top of Document, the root node must be a <html>",
+      // 23
+      "A <html> node must have 2 children. The first one <head> and the second one a <body>",
+      // 24
+      'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:',
+      // 25
+      "Tracking value changes can only be done to useStore() objects and component props",
+      // 26
+      "Missing Object ID for captured object",
+      // 27
+      'The provided Context reference "{{0}}" is not a valid context created by createContextId()',
+      // 28
+      "<html> is the root container, it can not be rendered inside a component",
+      // 29
+      "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.",
+      // 30
+      "QRLs can not be dynamically resolved, because it does not have a chunk path",
+      // 31
+      "The JSX ref attribute must be a Signal"
+      // 32
+    ];
+    let text = MAP[code2] ?? "";
+    if (parts.length) {
+      text = text.replaceAll(/{{(\d+)}}/g, (_, index) => {
+        let v = parts[index];
+        if (v && typeof v === "object" && v.constructor === Object) {
+          v = JSON.stringify(v).slice(0, 50);
+        }
+        return v;
+      });
+    }
+    return `Code(${code2}): ${text}`;
+  } else {
+    return `Code(${code2}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code2}`;
+  }
+};
+var QError_verifySerializable = 3;
+var QError_setProperty = 6;
+var QError_qrlIsNotFunction = 10;
+var QError_immutableProps = 17;
+var QError_useInvokeContext = 20;
+var QError_qrlMissingContainer = 30;
+var QError_qrlMissingChunk = 31;
+var qError = (code2, ...parts) => {
+  const text = codeToText(code2, ...parts);
+  return logErrorAndStop(text, ...parts);
+};
+
+// packages/qwik/src/core/util/types.ts
+var isSerializableObject = (v) => {
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
+};
+var isObject = (v) => {
+  return !!v && typeof v === "object";
+};
+var isArray = (v) => {
+  return Array.isArray(v);
+};
+var isString = (v) => {
+  return typeof v === "string";
+};
+var isFunction = (v) => {
+  return typeof v === "function";
+};
 
 // packages/qwik/src/core/util/case.ts
 var fromCamelToKebabCase = (text) => {
@@ -22369,7 +22576,112 @@ var fromCamelToKebabCase = (text) => {
 };
 
 // packages/qwik/src/core/util/markers.ts
+var OnRenderProp = "q:renderFn";
+var QSlot = "q:slot";
+var QSlotS = "q:s";
+var QScopedStyle = "q:sstyle";
+var QInstance = "q:instance";
+var QFuncsPrefix = "qFuncs_";
+var getQFuncs = (document2, hash) => {
+  return document2[QFuncsPrefix + hash] || [];
+};
+var QLocaleAttr = "q:locale";
 var QContainerSelector = "[q\\:container]";
+var ResourceEvent = "qResource";
+var ComputedEvent = "qComputed";
+var RenderEvent = "qRender";
+
+// packages/qwik/src/core/util/promises.ts
+var isPromise = (value) => {
+  return value && typeof value.then === "function";
+};
+var safeCall = (call, thenFn, rejectFn) => {
+  try {
+    const promise = call();
+    if (isPromise(promise)) {
+      return promise.then(thenFn, rejectFn);
+    } else {
+      return thenFn(promise);
+    }
+  } catch (e) {
+    return rejectFn(e);
+  }
+};
+var maybeThen = (promise, thenFn) => {
+  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+};
+
+// packages/qwik/src/core/util/implicit_dollar.ts
+var implicit$FirstArg = (fn) => {
+  return function(first, ...rest) {
+    return fn.call(null, $(first), ...rest);
+  };
+};
+
+// packages/qwik/src/core/platform/platform.ts
+import { isServer } from "@builder.io/qwik/build";
+var createPlatform = () => {
+  return {
+    isServer,
+    importSymbol(containerEl, url, symbolName) {
+      if (isServer) {
+        const hash = getSymbolHash(symbolName);
+        const regSym = globalThis.__qwik_reg_symbols?.get(hash);
+        if (regSym) {
+          return regSym;
+        }
+      }
+      if (!url) {
+        throw qError(QError_qrlMissingChunk, symbolName);
+      }
+      if (!containerEl) {
+        throw qError(QError_qrlMissingContainer, url, symbolName);
+      }
+      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
+      const urlCopy = new URL(urlDoc);
+      urlCopy.hash = "";
+      const importURL = urlCopy.href;
+      return import(
+        /* @vite-ignore */
+        importURL
+      ).then((mod) => {
+        return mod[symbolName];
+      });
+    },
+    raf: (fn) => {
+      return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+          resolve(fn());
+        });
+      });
+    },
+    nextTick: (fn) => {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(fn());
+        });
+      });
+    },
+    chunkForSymbol(symbolName, chunk) {
+      return [symbolName, chunk ?? "_"];
+    }
+  };
+};
+var toUrl = (doc, containerEl, url) => {
+  const baseURI = doc.baseURI;
+  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+  return new URL(url, base);
+};
+var _platform = /* @__PURE__ */ createPlatform();
+var getPlatform = () => {
+  return _platform;
+};
+var isServerPlatform = () => {
+  if (qDynamicPlatform) {
+    return _platform.isServer;
+  }
+  return false;
+};
 
 // packages/qwik/src/core/state/constants.ts
 var QObjectRecursive = 1 << 0;
@@ -22378,7 +22690,438 @@ var QOjectTargetSymbol = Symbol("proxy target");
 var QObjectFlagsSymbol = Symbol("proxy flags");
 var QObjectManagerSymbol = Symbol("proxy manager");
 var _IMMUTABLE = Symbol("IMMUTABLE");
+var _IMMUTABLE_PREFIX = "$$";
+var VIRTUAL_SYMBOL = "__virtual";
 var Q_CTX = "_qc_";
+
+// packages/qwik/src/core/qrl/inlined-fn.ts
+var serializeDerivedSignalFunc = (signal) => {
+  const fnBody = qSerialize ? signal.$funcStr$ : "null";
+  assertDefined(fnBody, "If qSerialize is true then fnStr must be provided.");
+  let args = "";
+  for (let i = 0; i < signal.$args$.length; i++) {
+    args += `p${i},`;
+  }
+  return `(${args})=>(${fnBody})`;
+};
+
+// packages/qwik/src/core/state/signal.ts
+var _createSignal = (value, containerState, flags, subscriptions) => {
+  const manager = containerState.$subsManager$.$createManager$(subscriptions);
+  const signal = new SignalImpl(value, manager, flags);
+  return signal;
+};
+var QObjectSignalFlags = Symbol("proxy manager");
+var SIGNAL_IMMUTABLE = 1 << 0;
+var SIGNAL_UNASSIGNED = 1 << 1;
+var SignalUnassignedException = Symbol("unassigned signal");
+var SignalBase = class {
+};
+var _a;
+var SignalImpl = class extends SignalBase {
+  constructor(v, manager, flags) {
+    super();
+    this[_a] = 0;
+    this.untrackedValue = v;
+    this[QObjectManagerSymbol] = manager;
+    this[QObjectSignalFlags] = flags;
+  }
+  // prevent accidental use as value
+  valueOf() {
+    if (qDev) {
+      throw new TypeError("Cannot coerce a Signal, use `.value` instead");
+    }
+  }
+  toString() {
+    return `[Signal ${String(this.value)}]`;
+  }
+  toJSON() {
+    return { value: this.value };
+  }
+  get value() {
+    if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
+      throw SignalUnassignedException;
+    }
+    const sub = tryGetInvokeContext()?.$subscriber$;
+    if (sub) {
+      this[QObjectManagerSymbol].$addSub$(sub);
+    }
+    return this.untrackedValue;
+  }
+  set value(v) {
+    if (qDev) {
+      if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
+        throw new Error("Cannot mutate immutable signal");
+      }
+      if (qSerialize) {
+        verifySerializable(v);
+      }
+      const invokeCtx = tryGetInvokeContext();
+      if (invokeCtx) {
+        if (invokeCtx.$event$ === RenderEvent) {
+          logWarn(
+            "State mutation inside render function. Use useTask$() instead.",
+            invokeCtx.$hostElement$
+          );
+        } else if (invokeCtx.$event$ === ComputedEvent) {
+          logWarn(
+            "State mutation inside useComputed$() is an antipattern. Use useTask$() instead",
+            invokeCtx.$hostElement$
+          );
+        } else if (invokeCtx.$event$ === ResourceEvent) {
+          logWarn(
+            "State mutation inside useResource$() is an antipattern. Use useTask$() instead",
+            invokeCtx.$hostElement$
+          );
+        }
+      }
+    }
+    const manager = this[QObjectManagerSymbol];
+    const oldValue = this.untrackedValue;
+    if (manager && oldValue !== v) {
+      this.untrackedValue = v;
+      manager.$notifySubs$();
+    }
+  }
+};
+QObjectManagerSymbol, _a = QObjectSignalFlags;
+var SignalDerived = class extends SignalBase {
+  constructor($func$, $args$, $funcStr$) {
+    super();
+    this.$func$ = $func$;
+    this.$args$ = $args$;
+    this.$funcStr$ = $funcStr$;
+  }
+  get value() {
+    return this.$func$.apply(void 0, this.$args$);
+  }
+};
+var SignalWrapper = class extends SignalBase {
+  constructor(ref, prop) {
+    super();
+    this.ref = ref;
+    this.prop = prop;
+  }
+  get [QObjectManagerSymbol]() {
+    return getSubscriptionManager(this.ref);
+  }
+  get value() {
+    return this.ref[this.prop];
+  }
+  set value(value) {
+    this.ref[this.prop] = value;
+  }
+};
+var isSignal = (obj) => {
+  return obj instanceof SignalBase;
+};
+
+// packages/qwik/src/core/qrl/qrl-class.ts
+var isQrl = (value) => {
+  return typeof value === "function" && typeof value.getSymbol === "function";
+};
+var SYNC_QRL = "<sync>";
+var isSyncQrl = (value) => {
+  return isQrl(value) && value.$symbol$ == SYNC_QRL;
+};
+var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
+  if (qDev && qSerialize) {
+    if (captureRef) {
+      for (const item of captureRef) {
+        verifySerializable(item, "Captured variable in the closure can not be serialized");
+      }
+    }
+  }
+  let _containerEl;
+  const qrl = async function(...args) {
+    const fn = invokeFn.call(this, tryGetInvokeContext());
+    const result = await fn(...args);
+    return result;
+  };
+  const setContainer = (el) => {
+    if (!_containerEl) {
+      _containerEl = el;
+    }
+    return _containerEl;
+  };
+  const wrapFn = (fn) => {
+    if (typeof fn !== "function" || !capture?.length && !captureRef?.length) {
+      return fn;
+    }
+    return function(...args) {
+      let context = tryGetInvokeContext();
+      if (context) {
+        const prevQrl = context.$qrl$;
+        context.$qrl$ = qrl;
+        const prevEvent = context.$event$;
+        if (context.$event$ === void 0) {
+          context.$event$ = this;
+        }
+        try {
+          return fn.apply(this, args);
+        } finally {
+          context.$qrl$ = prevQrl;
+          context.$event$ = prevEvent;
+        }
+      }
+      context = newInvokeContext();
+      context.$qrl$ = qrl;
+      context.$event$ = this;
+      return invoke.call(this, context, fn, ...args);
+    };
+  };
+  const resolve = async (containerEl) => {
+    if (symbolRef !== null) {
+      return symbolRef;
+    }
+    if (containerEl) {
+      setContainer(containerEl);
+    }
+    if (chunk === "") {
+      assertDefined(_containerEl, "Sync QRL must have container element");
+      const hash2 = _containerEl.getAttribute(QInstance);
+      const doc = _containerEl.ownerDocument;
+      const qFuncs2 = getQFuncs(doc, hash2);
+      return qrl.resolved = symbolRef = qFuncs2[Number(symbol)];
+    }
+    const start = now();
+    const ctx = tryGetInvokeContext();
+    if (symbolFn !== null) {
+      symbolRef = symbolFn().then((module) => qrl.resolved = symbolRef = wrapFn(module[symbol]));
+    } else {
+      const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
+      symbolRef = maybeThen(imported, (ref) => qrl.resolved = symbolRef = wrapFn(ref));
+    }
+    symbolRef.finally(() => emitUsedSymbol(symbol, ctx?.$element$, start));
+    return symbolRef;
+  };
+  const resolveLazy = (containerEl) => {
+    return symbolRef !== null ? symbolRef : resolve(containerEl);
+  };
+  function invokeFn(currentCtx, beforeFn) {
+    return (...args) => maybeThen(resolveLazy(), (f) => {
+      if (!isFunction(f)) {
+        throw qError(QError_qrlIsNotFunction);
+      }
+      if (beforeFn && beforeFn() === false) {
+        return;
+      }
+      const context = createOrReuseInvocationContext(currentCtx);
+      return invoke.call(this, context, f, ...args);
+    });
+  }
+  const createOrReuseInvocationContext = (invoke2) => {
+    if (invoke2 == null) {
+      return newInvokeContext();
+    } else if (isArray(invoke2)) {
+      return newInvokeContextFromTuple(invoke2);
+    } else {
+      return invoke2;
+    }
+  };
+  const resolvedSymbol = refSymbol ?? symbol;
+  const hash = getSymbolHash(resolvedSymbol);
+  Object.assign(qrl, {
+    getSymbol: () => resolvedSymbol,
+    getHash: () => hash,
+    getCaptured: () => captureRef,
+    resolve,
+    $resolveLazy$: resolveLazy,
+    $setContainer$: setContainer,
+    $chunk$: chunk,
+    $symbol$: symbol,
+    $refSymbol$: refSymbol,
+    $hash$: hash,
+    getFn: invokeFn,
+    $capture$: capture,
+    $captureRef$: captureRef,
+    dev: null,
+    resolved: void 0
+  });
+  if (symbolRef) {
+    symbolRef = maybeThen(symbolRef, (resolved) => qrl.resolved = symbolRef = wrapFn(resolved));
+  }
+  if (qDev) {
+    seal(qrl);
+  }
+  return qrl;
+};
+var getSymbolHash = (symbolName) => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
+function assertQrl(qrl) {
+  if (qDev) {
+    if (!isQrl(qrl)) {
+      throw new Error("Not a QRL");
+    }
+  }
+}
+function assertSignal(obj) {
+  if (qDev) {
+    if (!isSignal(obj)) {
+      throw new Error("Not a Signal");
+    }
+  }
+}
+var EMITTED = /* @__PURE__ */ new Set();
+var emitUsedSymbol = (symbol, element, reqTime) => {
+  if (!EMITTED.has(symbol)) {
+    EMITTED.add(symbol);
+    emitEvent("qsymbol", {
+      symbol,
+      element,
+      reqTime
+    });
+  }
+};
+var emitEvent = (eventName, detail) => {
+  if (!qTest && !isServerPlatform() && typeof document === "object") {
+    document.dispatchEvent(
+      new CustomEvent(eventName, {
+        bubbles: false,
+        detail
+      })
+    );
+  }
+};
+var now = () => {
+  if (qTest || isServerPlatform()) {
+    return 0;
+  }
+  if (typeof performance === "object") {
+    return performance.now();
+  }
+  return 0;
+};
+
+// packages/qwik/src/core/qrl/qrl.public.ts
+var runtimeSymbolId = 0;
+var $ = (expression) => {
+  if (!qRuntimeQrl && qDev) {
+    throw new Error(
+      "Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead."
+    );
+  }
+  return createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
+};
+var eventQrl = (qrl) => {
+  return qrl;
+};
+var event$ = implicit$FirstArg(eventQrl);
+
+// packages/qwik/src/core/render/jsx/utils.public.ts
+var SkipRender = Symbol("skip render");
+
+// packages/qwik/src/core/util/flyweight.ts
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+if (qDev) {
+  Object.freeze(EMPTY_ARRAY);
+  Object.freeze(EMPTY_OBJ);
+}
+
+// packages/qwik/src/core/qrl/qrl.ts
+var serializeQRL = (qrl, opts = {}) => {
+  assertTrue(qSerialize, "In order to serialize a QRL, qSerialize must be true");
+  assertQrl(qrl);
+  let symbol = qrl.$symbol$;
+  let chunk = qrl.$chunk$;
+  const refSymbol = qrl.$refSymbol$ ?? symbol;
+  const platform = getPlatform();
+  if (platform) {
+    const result = platform.chunkForSymbol(refSymbol, chunk, qrl.dev?.file);
+    if (result) {
+      chunk = result[1];
+      if (!qrl.$refSymbol$) {
+        symbol = result[0];
+      }
+    } else {
+      console.error("serializeQRL: Cannot resolve symbol", symbol, "in", chunk, qrl.dev?.file);
+    }
+  }
+  if (qRuntimeQrl && chunk == null) {
+    chunk = "/runtimeQRL";
+    symbol = "_";
+  }
+  if (chunk == null) {
+    throw qError(QError_qrlMissingChunk, qrl.$symbol$);
+  }
+  if (chunk.startsWith("./")) {
+    chunk = chunk.slice(2);
+  }
+  if (isSyncQrl(qrl)) {
+    if (opts.$containerState$) {
+      const fn = qrl.resolved;
+      const containerState = opts.$containerState$;
+      const fnStrKey = fn.toString();
+      let id = containerState.$inlineFns$.get(fnStrKey);
+      if (id === void 0) {
+        id = containerState.$inlineFns$.size;
+        containerState.$inlineFns$.set(fnStrKey, id);
+      }
+      symbol = String(id);
+    } else {
+      throwErrorAndStop("Sync QRL without containerState");
+    }
+  }
+  let output = `${chunk}#${symbol}`;
+  const capture = qrl.$capture$;
+  const captureRef = qrl.$captureRef$;
+  if (captureRef && captureRef.length) {
+    if (opts.$getObjId$) {
+      output += `[${mapJoin(captureRef, opts.$getObjId$, " ")}]`;
+    } else if (opts.$addRefMap$) {
+      output += `[${mapJoin(captureRef, opts.$addRefMap$, " ")}]`;
+    }
+  } else if (capture && capture.length > 0) {
+    output += `[${capture.join(" ")}]`;
+  }
+  return output;
+};
+var parseQRL = (qrl, containerEl) => {
+  const endIdx = qrl.length;
+  const hashIdx = indexOf(qrl, 0, "#");
+  const captureIdx = indexOf(qrl, hashIdx, "[");
+  const chunkEndIdx = Math.min(hashIdx, captureIdx);
+  const chunk = qrl.substring(0, chunkEndIdx);
+  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
+  const symbolEndIdx = captureIdx;
+  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
+  const captureStartIdx = captureIdx;
+  const captureEndIdx = endIdx;
+  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
+  const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
+  if (containerEl) {
+    iQrl.$setContainer$(containerEl);
+  }
+  return iQrl;
+};
+var indexOf = (text, startIdx, char) => {
+  const endIdx = text.length;
+  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
+  return charIdx == -1 ? endIdx : charIdx;
+};
+var inflateQrl = (qrl, elCtx) => {
+  assertDefined(qrl.$capture$, "invoke: qrl capture must be defined inside useLexicalScope()", qrl);
+  return qrl.$captureRef$ = qrl.$capture$.map((idx) => {
+    const int = parseInt(idx, 10);
+    const obj = elCtx.$refMap$[int];
+    assertTrue(elCtx.$refMap$.length > int, "out of bounds inflate access", idx);
+    return obj;
+  });
+};
+
+// packages/qwik/src/core/render/fast-calls.ts
+var directSetAttribute = (el, prop, value) => {
+  return el.setAttribute(prop, value);
+};
+var directGetAttribute = (el, prop) => {
+  return el.getAttribute(prop);
+};
 
 // packages/qwik/src/core/state/listeners.ts
 var PREFIXES = ["on", "window:on", "document:on"];
@@ -22400,11 +23143,2108 @@ var normalizeOnProp = (prop) => {
   }
   return scope + ":" + prop;
 };
+var getDomListeners = (elCtx, containerEl) => {
+  const attributes = elCtx.$element$.attributes;
+  const listeners = [];
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value } = attributes.item(i);
+    if (name.startsWith("on:") || name.startsWith("on-window:") || name.startsWith("on-document:")) {
+      const urls = value.split("\n");
+      for (const url of urls) {
+        const qrl = parseQRL(url, containerEl);
+        if (qrl.$capture$) {
+          inflateQrl(qrl, elCtx);
+        }
+        listeners.push([name, qrl]);
+      }
+    }
+  }
+  return listeners;
+};
+
+// packages/qwik/src/core/use/use-sequential-scope.ts
+var useSequentialScope = () => {
+  const iCtx = useInvokeContext();
+  const hostElement = iCtx.$hostElement$;
+  const elCtx = getContext(hostElement, iCtx.$renderCtx$.$static$.$containerState$);
+  const seq = elCtx.$seq$ || (elCtx.$seq$ = []);
+  const i = iCtx.$i$++;
+  const set = (value) => {
+    if (qDev && qSerialize) {
+      verifySerializable(value);
+    }
+    return seq[i] = value;
+  };
+  return {
+    val: seq[i],
+    set,
+    i,
+    iCtx,
+    elCtx
+  };
+};
+
+// packages/qwik/src/core/use/use-context.ts
+var createContextId = (name) => {
+  assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name);
+  return /* @__PURE__ */ Object.freeze({
+    id: fromCamelToKebabCase(name)
+  });
+};
+var findParentCtx = (el, containerState) => {
+  let node = el;
+  let stack = 1;
+  while (node && !node.hasAttribute?.("q:container")) {
+    while (node = node.previousSibling) {
+      if (isComment(node)) {
+        const virtual = node[VIRTUAL_SYMBOL];
+        if (virtual) {
+          const qtx = virtual[Q_CTX];
+          if (node === virtual.open) {
+            return qtx ?? getContext(virtual, containerState);
+          }
+          if (qtx?.$parentCtx$) {
+            return qtx.$parentCtx$;
+          }
+          node = virtual;
+          continue;
+        }
+        if (node.data === "/qv") {
+          stack++;
+        } else if (node.data.startsWith("qv ")) {
+          stack--;
+          if (stack === 0) {
+            return getContext(getVirtualElement(node), containerState);
+          }
+        }
+      }
+    }
+    node = el.parentElement;
+    el = node;
+  }
+  return null;
+};
+var getParentProvider = (ctx, containerState) => {
+  if (ctx.$parentCtx$ === void 0) {
+    ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState);
+  }
+  return ctx.$parentCtx$;
+};
+var resolveContext = (context, hostCtx, containerState) => {
+  const contextID = context.id;
+  if (!hostCtx) {
+    return;
+  }
+  let ctx = hostCtx;
+  while (ctx) {
+    const found = ctx.$contexts$?.get(contextID);
+    if (found) {
+      return found;
+    }
+    ctx = getParentProvider(ctx, containerState);
+  }
+};
+
+// packages/qwik/src/core/render/error-handling.ts
+var ERROR_CONTEXT = /* @__PURE__ */ createContextId("qk-error");
+var handleError = (err, hostElement, rCtx) => {
+  const elCtx = tryGetContext2(hostElement);
+  if (qDev) {
+    if (!isServerPlatform() && typeof document !== "undefined" && isVirtualElement(hostElement)) {
+      elCtx.$vdom$ = null;
+      const errorDiv = document.createElement("errored-host");
+      if (err && err instanceof Error) {
+        errorDiv.props = { error: err };
+      }
+      errorDiv.setAttribute("q:key", "_error_");
+      errorDiv.append(...hostElement.childNodes);
+      hostElement.appendChild(errorDiv);
+    }
+    if (err && err instanceof Error) {
+      if (!("hostElement" in err)) {
+        err["hostElement"] = hostElement;
+      }
+    }
+    if (!isRecoverable(err)) {
+      throw err;
+    }
+  }
+  if (isServerPlatform()) {
+    throw err;
+  } else {
+    const errorStore = resolveContext(ERROR_CONTEXT, elCtx, rCtx.$static$.$containerState$);
+    if (errorStore === void 0) {
+      throw err;
+    }
+    errorStore.error = err;
+  }
+};
+var isRecoverable = (err) => {
+  if (err && err instanceof Error) {
+    if ("plugin" in err) {
+      return false;
+    }
+  }
+  return true;
+};
+
+// packages/qwik/src/core/util/event.ts
+import { isBrowser } from "@builder.io/qwik/build";
+
+// packages/qwik/src/core/state/store.ts
+var getOrCreateProxy = (target, containerState, flags = 0) => {
+  const proxy = containerState.$proxyMap$.get(target);
+  if (proxy) {
+    return proxy;
+  }
+  if (flags !== 0) {
+    setObjectFlags(target, flags);
+  }
+  return createProxy(target, containerState, void 0);
+};
+var createProxy = (target, containerState, subs) => {
+  assertEqual(unwrapProxy(target), target, "Unexpected proxy at this location", target);
+  assertTrue(!containerState.$proxyMap$.has(target), "Proxy was already created", target);
+  assertTrue(isObject(target), "Target must be an object");
+  assertTrue(
+    isSerializableObject(target) || isArray(target),
+    "Target must be a serializable object"
+  );
+  const manager = containerState.$subsManager$.$createManager$(subs);
+  const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
+  containerState.$proxyMap$.set(target, proxy);
+  return proxy;
+};
+var createPropsState = () => {
+  const props = {};
+  setObjectFlags(props, QObjectImmutable);
+  return props;
+};
+var setObjectFlags = (obj, flags) => {
+  Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
+};
+var ReadWriteProxyHandler = class {
+  constructor($containerState$, $manager$) {
+    this.$containerState$ = $containerState$;
+    this.$manager$ = $manager$;
+  }
+  deleteProperty(target, prop) {
+    if (target[QObjectFlagsSymbol] & QObjectImmutable) {
+      throw qError(QError_immutableProps);
+    }
+    if (typeof prop != "string" || !delete target[prop]) {
+      return false;
+    }
+    this.$manager$.$notifySubs$(isArray(target) ? void 0 : prop);
+    return true;
+  }
+  get(target, prop) {
+    if (typeof prop === "symbol") {
+      if (prop === QOjectTargetSymbol) {
+        return target;
+      }
+      if (prop === QObjectManagerSymbol) {
+        return this.$manager$;
+      }
+      return target[prop];
+    }
+    const flags = target[QObjectFlagsSymbol] ?? 0;
+    assertNumber(flags, "flags must be an number");
+    const invokeCtx = tryGetInvokeContext();
+    const recursive = (flags & QObjectRecursive) !== 0;
+    const immutable = (flags & QObjectImmutable) !== 0;
+    const hiddenSignal = target[_IMMUTABLE_PREFIX + prop];
+    let subscriber;
+    let value;
+    if (invokeCtx) {
+      subscriber = invokeCtx.$subscriber$;
+    }
+    if (immutable && (!(prop in target) || immutableValue(target[_IMMUTABLE]?.[prop]))) {
+      subscriber = null;
+    }
+    if (hiddenSignal) {
+      assertTrue(isSignal(hiddenSignal), "$$ prop must be a signal");
+      value = hiddenSignal.value;
+      subscriber = null;
+    } else {
+      value = target[prop];
+    }
+    if (subscriber) {
+      const isA = isArray(target);
+      this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+    }
+    return recursive ? wrap(value, this.$containerState$) : value;
+  }
+  set(target, prop, newValue) {
+    if (typeof prop === "symbol") {
+      target[prop] = newValue;
+      return true;
+    }
+    const flags = target[QObjectFlagsSymbol] ?? 0;
+    assertNumber(flags, "flags must be an number");
+    const immutable = (flags & QObjectImmutable) !== 0;
+    if (immutable) {
+      throw qError(QError_immutableProps);
+    }
+    const recursive = (flags & QObjectRecursive) !== 0;
+    const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
+    if (qDev) {
+      if (qSerialize) {
+        verifySerializable(unwrappedNewValue);
+      }
+      const invokeCtx = tryGetInvokeContext();
+      if (invokeCtx) {
+        if (invokeCtx.$event$ === RenderEvent) {
+          logError(
+            "State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()",
+            prop
+          );
+        } else if (invokeCtx.$event$ === ComputedEvent) {
+          logWarn(
+            "State mutation inside useComputed$() is an antipattern. Use useTask$() instead",
+            invokeCtx.$hostElement$
+          );
+        } else if (invokeCtx.$event$ === ResourceEvent) {
+          logWarn(
+            "State mutation inside useResource$() is an antipattern. Use useTask$() instead",
+            invokeCtx.$hostElement$
+          );
+        }
+      }
+    }
+    const isA = isArray(target);
+    if (isA) {
+      target[prop] = unwrappedNewValue;
+      this.$manager$.$notifySubs$();
+      return true;
+    }
+    const oldValue = target[prop];
+    target[prop] = unwrappedNewValue;
+    if (oldValue !== unwrappedNewValue) {
+      this.$manager$.$notifySubs$(prop);
+    }
+    return true;
+  }
+  has(target, property) {
+    if (property === QOjectTargetSymbol) {
+      return true;
+    }
+    const hasOwnProperty = Object.prototype.hasOwnProperty;
+    if (hasOwnProperty.call(target, property)) {
+      return true;
+    }
+    if (typeof property === "string" && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+      return true;
+    }
+    return false;
+  }
+  ownKeys(target) {
+    const flags = target[QObjectFlagsSymbol] ?? 0;
+    assertNumber(flags, "flags must be an number");
+    const immutable = (flags & QObjectImmutable) !== 0;
+    if (!immutable) {
+      let subscriber = null;
+      const invokeCtx = tryGetInvokeContext();
+      if (invokeCtx) {
+        subscriber = invokeCtx.$subscriber$;
+      }
+      if (subscriber) {
+        this.$manager$.$addSub$(subscriber);
+      }
+    }
+    if (isArray(target)) {
+      return Reflect.ownKeys(target);
+    }
+    return Reflect.ownKeys(target).map((a) => {
+      return typeof a === "string" && a.startsWith(_IMMUTABLE_PREFIX) ? a.slice(_IMMUTABLE_PREFIX.length) : a;
+    });
+  }
+  getOwnPropertyDescriptor(target, prop) {
+    if (isArray(target) || typeof prop === "symbol") {
+      return Object.getOwnPropertyDescriptor(target, prop);
+    }
+    return {
+      enumerable: true,
+      configurable: true
+    };
+  }
+};
+var immutableValue = (value) => {
+  return value === _IMMUTABLE || isSignal(value);
+};
+var wrap = (value, containerState) => {
+  if (isObject(value)) {
+    if (Object.isFrozen(value)) {
+      return value;
+    }
+    const nakedValue = unwrapProxy(value);
+    if (nakedValue !== value) {
+      return value;
+    }
+    if (fastSkipSerialize(nakedValue)) {
+      return value;
+    }
+    if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
+      const proxy = containerState.$proxyMap$.get(nakedValue);
+      return proxy ? proxy : getOrCreateProxy(nakedValue, containerState, QObjectRecursive);
+    }
+  }
+  return value;
+};
+
+// packages/qwik/src/core/render/execute-component.ts
+var static_listeners = 1 << 0;
+var static_subtree = 1 << 1;
+var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+
+// packages/qwik/src/core/render/dom/visitor.ts
+import { isBrowser as isBrowser2 } from "@builder.io/qwik/build";
+var SVG_NS = "http://www.w3.org/2000/svg";
+var IS_SVG = 1 << 0;
+var IS_HEAD = 1 << 1;
+var IS_IMMUTABLE = 1 << 2;
+var getChildren = (elm, filter) => {
+  const end = isVirtualElement(elm) ? elm.close : null;
+  const nodes = [];
+  let node = elm.firstChild;
+  while (node = processVirtualNodes(node)) {
+    if (filter(node)) {
+      nodes.push(node);
+    }
+    node = node.nextSibling;
+    if (node === end) {
+      break;
+    }
+  }
+  return nodes;
+};
+var handleStyle = (ctx, elm, newValue) => {
+  setProperty(ctx, elm.style, "cssText", newValue);
+  return true;
+};
+var handleClass = (ctx, elm, newValue) => {
+  assertTrue(
+    newValue == null || typeof newValue === "string",
+    "class newValue must be either nullish or string",
+    newValue
+  );
+  if (elm.namespaceURI === SVG_NS) {
+    setAttribute(ctx, elm, "class", newValue);
+  } else {
+    setProperty(ctx, elm, "className", newValue);
+  }
+  return true;
+};
+var checkBeforeAssign = (ctx, elm, newValue, prop) => {
+  if (prop in elm) {
+    if (elm[prop] !== newValue || prop === "value" && !elm.hasAttribute(prop)) {
+      if (
+        // we must set value last so that it adheres to min,max,step
+        prop === "value" && // but we must also set options first so they are present before updating select
+        elm.tagName !== "OPTION"
+      ) {
+        setPropertyPost(ctx, elm, prop, newValue);
+      } else {
+        setProperty(ctx, elm, prop, newValue);
+      }
+    }
+    return true;
+  }
+  return false;
+};
+var forceAttribute = (ctx, elm, newValue, prop) => {
+  setAttribute(ctx, elm, prop.toLowerCase(), newValue);
+  return true;
+};
+var setInnerHTML = (ctx, elm, newValue) => {
+  setProperty(ctx, elm, "innerHTML", newValue);
+  return true;
+};
+var noop = () => {
+  return true;
+};
+var PROP_HANDLER_MAP = {
+  style: handleStyle,
+  class: handleClass,
+  className: handleClass,
+  value: checkBeforeAssign,
+  checked: checkBeforeAssign,
+  href: forceAttribute,
+  list: forceAttribute,
+  form: forceAttribute,
+  tabIndex: forceAttribute,
+  download: forceAttribute,
+  innerHTML: noop,
+  [dangerouslySetInnerHTML]: setInnerHTML
+};
+
+// packages/qwik/src/core/render/dom/operations.ts
+var setAttribute = (staticCtx, el, prop, value) => {
+  staticCtx.$operations$.push({
+    $operation$: _setAttribute,
+    $args$: [el, prop, value]
+  });
+};
+var _setAttribute = (el, prop, value) => {
+  if (value == null || value === false) {
+    el.removeAttribute(prop);
+  } else {
+    const str = value === true ? "" : String(value);
+    directSetAttribute(el, prop, str);
+  }
+};
+var setProperty = (staticCtx, node, key, value) => {
+  staticCtx.$operations$.push({
+    $operation$: _setProperty,
+    $args$: [node, key, value]
+  });
+};
+var setPropertyPost = (staticCtx, node, key, value) => {
+  staticCtx.$postOperations$.push({
+    $operation$: _setProperty,
+    $args$: [node, key, value]
+  });
+};
+var _setProperty = (node, key, value) => {
+  try {
+    node[key] = value == null ? "" : value;
+    if (value == null && isNode(node) && isElement(node)) {
+      node.removeAttribute(key);
+    }
+  } catch (err) {
+    logError(codeToText(QError_setProperty), key, { node, value }, err);
+  }
+};
+var createElement = (doc, expectTag, isSvg) => {
+  const el = isSvg ? doc.createElementNS(SVG_NS, expectTag) : doc.createElement(expectTag);
+  return el;
+};
+
+// packages/qwik/src/core/render/dom/virtual-element.ts
+var parseVirtualAttributes = (str) => {
+  if (!str) {
+    return {};
+  }
+  const attributes = str.split(" ");
+  return Object.fromEntries(
+    attributes.map((attr) => {
+      const index = attr.indexOf("=");
+      if (index >= 0) {
+        return [attr.slice(0, index), unescape(attr.slice(index + 1))];
+      } else {
+        return [attr, ""];
+      }
+    })
+  );
+};
+var serializeVirtualAttributes = (map) => {
+  const attributes = [];
+  Object.entries(map).forEach(([key, value]) => {
+    if (!value) {
+      attributes.push(`${key}`);
+    } else {
+      attributes.push(`${key}=${escape(value)}`);
+    }
+  });
+  return attributes.join(" ");
+};
+var escape = (s) => {
+  return s.replace(/ /g, "+");
+};
+var unescape = (s) => {
+  return s.replace(/\+/g, " ");
+};
+var VIRTUAL = ":virtual";
+var VirtualElementImpl = class {
+  constructor(open, close, isSvg) {
+    this.open = open;
+    this.close = close;
+    this.isSvg = isSvg;
+    this._qc_ = null;
+    this.nodeType = 111;
+    this.localName = VIRTUAL;
+    this.nodeName = VIRTUAL;
+    const doc = this.ownerDocument = open.ownerDocument;
+    this.$template$ = createElement(doc, "template", false);
+    this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
+    assertTrue(open.data.startsWith("qv "), "comment is not a qv");
+    open[VIRTUAL_SYMBOL] = this;
+    close[VIRTUAL_SYMBOL] = this;
+    seal(this);
+  }
+  insertBefore(node, ref) {
+    const parent = this.parentElement;
+    if (parent) {
+      const ref2 = ref ? ref : this.close;
+      parent.insertBefore(node, ref2);
+    } else {
+      this.$template$.insertBefore(node, ref);
+    }
+    return node;
+  }
+  remove() {
+    const parent = this.parentElement;
+    if (parent) {
+      const ch = this.childNodes;
+      assertEqual(this.$template$.childElementCount, 0, "children should be empty");
+      parent.removeChild(this.open);
+      for (let i = 0; i < ch.length; i++) {
+        this.$template$.appendChild(ch[i]);
+      }
+      parent.removeChild(this.close);
+    }
+  }
+  appendChild(node) {
+    return this.insertBefore(node, null);
+  }
+  insertBeforeTo(newParent, child) {
+    const ch = this.childNodes;
+    newParent.insertBefore(this.open, child);
+    for (const c of ch) {
+      newParent.insertBefore(c, child);
+    }
+    newParent.insertBefore(this.close, child);
+    assertEqual(this.$template$.childElementCount, 0, "children should be empty");
+  }
+  appendTo(newParent) {
+    this.insertBeforeTo(newParent, null);
+  }
+  get namespaceURI() {
+    return this.parentElement?.namespaceURI ?? "";
+  }
+  removeChild(child) {
+    if (this.parentElement) {
+      this.parentElement.removeChild(child);
+    } else {
+      this.$template$.removeChild(child);
+    }
+  }
+  getAttribute(prop) {
+    return this.$attributes$[prop] ?? null;
+  }
+  hasAttribute(prop) {
+    return prop in this.$attributes$;
+  }
+  setAttribute(prop, value) {
+    this.$attributes$[prop] = value;
+    if (qSerialize) {
+      this.open.data = updateComment(this.$attributes$);
+    }
+  }
+  removeAttribute(prop) {
+    delete this.$attributes$[prop];
+    if (qSerialize) {
+      this.open.data = updateComment(this.$attributes$);
+    }
+  }
+  matches(_) {
+    return false;
+  }
+  compareDocumentPosition(other) {
+    return this.open.compareDocumentPosition(other);
+  }
+  closest(query) {
+    const parent = this.parentElement;
+    if (parent) {
+      return parent.closest(query);
+    }
+    return null;
+  }
+  querySelectorAll(query) {
+    const result = [];
+    const ch = getChildren(this, isNodeElement);
+    ch.forEach((el) => {
+      if (isQwikElement(el)) {
+        if (el.matches(query)) {
+          result.push(el);
+        }
+        result.concat(Array.from(el.querySelectorAll(query)));
+      }
+    });
+    return result;
+  }
+  querySelector(query) {
+    for (const el of this.childNodes) {
+      if (isElement(el)) {
+        if (el.matches(query)) {
+          return el;
+        }
+        const v = el.querySelector(query);
+        if (v !== null) {
+          return v;
+        }
+      }
+    }
+    return null;
+  }
+  get innerHTML() {
+    return "";
+  }
+  set innerHTML(html) {
+    const parent = this.parentElement;
+    if (parent) {
+      this.childNodes.forEach((a) => this.removeChild(a));
+      this.$template$.innerHTML = html;
+      parent.insertBefore(this.$template$.content, this.close);
+    } else {
+      this.$template$.innerHTML = html;
+    }
+  }
+  get firstChild() {
+    if (this.parentElement) {
+      const first = this.open.nextSibling;
+      if (first === this.close) {
+        return null;
+      }
+      return first;
+    } else {
+      return this.$template$.firstChild;
+    }
+  }
+  get nextSibling() {
+    return this.close.nextSibling;
+  }
+  get previousSibling() {
+    return this.open.previousSibling;
+  }
+  get childNodes() {
+    if (!this.parentElement) {
+      return Array.from(this.$template$.childNodes);
+    }
+    const nodes = [];
+    let node = this.open;
+    while (node = node.nextSibling) {
+      if (node === this.close) {
+        break;
+      }
+      nodes.push(node);
+    }
+    return nodes;
+  }
+  get isConnected() {
+    return this.open.isConnected;
+  }
+  /** The DOM parent element (not the vDOM parent, use findVirtual for that) */
+  get parentElement() {
+    return this.open.parentElement;
+  }
+};
+var updateComment = (attributes) => {
+  return `qv ${serializeVirtualAttributes(attributes)}`;
+};
+var processVirtualNodes = (node) => {
+  if (node == null) {
+    return null;
+  }
+  if (isComment(node)) {
+    const virtual = getVirtualElement(node);
+    if (virtual) {
+      return virtual;
+    }
+  }
+  return node;
+};
+var findClose = (open) => {
+  let node = open;
+  let stack = 1;
+  while (node = node.nextSibling) {
+    if (isComment(node)) {
+      const virtual = node[VIRTUAL_SYMBOL];
+      if (virtual) {
+        node = virtual;
+      } else if (node.data.startsWith("qv ")) {
+        stack++;
+      } else if (node.data === "/qv") {
+        stack--;
+        if (stack === 0) {
+          return node;
+        }
+      }
+    }
+  }
+  assertFail("close not found");
+};
+var getVirtualElement = (open) => {
+  const virtual = open[VIRTUAL_SYMBOL];
+  if (virtual) {
+    return virtual;
+  }
+  if (open.data.startsWith("qv ")) {
+    const close = findClose(open);
+    return new VirtualElementImpl(open, close, open.parentElement?.namespaceURI === SVG_NS);
+  }
+  return null;
+};
+
+// packages/qwik/src/core/container/pause.ts
+var mapJoin = (objects, getObjectId, sep) => {
+  let output = "";
+  for (const obj of objects) {
+    const id = getObjectId(obj);
+    if (id !== null) {
+      if (output !== "") {
+        output += sep;
+      }
+      output += id;
+    }
+  }
+  return output;
+};
+var collectDeferElement = (el, collector) => {
+  const ctx = tryGetContext2(el);
+  if (collector.$elements$.includes(ctx)) {
+    return;
+  }
+  collector.$elements$.push(ctx);
+  if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
+    collector.$prefetch$++;
+    collectElementData(ctx, collector, true);
+    collector.$prefetch$--;
+  } else {
+    collector.$deferElements$.push(ctx);
+  }
+};
+var collectElementData = (elCtx, collector, dynamicCtx) => {
+  if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
+    collectValue(elCtx.$props$, collector, dynamicCtx);
+    collectSubscriptions(getSubscriptionManager(elCtx.$props$), collector, dynamicCtx);
+  }
+  if (elCtx.$componentQrl$) {
+    collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
+  }
+  if (elCtx.$seq$) {
+    for (const obj of elCtx.$seq$) {
+      collectValue(obj, collector, dynamicCtx);
+    }
+  }
+  if (elCtx.$tasks$) {
+    const map = collector.$containerState$.$subsManager$.$groupToManagers$;
+    for (const obj of elCtx.$tasks$) {
+      if (map.has(obj)) {
+        collectValue(obj, collector, dynamicCtx);
+      }
+    }
+  }
+  if (dynamicCtx === true) {
+    collectContext(elCtx, collector);
+    if (elCtx.$dynamicSlots$) {
+      for (const slotCtx of elCtx.$dynamicSlots$) {
+        collectContext(slotCtx, collector);
+      }
+    }
+  }
+};
+var collectContext = (elCtx, collector) => {
+  while (elCtx) {
+    if (elCtx.$contexts$) {
+      for (const obj of elCtx.$contexts$.values()) {
+        collectValue(obj, collector, true);
+      }
+    }
+    elCtx = elCtx.$parentCtx$;
+  }
+};
+var collectSubscriptions = (manager, collector, leaks) => {
+  if (collector.$seen$.has(manager)) {
+    return;
+  }
+  collector.$seen$.add(manager);
+  const subs = manager.$subs$;
+  assertDefined(subs, "subs must be defined");
+  for (const sub of subs) {
+    const type = sub[0];
+    if (type > 0) {
+      collectValue(sub[2], collector, leaks);
+    }
+    if (leaks === true) {
+      const host = sub[1];
+      if (isNode(host) && isVirtualElement(host)) {
+        if (sub[0] === 0) {
+          collectDeferElement(host, collector);
+        }
+      } else {
+        collectValue(host, collector, true);
+      }
+    }
+  }
+};
+var PROMISE_VALUE = Symbol();
+var resolvePromise = (promise) => {
+  return promise.then(
+    (value) => {
+      const v = {
+        resolved: true,
+        value
+      };
+      promise[PROMISE_VALUE] = v;
+      return value;
+    },
+    (value) => {
+      const v = {
+        resolved: false,
+        value
+      };
+      promise[PROMISE_VALUE] = v;
+      return value;
+    }
+  );
+};
+var collectValue = (obj, collector, leaks) => {
+  if (obj != null) {
+    const objType = typeof obj;
+    switch (objType) {
+      case "function":
+      case "object": {
+        if (collector.$seen$.has(obj)) {
+          return;
+        }
+        collector.$seen$.add(obj);
+        if (fastSkipSerialize(obj)) {
+          collector.$objSet$.add(void 0);
+          collector.$noSerialize$.push(obj);
+          return;
+        }
+        const input = obj;
+        const target = getProxyTarget(obj);
+        if (target) {
+          obj = target;
+          const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
+          if (leaks && mutable) {
+            collectSubscriptions(getSubscriptionManager(input), collector, leaks);
+          }
+          if (fastWeakSerialize(input)) {
+            collector.$objSet$.add(obj);
+            return;
+          }
+        }
+        const collected = collectDeps(obj, collector, leaks);
+        if (collected) {
+          collector.$objSet$.add(obj);
+          return;
+        }
+        if (isPromise(obj)) {
+          collector.$promises$.push(
+            resolvePromise(obj).then((value) => {
+              collectValue(value, collector, leaks);
+            })
+          );
+          return;
+        }
+        if (objType === "object") {
+          if (isNode(obj)) {
+            return;
+          }
+          if (isArray(obj)) {
+            for (let i = 0; i < obj.length; i++) {
+              collectValue(input[i], collector, leaks);
+            }
+          } else if (isSerializableObject(obj)) {
+            for (const key in obj) {
+              collectValue(input[key], collector, leaks);
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+  collector.$objSet$.add(obj);
+};
+var isEmptyObj = (obj) => {
+  return Object.keys(obj).length === 0;
+};
+
+// packages/qwik/src/core/version.ts
+var version = globalThis.QWIK_VERSION;
+
+// packages/qwik/src/core/render/ssr/render-ssr.ts
+var IS_HEAD2 = 1 << 0;
+var IS_HTML = 1 << 2;
+var IS_TEXT = 1 << 3;
+var IS_INVISIBLE = 1 << 4;
+var IS_PHASING = 1 << 5;
+var IS_ANCHOR = 1 << 6;
+var IS_BUTTON = 1 << 7;
+var IS_TABLE = 1 << 8;
+var IS_PHRASING_CONTAINER = 1 << 9;
+var IS_IMMUTABLE2 = 1 << 10;
+var _a2;
+var MockElement = class {
+  constructor(nodeType) {
+    this.nodeType = nodeType;
+    this[_a2] = null;
+    seal(this);
+  }
+};
+_a2 = Q_CTX;
+
+// packages/qwik/src/core/render/jsx/jsx-runtime.ts
+import { isBrowser as isBrowser3 } from "@builder.io/qwik/build";
+var _jsxQ = (type, mutableProps, immutableProps, children, flags, key, dev) => {
+  assertString(type, "jsx type must be a string");
+  const processed = key == null ? null : String(key);
+  const node = new JSXNodeImpl(
+    type,
+    mutableProps || EMPTY_OBJ,
+    immutableProps,
+    children,
+    flags,
+    processed
+  );
+  if (qDev && dev) {
+    node.dev = {
+      stack: new Error().stack,
+      ...dev
+    };
+  }
+  validateJSXNode(node);
+  seal(node);
+  return node;
+};
+var _jsxC = (type, mutableProps, flags, key, dev) => {
+  const processed = key == null ? null : String(key);
+  const props = mutableProps ?? {};
+  if (typeof type === "string" && _IMMUTABLE in props) {
+    const immutableProps = props[_IMMUTABLE];
+    delete props[_IMMUTABLE];
+    const children = props.children;
+    delete props.children;
+    for (const [k, v] of Object.entries(immutableProps)) {
+      if (v !== _IMMUTABLE) {
+        delete props[k];
+        props[k] = v;
+      }
+    }
+    return _jsxQ(type, null, props, children, flags, key, dev);
+  }
+  const node = new JSXNodeImpl(
+    type,
+    props,
+    null,
+    props.children,
+    flags,
+    processed
+  );
+  if (typeof type === "string" && mutableProps) {
+    delete mutableProps.children;
+  }
+  if (qDev && dev) {
+    node.dev = {
+      stack: new Error().stack,
+      ...dev
+    };
+  }
+  validateJSXNode(node);
+  seal(node);
+  return node;
+};
+var JSXNodeImpl = class {
+  constructor(type, props, immutableProps, children, flags, key = null) {
+    this.type = type;
+    this.props = props;
+    this.immutableProps = immutableProps;
+    this.children = children;
+    this.flags = flags;
+    this.key = key;
+  }
+};
+var Virtual = (props) => props.children;
+var validateJSXNode = (node) => {
+  if (qDev) {
+    const { type, props, immutableProps, children } = node;
+    invoke(void 0, () => {
+      const isQwikC = isQwikComponent(type);
+      if (!isString(type) && !isFunction(type)) {
+        throw new Error(
+          `The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(
+            type
+          )}.`
+        );
+      }
+      if (children) {
+        const flatChildren = isArray(children) ? children.flat() : [children];
+        if (isString(type) || isQwikC) {
+          flatChildren.forEach((child) => {
+            if (!isValidJSXChild(child)) {
+              const typeObj = typeof child;
+              let explanation = "";
+              if (typeObj === "object") {
+                if (child?.constructor) {
+                  explanation = `it's an instance of "${child?.constructor.name}".`;
+                } else {
+                  explanation = `it's a object literal: ${printObjectLiteral(child)} `;
+                }
+              } else if (typeObj === "function") {
+                explanation += `it's a function named "${child.name}".`;
+              } else {
+                explanation = `it's a "${typeObj}": ${String(child)}.`;
+              }
+              throw new Error(
+                `One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}
+`
+              );
+            }
+          });
+        }
+        if (isBrowser3) {
+          if (isFunction(type) || immutableProps) {
+            const keys = {};
+            flatChildren.forEach((child) => {
+              if (isJSXNode(child) && child.key != null) {
+                const key = String(child.type) + ":" + child.key;
+                if (keys[key]) {
+                  const err = createJSXError(
+                    `Multiple JSX sibling nodes with the same key.
+This is likely caused by missing a custom key in a for loop`,
+                    child
+                  );
+                  if (err) {
+                    if (isString(child.type)) {
+                      logOnceWarn(err);
+                    } else {
+                      logOnceWarn(err);
+                    }
+                  }
+                } else {
+                  keys[key] = true;
+                }
+              }
+            });
+          }
+        }
+      }
+      const allProps = [
+        ...Object.entries(props),
+        ...immutableProps ? Object.entries(immutableProps) : []
+      ];
+      if (!qRuntimeQrl) {
+        for (const [prop, value] of allProps) {
+          if (prop.endsWith("$") && value) {
+            if (!isQrl(value) && !Array.isArray(value)) {
+              throw new Error(
+                `The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:
+$(${String(
+                  value
+                )})`
+              );
+            }
+          }
+          if (prop !== "children" && isQwikC && value) {
+            verifySerializable(
+              value,
+              `The value of the JSX attribute "${prop}" can not be serialized`
+            );
+          }
+        }
+      }
+      if (isString(type)) {
+        const hasSetInnerHTML = allProps.some((a) => a[0] === "dangerouslySetInnerHTML");
+        if (hasSetInnerHTML && children) {
+          const err = createJSXError(
+            `The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`,
+            node
+          );
+          logError(err);
+        }
+        if (allProps.some((a) => a[0] === "children")) {
+          throw new Error(`The JSX element <${type}> can not have both 'children' as a property.`);
+        }
+        if (type === "style") {
+          if (children) {
+            logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
+In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
+
+However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
+See https://qwik.dev/docs/components/styles/#usestyles for more information.`);
+          }
+        }
+        if (type === "script") {
+          if (children) {
+            logOnceWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
+In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
+          }
+        }
+      }
+    });
+  }
+};
+var printObjectLiteral = (obj) => {
+  return `{ ${Object.keys(obj).map((key) => `"${key}"`).join(", ")} }`;
+};
+var isJSXNode = (n) => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (isObject(n) && "key" in n && "props" in n && "type" in n) {
+      logWarn(`Duplicate implementations of "JSXNode" found`);
+      return true;
+    }
+    return false;
+  } else {
+    return n instanceof JSXNodeImpl;
+  }
+};
+var isValidJSXChild = (node) => {
+  if (!node) {
+    return true;
+  } else if (node === SkipRender) {
+    return true;
+  } else if (isString(node) || typeof node === "number" || typeof node === "boolean") {
+    return true;
+  } else if (isJSXNode(node)) {
+    return true;
+  } else if (isArray(node)) {
+    return node.every(isValidJSXChild);
+  }
+  if (isSignal(node)) {
+    return isValidJSXChild(node.value);
+  } else if (isPromise(node)) {
+    return true;
+  }
+  return false;
+};
+var Fragment = (props) => props.children;
+var createJSXError = (message, node) => {
+  const error = new Error(message);
+  if (!node.dev) {
+    return error;
+  }
+  error.stack = `JSXError: ${message}
+${filterStack(node.dev.stack, 1)}`;
+  return error;
+};
+var filterStack = (stack, offset = 0) => {
+  return stack.split("\n").slice(offset).join("\n");
+};
+
+// packages/qwik/src/core/component/component.public.ts
+var componentQrl = (componentQrl2) => {
+  function QwikComponent(props, key, flags) {
+    assertQrl(componentQrl2);
+    assertNumber(flags, "The Qwik Component was not invoked correctly");
+    const hash = qTest ? "sX" : componentQrl2.$hash$.slice(0, 4);
+    const finalKey = hash + ":" + (key ? key : "");
+    return _jsxC(
+      Virtual,
+      {
+        [OnRenderProp]: componentQrl2,
+        [QSlot]: props[QSlot],
+        [_IMMUTABLE]: props[_IMMUTABLE],
+        children: props.children,
+        props
+      },
+      flags,
+      finalKey
+    );
+  }
+  QwikComponent[SERIALIZABLE_STATE] = [componentQrl2];
+  return QwikComponent;
+};
+var isQwikComponent = (component) => {
+  return typeof component == "function" && component[SERIALIZABLE_STATE] !== void 0;
+};
+
+// packages/qwik/src/core/use/use-resource.ts
+var _createResourceReturn = (opts) => {
+  const resource = {
+    __brand: "resource",
+    value: void 0,
+    loading: isServerPlatform() ? false : true,
+    _resolved: void 0,
+    _error: void 0,
+    _state: "pending",
+    _timeout: opts?.timeout ?? -1,
+    _cache: 0
+  };
+  return resource;
+};
+var isResourceReturn = (obj) => {
+  return isObject(obj) && obj.__brand === "resource";
+};
+var serializeResource = (resource, getObjId) => {
+  const state = resource._state;
+  if (state === "resolved") {
+    return `0 ${getObjId(resource._resolved)}`;
+  } else if (state === "pending") {
+    return `1`;
+  } else {
+    return `2 ${getObjId(resource._error)}`;
+  }
+};
+var parseResourceReturn = (data) => {
+  const [first, id] = data.split(" ");
+  const result = _createResourceReturn(void 0);
+  result.value = Promise.resolve();
+  if (first === "0") {
+    result._state = "resolved";
+    result._resolved = id;
+    result.loading = false;
+  } else if (first === "1") {
+    result._state = "pending";
+    result.value = new Promise(() => {
+    });
+    result.loading = true;
+  } else if (first === "2") {
+    result._state = "rejected";
+    result._error = id;
+    result.loading = false;
+  }
+  return result;
+};
+
+// packages/qwik/src/core/render/jsx/slot.public.ts
+var Slot = (props) => {
+  return _jsxC(
+    Virtual,
+    {
+      [QSlotS]: ""
+    },
+    0,
+    props.name ?? ""
+  );
+};
+
+// packages/qwik/src/core/container/serializers.ts
+var UNDEFINED_PREFIX = "";
+function serializer(serializer2) {
+  return {
+    $prefixCode$: serializer2.$prefix$.charCodeAt(0),
+    $prefixChar$: serializer2.$prefix$,
+    $test$: serializer2.$test$,
+    $serialize$: serializer2.$serialize$,
+    $prepare$: serializer2.$prepare$,
+    $fill$: serializer2.$fill$,
+    $collect$: serializer2.$collect$,
+    $subs$: serializer2.$subs$
+  };
+}
+var QRLSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => isQrl(v),
+  $collect$: (v, collector, leaks) => {
+    if (v.$captureRef$) {
+      for (const item of v.$captureRef$) {
+        collectValue(item, collector, leaks);
+      }
+    }
+    if (collector.$prefetch$ === 0) {
+      collector.$qrls$.push(v);
+    }
+  },
+  $serialize$: (obj, getObjId) => {
+    return serializeQRL(obj, {
+      $getObjId$: getObjId
+    });
+  },
+  $prepare$: (data, containerState) => {
+    return parseQRL(data, containerState.$containerEl$);
+  },
+  $fill$: (qrl, getObject) => {
+    if (qrl.$capture$ && qrl.$capture$.length > 0) {
+      qrl.$captureRef$ = qrl.$capture$.map(getObject);
+      qrl.$capture$ = null;
+    }
+  }
+});
+var TaskSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => isSubscriberDescriptor(v),
+  $collect$: (v, collector, leaks) => {
+    collectValue(v.$qrl$, collector, leaks);
+    if (v.$state$) {
+      collectValue(v.$state$, collector, leaks);
+      if (leaks === true && v.$state$ instanceof SignalImpl) {
+        collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, true);
+      }
+    }
+  },
+  $serialize$: (obj, getObjId) => serializeTask(obj, getObjId),
+  $prepare$: (data) => parseTask(data),
+  $fill$: (task, getObject) => {
+    task.$el$ = getObject(task.$el$);
+    task.$qrl$ = getObject(task.$qrl$);
+    if (task.$state$) {
+      task.$state$ = getObject(task.$state$);
+    }
+  }
+});
+var ResourceSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => isResourceReturn(v),
+  $collect$: (obj, collector, leaks) => {
+    collectValue(obj.value, collector, leaks);
+    collectValue(obj._resolved, collector, leaks);
+  },
+  $serialize$: (obj, getObjId) => {
+    return serializeResource(obj, getObjId);
+  },
+  $prepare$: (data) => {
+    return parseResourceReturn(data);
+  },
+  $fill$: (resource, getObject) => {
+    if (resource._state === "resolved") {
+      resource._resolved = getObject(resource._resolved);
+      resource.value = Promise.resolve(resource._resolved);
+    } else if (resource._state === "rejected") {
+      const p = Promise.reject(resource._error);
+      p.catch(() => null);
+      resource._error = getObject(resource._error);
+      resource.value = p;
+    }
+  }
+});
+var URLSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof URL,
+  $serialize$: (obj) => obj.href,
+  $prepare$: (data) => new URL(data)
+});
+var DateSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof Date,
+  $serialize$: (obj) => obj.toISOString(),
+  $prepare$: (data) => new Date(data)
+});
+var RegexSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "\x07",
+  $test$: (v) => v instanceof RegExp,
+  $serialize$: (obj) => `${obj.flags} ${obj.source}`,
+  $prepare$: (data) => {
+    const space = data.indexOf(" ");
+    const source = data.slice(space + 1);
+    const flags = data.slice(0, space);
+    return new RegExp(source, flags);
+  }
+});
+var ErrorSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof Error,
+  $serialize$: (obj) => {
+    return obj.message;
+  },
+  $prepare$: (text) => {
+    const err = new Error(text);
+    err.stack = void 0;
+    return err;
+  }
+});
+var DocumentSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => !!v && typeof v === "object" && isDocument(v),
+  $prepare$: (_, _c, doc) => {
+    return doc;
+  }
+});
+var SERIALIZABLE_STATE = Symbol("serializable-data");
+var ComponentSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (obj) => isQwikComponent(obj),
+  $serialize$: (obj, getObjId) => {
+    const [qrl] = obj[SERIALIZABLE_STATE];
+    return serializeQRL(qrl, {
+      $getObjId$: getObjId
+    });
+  },
+  $prepare$: (data, containerState) => {
+    const qrl = parseQRL(data, containerState.$containerEl$);
+    return componentQrl(qrl);
+  },
+  $fill$: (component, getObject) => {
+    const [qrl] = component[SERIALIZABLE_STATE];
+    if (qrl.$capture$?.length) {
+      qrl.$captureRef$ = qrl.$capture$.map(getObject);
+      qrl.$capture$ = null;
+    }
+  }
+});
+var DerivedSignalSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (obj) => obj instanceof SignalDerived,
+  $collect$: (obj, collector, leaks) => {
+    if (obj.$args$) {
+      for (const arg of obj.$args$) {
+        collectValue(arg, collector, leaks);
+      }
+    }
+  },
+  $serialize$: (signal, getObjID, collector) => {
+    const serialized = serializeDerivedSignalFunc(signal);
+    let index = collector.$inlinedFunctions$.indexOf(serialized);
+    if (index < 0) {
+      index = collector.$inlinedFunctions$.length;
+      collector.$inlinedFunctions$.push(serialized);
+    }
+    return mapJoin(signal.$args$, getObjID, " ") + " @" + intToStr(index);
+  },
+  $prepare$: (data) => {
+    const ids = data.split(" ");
+    const args = ids.slice(0, -1);
+    const fn = ids[ids.length - 1];
+    return new SignalDerived(fn, args, fn);
+  },
+  $fill$: (fn, getObject) => {
+    assertString(fn.$func$, "fn.$func$ should be a string");
+    fn.$func$ = getObject(fn.$func$);
+    fn.$args$ = fn.$args$.map(getObject);
+  }
+});
+var SignalSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof SignalImpl,
+  $collect$: (obj, collector, leaks) => {
+    collectValue(obj.untrackedValue, collector, leaks);
+    const mutable = (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) === 0;
+    if (leaks === true && mutable) {
+      collectSubscriptions(obj[QObjectManagerSymbol], collector, true);
+    }
+    return obj;
+  },
+  $serialize$: (obj, getObjId) => {
+    return getObjId(obj.untrackedValue);
+  },
+  $prepare$: (data, containerState) => {
+    return new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0);
+  },
+  $subs$: (signal, subs) => {
+    signal[QObjectManagerSymbol].$addSubs$(subs);
+  },
+  $fill$: (signal, getObject) => {
+    signal.untrackedValue = getObject(signal.untrackedValue);
+  }
+});
+var SignalWrapperSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof SignalWrapper,
+  $collect$(obj, collector, leaks) {
+    collectValue(obj.ref, collector, leaks);
+    if (fastWeakSerialize(obj.ref)) {
+      const localManager = getSubscriptionManager(obj.ref);
+      if (isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
+        collectValue(obj.ref[obj.prop], collector, leaks);
+      }
+    }
+    return obj;
+  },
+  $serialize$: (obj, getObjId) => {
+    return `${getObjId(obj.ref)} ${obj.prop}`;
+  },
+  $prepare$: (data) => {
+    const [id, prop] = data.split(" ");
+    return new SignalWrapper(id, prop);
+  },
+  $fill$: (signal, getObject) => {
+    signal.ref = getObject(signal.ref);
+  }
+});
+var NoFiniteNumberSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => typeof v === "number",
+  $serialize$: (v) => {
+    return String(v);
+  },
+  $prepare$: (data) => {
+    return Number(data);
+  }
+});
+var URLSearchParamsSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof URLSearchParams,
+  $serialize$: (obj) => obj.toString(),
+  $prepare$: (data) => new URLSearchParams(data)
+});
+var FormDataSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => typeof FormData !== "undefined" && v instanceof globalThis.FormData,
+  $serialize$: (formData) => {
+    const array = [];
+    formData.forEach((value, key) => {
+      if (typeof value === "string") {
+        array.push([key, value]);
+      } else {
+        array.push([key, value.name]);
+      }
+    });
+    return JSON.stringify(array);
+  },
+  $prepare$: (data) => {
+    const array = JSON.parse(data);
+    const formData = new FormData();
+    for (const [key, value] of array) {
+      formData.append(key, value);
+    }
+    return formData;
+  }
+});
+var JSXNodeSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => isJSXNode(v),
+  $collect$: (node, collector, leaks) => {
+    collectValue(node.children, collector, leaks);
+    collectValue(node.props, collector, leaks);
+    collectValue(node.immutableProps, collector, leaks);
+    collectValue(node.key, collector, leaks);
+    let type = node.type;
+    if (type === Slot) {
+      type = ":slot";
+    } else if (type === Fragment) {
+      type = ":fragment";
+    }
+    collectValue(type, collector, leaks);
+  },
+  $serialize$: (node, getObjID) => {
+    let type = node.type;
+    if (type === Slot) {
+      type = ":slot";
+    } else if (type === Fragment) {
+      type = ":fragment";
+    }
+    return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.immutableProps)} ${getObjID(
+      node.key
+    )} ${getObjID(node.children)} ${node.flags}`;
+  },
+  $prepare$: (data) => {
+    const [type, props, immutableProps, key, children, flags] = data.split(" ");
+    const node = new JSXNodeImpl(
+      type,
+      props,
+      immutableProps,
+      children,
+      parseInt(flags, 10),
+      key
+    );
+    return node;
+  },
+  $fill$: (node, getObject) => {
+    node.type = getResolveJSXType(getObject(node.type));
+    node.props = getObject(node.props);
+    node.immutableProps = getObject(node.immutableProps);
+    node.key = getObject(node.key);
+    node.children = getObject(node.children);
+  }
+});
+var BigIntSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => typeof v === "bigint",
+  $serialize$: (v) => {
+    return v.toString();
+  },
+  $prepare$: (data) => {
+    return BigInt(data);
+  }
+});
+var Uint8ArraySerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof Uint8Array,
+  $serialize$: (v) => {
+    let buf = "";
+    for (const c of v) {
+      buf += String.fromCharCode(c);
+    }
+    return btoa(buf).replace(/=+$/, "");
+  },
+  $prepare$: (data) => {
+    const buf = atob(data);
+    const bytes = new Uint8Array(buf.length);
+    let i = 0;
+    for (const s of buf) {
+      bytes[i++] = s.charCodeAt(0);
+    }
+    return bytes;
+  },
+  $fill$: void 0
+});
+var DATA = Symbol();
+var SetSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof Set,
+  $collect$: (set, collector, leaks) => {
+    set.forEach((value) => collectValue(value, collector, leaks));
+  },
+  $serialize$: (v, getObjID) => {
+    return Array.from(v).map(getObjID).join(" ");
+  },
+  $prepare$: (data) => {
+    const set = /* @__PURE__ */ new Set();
+    set[DATA] = data;
+    return set;
+  },
+  $fill$: (set, getObject) => {
+    const data = set[DATA];
+    set[DATA] = void 0;
+    assertString(data, "SetSerializer should be defined");
+    const items = data.length === 0 ? [] : data.split(" ");
+    for (const id of items) {
+      set.add(getObject(id));
+    }
+  }
+});
+var MapSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "",
+  $test$: (v) => v instanceof Map,
+  $collect$: (map, collector, leaks) => {
+    map.forEach((value, key) => {
+      collectValue(value, collector, leaks);
+      collectValue(key, collector, leaks);
+    });
+  },
+  $serialize$: (map, getObjID) => {
+    const result = [];
+    map.forEach((value, key) => {
+      result.push(getObjID(key) + " " + getObjID(value));
+    });
+    return result.join(" ");
+  },
+  $prepare$: (data) => {
+    const set = /* @__PURE__ */ new Map();
+    set[DATA] = data;
+    return set;
+  },
+  $fill$: (set, getObject) => {
+    const data = set[DATA];
+    set[DATA] = void 0;
+    assertString(data, "SetSerializer should be defined");
+    const items = data.length === 0 ? [] : data.split(" ");
+    assertTrue(items.length % 2 === 0, "MapSerializer should have even number of items");
+    for (let i = 0; i < items.length; i += 2) {
+      set.set(getObject(items[i]), getObject(items[i + 1]));
+    }
+  }
+});
+var StringSerializer = /* @__PURE__ */ serializer({
+  $prefix$: "\x1B",
+  $test$: (v) => !!getSerializer(v) || v === UNDEFINED_PREFIX,
+  $serialize$: (v) => v,
+  $prepare$: (data) => data
+});
+var serializers = [
+  // NULL                       \u0000
+  // UNDEFINED_PREFIX           \u0001
+  QRLSerializer,
+  ////////////// \u0002
+  TaskSerializer,
+  ///////////// \u0003
+  ResourceSerializer,
+  ///////// \u0004
+  URLSerializer,
+  ////////////// \u0005
+  DateSerializer,
+  ///////////// \u0006
+  RegexSerializer,
+  //////////// \u0007
+  // BACKSPACE                  \u0008
+  // HORIZONTAL TAB             \u0009
+  // NEW LINE                   \u000A
+  // VERTICAL TAB               \u000B
+  // FORM FEED                  \u000C
+  // CARRIAGE RETURN            \u000D
+  ErrorSerializer,
+  //////////// \u000E
+  DocumentSerializer,
+  ///////// \u000F
+  ComponentSerializer,
+  //////// \u0010
+  DerivedSignalSerializer,
+  //// \u0011
+  SignalSerializer,
+  /////////// \u0012
+  SignalWrapperSerializer,
+  //// \u0013
+  NoFiniteNumberSerializer,
+  /// \u0014
+  URLSearchParamsSerializer,
+  // \u0015
+  FormDataSerializer,
+  ///////// \u0016
+  JSXNodeSerializer,
+  ////////// \u0017
+  BigIntSerializer,
+  /////////// \u0018
+  SetSerializer,
+  ////////////// \u0019
+  MapSerializer,
+  ////////////// \u001a
+  StringSerializer,
+  /////////// \u001b
+  Uint8ArraySerializer
+  /////// \u001c
+];
+var serializerByPrefix = /* @__PURE__ */ (() => {
+  const serializerByPrefix2 = [];
+  serializers.forEach((s) => {
+    const prefix = s.$prefixCode$;
+    while (serializerByPrefix2.length < prefix) {
+      serializerByPrefix2.push(void 0);
+    }
+    serializerByPrefix2.push(s);
+  });
+  return serializerByPrefix2;
+})();
+function getSerializer(obj) {
+  if (typeof obj === "string") {
+    const prefix = obj.charCodeAt(0);
+    if (prefix < serializerByPrefix.length) {
+      return serializerByPrefix[prefix];
+    }
+  }
+  return void 0;
+}
+var collectorSerializers = /* @__PURE__ */ serializers.filter((a) => a.$collect$);
+var canSerialize = (obj) => {
+  for (const s of serializers) {
+    if (s.$test$(obj)) {
+      return true;
+    }
+  }
+  return false;
+};
+var collectDeps = (obj, collector, leaks) => {
+  for (const s of collectorSerializers) {
+    if (s.$test$(obj)) {
+      s.$collect$(obj, collector, leaks);
+      return true;
+    }
+  }
+  return false;
+};
+var isTreeShakeable = (manager, target, leaks) => {
+  if (typeof leaks === "boolean") {
+    return leaks;
+  }
+  const localManager = manager.$groupToManagers$.get(leaks);
+  if (localManager && localManager.length > 0) {
+    if (localManager.length === 1) {
+      return localManager[0] !== target;
+    }
+    return true;
+  }
+  return false;
+};
+var getResolveJSXType = (type) => {
+  if (type === ":slot") {
+    return Slot;
+  }
+  if (type === ":fragment") {
+    return Fragment;
+  }
+  return type;
+};
+
+// packages/qwik/src/core/state/common.ts
+var verifySerializable = (value, preMessage) => {
+  const seen = /* @__PURE__ */ new Set();
+  return _verifySerializable(value, seen, "_", preMessage);
+};
+var _verifySerializable = (value, seen, ctx, preMessage) => {
+  const unwrapped = unwrapProxy(value);
+  if (unwrapped == null) {
+    return value;
+  }
+  if (shouldSerialize(unwrapped)) {
+    if (seen.has(unwrapped)) {
+      return value;
+    }
+    seen.add(unwrapped);
+    if (canSerialize(unwrapped)) {
+      return value;
+    }
+    const typeObj = typeof unwrapped;
+    switch (typeObj) {
+      case "object":
+        if (isPromise(unwrapped)) {
+          return value;
+        }
+        if (isNode(unwrapped)) {
+          return value;
+        }
+        if (isArray(unwrapped)) {
+          let expectIndex = 0;
+          unwrapped.forEach((v, i) => {
+            if (i !== expectIndex) {
+              throw qError(QError_verifySerializable, unwrapped);
+            }
+            _verifySerializable(v, seen, ctx + "[" + i + "]");
+            expectIndex = i + 1;
+          });
+          return value;
+        }
+        if (isSerializableObject(unwrapped)) {
+          for (const [key, item] of Object.entries(unwrapped)) {
+            _verifySerializable(item, seen, ctx + "." + key);
+          }
+          return value;
+        }
+        break;
+      case "boolean":
+      case "string":
+      case "number":
+        return value;
+    }
+    let message = "";
+    if (preMessage) {
+      message = preMessage;
+    } else {
+      message = "Value cannot be serialized";
+    }
+    if (ctx !== "_") {
+      message += ` in ${ctx},`;
+    }
+    if (typeObj === "object") {
+      message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.dev/docs/advanced/dollar/`;
+    } else if (typeObj === "function") {
+      const fnName = value.name;
+      message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):
+
+const ${fnName} = $(${String(
+        value
+      )});
+
+Please check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
+    }
+    console.error("Trying to serialize", value);
+    throwErrorAndStop(message);
+  }
+  return value;
+};
+var noSerializeSet = /* @__PURE__ */ new WeakSet();
+var weakSerializeSet = /* @__PURE__ */ new WeakSet();
+var shouldSerialize = (obj) => {
+  if (isObject(obj) || isFunction(obj)) {
+    return !noSerializeSet.has(obj);
+  }
+  return true;
+};
+var fastSkipSerialize = (obj) => {
+  return noSerializeSet.has(obj);
+};
+var fastWeakSerialize = (obj) => {
+  return weakSerializeSet.has(obj);
+};
+var unwrapProxy = (proxy) => {
+  return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
+};
+var getProxyTarget = (obj) => {
+  return obj[QOjectTargetSymbol];
+};
+var getSubscriptionManager = (obj) => {
+  return obj[QObjectManagerSymbol];
+};
+var getProxyFlags = (obj) => {
+  return obj[QObjectFlagsSymbol];
+};
+
+// packages/qwik/src/core/container/container.ts
+var CONTAINER_STATE = Symbol("ContainerState");
+var intToStr = (nu) => {
+  return nu.toString(36);
+};
+var strToInt = (nu) => {
+  return parseInt(nu, 36);
+};
+
+// packages/qwik/src/core/use/use-locale.ts
+var _locale = void 0;
+function setLocale(locale) {
+  _locale = locale;
+}
 
 // packages/qwik/src/core/use/use-core.ts
+var _context;
+var tryGetInvokeContext = () => {
+  if (!_context) {
+    const context = typeof document !== "undefined" && document && document.__q_context__;
+    if (!context) {
+      return void 0;
+    }
+    if (isArray(context)) {
+      return document.__q_context__ = newInvokeContextFromTuple(context);
+    }
+    return context;
+  }
+  return _context;
+};
+var useInvokeContext = () => {
+  const ctx = tryGetInvokeContext();
+  if (!ctx || ctx.$event$ !== RenderEvent) {
+    throw qError(QError_useInvokeContext);
+  }
+  assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
+  assertDefined(ctx.$waitOn$, `invoke: $waitOn$ must be defined`, ctx);
+  assertDefined(ctx.$renderCtx$, `invoke: $renderCtx$ must be defined`, ctx);
+  assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
+  return ctx;
+};
+function invoke(context, fn, ...args) {
+  return invokeApply.call(this, context, fn, args);
+}
+function invokeApply(context, fn, args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(this, args);
+  } finally {
+    _context = previousContext;
+  }
+  return returnValue;
+}
+var waitAndRun = (ctx, callback) => {
+  const waitOn = ctx.$waitOn$;
+  if (waitOn.length === 0) {
+    const result = callback();
+    if (isPromise(result)) {
+      waitOn.push(result);
+    }
+  } else {
+    waitOn.push(Promise.all(waitOn).then(callback));
+  }
+};
+var newInvokeContextFromTuple = ([element, event, url]) => {
+  const container2 = element.closest(QContainerSelector);
+  const locale = container2?.getAttribute(QLocaleAttr) || void 0;
+  locale && setLocale(locale);
+  return newInvokeContext(locale, void 0, element, event, url);
+};
+var newInvokeContext = (locale, hostElement, element, event, url) => {
+  const $locale$ = locale || (typeof event === "object" && event && "locale" in event ? event.locale : void 0);
+  const ctx = {
+    $url$: url,
+    $i$: 0,
+    $hostElement$: hostElement,
+    $element$: element,
+    $event$: event,
+    $qrl$: void 0,
+    $waitOn$: void 0,
+    $subscriber$: void 0,
+    $renderCtx$: void 0,
+    $locale$
+  };
+  seal(ctx);
+  return ctx;
+};
 var getWrappingContainer = (el) => {
   return el.closest(QContainerSelector);
 };
+var untrack = (fn) => {
+  return invoke(void 0, fn);
+};
+
+// packages/qwik/src/core/use/use-signal.ts
+var useConstant = (value) => {
+  const { val, set } = useSequentialScope();
+  if (val != null) {
+    return val;
+  }
+  value = isFunction(value) && !isQwikComponent(value) ? value() : value;
+  return set(value);
+};
+
+// packages/qwik/src/core/use/use-task.ts
+var TaskFlagsIsVisibleTask = 1 << 0;
+var TaskFlagsIsTask = 1 << 1;
+var TaskFlagsIsResource = 1 << 2;
+var TaskFlagsIsComputed = 1 << 3;
+var TaskFlagsIsDirty = 1 << 4;
+var TaskFlagsIsCleanup = 1 << 5;
+var createComputedQrl = (qrl) => {
+  assertQrl(qrl);
+  const iCtx = useInvokeContext();
+  const hostElement = iCtx.$hostElement$;
+  const containerState = iCtx.$renderCtx$.$static$.$containerState$;
+  const elCtx = getContext(hostElement, containerState);
+  const signal = _createSignal(
+    void 0,
+    containerState,
+    SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE,
+    void 0
+  );
+  const task = new Task(
+    TaskFlagsIsDirty | TaskFlagsIsTask | TaskFlagsIsComputed,
+    // Computed signals should update immediately
+    0,
+    elCtx.$element$,
+    qrl,
+    signal
+  );
+  qrl.$resolveLazy$(containerState.$containerEl$);
+  (elCtx.$tasks$ || (elCtx.$tasks$ = [])).push(task);
+  waitAndRun(iCtx, () => runComputed(task, containerState, iCtx.$renderCtx$));
+  return signal;
+};
+var useComputedQrl = (qrl) => {
+  return useConstant(() => createComputedQrl(qrl));
+};
+var useComputed$ = implicit$FirstArg(useComputedQrl);
+var createComputed$ = implicit$FirstArg(createComputedQrl);
+var runComputed = (task, containerState, rCtx) => {
+  assertSignal(task.$state$);
+  task.$flags$ &= ~TaskFlagsIsDirty;
+  cleanupTask(task);
+  const hostElement = task.$el$;
+  const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, ComputedEvent);
+  iCtx.$subscriber$ = [0, task];
+  iCtx.$renderCtx$ = rCtx;
+  const { $subsManager$: subsManager } = containerState;
+  const taskFn = task.$qrl$.getFn(iCtx, () => {
+    subsManager.$clearSub$(task);
+  });
+  return safeCall(
+    taskFn,
+    (returnValue) => untrack(() => {
+      const signal = task.$state$;
+      signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
+      signal.untrackedValue = returnValue;
+      signal[QObjectManagerSymbol].$notifySubs$();
+    }),
+    (reason) => {
+      handleError(reason, hostElement, rCtx);
+    }
+  );
+};
+var cleanupTask = (task) => {
+  const destroy = task.$destroy$;
+  if (destroy) {
+    task.$destroy$ = void 0;
+    try {
+      destroy();
+    } catch (err) {
+      logError(err);
+    }
+  }
+};
+var isSubscriberDescriptor = (obj) => {
+  return isObject(obj) && obj instanceof Task;
+};
+var serializeTask = (task, getObjId) => {
+  let value = `${intToStr(task.$flags$)} ${intToStr(task.$index$)} ${getObjId(
+    task.$qrl$
+  )} ${getObjId(task.$el$)}`;
+  if (task.$state$) {
+    value += ` ${getObjId(task.$state$)}`;
+  }
+  return value;
+};
+var parseTask = (data) => {
+  const [flags, index, qrl, el, resource] = data.split(" ");
+  return new Task(strToInt(flags), strToInt(index), el, qrl, resource);
+};
+var Task = class {
+  constructor($flags$, $index$, $el$, $qrl$, $state$) {
+    this.$flags$ = $flags$;
+    this.$index$ = $index$;
+    this.$el$ = $el$;
+    this.$qrl$ = $qrl$;
+    this.$state$ = $state$;
+  }
+};
+
+// packages/qwik/src/testing/html.ts
+function isElement2(value) {
+  return isNode2(value) && value.nodeType === 1;
+}
+function isNode2(value) {
+  return value && typeof value.nodeType === "number";
+}
 
 // packages/qwik/src/core/state/context.ts
 var HOST_FLAG_DIRTY = 1 << 0;
@@ -22414,6 +25254,102 @@ var HOST_FLAG_DYNAMIC = 1 << 3;
 var HOST_REMOVED = 1 << 4;
 var tryGetContext2 = (element) => {
   return element[Q_CTX];
+};
+var getContext = (el, containerState) => {
+  assertQwikElement(el);
+  const ctx = tryGetContext2(el);
+  if (ctx) {
+    return ctx;
+  }
+  const elCtx = createContext(el);
+  const elementID = directGetAttribute(el, "q:id");
+  if (elementID) {
+    const pauseCtx = containerState.$pauseCtx$;
+    elCtx.$id$ = elementID;
+    if (pauseCtx) {
+      const { getObject, meta, refs } = pauseCtx;
+      if (isElement2(el)) {
+        const refMap = refs[elementID];
+        if (refMap) {
+          elCtx.$refMap$ = refMap.split(" ").map(getObject);
+          elCtx.li = getDomListeners(elCtx, containerState.$containerEl$);
+        }
+      } else {
+        const styleIds = el.getAttribute(QScopedStyle);
+        elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null;
+        const ctxMeta = meta[elementID];
+        if (ctxMeta) {
+          const seq = ctxMeta.s;
+          const host = ctxMeta.h;
+          const contexts = ctxMeta.c;
+          const tasks = ctxMeta.w;
+          if (seq) {
+            elCtx.$seq$ = seq.split(" ").map(getObject);
+          }
+          if (tasks) {
+            elCtx.$tasks$ = tasks.split(" ").map(getObject);
+          }
+          if (contexts) {
+            elCtx.$contexts$ = /* @__PURE__ */ new Map();
+            for (const part of contexts.split(" ")) {
+              const [key, value] = part.split("=");
+              elCtx.$contexts$.set(key, getObject(value));
+            }
+          }
+          if (host) {
+            const [renderQrl, props] = host.split(" ");
+            elCtx.$flags$ = HOST_FLAG_MOUNTED;
+            if (renderQrl) {
+              elCtx.$componentQrl$ = getObject(renderQrl);
+            }
+            if (props) {
+              const propsObj = getObject(props);
+              elCtx.$props$ = propsObj;
+              setObjectFlags(propsObj, QObjectImmutable);
+              propsObj[_IMMUTABLE] = getImmutableFromProps(propsObj);
+            } else {
+              elCtx.$props$ = createProxy(createPropsState(), containerState);
+            }
+          }
+        }
+      }
+    }
+  }
+  return elCtx;
+};
+var getImmutableFromProps = (props) => {
+  const immutable = {};
+  const target = getProxyTarget(props);
+  for (const key in target) {
+    if (key.startsWith(_IMMUTABLE_PREFIX)) {
+      immutable[key.slice(_IMMUTABLE_PREFIX.length)] = target[key];
+    }
+  }
+  return immutable;
+};
+var createContext = (element) => {
+  const ctx = {
+    $flags$: 0,
+    $id$: "",
+    $element$: element,
+    $refMap$: [],
+    li: [],
+    $tasks$: null,
+    $seq$: null,
+    $slots$: null,
+    $scopeIds$: null,
+    $appendStyles$: null,
+    $props$: null,
+    $vdom$: null,
+    $componentQrl$: null,
+    $contexts$: null,
+    $dynamicSlots$: null,
+    $parentCtx$: void 0,
+    $realParentCtx$: void 0
+  };
+  seal(ctx);
+  element[Q_CTX] = ctx;
+  return ctx;
 };
 
 // packages/qwik/src/testing/document.ts
@@ -22466,14 +25402,14 @@ function ensureGlobals(doc, opts) {
     get origin() {
       return loc.origin;
     },
-    addEventListener: noop,
-    removeEventListener: noop,
+    addEventListener: noop2,
+    removeEventListener: noop2,
     history: {
-      pushState: noop,
-      replaceState: noop,
-      go: noop,
-      back: noop,
-      forward: noop
+      pushState: noop2,
+      replaceState: noop2,
+      go: noop2,
+      back: noop2,
+      forward: noop2
     },
     CustomEvent: class CustomEvent {
       constructor(type, details) {
@@ -22484,14 +25420,14 @@ function ensureGlobals(doc, opts) {
   };
   return doc.defaultView;
 }
-var noop = () => {
+var noop2 = () => {
 };
 var QWIK_DOC = Symbol();
 
 // packages/qwik/src/testing/platform.ts
 import { existsSync } from "fs";
 import { fileURLToPath } from "url";
-function createPlatform() {
+function createPlatform2() {
   let render = null;
   const moduleCache = /* @__PURE__ */ new Map();
   const testPlatform2 = {
@@ -22503,7 +25439,7 @@ function createPlatform() {
       if (!containerEl) {
         throw new Error("Missing Container");
       }
-      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url);
+      const urlDoc = toUrl2(containerEl.ownerDocument, containerEl, url);
       const importPath = toPath(urlDoc);
       const mod = moduleCache.get(importPath);
       if (mod) {
@@ -22564,7 +25500,7 @@ function createPlatform() {
 function setTestPlatform(_setPlatform) {
   _setPlatform(testPlatform);
 }
-function toUrl(doc, containerEl, url) {
+function toUrl2(doc, containerEl, url) {
   const base = new URL(containerEl?.getAttribute("q:base") ?? doc.baseURI, doc.baseURI);
   return new URL(url, base);
 }
@@ -22581,7 +25517,7 @@ function toPath(url) {
   }
   throw new Error(`Unable to find path for import "${url}"`);
 }
-var testPlatform = createPlatform();
+var testPlatform = createPlatform2();
 function getTestPlatform() {
   return testPlatform;
 }
@@ -22630,12 +25566,12 @@ async function trigger(root, queryOrElement, eventNameCamel, eventPayload = {}) 
   }
   await getTestPlatform().flush();
 }
-var PREVENT_DEFAULT = "preventdefault:";
+var PREVENT_DEFAULT2 = "preventdefault:";
 var STOP_PROPAGATION = "stoppropagation:";
 var Q_FUNCS_PREFIX = /document.qdata\["qFuncs_(.+)"\]=/;
 var QContainerSelector2 = "[q\\:container]";
 var dispatch = async (element, attrName, event) => {
-  const preventAttributeName = PREVENT_DEFAULT + event.type;
+  const preventAttributeName = PREVENT_DEFAULT2 + event.type;
   const stopPropagationName = STOP_PROPAGATION + event.type;
   const collectListeners = [];
   while (element) {
@@ -22652,7 +25588,7 @@ var dispatch = async (element, attrName, event) => {
       for (const li of ctx.li) {
         if (li[0] === attrName) {
           const qrl = li[1];
-          if (isSyncQrl(qrl)) {
+          if (isSyncQrl2(qrl)) {
             qrl(event, element);
           } else {
             collectListeners.push({ element, qrl });
@@ -22683,7 +25619,7 @@ function qPropReadQRL(elCtx, prop) {
     );
   };
 }
-function isSyncQrl(qrl) {
+function isSyncQrl2(qrl) {
   return qrl.$chunk$ == "";
 }
 
