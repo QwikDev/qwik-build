@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.7.3-dev+42880cf
+ * @builder.io/qwik/optimizer 1.7.3-dev+80abcff
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.7.3-dev+42880cf"
+  qwik: "1.7.3-dev+80abcff"
 };
 
 async function getSystem() {
@@ -2687,32 +2687,18 @@ function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssets
   const outputOpts = {
     ...rollupOutputOptsObj
   };
-  outputOpts.assetFileNames || (outputOpts.assetFileNames = "build/q-[hash].[ext]");
   if ("client" === opts.target) {
-    outputOpts.assetFileNames = useAssetsDir ? `${opts.assetsDir}/${outputOpts.assetFileNames}` : outputOpts.assetFileNames;
-    if ("production" === opts.buildMode) {
-      if (!outputOpts.entryFileNames) {
-        const fileName = "build/q-[hash].js";
-        outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName;
-      }
-      if (!outputOpts.chunkFileNames) {
-        const fileName = "build/q-[hash].js";
-        outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName;
-      }
-    } else {
-      if (!outputOpts.entryFileNames) {
-        const fileName = "build/[name].js";
-        outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName;
-      }
-      if (!outputOpts.chunkFileNames) {
-        const fileName = "build/[name].js";
-        outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName;
-      }
+    if (!outputOpts.assetFileNames) {
+      const assetFileNames = "assets/[hash]-[name].[ext]";
+      outputOpts.assetFileNames = useAssetsDir ? `${opts.assetsDir}/${assetFileNames}` : assetFileNames;
     }
-  } else if ("production" === opts.buildMode) {
-    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js");
-    outputOpts.assetFileNames || (outputOpts.assetFileNames = "assets/[hash].[ext]");
+    const fileName = "production" == opts.buildMode ? "build/q-[hash].js" : "build/[name].js";
+    outputOpts.entryFileNames || (outputOpts.entryFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
+    outputOpts.chunkFileNames || (outputOpts.chunkFileNames = useAssetsDir ? `${opts.assetsDir}/${fileName}` : fileName);
+  } else {
+    "production" === opts.buildMode && (outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js"));
   }
+  outputOpts.assetFileNames || (outputOpts.assetFileNames = "assets/[hash]-[name].[ext]");
   "client" === opts.target && (outputOpts.format = "es");
   outputOpts.dir || (outputOpts.dir = opts.outDir);
   "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
