@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.7.3-dev+80abcff
+ * @builder.io/qwik/optimizer 1.7.3-dev+86d6378
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.7.3-dev+80abcff"
+    qwik: "1.7.3-dev+86d6378"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2046,7 +2046,6 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
     const buildStart = async ctx => {
-      var _a3;
       debug("buildStart()", opts.buildMode, opts.scope, opts.target);
       const optimizer = getOptimizer();
       if ("node" === optimizer.sys.env && "ssr" === opts.target && opts.lint) {
@@ -2054,69 +2053,20 @@ globalThis.qwikOptimizer = function(module) {
           linter = await createLinter(optimizer.sys, opts.rootDir, opts.tsconfigFileNames);
         } catch (err) {}
       }
-      const generatePreManifest = ![ "hoist", "hook", "inline" ].includes(opts.entryStrategy.type);
-      if (generatePreManifest) {
-        const path = getPath();
-        let srcDir = "/";
-        if ("string" === typeof opts.srcDir) {
-          srcDir = normalizePath(opts.srcDir);
-          debug("buildStart() srcDir", opts.srcDir);
-        } else if (Array.isArray(opts.srcInputs)) {
-          optimizer.sys.getInputFiles = async rootDir => opts.srcInputs.map((i => {
-            const relInput = {
-              path: normalizePath(path.relative(rootDir, i.path)),
-              code: i.code
-            };
-            return relInput;
-          }));
-          debug(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
-        }
-        const vendorRoots = opts.vendorRoots;
-        vendorRoots.length > 0 && debug("vendorRoots", vendorRoots);
-        debug("transformedOutput.clear()");
-        clientTransformedOutputs.clear();
-        const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
-        const transformOpts = {
-          srcDir: srcDir,
-          rootDir: opts.rootDir,
-          vendorRoots: vendorRoots,
-          entryStrategy: opts.entryStrategy,
-          minify: "simplify",
-          transpileTs: true,
-          transpileJsx: true,
-          explicitExtensions: true,
-          preserveFilenames: true,
-          mode: mode,
-          scope: opts.scope ? opts.scope : void 0,
-          sourceMaps: opts.sourcemap
-        };
-        let outputs = clientTransformedOutputs;
-        if ("client" === opts.target) {
-          transformOpts.stripCtxName = SERVER_STRIP_CTX_NAME;
-          transformOpts.stripExports = SERVER_STRIP_EXPORTS;
-          transformOpts.isServer = false;
-        } else if ("ssr" === opts.target && !devServer) {
-          transformOpts.stripCtxName = CLIENT_STRIP_CTX_NAME;
-          transformOpts.stripEventHandlers = true;
-          transformOpts.isServer = true;
-          transformOpts.regCtxName = REG_CTX_NAME;
-          outputs = serverTransformedOutputs;
-        }
-        const result = await optimizer.transformFs(transformOpts);
-        for (const output of result.modules) {
-          const key = normalizePath(path.join(srcDir, output.path));
-          debug("buildStart() add transformedOutput", key, null == (_a3 = output.hook) ? void 0 : _a3.displayName);
-          outputs.set(key, [ output, key ]);
-          "client" === opts.target && output.isEntry && ctx.emitFile({
-            id: key,
-            type: "chunk",
-            preserveSignature: "allow-extension"
-          });
-        }
-        diagnosticsCallback(result.diagnostics, optimizer, srcDir);
-        clientResults.set("@buildStart", result);
-        serverResults.set("@buildStart", result);
+      const path = getPath();
+      if (Array.isArray(opts.srcInputs)) {
+        optimizer.sys.getInputFiles = async rootDir => opts.srcInputs.map((i => {
+          const relInput = {
+            path: normalizePath(path.relative(rootDir, i.path)),
+            code: i.code
+          };
+          return relInput;
+        }));
+        debug(`buildStart() opts.srcInputs (${opts.srcInputs.length})`);
       }
+      debug("transformedOutputs.clear()");
+      clientTransformedOutputs.clear();
+      serverTransformedOutputs.clear();
     };
     const getIsServer = viteOpts => devServer ? !!(null == viteOpts ? void 0 : viteOpts.ssr) : "ssr" === opts.target || "test" === opts.target;
     const getParentId = (id2, isServer2) => {
@@ -2341,7 +2291,7 @@ globalThis.qwikOptimizer = function(module) {
         }
         diagnosticsCallback(newOutput.diagnostics, optimizer, srcDir);
         if (isServer2) {
-          0 === newOutput.diagnostics.length && linter && await linter.lint(ctx, code, id2);
+          0 === newOutput.diagnostics.length && linter && linter.lint(ctx, code, id2);
           serverResults.set(normalizedID, newOutput);
         } else {
           clientResults.set(normalizedID, newOutput);
@@ -2445,6 +2395,11 @@ globalThis.qwikOptimizer = function(module) {
         }
       }
     }
+    function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
+      const module2 = getModuleInfo(id2);
+      const hook = module2.meta.hook;
+      return null == hook ? void 0 : hook.entry;
+    }
     return {
       buildStart: buildStart,
       createOutputAnalyzer: createOutputAnalyzer,
@@ -2467,7 +2422,8 @@ globalThis.qwikOptimizer = function(module) {
       setSourceMapSupport: setSourceMapSupport,
       foundQrls: foundQrls,
       configureServer: configureServer,
-      handleHotUpdate: handleHotUpdate
+      handleHotUpdate: handleHotUpdate,
+      manualChunks: manualChunks
     };
   }
   var makeNormalizePath = sys => id => {
@@ -2581,7 +2537,7 @@ globalThis.qwikOptimizer = function(module) {
         inputOpts.input || (inputOpts.input = opts.input);
         return inputOpts;
       },
-      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptions(), rollupOutputOpts, false),
+      outputOptions: rollupOutputOpts => normalizeRollupOutputOptionsObject(qwikPlugin.getOptions(), rollupOutputOpts, false, qwikPlugin.manualChunks),
       async buildStart() {
         qwikPlugin.onDiagnostics(((diagnostics, optimizer, srcDir) => {
           diagnostics.forEach((d => {
@@ -2635,20 +2591,20 @@ globalThis.qwikOptimizer = function(module) {
     };
     return rollupPlugin;
   }
-  function normalizeRollupOutputOptions(opts, rollupOutputOpts, useAssetsDir, outDir) {
+  function normalizeRollupOutputOptions(opts, rollupOutputOpts, useAssetsDir, manualChunks, outDir) {
     if (Array.isArray(rollupOutputOpts)) {
       rollupOutputOpts.length || rollupOutputOpts.push({});
       return rollupOutputOpts.map((outputOptsObj => ({
-        ...normalizeRollupOutputOptionsObject(opts, outputOptsObj, useAssetsDir),
+        ...normalizeRollupOutputOptionsObject(opts, outputOptsObj, useAssetsDir, manualChunks),
         dir: outDir || outputOptsObj.dir
       })));
     }
     return {
-      ...normalizeRollupOutputOptionsObject(opts, rollupOutputOpts, useAssetsDir),
+      ...normalizeRollupOutputOptionsObject(opts, rollupOutputOpts, useAssetsDir, manualChunks),
       dir: outDir || (null == rollupOutputOpts ? void 0 : rollupOutputOpts.dir)
     };
   }
-  function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssetsDir) {
+  function normalizeRollupOutputOptionsObject(opts, rollupOutputOptsObj, useAssetsDir, manualChunks) {
     const outputOpts = {
       ...rollupOutputOptsObj
     };
@@ -2664,7 +2620,14 @@ globalThis.qwikOptimizer = function(module) {
       "production" === opts.buildMode && (outputOpts.chunkFileNames || (outputOpts.chunkFileNames = "q-[hash].js"));
     }
     outputOpts.assetFileNames || (outputOpts.assetFileNames = "assets/[hash]-[name].[ext]");
-    "client" === opts.target && (outputOpts.format = "es");
+    if ("client" === opts.target) {
+      outputOpts.format = "es";
+      const prevManualChunks = outputOpts.manualChunks;
+      if (prevManualChunks && "function" !== typeof prevManualChunks) {
+        throw new Error("manualChunks must be a function");
+      }
+      outputOpts.manualChunks = prevManualChunks ? (id, meta) => prevManualChunks(id, meta) || manualChunks(id, meta) : manualChunks;
+    }
     outputOpts.dir || (outputOpts.dir = opts.outDir);
     "cjs" === outputOpts.format && "string" !== typeof outputOpts.exports && (outputOpts.exports = "auto");
     return outputOpts;
@@ -5191,7 +5154,7 @@ globalThis.qwikOptimizer = function(module) {
     return `${protocol}://${host}`;
   }
   var encode = url => encodeURIComponent(url).replaceAll("%2F", "/").replaceAll("%40", "@").replaceAll("%3A", ":");
-  function createSymbolMapper(base, opts, foundQrls, path, sys) {
+  function createSymbolMapper(base, opts, path, sys) {
     const normalizePath = makeNormalizePath(sys);
     return (symbolName, mapper, parent) => {
       if (symbolName === SYNC_QRL) {
@@ -5199,11 +5162,7 @@ globalThis.qwikOptimizer = function(module) {
       }
       const hash = getSymbolHash(symbolName);
       if (!parent) {
-        console.warn(`qwik vite-dev-server symbolMapper: parent not provided for ${symbolName}, falling back to foundQrls.`);
-        parent = foundQrls.get(hash);
-      }
-      if (!parent) {
-        console.warn(`qwik vite-dev-server symbolMapper: ${symbolName} not in foundQrls, falling back to mapper.`);
+        console.warn(`qwik vite-dev-server symbolMapper: parent not provided for ${symbolName}, falling back to mapper.`);
         const chunk = mapper && mapper[hash];
         if (chunk) {
           return [ chunk[0], chunk[1] ];
@@ -5226,8 +5185,8 @@ globalThis.qwikOptimizer = function(module) {
     }
     throw new Error("symbolMapper not initialized");
   };
-  async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, foundQrls, devSsrServer) {
-    symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, foundQrls, path, sys);
+  async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
+    symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, path, sys);
     if (!devSsrServer) {
       return;
     }
@@ -5600,6 +5559,11 @@ globalThis.qwikOptimizer = function(module) {
             modulePreload: false,
             dynamicImportVarsOptions: {
               exclude: [ /./ ]
+            },
+            rollupOptions: {
+              output: {
+                manualChunks: qwikPlugin.manualChunks
+              }
             }
           },
           define: {
@@ -5615,7 +5579,7 @@ globalThis.qwikOptimizer = function(module) {
           updatedViteConfig.build.outDir = buildOutputDir;
           updatedViteConfig.build.rollupOptions = {
             input: opts.input,
-            output: normalizeRollupOutputOptions(opts, null == (_u = null == (_t = viteConfig.build) ? void 0 : _t.rollupOptions) ? void 0 : _u.output, useAssetsDir, buildOutputDir),
+            output: normalizeRollupOutputOptions(opts, null == (_u = null == (_t = viteConfig.build) ? void 0 : _t.rollupOptions) ? void 0 : _u.output, useAssetsDir, qwikPlugin.manualChunks, buildOutputDir),
             preserveEntrySignatures: "exports-only",
             onwarn: (warning, warn) => {
               if ("typescript" === warning.plugin && warning.message.includes("outputToFilesystem")) {
@@ -5841,7 +5805,7 @@ globalThis.qwikOptimizer = function(module) {
             const opts = qwikPlugin.getOptions();
             const sys = qwikPlugin.getSys();
             const path = qwikPlugin.getPath();
-            await configureDevServer(basePathname, server, opts, sys, path, isClientDevOnly, clientDevInput, qwikPlugin.foundQrls, devSsrServer);
+            await configureDevServer(basePathname, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer);
           };
           const isNEW = true === globalThis.__qwikCityNew;
           return isNEW ? plugin : plugin();

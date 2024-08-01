@@ -9,7 +9,7 @@ export declare interface ComponentEntryStrategy {
 /** @public */
 export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
-declare function createSymbolMapper(base: string, opts: NormalizedQwikPluginOptions, foundQrls: Map<string, string>, path: Path, sys: OptimizerSystem): SymbolMapperFn;
+declare function createSymbolMapper(base: string, opts: NormalizedQwikPluginOptions, path: Path, sys: OptimizerSystem): SymbolMapperFn;
 
 /** @public */
 export declare interface Diagnostic {
