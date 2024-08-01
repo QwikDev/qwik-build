@@ -1,3 +1,5 @@
+import type { Plugin as Plugin_2 } from 'vite';
+
 /** @public */
 export declare interface ComponentEntryStrategy {
     type: 'component';
@@ -123,6 +125,16 @@ export declare interface OptimizerSystem {
     getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
 }
+
+/**
+ * Workaround to make the api be defined in the type.
+ *
+ * @internal
+ */
+declare type P<T> = Plugin_2<T> & {
+    api: T;
+    config: Extract<Plugin_2<T>['config'], Function>;
+};
 
 /** @public */
 export declare interface Path {
@@ -337,7 +349,13 @@ export declare interface QwikSymbol {
     loc: [number, number];
 }
 
-/** @public */
+/**
+ * The types for Vite/Rollup don't allow us to be too specific about the return type. The correct
+ * return type is `[QwikVitePlugin, VitePlugin<never>]`, and if you search the plugin by name you'll
+ * get the `QwikVitePlugin`.
+ *
+ * @public
+ */
 export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 
 /** @public */
@@ -346,11 +364,15 @@ export declare interface QwikViteDevResponse {
     _qwikRenderResolve?: () => void;
 }
 
-/** @public */
-export declare interface QwikVitePlugin {
+/**
+ * This is the type of the "pre" Qwik Vite plugin. `qwikVite` actually returns a tuple of two
+ * plugins, but after Vite flattens them, you can find the plugin by name.
+ *
+ * @public
+ */
+export declare type QwikVitePlugin = P<QwikVitePluginApi> & {
     name: 'vite-plugin-qwik';
-    api: QwikVitePluginApi;
-}
+};
 
 /** @public */
 export declare interface QwikVitePluginApi {

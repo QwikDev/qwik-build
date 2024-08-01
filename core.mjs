@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.7.2-dev+3937471
+ * @builder.io/qwik 1.7.3-dev+42880cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.7.2-dev+3937471";
+const version = "1.7.3-dev+42880cf";
 
 /**
  * @internal
@@ -8378,7 +8378,7 @@ const isConnected = (sub) => {
 };
 /** @public */
 const unwrapProxy = (proxy) => {
-    return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
+    return isObject(proxy) ? (getProxyTarget(proxy) ?? proxy) : proxy;
 };
 const getProxyTarget = (obj) => {
     return obj[QOjectTargetSymbol];
