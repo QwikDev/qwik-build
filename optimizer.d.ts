@@ -85,7 +85,7 @@ export declare interface InsightManifest {
 /** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
-declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
+declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots'> {
     input: string[] | {
         [entry: string]: string;
     };
@@ -228,6 +228,7 @@ declare interface QwikPluginOptions {
     entryStrategy?: EntryStrategy;
     rootDir?: string;
     tsconfigFileNames?: string[];
+    /** @deprecated No longer used */
     vendorRoots?: string[];
     manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     manifestInput?: QwikManifest | null;
@@ -417,6 +418,8 @@ declare interface QwikVitePluginCommonOptions {
      * List of directories to recursively search for Qwik components or Vendors.
      *
      * Default `[]`
+     *
+     * @deprecated No longer used. Instead, any imported file with `.qwik.` in the name is processed.
      */
     vendorRoots?: string[];
     /**

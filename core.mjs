@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.7.3-dev+b5fbd8f
+ * @builder.io/qwik 1.7.3-dev+813e325
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.7.3-dev+b5fbd8f";
+const version = "1.7.3-dev+813e325";
 
 /**
  * @internal
@@ -7214,7 +7214,7 @@ const qrl = (chunkOrFn, symbol, lexicalScopeCapture = EMPTY_ARRAY, stackOffset =
         announcedQRL.add(symbol);
         emitEvent('qprefetch', {
             symbols: [getSymbolHash(symbol)],
-            bundles: [chunk],
+            bundles: chunk && [chunk],
         });
     }
     // Unwrap subscribers
