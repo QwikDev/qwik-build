@@ -29,7 +29,7 @@ export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 declare type EmitMode = 'dev' | 'prod' | 'lib';
 
 /** @public */
-export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
+export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /** @public */
 export declare interface GlobalInjections {
@@ -45,24 +45,8 @@ declare interface HoistEntryStrategy {
     type: 'hoist';
 }
 
-/** @public */
-export declare interface HookAnalysis {
-    origin: string;
-    name: string;
-    entry: string | null;
-    displayName: string;
-    hash: string;
-    canonicalFilename: string;
-    extension: string;
-    parent: string | null;
-    ctxKind: 'event' | 'function';
-    ctxName: string;
-    captures: boolean;
-    loc: [number, number];
-}
-
-/** @public */
-export declare interface HookEntryStrategy {
+/** @deprecated Use SegmentStrategy instead */
+declare interface HookEntryStrategy_2 {
     type: 'hook';
     manual?: Record<string, string>;
 }
@@ -285,7 +269,7 @@ export declare interface QwikRollupPluginOptions {
     debug?: boolean;
     /**
      * The Qwik entry strategy to use while building for production. During development the type is
-     * always `hook`.
+     * always `segment`.
      *
      * Default `{ type: "smart" }`)
      */
@@ -396,7 +380,7 @@ declare interface QwikVitePluginCommonOptions {
     debug?: boolean;
     /**
      * The Qwik entry strategy to use while building for production. During development the type is
-     * always `hook`.
+     * always `segment`.
      *
      * Default `{ type: "smart" }`)
      */
@@ -560,6 +544,32 @@ export declare interface ResolvedManifest {
 }
 
 /** @public */
+declare interface SegmentAnalysis {
+    origin: string;
+    name: string;
+    entry: string | null;
+    displayName: string;
+    hash: string;
+    canonicalFilename: string;
+    extension: string;
+    parent: string | null;
+    ctxKind: 'event' | 'function';
+    ctxName: string;
+    captures: boolean;
+    loc: [number, number];
+}
+export { SegmentAnalysis as HookAnalysis }
+export { SegmentAnalysis }
+
+/** @public */
+declare interface SegmentEntryStrategy {
+    type: 'segment';
+    manual?: Record<string, string>;
+}
+export { SegmentEntryStrategy as HookEntryStrategy }
+export { SegmentEntryStrategy }
+
+/** @public */
 export declare interface SingleEntryStrategy {
     type: 'single';
     manual?: Record<string, string>;
@@ -614,7 +624,7 @@ export declare interface TransformModule {
     isEntry: boolean;
     code: string;
     map: string | null;
-    hook: HookAnalysis | null;
+    segment: SegmentAnalysis | null;
     origPath: string | null;
 }
 

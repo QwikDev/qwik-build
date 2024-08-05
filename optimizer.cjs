@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.7.3-dev+813e325
+ * @builder.io/qwik/optimizer 1.7.3-dev+7afb605
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.7.3-dev+813e325"
+    qwik: "1.7.3-dev+7afb605"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1609,7 +1609,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     return;
   }
-  function generateManifestFromBundles(path, hooks, injections, outputBundles, opts) {
+  function generateManifestFromBundles(path, segments, injections, outputBundles, opts, debug) {
     const manifest = {
       manifestHash: "",
       symbols: {},
@@ -1624,7 +1624,7 @@ globalThis.qwikOptimizer = function(module) {
       }
     };
     const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
-    const qrlNames = new Set([ ...hooks.map((h => h.name)) ]);
+    const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
     for (const outputBundle of Object.values(outputBundles)) {
       if ("chunk" !== outputBundle.type) {
         continue;
@@ -1646,24 +1646,24 @@ globalThis.qwikOptimizer = function(module) {
       modulePaths.length > 0 && (bundle.origins = modulePaths);
       manifest.bundles[bundleFileName] = bundle;
     }
-    for (const hook of hooks) {
-      const symbol = hook.name;
+    for (const segment of segments) {
+      const symbol = segment.name;
       const bundle = manifest.mapping[symbol];
       if (!bundle) {
-        console.error(`Unable to find bundle for hook: ${hook.name}`, manifest);
-        throw new Error(`Unable to find bundle for hook: ${hook.hash}`);
+        debug(`Note: qrl ${segment.name} is not in the bundle, likely tree shaken`, manifest);
+        continue;
       }
       (manifest.bundles[bundle].symbols ||= []).push(symbol);
       manifest.symbols[symbol] = {
-        origin: hook.origin,
-        displayName: hook.displayName,
-        canonicalFilename: hook.canonicalFilename,
-        hash: hook.hash,
-        ctxKind: hook.ctxKind,
-        ctxName: hook.ctxName,
-        captures: hook.captures,
-        parent: hook.parent,
-        loc: hook.loc
+        origin: segment.origin,
+        displayName: segment.displayName,
+        canonicalFilename: segment.canonicalFilename,
+        hash: segment.hash,
+        ctxKind: segment.ctxKind,
+        ctxName: segment.ctxName,
+        captures: segment.captures,
+        parent: segment.parent,
+        loc: segment.loc
       };
     }
     return updateSortAndPriorities(manifest);
@@ -1947,7 +1947,7 @@ globalThis.qwikOptimizer = function(module) {
       } : "production" === opts.buildMode ? opts.entryStrategy = {
         type: "smart"
       } : opts.entryStrategy = {
-        type: "hook"
+        type: "segment"
       });
       "string" === typeof updatedOpts.rootDir && (opts.rootDir = updatedOpts.rootDir);
       "string" !== typeof opts.rootDir && (opts.rootDir = optimizer.sys.cwd());
@@ -2207,7 +2207,7 @@ globalThis.qwikOptimizer = function(module) {
       if (transformedModule) {
         debug("load()", "Found", id2);
         let {code: code} = transformedModule[0];
-        const {map: map, hook: hook} = transformedModule[0];
+        const {map: map, segment: segment} = transformedModule[0];
         if (devServer) {
           const firstInput = Object.values(opts.input)[0];
           code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)));
@@ -2216,7 +2216,7 @@ globalThis.qwikOptimizer = function(module) {
           code: code,
           map: map,
           meta: {
-            hook: hook
+            segment: segment
           }
         };
       }
@@ -2299,7 +2299,7 @@ globalThis.qwikOptimizer = function(module) {
         for (const mod of newOutput.modules) {
           if (mod !== module2) {
             const key = normalizePath(path.join(srcDir, mod.path));
-            debug("transform()", `segment ${key}`, null == (_a3 = mod.hook) ? void 0 : _a3.displayName);
+            debug("transform()", `segment ${key}`, null == (_a3 = mod.segment) ? void 0 : _a3.displayName);
             currentOutputs.set(key, [ mod, id2 ]);
             deps.add(key);
             devServer || "client" !== opts.target || ctx.emitFile({
@@ -2319,7 +2319,7 @@ globalThis.qwikOptimizer = function(module) {
           code: module2.code,
           map: module2.map,
           meta: {
-            hook: module2.hook,
+            segment: module2.segment,
             qwikdeps: Array.from(deps)
           }
         };
@@ -2333,8 +2333,8 @@ globalThis.qwikOptimizer = function(module) {
       const generateManifest = async () => {
         const optimizer = getOptimizer();
         const path = optimizer.sys.path;
-        const hooks = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.hook)).filter((h => !!h));
-        const manifest = generateManifestFromBundles(path, hooks, injections, rollupBundle, opts);
+        const segments = Array.from(clientResults.values()).flatMap((r => r.modules)).map((mod => mod.segment)).filter((h => !!h));
+        const manifest = generateManifestFromBundles(path, segments, injections, rollupBundle, opts, debug);
         for (const symbol of Object.values(manifest.symbols)) {
           symbol.origin && (symbol.origin = normalizePath(symbol.origin));
         }
@@ -2396,8 +2396,8 @@ globalThis.qwikOptimizer = function(module) {
     }
     function manualChunks(id2, {getModuleInfo: getModuleInfo}) {
       const module2 = getModuleInfo(id2);
-      const hook = module2.meta.hook;
-      return null == hook ? void 0 : hook.entry;
+      const segment = module2.meta.segment;
+      return null == segment ? void 0 : segment.entry;
     }
     return {
       buildStart: buildStart,
@@ -2440,7 +2440,7 @@ globalThis.qwikOptimizer = function(module) {
     return id;
   };
   function isAdditionalFile(mod) {
-    return mod.isEntry || mod.hook;
+    return mod.isEntry || mod.segment;
   }
   function parseId(originalId) {
     const [pathId, query] = originalId.split("?");
@@ -5216,10 +5216,10 @@ globalThis.qwikOptimizer = function(module) {
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
                 var _a3, _b;
-                const hook = null == (_b = null == (_a3 = v.info) ? void 0 : _a3.meta) ? void 0 : _b.hook;
+                const segment = null == (_b = null == (_a3 = v.info) ? void 0 : _a3.meta) ? void 0 : _b.segment;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
-                hook && (manifest.mapping[hook.name] = relativeURL(url2, opts.rootDir));
+                segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
                 const {pathId: pathId, query: query} = parseId(v.url);
                 if ("" === query && [ ".css", ".scss", ".sass", ".less", ".styl", ".stylus" ].some((ext => pathId.endsWith(ext)))) {
                   added.add(v.url);
@@ -5441,7 +5441,7 @@ globalThis.qwikOptimizer = function(module) {
         isClientDevOnly = "serve" === viteCommand && "ssr" !== viteEnv.mode;
         qwikPlugin.debug(`vite config(), command: ${viteCommand}, env.mode: ${viteEnv.mode}`);
         "serve" === viteCommand ? qwikViteOpts.entryStrategy = {
-          type: "hook"
+          type: "segment"
         } : "ssr" === target ? qwikViteOpts.entryStrategy = {
           type: "hoist"
         } : "lib" === target && (qwikViteOpts.entryStrategy = {
