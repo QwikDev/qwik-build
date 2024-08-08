@@ -1,3 +1,5 @@
+import type { Plugin as Plugin_2 } from 'vite';
+
 /** @public */
 export declare interface ComponentEntryStrategy {
     type: 'component';
@@ -7,7 +9,7 @@ export declare interface ComponentEntryStrategy {
 /** @public */
 export declare const createOptimizer: (optimizerOptions?: OptimizerOptions) => Promise<Optimizer>;
 
-declare function createSymbolMapper(base: string, opts: NormalizedQwikPluginOptions, foundQrls: Map<string, string>, path: Path, sys: OptimizerSystem): SymbolMapperFn;
+declare function createSymbolMapper(base: string, opts: NormalizedQwikPluginOptions, path: Path, sys: OptimizerSystem): SymbolMapperFn;
 
 /** @public */
 export declare interface Diagnostic {
@@ -27,7 +29,7 @@ export declare type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 declare type EmitMode = 'dev' | 'prod' | 'lib';
 
 /** @public */
-export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
+export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /** @public */
 export declare interface GlobalInjections {
@@ -43,24 +45,8 @@ declare interface HoistEntryStrategy {
     type: 'hoist';
 }
 
-/** @public */
-export declare interface HookAnalysis {
-    origin: string;
-    name: string;
-    entry: string | null;
-    displayName: string;
-    hash: string;
-    canonicalFilename: string;
-    extension: string;
-    parent: string | null;
-    ctxKind: 'event' | 'function';
-    ctxName: string;
-    captures: boolean;
-    loc: [number, number];
-}
-
-/** @public */
-export declare interface HookEntryStrategy {
+/** @deprecated Use SegmentStrategy instead */
+declare interface HookEntryStrategy_2 {
     type: 'hook';
     manual?: Record<string, string>;
 }
@@ -83,7 +69,7 @@ export declare interface InsightManifest {
 /** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
-declare interface NormalizedQwikPluginOptions extends Required<QwikPluginOptions> {
+declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots'> {
     input: string[] | {
         [entry: string]: string;
     };
@@ -123,6 +109,16 @@ export declare interface OptimizerSystem {
     getInputFiles?: (rootDir: string) => Promise<TransformModuleInput[]>;
     path: Path;
 }
+
+/**
+ * Workaround to make the api be defined in the type.
+ *
+ * @internal
+ */
+declare type P<T> = Plugin_2<T> & {
+    api: T;
+    config: Extract<Plugin_2<T>['config'], Function>;
+};
 
 /** @public */
 export declare interface Path {
@@ -216,6 +212,7 @@ declare interface QwikPluginOptions {
     entryStrategy?: EntryStrategy;
     rootDir?: string;
     tsconfigFileNames?: string[];
+    /** @deprecated No longer used */
     vendorRoots?: string[];
     manifestOutput?: ((manifest: QwikManifest) => Promise<void> | void) | null;
     manifestInput?: QwikManifest | null;
@@ -272,7 +269,7 @@ export declare interface QwikRollupPluginOptions {
     debug?: boolean;
     /**
      * The Qwik entry strategy to use while building for production. During development the type is
-     * always `hook`.
+     * always `segment`.
      *
      * Default `{ type: "smart" }`)
      */
@@ -337,7 +334,13 @@ export declare interface QwikSymbol {
     loc: [number, number];
 }
 
-/** @public */
+/**
+ * The types for Vite/Rollup don't allow us to be too specific about the return type. The correct
+ * return type is `[QwikVitePlugin, VitePlugin<never>]`, and if you search the plugin by name you'll
+ * get the `QwikVitePlugin`.
+ *
+ * @public
+ */
 export declare function qwikVite(qwikViteOpts?: QwikVitePluginOptions): any;
 
 /** @public */
@@ -346,11 +349,15 @@ export declare interface QwikViteDevResponse {
     _qwikRenderResolve?: () => void;
 }
 
-/** @public */
-export declare interface QwikVitePlugin {
+/**
+ * This is the type of the "pre" Qwik Vite plugin. `qwikVite` actually returns a tuple of two
+ * plugins, but after Vite flattens them, you can find the plugin by name.
+ *
+ * @public
+ */
+export declare type QwikVitePlugin = P<QwikVitePluginApi> & {
     name: 'vite-plugin-qwik';
-    api: QwikVitePluginApi;
-}
+};
 
 /** @public */
 export declare interface QwikVitePluginApi {
@@ -373,7 +380,7 @@ declare interface QwikVitePluginCommonOptions {
     debug?: boolean;
     /**
      * The Qwik entry strategy to use while building for production. During development the type is
-     * always `hook`.
+     * always `segment`.
      *
      * Default `{ type: "smart" }`)
      */
@@ -395,6 +402,8 @@ declare interface QwikVitePluginCommonOptions {
      * List of directories to recursively search for Qwik components or Vendors.
      *
      * Default `[]`
+     *
+     * @deprecated No longer used. Instead, any imported file with `.qwik.` in the name is processed.
      */
     vendorRoots?: string[];
     /**
@@ -535,6 +544,32 @@ export declare interface ResolvedManifest {
 }
 
 /** @public */
+declare interface SegmentAnalysis {
+    origin: string;
+    name: string;
+    entry: string | null;
+    displayName: string;
+    hash: string;
+    canonicalFilename: string;
+    extension: string;
+    parent: string | null;
+    ctxKind: 'event' | 'function';
+    ctxName: string;
+    captures: boolean;
+    loc: [number, number];
+}
+export { SegmentAnalysis as HookAnalysis }
+export { SegmentAnalysis }
+
+/** @public */
+declare interface SegmentEntryStrategy {
+    type: 'segment';
+    manual?: Record<string, string>;
+}
+export { SegmentEntryStrategy as HookEntryStrategy }
+export { SegmentEntryStrategy }
+
+/** @public */
 export declare interface SingleEntryStrategy {
     type: 'single';
     manual?: Record<string, string>;
@@ -589,7 +624,7 @@ export declare interface TransformModule {
     isEntry: boolean;
     code: string;
     map: string | null;
-    hook: HookAnalysis | null;
+    segment: SegmentAnalysis | null;
     origPath: string | null;
 }
 
