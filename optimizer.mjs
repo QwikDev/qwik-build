@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+e03c429
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+ec341ae
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+e03c429"
+  qwik: "2.0.0-0-dev+ec341ae"
 };
 
 async function getSystem() {

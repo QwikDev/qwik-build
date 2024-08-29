@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+e03c429
+ * @builder.io/qwik 2.0.0-0-dev+ec341ae
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -564,7 +564,7 @@ const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
 
-const version = "2.0.0-0-dev+e03c429";
+const version = "2.0.0-0-dev+ec341ae";
 
 const SkipRender = Symbol("skip render");
 
