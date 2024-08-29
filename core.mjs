@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+e8dd55f
+ * @builder.io/qwik 2.0.0-0-dev+e03c429
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -772,7 +772,7 @@ const delay = (timeout) => {
  *
  * @public
  */
-const version = "2.0.0-0-dev+e8dd55f";
+const version = "2.0.0-0-dev+e03c429";
 
 /** @public */
 const SkipRender = Symbol('skip render');
@@ -8675,7 +8675,7 @@ function qrlToString(serializationContext, value) {
     const refSymbol = value.$refSymbol$ ?? symbol;
     const platform = getPlatform();
     if (platform) {
-        const result = platform.chunkForSymbol(refSymbol, chunk);
+        const result = platform.chunkForSymbol(refSymbol, chunk, value.dev?.file);
         if (result) {
             chunk = result[1];
             if (!value.$refSymbol$) {
