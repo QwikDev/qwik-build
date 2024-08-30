@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+404d34e
+ * @builder.io/qwik 2.0.0-0-dev+b6ac7d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -776,7 +776,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+404d34e";
+    const version = "2.0.0-0-dev+b6ac7d3";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -1899,6 +1899,9 @@
         }
         if (isQrl(componentQRL)) {
             props = props || container.getHostProp(renderHost, ELEMENT_PROPS) || EMPTY_OBJ;
+            if (props && props.children) {
+                delete props.children;
+            }
             componentFn = componentQRL.getFn(iCtx);
         }
         else if (isQwikComponent(componentQRL)) {
@@ -2934,7 +2937,7 @@
                 // Inline Component
                 vnode_insertBefore(journal, vParent, (vNewNode = vnode_newVirtual()), vCurrent && getInsertBefore());
                 build.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.InlineComponent);
-                vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.propsC);
+                vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
                 host = vNewNode;
                 let component$Host = host;
                 // Find the closest component host which has `OnRender` prop.
@@ -2944,7 +2947,7 @@
                         : true)) {
                     component$Host = vnode_getParent(component$Host);
                 }
-                const jsxOutput = executeComponent2(container, host, (component$Host || container.rootVNode), component, jsxValue.propsC);
+                const jsxOutput = executeComponent2(container, host, (component$Host || container.rootVNode), component, jsxValue.props);
                 asyncQueue.push(jsxOutput, host);
             }
         }
@@ -3035,8 +3038,8 @@
         if (!src || !dst) {
             return true;
         }
-        let srcKeys = Object.keys(src);
-        let dstKeys = Object.keys(dst);
+        let srcKeys = removeChildrenKey(Object.keys(src));
+        let dstKeys = removeChildrenKey(Object.keys(dst));
         if (srcKeys.length !== dstKeys.length) {
             return true;
         }
@@ -3050,6 +3053,13 @@
             }
         }
         return false;
+    }
+    function removeChildrenKey(keys) {
+        const childrenIdx = keys.indexOf('children');
+        if (childrenIdx !== -1) {
+            keys.splice(childrenIdx, 1);
+        }
+        return keys;
     }
     /**
      * If vnode is removed, it is necessary to release all subscriptions associated with it.
@@ -6854,12 +6864,15 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
 
     const applyInlineComponent = (ssr, component$Host, component, jsx) => {
         const host = ssr.getLastNode();
-        return executeComponent2(ssr, host, component$Host, component, jsx.propsC);
+        return executeComponent2(ssr, host, component$Host, component, jsx.props);
     };
     const applyQwikComponentBody = (ssr, jsx, component) => {
         const host = ssr.getLastNode();
         const [componentQrl] = component[SERIALIZABLE_STATE];
         const srcProps = jsx.props;
+        if (srcProps && srcProps.children) {
+            delete srcProps.children;
+        }
         const scheduler = ssr.$scheduler$;
         host.setProp(OnRenderProp, componentQrl);
         host.setProp(ELEMENT_PROPS, srcProps);
@@ -7025,7 +7038,7 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
                             projectionAttrs.push(QSlot, slotName);
                             enqueue(new SetScopedStyle(styleScoped));
                             enqueue(ssr.closeProjection);
-                            const slotDefaultChildren = (jsx.children || null);
+                            const slotDefaultChildren = jsx.children || null;
                             const slotChildren = componentFrame.consumeChildrenForSlot(node, slotName) || slotDefaultChildren;
                             if (slotDefaultChildren && slotChildren !== slotDefaultChildren) {
                                 ssr.addUnclaimedProjection(componentFrame, QDefaultSlot, slotDefaultChildren);
@@ -7375,6 +7388,21 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
     const jsx = (type, props, key) => {
         return _jsxSplit(type, props, null, null, 0, key || null);
     };
+    const flattenArray = (array, dst) => {
+        // Yes this function is just Array.flat, but we need to run on old versions of Node.
+        if (!dst) {
+            dst = [];
+        }
+        for (const item of array) {
+            if (isArray(item)) {
+                flattenArray(item, dst);
+            }
+            else {
+                dst.push(item);
+            }
+        }
+        return dst;
+    };
     /**
      * The legacy transform, used in special cases like `<div {...props} key="key" />`. Note that the
      * children are spread arguments, instead of a prop like in jsx() calls.
@@ -7384,7 +7412,22 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
      * @public
      */
     function h(type, props, ...children) {
-        return _jsxSplit(type, props, null, children, 0, null);
+        const normalizedProps = {
+            children: arguments.length > 2 ? flattenArray(children) : null,
+        };
+        let key = null;
+        for (const i in props) {
+            if (i == 'key') {
+                key = props[i];
+            }
+            else {
+                normalizedProps[i] = props[i];
+            }
+        }
+        if (typeof type === 'string' && !key && 'dangerouslySetInnerHTML' in normalizedProps) {
+            key = 'innerhtml';
+        }
+        return _jsxSplit(type, props, null, normalizedProps.children, 0, key);
     }
     const SKIP_RENDER_TYPE = ':skipRender';
     const isPropsProxy = (obj) => {
@@ -7409,13 +7452,6 @@ This goes against the HTML spec: https://html.spec.whatwg.org/multipage/dom.html
             }
         }
         get props() {
-            // We use a proxy to merge the constProps if they exist and to evaluate derived signals
-            if (!this._proxy) {
-                this._proxy = createPropsProxy(this.varProps, this.constProps, undefined);
-            }
-            return this._proxy;
-        }
-        get propsC() {
             // We use a proxy to merge the constProps if they exist and to evaluate derived signals
             if (!this._proxy) {
                 this._proxy = createPropsProxy(this.varProps, this.constProps, this.children);
@@ -7634,7 +7670,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (prop === _VAR_PROPS) {
                 return this.$varProps$;
             }
-            if (this.$children$ !== undefined && prop === 'children') {
+            if (this.$children$ != null && prop === 'children') {
                 return this.$children$;
             }
             const value = this.$constProps$ && prop in this.$constProps$
@@ -7668,10 +7704,13 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             if (this.$constProps$) {
                 didDelete = delete this.$constProps$[prop] || didDelete;
             }
+            if (this.$children$ != null && prop === 'children') {
+                this.$children$ = null;
+            }
             return didDelete;
         }
         has(_, prop) {
-            const hasProp = (prop === 'children' && this.$children$ !== undefined) ||
+            const hasProp = (prop === 'children' && this.$children$ != null) ||
                 prop === _CONST_PROPS ||
                 prop === _VAR_PROPS ||
                 prop in this.$varProps$ ||
@@ -7679,7 +7718,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
             return hasProp;
         }
         getOwnPropertyDescriptor(target, p) {
-            const value = p === 'children' && this.$children$ !== undefined
+            const value = p === 'children' && this.$children$ != null
                 ? this.$children$
                 : this.$constProps$ && p in this.$constProps$
                     ? this.$constProps$[p]
@@ -7692,7 +7731,7 @@ In order to disable content escaping use '<script dangerouslySetInnerHTML={conte
         }
         ownKeys() {
             const out = Object.keys(this.$varProps$);
-            if (this.$children$ !== undefined) {
+            if (this.$children$ != null && out.indexOf('children') === -1) {
                 out.push('children');
             }
             if (this.$constProps$) {

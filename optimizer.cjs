@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+404d34e
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+b6ac7d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+404d34e"
+    qwik: "2.0.0-0-dev+b6ac7d3"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -3256,10 +3256,6 @@ globalThis.qwikOptimizer = function(module) {
       }
     }
     get props() {
-      this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, void 0));
-      return this._proxy;
-    }
-    get propsC() {
       this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, this.children));
       return this._proxy;
     }
@@ -3383,7 +3379,7 @@ globalThis.qwikOptimizer = function(module) {
       if (prop === _VAR_PROPS) {
         return this.$varProps$;
       }
-      if (void 0 !== this.$children$ && "children" === prop) {
+      if (null != this.$children$ && "children" === prop) {
         return this.$children$;
       }
       const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
@@ -3407,14 +3403,15 @@ globalThis.qwikOptimizer = function(module) {
       }
       let didDelete = delete this.$varProps$[prop];
       this.$constProps$ && (didDelete = delete this.$constProps$[prop] || didDelete);
+      null != this.$children$ && "children" === prop && (this.$children$ = null);
       return didDelete;
     }
     has(_, prop) {
-      const hasProp = "children" === prop && void 0 !== this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
+      const hasProp = "children" === prop && null != this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
       return hasProp;
     }
     getOwnPropertyDescriptor(target, p) {
-      const value = "children" === p && void 0 !== this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
+      const value = "children" === p && null != this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
       return {
         configurable: true,
         enumerable: true,
@@ -3423,7 +3420,7 @@ globalThis.qwikOptimizer = function(module) {
     }
     ownKeys() {
       const out = Object.keys(this.$varProps$);
-      void 0 !== this.$children$ && out.push("children");
+      null != this.$children$ && -1 === out.indexOf("children") && out.push("children");
       if (this.$constProps$) {
         for (const key in this.$constProps$) {
           -1 === out.indexOf(key) && out.push(key);

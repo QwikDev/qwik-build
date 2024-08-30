@@ -1436,7 +1436,6 @@ declare interface JsxDevOpts {
 export declare interface JSXNode<T extends string | FunctionComponent | unknown = unknown> {
     type: T;
     props: T extends FunctionComponent<infer P> ? P : Record<any, unknown>;
-    propsC: T extends FunctionComponent<infer P> ? P : Record<any, unknown>;
     varProps: Record<any, unknown>;
     constProps: Record<any, unknown> | null;
     children: JSXChildren | null;
@@ -4270,7 +4269,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+404d34e
+ * 2.0.0-0-dev+b6ac7d3
  *
  * @public
  */

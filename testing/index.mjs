@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+404d34e
+ * @builder.io/qwik/testing 2.0.0-0-dev+b6ac7d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23647,12 +23647,6 @@ var JSXNodeImpl = class {
   }
   get props() {
     if (!this._proxy) {
-      this._proxy = createPropsProxy(this.varProps, this.constProps, void 0);
-    }
-    return this._proxy;
-  }
-  get propsC() {
-    if (!this._proxy) {
       this._proxy = createPropsProxy(this.varProps, this.constProps, this.children);
     }
     return this._proxy;
@@ -23840,7 +23834,7 @@ var PropsProxyHandler = class {
     if (prop === _VAR_PROPS) {
       return this.$varProps$;
     }
-    if (this.$children$ !== void 0 && prop === "children") {
+    if (this.$children$ != null && prop === "children") {
       return this.$children$;
     }
     const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
@@ -23870,14 +23864,17 @@ var PropsProxyHandler = class {
     if (this.$constProps$) {
       didDelete = delete this.$constProps$[prop] || didDelete;
     }
+    if (this.$children$ != null && prop === "children") {
+      this.$children$ = null;
+    }
     return didDelete;
   }
   has(_, prop) {
-    const hasProp = prop === "children" && this.$children$ !== void 0 || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
+    const hasProp = prop === "children" && this.$children$ != null || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
     return hasProp;
   }
   getOwnPropertyDescriptor(target, p) {
-    const value = p === "children" && this.$children$ !== void 0 ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
+    const value = p === "children" && this.$children$ != null ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
     return {
       configurable: true,
       enumerable: true,
@@ -23886,7 +23883,7 @@ var PropsProxyHandler = class {
   }
   ownKeys() {
     const out = Object.keys(this.$varProps$);
-    if (this.$children$ !== void 0) {
+    if (this.$children$ != null && out.indexOf("children") === -1) {
       out.push("children");
     }
     if (this.$constProps$) {
@@ -24104,6 +24101,9 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
   }
   if (isQrl(componentQRL)) {
     props = props || container.getHostProp(renderHost, ELEMENT_PROPS) || EMPTY_OBJ;
+    if (props && props.children) {
+      delete props.children;
+    }
     componentFn = componentQRL.getFn(iCtx);
   } else if (isQwikComponent(componentQRL)) {
     const qComponentFn = componentQRL;
@@ -24931,7 +24931,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         vCurrent && getInsertBefore()
       );
       isDev3 && vnode_setProp(vNewNode, DEBUG_TYPE, "I" /* InlineComponent */);
-      vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.propsC);
+      vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
       host = vNewNode;
       let component$Host = host;
       while (component$Host && (vnode_isVirtualVNode(component$Host) ? vnode_getProp(component$Host, OnRenderProp, null) === null : true)) {
@@ -24942,7 +24942,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         host,
         component$Host || container.rootVNode,
         component,
-        jsxValue.propsC
+        jsxValue.props
       );
       asyncQueue.push(jsxOutput, host);
     }
@@ -25006,8 +25006,8 @@ function propsDiffer(src, dst) {
   if (!src || !dst) {
     return true;
   }
-  let srcKeys = Object.keys(src);
-  let dstKeys = Object.keys(dst);
+  let srcKeys = removeChildrenKey(Object.keys(src));
+  let dstKeys = removeChildrenKey(Object.keys(dst));
   if (srcKeys.length !== dstKeys.length) {
     return true;
   }
@@ -25021,6 +25021,13 @@ function propsDiffer(src, dst) {
     }
   }
   return false;
+}
+function removeChildrenKey(keys) {
+  const childrenIdx = keys.indexOf("children");
+  if (childrenIdx !== -1) {
+    keys.splice(childrenIdx, 1);
+  }
+  return keys;
 }
 function cleanup(container, vNode) {
   let vCursor = vNode;

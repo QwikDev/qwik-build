@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+404d34e
+ * @builder.io/qwik/server 2.0.0-0-dev+b6ac7d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -298,7 +298,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "2.0.0-0-dev+404d34e",
+  qwik: "2.0.0-0-dev+b6ac7d3",
   qwikDom: "2.1.19"
 };
 
@@ -1281,12 +1281,6 @@ var JSXNodeImpl = class {
   }
   get props() {
     if (!this._proxy) {
-      this._proxy = createPropsProxy(this.varProps, this.constProps, void 0);
-    }
-    return this._proxy;
-  }
-  get propsC() {
-    if (!this._proxy) {
       this._proxy = createPropsProxy(this.varProps, this.constProps, this.children);
     }
     return this._proxy;
@@ -1474,7 +1468,7 @@ var PropsProxyHandler = class {
     if (prop === _VAR_PROPS) {
       return this.$varProps$;
     }
-    if (this.$children$ !== void 0 && prop === "children") {
+    if (this.$children$ != null && prop === "children") {
       return this.$children$;
     }
     const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
@@ -1504,14 +1498,17 @@ var PropsProxyHandler = class {
     if (this.$constProps$) {
       didDelete = delete this.$constProps$[prop] || didDelete;
     }
+    if (this.$children$ != null && prop === "children") {
+      this.$children$ = null;
+    }
     return didDelete;
   }
   has(_, prop) {
-    const hasProp = prop === "children" && this.$children$ !== void 0 || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
+    const hasProp = prop === "children" && this.$children$ != null || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
     return hasProp;
   }
   getOwnPropertyDescriptor(target, p) {
-    const value = p === "children" && this.$children$ !== void 0 ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
+    const value = p === "children" && this.$children$ != null ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
     return {
       configurable: true,
       enumerable: true,
@@ -1520,7 +1517,7 @@ var PropsProxyHandler = class {
   }
   ownKeys() {
     const out = Object.keys(this.$varProps$);
-    if (this.$children$ !== void 0) {
+    if (this.$children$ != null && out.indexOf("children") === -1) {
       out.push("children");
     }
     if (this.$constProps$) {

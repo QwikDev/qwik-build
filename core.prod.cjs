@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+404d34e
+ * @builder.io/qwik 2.0.0-0-dev+b6ac7d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -315,7 +315,7 @@
     const delay = timeout => new Promise((resolve => {
         setTimeout(resolve, timeout);
     }));
-    const version = "2.0.0-0-dev+404d34e";
+    const version = "2.0.0-0-dev+b6ac7d3";
     const SkipRender = Symbol("skip render");
     const SSRRaw = () => null;
     const SSRComment = () => null;
@@ -687,7 +687,8 @@
         if (iCtx.$subscriber$ = [ exports.SubscriptionType.HOST, subscriptionHost ], iCtx.$container2$ = container, 
         container.ensureProjectionResolved(renderHost), null === componentQRL && assertDefined(componentQRL = componentQRL || container.getHostProp(renderHost, "q:renderFn"), "No Component found at this location"), 
         isQrl(componentQRL)) {
-            props = props || container.getHostProp(renderHost, "q:props") || EMPTY_OBJ, componentFn = componentQRL.getFn(iCtx);
+            (props = props || container.getHostProp(renderHost, "q:props") || EMPTY_OBJ) && props.children && delete props.children, 
+            componentFn = componentQRL.getFn(iCtx);
         } else if (isQwikComponent(componentQRL)) {
             const qComponentFn = componentQRL;
             componentFn = () => invokeApply(iCtx, qComponentFn, [ props || EMPTY_OBJ, null, 0 ]);
@@ -1129,8 +1130,8 @@
                         if (!src || !dst) {
                             return !0;
                         }
-                        let srcKeys = Object.keys(src);
-                        let dstKeys = Object.keys(dst);
+                        let srcKeys = removeChildrenKey(Object.keys(src));
+                        let dstKeys = removeChildrenKey(Object.keys(dst));
                         if (srcKeys.length !== dstKeys.length) {
                             return !0;
                         }
@@ -1175,12 +1176,12 @@
             } else {
                 vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
                 build.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.InlineComponent), 
-                vnode_setProp(vNewNode, "q:props", jsxValue.propsC), host = vNewNode;
+                vnode_setProp(vNewNode, "q:props", jsxValue.props), host = vNewNode;
                 let component$Host = host;
                 for (;component$Host && (!vnode_isVirtualVNode(component$Host) || null === vnode_getProp(component$Host, "q:renderFn", null)); ) {
                     component$Host = vnode_getParent(component$Host);
                 }
-                const jsxOutput = executeComponent2(container, host, component$Host || container.rootVNode, component, jsxValue.propsC);
+                const jsxOutput = executeComponent2(container, host, component$Host || container.rootVNode, component, jsxValue.props);
                 asyncQueue.push(jsxOutput, host);
             }
         }
@@ -1217,6 +1218,10 @@
         return qrl ? qrl.$hash$ : null;
     }
     function Projection() {}
+    function removeChildrenKey(keys) {
+        const childrenIdx = keys.indexOf("children");
+        return -1 !== childrenIdx && keys.splice(childrenIdx, 1), keys;
+    }
     function cleanup(container, vNode) {
         let vCursor = vNode;
         if (vnode_isTextVNode(vNode)) {
@@ -3408,12 +3413,13 @@
     const normalizeInvisibleEvents = eventName => "on:qvisible" === eventName ? "on-document:qinit" : eventName;
     const applyInlineComponent = (ssr, component$Host, component, jsx) => {
         const host = ssr.getLastNode();
-        return executeComponent2(ssr, host, component$Host, component, jsx.propsC);
+        return executeComponent2(ssr, host, component$Host, component, jsx.props);
     };
     const applyQwikComponentBody = (ssr, jsx, component) => {
         const host = ssr.getLastNode();
         const [componentQrl] = component[SERIALIZABLE_STATE];
         const srcProps = jsx.props;
+        srcProps && srcProps.children && delete srcProps.children;
         const scheduler = ssr.$scheduler$;
         return host.setProp("q:renderFn", componentQrl), host.setProp("q:props", srcProps), 
         null !== jsx.key && host.setProp(ELEMENT_KEY, jsx.key), scheduler(ChoreType.COMPONENT_SSR, host, componentQrl, srcProps);
@@ -3659,8 +3665,23 @@
         _jsxSorted(type, sortedProps, constProps, children, flags, key, dev);
     };
     const jsx = (type, props, key) => _jsxSplit(type, props, null, null, 0, key || null);
+    const flattenArray = (array, dst) => {
+        dst || (dst = []);
+        for (const item of array) {
+            isArray(item) ? flattenArray(item, dst) : dst.push(item);
+        }
+        return dst;
+    };
     function h(type, props, ...children) {
-        return _jsxSplit(type, props, null, children, 0, null);
+        const normalizedProps = {
+            children: arguments.length > 2 ? flattenArray(children) : null
+        };
+        let key = null;
+        for (const i in props) {
+            "key" == i ? key = props[i] : normalizedProps[i] = props[i];
+        }
+        return "string" == typeof type && !key && "dangerouslySetInnerHTML" in normalizedProps && (key = "innerhtml"), 
+        _jsxSplit(type, props, null, normalizedProps.children, 0, key);
     }
     const isPropsProxy = obj => obj && void 0 !== obj[_VAR_PROPS];
     class JSXNodeImpl {
@@ -3676,10 +3697,6 @@
             }
         }
         get props() {
-            return this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, void 0)), 
-            this._proxy;
-        }
-        get propsC() {
             return this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, this.children)), 
             this._proxy;
         }
@@ -3762,7 +3779,7 @@
             if (prop === _VAR_PROPS) {
                 return this.$varProps$;
             }
-            if (void 0 !== this.$children$ && "children" === prop) {
+            if (null != this.$children$ && "children" === prop) {
                 return this.$children$;
             }
             const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
@@ -3779,21 +3796,22 @@
             }
             let didDelete = delete this.$varProps$[prop];
             return this.$constProps$ && (didDelete = delete this.$constProps$[prop] || didDelete), 
-            didDelete;
+            null != this.$children$ && "children" === prop && (this.$children$ = null), didDelete;
         }
         has(_, prop) {
-            return "children" === prop && void 0 !== this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
+            return "children" === prop && null != this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
         }
         getOwnPropertyDescriptor(target, p) {
             return {
                 configurable: !0,
                 enumerable: !0,
-                value: "children" === p && void 0 !== this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p]
+                value: "children" === p && null != this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p]
             };
         }
         ownKeys() {
             const out = Object.keys(this.$varProps$);
-            if (void 0 !== this.$children$ && out.push("children"), this.$constProps$) {
+            if (null != this.$children$ && -1 === out.indexOf("children") && out.push("children"), 
+            this.$constProps$) {
                 for (const key in this.$constProps$) {
                     -1 === out.indexOf(key) && out.push(key);
                 }
