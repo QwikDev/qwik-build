@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+d7b4560
+ * @builder.io/qwik/optimizer 1.8.0-dev+7b1bb03
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.8.0-dev+d7b4560"
+    qwik: "1.8.0-dev+7b1bb03"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1637,9 +1637,9 @@ globalThis.qwikOptimizer = function(module) {
       for (const symbol of outputBundle.exports) {
         qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
       }
-      const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
+      const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName && outputBundle.code.includes(path.basename(i)))).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
       bundleImports.length > 0 && (bundle.imports = bundleImports);
-      const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
+      const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName && outputBundle.code.includes(path.basename(i)))).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
       bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
       const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
       const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
