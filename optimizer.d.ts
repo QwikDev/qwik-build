@@ -159,6 +159,8 @@ export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 /** @public */
 export declare interface QwikBundle {
     size: number;
+    /** Not precise, but an indication of whether this import may be a task */
+    isTask?: boolean;
     symbols?: string[];
     imports?: string[];
     dynamicImports?: string[];
