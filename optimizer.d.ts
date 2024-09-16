@@ -31,6 +31,17 @@ declare type EmitMode = 'dev' | 'prod' | 'lib';
 /** @public */
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
+/** List experimental features here */
+declare const experimental: readonly ["valibot"];
+
+/**
+ * Use `__EXPERIMENTAL__.x` to check if feature `x` is enabled. It will be replaced with `true` or
+ * `false` via an exact string replacement.
+ *
+ * @alpha
+ */
+export declare type ExperimentalFeatures = (typeof experimental)[number];
+
 /** @public */
 export declare interface GlobalInjections {
     tag: string;
@@ -69,10 +80,11 @@ export declare interface InsightManifest {
 /** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
-declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots'> {
+declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots' | 'experimental'> {
     input: string[] | {
         [entry: string]: string;
     };
+    experimental?: Record<ExperimentalFeatures, boolean>;
 }
 
 /** @public */
@@ -243,6 +255,11 @@ declare interface QwikPluginOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releases
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 /** @public */
@@ -321,6 +338,11 @@ export declare interface QwikRollupPluginOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releases.
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 /** @public */
@@ -452,6 +474,11 @@ declare interface QwikVitePluginCommonOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releaeses
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {

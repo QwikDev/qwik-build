@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+0d57dc8
+ * @builder.io/qwik/optimizer 1.8.0-dev+79683ca
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.8.0-dev+0d57dc8"
+    qwik: "1.8.0-dev+79683ca"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1874,6 +1874,7 @@ globalThis.qwikOptimizer = function(module) {
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
   var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
+  var experimental = [ "valibot" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const clientResults = new Map;
@@ -1909,7 +1910,8 @@ globalThis.qwikOptimizer = function(module) {
         clickToSource: [ "Alt" ]
       },
       inlineStylesUpToBytes: null,
-      lint: true
+      lint: true,
+      experimental: void 0
     };
     let lazyNormalizePath;
     const init2 = async () => {
@@ -2025,6 +2027,10 @@ globalThis.qwikOptimizer = function(module) {
       opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
       ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
       "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
+      opts.experimental = void 0;
+      for (const feature of updatedOpts.experimental ?? []) {
+        experimental.includes(feature) ? (opts.experimental ||= {})[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+      }
       return {
         ...opts
       };
@@ -2251,11 +2257,18 @@ globalThis.qwikOptimizer = function(module) {
         const strip = "client" === opts.target || "ssr" === opts.target;
         const normalizedID = normalizePath(pathId);
         debug("transform()", `Transforming ${id2} (for: ${isServer2 ? "server" : "client"}${strip ? ", strip" : ""})`);
+        const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
+        "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, ((_, feature) => {
+          var _a4;
+          if (null == (_a4 = opts.experimental) ? void 0 : _a4[feature]) {
+            return "true";
+          }
+          return "false";
+        })));
         let filePath = base;
         opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
         filePath = normalizePath(filePath);
         const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
-        const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
         const entryStrategy = opts.entryStrategy;
         const transformOpts2 = {
           input: [ {
@@ -2524,7 +2537,8 @@ globalThis.qwikOptimizer = function(module) {
           manifestInput: qwikRollupOpts.manifestInput,
           transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
           inlineStylesUpToBytes: null == (_a3 = qwikRollupOpts.optimizerOptions) ? void 0 : _a3.inlineStylesUpToBytes,
-          lint: qwikRollupOpts.lint
+          lint: qwikRollupOpts.lint,
+          experimental: qwikRollupOpts.experimental
         };
         const opts = qwikPlugin.normalizeOptions(pluginOpts);
         inputOpts.input || (inputOpts.input = opts.input);
@@ -5473,7 +5487,8 @@ globalThis.qwikOptimizer = function(module) {
           assetsDir: useAssetsDir ? viteAssetsDir : void 0,
           devTools: qwikViteOpts.devTools,
           sourcemap: !!(null == (_d = viteConfig.build) ? void 0 : _d.sourcemap),
-          lint: qwikViteOpts.lint
+          lint: qwikViteOpts.lint,
+          experimental: qwikViteOpts.experimental
         };
         if (!qwikViteOpts.csr) {
           if ("ssr" === target) {
