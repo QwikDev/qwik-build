@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.8.0-dev+66f0279
+ * @builder.io/qwik 1.8.0-dev+0d57dc8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1009,7 +1009,7 @@
      *
      * @public
      */
-    const version = "1.8.0-dev+66f0279";
+    const version = "1.8.0-dev+0d57dc8";
 
     /**
      * @internal

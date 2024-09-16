@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+66f0279
+ * @builder.io/qwik/optimizer 1.8.0-dev+0d57dc8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.8.0-dev+66f0279"
+  qwik: "1.8.0-dev+0d57dc8"
 };
 
 async function getSystem() {
@@ -2797,28 +2797,28 @@ async function getInfoForSrc(src) {
 }
 
 var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
-  const fs = await sys.dynamicImport("node:fs");
-  const path = await sys.dynamicImport("node:path");
-  const url = new URL(req.url, "http://localhost:3000/");
-  if ("GET" === req.method && "/__image_info" === url.pathname) {
-    const imageURL = url.searchParams.get("url");
-    res.setHeader("content-type", "application/json");
-    if (imageURL) {
-      const info = await getInfoForSrc(imageURL);
-      res.setHeader("cache-control", "public, max-age=31536000, immutable");
-      info ? res.write(JSON.stringify(info)) : res.statusCode = 404;
-    } else {
-      res.statusCode = 500;
-      const info = {
-        message: "error"
-      };
-      res.write(JSON.stringify(info));
+  try {
+    const fs = await sys.dynamicImport("node:fs");
+    const path = await sys.dynamicImport("node:path");
+    const url = new URL(req.url, "http://localhost:3000/");
+    if ("GET" === req.method && "/__image_info" === url.pathname) {
+      const imageURL = url.searchParams.get("url");
+      res.setHeader("content-type", "application/json");
+      if (imageURL) {
+        const info = await getInfoForSrc(imageURL);
+        res.setHeader("cache-control", "public, max-age=31536000, immutable");
+        info ? res.write(JSON.stringify(info)) : res.statusCode = 404;
+      } else {
+        res.statusCode = 500;
+        const info = {
+          message: "error"
+        };
+        res.write(JSON.stringify(info));
+      }
+      res.end();
+      return;
     }
-    res.end();
-    return;
-  }
-  if ("POST" === req.method && "/__image_fix" === url.pathname) {
-    try {
+    if ("POST" === req.method && "/__image_fix" === url.pathname) {
       const loc = url.searchParams.get("loc");
       const width = url.searchParams.get("width");
       const height = url.searchParams.get("height");
@@ -2900,11 +2900,12 @@ var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
       imgTag.includes("width=") || (imgTag = imgTag.replace(/<img/, `<img width="${width}"`));
       text = text.slice(0, offset) + imgTag + text.slice(end);
       fs.writeFileSync(filePath, text);
-    } catch (e) {
-      console.error("Error auto fixing image", e, url);
+    } else {
+      next();
     }
-  } else {
-    next();
+  } catch (e) {
+    e instanceof Error && await formatError(sys, e);
+    next(e);
   }
 };
 
