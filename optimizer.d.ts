@@ -476,7 +476,7 @@ declare interface QwikVitePluginCommonOptions {
     lint?: boolean;
     /**
      * Experimental features. These can come and go in patch releases, and their API is not guaranteed
-     * to be stable between releaeses
+     * to be stable between releases
      */
     experimental?: ExperimentalFeatures[];
 }
