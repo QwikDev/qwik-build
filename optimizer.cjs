@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+79683ca
+ * @builder.io/qwik/optimizer 1.8.0-dev+3125156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.8.0-dev+79683ca"
+    qwik: "1.8.0-dev+3125156"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1874,7 +1874,7 @@ globalThis.qwikOptimizer = function(module) {
   var SERVER_STRIP_EXPORTS = [ "onGet", "onPost", "onPut", "onRequest", "onDelete", "onHead", "onOptions", "onPatch", "onStaticGenerate" ];
   var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader$", "zod$", "validator$", "globalAction$" ];
   var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
-  var experimental = [ "valibot" ];
+  var experimental = [ "preventNavigate", "valibot" ];
   function createPlugin(optimizerOptions = {}) {
     const id = `${Math.round(899 * Math.random()) + 100}`;
     const clientResults = new Map;
@@ -5194,18 +5194,29 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("symbolMapper not initialized");
   };
   async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
+    var _a3;
     symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, path, sys);
     if (!devSsrServer) {
       return;
     }
+    const hasQwikCity = null == (_a3 = server.config.plugins) ? void 0 : _a3.some((plugin => "vite-plugin-qwik-city" === plugin.name));
     server.middlewares.use((async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
         const domain = ORIGIN ?? getOrigin(req);
         const url = new URL(req.originalUrl, domain);
         if (shouldSsrRender(req, url)) {
+          const {_qwikEnvData: _qwikEnvData} = res;
+          if (!_qwikEnvData && hasQwikCity) {
+            console.error(`not SSR rendering ${url} because Qwik City Env data did not populate`);
+            res.statusCode ||= 404;
+            res.setHeader("Content-Type", "text/plain");
+            res.writeHead(res.statusCode);
+            res.end("Not a SSR URL according to Qwik City");
+            return;
+          }
           const serverData = {
-            ...res._qwikEnvData,
+            ..._qwikEnvData,
             url: url.href
           };
           const status = "number" === typeof res.statusCode ? res.statusCode : 200;
@@ -5237,8 +5248,8 @@ globalThis.qwikOptimizer = function(module) {
             const added = new Set;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
-                var _a3, _b;
-                const segment = null == (_b = null == (_a3 = v.info) ? void 0 : _a3.meta) ? void 0 : _b.segment;
+                var _a4, _b;
+                const segment = null == (_b = null == (_a4 = v.info) ? void 0 : _a4.meta) ? void 0 : _b.segment;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));

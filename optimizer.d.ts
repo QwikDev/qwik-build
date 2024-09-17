@@ -32,7 +32,7 @@ declare type EmitMode = 'dev' | 'prod' | 'lib';
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
 /** List experimental features here */
-declare const experimental: readonly ["valibot"];
+declare const experimental: readonly ["preventNavigate", "valibot"];
 
 /**
  * Use `__EXPERIMENTAL__.x` to check if feature `x` is enabled. It will be replaced with `true` or

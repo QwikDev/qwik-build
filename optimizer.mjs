@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+79683ca
+ * @builder.io/qwik/optimizer 1.8.0-dev+3125156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.8.0-dev+79683ca"
+  qwik: "1.8.0-dev+3125156"
 };
 
 async function getSystem() {
@@ -1892,7 +1892,7 @@ var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader
 
 var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
 
-var experimental = [ "valibot" ];
+var experimental = [ "preventNavigate", "valibot" ];
 
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
@@ -5694,14 +5694,24 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
   if (!devSsrServer) {
     return;
   }
+  const hasQwikCity = server.config.plugins?.some((plugin => "vite-plugin-qwik-city" === plugin.name));
   server.middlewares.use((async (req, res, next) => {
     try {
       const {ORIGIN: ORIGIN} = process.env;
       const domain = ORIGIN ?? getOrigin(req);
       const url = new URL(req.originalUrl, domain);
       if (shouldSsrRender(req, url)) {
+        const {_qwikEnvData: _qwikEnvData} = res;
+        if (!_qwikEnvData && hasQwikCity) {
+          console.error(`not SSR rendering ${url} because Qwik City Env data did not populate`);
+          res.statusCode || (res.statusCode = 404);
+          res.setHeader("Content-Type", "text/plain");
+          res.writeHead(res.statusCode);
+          res.end("Not a SSR URL according to Qwik City");
+          return;
+        }
         const serverData = {
-          ...res._qwikEnvData,
+          ..._qwikEnvData,
           url: url.href
         };
         const status = "number" === typeof res.statusCode ? res.statusCode : 200;
