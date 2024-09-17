@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0
+ * @builder.io/qwik/optimizer 1.9.0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.8.0"
+  qwik: "1.9.0"
 };
 
 async function getSystem() {
@@ -1626,22 +1626,29 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
     }
   };
   const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
+  const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
   const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
   for (const outputBundle of Object.values(outputBundles)) {
     if ("chunk" !== outputBundle.type) {
       continue;
     }
     const bundleFileName = path.relative(buildPath, path.resolve(opts.outDir, outputBundle.fileName));
-    const buildDirName = path.dirname(outputBundle.fileName);
     const bundle = {
       size: outputBundle.code.length
     };
+    let hasSymbols = false;
+    let hasHW = false;
     for (const symbol of outputBundle.exports) {
-      qrlNames.has(symbol) && (manifest.mapping[symbol] && 1 === outputBundle.exports.length || (manifest.mapping[symbol] = bundleFileName));
+      if (qrlNames.has(symbol) && (!manifest.mapping[symbol] || 1 !== outputBundle.exports.length)) {
+        hasSymbols = true;
+        manifest.mapping[symbol] = bundleFileName;
+      }
+      "_hW" === symbol && (hasHW = true);
     }
-    const bundleImports = outputBundle.imports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
+    hasSymbols && hasHW && (bundle.isTask = true);
+    const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
     bundleImports.length > 0 && (bundle.imports = bundleImports);
-    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => path.dirname(i) === buildDirName)).map((i => path.relative(buildDirName, outputBundles[i].fileName)));
+    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
     const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
@@ -1885,6 +1892,8 @@ var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader
 
 var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
 
+var experimental = [ "preventNavigate", "valibot" ];
+
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
   const clientResults = new Map;
@@ -1920,7 +1929,8 @@ function createPlugin(optimizerOptions = {}) {
       clickToSource: [ "Alt" ]
     },
     inlineStylesUpToBytes: null,
-    lint: true
+    lint: true,
+    experimental: void 0
   };
   let lazyNormalizePath;
   const init2 = async () => {
@@ -2036,6 +2046,10 @@ function createPlugin(optimizerOptions = {}) {
     opts.inlineStylesUpToBytes = optimizerOptions.inlineStylesUpToBytes ?? 2e4;
     ("number" !== typeof opts.inlineStylesUpToBytes || opts.inlineStylesUpToBytes < 0) && (opts.inlineStylesUpToBytes = 0);
     "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
+    opts.experimental = void 0;
+    for (const feature of updatedOpts.experimental ?? []) {
+      experimental.includes(feature) ? (opts.experimental || (opts.experimental = {}))[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+    }
     return {
       ...opts
     };
@@ -2261,11 +2275,17 @@ function createPlugin(optimizerOptions = {}) {
       const strip = "client" === opts.target || "ssr" === opts.target;
       const normalizedID = normalizePath(pathId);
       debug("transform()", `Transforming ${id2} (for: ${isServer2 ? "server" : "client"}${strip ? ", strip" : ""})`);
+      const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
+      "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, ((_, feature) => {
+        if (opts.experimental?.[feature]) {
+          return "true";
+        }
+        return "false";
+      })));
       let filePath = base;
       opts.srcDir && (filePath = path.relative(opts.srcDir, pathId));
       filePath = normalizePath(filePath);
       const srcDir = opts.srcDir ? opts.srcDir : normalizePath(dir);
-      const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
       const entryStrategy = opts.entryStrategy;
       const transformOpts2 = {
         input: [ {
@@ -2551,7 +2571,8 @@ function qwikRollup(qwikRollupOpts = {}) {
         manifestInput: qwikRollupOpts.manifestInput,
         transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
         inlineStylesUpToBytes: qwikRollupOpts.optimizerOptions?.inlineStylesUpToBytes,
-        lint: qwikRollupOpts.lint
+        lint: qwikRollupOpts.lint,
+        experimental: qwikRollupOpts.experimental
       };
       const opts = qwikPlugin.normalizeOptions(pluginOpts);
       inputOpts.input || (inputOpts.input = opts.input);
@@ -2790,28 +2811,28 @@ async function getInfoForSrc(src) {
 }
 
 var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
-  const fs = await sys.dynamicImport("node:fs");
-  const path = await sys.dynamicImport("node:path");
-  const url = new URL(req.url, "http://localhost:3000/");
-  if ("GET" === req.method && "/__image_info" === url.pathname) {
-    const imageURL = url.searchParams.get("url");
-    res.setHeader("content-type", "application/json");
-    if (imageURL) {
-      const info = await getInfoForSrc(imageURL);
-      res.setHeader("cache-control", "public, max-age=31536000, immutable");
-      info ? res.write(JSON.stringify(info)) : res.statusCode = 404;
-    } else {
-      res.statusCode = 500;
-      const info = {
-        message: "error"
-      };
-      res.write(JSON.stringify(info));
+  try {
+    const fs = await sys.dynamicImport("node:fs");
+    const path = await sys.dynamicImport("node:path");
+    const url = new URL(req.url, "http://localhost:3000/");
+    if ("GET" === req.method && "/__image_info" === url.pathname) {
+      const imageURL = url.searchParams.get("url");
+      res.setHeader("content-type", "application/json");
+      if (imageURL) {
+        const info = await getInfoForSrc(imageURL);
+        res.setHeader("cache-control", "public, max-age=31536000, immutable");
+        info ? res.write(JSON.stringify(info)) : res.statusCode = 404;
+      } else {
+        res.statusCode = 500;
+        const info = {
+          message: "error"
+        };
+        res.write(JSON.stringify(info));
+      }
+      res.end();
+      return;
     }
-    res.end();
-    return;
-  }
-  if ("POST" === req.method && "/__image_fix" === url.pathname) {
-    try {
+    if ("POST" === req.method && "/__image_fix" === url.pathname) {
       const loc = url.searchParams.get("loc");
       const width = url.searchParams.get("width");
       const height = url.searchParams.get("height");
@@ -2893,11 +2914,12 @@ var getImageSizeServer = (sys, rootDir, srcDir) => async (req, res, next) => {
       imgTag.includes("width=") || (imgTag = imgTag.replace(/<img/, `<img width="${width}"`));
       text = text.slice(0, offset) + imgTag + text.slice(end);
       fs.writeFileSync(filePath, text);
-    } catch (e) {
-      console.error("Error auto fixing image", e, url);
+    } else {
+      next();
     }
-  } else {
-    next();
+  } catch (e) {
+    e instanceof Error && await formatError(sys, e);
+    next(e);
   }
 };
 
@@ -5672,14 +5694,24 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
   if (!devSsrServer) {
     return;
   }
+  const hasQwikCity = server.config.plugins?.some((plugin => "vite-plugin-qwik-city" === plugin.name));
   server.middlewares.use((async (req, res, next) => {
     try {
       const {ORIGIN: ORIGIN} = process.env;
       const domain = ORIGIN ?? getOrigin(req);
       const url = new URL(req.originalUrl, domain);
       if (shouldSsrRender(req, url)) {
+        const {_qwikEnvData: _qwikEnvData} = res;
+        if (!_qwikEnvData && hasQwikCity) {
+          console.error(`not SSR rendering ${url} because Qwik City Env data did not populate`);
+          res.statusCode || (res.statusCode = 404);
+          res.setHeader("Content-Type", "text/plain");
+          res.writeHead(res.statusCode);
+          res.end("Not a SSR URL according to Qwik City");
+          return;
+        }
         const serverData = {
-          ...res._qwikEnvData,
+          ..._qwikEnvData,
           url: url.href
         };
         const status = "number" === typeof res.statusCode ? res.statusCode : 200;
@@ -5977,7 +6009,8 @@ function qwikVite(qwikViteOpts = {}) {
         assetsDir: useAssetsDir ? viteAssetsDir : void 0,
         devTools: qwikViteOpts.devTools,
         sourcemap: !!viteConfig.build?.sourcemap,
-        lint: qwikViteOpts.lint
+        lint: qwikViteOpts.lint,
+        experimental: qwikViteOpts.experimental
       };
       if (!qwikViteOpts.csr) {
         if ("ssr" === target) {
@@ -6158,7 +6191,7 @@ function qwikVite(qwikViteOpts = {}) {
       return qwikPlugin.load(this, id, loadOpts);
     },
     transform(code, id, transformOpts) {
-      if (id.startsWith("\0") || !fileFilter(id, "transform")) {
+      if (id.startsWith("\0") || !fileFilter(id, "transform") || id.includes("?raw")) {
         return null;
       }
       if (isClientDevOnly) {
@@ -6449,32 +6482,74 @@ function absolutePathAwareJoin(path, ...segments) {
 function convertManifestToBundleGraph(manifest) {
   const bundleGraph = [];
   const graph = manifest.bundles;
+  if (!graph) {
+    return [];
+  }
+  const names = Object.keys(graph).sort();
   const map = new Map;
-  for (const bundleName in graph) {
+  const clearTransitiveDeps = (parentDeps, seen, bundleName) => {
+    const bundle = graph[bundleName];
+    for (const dep of bundle.imports || []) {
+      parentDeps.has(dep) && parentDeps.delete(dep);
+      if (!seen.has(dep)) {
+        seen.add(dep);
+        clearTransitiveDeps(parentDeps, seen, dep);
+      }
+    }
+  };
+  for (const bundleName of names) {
     const bundle = graph[bundleName];
     const index = bundleGraph.length;
-    const deps = [];
-    bundle.imports && deps.push(...bundle.imports);
-    bundle.dynamicImports && deps.push(...bundle.dynamicImports);
+    const deps = new Set(bundle.imports);
+    for (const depName of deps) {
+      if (!graph[depName]) {
+        continue;
+      }
+      clearTransitiveDeps(deps, new Set, depName);
+    }
+    let didAdd = false;
+    for (const depName of bundle.dynamicImports || []) {
+      const dep = graph[depName];
+      if (!graph[depName]) {
+        continue;
+      }
+      if (dep.isTask) {
+        if (!didAdd) {
+          deps.add("<dynamic>");
+          didAdd = true;
+        }
+        deps.add(depName);
+      }
+    }
     map.set(bundleName, {
       index: index,
       deps: deps
     });
     bundleGraph.push(bundleName);
-    while (index + deps.length >= bundleGraph.length) {
+    while (index + deps.size >= bundleGraph.length) {
       bundleGraph.push(null);
     }
   }
-  for (const bundleName in graph) {
-    const {index: index, deps: deps} = map.get(bundleName);
-    for (let i = 0; i < deps.length; i++) {
-      const depName = deps[i];
-      const dep = map.get(depName);
-      const depIndex = dep?.index;
-      if (void 0 == depIndex) {
-        throw new Error(`Missing dependency: ${depName}`);
+  for (const bundleName of names) {
+    const bundle = map.get(bundleName);
+    if (!bundle) {
+      console.warn(`Bundle ${bundleName} not found in the bundle graph.`);
+      continue;
+    }
+    let {index: index, deps: deps} = bundle;
+    index++;
+    for (const depName of deps) {
+      if ("<dynamic>" === depName) {
+        bundleGraph[index++] = -1;
+        continue;
       }
-      bundleGraph[index + i + 1] = depIndex;
+      const dep = map.get(depName);
+      if (!dep) {
+        console.warn(`Dependency ${depName} of ${bundleName} not found in the bundle graph.`);
+        continue;
+      }
+      const depIndex = dep.index;
+      bundleGraph[index++] = depIndex;
     }
   }
   return bundleGraph;
