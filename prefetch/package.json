@@ -1,6 +1,6 @@
 {
   "name": "@builder.io/qwik/prefetch",
-  "version": "1.8.0-dev+fa38f75",
+  "version": "1.9.0-dev+ae09275",
   "main": "index.mjs",
   "types": "index.d.ts",
   "private": true,

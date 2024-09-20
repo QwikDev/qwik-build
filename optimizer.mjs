@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.8.0-dev+fa38f75
+ * @builder.io/qwik/optimizer 1.9.0-dev+ae09275
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.8.0-dev+fa38f75"
+  qwik: "1.9.0-dev+ae09275"
 };
 
 async function getSystem() {
@@ -1627,12 +1627,20 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
   };
   const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
   const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
+  const getBundleName = name => {
+    const bundle = outputBundles[name];
+    if (!bundle) {
+      console.warn(`Client manifest generation: skipping external import "${name}"`);
+      return;
+    }
+    return canonPath(bundle.fileName);
+  };
   const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
   for (const outputBundle of Object.values(outputBundles)) {
     if ("chunk" !== outputBundle.type) {
       continue;
     }
-    const bundleFileName = path.relative(buildPath, path.resolve(opts.outDir, outputBundle.fileName));
+    const bundleFileName = canonPath(outputBundle.fileName);
     const bundle = {
       size: outputBundle.code.length
     };
@@ -1646,9 +1654,9 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
       "_hW" === symbol && (hasHW = true);
     }
     hasSymbols && hasHW && (bundle.isTask = true);
-    const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
+    const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleImports.length > 0 && (bundle.imports = bundleImports);
-    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
+    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
     const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
@@ -6489,6 +6497,9 @@ function convertManifestToBundleGraph(manifest) {
   const map = new Map;
   const clearTransitiveDeps = (parentDeps, seen, bundleName) => {
     const bundle = graph[bundleName];
+    if (!bundle) {
+      return;
+    }
     for (const dep of bundle.imports || []) {
       parentDeps.has(dep) && parentDeps.delete(dep);
       if (!seen.has(dep)) {
