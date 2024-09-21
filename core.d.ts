@@ -401,19 +401,21 @@ export declare interface CanvasHTMLAttributes<T extends Element> extends Attrs<'
 }
 
 declare const enum ChoreType {
-    MACRO = 56,
-    MICRO = 7,
-    COMPUTED = 1,
+    MACRO = 112,
+    MICRO = 15,
+    /** Ensure tha the QRL promise is resolved before processing next chores in the queue */
+    QRL_RESOLVE = 1,
     RESOURCE = 2,
     TASK = 3,
     NODE_DIFF = 4,
-    COMPONENT_SSR = 5,
-    COMPONENT = 6,
-    WAIT_FOR_COMPONENTS = 8,
-    JOURNAL_FLUSH = 24,
-    VISIBLE = 32,
-    CLEANUP_VISIBLE = 40,
-    WAIT_FOR_ALL = 63
+    NODE_PROP = 5,
+    COMPONENT_SSR = 6,
+    COMPONENT = 7,
+    WAIT_FOR_COMPONENTS = 16,
+    JOURNAL_FLUSH = 48,
+    VISIBLE = 64,
+    CLEANUP_VISIBLE = 80,
+    WAIT_FOR_ALL = 127
 }
 
 /**
@@ -438,7 +440,7 @@ export declare interface ClientContainer extends Container2 {
     qManifestHash: string;
     rootVNode: _ElementVNode;
     $journal$: VNodeJournal;
-    renderDone: Promise<void>;
+    renderDone: Promise<void> | null;
     parseQRL<T = unknown>(qrl: string): QRL<T>;
     $setRawState$(id: number, vParent: _ElementVNode | _VirtualVNode): void;
 }
@@ -586,7 +588,7 @@ declare type ComponentChildren<PROPS> = PROPS extends {
 export declare const componentQrl: <PROPS extends Record<any, any>>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
 declare interface Computed {
-    <T>(qrl: ComputedFn<T>): ReadonlySignal<Awaited<T>>;
+    <T>(qrl: ComputedFn<T>): ReadonlySignal<T>;
 }
 
 declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, Signal<T>> {
@@ -598,7 +600,16 @@ declare const ComputedEvent = "qComputed";
 export declare type ComputedFn<T> = () => T;
 
 declare interface ComputedQRL {
-    <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<Awaited<T>>;
+    <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<T>;
+}
+
+/** @public */
+export declare interface ComputedSignal<T> extends ReadonlySignal<T> {
+    /**
+     * Use this to force recalculation and running subscribers, for example when the calculated value
+     * mutates but remains the same object. Useful for third-party libraries.
+     */
+    force(): void;
 }
 
 /** @internal */
@@ -607,8 +618,7 @@ export declare const _CONST_PROPS: unique symbol;
 declare interface Container2 {
     readonly $version$: string;
     readonly $scheduler$: Scheduler;
-    readonly $subsManager$: SubscriptionManager;
-    readonly $proxyMap$: ObjToProxyMap;
+    readonly $storeProxyMap$: ObjToProxyMap;
     readonly $locale$: string;
     readonly $getObjectById$: (id: number | string) => any;
     readonly $serverData$: Record<string, any>;
@@ -804,6 +814,12 @@ export declare interface CorrectedToggleEvent extends Event {
     readonly prevState: 'open' | 'closed';
 }
 
+/** @public */
+export declare const createComputed$: <T>(qrl: () => T) => ComputedSignal<T>;
+
+/** @public */
+export declare const createComputedQrl: <T>(qrl: QRL<() => T>) => ComputedSignal<T>;
+
 /**
  * Create a context ID to be used in your application. The name should be written with no spaces.
  *
@@ -857,26 +873,23 @@ export declare interface CorrectedToggleEvent extends Event {
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
 declare const createScheduler: (container: Container2, scheduleDrain: () => void, journalFlush: () => void) => {
+    (type: ChoreType.QRL_RESOLVE, ignore: null, target: QRLInternal<any>): ValueOrPromise<void>;
     (type: ChoreType.JOURNAL_FLUSH): ValueOrPromise<void>;
     (type: ChoreType.WAIT_FOR_ALL): ValueOrPromise<void>;
     (type: ChoreType.WAIT_FOR_COMPONENTS): ValueOrPromise<void>;
-    (type: ChoreType.TASK | ChoreType.VISIBLE | ChoreType.RESOURCE | ChoreType.COMPUTED, task: Task): ValueOrPromise<void>;
+    (type: ChoreType.TASK | ChoreType.VISIBLE | ChoreType.RESOURCE, task: Task): ValueOrPromise<void>;
     (type: ChoreType.COMPONENT, host: HostElement, qrl: QRL<(...args: any[]) => any>, props: any): ValueOrPromise<JSXOutput>;
     (type: ChoreType.COMPONENT_SSR, host: HostElement, qrl: QRL<(...args: any[]) => any>, props: any): ValueOrPromise<JSXOutput>;
     (type: ChoreType.NODE_DIFF, host: HostElement, target: HostElement, value: JSXOutput): ValueOrPromise<void>;
+    (type: ChoreType.NODE_PROP, host: HostElement, prop: string, value: any): ValueOrPromise<void>;
     (type: ChoreType.CLEANUP_VISIBLE, task: Task): ValueOrPromise<JSXOutput>;
 };
 
-/**
- * Creates a signal.
- *
- * If the initial state is a function, the function is invoked to calculate the actual initial
- * state.
- *
- * @deprecated This is a technology preview
- * @public
- */
-export declare const createSignal: UseSignal;
+/** @public */
+export declare const createSignal: {
+    <T>(): Signal<T | undefined>;
+    <T>(value: T): Signal<T>;
+};
 
 /** @public */
 export declare interface CSSProperties extends CSS_2.Properties<string | number>, CSS_2.PropertiesHyphen<string | number> {
@@ -898,20 +911,8 @@ export declare interface DataHTMLAttributes<T extends Element> extends Attrs<'da
 export declare interface DelHTMLAttributes<T extends Element> extends Attrs<'del', T> {
 }
 
-declare class DerivedSubscriptionManager implements Omit<LocalSubscriptionManager, '$subs$'> {
-    private $delegate$;
-    private $prop$;
-    constructor($delegate$: LocalSubscriptionManager, $prop$: string);
-    $addSub$(sub: Subscriber, key?: string | undefined): void;
-    $addSubs$: () => never;
-    $addToGroup$: () => never;
-    $unsubGroup$: () => never;
-    $unsubEntry$: () => never;
-    $notifySubs$: () => never;
-}
-
 /** @public */
-declare interface DescriptorBase<T = unknown, B = unknown> {
+declare interface DescriptorBase<T = unknown, B = unknown> extends Subscriber_2 {
     $flags$: number;
     $index$: number;
     $el$: QwikElement;
@@ -947,7 +948,7 @@ export declare interface DialogHTMLAttributes<T extends Element> extends Attrs<'
 
 /** The Qwik-specific attributes that DOM elements accept @public */
 export declare interface DOMAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL> {
-    class?: ClassList | Signal<ClassList> | undefined;
+    class?: ClassList | Signal_2<ClassList> | undefined;
 }
 
 declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAttributes, PreventDefault, StopPropagation, RefAttr<EL> {
@@ -955,7 +956,7 @@ declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAtt
 }
 
 /** @internal */
-declare class DomContainer extends _SharedContainer implements ClientContainer, StoreTracker {
+declare class DomContainer extends _SharedContainer implements ClientContainer {
     element: _ContainerElement;
     qContainer: string;
     qBase: string;
@@ -963,15 +964,15 @@ declare class DomContainer extends _SharedContainer implements ClientContainer, 
     rootVNode: _ElementVNode;
     document: _QDocument;
     $journal$: VNodeJournal;
-    renderDone: Promise<void>;
-    rendering: boolean;
+    renderDone: Promise<void> | null;
     $rawStateData$: unknown[];
-    $proxyMap$: ObjToProxyMap;
+    $storeProxyMap$: ObjToProxyMap;
     $qFuncs$: Array<(...args: unknown[]) => unknown>;
     $instanceHash$: string;
     private stateData;
     private $styleIds$;
     private $vnodeLocate$;
+    private $renderCount$;
     constructor(element: _ContainerElement);
     $setRawState$(id: number, vParent: _ElementVNode | _VirtualVNode): void;
     parseQRL<T = unknown>(qrl: string): QRL<T>;
@@ -983,6 +984,7 @@ declare class DomContainer extends _SharedContainer implements ClientContainer, 
     setHostProp<T>(host: HostElement, name: string, value: T): void;
     getHostProp<T>(host: HostElement, name: string): T | null;
     scheduleRender(): Promise<void>;
+    private processChores;
     ensureProjectionResolved(vNode: _VirtualVNode): void;
     $getObjectById$: (id: number | string) => unknown;
     getSyncFn(id: number): (...args: unknown[]) => unknown;
@@ -993,6 +995,65 @@ export { DomContainer as _DomContainer }
 
 /** @public */
 export declare type EagernessOptions = 'visible' | 'load' | 'idle';
+
+/**
+ * Effect is something which needs to happen (side-effect) due to signal value change.
+ *
+ * There are three types of effects:
+ *
+ * - `Task`: `useTask`, `useVisibleTask`, `useResource`
+ * - `VNode` and `ISsrNode`: Either a component or `<Signal>`
+ * - `Signal2`: A derived signal which contains a computation function.
+ */
+declare type Effect = Task | _VNode | ISsrNode | Signal_3;
+
+/** @internal */
+export declare class _EffectData<T extends Record<string, any> = Record<string, any>> {
+    data: T;
+    constructor(data: T);
+}
+
+/**
+ * An effect plus a list of subscriptions effect depends on.
+ *
+ * An effect can be trigger by one or more of signal inputs. The first step of re-running an effect
+ * is to clear its subscriptions so that the effect can re add new set of subscriptions. In order to
+ * clear the subscriptions we need to store them here.
+ *
+ * Imagine you have effect such as:
+ *
+ * ```
+ * function effect1() {
+ *   console.log(signalA.value ? signalB.value : 'default');
+ * }
+ * ```
+ *
+ * In the above case the `signalB` needs to be unsubscribed when `signalA` is falsy. We do this by
+ * always clearing all of the subscriptions
+ *
+ * The `EffectSubscriptions` stores
+ *
+ * ```
+ * subscription1 = [effect1, signalA, signalB];
+ * ```
+ *
+ * The `signal1` and `signal2` back references are needed to "clear" existing subscriptions.
+ *
+ * Both `signalA` as well as `signalB` will have a reference to `subscription` to the so that the
+ * effect can be scheduled if either `signalA` or `signalB` triggers. The `subscription1` is shared
+ * between the signals.
+ *
+ * The second position `string|boolean` store the property name of the effect.
+ *
+ * - Property name of the VNode
+ * - `EffectProperty.COMPONENT` if component
+ * - `EffectProperty.VNODE` if VNode
+ */
+declare type EffectSubscriptions = [
+Effect,
+string,
+...(_EffectData | string | Signal_3 | TargetType)[]
+];
 
 /** @internal */
 export declare type _ElementVNode = [
@@ -1069,7 +1130,7 @@ declare type Filtered<T, A = {}> = {
 };
 
 /** @internal */
-export declare const _fnSignal: <T extends (...args: any) => any>(fn: T, args: Parameters<T>, fnStr?: string) => SignalDerived<ReturnType<T>, Parameters<T>>;
+export declare const _fnSignal: <T extends (...args: any) => any>(fn: T, args: Parameters<T>, fnStr?: string) => WrappedSignal<any>;
 
 /** @public */
 export declare interface FormHTMLAttributes<T extends Element> extends Attrs<'form', T> {
@@ -1350,6 +1411,7 @@ declare interface InvokeContext {
     $waitOn$: Promise<unknown>[] | undefined;
     /** The current subscriber for registering signal reads */
     $subscriber$: Subscriber | null | undefined;
+    $effectSubscriber$: EffectSubscriptions | undefined;
     $renderCtx$: RenderContext | undefined;
     $locale$: string | undefined;
     $container2$: Container2 | undefined;
@@ -1370,14 +1432,8 @@ declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
     -readonly [Q in K]: T[K];
 }, false, true>;
 
-/**
- * Checks if a given object is a `Signal`.
- *
- * @param obj - The object to check if `Signal`.
- * @returns Boolean - True if the object is a `Signal`.
- * @public
- */
-export declare const isSignal: <T = unknown>(obj: any) => obj is Signal<T>;
+/** @public */
+export declare const isSignal: (value: any) => value is Signal<unknown>;
 
 declare interface ISsrComponentFrame {
     componentNode: ISsrNode;
@@ -1417,7 +1473,7 @@ export declare const _jsxBranch: <T>(input?: T) => T | undefined;
 export declare const _jsxC: (type: any, mutable: any, _flags: any, key: any) => JSXNode<any>;
 
 /** @public */
-export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
+export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal_2<JSXChildren> | JSXNode;
 
 /** @public */
 export declare const jsxDEV: <T extends string | FunctionComponent<Props>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Props, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
@@ -1846,7 +1902,7 @@ declare interface ProcessedJSXNode {
     $key$: string | null;
     $elm$: Node | VirtualElement | null;
     $text$: string;
-    $signal$: Signal<any> | null;
+    $signal$: Signal_2<any> | null;
     $dev$?: DevJSX;
 }
 
@@ -1902,7 +1958,7 @@ export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof Qwi
 declare type PropSubscriber = readonly [
 type: SubscriptionType.PROP_IMMUTABLE | SubscriptionType.PROP_MUTABLE,
 host: SubscriberHost,
-signal: Signal,
+signal: Signal_2,
 elm: QwikElement,
 elementProperty: string,
 styleScopedId: string | undefined
@@ -1958,8 +2014,6 @@ declare interface QContext {
 export declare interface _QDocument extends Document {
     qVNodeData: WeakMap<Element, string>;
 }
-
-declare const QObjectManagerSymbol: unique symbol;
 
 /**
  * The `QRL` type represents a lazy-loadable AND serializable resource.
@@ -2332,7 +2386,9 @@ export declare type QwikVisibleEvent = CustomEvent<IntersectionObserverEntry>;
 export declare type QwikWheelEvent<T = Element> = NativeWheelEvent;
 
 /** @public */
-export declare type ReadonlySignal<T = unknown> = Readonly<Signal<T>>;
+export declare interface ReadonlySignal<T = unknown> {
+    readonly value: T;
+}
 
 /**
  * A ref can be either a signal or a function. Note that the type of Signal is Element so that it
@@ -2340,7 +2396,7 @@ export declare type ReadonlySignal<T = unknown> = Readonly<Signal<T>>;
  *
  * @public
  */
-declare type Ref<EL extends Element = Element> = Signal<Element | undefined> | RefFnInterface<EL>;
+declare type Ref<EL extends Element = Element> = Signal_2<Element | undefined> | RefFnInterface<EL>;
 
 declare interface RefAttr<EL extends Element> {
     ref?: Ref<EL> | undefined;
@@ -2520,7 +2576,7 @@ export declare interface ResourcePending<T> {
 
 /** @public */
 export declare interface ResourceProps<T> {
-    readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
+    readonly value: ResourceReturn<T> | Signal_2<Promise<T> | T> | Promise<T>;
     onResolved: (value: T) => JSXOutput;
     onPending?: () => JSXOutput;
     onRejected?: (reason: Error) => JSXOutput;
@@ -2598,8 +2654,7 @@ declare interface SerializationContext {
     $getRootId$: (obj: unknown) => number;
     $seen$: (obj: unknown) => void;
     $roots$: unknown[];
-    $addSyncFn$($funcStr$: string | undefined, argsCount: number, fn: Function): number;
-    $proxyMap$: ObjToProxyMap;
+    $addSyncFn$($funcStr$: string | null, argsCount: number, fn: Function): number;
     $breakCircularDepsAndAwaitPromises$: () => ValueOrPromise<void>;
     /**
      * Node constructor, for instanceof checks.
@@ -2646,15 +2701,14 @@ export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 export declare abstract class _SharedContainer implements Container2 {
     readonly $version$: string;
     readonly $scheduler$: Scheduler;
-    readonly $subsManager$: SubscriptionManager;
-    readonly $proxyMap$: ObjToProxyMap;
+    readonly $storeProxyMap$: ObjToProxyMap;
     readonly $locale$: string;
     readonly $getObjectById$: (id: number | string) => any;
     $serverData$: Record<string, any>;
     $currentUniqueId$: number;
     $instanceHash$: string | null;
     constructor(scheduleDrain: () => void, journalFlush: () => void, serverData: Record<string, any>, locale: string);
-    trackSignalValue<T>(signal: Signal, sub: Subscriber): T;
+    trackSignalValue<T>(signal: Signal_2, subscriber: Effect, property: string, data: _EffectData): T;
     serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter_3): SerializationContext;
     abstract ensureProjectionResolved(host: HostElement): void;
     abstract processJsx(host: HostElement, jsx: JSXOutput): ValueOrPromise<void>;
@@ -2679,20 +2733,41 @@ export declare abstract class _SharedContainer implements Container2 {
  *
  * @public
  */
-export declare interface Signal<T = any> {
+export declare interface Signal<T = any> extends ReadonlySignal<T> {
     value: T;
 }
 
-declare class SignalBase {
+/**
+ * A signal is a reactive value which can be read and written. When the signal is written, all tasks
+ * which are tracking the signal will be re-run and all components that read the signal will be
+ * re-rendered.
+ *
+ * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
+ * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
+ * will update the `title` attribute when the signal changes without having to re-render the
+ * component.
+ *
+ * @public
+ */
+declare interface Signal_2<T = any> {
+    value: T;
 }
 
-declare class SignalDerived<RETURN = unknown, ARGS extends any[] = unknown[]> extends SignalBase {
-    $func$: (...args: ARGS) => RETURN;
-    $args$: ARGS;
-    $funcStr$?: string | undefined;
-    constructor($func$: (...args: ARGS) => RETURN, $args$: ARGS, $funcStr$?: string | undefined);
-    get value(): RETURN;
-    get [QObjectManagerSymbol](): DerivedSubscriptionManager | undefined;
+declare class Signal_3<T = any> extends Subscriber_2 implements Signal<T> {
+    $untrackedValue$: T;
+    /** Store a list of effects which are dependent on this signal. */
+    $effects$: null | EffectSubscriptions[];
+    $container$: Container2 | null;
+    constructor(container: Container2 | null, value: T);
+    get untrackedValue(): T;
+    set untrackedValue(value: T);
+    get value(): T;
+    set value(value: T);
+    valueOf(): void;
+    toString(): string;
+    toJSON(): {
+        value: T;
+    };
 }
 
 declare interface SimplifiedServerRequestEvent<T = unknown> {
@@ -2835,12 +2910,12 @@ declare type SpecialAttrs = {
          */
         autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
         /** For type: 'checkbox' | 'radio' */
-        'bind:checked'?: Signal<boolean | undefined>;
+        'bind:checked'?: Signal_2<boolean | undefined>;
         /**
          * For type: HTMLInputTypeAttribute, excluding 'button' | 'reset' | 'submit' | 'checkbox' |
          * 'radio'
          */
-        'bind:value'?: Signal<string | undefined>;
+        'bind:value'?: Signal_2<string | undefined>;
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         height?: Size | undefined;
         max?: number | string | undefined;
@@ -2925,7 +3000,7 @@ declare type SpecialAttrs = {
     select: {
         form?: string | undefined;
         value?: string | ReadonlyArray<string> | number | undefined;
-        'bind:value'?: Signal<string | undefined>;
+        'bind:value'?: Signal_2<string | undefined>;
     };
     source: {
         /** Allowed if the parent is a `picture` element */
@@ -2952,7 +3027,7 @@ declare type SpecialAttrs = {
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         form?: string | undefined;
         value?: string | ReadonlyArray<string> | number | undefined;
-        'bind:value'?: Signal<string | undefined>;
+        'bind:value'?: Signal_2<string | undefined>;
         children?: string;
     };
     track: {
@@ -2972,7 +3047,7 @@ declare type SsrAttrKey = string;
 
 declare type SsrAttrs = Array<SsrAttrKey | SsrAttrValue>;
 
-declare type SsrAttrValue = string | Signal<any> | boolean | Object | null;
+declare type SsrAttrValue = string | Signal_2<any> | boolean | Object | null;
 
 /** @public */
 export declare const SSRComment: FunctionComponent<{
@@ -3071,6 +3146,10 @@ export declare interface StyleHTMLAttributes<T extends Element> extends Attrs<'s
 }
 
 declare type Subscriber = HostSubscriber | PropSubscriber | TextSubscriber;
+
+declare abstract class Subscriber_2 {
+    $effectDependencies$: Subscriber_2[] | null;
+}
 
 declare type SubscriberEffect = TaskDescriptor | ResourceDescriptor<unknown> | ComputedDescriptor<unknown>;
 
@@ -3413,14 +3492,16 @@ declare type TableCellSpecialAttrs = {
 export declare interface TableHTMLAttributes<T extends Element> extends Attrs<'table', T> {
 }
 
-declare class Task<T = unknown, B = T> implements DescriptorBase<unknown, Signal<B>> {
+declare type TargetType = Record<string | symbol, any>;
+
+declare class Task<T = unknown, B = T> extends Subscriber_2 implements DescriptorBase<unknown, Signal<B> | ResourceReturnInternal<B>> {
     $flags$: number;
     $index$: number;
     $el$: QwikElement;
     $qrl$: QRLInternal<T>;
-    $state$: Signal<B> | undefined;
+    $state$: Signal<B> | ResourceReturnInternal<B> | undefined;
     $destroy$: NoSerialize<() => void> | null;
-    constructor($flags$: number, $index$: number, $el$: QwikElement, $qrl$: QRLInternal<T>, $state$: Signal<B> | undefined, $destroy$: NoSerialize<() => void> | null);
+    constructor($flags$: number, $index$: number, $el$: QwikElement, $qrl$: QRLInternal<T>, $state$: Signal<B> | ResourceReturnInternal<B> | undefined, $destroy$: NoSerialize<() => void> | null);
 }
 
 /** @public */
@@ -3448,7 +3529,7 @@ export declare interface TextareaHTMLAttributes<T extends Element> extends Attrs
 declare type TextSubscriber = readonly [
 type: SubscriptionType.TEXT_IMMUTABLE | SubscriptionType.TEXT_MUTABLE,
 host: SubscriberHost | Text,
-signal: Signal,
+signal: Signal_2,
 elm: Node | QwikElement
 ];
 
@@ -3908,11 +3989,7 @@ export declare interface UseSignal {
     <T>(value: T | (() => T)): Signal<T>;
 }
 
-/**
- * Hook that creates a signal that is retained for the lifetime of the component.
- *
- * @public
- */
+/** @public */
 export declare const useSignal: UseSignal;
 
 /**
@@ -4269,7 +4346,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+b6ac7d3
+ * 2.0.0-0-dev+6c4c5b9
  *
  * @public
  */
@@ -4365,11 +4442,12 @@ export declare const enum _VNodeFlags {
     Text = 4,
     Inflated = 8,
     Resolved = 16,
-    NAMESPACE_MASK = 96,
-    NEGATED_NAMESPACE_MASK = -97,
+    Deleted = 32,
+    NAMESPACE_MASK = 192,
+    NEGATED_NAMESPACE_MASK = -193,
     NS_html = 0,// http://www.w3.org/1999/xhtml
-    NS_svg = 32,// http://www.w3.org/2000/svg
-    NS_math = 64
+    NS_svg = 64,// http://www.w3.org/2000/svg
+    NS_math = 128
 }
 
 declare type VNodeJournal = Array<VNodeJournalOpCode | Document | Element | Text | string | null>;
@@ -4433,6 +4511,24 @@ export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAt
  * @internal
  */
 export declare function withLocale<T>(locale: string, fn: () => T): T;
+
+declare class WrappedSignal<T> extends Signal_3<T> {
+    $args$: any[];
+    $func$: (...args: any[]) => T;
+    $funcStr$: string | null;
+    $invalid$: boolean;
+    constructor(container: Container2 | null, fn: (...args: any[]) => T, args: any[], fnStr: string | null);
+    $invalidate$(): void;
+    /**
+     * Use this to force running subscribers, for example when the calculated value has mutated but
+     * remained the same object
+     */
+    force(): void;
+    get untrackedValue(): T;
+    private $computeIfNeeded$;
+    get value(): any;
+    set value(_: any);
+}
 
 /** @internal */
 export declare const _wrapProp: <T extends Record<any, any>, P extends keyof T>(obj: T, prop?: P | undefined) => any;

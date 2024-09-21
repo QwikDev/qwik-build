@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+b6ac7d3
+ * @builder.io/qwik/testing 2.0.0-0-dev+6c4c5b9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -824,7 +824,7 @@ var require_NodeUtils = __commonJS({
       listing: true
       */
     };
-    function escape2(s) {
+    function escape(s) {
       return s.replace(/[&<>\u00A0]/g, function(c) {
         switch (c) {
           case "&":
@@ -904,7 +904,7 @@ var require_NodeUtils = __commonJS({
           if (hasRawContent[parenttag] || parenttag === "NOSCRIPT" && parent.ownerDocument._scripting_enabled) {
             s += kid.data;
           } else {
-            s += escape2(kid.data);
+            s += escape(kid.data);
           }
           break;
         case 8:
@@ -1726,7 +1726,7 @@ var require_ContainerNode = __commonJS({
       // Remove all of this node's children.  This is a minor
       // optimization that only calls modify() once.
       removeChildren: {
-        value: function removeChildren2() {
+        value: function removeChildren() {
           var root = this.rooted ? this.ownerDocument : null, next = this.firstChild, kid;
           while (next !== null) {
             kid = next;
@@ -2298,7 +2298,7 @@ var require_select = __commonJS({
         );
       });
     };
-    var indexOf2 = function() {
+    var indexOf = function() {
       if (Array.prototype.indexOf) {
         return Array.prototype.indexOf;
       }
@@ -2938,7 +2938,7 @@ var require_select = __commonJS({
           scope = node.getElementsByTagName(test.qname);
           i = 0;
           while (el = scope[i++]) {
-            if (test(el) && indexOf2.call(results, el) === -1) {
+            if (test(el) && indexOf.call(results, el) === -1) {
               results.push(el);
             }
           }
@@ -22310,33 +22310,94 @@ import { expect } from "vitest";
 // packages/qwik/src/core/v2/client/vnode.ts
 import { isDev as isDev6 } from "@builder.io/qwik/build";
 
-// packages/qwik/src/core/util/element.ts
-var isNode = (value) => {
-  return value && typeof value.nodeType === "number";
+// packages/qwik/src/server/utils.ts
+function createTimer() {
+  if (typeof performance === "undefined") {
+    return () => 0;
+  }
+  const start = performance.now();
+  return () => {
+    const end = performance.now();
+    const delta = end - start;
+    return delta / 1e6;
+  };
+}
+function getBuildBase(opts) {
+  let base = opts.base;
+  if (typeof opts.base === "function") {
+    base = opts.base(opts);
+  }
+  if (typeof base === "string") {
+    if (!base.endsWith("/")) {
+      base += "/";
+    }
+    return base;
+  }
+  return `${import.meta.env.BASE_URL}build/`;
+}
+var versions = {
+  qwik: globalThis.QWIK_VERSION,
+  qwikDom: globalThis.QWIK_DOM_VERSION
 };
-var isDocument = (value) => {
-  return value.nodeType === 9;
-};
-var isElement = (value) => {
-  return value.nodeType === 1;
-};
-var isQwikElement = (value) => {
-  const nodeType = value.nodeType;
-  return nodeType === 1 || nodeType === 11 || nodeType === 111;
-};
-var isNodeElement = (value) => {
-  const nodeType = value.nodeType;
-  return nodeType === 1 || nodeType === 11 || nodeType === 111 || nodeType === 3;
-};
-var isVirtualElement = (value) => {
-  const nodeType = value.nodeType;
-  return nodeType === 11 || nodeType === 111;
-};
-var isText = (value) => {
-  return value.nodeType === 3;
-};
-var isComment = (value) => {
-  return value.nodeType === 8;
+
+// packages/qwik/src/server/prefetch-strategy.ts
+function getPrefetchResources(qrls, opts, resolvedManifest) {
+  if (!resolvedManifest) {
+    return [];
+  }
+  const prefetchStrategy = opts.prefetchStrategy;
+  const buildBase = getBuildBase(opts);
+  if (prefetchStrategy !== null) {
+    if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "auto") {
+      return getAutoPrefetch(qrls, resolvedManifest, buildBase);
+    }
+    if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
+      try {
+        return prefetchStrategy.symbolsToPrefetch({ manifest: resolvedManifest.manifest });
+      } catch (e) {
+        console.error("getPrefetchUrls, symbolsToPrefetch()", e);
+      }
+    }
+  }
+  return [];
+}
+function getAutoPrefetch(qrls, resolvedManifest, buildBase) {
+  const prefetchResources = [];
+  const { mapper, manifest } = resolvedManifest;
+  const urls = /* @__PURE__ */ new Map();
+  if (mapper && manifest) {
+    for (const obj of qrls) {
+      const qrlSymbolName = obj.getHash();
+      const resolvedSymbol = mapper[qrlSymbolName];
+      if (resolvedSymbol) {
+        addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[1]);
+      }
+    }
+  }
+  return prefetchResources;
+}
+function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
+  const url = buildBase + bundleFileName;
+  let prefetchResource = urls.get(url);
+  if (!prefetchResource) {
+    prefetchResource = {
+      url,
+      imports: []
+    };
+    urls.set(url, prefetchResource);
+    const bundle = manifest.bundles[bundleFileName];
+    if (bundle) {
+      if (Array.isArray(bundle.imports)) {
+        for (const importedFilename of bundle.imports) {
+          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
+        }
+      }
+    }
+  }
+  prefetchResources.push(prefetchResource);
+}
+var isQrl = (value) => {
+  return typeof value === "function" && typeof value.getSymbol === "function";
 };
 
 // packages/qwik/src/core/util/qdev.ts
@@ -22350,6 +22411,23 @@ var seal = (obj) => {
   if (qDev) {
     Object.seal(obj);
   }
+};
+
+// packages/qwik/src/core/qrl/qrl-class.ts
+import { isDev as isDev4 } from "@builder.io/qwik/build";
+
+// packages/qwik/src/core/util/element.ts
+var isNode = (value) => {
+  return value && typeof value.nodeType === "number";
+};
+var isDocument = (value) => {
+  return value.nodeType === 9;
+};
+var isElement = (value) => {
+  return value.nodeType === 1;
+};
+var isText = (value) => {
+  return value.nodeType === 3;
 };
 
 // packages/qwik/src/core/util/log.ts
@@ -22367,24 +22445,9 @@ var logErrorAndStop = (message, ...optionalParams) => {
   debugger;
   return err;
 };
-var _printed = /* @__PURE__ */ new Set();
-var logOnceWarn = (message, ...optionalParams) => {
-  if (qDev) {
-    const key = "warn" + String(message);
-    if (!_printed.has(key)) {
-      _printed.add(key);
-      logWarn(message, ...optionalParams);
-    }
-  }
-};
 var logWarn = (message, ...optionalParams) => {
   if (qDev) {
     console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
-  }
-};
-var logDebug = (message, ...optionalParams) => {
-  if (qDev) {
-    console.debug("%cQWIK", STYLE, message, ...printParams(optionalParams));
   }
 };
 var tryGetContext = (element) => {
@@ -22438,11 +22501,6 @@ function assertEqual(value1, value2, text, ...parts) {
     throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
   }
 }
-function assertFail(text, ...parts) {
-  if (qDev) {
-    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-  }
-}
 function assertTrue(value1, text, ...parts) {
   if (qDev) {
     if (value1 === true) {
@@ -22459,41 +22517,6 @@ function assertFalse(value1, text, ...parts) {
     throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
   }
 }
-function assertNumber(value1, text, ...parts) {
-  if (qDev) {
-    if (typeof value1 === "number") {
-      return;
-    }
-    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-  }
-}
-function assertString(value1, text, ...parts) {
-  if (qDev) {
-    if (typeof value1 === "string") {
-      return;
-    }
-    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-  }
-}
-function assertQwikElement(el) {
-  if (qDev) {
-    if (!isQwikElement(el)) {
-      console.error("Not a Qwik Element, got", el.nodeType, el);
-      throwErrorAndStop(ASSERT_DISCLAIMER + "Not a Qwik Element");
-    }
-  }
-}
-function assertElement(el) {
-  if (qDev) {
-    if (!isElement(el)) {
-      console.error("Not a Element, got", el);
-      throwErrorAndStop(ASSERT_DISCLAIMER + "Not an Element");
-    }
-  }
-}
-
-// packages/qwik/src/core/qrl/qrl-class.ts
-import { isDev as isDev5 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/error/error.ts
 var codeToText = (code2, ...parts) => {
@@ -22586,16 +22609,10 @@ var QError_stringifyClassOrStyle = 0;
 var QError_verifySerializable = 3;
 var QError_setProperty = 6;
 var QError_qrlIsNotFunction = 10;
-var QError_immutableProps = 17;
 var QError_useInvokeContext = 20;
-var QError_containerAlreadyPaused = 21;
-var QError_invalidJsxNodeType = 25;
-var QError_trackUseStore = 26;
-var QError_missingObjectId = 27;
 var QError_invalidContext = 28;
 var QError_qrlMissingContainer = 30;
 var QError_qrlMissingChunk = 31;
-var QError_invalidRefValue = 32;
 var qError = (code2, ...parts) => {
   const text = codeToText(code2, ...parts);
   return logErrorAndStop(text, ...parts);
@@ -22667,49 +22684,30 @@ var isServerPlatform = () => {
   return false;
 };
 
-// packages/qwik/src/core/util/implicit_dollar.ts
-var implicit$FirstArg = (fn) => {
-  return function(first, ...rest2) {
-    return fn.call(null, dollar(first), ...rest2);
-  };
+// packages/qwik/src/core/util/types.ts
+var isSerializableObject = (v) => {
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === Array.prototype || proto === null;
+};
+var isObject = (v) => {
+  return !!v && typeof v === "object";
+};
+var isArray = (v) => {
+  return Array.isArray(v);
+};
+var isString = (v) => {
+  return typeof v === "string";
+};
+var isFunction = (v) => {
+  return typeof v === "function";
 };
 
-// packages/qwik/src/core/qrl/qrl.public.ts
-var runtimeSymbolId = 0;
-var $ = (expression) => {
-  if (!qRuntimeQrl && qDev) {
-    throw new Error(
-      "Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead."
-    );
-  }
-  return createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
-};
-var dollar = $;
-var eventQrl = (qrl2) => {
-  return qrl2;
-};
-var event$ = implicit$FirstArg(eventQrl);
-
-// packages/qwik/src/core/util/dom.ts
-var getDocument = (node) => {
-  if (!qDynamicPlatform) {
-    return document;
-  }
-  if (typeof document !== "undefined") {
-    return document;
-  }
-  if (node.nodeType === 9) {
-    return node;
-  }
-  const doc = node.ownerDocument;
-  assertDefined(doc, "doc must be defined");
-  return doc;
+// packages/qwik/src/core/util/case.ts
+var fromCamelToKebabCase = (text) => {
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
 };
 
 // packages/qwik/src/core/v2/shared/types.ts
-var isContainer2 = (container) => {
-  return container && typeof container === "object" && typeof container.setHostProp === "function";
-};
 var DEBUG_TYPE = "q:type";
 var START = "\x1B[34m";
 var END = "\x1B[0m";
@@ -22724,7 +22722,7 @@ var VirtualTypeName = {
     START + "Fragment" + END
   ),
   //
-  ["D" /* DerivedSignal */]: (
+  ["S" /* WrappedSignal */]: (
     /* *** */
     START + "Signal" + END
   ),
@@ -22764,6 +22762,7 @@ var QStyleSSelector = "style[q\\:sstyle]";
 var QStylesAllSelector = QStyleSelector + "," + QStyleSSelector;
 var QScopedStyle = "q:sstyle";
 var QCtxAttr = "q:ctx";
+var QSubscribers = "q:subs";
 var QFuncsPrefix = "qFuncs_";
 var getQFuncs = (document2, hash4) => {
   return document2[QFuncsPrefix + hash4] || [];
@@ -22796,146 +22795,12 @@ var ELEMENT_KEY = "q:key";
 var ELEMENT_PROPS = "q:props";
 var ELEMENT_SEQ = "q:seq";
 var ELEMENT_SEQ_IDX = "q:seqIdx";
-var ELEMENT_ID_PREFIX = "#";
 var USE_ON_LOCAL = ":on";
 var USE_ON_LOCAL_SEQ_IDX = ":onIdx";
 var FLUSH_COMMENT = "qkssr-f";
 var STREAM_BLOCK_START_COMMENT = "qkssr-pu";
 var STREAM_BLOCK_END_COMMENT = "qkssr-po";
-
-// packages/qwik/src/core/util/flyweight.ts
-var EMPTY_ARRAY = [];
-var EMPTY_OBJ = {};
-Object.freeze(EMPTY_ARRAY);
-Object.freeze(EMPTY_OBJ);
-
-// packages/qwik/src/core/util/types.ts
-var isSerializableObject = (v) => {
-  const proto = Object.getPrototypeOf(v);
-  return proto === Object.prototype || proto === null;
-};
-var isObject = (v) => {
-  return !!v && typeof v === "object";
-};
-var isArray = (v) => {
-  return Array.isArray(v);
-};
-var isString = (v) => {
-  return typeof v === "string";
-};
-var isFunction = (v) => {
-  return typeof v === "function";
-};
-
-// packages/qwik/src/core/qrl/qrl.ts
-var inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
-  return createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
-};
-var serializeQRL = (qrl2, opts = {}) => {
-  assertTrue(qSerialize, "In order to serialize a QRL, qSerialize must be true");
-  assertQrl(qrl2);
-  let symbol = qrl2.$symbol$;
-  let chunk = qrl2.$chunk$;
-  const refSymbol = qrl2.$refSymbol$ ?? symbol;
-  const platform = getPlatform();
-  if (platform) {
-    const result = platform.chunkForSymbol(refSymbol, chunk, qrl2.dev?.file);
-    if (result) {
-      chunk = result[1];
-      if (!qrl2.$refSymbol$) {
-        symbol = result[0];
-      }
-    } else {
-      console.error("serializeQRL: Cannot resolve symbol", symbol, "in", chunk, qrl2.dev?.file);
-    }
-  }
-  if (qRuntimeQrl && chunk == null) {
-    chunk = "/runtimeQRL";
-    symbol = "_";
-  }
-  if (chunk == null) {
-    throw qError(QError_qrlMissingChunk, qrl2.$symbol$);
-  }
-  if (chunk.startsWith("./")) {
-    chunk = chunk.slice(2);
-  }
-  if (isSyncQrl(qrl2)) {
-    if (opts.$containerState$) {
-      const fn = qrl2.resolved;
-      const containerState = opts.$containerState$;
-      const fnStrKey = fn.toString();
-      let id = containerState.$inlineFns$.get(fnStrKey);
-      if (id === void 0) {
-        id = containerState.$inlineFns$.size;
-        containerState.$inlineFns$.set(fnStrKey, id);
-      }
-      symbol = String(id);
-    } else {
-      throwErrorAndStop("Sync QRL without containerState");
-    }
-  }
-  let output = `${chunk}#${symbol}`;
-  const capture = qrl2.$capture$;
-  const captureRef = qrl2.$captureRef$;
-  if (captureRef && captureRef.length) {
-    if (opts.$getObjId$) {
-      output += `[${mapJoin(captureRef, opts.$getObjId$, " ")}]`;
-    } else if (opts.$addRefMap$) {
-      output += `[${mapJoin(captureRef, opts.$addRefMap$, " ")}]`;
-    }
-  } else if (capture && capture.length > 0) {
-    output += `[${capture.join(" ")}]`;
-  }
-  return output;
-};
-var serializeQRLs = (existingQRLs, containerState, elCtx) => {
-  assertElement(elCtx.$element$);
-  const opts = {
-    $containerState$: containerState,
-    $addRefMap$: (obj) => addToArray(elCtx.$refMap$, obj)
-  };
-  return mapJoin(existingQRLs, (qrl2) => serializeQRL(qrl2, opts), "\n");
-};
-var parseQRL = (qrl2, containerEl) => {
-  const endIdx = qrl2.length;
-  const hashIdx = indexOf(qrl2, 0, "#");
-  const captureIdx = indexOf(qrl2, hashIdx, "[");
-  const chunkEndIdx = Math.min(hashIdx, captureIdx);
-  const chunk = qrl2.substring(0, chunkEndIdx);
-  const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-  const symbolEndIdx = captureIdx;
-  const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl2.substring(symbolStartIdx, symbolEndIdx);
-  const captureStartIdx = captureIdx;
-  const captureEndIdx = endIdx;
-  const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl2.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-  const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
-  if (containerEl) {
-    iQrl.$setContainer$(containerEl);
-  }
-  return iQrl;
-};
-var indexOf = (text, startIdx, char) => {
-  const endIdx = text.length;
-  const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-  return charIdx == -1 ? endIdx : charIdx;
-};
-var addToArray = (array, obj) => {
-  const index = array.indexOf(obj);
-  if (index === -1) {
-    array.push(obj);
-    return String(array.length - 1);
-  }
-  return String(index);
-};
-var inflateQrl = (qrl2, elCtx) => {
-  assertDefined(qrl2.$capture$, "invoke: qrl capture must be defined inside useLexicalScope()", qrl2);
-  return qrl2.$captureRef$ = qrl2.$capture$.map((idx) => {
-    const int = parseInt(idx, 10);
-    const obj = elCtx.$refMap$[int];
-    assertTrue(elCtx.$refMap$.length > int, "out of bounds inflate access", idx);
-    return obj;
-  });
-};
+var Q_PROPS_SEPARATOR = ":";
 
 // packages/qwik/src/core/state/constants.ts
 var QObjectRecursive = 1 << 0;
@@ -22946,50 +22811,27 @@ var QObjectManagerSymbol = Symbol("proxy manager");
 var _CONST_PROPS = Symbol("CONST");
 var _VAR_PROPS = Symbol("VAR");
 var _IMMUTABLE = Symbol("IMMUTABLE");
-var VIRTUAL_SYMBOL = "__virtual";
 var Q_CTX = "_qc_";
 
 // packages/qwik/src/core/render/fast-calls.ts
 var directSetAttribute = (el, prop, value) => {
   return el.setAttribute(prop, value);
 };
-var directGetAttribute = (el, prop) => {
-  return el.getAttribute(prop);
-};
 
-// packages/qwik/src/core/util/case.ts
-var fromCamelToKebabCase = (text) => {
-  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
-};
-var fromKebabToCamelCase = (text) => {
-  return text.replace(/-./g, (x) => x[1].toUpperCase());
-};
+// packages/qwik/src/core/util/flyweight.ts
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+Object.freeze(EMPTY_ARRAY);
+Object.freeze(EMPTY_OBJ);
 
-// packages/qwik/src/core/util/event.ts
-import { isBrowser } from "@builder.io/qwik/build";
-var emitEvent2 = (el, eventName, detail, bubbles) => {
-  if (!qTest && (isBrowser || typeof CustomEvent === "function")) {
-    if (el) {
-      el.dispatchEvent(
-        new CustomEvent(eventName, {
-          detail,
-          bubbles,
-          composed: bubbles
-        })
-      );
-    }
-  }
+// packages/qwik/src/core/style/qrl-styles.ts
+var styleContent = (styleId) => {
+  return ComponentStylesPrefixContent + styleId;
 };
-
-// packages/qwik/src/build/index.dev.ts
-var isDev = true;
-
-// packages/qwik/src/core/render/jsx/jsx-runtime.ts
-import { isBrowser as isBrowser3 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/util/promises.ts
 var isPromise = (value) => {
-  return value && typeof value == "object" && typeof value.then === "function";
+  return !!value && typeof value == "object" && typeof value.then === "function";
 };
 var safeCall = (call, thenFn, rejectFn) => {
   try {
@@ -23003,30 +22845,14 @@ var safeCall = (call, thenFn, rejectFn) => {
     return rejectFn(e);
   }
 };
-var maybeThen = (promise, thenFn) => {
-  return isPromise(promise) ? promise.then(thenFn, shouldNotError) : thenFn(promise);
+var maybeThen = (valueOrPromise, thenFn) => {
+  return isPromise(valueOrPromise) ? valueOrPromise.then(thenFn, shouldNotError) : thenFn(valueOrPromise);
 };
-var maybeThenPassError = (promise, thenFn) => {
-  return isPromise(promise) ? promise.then(thenFn) : thenFn(promise);
+var maybeThenPassError = (valueOrPromise, thenFn) => {
+  return isPromise(valueOrPromise) ? valueOrPromise.then(thenFn) : thenFn(valueOrPromise);
 };
 var shouldNotError = (reason) => {
   throwErrorAndStop("QWIK ERROR:", reason);
-};
-var promiseAll = (promises) => {
-  const hasPromise = promises.some(isPromise);
-  if (hasPromise) {
-    return Promise.all(promises);
-  }
-  return promises;
-};
-var promiseAllLazy = (promises) => {
-  if (promises.length > 0) {
-    return Promise.all(promises);
-  }
-  return promises;
-};
-var isNotNullable = (v) => {
-  return v != null;
 };
 var delay = (timeout) => {
   return new Promise((resolve) => {
@@ -23034,10 +22860,110 @@ var delay = (timeout) => {
   });
 };
 
+// packages/qwik/src/build/index.dev.ts
+var isDev = true;
+
+// packages/qwik/src/core/render/jsx/slot.public.ts
+var Slot = (props) => {
+  return _jsxSorted(Virtual, null, { [QSlotS]: "" }, props.children, 0, props.name ?? "");
+};
+
+// packages/qwik/src/core/util/prop.ts
+function isSlotProp(prop) {
+  return !prop.startsWith("q:");
+}
+function isParentSlotProp(prop) {
+  return prop.startsWith(QSlotParent);
+}
+
+// packages/qwik/src/core/v2/client/vnode-diff.ts
+import { isDev as isDev3 } from "@builder.io/qwik/build";
+
 // packages/qwik/src/core/render/jsx/utils.public.ts
 var SkipRender = Symbol("skip render");
 var SSRRaw = () => null;
 var SSRComment = () => null;
+
+// packages/qwik/src/core/util/unitless_number.ts
+var unitlessNumbers = /* @__PURE__ */ new Set([
+  "animationIterationCount",
+  "aspectRatio",
+  "borderImageOutset",
+  "borderImageSlice",
+  "borderImageWidth",
+  "boxFlex",
+  "boxFlexGroup",
+  "boxOrdinalGroup",
+  "columnCount",
+  "columns",
+  "flex",
+  "flexGrow",
+  "flexShrink",
+  "gridArea",
+  "gridRow",
+  "gridRowEnd",
+  "gridRowStart",
+  "gridColumn",
+  "gridColumnEnd",
+  "gridColumnStart",
+  "fontWeight",
+  "lineClamp",
+  "lineHeight",
+  "opacity",
+  "order",
+  "orphans",
+  "scale",
+  "tabSize",
+  "widows",
+  "zIndex",
+  "zoom",
+  "MozAnimationIterationCount",
+  // Known Prefixed Properties
+  "MozBoxFlex",
+  // TODO: Remove these since they shouldn't be used in modern code
+  "msFlex",
+  "msFlexPositive",
+  "WebkitAnimationIterationCount",
+  "WebkitBoxFlex",
+  "WebkitBoxOrdinalGroup",
+  "WebkitColumnCount",
+  "WebkitColumns",
+  "WebkitFlex",
+  "WebkitFlexGrow",
+  "WebkitFlexShrink",
+  "WebkitLineClamp"
+]);
+var isUnitlessNumber = (name) => {
+  return unitlessNumbers.has(name);
+};
+
+// packages/qwik/src/core/v2/shared/scoped-styles.ts
+function hasClassAttr(props) {
+  for (const key in props) {
+    if (Object.prototype.hasOwnProperty.call(props, key) && isClassAttr(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+function isClassAttr(key) {
+  return key === "class" || key === "className";
+}
+function convertScopedStyleIdsToArray(scopedStyleIds) {
+  return scopedStyleIds?.split(" ") ?? null;
+}
+function convertStyleIdsToString(scopedStyleIds) {
+  return Array.from(scopedStyleIds).join(" ");
+}
+var addComponentStylePrefix = (styleId) => {
+  if (styleId) {
+    let idx = 0;
+    do {
+      styleId = styleId.substring(0, idx) + styleContent(styleId.substring(idx));
+    } while ((idx = styleId.indexOf(" ", idx) + 1) !== 0);
+  }
+  return styleId || null;
+};
 
 // packages/qwik/src/core/v2/shared/event-names.ts
 var isJsxPropertyAnEventName = (name) => {
@@ -23115,361 +23041,7 @@ function isPreventDefault(key) {
   return key.startsWith("preventdefault:");
 }
 
-// packages/qwik/src/core/use/use-sequential-scope.ts
-var useSequentialScope = () => {
-  const iCtx = useInvokeContext();
-  const hostElement = iCtx.$hostElement$;
-  const host = hostElement;
-  let seq = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ);
-  if (seq === null) {
-    seq = [];
-    iCtx.$container2$.setHostProp(host, ELEMENT_SEQ, seq);
-  }
-  let seqIdx = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ_IDX);
-  if (seqIdx === null) {
-    seqIdx = 0;
-  }
-  iCtx.$container2$.setHostProp(host, ELEMENT_SEQ_IDX, seqIdx + 1);
-  while (seq.length <= seqIdx) {
-    seq.push(void 0);
-  }
-  const set = (value) => {
-    if (qDev && qSerialize) {
-      verifySerializable(value);
-    }
-    return seq[seqIdx] = value;
-  };
-  return {
-    val: seq[seqIdx],
-    set,
-    i: seqIdx,
-    iCtx
-  };
-};
-
-// packages/qwik/src/core/use/use-context.ts
-var createContextId = (name) => {
-  assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name);
-  return /* @__PURE__ */ Object.freeze({
-    id: fromCamelToKebabCase2(name)
-  });
-};
-var useContextProvider = (context, newValue) => {
-  const { val, set, elCtx, iCtx } = useSequentialScope();
-  if (val !== void 0) {
-    return;
-  }
-  if (qDev) {
-    validateContext(context);
-  }
-  if (qDev && qSerialize) {
-    verifySerializable(newValue);
-  }
-  if (iCtx.$container2$) {
-    iCtx.$container2$.setContext(iCtx.$hostElement$, context, newValue);
-  } else {
-    const contexts = elCtx.$contexts$ || (elCtx.$contexts$ = /* @__PURE__ */ new Map());
-    contexts.set(context.id, newValue);
-  }
-  set(1);
-};
-var findParentCtx = (el, containerState) => {
-  let node = el;
-  let stack2 = 1;
-  while (node && !node.hasAttribute?.("q:container")) {
-    while (node = node.previousSibling) {
-      if (isComment(node)) {
-        const virtual = node[VIRTUAL_SYMBOL];
-        if (virtual) {
-          const qtx = virtual[Q_CTX];
-          if (node === virtual.open) {
-            return qtx ?? getContext(virtual, containerState);
-          }
-          if (qtx?.$parentCtx$) {
-            return qtx.$parentCtx$;
-          }
-          node = virtual;
-          continue;
-        }
-        if (node.data === "/qv") {
-          stack2++;
-        } else if (node.data.startsWith("qv ")) {
-          stack2--;
-          if (stack2 === 0) {
-            return getContext(getVirtualElement(node), containerState);
-          }
-        }
-      }
-    }
-    node = el.parentElement;
-    el = node;
-  }
-  return null;
-};
-var getParentProvider = (ctx, containerState) => {
-  if (ctx.$parentCtx$ === void 0) {
-    ctx.$parentCtx$ = findParentCtx(ctx.$element$, containerState);
-  }
-  return ctx.$parentCtx$;
-};
-var resolveContext = (context, hostCtx, containerState) => {
-  const contextID = context.id;
-  if (!hostCtx) {
-    return;
-  }
-  let ctx = hostCtx;
-  while (ctx) {
-    const found = ctx.$contexts$?.get(contextID);
-    if (found) {
-      return found;
-    }
-    ctx = getParentProvider(ctx, containerState);
-  }
-};
-var validateContext = (context) => {
-  if (!isObject(context) || typeof context.id !== "string" || context.id.length === 0) {
-    throw qError(QError_invalidContext, context);
-  }
-};
-
-// packages/qwik/src/core/render/error-handling.ts
-var ERROR_CONTEXT = /* @__PURE__ */ createContextId("qk-error");
-var handleError = (err, hostElement, containerState) => {
-  const elCtx = tryGetContext2(hostElement);
-  if (qDev) {
-    if (!isServerPlatform() && typeof document !== "undefined" && isVirtualElement(hostElement)) {
-      elCtx.$vdom$ = null;
-      const errorDiv = document.createElement("errored-host");
-      if (err && err instanceof Error) {
-        errorDiv.props = { error: err };
-      }
-      errorDiv.setAttribute("q:key", "_error_");
-      errorDiv.append(...hostElement.childNodes);
-      hostElement.appendChild(errorDiv);
-    }
-    if (err && err instanceof Error) {
-      if (!("hostElement" in err)) {
-        err["hostElement"] = hostElement;
-      }
-    }
-    if (!isRecoverable(err)) {
-      throw err;
-    }
-  }
-  if (isServerPlatform()) {
-    throw err;
-  } else {
-    const errorStore = resolveContext(ERROR_CONTEXT, elCtx, containerState);
-    if (errorStore === void 0) {
-      throw err;
-    }
-    errorStore.error = err;
-  }
-};
-var isRecoverable = (err) => {
-  if (err && err instanceof Error) {
-    if ("plugin" in err) {
-      return false;
-    }
-  }
-  return true;
-};
-
-// packages/qwik/src/core/util/unitless_number.ts
-var unitlessNumbers = /* @__PURE__ */ new Set([
-  "animationIterationCount",
-  "aspectRatio",
-  "borderImageOutset",
-  "borderImageSlice",
-  "borderImageWidth",
-  "boxFlex",
-  "boxFlexGroup",
-  "boxOrdinalGroup",
-  "columnCount",
-  "columns",
-  "flex",
-  "flexGrow",
-  "flexShrink",
-  "gridArea",
-  "gridRow",
-  "gridRowEnd",
-  "gridRowStart",
-  "gridColumn",
-  "gridColumnEnd",
-  "gridColumnStart",
-  "fontWeight",
-  "lineClamp",
-  "lineHeight",
-  "opacity",
-  "order",
-  "orphans",
-  "scale",
-  "tabSize",
-  "widows",
-  "zIndex",
-  "zoom",
-  "MozAnimationIterationCount",
-  // Known Prefixed Properties
-  "MozBoxFlex",
-  // TODO: Remove these since they shouldn't be used in modern code
-  "msFlex",
-  "msFlexPositive",
-  "WebkitAnimationIterationCount",
-  "WebkitBoxFlex",
-  "WebkitBoxOrdinalGroup",
-  "WebkitColumnCount",
-  "WebkitColumns",
-  "WebkitFlex",
-  "WebkitFlexGrow",
-  "WebkitFlexShrink",
-  "WebkitLineClamp"
-]);
-var isUnitlessNumber = (name) => {
-  return unitlessNumbers.has(name);
-};
-
-// packages/qwik/src/core/style/qrl-styles.ts
-var styleContent = (styleId) => {
-  return ComponentStylesPrefixContent + styleId;
-};
-var serializeSStyle = (scopeIds) => {
-  const value = scopeIds.join("|");
-  if (value.length > 0) {
-    return value;
-  }
-  return void 0;
-};
-
-// packages/qwik/src/core/v2/shared/scoped-styles.ts
-function hasClassAttr(props) {
-  for (const key in props) {
-    if (Object.prototype.hasOwnProperty.call(props, key) && isClassAttr(key)) {
-      return true;
-    }
-  }
-  return false;
-}
-function isClassAttr(key) {
-  return key === "class" || key === "className";
-}
-function convertScopedStyleIdsToArray(scopedStyleIds) {
-  return scopedStyleIds?.split(" ") ?? null;
-}
-function convertStyleIdsToString(scopedStyleIds) {
-  return Array.from(scopedStyleIds).join(" ");
-}
-var addComponentStylePrefix = (styleId) => {
-  if (styleId) {
-    let idx = 0;
-    do {
-      styleId = styleId.substring(0, idx) + styleContent(styleId.substring(idx));
-    } while ((idx = styleId.indexOf(" ", idx) + 1) !== 0);
-  }
-  return styleId || null;
-};
-
 // packages/qwik/src/core/render/execute-component.ts
-var executeComponent = (rCtx, elCtx, attempt) => {
-  elCtx.$flags$ &= ~HOST_FLAG_DIRTY;
-  elCtx.$flags$ |= HOST_FLAG_MOUNTED;
-  elCtx.$slots$ = [];
-  elCtx.li.length = 0;
-  const hostElement = elCtx.$element$;
-  const componentQRL = elCtx.$componentQrl$;
-  const props = elCtx.$props$;
-  const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, RenderEvent);
-  const waitOn = iCtx.$waitOn$ = [];
-  assertDefined(componentQRL, `render: host element to render must have a $renderQrl$:`, elCtx);
-  assertDefined(props, `render: host element to render must have defined props`, elCtx);
-  const newCtx = pushRenderContext(rCtx);
-  newCtx.$cmpCtx$ = elCtx;
-  newCtx.$slotCtx$ = void 0;
-  iCtx.$subscriber$ = [0 /* HOST */, hostElement];
-  iCtx.$renderCtx$ = rCtx;
-  componentQRL.$setContainer$(rCtx.$static$.$containerState$.$containerEl$);
-  const componentFn = componentQRL.getFn(iCtx);
-  return safeCall(
-    () => componentFn(props),
-    (jsxNode) => {
-      return maybeThen(
-        isServerPlatform() ? maybeThen(
-          promiseAllLazy(waitOn),
-          () => (
-            // Run dirty tasks before SSR output is generated.
-            maybeThen(
-              executeSSRTasks(rCtx.$static$.$containerState$, rCtx),
-              () => promiseAllLazy(waitOn)
-            )
-          )
-        ) : promiseAllLazy(waitOn),
-        () => {
-          if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-            if (attempt && attempt > 100) {
-              logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
-            } else {
-              return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
-            }
-          }
-          return {
-            node: jsxNode,
-            rCtx: newCtx
-          };
-        }
-      );
-    },
-    (err) => {
-      if (err === SignalUnassignedException) {
-        if (attempt && attempt > 100) {
-          logWarn(`Infinite loop detected. Element: ${elCtx.$componentQrl$?.$symbol$}`);
-        } else {
-          return maybeThen(promiseAllLazy(waitOn), () => {
-            return executeComponent(rCtx, elCtx, attempt ? attempt + 1 : 1);
-          });
-        }
-      }
-      handleError(err, hostElement, rCtx.$static$.$containerState$);
-      return {
-        node: SkipRender,
-        rCtx: newCtx
-      };
-    }
-  );
-};
-var createRenderContext = (doc, containerState) => {
-  const ctx = {
-    $static$: {
-      $doc$: doc,
-      $locale$: containerState.$serverData$.locale,
-      $containerState$: containerState,
-      $hostElements$: /* @__PURE__ */ new Set(),
-      $operations$: [],
-      $postOperations$: [],
-      $roots$: [],
-      $addSlots$: [],
-      $rmSlots$: [],
-      $visited$: []
-    },
-    $cmpCtx$: null,
-    $slotCtx$: void 0
-  };
-  seal(ctx);
-  seal(ctx.$static$);
-  return ctx;
-};
-var pushRenderContext = (ctx) => {
-  const newCtx = {
-    $static$: ctx.$static$,
-    $cmpCtx$: ctx.$cmpCtx$,
-    $slotCtx$: ctx.$slotCtx$
-  };
-  return newCtx;
-};
-var serializeClassWithHost = (obj, hostCtx) => {
-  if (hostCtx?.$scopeIds$?.length) {
-    return hostCtx.$scopeIds$.join(" ") + " " + serializeClass(obj);
-  }
-  return serializeClass(obj);
-};
 var serializeClass = (obj) => {
   if (!obj) {
     return "";
@@ -23547,371 +23119,12 @@ var setValueForStyle = (styleName, value) => {
   }
   return value;
 };
-var getNextIndex = (ctx) => {
-  return intToStr(ctx.$static$.$containerState$.$elementIndex$++);
-};
-var setQId = (rCtx, elCtx) => {
-  const id = getNextIndex(rCtx);
-  elCtx.$id$ = id;
-};
-var jsxToString = (data) => {
-  if (isSignal(data)) {
-    return jsxToString(data.value);
-  }
-  return data == null || typeof data === "boolean" ? "" : String(data);
-};
 function isAriaAttribute(prop) {
   return prop.startsWith("aria-");
 }
-var shouldWrapFunctional = (res, node) => {
-  if (node.key) {
-    return !isJSXNode(res) || !isFunction(res.type) && res.key != node.key;
-  }
-  return false;
-};
 var static_listeners = 1 << 0;
 var static_subtree = 1 << 1;
 var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
-
-// packages/qwik/src/core/render/jsx/jsx-runtime.ts
-var _jsxSorted = (type, varProps, constProps, children, flags, key, dev) => {
-  const processed = key == null ? null : String(key);
-  const node = new JSXNodeImpl(
-    type,
-    varProps || {},
-    constProps || null,
-    children,
-    flags,
-    processed
-  );
-  if (qDev && dev) {
-    node.dev = {
-      stack: new Error().stack,
-      ...dev
-    };
-  }
-  validateJSXNode(node);
-  seal(node);
-  return node;
-};
-var _jsxSplit = (type, varProps, constProps, children, flags, key, dev) => {
-  let sortedProps;
-  if (varProps) {
-    sortedProps = Object.fromEntries(
-      untrack(() => Object.entries(varProps)).filter((entry) => {
-        const attr = entry[0];
-        if (attr === "children") {
-          children ?? (children = entry[1]);
-          return false;
-        } else if (attr === "key") {
-          key = entry[1];
-          return false;
-        }
-        return !constProps || !(attr in constProps) || // special case for event handlers, they merge
-        /^on[A-Z].*\$$/.test(attr);
-      }).sort(([a], [b]) => a < b ? -1 : 1)
-    );
-  } else {
-    sortedProps = typeof type === "string" ? EMPTY_OBJ : {};
-  }
-  if (constProps && "children" in constProps) {
-    children = constProps.children;
-    constProps.children = void 0;
-  }
-  return _jsxSorted(type, sortedProps, constProps, children, flags, key, dev);
-};
-var jsx = (type, props, key) => {
-  return _jsxSplit(type, props, null, null, 0, key || null);
-};
-var SKIP_RENDER_TYPE = ":skipRender";
-var isPropsProxy = (obj) => {
-  return obj && obj[_VAR_PROPS] !== void 0;
-};
-var JSXNodeImpl = class {
-  constructor(type, varProps, constProps, children, flags, key = null) {
-    this.type = type;
-    this.varProps = varProps;
-    this.constProps = constProps;
-    this.children = children;
-    this.flags = flags;
-    this.key = key;
-    this._proxy = null;
-    if (qDev) {
-      if (typeof varProps !== "object") {
-        throw new Error(`JSXNodeImpl: varProps must be objects: ` + JSON.stringify(varProps));
-      }
-      if (typeof constProps !== "object") {
-        throw new Error(`JSXNodeImpl: constProps must be objects: ` + JSON.stringify(constProps));
-      }
-    }
-  }
-  get props() {
-    if (!this._proxy) {
-      this._proxy = createPropsProxy(this.varProps, this.constProps, this.children);
-    }
-    return this._proxy;
-  }
-};
-var Virtual = (props) => props.children;
-var validateJSXNode = (node) => {
-  if (qDev) {
-    const { type, varProps, constProps, children } = node;
-    invoke(void 0, () => {
-      const isQwikC = isQwikComponent(type);
-      if (!isString(type) && !isFunction(type)) {
-        throw new Error(
-          `The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(
-            type
-          )}.`
-        );
-      }
-      if (children) {
-        const flatChildren = isArray(children) ? children.flat() : [children];
-        if (isString(type) || isQwikC) {
-          flatChildren.forEach((child) => {
-            if (!isValidJSXChild(child)) {
-              const typeObj = typeof child;
-              let explanation = "";
-              if (typeObj === "object") {
-                if (child?.constructor) {
-                  explanation = `it's an instance of "${child?.constructor.name}".`;
-                } else {
-                  explanation = `it's a object literal: ${printObjectLiteral(child)} `;
-                }
-              } else if (typeObj === "function") {
-                explanation += `it's a function named "${child.name}".`;
-              } else {
-                explanation = `it's a "${typeObj}": ${String(child)}.`;
-              }
-              throw new Error(
-                `One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}
-`
-              );
-            }
-          });
-        }
-        if (isBrowser3) {
-          if (isFunction(type) || constProps) {
-            const keys = {};
-            flatChildren.forEach((child) => {
-              if (isJSXNode(child) && child.key != null) {
-                const key = String(child.type) + ":" + child.key;
-                if (keys[key]) {
-                  const err = createJSXError(
-                    `Multiple JSX sibling nodes with the same key.
-This is likely caused by missing a custom key in a for loop`,
-                    child
-                  );
-                  if (err) {
-                    if (isString(child.type)) {
-                      logOnceWarn(err);
-                    } else {
-                      logOnceWarn(err);
-                    }
-                  }
-                } else {
-                  keys[key] = true;
-                }
-              }
-            });
-          }
-        }
-      }
-      const allProps = [
-        ...varProps ? Object.entries(varProps) : [],
-        ...constProps ? Object.entries(constProps) : []
-      ];
-      if (!qRuntimeQrl) {
-        for (const [prop, value] of allProps) {
-          if (prop.endsWith("$") && value) {
-            if (!isQrl(value) && !Array.isArray(value)) {
-              throw new Error(
-                `The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:
-$(${String(
-                  value
-                )})`
-              );
-            }
-          }
-          if (prop !== "children" && isQwikC && value) {
-            verifySerializable(
-              value,
-              `The value of the JSX attribute "${prop}" can not be serialized`
-            );
-          }
-        }
-      }
-      if (isString(type)) {
-        const hasSetInnerHTML = allProps.some((a) => a[0] === "dangerouslySetInnerHTML");
-        if (hasSetInnerHTML && children && (Array.isArray(children) ? children.length > 0 : true)) {
-          const err = createJSXError(
-            `The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`,
-            node
-          );
-          logError(err);
-        }
-        if (type === "style") {
-          if (children) {
-            logOnceWarn(`jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.
-In order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'
-
-However, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.
-See https://qwik.dev/docs/components/styles/#usestyles for more information.`);
-          }
-        }
-        if (type === "script") {
-          if (children) {
-            logOnceWarn(`jsx: Using <script>{content}</script> will escape the content, effectively breaking the inlined JS.
-In order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'`);
-          }
-        }
-      }
-    });
-  }
-};
-var printObjectLiteral = (obj) => {
-  return `{ ${Object.keys(obj).map((key) => `"${key}"`).join(", ")} }`;
-};
-var isJSXNode = (n) => {
-  if (qDev) {
-    if (n instanceof JSXNodeImpl) {
-      return true;
-    }
-    if (isObject(n) && "key" in n && "props" in n && "type" in n) {
-      logWarn(`Duplicate implementations of "JSXNode" found`);
-      return true;
-    }
-    return false;
-  } else {
-    return n instanceof JSXNodeImpl;
-  }
-};
-var isValidJSXChild = (node) => {
-  if (!node) {
-    return true;
-  } else if (node === SkipRender) {
-    return true;
-  } else if (isString(node) || typeof node === "number" || typeof node === "boolean") {
-    return true;
-  } else if (isJSXNode(node)) {
-    return true;
-  } else if (isArray(node)) {
-    return node.every(isValidJSXChild);
-  }
-  if (isSignal(node)) {
-    return isValidJSXChild(node.value);
-  } else if (isPromise(node)) {
-    return true;
-  }
-  return false;
-};
-var Fragment = (props) => props.children;
-var createJSXError = (message, node) => {
-  const error = new Error(message);
-  if (!node.dev) {
-    return error;
-  }
-  error.stack = `JSXError: ${message}
-${filterStack(node.dev.stack, 1)}`;
-  return error;
-};
-var filterStack = (stack2, offset = 0) => {
-  return stack2.split("\n").slice(offset).join("\n");
-};
-function createPropsProxy(varProps, constProps, children) {
-  return new Proxy({}, new PropsProxyHandler(varProps, constProps, children));
-}
-var PropsProxyHandler = class {
-  constructor($varProps$, $constProps$, $children$) {
-    this.$varProps$ = $varProps$;
-    this.$constProps$ = $constProps$;
-    this.$children$ = $children$;
-  }
-  get(_, prop) {
-    if (prop === _CONST_PROPS) {
-      return this.$constProps$;
-    }
-    if (prop === _VAR_PROPS) {
-      return this.$varProps$;
-    }
-    if (this.$children$ != null && prop === "children") {
-      return this.$children$;
-    }
-    const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
-    return value instanceof SignalDerived ? value.value : value;
-  }
-  set(_, prop, value) {
-    if (prop === _CONST_PROPS) {
-      this.$constProps$ = value;
-      return true;
-    }
-    if (prop === _VAR_PROPS) {
-      this.$varProps$ = value;
-      return true;
-    }
-    if (this.$constProps$ && prop in this.$constProps$) {
-      this.$constProps$[prop] = value;
-    } else {
-      this.$varProps$[prop] = value;
-    }
-    return true;
-  }
-  deleteProperty(_, prop) {
-    if (typeof prop !== "string") {
-      return false;
-    }
-    let didDelete = delete this.$varProps$[prop];
-    if (this.$constProps$) {
-      didDelete = delete this.$constProps$[prop] || didDelete;
-    }
-    if (this.$children$ != null && prop === "children") {
-      this.$children$ = null;
-    }
-    return didDelete;
-  }
-  has(_, prop) {
-    const hasProp = prop === "children" && this.$children$ != null || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
-    return hasProp;
-  }
-  getOwnPropertyDescriptor(target, p) {
-    const value = p === "children" && this.$children$ != null ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
-    return {
-      configurable: true,
-      enumerable: true,
-      value
-    };
-  }
-  ownKeys() {
-    const out = Object.keys(this.$varProps$);
-    if (this.$children$ != null && out.indexOf("children") === -1) {
-      out.push("children");
-    }
-    if (this.$constProps$) {
-      for (const key in this.$constProps$) {
-        if (out.indexOf(key) === -1) {
-          out.push(key);
-        }
-      }
-    }
-    return out;
-  }
-};
-
-// packages/qwik/src/core/render/jsx/slot.public.ts
-var Slot = (props) => {
-  return _jsxSorted(Virtual, null, { [QSlotS]: "" }, props.children, 0, props.name ?? "");
-};
-
-// packages/qwik/src/core/util/prop.ts
-function isSlotProp(prop) {
-  return !prop.startsWith("q:");
-}
-function isParentSlotProp(prop) {
-  return prop.startsWith(QSlotParent);
-}
-
-// packages/qwik/src/core/v2/client/vnode-diff.ts
-import { isDev as isDev3 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/v2/client/vnode-namespace.ts
 var isForeignObjectElement = (elementName) => elementName.toLowerCase() === "foreignobject";
@@ -23919,13 +23132,13 @@ var isSvgElement = (elementName) => elementName === "svg" || isForeignObjectElem
 var isMathElement = (elementName) => elementName === "math";
 var vnode_isDefaultNamespace = (vnode) => {
   const flags = vnode[0 /* flags */];
-  return (flags & 96 /* NAMESPACE_MASK */) === 0;
+  return (flags & 192 /* NAMESPACE_MASK */) === 0;
 };
 var vnode_getElementNamespaceFlags = (elementName) => {
   if (isSvgElement(elementName)) {
-    return 32 /* NS_svg */;
+    return 64 /* NS_svg */;
   } else if (isMathElement(elementName)) {
-    return 64 /* NS_math */;
+    return 128 /* NS_math */;
   } else {
     return 0 /* NS_html */;
   }
@@ -23946,7 +23159,7 @@ function vnode_getDomChildrenWithCorrectNamespacesToInsert(journal, domParentVNo
         domChildren.push(childVNode[4 /* node */]);
         continue;
       }
-      if ((childVNode[0 /* flags */] & 96 /* NAMESPACE_MASK */) === (domParentVNode[0 /* flags */] & 96 /* NAMESPACE_MASK */)) {
+      if ((childVNode[0 /* flags */] & 192 /* NAMESPACE_MASK */) === (domParentVNode[0 /* flags */] & 192 /* NAMESPACE_MASK */)) {
         domChildren.push(childVNode[6 /* element */]);
         continue;
       }
@@ -23969,7 +23182,7 @@ function cloneElementWithNamespace(element, elementName, namespace) {
   for (const attribute of attributes) {
     const name = attribute.name;
     const value = attribute.value;
-    if (!name || name === ":") {
+    if (!name || name === Q_PROPS_SEPARATOR) {
       continue;
     }
     newElement.setAttribute(name, value);
@@ -24008,7 +23221,7 @@ function vnode_cloneElementWithNamespace(elementVNode, parentVNode, namespace, n
       }
       const vFirstChild = vnode_getFirstChild(vCursor);
       vCursor[6 /* element */] = newChildElement;
-      vCursor[0 /* flags */] &= -97 /* NEGATED_NAMESPACE_MASK */;
+      vCursor[0 /* flags */] &= -193 /* NEGATED_NAMESPACE_MASK */;
       vCursor[0 /* flags */] |= namespaceFlag;
       if (vFirstChild) {
         vCursor = vFirstChild;
@@ -24053,10 +23266,10 @@ function vnode_cloneElementWithNamespace(elementVNode, parentVNode, namespace, n
   return rootElement;
 }
 function isSvg(tagOrVNode) {
-  return typeof tagOrVNode === "string" ? isSvgElement(tagOrVNode) : (tagOrVNode[0 /* flags */] & 32 /* NS_svg */) !== 0;
+  return typeof tagOrVNode === "string" ? isSvgElement(tagOrVNode) : (tagOrVNode[0 /* flags */] & 64 /* NS_svg */) !== 0;
 }
 function isMath(tagOrVNode) {
-  return typeof tagOrVNode === "string" ? isMathElement(tagOrVNode) : (tagOrVNode[0 /* flags */] & 64 /* NS_math */) !== 0;
+  return typeof tagOrVNode === "string" ? isMathElement(tagOrVNode) : (tagOrVNode[0 /* flags */] & 128 /* NS_math */) !== 0;
 }
 function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
   const parentIsDefaultNamespace = domParentVNode ? !!vnode_getElementName(domParentVNode) && vnode_isDefaultNamespace(domParentVNode) : true;
@@ -24066,21 +23279,395 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
   const isElementVNodeOrString = typeof tagOrVNode === "string" || vnode_isElementVNode(tagOrVNode);
   if (isElementVNodeOrString && isSvg(tagOrVNode)) {
     elementNamespace = SVG_NS;
-    elementNamespaceFlag = 32 /* NS_svg */;
+    elementNamespaceFlag = 64 /* NS_svg */;
   } else if (isElementVNodeOrString && isMath(tagOrVNode)) {
     elementNamespace = MATH_NS;
-    elementNamespaceFlag = 64 /* NS_math */;
+    elementNamespaceFlag = 128 /* NS_math */;
   } else if (domParentVNode && !parentIsForeignObject && !parentIsDefaultNamespace) {
-    const isParentSvg = (domParentVNode[0 /* flags */] & 32 /* NS_svg */) !== 0;
-    const isParentMath = (domParentVNode[0 /* flags */] & 64 /* NS_math */) !== 0;
+    const isParentSvg = (domParentVNode[0 /* flags */] & 64 /* NS_svg */) !== 0;
+    const isParentMath = (domParentVNode[0 /* flags */] & 128 /* NS_math */) !== 0;
     elementNamespace = isParentSvg ? SVG_NS : isParentMath ? MATH_NS : HTML_NS;
-    elementNamespaceFlag = domParentVNode[0 /* flags */] & 96 /* NAMESPACE_MASK */;
+    elementNamespaceFlag = domParentVNode[0 /* flags */] & 192 /* NAMESPACE_MASK */;
   }
   return {
     elementNamespace,
     elementNamespaceFlag
   };
 }
+
+// packages/qwik/src/core/v2/signal/v2-subscriber.ts
+var Subscriber = class {
+  constructor() {
+    this.$effectDependencies$ = null;
+  }
+};
+function isSubscriber(value) {
+  return value instanceof Subscriber;
+}
+function clearVNodeEffectDependencies(value) {
+  const effects = vnode_getProp(value, QSubscribers, null);
+  if (!effects) {
+    return;
+  }
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const subscriber = effects[i];
+    const subscriptionRemoved = clearEffects(subscriber, value);
+    if (subscriptionRemoved) {
+      effects.splice(i, 1);
+    }
+  }
+}
+function clearSubscriberEffectDependencies(value) {
+  if (value.$effectDependencies$) {
+    for (let i = value.$effectDependencies$.length - 1; i >= 0; i--) {
+      const subscriber = value.$effectDependencies$[i];
+      const subscriptionRemoved = clearEffects(subscriber, value);
+      if (subscriptionRemoved) {
+        value.$effectDependencies$.splice(i, 1);
+      }
+    }
+  }
+}
+function clearEffects(subscriber, value) {
+  if (!isSignal(subscriber)) {
+    return false;
+  }
+  const effectSubscriptions = subscriber.$effects$;
+  if (!effectSubscriptions) {
+    return false;
+  }
+  let subscriptionRemoved = false;
+  for (let i = effectSubscriptions.length - 1; i >= 0; i--) {
+    const effect = effectSubscriptions[i];
+    if (effect[0 /* EFFECT */] === value) {
+      effectSubscriptions.splice(i, 1);
+      subscriptionRemoved = true;
+    }
+  }
+  return subscriptionRemoved;
+}
+
+// packages/qwik/src/core/v2/signal/v2-signal.ts
+var DEBUG = false;
+var NEEDS_COMPUTATION = {
+  __dirty__: true
+};
+var log = (...args) => console.log("SIGNAL", ...args.map(qwikDebugToString));
+var throwIfQRLNotResolved = (qrl2) => {
+  const resolved = qrl2.resolved;
+  if (!resolved) {
+    throw qrl2.resolve();
+  }
+};
+var isSignal = (value) => {
+  return value instanceof Signal;
+};
+var EffectData = class {
+  constructor(data) {
+    this.data = data;
+  }
+};
+var Signal = class extends Subscriber {
+  constructor(container, value) {
+    super();
+    /** Store a list of effects which are dependent on this signal. */
+    this.$effects$ = null;
+    this.$container$ = null;
+    this.$container$ = container;
+    this.$untrackedValue$ = value;
+    DEBUG && log("new", this);
+  }
+  get untrackedValue() {
+    return this.$untrackedValue$;
+  }
+  // TODO: should we disallow setting the value directly?
+  set untrackedValue(value) {
+    this.$untrackedValue$ = value;
+  }
+  get value() {
+    const ctx = tryGetInvokeContext();
+    if (ctx) {
+      if (this.$container$ === null) {
+        if (!ctx.$container2$) {
+          return this.untrackedValue;
+        }
+        this.$container$ = ctx.$container2$;
+      } else {
+        assertTrue(
+          !ctx.$container2$ || ctx.$container2$ === this.$container$,
+          "Do not use signals across containers"
+        );
+      }
+      const effectSubscriber = ctx.$effectSubscriber$;
+      if (effectSubscriber) {
+        const effects = this.$effects$ || (this.$effects$ = []);
+        ensureContainsEffect(effects, effectSubscriber);
+        ensureContains(effectSubscriber, this);
+        ensureEffectContainsSubscriber(
+          effectSubscriber[0 /* EFFECT */],
+          this,
+          this.$container$
+        );
+        DEBUG && log("read->sub", pad("\n" + this.toString(), "  "));
+      }
+    }
+    return this.untrackedValue;
+  }
+  set value(value) {
+    if (value !== this.$untrackedValue$) {
+      DEBUG && log("Signal.set", this.$untrackedValue$, "->", value, pad("\n" + this.toString(), "  "));
+      this.$untrackedValue$ = value;
+      triggerEffects(this.$container$, this, this.$effects$);
+    }
+  }
+  // prevent accidental use as value
+  valueOf() {
+    if (qDev) {
+      throw new TypeError("Cannot coerce a Signal, use `.value` instead");
+    }
+  }
+  toString() {
+    return `[${this.constructor.name}${this.$invalid$ ? " INVALID" : ""} ${String(this.$untrackedValue$)}]` + (this.$effects$?.map((e) => "\n -> " + pad(qwikDebugToString(e[0]), "    ")).join("\n") || "");
+  }
+  toJSON() {
+    return { value: this.$untrackedValue$ };
+  }
+};
+var ensureContains = (array, value) => {
+  const isMissing = array.indexOf(value) === -1;
+  if (isMissing) {
+    array.push(value);
+  }
+};
+var ensureContainsEffect = (array, effectSubscriptions) => {
+  for (let i = 0; i < array.length; i++) {
+    const existingEffect = array[i];
+    if (existingEffect[0] === effectSubscriptions[0] && existingEffect[1] === effectSubscriptions[1]) {
+      return;
+    }
+  }
+  array.push(effectSubscriptions);
+};
+var ensureEffectContainsSubscriber = (effect, subscriber, container) => {
+  if (isSubscriber(effect)) {
+    effect.$effectDependencies$ || (effect.$effectDependencies$ = []);
+    if (subscriberExistInSubscribers(effect.$effectDependencies$, subscriber)) {
+      return;
+    }
+    effect.$effectDependencies$.push(subscriber);
+  } else if (vnode_isVNode(effect) && vnode_isVirtualVNode(effect)) {
+    let subscribers = vnode_getProp(
+      effect,
+      QSubscribers,
+      container ? container.$getObjectById$ : null
+    );
+    subscribers || (subscribers = []);
+    if (subscriberExistInSubscribers(subscribers, subscriber)) {
+      return;
+    }
+    subscribers.push(subscriber);
+    vnode_setProp(effect, QSubscribers, subscribers);
+  } else if (isSSRNode(effect)) {
+    let subscribers = effect.getProp(QSubscribers);
+    subscribers || (subscribers = []);
+    if (subscriberExistInSubscribers(subscribers, subscriber)) {
+      return;
+    }
+    subscribers.push(subscriber);
+    effect.setProp(QSubscribers, subscribers);
+  }
+};
+var isSSRNode = (effect) => {
+  return "setProp" in effect && "getProp" in effect && "removeProp" in effect && "id" in effect;
+};
+var subscriberExistInSubscribers = (subscribers, subscriber) => {
+  for (let i = 0; i < subscribers.length; i++) {
+    if (subscribers[i] === subscriber) {
+      return true;
+    }
+  }
+  return false;
+};
+var triggerEffects = (container, signal, effects) => {
+  if (effects) {
+    const scheduleEffect = (effectSubscriptions) => {
+      const effect = effectSubscriptions[0 /* EFFECT */];
+      const property = effectSubscriptions[1 /* PROPERTY */];
+      assertDefined(container, "Container must be defined.");
+      if (isTask(effect)) {
+        effect.$flags$ |= 16 /* DIRTY */;
+        DEBUG && log("schedule.effect.task", pad("\n" + String(effect), "  "));
+        let choreType = 3 /* TASK */;
+        if (effect.$flags$ & 1 /* VISIBLE_TASK */) {
+          choreType = 64 /* VISIBLE */;
+        } else if (effect.$flags$ & 4 /* RESOURCE */) {
+          choreType = 2 /* RESOURCE */;
+        }
+        container.$scheduler$(choreType, effect);
+      } else if (effect instanceof Signal) {
+        if (effect instanceof ComputedSignal) {
+          if (!effect.$computeQrl$.resolved) {
+            container.$scheduler$(1 /* QRL_RESOLVE */, null, effect.$computeQrl$);
+          }
+        }
+        effect.$invalid$ = true;
+        const previousSignal = signal;
+        try {
+          signal = effect;
+          effect.$effects$?.forEach(scheduleEffect);
+        } catch (e) {
+          logError(e);
+        } finally {
+          signal = previousSignal;
+        }
+      } else if (property === ":" /* COMPONENT */) {
+        const host = effect;
+        const qrl2 = container.getHostProp(host, OnRenderProp);
+        assertDefined(qrl2, "Component must have QRL");
+        const props = container.getHostProp(host, ELEMENT_PROPS);
+        container.$scheduler$(7 /* COMPONENT */, host, qrl2, props);
+      } else if (property === "." /* VNODE */) {
+        const host = effect;
+        const target = host;
+        container.$scheduler$(4 /* NODE_DIFF */, host, target, signal);
+      } else {
+        const host = effect;
+        let effectData = effectSubscriptions[2 /* FIRST_BACK_REF_OR_DATA */];
+        if (effectData instanceof EffectData) {
+          effectData = effectData;
+          const payload = {
+            ...effectData.data,
+            $value$: signal
+          };
+          container.$scheduler$(5 /* NODE_PROP */, host, property, payload);
+        }
+      }
+    };
+    effects.forEach(scheduleEffect);
+  }
+  DEBUG && log("done scheduling");
+};
+var ComputedSignal = class extends Signal {
+  constructor(container, computeTask) {
+    super(container, NEEDS_COMPUTATION);
+    // We need a separate flag to know when the computation needs running because
+    // we need the old value to know if effects need running after computation
+    this.$invalid$ = true;
+    this.$computeQrl$ = computeTask;
+  }
+  $invalidate$() {
+    this.$invalid$ = true;
+    if (!this.$effects$?.length) {
+      return;
+    }
+    if (this.$computeIfNeeded$()) {
+      triggerEffects(this.$container$, this, this.$effects$);
+    }
+  }
+  /**
+   * Use this to force running subscribers, for example when the calculated value has mutated but
+   * remained the same object
+   */
+  force() {
+    this.$invalid$ = true;
+    triggerEffects(this.$container$, this, this.$effects$);
+  }
+  get untrackedValue() {
+    this.$computeIfNeeded$();
+    assertFalse(this.$untrackedValue$ === NEEDS_COMPUTATION, "Invalid state");
+    return this.$untrackedValue$;
+  }
+  $computeIfNeeded$() {
+    if (!this.$invalid$) {
+      return false;
+    }
+    const computeQrl = this.$computeQrl$;
+    assertDefined(
+      computeQrl.resolved,
+      "Computed signals must run sync. Expected the QRL to be resolved at this point."
+    );
+    throwIfQRLNotResolved(computeQrl);
+    const ctx = tryGetInvokeContext();
+    assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
+    const previousEffectSubscription = ctx?.$effectSubscriber$;
+    ctx && (ctx.$effectSubscriber$ = [this, "." /* VNODE */]);
+    assertTrue(
+      !!computeQrl.resolved,
+      "Computed signals must run sync. Expected the QRL to be resolved at this point."
+    );
+    try {
+      const untrackedValue = computeQrl.getFn(ctx)();
+      assertFalse(isPromise(untrackedValue), "Computed function must be synchronous.");
+      DEBUG && log("Signal.$compute$", untrackedValue);
+      this.$invalid$ = false;
+      const didChange = untrackedValue !== this.$untrackedValue$;
+      this.$untrackedValue$ = untrackedValue;
+      return didChange;
+    } finally {
+      if (ctx) {
+        ctx.$effectSubscriber$ = previousEffectSubscription;
+      }
+    }
+  }
+  // Getters don't get inherited
+  get value() {
+    return super.value;
+  }
+  set value(_) {
+    throw new TypeError("ComputedSignal is read-only");
+  }
+};
+var WrappedSignal = class extends Signal {
+  constructor(container, fn, args, fnStr) {
+    super(container, NEEDS_COMPUTATION);
+    // We need a separate flag to know when the computation needs running because
+    // we need the old value to know if effects need running after computation
+    this.$invalid$ = true;
+    this.$args$ = args;
+    this.$func$ = fn;
+    this.$funcStr$ = fnStr;
+  }
+  $invalidate$() {
+    this.$invalid$ = true;
+    if (!this.$effects$?.length) {
+      return;
+    }
+    if (this.$computeIfNeeded$()) {
+      triggerEffects(this.$container$, this, this.$effects$);
+    }
+  }
+  /**
+   * Use this to force running subscribers, for example when the calculated value has mutated but
+   * remained the same object
+   */
+  force() {
+    this.$invalid$ = true;
+    triggerEffects(this.$container$, this, this.$effects$);
+  }
+  get untrackedValue() {
+    this.$computeIfNeeded$();
+    assertFalse(this.$untrackedValue$ === NEEDS_COMPUTATION, "Invalid state");
+    return this.$untrackedValue$;
+  }
+  $computeIfNeeded$() {
+    if (!this.$invalid$) {
+      return false;
+    }
+    this.$untrackedValue$ = trackSignal(
+      () => this.$func$(...this.$args$),
+      this,
+      "." /* VNODE */,
+      this.$container$
+    );
+  }
+  // Getters don't get inherited
+  get value() {
+    return super.value;
+  }
+  set value(_) {
+    throw new TypeError("WrappedSignal is read-only");
+  }
+};
 
 // packages/qwik/src/core/v2/shared/component-execution.ts
 import { isDev as isDev2 } from "@builder.io/qwik/build";
@@ -24091,7 +23678,7 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
     void 0,
     RenderEvent
   );
-  iCtx.$subscriber$ = [0 /* HOST */, subscriptionHost];
+  iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
   iCtx.$container2$ = container;
   let componentFn;
   container.ensureProjectionResolved(renderHost);
@@ -24099,7 +23686,7 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
     componentQRL = componentQRL || container.getHostProp(renderHost, OnRenderProp);
     assertDefined(componentQRL, "No Component found at this location");
   }
-  if (isQrl(componentQRL)) {
+  if (isQrl2(componentQRL)) {
     props = props || container.getHostProp(renderHost, ELEMENT_PROPS) || EMPTY_OBJ;
     if (props && props.children) {
       delete props.children;
@@ -24117,6 +23704,9 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
       container.setHostProp(renderHost, ELEMENT_SEQ_IDX, null);
       container.setHostProp(renderHost, USE_ON_LOCAL_SEQ_IDX, null);
       container.setHostProp(renderHost, ELEMENT_PROPS, props);
+      if (vnode_isVNode(renderHost)) {
+        clearVNodeEffectDependencies(renderHost);
+      }
       return componentFn(props);
     },
     (jsx4) => {
@@ -24293,15 +23883,17 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           if (Array.isArray(jsxValue)) {
             descend(jsxValue, false);
           } else if (isSignal(jsxValue)) {
-            expectVirtual("D" /* DerivedSignal */, null);
+            if (vCurrent) {
+              clearVNodeEffectDependencies(vCurrent);
+            }
+            expectVirtual("S" /* WrappedSignal */, null);
             descend(
-              trackSignal(jsxValue, [
-                4 /* TEXT_MUTABLE */,
-                vCurrent || vNewNode,
-                // This should be host, but not sure why
-                jsxValue,
-                vCurrent || vNewNode
-              ]),
+              trackSignal(
+                () => jsxValue.value,
+                vNewNode || vCurrent,
+                "." /* VNODE */,
+                container
+              ),
               true
             );
           } else if (isPromise(jsxValue)) {
@@ -24541,8 +24133,13 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     const constProps = jsxValue.constProps;
     if (constProps && typeof constProps == "object" && "name" in constProps) {
       const constValue = constProps.name;
-      if (constValue instanceof SignalDerived) {
-        return trackSignal(constValue, [0 /* HOST */, vHost]);
+      if (constValue instanceof WrappedSignal) {
+        return trackSignal(
+          () => constValue.value,
+          vHost,
+          ":" /* COMPONENT */,
+          container
+        );
       }
     }
     return jsxValue.props.name || QDefaultSlot;
@@ -24624,14 +24221,17 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           }
         }
         if (isSignal(value)) {
-          value = trackSignal(value, [
-            1 /* PROP_IMMUTABLE */,
-            vNewNode,
-            value,
+          const signalData = new EffectData({
+            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+            $isConst$: true
+          });
+          value = trackSignal(
+            () => value.value,
             vNewNode,
             key2,
-            scopedStyleIdPrefix || void 0
-          ]);
+            container,
+            signalData
+          );
         }
         if (key2 === dangerouslySetInnerHTML) {
           element.innerHTML = value;
@@ -24749,6 +24349,9 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           value(element);
           return;
         }
+      }
+      if (isSignal(value)) {
+        value = untrack(() => value.value);
       }
       vnode_setAttr(journal, vnode, key, value);
       if (value === null) {
@@ -24919,7 +24522,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
         shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
         if (shouldRender) {
-          container.$scheduler$(6 /* COMPONENT */, host, componentQRL, jsxProps);
+          container.$scheduler$(7 /* COMPONENT */, host, componentQRL, jsxProps);
         }
       }
       jsxValue.children != null && descendContentToProject(jsxValue.children, host);
@@ -24948,6 +24551,9 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     }
   }
   function insertNewComponent(host, componentQRL, jsxProps) {
+    if (host) {
+      clearVNodeEffectDependencies(host);
+    }
     vnode_insertBefore(
       journal,
       vParent,
@@ -25039,16 +24645,17 @@ function cleanup(container, vNode) {
     const type = vCursor[0 /* flags */];
     if (type & 3 /* ELEMENT_OR_VIRTUAL_MASK */) {
       if (type & 2 /* Virtual */) {
-        container.$subsManager$.$clearSub$(vCursor);
+        clearVNodeEffectDependencies(vCursor);
+        markVNodeAsDeleted(vNode, vParent, vCursor);
         const seq = container.getHostProp(vCursor, ELEMENT_SEQ);
         if (seq) {
           for (let i = 0; i < seq.length; i++) {
             const obj = seq[i];
             if (isTask(obj)) {
               const task = obj;
-              container.$subsManager$.$clearSub$(task);
-              if (obj.$flags$ & 1 /* VISIBLE_TASK */) {
-                container.$scheduler$(40 /* CLEANUP_VISIBLE */, obj);
+              clearSubscriberEffectDependencies(task);
+              if (task.$flags$ & 1 /* VISIBLE_TASK */) {
+                container.$scheduler$(80 /* CLEANUP_VISIBLE */, task);
               } else {
                 cleanupTask(task);
               }
@@ -25076,8 +24683,8 @@ function cleanup(container, vNode) {
           }
         }
       }
-      const isSlot = type & 2 /* Virtual */ && vnode_getProp(vCursor, QSlot, null) !== null;
-      if (!isSlot) {
+      const isProjection = type & 2 /* Virtual */ && vnode_getProp(vCursor, QSlot, null) !== null;
+      if (!isProjection) {
         const vFirstChild = vnode_getFirstChild(vCursor);
         if (vFirstChild) {
           vCursor = vFirstChild;
@@ -25125,38 +24732,57 @@ function cleanupStaleUnclaimedProjection(journal, projection) {
     }
   }
 }
+function markVNodeAsDeleted(vNode, vParent, vCursor) {
+  if (vNode !== vCursor) {
+    vCursor[0 /* flags */] |= 32 /* Deleted */;
+  } else {
+    const currentVParent = vParent || vnode_getParent(vNode);
+    const isParentProjection = currentVParent && vnode_getProp(currentVParent, QSlot, null) !== null;
+    if (!isParentProjection) {
+      vCursor[0 /* flags */] |= 32 /* Deleted */;
+    }
+  }
+}
 var HANDLER_PREFIX = ":";
 var count = 0;
 
+// packages/qwik/src/core/util/implicit_dollar.ts
+var implicit$FirstArg = (fn) => {
+  return function(first, ...rest2) {
+    return fn.call(null, dollar(first), ...rest2);
+  };
+};
+
 // packages/qwik/src/core/v2/shared/scheduler.ts
-var DEBUG = false;
+var DEBUG2 = false;
 var createScheduler = (container, scheduleDrain, journalFlush) => {
   const choreQueue = [];
   let currentChore = null;
   let journalFlushScheduled = false;
   return schedule;
   function schedule(type, hostOrTask = null, targetOrQrl = null, payload = null) {
-    const runLater = type !== 63 /* WAIT_FOR_ALL */ && type !== 8 /* WAIT_FOR_COMPONENTS */ && type !== 5 /* COMPONENT_SSR */;
-    const isTask3 = type === 3 /* TASK */ || type === 32 /* VISIBLE */ || type === 1 /* COMPUTED */ || type === 2 /* RESOURCE */ || type === 40 /* CLEANUP_VISIBLE */;
-    if (isTask3) {
+    const runLater = type !== 127 /* WAIT_FOR_ALL */ && type !== 16 /* WAIT_FOR_COMPONENTS */ && type !== 6 /* COMPONENT_SSR */;
+    const isTask2 = type === 3 /* TASK */ || type === 64 /* VISIBLE */ || type === 2 /* RESOURCE */ || type === 80 /* CLEANUP_VISIBLE */;
+    if (isTask2) {
       hostOrTask.$flags$ |= 16 /* DIRTY */;
     }
     let chore = {
       $type$: type,
-      $idx$: isTask3 ? hostOrTask.$index$ : 0,
-      $host$: isTask3 ? hostOrTask.$el$ : hostOrTask,
+      $idx$: isTask2 ? hostOrTask.$index$ : typeof targetOrQrl === "string" ? targetOrQrl : 0,
+      $host$: isTask2 ? hostOrTask.$el$ : hostOrTask,
       $target$: targetOrQrl,
-      $payload$: isTask3 ? hostOrTask : payload,
+      $payload$: isTask2 ? hostOrTask : payload,
       $resolve$: null,
       $promise$: null,
-      $returnValue$: null
+      $returnValue$: null,
+      $executed$: false
     };
     chore.$promise$ = new Promise((resolve) => chore.$resolve$ = resolve);
-    DEBUG && debugTrace("schedule", chore, currentChore, choreQueue);
+    DEBUG2 && debugTrace("schedule", chore, currentChore, choreQueue);
     chore = sortedInsert(choreQueue, chore);
     if (!journalFlushScheduled && runLater) {
       journalFlushScheduled = true;
-      schedule(24 /* JOURNAL_FLUSH */);
+      schedule(48 /* JOURNAL_FLUSH */);
       scheduleDrain();
     }
     if (runLater) {
@@ -25166,38 +24792,48 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
     }
   }
   function drainUpTo(runUptoChore) {
+    if (runUptoChore.$executed$) {
+      return runUptoChore.$returnValue$;
+    }
     if (currentChore) {
       return runUptoChore.$promise$;
     }
     while (choreQueue.length) {
       const nextChore = choreQueue.shift();
-      const comp = choreComparator(nextChore, runUptoChore, false);
-      if (comp === null) {
+      const order = choreComparator(nextChore, runUptoChore, false);
+      if (order === null) {
         continue;
       }
-      if (comp > 0) {
+      if (order > 0) {
         break;
+      }
+      const isDeletedVNode = vNodeAlreadyDeleted(nextChore);
+      if (isDeletedVNode && // we need to process cleanup tasks for deleted nodes
+      nextChore.$type$ !== 80 /* CLEANUP_VISIBLE */) {
+        DEBUG2 && debugTrace("skip chore", nextChore, currentChore, choreQueue);
+        continue;
       }
       const returnValue = executeChore(nextChore);
       if (isPromise(returnValue)) {
-        return returnValue.then(() => drainUpTo(runUptoChore));
+        const promise = returnValue.then(() => drainUpTo(runUptoChore));
+        return promise;
       }
     }
     return runUptoChore.$returnValue$;
   }
   function executeChore(chore) {
     const host = chore.$host$;
-    DEBUG && debugTrace("execute", chore, currentChore, choreQueue);
+    DEBUG2 && debugTrace("execute", chore, currentChore, choreQueue);
     assertEqual(currentChore, null, "Chore already running.");
     currentChore = chore;
     let returnValue = null;
     switch (chore.$type$) {
-      case 24 /* JOURNAL_FLUSH */:
+      case 48 /* JOURNAL_FLUSH */:
         returnValue = journalFlush();
         journalFlushScheduled = false;
         break;
-      case 6 /* COMPONENT */:
-      case 5 /* COMPONENT_SSR */:
+      case 7 /* COMPONENT */:
+      case 6 /* COMPONENT_SSR */:
         returnValue = safeCall(
           () => executeComponent2(
             container,
@@ -25206,37 +24842,64 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
             chore.$target$,
             chore.$payload$
           ),
-          (jsx4) => {
-            return chore.$type$ === 6 /* COMPONENT */ ? maybeThen(container.processJsx(host, jsx4), () => jsx4) : jsx4;
+          (jsx5) => {
+            return chore.$type$ === 7 /* COMPONENT */ ? maybeThen(container.processJsx(host, jsx5), () => jsx5) : jsx5;
           },
           (err) => container.handleError(err, host)
         );
-        break;
-      case 1 /* COMPUTED */:
-        returnValue = runComputed2(chore.$payload$, container, host);
         break;
       case 2 /* RESOURCE */:
         const result = runResource(chore.$payload$, container, host);
         returnValue = isDomContainer(container) ? null : result;
         break;
       case 3 /* TASK */:
-      case 32 /* VISIBLE */:
-        returnValue = runSubscriber2(chore.$payload$, container, host);
+        returnValue = runTask2(chore.$payload$, container, host);
         break;
-      case 40 /* CLEANUP_VISIBLE */:
+      case 64 /* VISIBLE */:
+        returnValue = runTask2(chore.$payload$, container, host);
+        break;
+      case 80 /* CLEANUP_VISIBLE */:
         const task = chore.$payload$;
         cleanupTask(task);
         break;
-      case 4 /* NODE_DIFF */: {
+      case 4 /* NODE_DIFF */:
         const parentVirtualNode = chore.$target$;
-        const jsx4 = chore.$payload$;
+        let jsx4 = chore.$payload$;
+        if (isSignal(jsx4)) {
+          jsx4 = jsx4.value;
+        }
         returnValue = vnode_diff(container, jsx4, parentVirtualNode, null);
+        break;
+      case 5 /* NODE_PROP */:
+        const virtualNode = chore.$host$;
+        const payload = chore.$payload$;
+        let value = payload.$value$;
+        if (isSignal(value)) {
+          value = value.value;
+        }
+        const isConst = payload.$isConst$;
+        const journal = container.$journal$;
+        const property = chore.$idx$;
+        value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$);
+        if (isConst) {
+          const element = virtualNode[6 /* element */];
+          journal.push(2 /* SetAttribute */, element, property, value);
+        } else {
+          vnode_setAttr(journal, virtualNode, property, value);
+        }
+        break;
+      case 1 /* QRL_RESOLVE */: {
+        const target = chore.$target$;
+        returnValue = !target.resolved ? target.resolve() : null;
         break;
       }
     }
     return maybeThenPassError(returnValue, (value) => {
-      DEBUG && debugTrace("execute.DONE", null, currentChore, choreQueue);
-      currentChore?.$resolve$?.(value);
+      DEBUG2 && debugTrace("execute.DONE", null, currentChore, choreQueue);
+      if (currentChore) {
+        currentChore.$executed$ = true;
+        currentChore.$resolve$?.(value);
+      }
       currentChore = null;
       return chore.$returnValue$ = value;
     });
@@ -25250,15 +24913,18 @@ var choreUpdate = (existing, newChore) => {
     existing.$payload$ = newChore.$payload$;
   }
 };
+function vNodeAlreadyDeleted(chore) {
+  return !!(chore.$host$ && vnode_isVNode(chore.$host$) && chore.$host$[0 /* flags */] & 32 /* Deleted */);
+}
 function choreComparator(a, b, shouldThrowOnHostMismatch) {
-  const macroTypeDiff = (a.$type$ & 56 /* MACRO */) - (b.$type$ & 56 /* MACRO */);
+  const macroTypeDiff = (a.$type$ & 112 /* MACRO */) - (b.$type$ & 112 /* MACRO */);
   if (macroTypeDiff !== 0) {
     return macroTypeDiff;
   }
-  if (a.$type$ !== 24 /* JOURNAL_FLUSH */) {
+  if (a.$type$ !== 48 /* JOURNAL_FLUSH */) {
     const aHost = a.$host$;
     const bHost = b.$host$;
-    if (aHost !== bHost) {
+    if (aHost !== bHost && aHost !== null && bHost !== null) {
       if (vnode_isVNode(aHost) && vnode_isVNode(bHost)) {
         const hostDiff = vnode_documentPosition(aHost, bHost);
         if (hostDiff !== 0) {
@@ -25273,13 +24939,16 @@ function choreComparator(a, b, shouldThrowOnHostMismatch) {
         return null;
       }
     }
-    const microTypeDiff = (a.$type$ & 7 /* MICRO */) - (b.$type$ & 7 /* MICRO */);
+    const microTypeDiff = (a.$type$ & 15 /* MICRO */) - (b.$type$ & 15 /* MICRO */);
     if (microTypeDiff !== 0) {
       return microTypeDiff;
     }
     const idxDiff = toNumber(a.$idx$) - toNumber(b.$idx$);
     if (idxDiff !== 0) {
       return idxDiff;
+    }
+    if (a.$target$ !== b.$target$ && (a.$type$ === 1 /* QRL_RESOLVE */ && b.$type$ === 1 /* QRL_RESOLVE */ || a.$type$ === 5 /* NODE_PROP */ && b.$type$ === 5 /* NODE_PROP */)) {
+      return 1;
     }
   }
   return 0;
@@ -25313,19 +24982,22 @@ function sortedInsert(sortedArray, value) {
 }
 function debugChoreToString(chore) {
   const type = {
-    [1 /* COMPUTED */]: "COMPUTED",
+    [1 /* QRL_RESOLVE */]: "QRL_RESOLVE",
     [2 /* RESOURCE */]: "RESOURCE",
     [3 /* TASK */]: "TASK",
     [4 /* NODE_DIFF */]: "NODE_DIFF",
-    [6 /* COMPONENT */]: "COMPONENT",
-    [5 /* COMPONENT_SSR */]: "COMPONENT_SSR",
-    [24 /* JOURNAL_FLUSH */]: "JOURNAL_FLUSH",
-    [32 /* VISIBLE */]: "VISIBLE",
-    [63 /* WAIT_FOR_ALL */]: "WAIT_FOR_ALL",
-    [8 /* WAIT_FOR_COMPONENTS */]: "WAIT_FOR_COMPONENTS"
+    [5 /* NODE_PROP */]: "NODE_PROP",
+    [7 /* COMPONENT */]: "COMPONENT",
+    [6 /* COMPONENT_SSR */]: "COMPONENT_SSR",
+    [48 /* JOURNAL_FLUSH */]: "JOURNAL_FLUSH",
+    [64 /* VISIBLE */]: "VISIBLE",
+    [80 /* CLEANUP_VISIBLE */]: "CLEANUP_VISIBLE",
+    [127 /* WAIT_FOR_ALL */]: "WAIT_FOR_ALL",
+    [16 /* WAIT_FOR_COMPONENTS */]: "WAIT_FOR_COMPONENTS"
   }[chore.$type$] || "UNKNOWN: " + chore.$type$;
   const host = String(chore.$host$).replaceAll(/\n.*/gim, "");
-  return `Chore(${type} ${host} ${chore.$idx$})`;
+  const qrlTarget = chore.$target$?.$symbol$;
+  return `Chore(${type} ${chore.$type$ === 1 /* QRL_RESOLVE */ ? qrlTarget : host} ${chore.$idx$})`;
 }
 function debugTrace(action, arg, currentChore, queue) {
   const lines = ["Scheduler: " + action];
@@ -25356,20 +25028,18 @@ var _SharedContainer = class {
     this.$serverData$ = serverData;
     this.$locale$ = locale;
     this.$version$ = version;
-    this.$proxyMap$ = /* @__PURE__ */ new WeakMap();
+    this.$storeProxyMap$ = /* @__PURE__ */ new WeakMap();
     this.$getObjectById$ = (id) => {
       throw Error("Not implemented");
     };
-    this.$subsManager$ = createSubscriptionManager(this);
     this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
   }
-  trackSignalValue(signal, sub) {
-    return trackSignal(signal, sub);
+  trackSignalValue(signal, subscriber, property, data) {
+    return trackSignal(() => signal.value, subscriber, property, this, data);
   }
   serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
     return createSerializationContext(
       NodeConstructor,
-      this.$proxyMap$,
       symbolToChunkResolver,
       this.setHostProp.bind(this),
       writer
@@ -25660,7 +25330,7 @@ var VNodeDataChar = {
 function processVNodeData(document2) {
   const Q_CONTAINER = "q:container";
   const Q_CONTAINER_END = "/" + Q_CONTAINER;
-  const Q_PROPS_SEPARATOR = ":";
+  const Q_PROPS_SEPARATOR2 = ":";
   const Q_SHADOW_ROOT = "q:shadowroot";
   const Q_IGNORE = "q:ignore";
   const Q_IGNORE_END = "/" + Q_IGNORE;
@@ -25716,7 +25386,7 @@ function processVNodeData(document2) {
         if (hasAttribute.call(node, Q_SHADOW_ROOT)) {
           return 6 /* ELEMENT_SHADOW_ROOT */;
         }
-        const isQElement = hasAttribute.call(node, Q_PROPS_SEPARATOR);
+        const isQElement = hasAttribute.call(node, Q_PROPS_SEPARATOR2);
         return isQElement ? 2 /* ELEMENT */ : 0 /* OTHER */;
       } else {
         return 3 /* ELEMENT_CONTAINER */;
@@ -25924,6 +25594,9 @@ function getDomContainerFromQContainerElement(qContainerElement) {
       if (attrs) {
         for (let index = 0; index < attrs.length; index++) {
           const attr = attrs[index];
+          if (attr.name === Q_PROPS_SEPARATOR) {
+            continue;
+          }
           containerAttributes[attr.name] = attr.value;
         }
       }
@@ -25948,16 +25621,19 @@ var DomContainer = class extends _SharedContainer {
       {},
       element.getAttribute("q:locale")
     );
-    this.renderDone = Promise.resolve();
-    this.rendering = false;
-    this.$proxyMap$ = /* @__PURE__ */ new WeakMap();
+    this.renderDone = null;
+    this.$storeProxyMap$ = /* @__PURE__ */ new WeakMap();
     this.$styleIds$ = null;
     this.$vnodeLocate$ = (id) => vnode_locate(this.rootVNode, id);
+    this.$renderCount$ = 0;
     this.$getObjectById$ = (id) => {
       if (typeof id === "string") {
         id = parseFloat(id);
       }
-      assertTrue(id < this.$rawStateData$.length, "Invalid reference");
+      assertTrue(
+        id < this.$rawStateData$.length,
+        `Invalid reference: ${id} < ${this.$rawStateData$.length}`
+      );
       return this.stateData[id];
     };
     this.qContainer = element.getAttribute(QContainerAttr);
@@ -25999,7 +25675,7 @@ var DomContainer = class extends _SharedContainer {
     this.stateData[id] = vParent;
   }
   parseQRL(qrl2) {
-    return inflateQRL(this, parseQRL2(qrl2));
+    return inflateQRL(this, parseQRL(qrl2));
   }
   processJsx(host, jsx4) {
     const styleScopedId = this.getHostProp(host, QScopedStyle);
@@ -26084,6 +25760,7 @@ var DomContainer = class extends _SharedContainer {
       case ELEMENT_PROPS:
       case OnRenderProp:
       case QCtxAttr:
+      case QSubscribers:
         getObjectById = this.$getObjectById$;
         break;
       case ELEMENT_SEQ_IDX:
@@ -26094,15 +25771,27 @@ var DomContainer = class extends _SharedContainer {
     return vnode_getProp(vNode, name, getObjectById);
   }
   scheduleRender() {
-    if (!this.rendering) {
-      this.rendering = true;
-      this.renderDone = getPlatform().nextTick(() => {
-        return maybeThen(this.$scheduler$(63 /* WAIT_FOR_ALL */), () => {
-          this.rendering = false;
-        });
+    this.$renderCount$++;
+    this.renderDone || (this.renderDone = getPlatform().nextTick(() => this.processChores()));
+    return this.renderDone;
+  }
+  processChores() {
+    let renderCount = this.$renderCount$;
+    const result = this.$scheduler$(127 /* WAIT_FOR_ALL */);
+    if (isPromise(result)) {
+      return result.then(async () => {
+        while (renderCount !== this.$renderCount$) {
+          renderCount = this.$renderCount$;
+          await this.$scheduler$(127 /* WAIT_FOR_ALL */);
+        }
+        this.renderDone = null;
       });
     }
-    return this.renderDone;
+    if (renderCount !== this.$renderCount$) {
+      this.processChores();
+      return;
+    }
+    this.renderDone = null;
   }
   ensureProjectionResolved(vNode) {
     if ((vNode[0 /* flags */] & 16 /* Resolved */) === 0) {
@@ -26182,8 +25871,8 @@ var DeserializationHandler = class {
     if (property === SERIALIZER_PROXY_UNWRAP) {
       return target;
     }
-    if (getProxyTarget(target) !== void 0) {
-      const unwrapped = unwrapDeserializerProxy(unwrapProxy(target));
+    if (getStoreTarget(target) !== void 0) {
+      const unwrapped = unwrapDeserializerProxy(unwrapStore(target));
       const unwrappedPropValue = Reflect.get(unwrapped, property, receiver);
       if (typeof unwrappedPropValue === "string" && unwrappedPropValue.length >= 1 && unwrappedPropValue.charCodeAt(0) === 5 /* String_VALUE */) {
         return allocate(unwrappedPropValue);
@@ -26201,9 +25890,8 @@ var DeserializationHandler = class {
       } else if (typeCode === 6 /* VNode_VALUE */) {
         propValue = propValue === "" /* VNode_CHAR */ ? container.element.ownerDocument : vnode_locate(container.rootVNode, propValue.substring(1));
       } else if (typeCode === 23 /* Store_VALUE */) {
-        const target2 = container.$getObjectById$(propValue.substring(1));
-        propValue = getOrCreateProxy(target2, container);
-      } else if (typeCode === 20 /* DerivedSignal_VALUE */ && !Array.isArray(target)) {
+        propValue = deserializeStore2(container, propValue);
+      } else if (typeCode === 21 /* WrappedSignal_VALUE */ && !Array.isArray(target)) {
         return wrapDeserializerProxy(
           container,
           upgradePropsWithDerivedSignal(container, target, property)
@@ -26239,15 +25927,15 @@ function upgradePropsWithDerivedSignal(container, target, property) {
   for (const key in target) {
     if (Object.prototype.hasOwnProperty.call(target, key)) {
       const value = target[key];
-      if (typeof value === "string" && value.charCodeAt(0) === 20 /* DerivedSignal_VALUE */) {
-        const derivedSignal = immutable[key] = allocate(value);
+      if (typeof value === "string" && value.charCodeAt(0) === 21 /* WrappedSignal_VALUE */) {
+        const wrappedSignal = immutable[key] = allocate(value);
         Object.defineProperty(target, key, {
           get() {
-            return derivedSignal.value;
+            return wrappedSignal.value;
           },
           enumerable: true
         });
-        inflate(container, derivedSignal, value);
+        inflate(container, wrappedSignal, value);
       }
     }
   }
@@ -26293,7 +25981,8 @@ var inflate = (container, target, needsInflationData) => {
       task.$flags$ = restInt();
       task.$index$ = restInt();
       task.$el$ = container.$getObjectById$(restInt());
-      task.$qrl$ = inflateQRL(container, parseQRL2(restString()));
+      task.$effectDependencies$ = container.$getObjectById$(restInt());
+      task.$qrl$ = inflateQRL(container, parseQRL(restString()));
       const taskState = restString();
       task.$state$ = taskState ? container.$getObjectById$(taskState) : void 0;
       break;
@@ -26302,39 +25991,16 @@ var inflate = (container, target, needsInflationData) => {
     case 19 /* Component_VALUE */:
       inflateQRL(container, target[SERIALIZABLE_STATE][0]);
       break;
-    case 20 /* DerivedSignal_VALUE */:
-      const derivedSignal = target;
-      derivedSignal.$func$ = container.getSyncFn(restInt());
-      const args = derivedSignal.$args$ = [];
-      while (restIdx < rest.length) {
-        args.push(container.$getObjectById$(restInt()));
-      }
-      break;
     case 23 /* Store_VALUE */:
       break;
-    case 21 /* Signal_VALUE */:
-      const signal = target;
-      const semiIdx = rest.indexOf(";");
-      const manager = signal[QObjectManagerSymbol] = container.$subsManager$.$createManager$();
-      let signalValue = container.$getObjectById$(
-        rest.substring(1, semiIdx === -1 ? rest.length : semiIdx)
-      );
-      if (vnode_isVNode(signalValue)) {
-        signalValue = vnode_getNode(signalValue);
-      }
-      signal.untrackedValue = signalValue;
-      if (semiIdx > 0) {
-        subscriptionManagerFromString(
-          manager,
-          rest.substring(semiIdx + 1),
-          container.$getObjectById$
-        );
-      }
+    case 20 /* Signal_VALUE */:
+      deserializeSignal2(target, container, rest, false, false);
       break;
-    case 22 /* SignalWrapper_VALUE */:
-      const signalWrapper = target;
-      signalWrapper.ref = container.$getObjectById$(restInt());
-      signalWrapper.prop = restString();
+    case 21 /* WrappedSignal_VALUE */:
+      deserializeSignal2(target, container, rest, true, false);
+      break;
+    case 22 /* ComputedSignal_VALUE */:
+      deserializeSignal2(target, container, rest, false, true);
       break;
     case 15 /* Error_VALUE */:
       Object.assign(target, container.$getObjectById$(restInt()));
@@ -26401,9 +26067,9 @@ var allocate = (value) => {
     case 0 /* UNDEFINED_VALUE */:
       return void 0;
     case 16 /* QRL_VALUE */:
-      return parseQRL2(value);
+      return parseQRL(value);
     case 17 /* Task_VALUE */:
-      return new Task(-1, -1, null, null, null, null);
+      return new Task3(-1, -1, null, null, null, null);
     case 18 /* Resource_VALUE */:
       throw new Error("Not implemented");
     case 2 /* URL_VALUE */:
@@ -26416,13 +26082,13 @@ var allocate = (value) => {
     case 15 /* Error_VALUE */:
       return new Error();
     case 19 /* Component_VALUE */:
-      return componentQrl(parseQRL2(value));
-    case 20 /* DerivedSignal_VALUE */:
-      return new SignalDerived(null, null, null);
-    case 21 /* Signal_VALUE */:
-      return new SignalImpl(null, null, 0);
-    case 22 /* SignalWrapper_VALUE */:
-      return new SignalWrapper(null, null);
+      return componentQrl(parseQRL(value));
+    case 20 /* Signal_VALUE */:
+      return new Signal(null, 0);
+    case 21 /* WrappedSignal_VALUE */:
+      return new WrappedSignal(null, null, null, null);
+    case 22 /* ComputedSignal_VALUE */:
+      return new ComputedSignal(null, null);
     case 7 /* NotFinite_VALUE */:
       const type = value.substring(1);
       const isNaN = type.length === 0;
@@ -26470,7 +26136,7 @@ var allocate = (value) => {
 };
 var PROMISE_RESOLVE = Symbol("resolve");
 var PROMISE_REJECT = Symbol("reject");
-function parseQRL2(qrl2) {
+function parseQRL(qrl2) {
   const hashIdx = qrl2.indexOf("#");
   const captureStart = qrl2.indexOf("[", hashIdx);
   const captureEnd = qrl2.indexOf("]", captureStart);
@@ -26493,7 +26159,7 @@ function inflateQRL(container, qrl2) {
   }
   return qrl2;
 }
-var createSerializationContext = (NodeConstructor, $proxyMap$, symbolToChunkResolver, setProp, writer) => {
+var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setProp, writer) => {
   if (!writer) {
     const buffer = [];
     writer = {
@@ -26537,10 +26203,9 @@ var createSerializationContext = (NodeConstructor, $proxyMap$, symbolToChunkReso
       }
       return id;
     },
-    $proxyMap$,
     $syncFns$: syncFns,
     $addSyncFn$: (funcStr, argCount, fn) => {
-      const isFullFn = funcStr === void 0;
+      const isFullFn = funcStr == null;
       if (isFullFn) {
         funcStr = fn.toString();
       }
@@ -26587,19 +26252,13 @@ var createSerializationContext = (NodeConstructor, $proxyMap$, symbolToChunkReso
       if (shouldTrackObj(obj) || frameworkType(obj)) {
         const isRoot = obj === rootObj;
         const id = $wasSeen$(obj);
-        const unwrapObj = unwrapProxy(obj);
-        if (unwrapObj !== obj) {
-          discoveredValues.push(unwrapObj);
-          const manager = getSubscriptionManager(obj);
-          for (const sub of manager.$subs$) {
-            for (let i = 1 /* HOST */; i < sub.length; i++) {
-              discoveredValues.push(sub[i]);
-            }
-          }
-        } else if (id === void 0 || isRoot) {
+        const unwrapObj = unwrapStore(obj);
+        if (id === void 0 || isRoot) {
           !isRoot && $seen$(obj);
           if (typeof obj !== "object" || obj === null || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Error || obj instanceof Date || obj instanceof Uint8Array || obj instanceof URLSearchParams || typeof FormData !== "undefined" && obj instanceof FormData) {
           } else if (fastSkipSerialize(obj)) {
+          } else if (unwrapObj !== obj) {
+            discoveredValues.push(unwrapObj);
           } else if (obj instanceof Set) {
             const contents = Array.from(obj.values());
             setSerializableDataRootId($addRoot$, obj, contents);
@@ -26612,27 +26271,24 @@ var createSerializationContext = (NodeConstructor, $proxyMap$, symbolToChunkReso
             });
             setSerializableDataRootId($addRoot$, obj, tuples);
             discoveredValues.push(tuples);
-          } else if (isSignal(obj)) {
-            if (obj instanceof SignalImpl) {
-              discoveredValues.push(obj.untrackedValue);
-              const manager = getSubscriptionManager(obj);
-              manager?.$subs$.forEach((sub) => {
-                discoveredValues.push(sub[1 /* HOST */]);
-                if (obj !== sub[2 /* SIGNAL */]) {
-                  discoveredValues.push(sub[2 /* SIGNAL */]);
-                }
-              });
-            } else if (obj instanceof SignalWrapper) {
-              discoveredValues.push(obj.ref);
+          } else if (obj instanceof Signal) {
+            discoveredValues.push(obj.$untrackedValue$);
+            if (obj.$effects$) {
+              for (const effect of obj.$effects$) {
+                discoveredValues.push(effect[0 /* EFFECT */]);
+              }
             }
-          } else if (obj instanceof Task) {
-            discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$);
+            if (obj.$effectDependencies$) {
+              discoveredValues.push(obj.$effectDependencies$);
+            }
+          } else if (obj instanceof Task3) {
+            discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
           } else if (NodeConstructor && obj instanceof NodeConstructor) {
           } else if (isJSXNode(obj)) {
             discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
           } else if (Array.isArray(obj)) {
             discoveredValues.push(...obj);
-          } else if (isQrl(obj)) {
+          } else if (isQrl2(obj)) {
             obj.$captureRef$ && obj.$captureRef$.length && discoveredValues.push(...obj.$captureRef$);
           } else if (isPropsProxy(obj)) {
             discoveredValues.push(obj[_VAR_PROPS], obj[_CONST_PROPS]);
@@ -26686,7 +26342,7 @@ function serialize(serializationContext) {
     } else if (typeof value === "boolean") {
       $writer$.write(String(value));
     } else if (typeof value === "function") {
-      if (isQrl(value)) {
+      if (isQrl2(value)) {
         writeString("" /* QRL_CHAR */ + qrlToString(serializationContext, value));
       } else if (isQwikComponent(value)) {
         const [qrl2] = value[SERIALIZABLE_STATE];
@@ -26740,36 +26396,41 @@ function serialize(serializationContext) {
       const constId = $addRoot$(constProps);
       writeString("" /* PropsProxy_CHAR */ + varId + " " + constId);
     } else if (isStore(value)) {
-      writeString("" /* Store_CHAR */ + $addRoot$(unwrapProxy(value)));
+      const storeHandler = getStoreHandler(value);
+      let store = "" /* Store_CHAR */ + $addRoot$(unwrapStore(value)) + " " + storeHandler.$flags$;
+      const effects = storeHandler.$effects$;
+      if (effects) {
+        let sep = " ";
+        for (const propName in effects) {
+          store += sep + propName + serializeEffectSubs($addRoot$, effects[propName]);
+          sep = "|";
+        }
+        if (effects[STORE_ARRAY_PROP]) {
+          store += sep + "\0" /* UNDEFINED_CHAR */ + serializeEffectSubs($addRoot$, effects[STORE_ARRAY_PROP]);
+        }
+      }
+      writeString(store);
     } else if (isObjectLiteral(value)) {
       if (isResource(value)) {
         serializationContext.$resources$.add(value);
       }
-      serializeObjectLiteral(
-        value,
-        $writer$,
-        writeValue,
-        writeString,
-        serializationContext.$proxyMap$,
-        $addRoot$
-      );
-    } else if (value instanceof SignalImpl) {
-      const manager = getSubscriptionManager(value);
-      const subscriptions = subscriptionManagerToString(manager, $addRoot$);
-      writeString(
-        "" /* Signal_CHAR */ + $addRoot$(value.untrackedValue) + (subscriptions === "" ? "" : ";" + subscriptions)
-      );
-    } else if (value instanceof SignalDerived) {
-      const serializedSignalDerived = serializeSignalDerived(
-        serializationContext,
-        value,
-        $addRoot$
-      );
-      writeString(serializedSignalDerived);
-    } else if (value instanceof SignalWrapper) {
-      writeString(
-        "" /* SignalWrapper_CHAR */ + $addRoot$(value.ref) + " " + value.prop
-      );
+      serializeObjectLiteral(value, $writer$, writeValue, writeString);
+    } else if (value instanceof Signal) {
+      if (value instanceof WrappedSignal) {
+        writeString(
+          "" /* WrappedSignal_CHAR */ + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + // `.untrackedValue` implicitly calls `$computeIfNeeded$`, which is what we want in case
+          // the signal is not computed yet.
+          $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$)
+        );
+      } else if (value instanceof ComputedSignal) {
+        writeString(
+          "" /* ComputedSignal_CHAR */ + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+        );
+      } else {
+        writeString(
+          "" /* Signal_CHAR */ + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+        );
+      }
     } else if (value instanceof URL) {
       writeString("" /* URL_CHAR */ + value.href);
     } else if (value instanceof Date) {
@@ -26809,9 +26470,9 @@ function serialize(serializationContext) {
       writeString(
         "" /* JSXNode_CHAR */ + serializeJSXType($addRoot$, value.type) + " " + $addRoot$(value.varProps) + " " + $addRoot$(value.constProps) + " " + $addRoot$(value.children) + " " + value.flags + " " + (value.key || "")
       );
-    } else if (value instanceof Task) {
+    } else if (value instanceof Task3) {
       writeString(
-        "" /* Task_CHAR */ + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + qrlToString(serializationContext, value.$qrl$) + (value.$state$ == null ? "" : " " + $addRoot$(value.$state$))
+        "" /* Task_CHAR */ + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + $addRoot$(value.$effectDependencies$) + " " + qrlToString(serializationContext, value.$qrl$) + (value.$state$ == null ? "" : " " + $addRoot$(value.$state$))
       );
     } else if (isPromise(value)) {
       writeString("" /* Promise_CHAR */ + getSerializableDataRootId(value));
@@ -26823,41 +26484,40 @@ function serialize(serializationContext) {
       const out = btoa(buf).replace(/=+$/, "");
       writeString("" /* Uint8Array_CHAR */ + out);
     } else {
-      throw new Error("implement: " + JSON.stringify(value));
+      throw new Error("implement");
     }
   };
-  const serializeObjectLiteral = (value, $writer$2, writeValue2, writeString2, objectMap, $addRoot$2) => {
+  const serializeObjectLiteral = (value, $writer$2, writeValue2, writeString2) => {
     if (Array.isArray(value)) {
-      const proxy = objectMap.get(value);
-      if (proxy !== void 0) {
-        $writer$2.write("{");
-        serializeProxy(value, proxy, $writer$2, writeString2, $addRoot$2);
-        $writer$2.write(",");
-        writeString2("\0" /* UNDEFINED_CHAR */);
-        $writer$2.write(":");
-      }
       serializeArray(value, $writer$2, writeValue2);
-      if (proxy !== void 0) {
-        $writer$2.write("}");
-      }
     } else {
       $writer$2.write("{");
-      const proxy = objectMap.get(value);
-      if (proxy !== void 0) {
-        serializeProxy(value, proxy, $writer$2, writeString2, $addRoot$2);
-      }
-      serializeObjectProperties(value, $writer$2, writeValue2, writeString2, proxy !== void 0);
+      serializeObjectProperties(value, $writer$2, writeValue2, writeString2);
       $writer$2.write("}");
     }
   };
   writeValue(serializationContext.$roots$, -1);
 }
-function serializeProxy(value, proxy, $writer$, writeString, $addRoot$) {
-  const flags = getProxyFlags(value) || 0;
-  writeString("" /* Store_CHAR */);
-  $writer$.write(":");
-  const manager = getSubscriptionManager(proxy);
-  writeString(String(flags) + subscriptionManagerToString(manager, $addRoot$));
+function serializeEffectSubs(addRoot, effects) {
+  let data = "";
+  if (effects) {
+    for (let i = 0; i < effects.length; i++) {
+      const effectSubscription = effects[i];
+      const effect = effectSubscription[0 /* EFFECT */];
+      const prop = effectSubscription[1 /* PROPERTY */];
+      data += ";" + addRoot(effect) + " " + prop;
+      let effectSubscriptionDataIndex = 2 /* FIRST_BACK_REF_OR_DATA */;
+      const effectSubscriptionData = effectSubscription[effectSubscriptionDataIndex];
+      if (effectSubscriptionData instanceof EffectData) {
+        data += " |" + addRoot(effectSubscriptionData.data);
+        effectSubscriptionDataIndex++;
+      }
+      for (let j = effectSubscriptionDataIndex; j < effectSubscription.length; j++) {
+        data += " " + addRoot(effectSubscription[j]);
+      }
+    }
+  }
+  return data;
 }
 function serializeArray(value, $writer$, writeValue) {
   $writer$.write("[");
@@ -26869,8 +26529,8 @@ function serializeArray(value, $writer$, writeValue) {
   }
   $writer$.write("]");
 }
-function serializeObjectProperties(value, $writer$, writeValue, writeString, startWithDelimiter) {
-  let delimiter = startWithDelimiter;
+function serializeObjectProperties(value, $writer$, writeValue, writeString) {
+  let delimiter = false;
   for (const key in value) {
     if (Object.prototype.hasOwnProperty.call(value, key) && !fastSkipSerialize(value[key])) {
       delimiter && $writer$.write(",");
@@ -26881,7 +26541,7 @@ function serializeObjectProperties(value, $writer$, writeValue, writeString, sta
     }
   }
 }
-function serializeSignalDerived(serializationContext, value, $addRoot$) {
+function serializeDerivedFn(serializationContext, value, $addRoot$) {
   if (value.$funcStr$ && value.$funcStr$[0] === "{") {
     value.$funcStr$ = `(${value.$funcStr$})`;
   }
@@ -26891,7 +26551,83 @@ function serializeSignalDerived(serializationContext, value, $addRoot$) {
     value.$func$
   );
   const args = value.$args$.map($addRoot$).join(" ");
-  return "" /* DerivedSignal_CHAR */ + syncFnId + (args.length ? " " + args : "");
+  return syncFnId + (args.length ? " " + args : "");
+}
+function deserializeSignal2(signal, container, data, readFn, readQrl) {
+  signal.$container$ = container;
+  const parts = data.substring(1).split(";");
+  let idx = 0;
+  if (readFn) {
+    const derivedSignal = signal;
+    derivedSignal.$invalid$ = false;
+    const fnParts = parts[idx++].split(" ");
+    derivedSignal.$func$ = container.getSyncFn(parseInt(fnParts[0]));
+    for (let i = 1; i < fnParts.length; i++) {
+      (derivedSignal.$args$ || (derivedSignal.$args$ = [])).push(
+        container.$getObjectById$(parseInt(fnParts[i]))
+      );
+    }
+  }
+  if (readQrl) {
+    const computedSignal = signal;
+    computedSignal.$computeQrl$ = inflateQRL(container, parseQRL(parts[idx++]));
+  }
+  const dependencies = container.$getObjectById$(parts[idx++]);
+  signal.$effectDependencies$ = dependencies;
+  let signalValue = container.$getObjectById$(parts[idx++]);
+  if (vnode_isVNode(signalValue)) {
+    signalValue = vnode_getNode(signalValue);
+  }
+  signal.$untrackedValue$ = signalValue;
+  if (idx < parts.length) {
+    const effects = signal.$effects$ || (signal.$effects$ = []);
+    idx = deserializeSignal2Effect(idx, parts, container, effects);
+  }
+}
+function deserializeStore2(container, data) {
+  restStack.push(rest, restIdx);
+  rest = data;
+  restIdx = 1;
+  const target = container.$getObjectById$(restInt());
+  const store = createStore(container, target, restInt());
+  const storeHandler = getStoreHandler(store);
+  const effectSerializedString = rest.substring(restIdx);
+  const storeHasEffects = !!effectSerializedString.length;
+  if (storeHasEffects) {
+    const effectProps = effectSerializedString.split("|");
+    if (effectProps.length) {
+      const effects = storeHandler.$effects$ = {};
+      for (let i = 0; i < effectProps.length; i++) {
+        const effect = effectProps[i];
+        const idx = effect.indexOf(";");
+        let prop = effect.substring(0, idx);
+        if (prop === "\0" /* UNDEFINED_CHAR */) {
+          prop = STORE_ARRAY_PROP;
+        }
+        const effectStr = effect.substring(idx + 1);
+        deserializeSignal2Effect(0, effectStr.split(";"), container, effects[prop] = []);
+      }
+    }
+  }
+  restIdx = restStack.pop();
+  rest = restStack.pop();
+  return store;
+}
+function deserializeSignal2Effect(idx, parts, container, effects) {
+  while (idx < parts.length) {
+    const effect = parts[idx++].split(" ").map((obj, idx2) => {
+      if (idx2 === 1 /* PROPERTY */) {
+        return obj;
+      } else {
+        if (obj[0] === "|") {
+          return new EffectData(container.$getObjectById$(parseInt(obj.substring(1))));
+        }
+        return container.$getObjectById$(obj);
+      }
+    });
+    effects.push(effect);
+  }
+  return idx;
 }
 function setSerializableDataRootId($addRoot$, obj, value) {
   obj[SERIALIZABLE_ROOT_ID] = $addRoot$(value);
@@ -26900,37 +26636,6 @@ function getSerializableDataRootId(value) {
   const id = value[SERIALIZABLE_ROOT_ID];
   assertDefined(id, "Missing SERIALIZABLE_ROOT_ID");
   return id;
-}
-function subscriptionManagerToString(subscriptionManager, $addRoot$) {
-  const data = [];
-  for (const sub of subscriptionManager.$subs$) {
-    let subData = "";
-    for (let i = 0; i < sub.length; i++) {
-      if (i === 0 /* TYPE */) {
-        subData += sub[i];
-      } else {
-        subData += " " + $addRoot$(sub[i]);
-      }
-    }
-    data.push(subData);
-  }
-  return data.join(";");
-}
-function subscriptionManagerFromString(subscriptionManager, value, getObjectById) {
-  const subs = value.split(";");
-  for (let k = 0; k < subs.length; k++) {
-    const sub = subs[k];
-    if (!sub) {
-      continue;
-    }
-    const subscription = sub.split(" ");
-    subscription[0] = parseInt(subscription[0]);
-    for (let i = 1; i < subscription.length; i++) {
-      subscription[i] = getObjectById(subscription[i]);
-    }
-    const prop = subscription.pop();
-    subscriptionManager.$addSub$(subscription, prop);
-  }
 }
 function qrlToString(serializationContext, value) {
   let symbol = value.$symbol$;
@@ -26967,7 +26672,7 @@ function qrlToString(serializationContext, value) {
   } else {
     const fn = value.resolved;
     chunk = "";
-    symbol = String(serializationContext.$addSyncFn$(void 0, 0, fn));
+    symbol = String(serializationContext.$addSyncFn$(null, 0, fn));
   }
   let qrlStringInline = `${chunk}#${symbol}`;
   if (Array.isArray(value.$captureRef$) && value.$captureRef$.length > 0) {
@@ -26995,7 +26700,63 @@ function isResource(value) {
   return "__brand" in value && value.__brand === "resource";
 }
 var frameworkType = (obj) => {
-  return typeof obj === "object" && obj !== null && (obj instanceof SignalImpl || obj instanceof Task || isJSXNode(obj)) || isQrl(obj);
+  return typeof obj === "object" && obj !== null && (obj instanceof Signal || obj instanceof Task3 || isJSXNode(obj)) || isQrl2(obj);
+};
+var canSerialize2 = (value) => {
+  if (value == null || typeof value === "string" || typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return true;
+  } else if (typeof value === "object") {
+    const proto = Object.getPrototypeOf(value);
+    if (isStore(value)) {
+      value = unwrapStore(value);
+    }
+    if (proto == Object.prototype) {
+      for (const key in value) {
+        if (!canSerialize2(value[key])) {
+          return false;
+        }
+      }
+      return true;
+    } else if (proto == Array.prototype) {
+      for (let i = 0; i < value.length; i++) {
+        if (!canSerialize2(value[i])) {
+          return false;
+        }
+      }
+      return true;
+    } else if (isTask(value)) {
+      return true;
+    } else if (isPropsProxy(value)) {
+      return true;
+    } else if (isPromise(value)) {
+      return true;
+    } else if (isJSXNode(value)) {
+      return true;
+    } else if (value instanceof Error) {
+      return true;
+    } else if (value instanceof URL) {
+      return true;
+    } else if (value instanceof Date) {
+      return true;
+    } else if (value instanceof RegExp) {
+      return true;
+    } else if (value instanceof URLSearchParams) {
+      return true;
+    } else if (value instanceof FormData) {
+      return true;
+    } else if (value instanceof Set) {
+      return true;
+    } else if (value instanceof Map) {
+      return true;
+    } else if (value instanceof Uint8Array) {
+      return true;
+    }
+  } else if (typeof value === "function") {
+    if (isQrl2(value) || isQwikComponent(value)) {
+      return true;
+    }
+  }
+  return false;
 };
 var QRL_RUNTIME_CHUNK = "qwik-runtime-mock-chunk";
 var SERIALIZABLE_ROOT_ID = Symbol("SERIALIZABLE_ROOT_ID");
@@ -27060,14 +26821,14 @@ var codeToName = (code2) => {
       return "VNode";
     case 19 /* Component_VALUE */:
       return "Component";
-    case 20 /* DerivedSignal_VALUE */:
+    case 21 /* WrappedSignal_VALUE */:
       return "DerivedSignal";
     case 23 /* Store_VALUE */:
       return "Store";
-    case 21 /* Signal_VALUE */:
+    case 20 /* Signal_VALUE */:
       return "Signal";
-    case 22 /* SignalWrapper_VALUE */:
-      return "SignalWrapper";
+    case 22 /* ComputedSignal_VALUE */:
+      return "ComputedSignal";
     case 7 /* NotFinite_VALUE */:
       return "NotFinite";
     case 14 /* URLSearchParams_VALUE */:
@@ -27091,200 +26852,133 @@ var codeToName = (code2) => {
   }
 };
 
-// packages/qwik/src/core/state/store.ts
-var getOrCreateProxy = (target, storeMgr, flags = 0) => {
-  const proxy = storeMgr.$proxyMap$.get(target);
-  if (proxy) {
-    return proxy;
-  }
-  if (flags !== 0) {
-    setObjectFlags(target, flags);
-  }
-  return createProxy(target, storeMgr, void 0);
+// packages/qwik/src/core/v2/signal/v2-store.ts
+var DEBUG3 = false;
+var log2 = (...args) => console.log("STORE", ...args.map(qwikDebugToString));
+var STORE_TARGET = Symbol("store.target");
+var STORE_HANDLER = Symbol("store.handler");
+var STORE_ARRAY_PROP = Symbol("store.array");
+var getStoreHandler = (value) => {
+  return value[STORE_HANDLER];
 };
-var isStore = (target) => {
-  const unwrap = unwrapProxy(target);
-  return unwrap !== target;
+var getStoreTarget = (value) => {
+  return value?.[STORE_TARGET] || null;
 };
-var createProxy = (target, storeTracker, subs) => {
-  assertEqual(unwrapProxy(target), target, "Unexpected proxy at this location", target);
-  assertTrue(!storeTracker.$proxyMap$.has(target), "Proxy was already created", target);
-  assertTrue(isObject(target), "Target must be an object");
-  assertTrue(
-    isSerializableObject(target) || isArray(target),
-    "Target must be a serializable object"
-  );
-  const manager = storeTracker.$subsManager$.$createManager$(subs);
-  const getSerializedState = (target2) => {
-    return target2["" /* Store_CHAR */];
-  };
-  const removeSerializedState = (target2) => {
-    delete target2["" /* Store_CHAR */];
-  };
-  const addSubscriptions = (serializedState, serializedStateObject, target2) => {
-    removeSerializedState(serializedStateObject);
-    setObjectFlags(
-      target2,
-      serializedState.charCodeAt(0) - 48
-      /*'0'*/
-    );
-    subscriptionManagerFromString(
-      manager,
-      serializedState.substring(1),
-      storeTracker.$getObjectById$
-    );
-  };
-  const serializedArrayTarget = target["\0" /* UNDEFINED_CHAR */];
-  if (serializedArrayTarget) {
-    const proxy = new Proxy(
-      serializedArrayTarget,
-      new ReadWriteProxyHandler(storeTracker, manager)
-    );
-    storeTracker.$proxyMap$.set(target, proxy);
-    const serializedState = getSerializedState(target);
-    if (serializedState) {
-      addSubscriptions(serializedState, target, serializedArrayTarget);
+var unwrapStore = (value) => {
+  return getStoreTarget(value) || value;
+};
+var isStore = (value) => {
+  const unwrap = unwrapStore(value);
+  return unwrap !== value;
+};
+function createStore(container, obj, flags) {
+  return new Proxy(obj, new StoreHandler(flags, container || null));
+}
+var getOrCreateStore = (obj, flags, container) => {
+  if (isSerializableObject(obj) && container) {
+    let store = container.$storeProxyMap$.get(obj);
+    if (!store) {
+      store = createStore(container, obj, flags);
+      container.$storeProxyMap$.set(obj, store);
     }
-    return proxy;
-  } else {
-    const proxy = new Proxy(target, new ReadWriteProxyHandler(storeTracker, manager));
-    storeTracker.$proxyMap$.set(target, proxy);
-    const serializedState = getSerializedState(target);
-    if (serializedState) {
-      addSubscriptions(serializedState, target, target);
-    }
-    return proxy;
+    return store;
   }
+  return obj;
 };
-var createPropsState = () => {
-  const props = {};
-  setObjectFlags(props, QObjectImmutable);
-  return props;
-};
-var setObjectFlags = (obj, flags) => {
-  Object.defineProperty(obj, QObjectFlagsSymbol, { value: flags, enumerable: false });
-};
-var ReadWriteProxyHandler = class {
-  constructor($storeTracker$, $manager$) {
-    this.$storeTracker$ = $storeTracker$;
-    this.$manager$ = $manager$;
+var StoreHandler = class {
+  constructor($flags$, $container$) {
+    this.$flags$ = $flags$;
+    this.$container$ = $container$;
+    this.$effects$ = null;
   }
-  deleteProperty(target, prop) {
-    if (target[QObjectFlagsSymbol] & QObjectImmutable) {
-      throw qError(QError_immutableProps);
-    }
-    if (typeof prop != "string" || !delete target[prop]) {
-      return false;
-    }
-    this.$manager$.$notifySubs$(isArray(target) ? void 0 : prop);
-    return true;
+  toString() {
+    return "[Store]";
   }
   get(target, prop) {
     if (typeof prop === "symbol") {
-      if (prop === QObjectTargetSymbol) {
+      if (prop === STORE_TARGET) {
         return target;
       }
-      if (prop === QObjectManagerSymbol) {
-        return this.$manager$;
+      if (prop === STORE_HANDLER) {
+        return this;
       }
       if (prop === SERIALIZER_PROXY_UNWRAP) {
         return void 0;
       }
       return target[prop];
     }
-    const flags = target[QObjectFlagsSymbol] ?? 0;
-    assertNumber(flags, "flags must be an number");
-    const invokeCtx = tryGetInvokeContext();
-    const recursive = (flags & QObjectRecursive) !== 0;
-    const immutable = (flags & QObjectImmutable) !== 0;
-    let subscriber;
-    if (invokeCtx) {
-      subscriber = invokeCtx.$subscriber$;
+    const ctx = tryGetInvokeContext();
+    let value = target[prop];
+    if (ctx) {
+      if (this.$container$ === null) {
+        if (!ctx.$container2$) {
+          return value;
+        }
+        this.$container$ = ctx.$container2$;
+      } else {
+        assertTrue(
+          !ctx.$container2$ || ctx.$container2$ === this.$container$,
+          "Do not use signals across containers"
+        );
+      }
+      const effectSubscriber = ctx.$effectSubscriber$;
+      if (effectSubscriber) {
+        addEffect(target, Array.isArray(target) ? STORE_ARRAY_PROP : prop, this, effectSubscriber);
+      }
     }
-    if (immutable && (!(prop in target) || immutableValue(target[_CONST_PROPS]?.[prop]))) {
-      subscriber = null;
+    if (prop === "toString" && value === Object.prototype.toString) {
+      return this.toString;
     }
-    const value = target[prop];
-    if (subscriber) {
-      const isA = isArray(target);
-      this.$manager$.$addSub$(subscriber, isA ? void 0 : prop);
+    const flags = this.$flags$;
+    if (flags & 1 /* RECURSIVE */ && typeof value === "object" && value !== null && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target)) {
+      value = getOrCreateStore(value, this.$flags$, this.$container$);
+      target[prop] = value;
     }
-    return recursive ? wrap(value, this.$storeTracker$) : value;
+    return value;
   }
-  set(target, prop, newValue) {
+  /** In the case of oldValue and value are the same, the effects are not triggered. */
+  set(target, prop, value) {
     target = unwrapDeserializerProxy(target);
     if (typeof prop === "symbol") {
-      target[prop] = newValue;
+      target[prop] = value;
       return true;
     }
-    const flags = target[QObjectFlagsSymbol] ?? 0;
-    assertNumber(flags, "flags must be an number");
-    const immutable = (flags & QObjectImmutable) !== 0;
-    if (immutable) {
-      throw qError(QError_immutableProps);
-    }
-    const recursive = (flags & QObjectRecursive) !== 0;
-    const unwrappedNewValue = recursive ? unwrapProxy(newValue) : newValue;
-    if (qDev) {
-      if (qSerialize) {
-        verifySerializable(unwrappedNewValue);
+    const newValue = this.$flags$ & 1 /* RECURSIVE */ ? unwrapStore(value) : value;
+    if (prop in target) {
+      const oldValue = target[prop];
+      if (newValue !== oldValue) {
+        DEBUG3 && log2("Store.set", oldValue, "->", newValue, pad("\n" + this.toString(), "  "));
+        setNewValueAndTriggerEffects(prop, newValue, target, this);
       }
-      const invokeCtx = tryGetInvokeContext();
-      if (invokeCtx) {
-        if (invokeCtx.$event$ === RenderEvent) {
-          logError(
-            "State mutation inside render function. Move mutation to useTask$() or useVisibleTask$()",
-            prop
-          );
-        } else if (invokeCtx.$event$ === ComputedEvent) {
-          logWarn(
-            "State mutation inside useComputed$() is an antipattern. Use useTask$() instead",
-            String(invokeCtx.$hostElement$)
-          );
-        }
-      }
-    }
-    const isA = isArray(target);
-    if (isA) {
-      target[prop] = unwrappedNewValue;
-      this.$manager$.$notifySubs$();
-      return true;
-    }
-    const oldValue = target[prop];
-    target[prop] = unwrappedNewValue;
-    if (oldValue !== unwrappedNewValue) {
-      this.$manager$.$notifySubs$(prop);
+    } else {
+      DEBUG3 && log2("Store.set", "create property", newValue, pad("\n" + this.toString(), "  "));
+      setNewValueAndTriggerEffects(prop, newValue, target, this);
     }
     return true;
   }
-  has(target, property) {
-    if (property === QObjectTargetSymbol) {
+  deleteProperty(target, prop) {
+    if (typeof prop != "string" || !delete target[prop]) {
+      return false;
+    }
+    triggerEffects(this.$container$, this, getEffects(target, prop, this.$effects$));
+    return true;
+  }
+  has(target, prop) {
+    if (prop === STORE_TARGET) {
       return true;
     }
-    const hasOwnProperty = Object.prototype.hasOwnProperty;
-    if (hasOwnProperty.call(target, property)) {
-      return true;
-    }
-    return false;
+    return Object.prototype.hasOwnProperty.call(target, prop);
   }
   ownKeys(target) {
-    const flags = target[QObjectFlagsSymbol] ?? 0;
-    assertNumber(flags, "flags must be an number");
-    const immutable = (flags & QObjectImmutable) !== 0;
-    if (!immutable) {
-      let subscriber = null;
-      const invokeCtx = tryGetInvokeContext();
-      if (invokeCtx) {
-        subscriber = invokeCtx.$subscriber$;
-      }
-      if (subscriber) {
-        this.$manager$.$addSub$(subscriber);
-      }
+    const ctx = tryGetInvokeContext();
+    const effectSubscriber = ctx?.$effectSubscriber$;
+    if (effectSubscriber) {
+      addEffect(target, STORE_ARRAY_PROP, this, effectSubscriber);
     }
     return Reflect.ownKeys(target);
   }
   getOwnPropertyDescriptor(target, prop) {
-    if (isArray(target) || typeof prop === "symbol") {
+    if (Array.isArray(target) || typeof prop === "symbol") {
       return Object.getOwnPropertyDescriptor(target, prop);
     }
     return {
@@ -27293,832 +26987,247 @@ var ReadWriteProxyHandler = class {
     };
   }
 };
-var immutableValue = (value) => {
-  return value === _CONST_PROPS || isSignal(value);
-};
-var wrap = (value, storeTracker) => {
-  if (isObject(value)) {
-    if (Object.isFrozen(value)) {
-      return value;
-    }
-    const nakedValue = unwrapProxy(value);
-    if (nakedValue !== value) {
-      return value;
-    }
-    if (fastSkipSerialize(nakedValue)) {
-      return value;
-    }
-    if (isSerializableObject(nakedValue) || isArray(nakedValue)) {
-      const proxy = storeTracker.$proxyMap$.get(nakedValue);
-      return proxy ? proxy : getOrCreateProxy(nakedValue, storeTracker, QObjectRecursive);
-    }
+function addEffect(target, prop, store, effectSubscriber) {
+  const effectsMap = store.$effects$ || (store.$effects$ = {});
+  const effects = Object.prototype.hasOwnProperty.call(effectsMap, prop) && effectsMap[prop] || (effectsMap[prop] = []);
+  ensureContainsEffect(effects, effectSubscriber);
+  ensureContains(effectSubscriber, target);
+  DEBUG3 && log2("sub", pad("\n" + store.$effects$.toString(), "  "));
+}
+function setNewValueAndTriggerEffects(prop, value, target, currentStore) {
+  target[prop] = value;
+  triggerEffects(
+    currentStore.$container$,
+    currentStore,
+    getEffects(target, prop, currentStore.$effects$)
+  );
+}
+function getEffects(target, prop, storeEffects) {
+  let effectsToTrigger = storeEffects ? Array.isArray(target) ? Object.values(storeEffects).flatMap((effects) => effects) : storeEffects[prop] : null;
+  const storeArrayValue = storeEffects?.[STORE_ARRAY_PROP];
+  if (storeArrayValue) {
+    effectsToTrigger || (effectsToTrigger = []);
+    effectsToTrigger.push(...storeArrayValue);
   }
-  return value;
-};
-
-// packages/qwik/src/core/render/dom/render-dom.ts
-var renderComponent = (rCtx, elCtx, flags) => {
-  const justMounted = !(elCtx.$flags$ & HOST_FLAG_MOUNTED);
-  const hostElement = elCtx.$element$;
-  const containerState = rCtx.$static$.$containerState$;
-  containerState.$hostsStaging$.delete(elCtx);
-  containerState.$subsManager$.$clearSub$(hostElement);
-  return maybeThen(executeComponent(rCtx, elCtx), (res) => {
-    const staticCtx = rCtx.$static$;
-    const newCtx = res.rCtx;
-    const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement);
-    staticCtx.$hostElements$.add(hostElement);
-    iCtx.$subscriber$ = [0 /* HOST */, hostElement];
-    iCtx.$renderCtx$ = newCtx;
-    if (justMounted) {
-      if (elCtx.$appendStyles$) {
-        for (const style of elCtx.$appendStyles$) {
-          appendHeadStyle(staticCtx, style);
-        }
-      }
-    }
-    const processedJSXNode = processData(res.node, iCtx);
-    return maybeThen(processedJSXNode, (processedJSXNode2) => {
-      const newVdom = wrapJSX(hostElement, processedJSXNode2);
-      const oldVdom = getVdom(elCtx);
-      return maybeThen(smartUpdateChildren(newCtx, oldVdom, newVdom, flags), () => {
-        elCtx.$vdom$ = newVdom;
-      });
-    });
-  });
-};
-var getVdom = (elCtx) => {
-  if (!elCtx.$vdom$) {
-    elCtx.$vdom$ = domToVnode(elCtx.$element$);
-  }
-  return elCtx.$vdom$;
-};
-var ProcessedJSXNodeImpl = class {
-  constructor($type$, $varProps$, $constProps$, $children$, $flags$, $key$) {
-    this.$type$ = $type$;
-    this.$varProps$ = $varProps$;
-    this.$constProps$ = $constProps$;
-    this.$children$ = $children$;
-    this.$flags$ = $flags$;
-    this.$key$ = $key$;
-    this.$elm$ = null;
-    this.$text$ = "";
-    this.$signal$ = null;
-    this.$id$ = $type$ + ($key$ ? ":" + $key$ : "");
-    if (qDev && qInspector) {
-      this.$dev$ = void 0;
-    }
-    seal(this);
-  }
-};
-var processNode = (node, invocationContext) => {
-  const { key, type, varProps, children, flags, constProps } = node;
-  let textType = "";
-  if (isString(type)) {
-    textType = type;
-  } else if (type === Virtual) {
-    textType = VIRTUAL;
-  } else if (isFunction(type)) {
-    const res = invoke(invocationContext, type, node.props, key, flags, node.dev);
-    if (!shouldWrapFunctional(res, node)) {
-      return processData(res, invocationContext);
-    }
-    return processNode(_jsxSorted(Virtual, null, null, res, 0, key), invocationContext);
-  } else {
-    throw qError(QError_invalidJsxNodeType, type);
-  }
-  let convertedChildren = EMPTY_ARRAY;
-  if (children != null) {
-    return maybeThen(processData(children, invocationContext), (result) => {
-      if (result !== void 0) {
-        convertedChildren = isArray(result) ? result : [result];
-      }
-      const vnode = new ProcessedJSXNodeImpl(
-        textType,
-        varProps,
-        constProps,
-        convertedChildren,
-        flags,
-        key
-      );
-      if (qDev && qInspector) {
-        vnode.$dev$ = node.dev;
-      }
-      return vnode;
-    });
-  } else {
-    const vnode = new ProcessedJSXNodeImpl(
-      textType,
-      varProps,
-      constProps,
-      convertedChildren,
-      flags,
-      key
-    );
-    if (qDev && qInspector) {
-      vnode.$dev$ = node.dev;
-    }
-    return vnode;
-  }
-};
-var wrapJSX = (element, input) => {
-  const children = input === void 0 ? EMPTY_ARRAY : isArray(input) ? input : [input];
-  const node = new ProcessedJSXNodeImpl(":virtual", {}, null, children, 0, null);
-  node.$elm$ = element;
-  return node;
-};
-var processData = (node, invocationContext) => {
-  if (node == null || typeof node === "boolean") {
-    return void 0;
-  }
-  if (isPrimitive(node)) {
-    const newNode = new ProcessedJSXNodeImpl("#text", EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
-    newNode.$text$ = String(node);
-    return newNode;
-  } else if (isJSXNode(node)) {
-    return processNode(node, invocationContext);
-  } else if (isSignal(node)) {
-    const newNode = new ProcessedJSXNodeImpl("#signal", EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
-    newNode.$signal$ = node;
-    return newNode;
-  } else if (isArray(node)) {
-    const output = promiseAll(node.flatMap((n) => processData(n, invocationContext)));
-    return maybeThen(output, (array) => array.flat(100).filter(isNotNullable));
-  } else if (isPromise(node)) {
-    return node.then((node2) => processData(node2, invocationContext));
-  } else if (node === SkipRender) {
-    return new ProcessedJSXNodeImpl(SKIP_RENDER_TYPE, EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
-  } else {
-    logWarn("A unsupported value was passed to the JSX, skipping render. Value:", node);
-    return void 0;
-  }
-};
-var isPrimitive = (obj) => {
-  return isString(obj) || typeof obj === "number";
-};
-
-// packages/qwik/src/core/container/resume.ts
-var resumeIfNeeded = (containerEl) => {
-  const isResumed = directGetAttribute(containerEl, QContainerAttr);
-  if (isResumed === "paused") {
-    resumeContainer(containerEl);
-    if (qSerialize) {
-      appendQwikDevTools(containerEl);
-    }
-  }
-};
-var getPauseState = (containerEl) => {
-  const doc = getDocument(containerEl);
-  const isDocElement = containerEl === doc.documentElement;
-  const parentJSON = isDocElement ? doc.body : containerEl;
-  const script = getQwikJSON(parentJSON, "type");
-  if (script) {
-    const data = script.firstChild.data;
-    return JSON.parse(unescapeText(data) || "{}");
-  }
-};
-var resumeContainer = (containerEl) => {
-  if (!isContainer(containerEl)) {
-    logWarn("Skipping resuming because parent element is not q:container");
-    return;
-  }
-  const pauseState = containerEl["_qwikjson_"] ?? getPauseState(containerEl);
-  containerEl["_qwikjson_"] = null;
-  if (!pauseState) {
-    logWarn("Skipping resuming qwik/json metadata was not found.");
-    return;
-  }
-  const doc = getDocument(containerEl);
-  const hash4 = containerEl.getAttribute(QInstanceAttr);
-  const isDocElement = containerEl === doc.documentElement;
-  const parentJSON = isDocElement ? doc.body : containerEl;
-  if (qDev) {
-    const script = getQwikJSON(parentJSON, "type");
-    if (!script) {
-      logWarn("Skipping resuming qwik/json metadata was not found.");
-      return;
-    }
-  }
-  const inlinedFunctions = getQFuncs(doc, hash4);
-  const containerState = _getContainerState(containerEl);
-  const elements = /* @__PURE__ */ new Map();
-  const text = /* @__PURE__ */ new Map();
-  let node = null;
-  let container = 0;
-  const elementWalker = doc.createTreeWalker(containerEl, SHOW_COMMENT);
-  while (node = elementWalker.nextNode()) {
-    const data = node.data;
-    if (container === 0) {
-      if (data.startsWith("qv ")) {
-        const id = getID(data);
-        if (id >= 0) {
-          elements.set(id, node);
-        }
-      } else if (data.startsWith("t=")) {
-        const id = data.slice(2);
-        const index = strToInt(id);
-        const textNode = getTextNode(node);
-        elements.set(index, textNode);
-        text.set(index, textNode.data);
-      }
-    }
-    if (data === "cq") {
-      container++;
-    } else if (data === "/cq") {
-      container--;
-    }
-  }
-  const slotPath = containerEl.getElementsByClassName("qc\u{1F4E6}").length !== 0;
-  containerEl.querySelectorAll("[q\\:id]").forEach((el) => {
-    if (slotPath && el.closest("[q\\:container]") !== containerEl) {
-      return;
-    }
-    const id = directGetAttribute(el, ELEMENT_ID);
-    assertDefined(id, `resume: element missed q:id`, el);
-    const index = strToInt(id);
-    elements.set(index, el);
-  });
-  const parser = createParser(containerState, doc);
-  const finalized = /* @__PURE__ */ new Map();
-  const revived = /* @__PURE__ */ new Set();
-  const getObject = (id) => {
-    assertTrue(
-      typeof id === "string" && id.length > 0,
-      "resume: id must be an non-empty string, got:",
-      id
-    );
-    if (finalized.has(id)) {
-      return finalized.get(id);
-    }
-    return computeObject(id);
-  };
-  const computeObject = (id) => {
-    if (id.startsWith("#")) {
-      const elementId = id.slice(1);
-      const index2 = strToInt(elementId);
-      assertTrue(elements.has(index2), `missing element for id:`, elementId);
-      const rawElement = elements.get(index2);
-      assertDefined(rawElement, `missing element for id:`, elementId);
-      if (isComment(rawElement)) {
-        if (!rawElement.isConnected) {
-          finalized.set(id, void 0);
-          return void 0;
-        }
-        const virtual = getVirtualElement(rawElement);
-        finalized.set(id, virtual);
-        getContext(virtual, containerState);
-        return virtual;
-      } else if (isElement(rawElement)) {
-        finalized.set(id, rawElement);
-        getContext(rawElement, containerState);
-        return rawElement;
-      }
-      finalized.set(id, rawElement);
-      return rawElement;
-    } else if (id.startsWith("@")) {
-      const funcId = id.slice(1);
-      const index2 = strToInt(funcId);
-      const func = inlinedFunctions[index2];
-      assertDefined(func, `missing inlined function for id:`, funcId);
-      return func;
-    } else if (id.startsWith("*")) {
-      const elementId = id.slice(1);
-      const index2 = strToInt(elementId);
-      assertTrue(elements.has(index2), `missing element for id:`, elementId);
-      const str = text.get(index2);
-      assertDefined(str, `missing element for id:`, elementId);
-      finalized.set(id, str);
-      return str;
-    }
-    const index = strToInt(id);
-    const objs = pauseState.objs;
-    assertTrue(objs.length > index, "resume: index is out of bounds", id);
-    let value = objs[index];
-    if (isString(value)) {
-      value = value === UNDEFINED_PREFIX ? void 0 : parser.prepare(value);
-    }
-    let obj = value;
-    for (let i = id.length - 1; i >= 0; i--) {
-      const code2 = id[i];
-      const transform = OBJECT_TRANSFORMS[code2];
-      if (!transform) {
-        break;
-      }
-      obj = transform(obj, containerState);
-    }
-    finalized.set(id, obj);
-    if (!isPrimitive(value) && !revived.has(index)) {
-      revived.add(index);
-      reviveSubscriptions(value, index, pauseState.subs, getObject, containerState, parser);
-      reviveNestedObjects(value, getObject, parser);
-    }
-    return obj;
-  };
-  containerState.$elementIndex$ = 1e5;
-  containerState.$pauseCtx$ = {
-    getObject,
-    meta: pauseState.ctx,
-    refs: pauseState.refs
-  };
-  directSetAttribute(containerEl, QContainerAttr, "resumed");
-  logDebug("Container resumed");
-  emitEvent2(containerEl, "qresume", void 0, true);
-};
-var reviveSubscriptions = (value, i, objsSubs, getObject, containerState, parser) => {
-  const subs = objsSubs[i];
-  if (subs) {
-    const converted = [];
-    let flag = 0;
-    for (const sub of subs) {
-      if (sub.startsWith("_")) {
-        flag = parseInt(sub.slice(1), 10);
-      } else {
-        const parsed = parseSubscription(sub, getObject);
-        if (parsed) {
-          converted.push(parsed);
-        }
-      }
-    }
-    if (flag > 0) {
-      setObjectFlags(value, flag);
-    }
-    if (!parser.subs(value, converted)) {
-      const proxy = containerState.$proxyMap$.get(value);
-      if (proxy) {
-        getSubscriptionManager(proxy).$addSubs$(converted);
-      } else {
-        createProxy(value, containerState, converted);
-      }
-    }
-  }
-};
-var reviveNestedObjects = (obj, getObject, parser) => {
-  if (parser.fill(obj, getObject)) {
-    return;
-  }
-  if (obj && typeof obj == "object") {
-    if (isArray(obj)) {
-      for (let i = 0; i < obj.length; i++) {
-        obj[i] = getObject(obj[i]);
-      }
-    } else if (isSerializableObject(obj)) {
-      for (const key in obj) {
-        obj[key] = getObject(obj[key]);
-      }
-    }
-  }
-};
-var unescapeText = (str) => {
-  return str.replace(/\\x3C(\/?script)/gi, "<$1");
-};
-var getQwikJSON = (parentElm, attribute) => {
-  let child = parentElm.lastElementChild;
-  while (child) {
-    if (child.tagName === "SCRIPT" && directGetAttribute(child, attribute) === "qwik/json") {
-      return child;
-    }
-    child = child.previousElementSibling;
-  }
-  return void 0;
-};
-var getTextNode = (mark) => {
-  const nextNode = mark.nextSibling;
-  if (isText(nextNode)) {
-    return nextNode;
-  } else {
-    const textNode = mark.ownerDocument.createTextNode("");
-    mark.parentElement.insertBefore(textNode, mark);
-    return textNode;
-  }
-};
-var appendQwikDevTools = (containerEl) => {
-  containerEl["qwik"] = {
-    pause: () => pauseContainer(containerEl),
-    state: _getContainerState(containerEl)
-  };
-};
-var getID = (stuff) => {
-  const index = stuff.indexOf("q:id=");
-  if (index > 0) {
-    return strToInt(stuff.slice(index + 5));
-  }
-  return -1;
-};
-
-// packages/qwik/src/core/render/dom/signals.ts
-var executeSignalOperation = (rCtx, operation) => {
-  try {
-    const type = operation[0];
-    const staticCtx = rCtx.$static$;
-    switch (type) {
-      case 1:
-      case 2: {
-        let elm;
-        let hostElm;
-        if (type === 1) {
-          elm = operation[1];
-          hostElm = operation[3];
-        } else {
-          elm = operation[3];
-          hostElm = operation[1];
-        }
-        const elCtx = tryGetContext2(elm);
-        if (elCtx == null) {
-          return;
-        }
-        const prop = operation[4];
-        const isSVG = elm.namespaceURI === SVG_NS2;
-        staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
-        let value = trackSignal(operation[2], operation.slice(0, -1));
-        if (prop === "class") {
-          value = serializeClassWithHost(value, tryGetContext2(hostElm));
-        } else if (prop === "style") {
-          value = stringifyStyle(value);
-        }
-        const vdom = getVdom(elCtx);
-        if (prop in vdom.$varProps$ && vdom.$varProps$[prop] === value) {
-          return;
-        }
-        vdom.$varProps$[prop] = value;
-        return smartSetProperty(staticCtx, elm, prop, value, isSVG);
-      }
-      case 3:
-      case 4: {
-        const elm = operation[3];
-        if (!staticCtx.$visited$.includes(elm)) {
-          staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
-          const invocationContext = void 0;
-          let signalValue = trackSignal(operation[2], operation.slice(0, -1));
-          const subscription = getLastSubscription();
-          if (Array.isArray(signalValue)) {
-            signalValue = new JSXNodeImpl(Virtual, {}, null, signalValue, 0, null);
-          }
-          let newVnode = processData(signalValue, invocationContext);
-          if (isPromise(newVnode)) {
-            logError("Rendering promises in JSX signals is not supported");
-          } else {
-            if (newVnode === void 0) {
-              newVnode = processData("", invocationContext);
-            }
-            const oldVnode = getVnodeFromEl(elm);
-            const element = getQwikElement(operation[1]);
-            rCtx.$cmpCtx$ = getContext(element, rCtx.$static$.$containerState$);
-            if (oldVnode.$type$ == newVnode.$type$ && oldVnode.$key$ == newVnode.$key$ && oldVnode.$id$ == newVnode.$id$) {
-              diffVnode(rCtx, oldVnode, newVnode, 0);
-            } else {
-              const promises = [];
-              const oldNode = oldVnode.$elm$;
-              const newElm = createElm(rCtx, newVnode, 0, promises);
-              if (promises.length) {
-                logError("Rendering promises in JSX signals is not supported");
-              }
-              subscription[3] = newElm;
-              insertBefore(rCtx.$static$, elm.parentElement, newElm, oldNode);
-              oldNode && removeNode(staticCtx, oldNode);
-            }
-          }
-        }
-      }
-    }
-  } catch (e) {
-  }
-};
-function getQwikElement(element) {
-  while (element) {
-    if (isQwikElement(element)) {
-      return element;
-    }
-    element = element.parentElement;
-  }
-  throw new Error("Not found");
+  return effectsToTrigger;
 }
 
-// packages/qwik/src/core/render/dom/notify-render.ts
-var notifyChange = (subAction, containerState) => {
-  if (subAction[0] === 0) {
-    const host = subAction[1];
-    if (isSubscriberDescriptor(host)) {
-      notifyTask(host, containerState);
-    } else {
-      notifyRender(host, containerState);
-    }
-  } else {
-    notifySignalOperation(subAction, containerState);
+// packages/qwik/src/core/use/use-sequential-scope.ts
+var useSequentialScope = () => {
+  const iCtx = useInvokeContext();
+  const hostElement = iCtx.$hostElement$;
+  const host = hostElement;
+  let seq = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ);
+  if (seq === null) {
+    seq = [];
+    iCtx.$container2$.setHostProp(host, ELEMENT_SEQ, seq);
   }
+  let seqIdx = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ_IDX);
+  if (seqIdx === null) {
+    seqIdx = 0;
+  }
+  iCtx.$container2$.setHostProp(host, ELEMENT_SEQ_IDX, seqIdx + 1);
+  while (seq.length <= seqIdx) {
+    seq.push(void 0);
+  }
+  const set = (value) => {
+    if (qDev && qSerialize) {
+      verifySerializable(value);
+    }
+    return seq[seqIdx] = value;
+  };
+  return {
+    val: seq[seqIdx],
+    set,
+    i: seqIdx,
+    iCtx
+  };
 };
-var notifyRender = (hostElement, containerState) => {
-  if (vnode_isVNode(hostElement)) {
-    const container2 = containerState;
-    container2.markComponentForRender(hostElement);
+
+// packages/qwik/src/core/container/serializers.ts
+var SERIALIZABLE_STATE = Symbol("serializable-data");
+var DATA = Symbol();
+
+// packages/qwik/src/core/container/pause.ts
+var PROMISE_VALUE = Symbol();
+
+// packages/qwik/src/core/qrl/qrl.ts
+var inlinedQrl = (symbol, symbolName, lexicalScopeCapture = EMPTY_ARRAY) => {
+  return createQRL(null, symbolName, symbol, null, null, lexicalScopeCapture, null);
+};
+
+// packages/qwik/src/core/render/dom/visitor.ts
+import { isBrowser as isBrowser2 } from "@builder.io/qwik/build";
+var SVG_NS2 = "http://www.w3.org/2000/svg";
+var IS_SVG = 1 << 0;
+var IS_HEAD = 1 << 1;
+var IS_IMMUTABLE = 1 << 2;
+var handleStyle = (ctx, elm, newValue) => {
+  setProperty(ctx, elm.style, "cssText", newValue);
+  return true;
+};
+var handleClass = (ctx, elm, newValue) => {
+  assertTrue(
+    newValue == null || typeof newValue === "string",
+    "class newValue must be either nullish or string",
+    newValue
+  );
+  if (elm.namespaceURI === SVG_NS2) {
+    setAttribute(ctx, elm, "class", newValue);
   } else {
-    const server = isServerPlatform();
-    if (!server) {
-      resumeIfNeeded(containerState.$containerEl$);
-    }
-    const elCtx = getContext(hostElement, containerState);
-    assertDefined(
-      elCtx.$componentQrl$,
-      `render: notified host element must have a defined $renderQrl$`,
-      elCtx
-    );
-    if (elCtx.$flags$ & HOST_FLAG_DIRTY) {
-      return;
-    }
-    elCtx.$flags$ |= HOST_FLAG_DIRTY;
-    const activeRendering = containerState.$hostsRendering$ !== void 0;
-    if (activeRendering) {
-      containerState.$hostsStaging$.add(elCtx);
-    } else {
-      if (server) {
-        logWarn("Can not rerender in server platform");
-        return void 0;
+    setProperty(ctx, elm, "className", newValue);
+  }
+  return true;
+};
+var checkBeforeAssign = (ctx, elm, newValue, prop) => {
+  if (prop in elm) {
+    if (elm[prop] !== newValue || prop === "value" && !elm.hasAttribute(prop)) {
+      if (
+        // we must set value last so that it adheres to min,max,step
+        prop === "value" && // but we must also set options first so they are present before updating select
+        elm.tagName !== "OPTION"
+      ) {
+        setPropertyPost(ctx, elm, prop, newValue);
+      } else {
+        setProperty(ctx, elm, prop, newValue);
       }
-      containerState.$hostsNext$.add(elCtx);
-      scheduleFrame(containerState);
-    }
-  }
-};
-var notifySignalOperation = (op, containerState) => {
-  const activeRendering = containerState.$hostsRendering$ !== void 0;
-  containerState.$opsNext$.add(op);
-  if (!activeRendering) {
-    scheduleFrame(containerState);
-  }
-};
-var notifyTask = (task, containerState) => {
-  if (task.$flags$ & 16 /* DIRTY */) {
-    return;
-  }
-  task.$flags$ |= 16 /* DIRTY */;
-  if (isDomContainer(containerState)) {
-    containerState.$tasks$.push(task);
-    containerState.scheduleRender();
-  } else {
-    const activeRendering = containerState.$hostsRendering$ !== void 0;
-    if (activeRendering) {
-      containerState.$taskStaging$.add(task);
-    } else {
-      containerState.$taskNext$.add(task);
-      scheduleFrame(containerState);
-    }
-  }
-};
-var scheduleFrame = (containerState) => {
-  if (containerState.$renderPromise$ === void 0) {
-    containerState.$renderPromise$ = getPlatform().nextTick(() => renderMarked(containerState));
-  }
-  return containerState.$renderPromise$;
-};
-var renderMarked = async (containerState) => {
-  const containerEl = containerState.$containerEl$;
-  const doc = getDocument(containerEl);
-  try {
-    const rCtx = createRenderContext(doc, containerState);
-    const staticCtx = rCtx.$static$;
-    const hostsRendering = containerState.$hostsRendering$ = new Set(containerState.$hostsNext$);
-    containerState.$hostsNext$.clear();
-    await executeTasksBefore(containerState, rCtx);
-    containerState.$hostsStaging$.forEach((host) => {
-      hostsRendering.add(host);
-    });
-    containerState.$hostsStaging$.clear();
-    const signalOperations = Array.from(containerState.$opsNext$);
-    containerState.$opsNext$.clear();
-    const renderingQueue = Array.from(hostsRendering);
-    sortNodes(renderingQueue);
-    if (!containerState.$styleMoved$ && renderingQueue.length > 0) {
-      containerState.$styleMoved$ = true;
-      const parentJSON = containerEl === doc.documentElement ? doc.body : containerEl;
-      parentJSON.querySelectorAll("style[q\\:style]").forEach((el) => {
-        containerState.$styleIds$.add(directGetAttribute(el, QStyle));
-        appendChild(staticCtx, doc.head, el);
-      });
-    }
-    for (const elCtx of renderingQueue) {
-      const el = elCtx.$element$;
-      if (!staticCtx.$hostElements$.has(el)) {
-        if (elCtx.$componentQrl$) {
-          assertTrue(el.isConnected, "element must be connected to the dom");
-          staticCtx.$roots$.push(elCtx);
-          try {
-            await renderComponent(rCtx, elCtx, getFlags(el.parentElement));
-          } catch (err) {
-            if (qDev) {
-              throw err;
-            } else {
-              logError(err);
-            }
-          }
-        }
-      }
-    }
-    signalOperations.forEach((op) => {
-      executeSignalOperation(rCtx, op);
-    });
-    staticCtx.$operations$.push(...staticCtx.$postOperations$);
-    if (staticCtx.$operations$.length === 0) {
-      printRenderStats(staticCtx);
-      await postRendering(containerState, rCtx);
-      return;
-    }
-    await executeContextWithScrollAndTransition(staticCtx);
-    printRenderStats(staticCtx);
-    return postRendering(containerState, rCtx);
-  } catch (err) {
-    logError(err);
-  }
-};
-var getFlags = (el) => {
-  let flags = 0;
-  if (el) {
-    if (el.namespaceURI === SVG_NS2) {
-      flags |= IS_SVG;
-    }
-    if (el.tagName === "HEAD") {
-      flags |= IS_HEAD;
-    }
-  }
-  return flags;
-};
-var postRendering = async (containerState, rCtx) => {
-  const hostElements = rCtx.$static$.$hostElements$;
-  await executeTasksAfter(containerState, rCtx, (task, stage) => {
-    if ((task.$flags$ & 1 /* VISIBLE_TASK */) === 0) {
-      return false;
-    }
-    if (stage) {
-      return hostElements.has(task.$el$);
     }
     return true;
+  }
+  return false;
+};
+var forceAttribute = (ctx, elm, newValue, prop) => {
+  setAttribute(ctx, elm, prop.toLowerCase(), newValue);
+  return true;
+};
+var setInnerHTML = (ctx, elm, newValue) => {
+  setProperty(ctx, elm, "innerHTML", newValue);
+  return true;
+};
+var noop = () => {
+  return true;
+};
+var PROP_HANDLER_MAP = {
+  style: handleStyle,
+  class: handleClass,
+  className: handleClass,
+  value: checkBeforeAssign,
+  checked: checkBeforeAssign,
+  href: forceAttribute,
+  list: forceAttribute,
+  form: forceAttribute,
+  tabIndex: forceAttribute,
+  download: forceAttribute,
+  innerHTML: noop,
+  [dangerouslySetInnerHTML]: setInnerHTML,
+  // handled by jsx
+  children: noop
+};
+
+// packages/qwik/src/core/render/dom/operations.ts
+var setAttribute = (staticCtx, el, prop, value) => {
+  staticCtx.$operations$.push({
+    $operation$: _setAttribute,
+    $args$: [el, prop, value]
   });
-  containerState.$hostsStaging$.forEach((el) => {
-    containerState.$hostsNext$.add(el);
-  });
-  containerState.$hostsStaging$.clear();
-  containerState.$hostsRendering$ = void 0;
-  containerState.$renderPromise$ = void 0;
-  const pending = containerState.$hostsNext$.size + containerState.$taskNext$.size + containerState.$opsNext$.size;
-  if (pending > 0) {
-    containerState.$renderPromise$ = renderMarked(containerState);
+};
+var _setAttribute = (el, prop, value) => {
+  if (value == null || value === false) {
+    el.removeAttribute(prop);
+  } else {
+    const str = value === true ? "" : String(value);
+    directSetAttribute(el, prop, str);
   }
 };
-var isTask2 = (task) => (task.$flags$ & 2 /* TASK */) !== 0;
-var isResourceTask = (task) => (task.$flags$ & 4 /* RESOURCE */) !== 0;
-var executeTasksBefore = async (containerState, rCtx) => {
-  const containerEl = containerState.$containerEl$;
-  const resourcesPromises = [];
-  const taskPromises = [];
-  containerState.$taskNext$.forEach((task) => {
-    if (isTask2(task)) {
-      taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      containerState.$taskNext$.delete(task);
-    }
-    if (isResourceTask(task)) {
-      resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      containerState.$taskNext$.delete(task);
-    }
+var setProperty = (staticCtx, node, key, value) => {
+  staticCtx.$operations$.push({
+    $operation$: _setProperty,
+    $args$: [node, key, value]
   });
-  do {
-    containerState.$taskStaging$.forEach((task) => {
-      if (isTask2(task)) {
-        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      } else if (isResourceTask(task)) {
-        resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      } else {
-        containerState.$taskNext$.add(task);
-      }
-    });
-    containerState.$taskStaging$.clear();
-    if (taskPromises.length > 0) {
-      const tasks = await Promise.all(taskPromises);
-      sortTasks(tasks);
-      await Promise.all(
-        tasks.map((task) => {
-          return runSubscriber(task, containerState, rCtx);
-        })
-      );
-      taskPromises.length = 0;
+};
+var setPropertyPost = (staticCtx, node, key, value) => {
+  staticCtx.$postOperations$.push({
+    $operation$: _setProperty,
+    $args$: [node, key, value]
+  });
+};
+var _setProperty = (node, key, value) => {
+  try {
+    node[key] = value == null ? "" : value;
+    if (value == null && isNode(node) && isElement(node)) {
+      node.removeAttribute(key);
     }
-  } while (containerState.$taskStaging$.size > 0);
-  if (resourcesPromises.length > 0) {
-    const resources = await Promise.all(resourcesPromises);
-    sortTasks(resources);
-    for (const task of resources) {
-      runSubscriber(task, containerState, rCtx);
-    }
+  } catch (err) {
+    logError(codeToText(QError_setProperty), key, { node, value }, err);
   }
 };
-var executeSSRTasks = (containerState, rCtx) => {
-  const containerEl = containerState.$containerEl$;
-  const staging = containerState.$taskStaging$;
-  if (!staging.size) {
+
+// packages/qwik/src/core/use/use-context.ts
+var createContextId = (name) => {
+  assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name);
+  return /* @__PURE__ */ Object.freeze({
+    id: fromCamelToKebabCase2(name)
+  });
+};
+var useContextProvider = (context, newValue) => {
+  const { val, set, elCtx, iCtx } = useSequentialScope();
+  if (val !== void 0) {
     return;
   }
-  const taskPromises = [];
-  let tries = 20;
-  const runTasks = () => {
-    staging.forEach((task) => {
-      if (isTask2(task)) {
-        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      }
-    });
-    staging.clear();
-    if (taskPromises.length > 0) {
-      return Promise.all(taskPromises).then(async (tasks) => {
-        sortTasks(tasks);
-        await Promise.all(
-          tasks.map((task) => {
-            return runSubscriber(task, containerState, rCtx);
-          })
-        );
-        taskPromises.length = 0;
-        if (--tries && staging.size > 0) {
-          return runTasks();
-        }
-        if (!tries) {
-          logWarn(
-            `Infinite task loop detected. Tasks:
-${Array.from(staging).map((task) => `  ${task.$qrl$.$symbol$}`).join("\n")}`
-          );
-        }
-      });
-    }
-  };
-  return runTasks();
+  if (qDev) {
+    validateContext(context);
+  }
+  if (qDev && qSerialize) {
+    verifySerializable(newValue);
+  }
+  if (iCtx.$container2$) {
+    iCtx.$container2$.setContext(iCtx.$hostElement$, context, newValue);
+  } else {
+    const contexts = elCtx.$contexts$ || (elCtx.$contexts$ = /* @__PURE__ */ new Map());
+    contexts.set(context.id, newValue);
+  }
+  set(1);
 };
-var executeTasksAfter = async (containerState, rCtx, taskPred) => {
-  const taskPromises = [];
-  const containerEl = containerState.$containerEl$;
-  containerState.$taskNext$.forEach((task) => {
-    if (taskPred(task, false)) {
-      if (task.$el$.isConnected) {
-        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-      }
-      containerState.$taskNext$.delete(task);
-    }
-  });
-  do {
-    containerState.$taskStaging$.forEach((task) => {
-      if (task.$el$.isConnected) {
-        if (taskPred(task, true)) {
-          taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
-        } else {
-          containerState.$taskNext$.add(task);
-        }
-      }
-    });
-    containerState.$taskStaging$.clear();
-    if (taskPromises.length > 0) {
-      const tasks = await Promise.all(taskPromises);
-      sortTasks(tasks);
-      for (const task of tasks) {
-        runSubscriber(task, containerState, rCtx);
-      }
-      taskPromises.length = 0;
-    }
-  } while (containerState.$taskStaging$.size > 0);
+var validateContext = (context) => {
+  if (!isObject(context) || typeof context.id !== "string" || context.id.length === 0) {
+    throw qError(QError_invalidContext, context);
+  }
 };
-var sortNodes = (elements) => {
-  elements.sort(
-    (a, b) => a.$element$.compareDocumentPosition(getRootNode(b.$element$)) & 2 ? 1 : -1
-  );
-};
-var sortTasks = (tasks) => {
-  const isServer3 = isServerPlatform();
-  tasks.sort((a, b) => {
-    if (isServer3 || a.$el$ === b.$el$) {
-      return a.$index$ < b.$index$ ? -1 : 1;
+
+// packages/qwik/src/core/render/error-handling.ts
+var ERROR_CONTEXT = /* @__PURE__ */ createContextId("qk-error");
+var isRecoverable = (err) => {
+  if (err && err instanceof Error) {
+    if ("plugin" in err) {
+      return false;
     }
-    return (a.$el$.compareDocumentPosition(getRootNode(b.$el$)) & 2) !== 0 ? 1 : -1;
-  });
+  }
+  return true;
 };
 
 // packages/qwik/src/core/use/use-task.ts
 var runTask2 = (task, container, host) => {
   task.$flags$ &= ~16 /* DIRTY */;
+  cleanupTask(task);
   const iCtx = newInvokeContext(container.$locale$, host, void 0, TaskEvent);
-  const taskFn = task.$qrl$.getFn(iCtx, () => {
-    container.$subsManager$.$clearSub$(task);
-  });
+  iCtx.$container2$ = container;
+  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
   const track = (obj, prop) => {
-    if (isFunction(obj)) {
-      const ctx = newInvokeContext();
-      ctx.$subscriber$ = [0 /* HOST */, task];
-      return invoke(ctx, obj);
-    }
-    const manager = getSubscriptionManager(obj);
-    if (manager) {
-      manager.$addSub$([0 /* HOST */, task], prop);
-    } else {
-      logErrorAndStop(codeToText(QError_trackUseStore), obj);
-    }
-    if (prop) {
-      return obj[prop];
-    } else if (isSignal(obj)) {
-      return obj.value;
-    } else {
-      return obj;
-    }
+    const ctx = newInvokeContext();
+    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */];
+    ctx.$container2$ = container;
+    return invoke(ctx, () => {
+      if (isFunction(obj)) {
+        return obj();
+      }
+      if (prop) {
+        return obj[prop];
+      } else if (isSignal(obj)) {
+        return obj.value;
+      } else {
+        return obj;
+      }
+    });
   };
   const handleError2 = (reason) => container.handleError(reason, host);
   let cleanupFns = null;
@@ -28141,94 +27250,36 @@ var runTask2 = (task, container, host) => {
     }
   };
   const taskApi = { track, cleanup: cleanup2 };
-  cleanupTask(task);
-  const result = safeCall(() => taskFn(taskApi), cleanup2, handleError2);
-  return result;
-};
-var runComputed2 = (task, container, host) => {
-  assertSignal(task.$state$);
-  task.$flags$ &= ~16 /* DIRTY */;
-  const iCtx = newInvokeContext(container.$locale$, host, void 0, ComputedEvent);
-  iCtx.$subscriber$ = [0 /* HOST */, task];
-  const taskFn = task.$qrl$.getFn(iCtx, () => {
-    container.$subsManager$.$clearSub$(task);
-  });
-  const handleError2 = (reason) => container.handleError(reason, host);
   const result = safeCall(
-    taskFn,
-    (returnValue) => untrack(() => {
-      const signal = task.$state$;
-      signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-      signal.untrackedValue = returnValue;
-      signal[QObjectManagerSymbol].$notifySubs$();
-    }),
-    handleError2
+    () => taskFn(taskApi),
+    cleanup2,
+    (err) => {
+      if (isPromise(err)) {
+        return err.then(() => runTask2(task, container, host));
+      } else {
+        return handleError2(err);
+      }
+    }
   );
   return result;
 };
 var useComputedQrl = (qrl2) => {
-  const { val, set, iCtx, i } = useSequentialScope();
+  const { val, set } = useSequentialScope();
   if (val) {
     return val;
   }
   assertQrl(qrl2);
-  const host = iCtx.$hostElement$;
-  const signal = _createSignal(
-    void 0,
-    iCtx.$container2$.$subsManager$,
-    SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE,
-    void 0
-  );
-  const task = new Task(
-    16 /* DIRTY */ | 2 /* TASK */ | 8 /* COMPUTED */,
-    i,
-    iCtx.$hostElement$,
-    qrl2,
-    signal,
-    null
-  );
+  const signal = new ComputedSignal(null, qrl2);
   set(signal);
-  qrl2.$resolveLazy$(host);
-  const result = runComputed2(task, iCtx.$container2$, host);
-  if (isPromise(result)) {
-    throw result;
-  }
+  throwIfQRLNotResolved(qrl2);
   return signal;
-};
-var useComputed$ = implicit$FirstArg(useComputedQrl);
-var isResourceTask2 = (task) => {
-  return (task.$flags$ & 4 /* RESOURCE */) !== 0;
-};
-var isComputedTask = (task) => {
-  return (task.$flags$ & 8 /* COMPUTED */) !== 0;
-};
-var runSubscriber = async (task, containerState, rCtx) => {
-  assertEqual(!!(task.$flags$ & 16 /* DIRTY */), true, "Resource is not dirty", task);
-  if (isResourceTask2(task)) {
-    return runResource(task, containerState, rCtx);
-  } else if (isComputedTask(task)) {
-    return runComputed(task, containerState, rCtx);
-  } else {
-    return runTask(task, containerState, rCtx);
-  }
-};
-var runSubscriber2 = async (task, container, host) => {
-  assertEqual(!!(task.$flags$ & 16 /* DIRTY */), true, "Task is not dirty", task);
-  if (isResourceTask2(task)) {
-    return runResource(task, container, host);
-  } else if (isComputedTask(task)) {
-    return runComputed2(task, container, host);
-  } else {
-    return runTask2(task, container, host);
-  }
 };
 var runResource = (task, container, host) => {
   task.$flags$ &= ~16 /* DIRTY */;
   cleanupTask(task);
   const iCtx = newInvokeContext(container.$locale$, host, void 0, ResourceEvent);
-  const taskFn = task.$qrl$.getFn(iCtx, () => {
-    container.$subsManager$.$clearSub$(task);
-  });
+  iCtx.$container2$ = container;
+  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
   const resource = task.$state$;
   assertDefined(
     resource,
@@ -28236,24 +27287,21 @@ var runResource = (task, container, host) => {
     task
   );
   const track = (obj, prop) => {
-    if (isFunction(obj)) {
-      const ctx = newInvokeContext();
-      ctx.$subscriber$ = [0 /* HOST */, task];
-      return invoke(ctx, obj);
-    }
-    const manager = getSubscriptionManager(obj);
-    if (manager) {
-      manager.$addSub$([0 /* HOST */, task], prop);
-    } else {
-      logErrorAndStop(codeToText(QError_trackUseStore), obj);
-    }
-    if (prop) {
-      return obj[prop];
-    } else if (isSignal(obj)) {
-      return obj.value;
-    } else {
-      return obj;
-    }
+    const ctx = newInvokeContext();
+    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */];
+    ctx.$container2$ = container;
+    return invoke(ctx, () => {
+      if (isFunction(obj)) {
+        return obj();
+      }
+      if (prop) {
+        return obj[prop];
+      } else if (isSignal(obj)) {
+        return obj.value;
+      } else {
+        return obj;
+      }
+    });
   };
   const handleError2 = (reason) => container.handleError(reason, host);
   const cleanups = [];
@@ -28267,7 +27315,7 @@ var runResource = (task, container, host) => {
     });
     done = true;
   });
-  const resourceTarget = unwrapProxy(resource);
+  const resourceTarget = unwrapStore(resource);
   const opts = {
     track,
     cleanup(fn) {
@@ -28330,8 +27378,12 @@ var runResource = (task, container, host) => {
     (value) => {
       setState(true, value);
     },
-    (reason) => {
-      setState(false, reason);
+    (err) => {
+      if (isPromise(err)) {
+        return err.then(() => runResource(task, container, host));
+      } else {
+        setState(false, err);
+      }
     }
   );
   const timeout = resourceTarget._timeout;
@@ -28349,83 +27401,6 @@ var runResource = (task, container, host) => {
 };
 var ignoreErrorToPreventNodeFromCrashing = (err) => {
 };
-var runTask = (task, containerState, rCtx) => {
-  task.$flags$ &= ~16 /* DIRTY */;
-  cleanupTask(task);
-  const hostElement = task.$el$;
-  const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, TaskEvent);
-  iCtx.$renderCtx$ = rCtx;
-  const { $subsManager$: subsManager } = containerState;
-  const taskFn = task.$qrl$.getFn(iCtx, () => {
-    subsManager.$clearSub$(task);
-  });
-  const track = (obj, prop) => {
-    if (isFunction(obj)) {
-      const ctx = newInvokeContext();
-      ctx.$subscriber$ = [0 /* HOST */, task];
-      return invoke(ctx, obj);
-    }
-    const manager = getSubscriptionManager(obj);
-    if (manager) {
-      manager.$addSub$([0 /* HOST */, task], prop);
-    } else {
-      logErrorAndStop(codeToText(QError_trackUseStore), obj);
-    }
-    if (prop) {
-      return obj[prop];
-    } else if (isSignal(obj)) {
-      return obj.value;
-    } else {
-      return obj;
-    }
-  };
-  const cleanups = [];
-  task.$destroy$ = noSerialize(() => {
-    cleanups.forEach((fn) => fn());
-  });
-  const opts = {
-    track,
-    cleanup(callback) {
-      cleanups.push(callback);
-    }
-  };
-  return safeCall(
-    () => taskFn(opts),
-    (returnValue) => {
-      if (isFunction(returnValue)) {
-        cleanups.push(returnValue);
-      }
-    },
-    (reason) => {
-      handleError(reason, hostElement, rCtx.$static$.$containerState$);
-    }
-  );
-};
-var runComputed = (task, containerState, rCtx) => {
-  assertSignal(task.$state$);
-  task.$flags$ &= ~16 /* DIRTY */;
-  cleanupTask(task);
-  const hostElement = task.$el$;
-  const iCtx = newInvokeContext(rCtx.$static$.$locale$, hostElement, void 0, ComputedEvent);
-  iCtx.$subscriber$ = [0 /* HOST */, task];
-  iCtx.$renderCtx$ = rCtx;
-  const { $subsManager$: subsManager } = containerState;
-  const taskFn = task.$qrl$.getFn(iCtx, () => {
-    subsManager.$clearSub$(task);
-  });
-  return safeCall(
-    taskFn,
-    (returnValue) => untrack(() => {
-      const signal = task.$state$;
-      signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-      signal.untrackedValue = returnValue;
-      signal[QObjectManagerSymbol].$notifySubs$();
-    }),
-    (reason) => {
-      handleError(reason, hostElement, rCtx.$static$.$containerState$);
-    }
-  );
-};
 var cleanupTask = (task) => {
   const destroy = task.$destroy$;
   if (destroy) {
@@ -28437,24 +27412,9 @@ var cleanupTask = (task) => {
     }
   }
 };
-var isSubscriberDescriptor = (obj) => {
-  return isObject(obj) && obj instanceof Task;
-};
-var serializeTask = (task, getObjId) => {
-  let value = `${intToStr(task.$flags$)} ${intToStr(task.$index$)} ${getObjId(
-    task.$qrl$
-  )} ${getObjId(task.$el$)}`;
-  if (task.$state$) {
-    value += ` ${getObjId(task.$state$)}`;
-  }
-  return value;
-};
-var parseTask = (data) => {
-  const [flags, index, qrl2, el, resource] = data.split(" ");
-  return new Task(strToInt(flags), strToInt(index), el, qrl2, resource, null);
-};
-var Task = class {
+var Task3 = class extends Subscriber {
   constructor($flags$, $index$, $el$, $qrl$, $state$, $destroy$) {
+    super();
     this.$flags$ = $flags$;
     this.$index$ = $index$;
     this.$el$ = $el$;
@@ -28464,93 +27424,7 @@ var Task = class {
   }
 };
 var isTask = (value) => {
-  return value instanceof Task;
-};
-
-// packages/qwik/src/core/state/listeners.ts
-var ON_PROP_REGEX = /^(on|window:|document:)/;
-var PREVENT_DEFAULT = "preventdefault:";
-var isOnProp = (prop) => {
-  return prop.endsWith("$") && ON_PROP_REGEX.test(prop);
-};
-var groupListeners = (listeners) => {
-  if (listeners.length === 0) {
-    return EMPTY_ARRAY;
-  }
-  if (listeners.length === 1) {
-    const listener = listeners[0];
-    return [[listener[0], [listener[1]]]];
-  }
-  const keys = [];
-  for (let i = 0; i < listeners.length; i++) {
-    const eventName = listeners[i][0];
-    if (!keys.includes(eventName)) {
-      keys.push(eventName);
-    }
-  }
-  return keys.map((eventName) => {
-    return [eventName, listeners.filter((l) => l[0] === eventName).map((a) => a[1])];
-  });
-};
-var setEvent = (existingListeners, prop, input, containerEl) => {
-  assertTrue(prop.endsWith("$"), "render: event property does not end with $", prop);
-  prop = normalizeOnProp(prop.slice(0, -1));
-  if (input) {
-    if (isArray(input)) {
-      const processed = input.flat(Infinity).filter((q) => q != null).map((q) => [prop, ensureQrl(q, containerEl)]);
-      existingListeners.push(...processed);
-    } else {
-      existingListeners.push([prop, ensureQrl(input, containerEl)]);
-    }
-  }
-  return prop;
-};
-var PREFIXES = ["on", "window:on", "document:on"];
-var SCOPED = ["on", "on-window", "on-document"];
-var normalizeOnProp = (prop) => {
-  let scope = "on";
-  for (let i = 0; i < PREFIXES.length; i++) {
-    const prefix = PREFIXES[i];
-    if (prop.startsWith(prefix)) {
-      scope = SCOPED[i];
-      prop = prop.slice(prefix.length);
-      break;
-    }
-  }
-  if (prop.startsWith("-")) {
-    prop = fromCamelToKebabCase(prop.slice(1));
-  } else {
-    prop = prop.toLowerCase();
-  }
-  return scope + ":" + prop;
-};
-var ensureQrl = (value, containerEl) => {
-  if (qSerialize && !qRuntimeQrl) {
-    assertQrl(value);
-    value.$setContainer$(containerEl);
-    return value;
-  }
-  const qrl2 = isQrl(value) ? value : dollar(value);
-  qrl2.$setContainer$(containerEl);
-  return qrl2;
-};
-var getDomListeners = (elCtx, containerEl) => {
-  const attributes = elCtx.$element$.attributes;
-  const listeners = [];
-  for (let i = 0; i < attributes.length; i++) {
-    const { name, value } = attributes.item(i);
-    if (name.startsWith("on:") || name.startsWith("on-window:") || name.startsWith("on-document:")) {
-      const urls = value.split("\n");
-      for (const url of urls) {
-        const qrl2 = parseQRL(url, containerEl);
-        if (qrl2.$capture$) {
-          inflateQrl(qrl2, elCtx);
-        }
-        listeners.push([name, qrl2]);
-      }
-    }
-  }
-  return listeners;
+  return value instanceof Task3;
 };
 
 // packages/qwik/src/core/state/context.ts
@@ -28561,120 +27435,6 @@ var HOST_FLAG_DYNAMIC = 1 << 3;
 var HOST_REMOVED = 1 << 4;
 var tryGetContext2 = (element) => {
   return element[Q_CTX];
-};
-var getContext = (el, containerState) => {
-  assertQwikElement(el);
-  const ctx = tryGetContext2(el);
-  if (ctx) {
-    return ctx;
-  }
-  const elCtx = createContext(el);
-  const elementID = directGetAttribute(el, ELEMENT_ID);
-  if (elementID) {
-    const pauseCtx = containerState.$pauseCtx$;
-    elCtx.$id$ = elementID;
-    if (pauseCtx) {
-      const { getObject, meta, refs } = pauseCtx;
-      if (isElement(el)) {
-        const refMap = refs[elementID];
-        if (refMap) {
-          elCtx.$refMap$ = refMap.split(" ").map(getObject);
-          elCtx.li = getDomListeners(elCtx, containerState.$containerEl$);
-        }
-      } else {
-        const styleIds = el.getAttribute(QScopedStyle);
-        elCtx.$scopeIds$ = styleIds ? styleIds.split("|") : null;
-        const ctxMeta = meta[elementID];
-        if (ctxMeta) {
-          const seq = ctxMeta.s;
-          const host = ctxMeta.h;
-          const contexts = ctxMeta.c;
-          const tasks = ctxMeta.w;
-          if (seq) {
-            elCtx.$seq$ = seq.split(" ").map(getObject);
-          }
-          if (tasks) {
-            elCtx.$tasks$ = tasks.split(" ").map(getObject);
-          }
-          if (contexts) {
-            elCtx.$contexts$ = /* @__PURE__ */ new Map();
-            for (const part of contexts.split(" ")) {
-              const [key, value] = part.split("=");
-              elCtx.$contexts$.set(key, getObject(value));
-            }
-          }
-          if (host) {
-            const [renderQrl, props] = host.split(" ");
-            elCtx.$flags$ = HOST_FLAG_MOUNTED;
-            if (renderQrl) {
-              elCtx.$componentQrl$ = getObject(renderQrl);
-            }
-            if (props) {
-              const propsObj = getObject(props);
-              elCtx.$props$ = propsObj;
-              setObjectFlags(propsObj, QObjectImmutable);
-              propsObj[_CONST_PROPS] = getImmutableFromProps(propsObj);
-            } else {
-              elCtx.$props$ = createProxy(createPropsState(), containerState);
-            }
-          }
-        }
-      }
-    }
-  }
-  const onRenderProp = directGetAttribute(el, OnRenderProp);
-  if (onRenderProp) {
-    const getObject = containerState.$pauseCtx$.getObject;
-    elCtx.$componentQrl$ = getObject(onRenderProp);
-    const propId = directGetAttribute(el, ELEMENT_PROPS);
-    propId && (elCtx.$props$ = getObject(propId));
-    const seq = directGetAttribute(el, ELEMENT_SEQ);
-    seq && (elCtx.$seq$ = getObject(seq));
-  }
-  return elCtx;
-};
-var getImmutableFromProps = (props) => {
-  const immutable = {};
-  const target = getProxyTarget(props);
-  for (const key in target) {
-    if (key.startsWith("_IMMUTABLE_PREFIX")) {
-      immutable[key.slice("_IMMUTABLE_PREFIX".length)] = target[key];
-    }
-  }
-  return immutable;
-};
-var createContext = (element) => {
-  const ctx = {
-    $flags$: 0,
-    $id$: "",
-    $element$: element,
-    $refMap$: [],
-    li: [],
-    $tasks$: null,
-    $seq$: null,
-    $slots$: null,
-    $scopeIds$: null,
-    $appendStyles$: null,
-    $props$: null,
-    $vdom$: null,
-    $componentQrl$: null,
-    $contexts$: null,
-    $dynamicSlots$: null,
-    $parentCtx$: void 0,
-    $realParentCtx$: void 0
-  };
-  seal(ctx);
-  element[Q_CTX] = ctx;
-  return ctx;
-};
-var cleanupContext = (elCtx, subsManager) => {
-  elCtx.$tasks$?.forEach((task) => {
-    subsManager.$clearSub$(task);
-    cleanupTask(task);
-  });
-  elCtx.$componentQrl$ = null;
-  elCtx.$seq$ = null;
-  elCtx.$tasks$ = null;
 };
 
 // packages/qwik/src/core/use/use-locale.ts
@@ -28704,7 +27464,7 @@ var useInvokeContext = () => {
     throw qError(QError_useInvokeContext);
   }
   assertDefined(ctx.$hostElement$, `invoke: $hostElement$ must be defined`, ctx);
-  assertDefined(ctx.$subscriber$, `invoke: $subscriber$ must be defined`, ctx);
+  assertDefined(ctx.$effectSubscriber$, `invoke: $effectSubscriber$ must be defined`, ctx);
   return ctx;
 };
 function invoke(context, fn, ...args) {
@@ -28738,6 +27498,7 @@ var newInvokeContext = (locale, hostElement, element, event, url) => {
     $qrl$: void 0,
     $waitOn$: void 0,
     $subscriber$: void 0,
+    $effectSubscriber$: void 0,
     $renderCtx$: void 0,
     $locale$,
     $container2$: void 0
@@ -28754,17 +27515,23 @@ var trackInvocation = /* @__PURE__ */ newInvokeContext(
   void 0,
   RenderEvent
 );
-var trackSignal = (signal, sub) => {
-  trackInvocation.$subscriber$ = sub;
-  return invoke(trackInvocation, () => signal.value);
+var trackSignal = (fn, subscriber, property, container, data) => {
+  const previousSubscriber = trackInvocation.$effectSubscriber$;
+  const previousContainer = trackInvocation.$container2$;
+  try {
+    trackInvocation.$effectSubscriber$ = [subscriber, property];
+    if (data) {
+      trackInvocation.$effectSubscriber$.push(data);
+    }
+    trackInvocation.$container2$ = container;
+    return invoke(trackInvocation, fn);
+  } finally {
+    trackInvocation.$effectSubscriber$ = previousSubscriber;
+    trackInvocation.$container2$ = previousContainer;
+  }
 };
 
 // packages/qwik/src/core/state/signal.ts
-var _createSignal = (value, subsManager, flags, subscriptions) => {
-  const manager = subsManager.$createManager$(subscriptions);
-  const signal = new SignalImpl(value, manager, flags);
-  return signal;
-};
 var QObjectSignalFlags = Symbol("proxy manager");
 var SIGNAL_IMMUTABLE = 1 << 0;
 var SIGNAL_UNASSIGNED = 1 << 1;
@@ -28834,7 +27601,7 @@ var SignalImpl = class extends SignalBase {
   }
 };
 QObjectManagerSymbol, _a = QObjectSignalFlags;
-var SignalDerived = class extends SignalBase {
+var SignalDerived2 = class extends SignalBase {
   constructor($func$, $args$, $funcStr$) {
     super();
     this.$func$ = $func$;
@@ -28888,2900 +27655,12 @@ var SignalWrapper = class extends SignalBase {
     this.ref[this.prop] = value;
   }
 };
-var isSignal = (obj) => {
-  return obj instanceof SignalBase;
-};
 
 // packages/qwik/src/core/container/container.ts
 var CONTAINER_STATE = Symbol("ContainerState");
-var _getContainerState = (containerEl) => {
-  let state = containerEl[CONTAINER_STATE];
-  if (!state) {
-    containerEl[CONTAINER_STATE] = state = createContainerState(
-      containerEl,
-      directGetAttribute(containerEl, "q:base") ?? "/"
-    );
-  }
-  return state;
-};
-var createContainerState = (containerEl, base) => {
-  const containerAttributes = {};
-  if (containerEl) {
-    const attrs = containerEl.attributes;
-    if (attrs) {
-      for (let index = 0; index < attrs.length; index++) {
-        const attr = attrs[index];
-        containerAttributes[attr.name] = attr.value;
-      }
-    }
-  }
-  const containerState = {
-    $containerEl$: containerEl,
-    $elementIndex$: 0,
-    $styleMoved$: false,
-    $proxyMap$: /* @__PURE__ */ new WeakMap(),
-    $opsNext$: /* @__PURE__ */ new Set(),
-    $taskNext$: /* @__PURE__ */ new Set(),
-    $taskStaging$: /* @__PURE__ */ new Set(),
-    $hostsNext$: /* @__PURE__ */ new Set(),
-    $hostsStaging$: /* @__PURE__ */ new Set(),
-    $styleIds$: /* @__PURE__ */ new Set(),
-    $events$: /* @__PURE__ */ new Set(),
-    $serverData$: { containerAttributes },
-    $base$: base,
-    $renderPromise$: void 0,
-    $hostsRendering$: void 0,
-    $pauseCtx$: void 0,
-    $subsManager$: void 0,
-    $inlineFns$: /* @__PURE__ */ new Map()
-  };
-  containerState.$subsManager$ = createSubscriptionManager(containerState);
-  seal(containerState);
-  return containerState;
-};
-var setRef = (value, elm) => {
-  if (isFunction(value)) {
-    return value(elm);
-  } else if (isSignal(value)) {
-    if (isServerPlatform()) {
-      return value.untrackedValue = elm;
-    } else {
-      return value.value = elm;
-    }
-  }
-  throw qError(QError_invalidRefValue, value);
-};
-var SHOW_ELEMENT = 1;
-var SHOW_COMMENT = 128;
-var FILTER_REJECT = 2;
-var FILTER_SKIP = 3;
-var isContainer = (el) => {
-  return isElement(el) && el.hasAttribute(QContainerAttr);
-};
-var intToStr = (nu) => {
-  return nu.toString(36);
-};
-var strToInt = (nu) => {
-  return parseInt(nu, 36);
-};
-var getEventName = (attribute) => {
-  const colonPos = attribute.indexOf(":");
-  if (attribute) {
-    return fromKebabToCamelCase(attribute.slice(colonPos + 1));
-  } else {
-    return attribute;
-  }
-};
 
-// packages/qwik/src/core/render/dom/visitor.ts
-import { isBrowser as isBrowser4 } from "@builder.io/qwik/build";
-var SVG_NS2 = "http://www.w3.org/2000/svg";
-var IS_SVG = 1 << 0;
-var IS_HEAD = 1 << 1;
-var IS_IMMUTABLE = 1 << 2;
-var CHILDREN_PLACEHOLDER = [];
-var smartUpdateChildren = (ctx, oldVnode, newVnode, flags) => {
-  assertQwikElement(oldVnode.$elm$);
-  const ch = newVnode.$children$;
-  if (ch.length === 1 && ch[0].$type$ === SKIP_RENDER_TYPE) {
-    newVnode.$children$ = oldVnode.$children$;
-    return;
-  }
-  const elm = oldVnode.$elm$;
-  const needsDOMRead = oldVnode.$children$ === CHILDREN_PLACEHOLDER;
-  let filter = isChildComponent;
-  if (needsDOMRead) {
-    const isHead = elm.nodeName === "HEAD";
-    if (isHead) {
-      filter = isHeadChildren;
-      flags |= IS_HEAD;
-    }
-  }
-  const oldCh = getVnodeChildren(oldVnode, filter);
-  if (oldCh.length > 0 && ch.length > 0) {
-    return diffChildren(ctx, elm, oldCh, ch, flags);
-  } else if (oldCh.length > 0 && ch.length === 0) {
-    return removeChildren(ctx.$static$, oldCh, 0, oldCh.length - 1);
-  } else if (ch.length > 0) {
-    return addChildren(ctx, elm, null, ch, 0, ch.length - 1, flags);
-  }
-};
-var getVnodeChildren = (oldVnode, filter) => {
-  const oldCh = oldVnode.$children$;
-  const elm = oldVnode.$elm$;
-  if (oldCh === CHILDREN_PLACEHOLDER) {
-    return oldVnode.$children$ = getChildrenVnodes(elm, filter);
-  }
-  return oldCh;
-};
-var diffChildren = (ctx, parentElm, oldCh, newCh, flags) => {
-  let oldStartIdx = 0;
-  let newStartIdx = 0;
-  let oldEndIdx = oldCh.length - 1;
-  let oldStartVnode = oldCh[0];
-  let oldEndVnode = oldCh[oldEndIdx];
-  let newEndIdx = newCh.length - 1;
-  let newStartVnode = newCh[0];
-  let newEndVnode = newCh[newEndIdx];
-  let oldKeyToIdx;
-  let idxInOld;
-  let elmToMove;
-  const results = [];
-  const staticCtx = ctx.$static$;
-  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-    if (oldStartVnode == null) {
-      oldStartVnode = oldCh[++oldStartIdx];
-    } else if (oldEndVnode == null) {
-      oldEndVnode = oldCh[--oldEndIdx];
-    } else if (newStartVnode == null) {
-      newStartVnode = newCh[++newStartIdx];
-    } else if (newEndVnode == null) {
-      newEndVnode = newCh[--newEndIdx];
-    } else if (oldStartVnode.$id$ === newStartVnode.$id$) {
-      results.push(diffVnode(ctx, oldStartVnode, newStartVnode, flags));
-      oldStartVnode = oldCh[++oldStartIdx];
-      newStartVnode = newCh[++newStartIdx];
-    } else if (oldEndVnode.$id$ === newEndVnode.$id$) {
-      results.push(diffVnode(ctx, oldEndVnode, newEndVnode, flags));
-      oldEndVnode = oldCh[--oldEndIdx];
-      newEndVnode = newCh[--newEndIdx];
-    } else if (oldStartVnode.$key$ && oldStartVnode.$id$ === newEndVnode.$id$) {
-      assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined");
-      assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined");
-      results.push(diffVnode(ctx, oldStartVnode, newEndVnode, flags));
-      insertAfter(staticCtx, parentElm, oldStartVnode.$elm$, oldEndVnode.$elm$);
-      oldStartVnode = oldCh[++oldStartIdx];
-      newEndVnode = newCh[--newEndIdx];
-    } else if (oldEndVnode.$key$ && oldEndVnode.$id$ === newStartVnode.$id$) {
-      assertDefined(oldStartVnode.$elm$, "oldStartVnode $elm$ must be defined");
-      assertDefined(oldEndVnode.$elm$, "oldEndVnode $elm$ must be defined");
-      results.push(diffVnode(ctx, oldEndVnode, newStartVnode, flags));
-      insertBefore(staticCtx, parentElm, oldEndVnode.$elm$, oldStartVnode.$elm$);
-      oldEndVnode = oldCh[--oldEndIdx];
-      newStartVnode = newCh[++newStartIdx];
-    } else {
-      if (oldKeyToIdx === void 0) {
-        oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
-      }
-      idxInOld = oldKeyToIdx[newStartVnode.$key$];
-      if (idxInOld === void 0) {
-        const newElm = createElm(ctx, newStartVnode, flags, results);
-        insertBefore(staticCtx, parentElm, newElm, oldStartVnode?.$elm$);
-      } else {
-        elmToMove = oldCh[idxInOld];
-        if (elmToMove.$type$ !== newStartVnode.$type$) {
-          const newElm = createElm(ctx, newStartVnode, flags, results);
-          maybeThen(newElm, (newElm2) => {
-            insertBefore(staticCtx, parentElm, newElm2, oldStartVnode?.$elm$);
-          });
-        } else {
-          results.push(diffVnode(ctx, elmToMove, newStartVnode, flags));
-          oldCh[idxInOld] = void 0;
-          assertDefined(elmToMove.$elm$, "elmToMove $elm$ must be defined");
-          insertBefore(staticCtx, parentElm, elmToMove.$elm$, oldStartVnode.$elm$);
-        }
-      }
-      newStartVnode = newCh[++newStartIdx];
-    }
-  }
-  if (newStartIdx <= newEndIdx) {
-    const before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].$elm$;
-    results.push(addChildren(ctx, parentElm, before, newCh, newStartIdx, newEndIdx, flags));
-  }
-  let wait = promiseAll(results);
-  if (oldStartIdx <= oldEndIdx) {
-    wait = maybeThen(wait, () => {
-      removeChildren(staticCtx, oldCh, oldStartIdx, oldEndIdx);
-    });
-  }
-  return wait;
-};
-var getChildren = (elm, filter) => {
-  const end = isVirtualElement(elm) ? elm.close : null;
-  const nodes = [];
-  let node = elm.firstChild;
-  while (node = processVirtualNodes(node)) {
-    if (filter(node)) {
-      nodes.push(node);
-    }
-    node = node.nextSibling;
-    if (node === end) {
-      break;
-    }
-  }
-  return nodes;
-};
-var getChildrenVnodes = (elm, filter) => {
-  return getChildren(elm, filter).map(getVnodeFromEl);
-};
-var getVnodeFromEl = (el) => {
-  if (isElement(el)) {
-    return tryGetContext2(el)?.$vdom$ ?? domToVnode(el);
-  }
-  return domToVnode(el);
-};
-var domToVnode = (node) => {
-  if (isQwikElement(node)) {
-    const t = new ProcessedJSXNodeImpl(
-      node.localName,
-      {},
-      null,
-      CHILDREN_PLACEHOLDER,
-      0,
-      getKey2(node)
-    );
-    t.$elm$ = node;
-    return t;
-  } else if (isText(node)) {
-    const t = new ProcessedJSXNodeImpl(
-      node.nodeName,
-      EMPTY_OBJ,
-      null,
-      CHILDREN_PLACEHOLDER,
-      0,
-      null
-    );
-    t.$text$ = node.data;
-    t.$elm$ = node;
-    return t;
-  }
-  assertFail("Invalid node type");
-};
-var isHeadChildren = (node) => {
-  const type = node.nodeType;
-  if (type === 1) {
-    return node.hasAttribute("q:head");
-  }
-  return type === 111;
-};
-var isSlotTemplate = (node) => {
-  return node.nodeName === "Q:TEMPLATE";
-};
-var isChildComponent = (node) => {
-  const type = node.nodeType;
-  if (type === 3 || type === 111) {
-    return true;
-  }
-  if (type !== 1) {
-    return false;
-  }
-  const nodeName = node.nodeName;
-  if (nodeName === "Q:TEMPLATE") {
-    return false;
-  }
-  if (nodeName === "HEAD") {
-    return node.hasAttribute("q:head");
-  }
-  if (nodeName === "STYLE") {
-    return !node.hasAttribute(QStyle);
-  }
-  return true;
-};
-var splitChildren = (input) => {
-  const output = {};
-  for (const item of input) {
-    const key = getSlotName(item);
-    const node = output[key] ?? (output[key] = new ProcessedJSXNodeImpl(
-      VIRTUAL,
-      {
-        [QSlotS]: ""
-      },
-      null,
-      [],
-      0,
-      key
-    ));
-    node.$children$.push(item);
-  }
-  return output;
-};
-var diffVnode = (rCtx, oldVnode, newVnode, flags) => {
-  assertEqual(oldVnode.$type$, newVnode.$type$, "old and new vnodes type must be the same");
-  assertEqual(oldVnode.$key$, newVnode.$key$, "old and new vnodes key must be the same");
-  assertEqual(oldVnode.$id$, newVnode.$id$, "old and new vnodes key must be the same");
-  const elm = oldVnode.$elm$;
-  const tag = newVnode.$type$;
-  const staticCtx = rCtx.$static$;
-  const containerState = staticCtx.$containerState$;
-  const currentComponent = rCtx.$cmpCtx$;
-  assertDefined(elm, "while patching element must be defined");
-  assertDefined(currentComponent, "while patching current component must be defined");
-  newVnode.$elm$ = elm;
-  if (tag === "#text") {
-    staticCtx.$visited$.push(elm);
-    const signal = newVnode.$signal$;
-    if (signal) {
-      newVnode.$text$ = jsxToString(
-        trackSignal(signal, [
-          4 /* TEXT_MUTABLE */,
-          currentComponent.$element$,
-          signal,
-          elm
-        ])
-      );
-    }
-    setProperty(staticCtx, elm, "data", newVnode.$text$);
-    return;
-  } else if (tag === "#signal") {
-    return;
-  }
-  assertQwikElement(elm);
-  const props = newVnode.$varProps$;
-  const vnodeFlags = newVnode.$flags$;
-  const elCtx = getContext(elm, containerState);
-  if (tag !== VIRTUAL) {
-    let isSvg2 = (flags & IS_SVG) !== 0;
-    if (!isSvg2 && tag === "svg") {
-      flags |= IS_SVG;
-      isSvg2 = true;
-    }
-    if (props !== EMPTY_OBJ) {
-      if ((vnodeFlags & static_listeners) === 0) {
-        elCtx.li.length = 0;
-      }
-      const values = oldVnode.$varProps$;
-      newVnode.$varProps$ = values;
-      for (const prop in props) {
-        let newValue = props[prop];
-        if (prop === "ref") {
-          assertElement(elm);
-          if (newValue !== void 0) {
-            setRef(newValue, elm);
-          }
-          continue;
-        }
-        if (isOnProp(prop)) {
-          const normalized = setEvent(elCtx.li, prop, newValue, containerState.$containerEl$);
-          addQwikEvent(staticCtx, elm, normalized);
-          continue;
-        }
-        if (isSignal(newValue)) {
-          newValue = trackSignal(newValue, [
-            1 /* PROP_IMMUTABLE */,
-            currentComponent.$element$,
-            newValue,
-            elm,
-            prop,
-            void 0
-          ]);
-        }
-        if (prop === "class") {
-          newValue = serializeClassWithHost(newValue, currentComponent);
-        } else if (prop === "style") {
-          newValue = stringifyStyle(newValue);
-        }
-        if (values[prop] !== newValue) {
-          values[prop] = newValue;
-          smartSetProperty(staticCtx, elm, prop, newValue, isSvg2);
-        }
-      }
-    }
-    if (vnodeFlags & static_subtree) {
-      return;
-    }
-    if (isSvg2 && tag === "foreignObject") {
-      flags &= ~IS_SVG;
-    }
-    const setsInnerHTML = props[dangerouslySetInnerHTML] !== void 0;
-    if (setsInnerHTML) {
-      if (qDev && newVnode.$children$.length > 0) {
-        logWarn("Node can not have children when innerHTML is set");
-      }
-      return;
-    }
-    if (tag === "textarea") {
-      return;
-    }
-    return smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
-  } else if (OnRenderProp in props) {
-    const cmpProps = props.props;
-    setComponentProps(containerState, elCtx, cmpProps);
-    let needsRender = !!(elCtx.$flags$ & HOST_FLAG_DIRTY);
-    if (!needsRender && !elCtx.$componentQrl$ && !elCtx.$element$.hasAttribute(ELEMENT_ID)) {
-      setQId(rCtx, elCtx);
-      elCtx.$componentQrl$ = cmpProps[OnRenderProp];
-      assertQrl(elCtx.$componentQrl$);
-      needsRender = true;
-    }
-    if (needsRender) {
-      return maybeThen(
-        renderComponent(rCtx, elCtx, flags),
-        () => renderContentProjection(rCtx, elCtx, newVnode, flags)
-      );
-    }
-    return renderContentProjection(rCtx, elCtx, newVnode, flags);
-  } else if (QSlotS in props) {
-    assertDefined(currentComponent.$slots$, "current component slots must be a defined array");
-    currentComponent.$slots$.push(newVnode);
-    return;
-  } else if (dangerouslySetInnerHTML in props) {
-    setProperty(staticCtx, elm, "innerHTML", props[dangerouslySetInnerHTML]);
-    return;
-  }
-  if (vnodeFlags & static_subtree) {
-    return;
-  }
-  return smartUpdateChildren(rCtx, oldVnode, newVnode, flags);
-};
-var renderContentProjection = (rCtx, hostCtx, vnode, flags) => {
-  if (vnode.$flags$ & static_subtree) {
-    return;
-  }
-  const newChildren = vnode.$children$;
-  const staticCtx = rCtx.$static$;
-  const splittedNewChildren = splitChildren(newChildren);
-  const slotMaps = getSlotMap(hostCtx);
-  for (const key in slotMaps.slots) {
-    if (!splittedNewChildren[key]) {
-      const slotEl = slotMaps.slots[key];
-      const oldCh = getChildrenVnodes(slotEl, isChildComponent);
-      if (oldCh.length > 0) {
-        const slotCtx = tryGetContext2(slotEl);
-        if (slotCtx && slotCtx.$vdom$) {
-          slotCtx.$vdom$.$children$ = [];
-        }
-        removeChildren(staticCtx, oldCh, 0, oldCh.length - 1);
-      }
-    }
-  }
-  for (const key in slotMaps.templates) {
-    const templateEl = slotMaps.templates[key];
-    if (templateEl && !splittedNewChildren[key]) {
-      slotMaps.templates[key] = void 0;
-      removeNode(staticCtx, templateEl);
-    }
-  }
-  return promiseAll(
-    Object.keys(splittedNewChildren).map((slotName) => {
-      const newVdom = splittedNewChildren[slotName];
-      const slotCtx = getSlotCtx(
-        staticCtx,
-        slotMaps,
-        hostCtx,
-        slotName,
-        rCtx.$static$.$containerState$
-      );
-      const oldVdom = getVdom(slotCtx);
-      const slotRctx = pushRenderContext(rCtx);
-      const slotEl = slotCtx.$element$;
-      slotRctx.$slotCtx$ = slotCtx;
-      slotCtx.$vdom$ = newVdom;
-      newVdom.$elm$ = slotEl;
-      let newFlags = flags & ~IS_SVG;
-      if (slotEl.isSvg) {
-        newFlags |= IS_SVG;
-      }
-      const index = staticCtx.$addSlots$.findIndex((slot) => slot[0] === slotEl);
-      if (index >= 0) {
-        staticCtx.$addSlots$.splice(index, 1);
-      }
-      return smartUpdateChildren(slotRctx, oldVdom, newVdom, newFlags);
-    })
-  );
-};
-var addChildren = (ctx, parentElm, before, vnodes, startIdx, endIdx, flags) => {
-  const promises = [];
-  for (; startIdx <= endIdx; ++startIdx) {
-    const ch = vnodes[startIdx];
-    assertDefined(ch, "render: node must be defined at index", startIdx, vnodes);
-    const elm = createElm(ctx, ch, flags, promises);
-    insertBefore(ctx.$static$, parentElm, elm, before);
-  }
-  return promiseAllLazy(promises);
-};
-var removeChildren = (staticCtx, nodes, startIdx, endIdx) => {
-  for (; startIdx <= endIdx; ++startIdx) {
-    const ch = nodes[startIdx];
-    if (ch) {
-      assertDefined(ch.$elm$, "vnode elm must be defined");
-      removeNode(staticCtx, ch.$elm$);
-    }
-  }
-};
-var getSlotCtx = (staticCtx, slotMaps, hostCtx, slotName, containerState) => {
-  const slotEl = slotMaps.slots[slotName];
-  if (slotEl) {
-    return getContext(slotEl, containerState);
-  }
-  const templateEl = slotMaps.templates[slotName];
-  if (templateEl) {
-    return getContext(templateEl, containerState);
-  }
-  const template = createTemplate(staticCtx.$doc$, slotName);
-  const elCtx = createContext(template);
-  elCtx.$parentCtx$ = hostCtx;
-  prepend(staticCtx, hostCtx.$element$, template);
-  slotMaps.templates[slotName] = template;
-  return elCtx;
-};
-var getSlotName = (node) => {
-  return node.$varProps$[QSlot] ?? "";
-};
-var createElm = (rCtx, vnode, flags, promises) => {
-  const tag = vnode.$type$;
-  const doc = rCtx.$static$.$doc$;
-  const currentComponent = rCtx.$cmpCtx$;
-  if (tag === "#text") {
-    return vnode.$elm$ = doc.createTextNode(vnode.$text$);
-  }
-  if (tag === "#signal") {
-    const signal = vnode.$signal$;
-    assertDefined(signal, "expecting signal here");
-    assertDefined(currentComponent, "signals can not be used outside components");
-    const signalValue = signal.value;
-    if (isJSXNode(signalValue)) {
-      const processedSignal = processData(signalValue);
-      if (isSignal(processedSignal)) {
-        throw new Error("NOT IMPLEMENTED: Promise");
-      } else if (Array.isArray(processedSignal)) {
-        throw new Error("NOT IMPLEMENTED: Array");
-      } else {
-        const elm2 = createElm(rCtx, processedSignal, flags, promises);
-        trackSignal(
-          signal,
-          flags & IS_IMMUTABLE ? [3 /* TEXT_IMMUTABLE */, elm2, signal, elm2] : [
-            4 /* TEXT_MUTABLE */,
-            currentComponent.$element$,
-            signal,
-            elm2
-          ]
-        );
-        return vnode.$elm$ = elm2;
-      }
-    } else {
-      const elm2 = doc.createTextNode(vnode.$text$);
-      elm2.data = vnode.$text$ = jsxToString(signalValue);
-      trackSignal(
-        signal,
-        flags & IS_IMMUTABLE ? [3 /* TEXT_IMMUTABLE */, elm2, signal, elm2] : [
-          4 /* TEXT_MUTABLE */,
-          currentComponent.$element$,
-          signal,
-          elm2
-        ]
-      );
-      return vnode.$elm$ = elm2;
-    }
-  }
-  let elm;
-  let isSvg2 = !!(flags & IS_SVG);
-  if (!isSvg2 && tag === "svg") {
-    flags |= IS_SVG;
-    isSvg2 = true;
-  }
-  const isVirtual = tag === VIRTUAL;
-  const props = vnode.$varProps$;
-  const staticCtx = rCtx.$static$;
-  const containerState = staticCtx.$containerState$;
-  if (isVirtual) {
-    elm = newVirtualElement(doc, isSvg2);
-  } else if (tag === "head") {
-    elm = doc.head;
-    flags |= IS_HEAD;
-  } else {
-    elm = createElement(doc, tag, isSvg2);
-    flags &= ~IS_HEAD;
-  }
-  if (vnode.$flags$ & static_subtree) {
-    flags |= IS_IMMUTABLE;
-  }
-  vnode.$elm$ = elm;
-  const elCtx = createContext(elm);
-  if (rCtx.$slotCtx$) {
-    elCtx.$parentCtx$ = rCtx.$slotCtx$;
-    elCtx.$realParentCtx$ = rCtx.$cmpCtx$;
-  } else {
-    elCtx.$parentCtx$ = rCtx.$cmpCtx$;
-  }
-  if (!isVirtual) {
-    if (qDev && qInspector) {
-      const dev = vnode.$dev$;
-      if (dev) {
-        directSetAttribute(
-          elm,
-          "data-qwik-inspector",
-          `${dev.fileName}:${dev.lineNumber}:${dev.columnNumber}`
-        );
-      }
-    }
-    if (vnode.$constProps$) {
-      setProperties(staticCtx, elCtx, currentComponent, vnode.$constProps$, isSvg2, true);
-    }
-    if (props !== EMPTY_OBJ) {
-      elCtx.$vdom$ = vnode;
-      vnode.$varProps$ = setProperties(staticCtx, elCtx, currentComponent, props, isSvg2, false);
-    }
-    if (isSvg2 && tag === "foreignObject") {
-      isSvg2 = false;
-      flags &= ~IS_SVG;
-    }
-    if (currentComponent) {
-      const scopedIds = currentComponent.$scopeIds$;
-      if (scopedIds) {
-        scopedIds.forEach((styleId) => {
-          elm.classList.add(styleId);
-        });
-      }
-      if (currentComponent.$flags$ & HOST_FLAG_NEED_ATTACH_LISTENER) {
-        elCtx.li.push(...currentComponent.li);
-        currentComponent.$flags$ &= ~HOST_FLAG_NEED_ATTACH_LISTENER;
-      }
-    }
-    for (const listener of elCtx.li) {
-      addQwikEvent(staticCtx, elm, listener[0]);
-    }
-    const setsInnerHTML = props[dangerouslySetInnerHTML] !== void 0;
-    if (setsInnerHTML) {
-      if (qDev && vnode.$children$.length > 0) {
-        logWarn("Node can not have children when innerHTML is set");
-      }
-      return elm;
-    }
-    if (isSvg2 && tag === "foreignObject") {
-      isSvg2 = false;
-      flags &= ~IS_SVG;
-    }
-  } else if (OnRenderProp in props) {
-    const renderQRL = props[OnRenderProp];
-    assertQrl(renderQRL);
-    const target = createPropsState();
-    const manager = containerState.$subsManager$.$createManager$();
-    const proxy = new Proxy(target, new ReadWriteProxyHandler(containerState, manager));
-    const expectProps = props.props;
-    containerState.$proxyMap$.set(target, proxy);
-    elCtx.$props$ = proxy;
-    if (expectProps !== EMPTY_OBJ) {
-      const immutableMeta = target[_CONST_PROPS] = expectProps[_CONST_PROPS] ?? EMPTY_OBJ;
-      for (const prop in expectProps) {
-        if (prop !== "children" && prop !== QSlot) {
-          const immutableValue2 = immutableMeta[prop];
-          if (isSignal(immutableValue2)) {
-            target["_IMMUTABLE_PREFIX" + prop] = immutableValue2;
-          } else {
-            target[prop] = expectProps[prop];
-          }
-        }
-      }
-    }
-    setQId(rCtx, elCtx);
-    elCtx.$componentQrl$ = renderQRL;
-    const wait = maybeThen(renderComponent(rCtx, elCtx, flags), () => {
-      let children2 = vnode.$children$;
-      if (children2.length === 0) {
-        return;
-      }
-      if (children2.length === 1 && children2[0].$type$ === SKIP_RENDER_TYPE) {
-        children2 = children2[0].$children$;
-      }
-      const slotMap = getSlotMap(elCtx);
-      const p = [];
-      const splittedNewChildren = splitChildren(children2);
-      for (const slotName in splittedNewChildren) {
-        const newVnode = splittedNewChildren[slotName];
-        const slotCtx = getSlotCtx(staticCtx, slotMap, elCtx, slotName, staticCtx.$containerState$);
-        const slotRctx = pushRenderContext(rCtx);
-        const slotEl = slotCtx.$element$;
-        slotRctx.$slotCtx$ = slotCtx;
-        slotCtx.$vdom$ = newVnode;
-        newVnode.$elm$ = slotEl;
-        let newFlags = flags & ~IS_SVG;
-        if (slotEl.isSvg) {
-          newFlags |= IS_SVG;
-        }
-        for (const node of newVnode.$children$) {
-          const nodeElm = createElm(slotRctx, node, newFlags, p);
-          assertDefined(node.$elm$, "vnode elm must be defined");
-          assertEqual(nodeElm, node.$elm$, "vnode elm must be defined");
-          appendChild(staticCtx, slotEl, nodeElm);
-        }
-      }
-      return promiseAllLazy(p);
-    });
-    if (isPromise(wait)) {
-      promises.push(wait);
-    }
-    return elm;
-  } else if (QSlotS in props) {
-    assertDefined(currentComponent, "slot can only be used inside component");
-    assertDefined(currentComponent.$slots$, "current component slots must be a defined array");
-    setKey(elm, vnode.$key$);
-    directSetAttribute(elm, QSlotRef, currentComponent.$id$);
-    directSetAttribute(elm, QSlotS, "");
-    currentComponent.$slots$.push(vnode);
-    staticCtx.$addSlots$.push([elm, currentComponent.$element$]);
-  } else if (dangerouslySetInnerHTML in props) {
-    setProperty(staticCtx, elm, "innerHTML", props[dangerouslySetInnerHTML]);
-    return elm;
-  }
-  let children = vnode.$children$;
-  if (children.length === 0) {
-    return elm;
-  }
-  if (children.length === 1 && children[0].$type$ === SKIP_RENDER_TYPE) {
-    children = children[0].$children$;
-  }
-  const nodes = children.map((ch) => createElm(rCtx, ch, flags, promises));
-  for (const node of nodes) {
-    directAppendChild(elm, node);
-  }
-  return elm;
-};
-var getSlots = (elCtx) => {
-  const slots = elCtx.$slots$;
-  if (!slots) {
-    const parent = elCtx.$element$.parentElement;
-    assertDefined(parent, "component should be already attached to the dom");
-    return elCtx.$slots$ = readDOMSlots(elCtx);
-  }
-  return slots;
-};
-var getSlotMap = (elCtx) => {
-  const slotsArray = getSlots(elCtx);
-  const slots = {};
-  const templates = {};
-  const t = Array.from(elCtx.$element$.childNodes).filter(isSlotTemplate);
-  for (const vnode of slotsArray) {
-    assertQwikElement(vnode.$elm$);
-    slots[vnode.$key$ ?? ""] = vnode.$elm$;
-  }
-  for (const elm of t) {
-    templates[directGetAttribute(elm, QSlot) ?? ""] = elm;
-  }
-  return { slots, templates };
-};
-var readDOMSlots = (elCtx) => {
-  const parent = elCtx.$element$.parentElement;
-  assertDefined(parent, "component should be already attached to the dom");
-  return queryAllVirtualByAttribute(parent, QSlotRef, elCtx.$id$).map(domToVnode);
-};
-var handleStyle = (ctx, elm, newValue) => {
-  setProperty(ctx, elm.style, "cssText", newValue);
-  return true;
-};
-var handleClass = (ctx, elm, newValue) => {
-  assertTrue(
-    newValue == null || typeof newValue === "string",
-    "class newValue must be either nullish or string",
-    newValue
-  );
-  if (elm.namespaceURI === SVG_NS2) {
-    setAttribute(ctx, elm, "class", newValue);
-  } else {
-    setProperty(ctx, elm, "className", newValue);
-  }
-  return true;
-};
-var checkBeforeAssign = (ctx, elm, newValue, prop) => {
-  if (prop in elm) {
-    if (elm[prop] !== newValue || prop === "value" && !elm.hasAttribute(prop)) {
-      if (
-        // we must set value last so that it adheres to min,max,step
-        prop === "value" && // but we must also set options first so they are present before updating select
-        elm.tagName !== "OPTION"
-      ) {
-        setPropertyPost(ctx, elm, prop, newValue);
-      } else {
-        setProperty(ctx, elm, prop, newValue);
-      }
-    }
-    return true;
-  }
-  return false;
-};
-var forceAttribute = (ctx, elm, newValue, prop) => {
-  setAttribute(ctx, elm, prop.toLowerCase(), newValue);
-  return true;
-};
-var setInnerHTML = (ctx, elm, newValue) => {
-  setProperty(ctx, elm, "innerHTML", newValue);
-  return true;
-};
-var noop = () => {
-  return true;
-};
-var PROP_HANDLER_MAP = {
-  style: handleStyle,
-  class: handleClass,
-  className: handleClass,
-  value: checkBeforeAssign,
-  checked: checkBeforeAssign,
-  href: forceAttribute,
-  list: forceAttribute,
-  form: forceAttribute,
-  tabIndex: forceAttribute,
-  download: forceAttribute,
-  innerHTML: noop,
-  [dangerouslySetInnerHTML]: setInnerHTML,
-  // handled by jsx
-  children: noop
-};
-var smartSetProperty = (staticCtx, elm, prop, newValue, isSvg2) => {
-  if (isAriaAttribute(prop)) {
-    setAttribute(staticCtx, elm, prop, newValue != null ? String(newValue) : newValue);
-    return;
-  }
-  const exception = PROP_HANDLER_MAP[prop];
-  if (exception) {
-    if (exception(staticCtx, elm, newValue, prop)) {
-      return;
-    }
-  }
-  if (!isSvg2 && prop in elm) {
-    setProperty(staticCtx, elm, prop, newValue);
-    return;
-  }
-  if (prop.startsWith(PREVENT_DEFAULT)) {
-    registerQwikEvent(prop.slice(PREVENT_DEFAULT.length));
-  }
-  setAttribute(staticCtx, elm, prop, newValue);
-};
-var setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg2, immutable) => {
-  const values = {};
-  const elm = elCtx.$element$;
-  for (const prop in newProps) {
-    let newValue = newProps[prop];
-    if (prop === "ref") {
-      assertElement(elm);
-      if (newValue !== void 0) {
-        setRef(newValue, elm);
-      }
-      continue;
-    }
-    if (isOnProp(prop)) {
-      setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
-      continue;
-    }
-    if (isSignal(newValue)) {
-      assertDefined(hostCtx, "Signals can only be used in components");
-      newValue = trackSignal(
-        newValue,
-        immutable ? [1 /* PROP_IMMUTABLE */, elm, newValue, hostCtx.$element$, prop, void 0] : [2 /* PROP_MUTABLE */, hostCtx.$element$, newValue, elm, prop, void 0]
-      );
-    }
-    if (prop === "class") {
-      if (qDev && values.class) {
-        throw new TypeError("Can only provide one of class or className");
-      }
-      newValue = serializeClassWithHost(newValue, hostCtx);
-      if (!newValue) {
-        continue;
-      }
-    } else if (prop === "style") {
-      newValue = stringifyStyle(newValue);
-    }
-    values[prop] = newValue;
-    smartSetProperty(staticCtx, elm, prop, newValue, isSvg2);
-  }
-  return values;
-};
-var setComponentProps = (containerState, elCtx, expectProps) => {
-  let props = elCtx.$props$;
-  if (!props) {
-    elCtx.$props$ = props = createProxy(createPropsState(), containerState);
-  }
-  if (expectProps === EMPTY_OBJ) {
-    return;
-  }
-  const manager = getSubscriptionManager(props);
-  assertDefined(manager, `props have to be a proxy, but it is not`, props);
-  const target = getProxyTarget(props);
-  assertDefined(target, `props have to be a proxy, but it is not`, props);
-  const immutableMeta = target[_CONST_PROPS] = expectProps[_CONST_PROPS] ?? EMPTY_OBJ;
-  for (const prop in expectProps) {
-    if (prop !== "children" && prop !== QSlot && !immutableMeta[prop]) {
-      const value = expectProps[prop];
-      if (target[prop] !== value) {
-        target[prop] = value;
-        manager.$notifySubs$(prop);
-      }
-    }
-  }
-};
-var cleanupTree = (elm, staticCtx, subsManager, stopSlots) => {
-  subsManager.$clearSub$(elm);
-  if (isQwikElement(elm)) {
-    if (stopSlots && elm.hasAttribute(QSlotS)) {
-      staticCtx.$rmSlots$.push(elm);
-      return;
-    }
-    const ctx = tryGetContext2(elm);
-    if (ctx) {
-      cleanupContext(ctx, subsManager);
-    }
-    const end = isVirtualElement(elm) ? elm.close : null;
-    let node = elm.firstChild;
-    while (node = processVirtualNodes(node)) {
-      cleanupTree(node, staticCtx, subsManager, true);
-      node = node.nextSibling;
-      if (node === end) {
-        break;
-      }
-    }
-  }
-};
-var restoreScroll = () => {
-  if (document.__q_scroll_restore__) {
-    document.__q_scroll_restore__();
-    document.__q_scroll_restore__ = void 0;
-  }
-};
-var executeContextWithScrollAndTransition = async (ctx) => {
-  if (isBrowser4 && !qTest) {
-    if (document.__q_view_transition__) {
-      document.__q_view_transition__ = void 0;
-      if (document.startViewTransition) {
-        await document.startViewTransition(() => {
-          executeDOMRender(ctx);
-          restoreScroll();
-        }).finished;
-        return;
-      }
-    }
-  }
-  executeDOMRender(ctx);
-  if (isBrowser4) {
-    restoreScroll();
-  }
-};
-var directAppendChild = (parent, child) => {
-  if (isVirtualElement(child)) {
-    child.appendTo(parent);
-  } else {
-    parent.appendChild(child);
-  }
-};
-var directRemoveChild = (parent, child) => {
-  if (isVirtualElement(child)) {
-    child.remove();
-  } else {
-    parent.removeChild(child);
-  }
-};
-var directInsertAfter = (parent, child, ref) => {
-  if (isVirtualElement(child)) {
-    child.insertBeforeTo(parent, ref?.nextSibling ?? null);
-  } else {
-    parent.insertBefore(child, ref?.nextSibling ?? null);
-  }
-};
-var directInsertBefore = (parent, child, ref) => {
-  if (isVirtualElement(child)) {
-    child.insertBeforeTo(parent, getRootNode(ref));
-  } else {
-    parent.insertBefore(child, getRootNode(ref));
-  }
-};
-var createKeyToOldIdx = (children, beginIdx, endIdx) => {
-  const map = {};
-  for (let i = beginIdx; i <= endIdx; ++i) {
-    const child = children[i];
-    const key = child.$key$;
-    if (key != null) {
-      map[key] = i;
-    }
-  }
-  return map;
-};
-var addQwikEvent = (staticCtx, elm, prop) => {
-  if (!prop.startsWith("on:")) {
-    setAttribute(staticCtx, elm, prop, "");
-  }
-  registerQwikEvent(prop);
-};
-var registerQwikEvent = (prop) => {
-  if (!qTest) {
-    const eventName = getEventName(prop);
-    try {
-      (globalThis.qwikevents || (globalThis.qwikevents = [])).push(eventName);
-    } catch (err) {
-      logWarn(err);
-    }
-  }
-};
-
-// packages/qwik/src/core/render/dom/operations.ts
-var setAttribute = (staticCtx, el, prop, value) => {
-  staticCtx.$operations$.push({
-    $operation$: _setAttribute,
-    $args$: [el, prop, value]
-  });
-};
-var _setAttribute = (el, prop, value) => {
-  if (value == null || value === false) {
-    el.removeAttribute(prop);
-  } else {
-    const str = value === true ? "" : String(value);
-    directSetAttribute(el, prop, str);
-  }
-};
-var setProperty = (staticCtx, node, key, value) => {
-  staticCtx.$operations$.push({
-    $operation$: _setProperty,
-    $args$: [node, key, value]
-  });
-};
-var setPropertyPost = (staticCtx, node, key, value) => {
-  staticCtx.$postOperations$.push({
-    $operation$: _setProperty,
-    $args$: [node, key, value]
-  });
-};
-var _setProperty = (node, key, value) => {
-  try {
-    node[key] = value == null ? "" : value;
-    if (value == null && isNode(node) && isElement(node)) {
-      node.removeAttribute(key);
-    }
-  } catch (err) {
-    logError(codeToText(QError_setProperty), key, { node, value }, err);
-  }
-};
-var createElement = (doc, expectTag, isSvg2) => {
-  const el = isSvg2 ? doc.createElementNS(SVG_NS2, expectTag) : doc.createElement(expectTag);
-  return el;
-};
-var insertBefore = (staticCtx, parent, newChild, refChild) => {
-  staticCtx.$operations$.push({
-    $operation$: directInsertBefore,
-    $args$: [parent, newChild, refChild ? refChild : null]
-  });
-  return newChild;
-};
-var insertAfter = (staticCtx, parent, newChild, refChild) => {
-  staticCtx.$operations$.push({
-    $operation$: directInsertAfter,
-    $args$: [parent, newChild, refChild ? refChild : null]
-  });
-  return newChild;
-};
-var appendChild = (staticCtx, parent, newChild) => {
-  staticCtx.$operations$.push({
-    $operation$: directAppendChild,
-    $args$: [parent, newChild]
-  });
-  return newChild;
-};
-var appendHeadStyle = (staticCtx, styleTask) => {
-  staticCtx.$containerState$.$styleIds$.add(styleTask.styleId);
-  staticCtx.$postOperations$.push({
-    $operation$: _appendHeadStyle,
-    $args$: [staticCtx.$containerState$, styleTask]
-  });
-};
-var _appendHeadStyle = (containerState, styleTask) => {
-  const containerEl = containerState.$containerEl$;
-  const doc = getDocument(containerEl);
-  const isDoc = doc.documentElement === containerEl;
-  const headEl = doc.head;
-  const style = doc.createElement("style");
-  if (isDoc && !headEl) {
-    logWarn("document.head is undefined");
-  }
-  directSetAttribute(style, QStyle, styleTask.styleId);
-  directSetAttribute(style, "hidden", "");
-  style.textContent = styleTask.content;
-  if (isDoc && headEl) {
-    directAppendChild(headEl, style);
-  } else {
-    directInsertBefore(containerEl, style, containerEl.firstChild);
-  }
-};
-var prepend = (staticCtx, parent, newChild) => {
-  staticCtx.$operations$.push({
-    $operation$: directPrepend,
-    $args$: [parent, newChild]
-  });
-};
-var directPrepend = (parent, newChild) => {
-  directInsertBefore(parent, newChild, parent.firstChild);
-};
-var removeNode = (staticCtx, el) => {
-  if (isQwikElement(el)) {
-    const subsManager = staticCtx.$containerState$.$subsManager$;
-    cleanupTree(el, staticCtx, subsManager, true);
-  }
-  staticCtx.$operations$.push({
-    $operation$: _removeNode,
-    $args$: [el, staticCtx]
-  });
-};
-var _removeNode = (el, staticCtx) => {
-  const parent = el.parentElement;
-  if (parent) {
-    directRemoveChild(parent, el);
-  } else if (qDev) {
-    logWarn("Trying to remove component already removed", el);
-  }
-};
-var createTemplate = (doc, slotName) => {
-  const template = createElement(doc, "q:template", false);
-  directSetAttribute(template, QSlot, slotName);
-  directSetAttribute(template, "hidden", "");
-  directSetAttribute(template, "aria-hidden", "true");
-  return template;
-};
-var executeDOMRender = (staticCtx) => {
-  for (const op of staticCtx.$operations$) {
-    op.$operation$.apply(void 0, op.$args$);
-  }
-  resolveSlotProjection(staticCtx);
-};
-var getKey2 = (el) => {
-  return directGetAttribute(el, "q:key");
-};
-var setKey = (el, key) => {
-  if (key !== null) {
-    directSetAttribute(el, "q:key", key);
-  }
-};
-var resolveSlotProjection = (staticCtx) => {
-  const subsManager = staticCtx.$containerState$.$subsManager$;
-  for (const slotEl of staticCtx.$rmSlots$) {
-    const key = getKey2(slotEl);
-    assertDefined(key, "slots must have a key");
-    const slotChildren = getChildren(slotEl, isChildComponent);
-    if (slotChildren.length > 0) {
-      const sref = slotEl.getAttribute(QSlotRef);
-      const hostCtx = staticCtx.$roots$.find((r) => r.$id$ === sref);
-      if (hostCtx) {
-        const hostElm = hostCtx.$element$;
-        if (hostElm.isConnected) {
-          const hasTemplate = getChildren(hostElm, isSlotTemplate).some(
-            (node) => directGetAttribute(node, QSlot) === key
-          );
-          if (!hasTemplate) {
-            const template = createTemplate(staticCtx.$doc$, key);
-            for (const child of slotChildren) {
-              directAppendChild(template, child);
-            }
-            directInsertBefore(hostElm, template, hostElm.firstChild);
-          } else {
-            cleanupTree(slotEl, staticCtx, subsManager, false);
-          }
-        } else {
-          cleanupTree(slotEl, staticCtx, subsManager, false);
-        }
-      } else {
-        cleanupTree(slotEl, staticCtx, subsManager, false);
-      }
-    }
-  }
-  for (const [slotEl, hostElm] of staticCtx.$addSlots$) {
-    const key = getKey2(slotEl);
-    assertDefined(key, "slots must have a key");
-    const template = getChildren(hostElm, isSlotTemplate).find((node) => {
-      return node.getAttribute(QSlot) === key;
-    });
-    if (template) {
-      getChildren(template, isChildComponent).forEach((child) => {
-        directAppendChild(slotEl, child);
-      });
-      template.remove();
-    }
-  }
-};
-var printRenderStats = (staticCtx) => {
-  if (qDev) {
-    if (typeof window !== "undefined" && window.document != null) {
-      const byOp = {};
-      for (const op of staticCtx.$operations$) {
-        byOp[op.$operation$.name] = (byOp[op.$operation$.name] ?? 0) + 1;
-      }
-      const stats = {
-        byOp,
-        roots: staticCtx.$roots$.map((ctx) => ctx.$element$),
-        hostElements: Array.from(staticCtx.$hostElements$),
-        operations: staticCtx.$operations$.map((v) => [v.$operation$.name, ...v.$args$])
-      };
-      const noOps = staticCtx.$operations$.length === 0;
-      logDebug("Render stats.", noOps ? "No operations" : "", stats);
-    }
-  }
-};
-
-// packages/qwik/src/core/render/dom/virtual-element.ts
-var newVirtualElement = (doc, isSvg2) => {
-  const open = doc.createComment("qv ");
-  const close = doc.createComment("/qv");
-  return new VirtualElementImpl(open, close, isSvg2);
-};
-var parseVirtualAttributes = (str) => {
-  if (!str) {
-    return {};
-  }
-  const attributes = str.split(" ");
-  return Object.fromEntries(
-    attributes.map((attr) => {
-      const index = attr.indexOf("=");
-      if (index >= 0) {
-        return [attr.slice(0, index), unescape(attr.slice(index + 1))];
-      } else {
-        return [attr, ""];
-      }
-    })
-  );
-};
-var serializeVirtualAttributes = (map) => {
-  const attributes = [];
-  Object.entries(map).forEach(([key, value]) => {
-    if (!value) {
-      attributes.push(`${key}`);
-    } else {
-      attributes.push(`${key}=${escape(value)}`);
-    }
-  });
-  return attributes.join(" ");
-};
-var SHOW_COMMENT2 = 128;
-var FILTER_ACCEPT = 1;
-var FILTER_REJECT2 = 2;
-var walkerVirtualByAttribute = (el, prop, value) => {
-  return el.ownerDocument.createTreeWalker(el, SHOW_COMMENT2, {
-    acceptNode(c) {
-      const virtual = getVirtualElement(c);
-      if (virtual) {
-        return directGetAttribute(virtual, prop) === value ? FILTER_ACCEPT : FILTER_REJECT2;
-      }
-      return FILTER_REJECT2;
-    }
-  });
-};
-var queryAllVirtualByAttribute = (el, prop, value) => {
-  const walker = walkerVirtualByAttribute(el, prop, value);
-  const pars = [];
-  let currentNode = null;
-  while (currentNode = walker.nextNode()) {
-    pars.push(getVirtualElement(currentNode));
-  }
-  return pars;
-};
-var escape = (s) => {
-  return s.replace(/ /g, "+");
-};
-var unescape = (s) => {
-  return s.replace(/\+/g, " ");
-};
-var VIRTUAL = ":virtual";
-var VirtualElementImpl = class {
-  constructor(open, close, isSvg2) {
-    this.open = open;
-    this.close = close;
-    this.isSvg = isSvg2;
-    this._qc_ = null;
-    this.nodeType = 111;
-    this.localName = VIRTUAL;
-    this.nodeName = VIRTUAL;
-    throw new Error("SHOULD NOT BE CALLED");
-    const doc = this.ownerDocument = open.ownerDocument;
-    this.$template$ = createElement(doc, "template", false);
-    this.$attributes$ = parseVirtualAttributes(open.data.slice(3));
-    assertTrue(open.data.startsWith("qv "), "comment is not a qv");
-    open[VIRTUAL_SYMBOL] = this;
-    close[VIRTUAL_SYMBOL] = this;
-    seal(this);
-  }
-  insertBefore(node, ref) {
-    const parent = this.parentElement;
-    if (parent) {
-      const ref2 = ref ? ref : this.close;
-      parent.insertBefore(node, ref2);
-    } else {
-      this.$template$.insertBefore(node, ref);
-    }
-    return node;
-  }
-  remove() {
-    const parent = this.parentElement;
-    if (parent) {
-      const ch = this.childNodes;
-      assertEqual(this.$template$.childElementCount, 0, "children should be empty");
-      parent.removeChild(this.open);
-      for (let i = 0; i < ch.length; i++) {
-        this.$template$.appendChild(ch[i]);
-      }
-      parent.removeChild(this.close);
-    }
-  }
-  appendChild(node) {
-    return this.insertBefore(node, null);
-  }
-  insertBeforeTo(newParent, child) {
-    const ch = this.childNodes;
-    newParent.insertBefore(this.open, child);
-    for (const c of ch) {
-      newParent.insertBefore(c, child);
-    }
-    newParent.insertBefore(this.close, child);
-    assertEqual(this.$template$.childElementCount, 0, "children should be empty");
-  }
-  appendTo(newParent) {
-    this.insertBeforeTo(newParent, null);
-  }
-  get namespaceURI() {
-    return this.parentElement?.namespaceURI ?? "";
-  }
-  removeChild(child) {
-    if (this.parentElement) {
-      this.parentElement.removeChild(child);
-    } else {
-      this.$template$.removeChild(child);
-    }
-  }
-  getAttribute(prop) {
-    return this.$attributes$[prop] ?? null;
-  }
-  hasAttribute(prop) {
-    return prop in this.$attributes$;
-  }
-  setAttribute(prop, value) {
-    this.$attributes$[prop] = value;
-    if (qSerialize) {
-      this.open.data = updateComment(this.$attributes$);
-    }
-  }
-  removeAttribute(prop) {
-    delete this.$attributes$[prop];
-    if (qSerialize) {
-      this.open.data = updateComment(this.$attributes$);
-    }
-  }
-  matches(_) {
-    return false;
-  }
-  compareDocumentPosition(other) {
-    return this.open.compareDocumentPosition(other);
-  }
-  closest(query) {
-    const parent = this.parentElement;
-    if (parent) {
-      return parent.closest(query);
-    }
-    return null;
-  }
-  querySelectorAll(query) {
-    const result = [];
-    const ch = getChildren(this, isNodeElement);
-    ch.forEach((el) => {
-      if (isQwikElement(el)) {
-        if (el.matches(query)) {
-          result.push(el);
-        }
-        result.concat(Array.from(el.querySelectorAll(query)));
-      }
-    });
-    return result;
-  }
-  querySelector(query) {
-    for (const el of this.childNodes) {
-      if (isElement(el)) {
-        if (el.matches(query)) {
-          return el;
-        }
-        const v = el.querySelector(query);
-        if (v !== null) {
-          return v;
-        }
-      }
-    }
-    return null;
-  }
-  get innerHTML() {
-    return "";
-  }
-  set innerHTML(html) {
-    const parent = this.parentElement;
-    if (parent) {
-      this.childNodes.forEach((a) => this.removeChild(a));
-      this.$template$.innerHTML = html;
-      parent.insertBefore(this.$template$.content, this.close);
-    } else {
-      this.$template$.innerHTML = html;
-    }
-  }
-  get firstChild() {
-    if (this.parentElement) {
-      const first = this.open.nextSibling;
-      if (first === this.close) {
-        return null;
-      }
-      return first;
-    } else {
-      return this.$template$.firstChild;
-    }
-  }
-  get nextSibling() {
-    return this.close.nextSibling;
-  }
-  get previousSibling() {
-    return this.open.previousSibling;
-  }
-  get childNodes() {
-    if (!this.parentElement) {
-      return Array.from(this.$template$.childNodes);
-    }
-    const nodes = [];
-    let node = this.open;
-    while (node = node.nextSibling) {
-      if (node === this.close) {
-        break;
-      }
-      nodes.push(node);
-    }
-    return nodes;
-  }
-  get isConnected() {
-    return this.open.isConnected;
-  }
-  /** The DOM parent element (not the vDOM parent, use findVirtual for that) */
-  get parentElement() {
-    return this.open.parentElement;
-  }
-};
-var updateComment = (attributes) => {
-  return `qv ${serializeVirtualAttributes(attributes)}`;
-};
-var processVirtualNodes = (node) => {
-  if (node == null) {
-    return null;
-  }
-  if (isComment(node)) {
-    const virtual = getVirtualElement(node);
-    if (virtual) {
-      return virtual;
-    }
-  }
-  return node;
-};
-var findClose = (open) => {
-  let node = open;
-  let stack2 = 1;
-  while (node = node.nextSibling) {
-    if (isComment(node)) {
-      const virtual = node[VIRTUAL_SYMBOL];
-      if (virtual) {
-        node = virtual;
-      } else if (node.data.startsWith("qv ")) {
-        stack2++;
-      } else if (node.data === "/qv") {
-        stack2--;
-        if (stack2 === 0) {
-          return node;
-        }
-      }
-    }
-  }
-  assertFail("close not found");
-};
-var getVirtualElement = (open) => {
-  const virtual = open[VIRTUAL_SYMBOL];
-  if (virtual) {
-    return virtual;
-  }
-  if (open.data.startsWith("qv ")) {
-    const close = findClose(open);
-    return new VirtualElementImpl(open, close, open.parentElement?.namespaceURI === SVG_NS2);
-  }
-  return null;
-};
-var getRootNode = (node) => {
-  if (node == null) {
-    return null;
-  }
-  if (isVirtualElement(node)) {
-    return node.open;
-  } else {
-    return node;
-  }
-};
-
-// packages/qwik/src/core/container/pause.ts
-var pauseContainer = async (elmOrDoc, defaultParentJSON) => {
-  const doc = getDocument(elmOrDoc);
-  const documentElement = doc.documentElement;
-  const containerEl = isDocument(elmOrDoc) ? documentElement : elmOrDoc;
-  if (directGetAttribute(containerEl, QContainerAttr) === "paused") {
-    throw qError(QError_containerAlreadyPaused);
-  }
-  const parentJSON = defaultParentJSON ?? (containerEl === doc.documentElement ? doc.body : containerEl);
-  const containerState = _getContainerState(containerEl);
-  const contexts = getNodesInScope(containerEl, hasContext);
-  directSetAttribute(containerEl, QContainerAttr, "paused");
-  for (const elCtx of contexts) {
-    const elm = elCtx.$element$;
-    const listeners = elCtx.li;
-    if (elCtx.$scopeIds$) {
-      const value = serializeSStyle(elCtx.$scopeIds$);
-      if (value) {
-        elm.setAttribute(QScopedStyle, value);
-      }
-    }
-    if (elCtx.$id$) {
-      elm.setAttribute(ELEMENT_ID, elCtx.$id$);
-    }
-    if (isElement(elm) && listeners.length > 0) {
-      const groups = groupListeners(listeners);
-      for (const listener of groups) {
-        elm.setAttribute(listener[0], serializeQRLs(listener[1], containerState, elCtx));
-      }
-    }
-  }
-  const data = await _pauseFromContexts(contexts, containerState, (el) => {
-    if (isNode(el) && isText(el)) {
-      return getTextID(el, containerState);
-    }
-    return null;
-  });
-  const qwikJson = doc.createElement("script");
-  directSetAttribute(qwikJson, "type", "qwik/json");
-  qwikJson.textContent = escapeText(JSON.stringify(data.state, void 0, qDev ? "  " : void 0));
-  parentJSON.appendChild(qwikJson);
-  const extraListeners = Array.from(containerState.$events$, (s) => JSON.stringify(s));
-  const eventsScript = doc.createElement("script");
-  eventsScript.textContent = `(window.qwikevents||=[]).push(${extraListeners.join(", ")})`;
-  parentJSON.appendChild(eventsScript);
-  return data;
-};
-var _pauseFromContexts = async (allContexts, containerState, fallbackGetObjId, textNodes) => {
-  const collector = createCollector(containerState);
-  textNodes?.forEach((_, key) => {
-    collector.$seen$.add(key);
-  });
-  let hasListeners = false;
-  for (const ctx of allContexts) {
-    if (ctx.$tasks$) {
-      for (const task of ctx.$tasks$) {
-        if (qDev) {
-          if (task.$flags$ & 16 /* DIRTY */) {
-            logWarn(
-              `Serializing dirty task. Looks like an internal error. 
-Task Symbol: ${task.$qrl$.$symbol$}
-`
-            );
-          }
-          if (!isConnected(task)) {
-            logWarn("Serializing disconnected task. Looks like an internal error.");
-          }
-        }
-        if (isResourceTask2(task)) {
-          collector.$resources$.push(task.$state$);
-        }
-        cleanupTask(task);
-      }
-    }
-  }
-  for (const ctx of allContexts) {
-    const el = ctx.$element$;
-    const ctxListeners = ctx.li;
-    for (const listener of ctxListeners) {
-      if (isElement(el)) {
-        const qrl2 = listener[1];
-        const captured = qrl2.$captureRef$;
-        if (captured) {
-          for (const obj of captured) {
-            collectValue(obj, collector, true);
-          }
-        }
-        collector.$qrls$.push(qrl2);
-        hasListeners = true;
-      }
-    }
-  }
-  if (!hasListeners) {
-    return {
-      state: {
-        refs: {},
-        ctx: {},
-        objs: [],
-        subs: []
-      },
-      objs: [],
-      funcs: [],
-      qrls: [],
-      resources: collector.$resources$,
-      mode: "static"
-    };
-  }
-  let promises;
-  while ((promises = collector.$promises$).length > 0) {
-    collector.$promises$ = [];
-    await Promise.all(promises);
-  }
-  const canRender = collector.$elements$.length > 0;
-  if (canRender) {
-    for (const elCtx of collector.$deferElements$) {
-      collectElementData(elCtx, collector, elCtx.$element$);
-    }
-    for (const ctx of allContexts) {
-      collectProps(ctx, collector);
-    }
-  }
-  while ((promises = collector.$promises$).length > 0) {
-    collector.$promises$ = [];
-    await Promise.all(promises);
-  }
-  const elementToIndex = /* @__PURE__ */ new Map();
-  const objs = Array.from(collector.$objSet$.keys());
-  const objToId = /* @__PURE__ */ new Map();
-  const getElementID = (el) => {
-    let id = elementToIndex.get(el);
-    if (id === void 0) {
-      id = getQId(el);
-      if (!id) {
-        console.warn("Missing ID", el);
-      }
-      elementToIndex.set(el, id);
-    }
-    return id;
-  };
-  const getObjId = (obj) => {
-    let suffix = "";
-    if (isPromise(obj)) {
-      const promiseValue = getPromiseValue(obj);
-      if (!promiseValue) {
-        return null;
-      }
-      obj = promiseValue.value;
-      if (promiseValue.resolved) {
-        suffix += "~";
-      } else {
-        suffix += "_";
-      }
-    }
-    if (isObject(obj)) {
-      const target = getProxyTarget(obj);
-      if (target) {
-        suffix += "!";
-        obj = target;
-      } else if (isQwikElement(obj)) {
-        const elID = getElementID(obj);
-        if (elID) {
-          return ELEMENT_ID_PREFIX + elID + suffix;
-        }
-        return null;
-      }
-    }
-    const id = objToId.get(obj);
-    if (id) {
-      return id + suffix;
-    }
-    const textId = textNodes?.get(obj);
-    if (textId) {
-      return "*" + textId;
-    }
-    if (fallbackGetObjId) {
-      return fallbackGetObjId(obj);
-    }
-    return null;
-  };
-  const mustGetObjId = (obj) => {
-    const key = getObjId(obj);
-    if (key === null) {
-      if (isQrl(obj)) {
-        const id = intToStr(objToId.size);
-        objToId.set(obj, id);
-        return id;
-      } else {
-        throw qError(QError_missingObjectId, obj);
-      }
-    }
-    return key;
-  };
-  const subsMap = /* @__PURE__ */ new Map();
-  for (const obj of objs) {
-    const subs2 = getManager(obj, containerState)?.$subs$;
-    if (!subs2) {
-      continue;
-    }
-    const flags = getProxyFlags(obj) ?? 0;
-    const converted = [];
-    if (flags & QObjectRecursive) {
-      converted.push(flags);
-    }
-    for (const sub of subs2) {
-      const host = sub[1];
-      if (sub[0] === 0 && isNode(host) && isVirtualElement(host)) {
-        if (!collector.$elements$.includes(tryGetContext2(host))) {
-          continue;
-        }
-      }
-      converted.push(sub);
-    }
-    if (converted.length > 0) {
-      subsMap.set(obj, converted);
-    }
-  }
-  objs.sort((a, b) => {
-    const isProxyA = subsMap.has(a) ? 0 : 1;
-    const isProxyB = subsMap.has(b) ? 0 : 1;
-    return isProxyA - isProxyB;
-  });
-  let count2 = 0;
-  for (const obj of objs) {
-    objToId.set(obj, intToStr(count2));
-    count2++;
-  }
-  if (collector.$noSerialize$.length > 0) {
-    const undefinedID = objToId.get(void 0);
-    assertDefined(undefinedID, "undefined ID must be defined");
-    for (const obj of collector.$noSerialize$) {
-      objToId.set(obj, undefinedID);
-    }
-  }
-  const subs = [];
-  for (const obj of objs) {
-    const value = subsMap.get(obj);
-    if (value == null) {
-      break;
-    }
-    subs.push(
-      value.map((s) => {
-        if (typeof s === "number") {
-          return `_${s}`;
-        }
-        return serializeSubscription(s, getObjId);
-      }).filter(isNotNullable)
-    );
-  }
-  assertEqual(subs.length, subsMap.size, "missing subscriptions to serialize", subs, subsMap);
-  const convertedObjs = serializeObjects(objs, mustGetObjId, getObjId, collector, containerState);
-  const meta = {};
-  const refs = {};
-  for (const ctx of allContexts) {
-    const node = ctx.$element$;
-    const elementCaptured = isVirtualElement(node) && collector.$elements$.includes(ctx);
-    const value = serializeComponentContext(
-      ctx,
-      getObjId,
-      mustGetObjId,
-      elementCaptured,
-      canRender,
-      refs
-    );
-    if (value) {
-      meta[ctx.$id$] = value;
-    }
-  }
-  if (qDev) {
-    elementToIndex.forEach((value, el) => {
-      if (!value) {
-        logWarn("unconnected element", el.nodeName, "\n");
-      }
-    });
-  }
-  return {
-    state: {
-      refs,
-      ctx: meta,
-      objs: convertedObjs,
-      subs
-    },
-    objs,
-    funcs: collector.$inlinedFunctions$,
-    resources: collector.$resources$,
-    qrls: collector.$qrls$,
-    mode: canRender ? "render" : "listeners"
-  };
-};
-var mapJoin = (objects, getObjectId, sep) => {
-  let output = "";
-  for (const obj of objects) {
-    const id = getObjectId(obj);
-    if (id !== null) {
-      if (output !== "") {
-        output += sep;
-      }
-      output += id;
-    }
-  }
-  return output;
-};
-var getNodesInScope = (parent, predicate) => {
-  const results = [];
-  const v = predicate(parent);
-  if (v !== void 0) {
-    results.push(v);
-  }
-  const walker = parent.ownerDocument.createTreeWalker(parent, SHOW_ELEMENT | SHOW_COMMENT, {
-    acceptNode(node) {
-      if (isContainer3(node)) {
-        return FILTER_REJECT;
-      }
-      const v2 = predicate(node);
-      if (v2 !== void 0) {
-        results.push(v2);
-      }
-      return FILTER_SKIP;
-    }
-  });
-  while (walker.nextNode()) {
-  }
-  return results;
-};
-var collectProps = (elCtx, collector) => {
-  const parentCtx = elCtx.$realParentCtx$ || elCtx.$parentCtx$;
-  const props = elCtx.$props$;
-  if (parentCtx && props && !isEmptyObj(props) && collector.$elements$.includes(parentCtx)) {
-    const subs = getSubscriptionManager(props)?.$subs$;
-    const el = elCtx.$element$;
-    if (subs) {
-      for (const [type, host] of subs) {
-        if (type === 0) {
-          if (host !== el) {
-            collectSubscriptions(getSubscriptionManager(props), collector, false);
-          }
-          if (isNode(host)) {
-            collectElement(host, collector);
-          } else {
-            collectValue(host, collector, true);
-          }
-        } else {
-          collectValue(props, collector, false);
-          collectSubscriptions(getSubscriptionManager(props), collector, false);
-        }
-      }
-    }
-  }
-};
-var createCollector = (containerState) => {
-  const inlinedFunctions = [];
-  containerState.$inlineFns$.forEach((id, fnStr) => {
-    while (inlinedFunctions.length <= id) {
-      inlinedFunctions.push("");
-    }
-    inlinedFunctions[id] = fnStr;
-  });
-  return {
-    $containerState$: containerState,
-    $seen$: /* @__PURE__ */ new Set(),
-    $objSet$: /* @__PURE__ */ new Set(),
-    $prefetch$: 0,
-    $noSerialize$: [],
-    $inlinedFunctions$: inlinedFunctions,
-    $resources$: [],
-    $elements$: [],
-    $qrls$: [],
-    $deferElements$: [],
-    $promises$: []
-  };
-};
-var collectDeferElement = (el, collector) => {
-  const ctx = tryGetContext2(el);
-  if (collector.$elements$.includes(ctx)) {
-    return;
-  }
-  collector.$elements$.push(ctx);
-  if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
-    collector.$prefetch$++;
-    collectElementData(ctx, collector, true);
-    collector.$prefetch$--;
-  } else {
-    collector.$deferElements$.push(ctx);
-  }
-};
-var collectElement = (el, collector) => {
-  const ctx = tryGetContext2(el);
-  if (ctx) {
-    if (collector.$elements$.includes(ctx)) {
-      return;
-    }
-    collector.$elements$.push(ctx);
-    collectElementData(ctx, collector, el);
-  }
-};
-var collectElementData = (elCtx, collector, dynamicCtx) => {
-  if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
-    collectValue(elCtx.$props$, collector, dynamicCtx);
-    collectSubscriptions(getSubscriptionManager(elCtx.$props$), collector, dynamicCtx);
-  }
-  if (elCtx.$componentQrl$) {
-    collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
-  }
-  if (elCtx.$seq$) {
-    for (const obj of elCtx.$seq$) {
-      collectValue(obj, collector, dynamicCtx);
-    }
-  }
-  if (elCtx.$tasks$) {
-    const map = collector.$containerState$.$subsManager$.$groupToManagers$;
-    for (const obj of elCtx.$tasks$) {
-      if (map.has(obj)) {
-        collectValue(obj, collector, dynamicCtx);
-      }
-    }
-  }
-  if (dynamicCtx === true) {
-    collectContext(elCtx, collector);
-    if (elCtx.$dynamicSlots$) {
-      for (const slotCtx of elCtx.$dynamicSlots$) {
-        collectContext(slotCtx, collector);
-      }
-    }
-  }
-};
-var collectContext = (elCtx, collector) => {
-  while (elCtx) {
-    if (elCtx.$contexts$) {
-      for (const obj of elCtx.$contexts$.values()) {
-        collectValue(obj, collector, true);
-      }
-    }
-    elCtx = elCtx.$parentCtx$;
-  }
-};
-var escapeText = (str) => {
-  return str.replace(/<(\/?script)/gi, "\\x3C$1");
-};
-var collectSubscriptions = (manager, collector, leaks) => {
-  if (collector.$seen$.has(manager)) {
-    return;
-  }
-  collector.$seen$.add(manager);
-  const subs = manager.$subs$;
-  assertDefined(subs, "subs must be defined");
-  for (const sub of subs) {
-    const type = sub[0];
-    if (type > 0) {
-      collectValue(sub[2], collector, leaks);
-    }
-    if (leaks === true) {
-      const host = sub[1];
-      if (isNode(host) && isVirtualElement(host)) {
-        if (sub[0] === 0) {
-          collectDeferElement(host, collector);
-        }
-      } else {
-        collectValue(host, collector, true);
-      }
-    }
-  }
-};
-var PROMISE_VALUE = Symbol();
-var resolvePromise = (promise) => {
-  return promise.then(
-    (value) => {
-      const v = {
-        resolved: true,
-        value
-      };
-      promise[PROMISE_VALUE] = v;
-      return value;
-    },
-    (value) => {
-      const v = {
-        resolved: false,
-        value
-      };
-      promise[PROMISE_VALUE] = v;
-      return value;
-    }
-  );
-};
-var getPromiseValue = (promise) => {
-  return promise[PROMISE_VALUE];
-};
-var collectValue = (obj, collector, leaks) => {
-  if (obj != null) {
-    switch (typeof obj) {
-      case "function":
-      case "object": {
-        if (collector.$seen$.has(obj)) {
-          return;
-        }
-        collector.$seen$.add(obj);
-        if (fastSkipSerialize(obj)) {
-          collector.$objSet$.add(void 0);
-          collector.$noSerialize$.push(obj);
-          return;
-        }
-        const input = obj;
-        const target = getProxyTarget(obj);
-        if (target) {
-          obj = target;
-          const mutable = (getProxyFlags(obj) & QObjectImmutable) === 0;
-          if (leaks && mutable) {
-            collectSubscriptions(getSubscriptionManager(input), collector, leaks);
-          }
-          if (fastWeakSerialize(input)) {
-            collector.$objSet$.add(obj);
-            return;
-          }
-        }
-        const collected = collectDeps(obj, collector, leaks);
-        if (collected) {
-          collector.$objSet$.add(obj);
-          return;
-        }
-        if (isPromise(obj)) {
-          collector.$promises$.push(
-            resolvePromise(obj).then((value) => {
-              collectValue(value, collector, leaks);
-            })
-          );
-          return;
-        }
-        if (typeof obj === "object") {
-          if (isNode(obj)) {
-            return;
-          }
-          if (isArray(obj)) {
-            for (let i = 0; i < obj.length; i++) {
-              collectValue(input[i], collector, leaks);
-            }
-          } else if (isSerializableObject(obj)) {
-            for (const key in obj) {
-              collectValue(input[key], collector, leaks);
-            }
-          }
-        }
-        break;
-      }
-    }
-  }
-  collector.$objSet$.add(obj);
-};
-var isContainer3 = (el) => {
-  return isElement(el) && el.hasAttribute(QContainerAttr);
-};
-var hasContext = (el) => {
-  const node = processVirtualNodes(el);
-  if (isQwikElement(node)) {
-    const ctx = tryGetContext2(node);
-    if (ctx && ctx.$id$) {
-      return ctx;
-    }
-  }
-  return void 0;
-};
-var getManager = (obj, containerState) => {
-  if (!isObject(obj)) {
-    return void 0;
-  }
-  if (obj instanceof SignalImpl) {
-    return getSubscriptionManager(obj);
-  }
-  const proxy = containerState.$proxyMap$.get(obj);
-  if (proxy) {
-    return getSubscriptionManager(proxy);
-  }
-  return void 0;
-};
-var getQId = (el) => {
-  const ctx = tryGetContext2(el);
-  if (ctx) {
-    return ctx.$id$;
-  }
-  return null;
-};
-var getTextID = (node, containerState) => {
-  const prev = node.previousSibling;
-  if (prev && isComment(prev)) {
-    if (prev.data.startsWith("t=")) {
-      return ELEMENT_ID_PREFIX + prev.data.slice(2);
-    }
-  }
-  const doc = node.ownerDocument;
-  const id = intToStr(containerState.$elementIndex$++);
-  const open = doc.createComment(`t=${id}`);
-  const close = doc.createComment("");
-  const parent = node.parentElement;
-  parent.insertBefore(open, node);
-  parent.insertBefore(close, node.nextSibling);
-  return ELEMENT_ID_PREFIX + id;
-};
-var isEmptyObj = (obj) => {
-  return Object.keys(obj).length === 0;
-};
-function serializeComponentContext(ctx, getObjId, mustGetObjId, elementCaptured, canRender, refs) {
-  const node = ctx.$element$;
-  const ref = ctx.$refMap$;
-  const props = ctx.$props$;
-  const contexts = ctx.$contexts$;
-  const tasks = ctx.$tasks$;
-  const renderQrl = ctx.$componentQrl$;
-  const seq = ctx.$seq$;
-  const metaValue = {};
-  assertDefined(ctx.$id$, `pause: can not generate ID for dom node`, node);
-  if (ref.length > 0) {
-    assertElement(node);
-    const value = mapJoin(ref, mustGetObjId, " ");
-    if (value) {
-      refs[ctx.$id$] = value;
-    }
-  } else if (canRender) {
-    let add = false;
-    if (elementCaptured) {
-      assertDefined(renderQrl, "renderQrl must be defined");
-      const propsId = getObjId(props);
-      metaValue.h = mustGetObjId(renderQrl) + (propsId ? " " + propsId : "");
-      add = true;
-    } else {
-      const propsId = getObjId(props);
-      if (propsId) {
-        metaValue.h = " " + propsId;
-        add = true;
-      }
-    }
-    if (tasks && tasks.length > 0) {
-      const value = mapJoin(tasks, getObjId, " ");
-      if (value) {
-        metaValue.w = value;
-        add = true;
-      }
-    }
-    if (elementCaptured && seq && seq.length > 0) {
-      const value = mapJoin(seq, mustGetObjId, " ");
-      metaValue.s = value;
-      add = true;
-    }
-    if (contexts) {
-      const serializedContexts = [];
-      contexts.forEach((value2, key) => {
-        const id = getObjId(value2);
-        if (id) {
-          serializedContexts.push(`${key}=${id}`);
-        }
-      });
-      const value = serializedContexts.join(" ");
-      if (value) {
-        metaValue.c = value;
-        add = true;
-      }
-    }
-    if (add) {
-      return metaValue;
-    }
-  }
-}
-function serializeObjects(objs, mustGetObjId, getObjId, collector, containerState) {
-  return objs.map((obj) => {
-    if (obj === null) {
-      return null;
-    }
-    const typeObj = typeof obj;
-    switch (typeObj) {
-      case "undefined":
-        return UNDEFINED_PREFIX;
-      case "number":
-        if (!Number.isFinite(obj)) {
-          break;
-        }
-        return obj;
-      case "string":
-        if (obj.charCodeAt(0) < 32) {
-          break;
-        } else {
-          return obj;
-        }
-      case "boolean":
-        return obj;
-    }
-    const value = serializeValue(obj, mustGetObjId, collector, containerState);
-    if (value !== void 0) {
-      return value;
-    }
-    if (typeObj === "object") {
-      if (isArray(obj)) {
-        return obj.map(mustGetObjId);
-      }
-      if (isSerializableObject(obj)) {
-        const output = {};
-        for (const key in obj) {
-          if (getObjId) {
-            const id = getObjId(obj[key]);
-            if (id !== null) {
-              output[key] = id;
-            }
-          } else {
-            output[key] = mustGetObjId(obj[key]);
-          }
-        }
-        return output;
-      }
-    }
-    throw qError(QError_verifySerializable, obj);
-  });
-}
-
-// packages/qwik/src/core/render/ssr/render-ssr.ts
-var IS_HEAD2 = 1 << 0;
-var IS_HTML = 1 << 2;
-var IS_TEXT = 1 << 3;
-var IS_INVISIBLE = 1 << 4;
-var IS_PHASING = 1 << 5;
-var IS_ANCHOR = 1 << 6;
-var IS_BUTTON = 1 << 7;
-var IS_TABLE = 1 << 8;
-var IS_PHRASING_CONTAINER = 1 << 9;
-var IS_IMMUTABLE2 = 1 << 10;
-var _a2;
-var MockElement = class {
-  constructor(nodeType) {
-    this.nodeType = nodeType;
-    this[_a2] = null;
-    seal(this);
-  }
-};
-_a2 = Q_CTX;
-
-// packages/qwik/src/core/v2/ssr/ssr-render-jsx.ts
-import { isDev as isDev4 } from "@builder.io/qwik/build";
-
-// packages/qwik/src/core/qrl/inlined-fn.ts
-var serializeDerivedSignalFunc = (signal) => {
-  const fnBody = qSerialize ? signal.$funcStr$ : "null";
-  assertDefined(fnBody, "If qSerialize is true then fnStr must be provided.");
-  let args = "";
-  for (let i = 0; i < signal.$args$.length; i++) {
-    args += `p${i},`;
-  }
-  return `(${args})=>(${fnBody})`;
-};
-
-// packages/qwik/src/core/component/component.public.ts
-var componentQrl = (componentQrl3) => {
-  const QwikComponent = () => {
-  };
-  QwikComponent[SERIALIZABLE_STATE] = [componentQrl3];
-  return QwikComponent;
-};
-var isQwikComponent = (component) => {
-  return typeof component == "function" && component[SERIALIZABLE_STATE] !== void 0;
-};
-
-// packages/qwik/src/core/use/use-resource.ts
-var _createResourceReturn = (opts) => {
-  const resource = {
-    __brand: "resource",
-    value: void 0,
-    loading: isServerPlatform() ? false : true,
-    _resolved: void 0,
-    _error: void 0,
-    _state: "pending",
-    _timeout: opts?.timeout ?? -1,
-    _cache: 0
-  };
-  return resource;
-};
-var isResourceReturn = (obj) => {
-  return isObject(obj) && (getProxyTarget(obj) || obj).__brand === "resource";
-};
-var serializeResource = (resource, getObjId) => {
-  const state = resource._state;
-  if (state === "resolved") {
-    return `0 ${getObjId(resource._resolved)}`;
-  } else if (state === "pending") {
-    return `1`;
-  } else {
-    return `2 ${getObjId(resource._error)}`;
-  }
-};
-var parseResourceReturn = (data) => {
-  const [first, id] = data.split(" ");
-  const result = _createResourceReturn();
-  result.value = Promise.resolve();
-  if (first === "0") {
-    result._state = "resolved";
-    result._resolved = id;
-    result.loading = false;
-  } else if (first === "1") {
-    result._state = "pending";
-    result.value = new Promise(() => {
-    });
-    result.loading = true;
-  } else if (first === "2") {
-    result._state = "rejected";
-    result._error = id;
-    result.loading = false;
-  }
-  return result;
-};
-
-// packages/qwik/src/core/container/serializers.ts
-var UNDEFINED_PREFIX = "";
-function serializer(serializer2) {
-  return {
-    $prefixCode$: serializer2.$prefix$.charCodeAt(0),
-    $prefixChar$: serializer2.$prefix$,
-    $test$: serializer2.$test$,
-    $serialize$: serializer2.$serialize$,
-    $prepare$: serializer2.$prepare$,
-    $fill$: serializer2.$fill$,
-    $collect$: serializer2.$collect$,
-    $subs$: serializer2.$subs$
-  };
-}
-var QRLSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => isQrl(v),
-  $collect$: (v, collector, leaks) => {
-    if (v.$captureRef$) {
-      for (const item of v.$captureRef$) {
-        collectValue(item, collector, leaks);
-      }
-    }
-    if (collector.$prefetch$ === 0) {
-      collector.$qrls$.push(v);
-    }
-  },
-  $serialize$: (obj, getObjId) => {
-    return serializeQRL(obj, {
-      $getObjId$: getObjId
-    });
-  },
-  $prepare$: (data, containerState) => {
-    return parseQRL(data, containerState.$containerEl$);
-  },
-  $fill$: (qrl2, getObject) => {
-    if (qrl2.$capture$ && qrl2.$capture$.length > 0) {
-      qrl2.$captureRef$ = qrl2.$capture$.map(getObject);
-      qrl2.$capture$ = null;
-    }
-  }
-});
-var TaskSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => isSubscriberDescriptor(v),
-  $collect$: (v, collector, leaks) => {
-    collectValue(v.$qrl$, collector, leaks);
-    if (v.$state$) {
-      collectValue(v.$state$, collector, leaks);
-      if (leaks === true && v.$state$ instanceof SignalImpl) {
-        collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, true);
-      }
-    }
-  },
-  $serialize$: (obj, getObjId) => serializeTask(obj, getObjId),
-  $prepare$: (data) => parseTask(data),
-  $fill$: (task, getObject) => {
-    task.$el$ = getObject(task.$el$);
-    task.$qrl$ = getObject(task.$qrl$);
-    if (task.$state$) {
-      task.$state$ = getObject(task.$state$);
-    }
-  }
-});
-var ResourceSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => isResourceReturn(v),
-  $collect$: (obj, collector, leaks) => {
-    collectValue(obj.value, collector, leaks);
-    collectValue(obj._resolved, collector, leaks);
-  },
-  $serialize$: (obj, getObjId) => {
-    return serializeResource(obj, getObjId);
-  },
-  $prepare$: (data) => {
-    return parseResourceReturn(data);
-  },
-  $fill$: (resource, getObject) => {
-    if (resource._state === "resolved") {
-      resource._resolved = getObject(resource._resolved);
-      resource.value = Promise.resolve(resource._resolved);
-    } else if (resource._state === "rejected") {
-      const p = Promise.reject(resource._error);
-      p.catch(() => null);
-      resource._error = getObject(resource._error);
-      resource.value = p;
-    }
-  }
-});
-var URLSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof URL,
-  $serialize$: (obj) => obj.href,
-  $prepare$: (data) => new URL(data)
-});
-var DateSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof Date,
-  $serialize$: (obj) => obj.toISOString(),
-  $prepare$: (data) => new Date(data)
-});
-var RegexSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "\x07",
-  $test$: (v) => v instanceof RegExp,
-  $serialize$: (obj) => `${obj.flags} ${obj.source}`,
-  $prepare$: (data) => {
-    const space = data.indexOf(" ");
-    const source = data.slice(space + 1);
-    const flags = data.slice(0, space);
-    return new RegExp(source, flags);
-  }
-});
-var ErrorSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof Error,
-  $serialize$: (obj) => {
-    return obj.message;
-  },
-  $prepare$: (text) => {
-    const err = new Error(text);
-    err.stack = void 0;
-    return err;
-  }
-});
-var DocumentSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => !!v && typeof v === "object" && isDocument(v),
-  $prepare$: (_, _c, doc) => {
-    return doc;
-  }
-});
-var SERIALIZABLE_STATE = Symbol("serializable-data");
-var ComponentSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (obj) => isQwikComponent(obj),
-  $serialize$: (obj, getObjId) => {
-    const [qrl2] = obj[SERIALIZABLE_STATE];
-    return serializeQRL(qrl2, {
-      $getObjId$: getObjId
-    });
-  },
-  $prepare$: (data, containerState) => {
-    const qrl2 = parseQRL(data, containerState.$containerEl$);
-    return componentQrl(qrl2);
-  },
-  $fill$: (component, getObject) => {
-    const [qrl2] = component[SERIALIZABLE_STATE];
-    if (qrl2.$capture$?.length) {
-      qrl2.$captureRef$ = qrl2.$capture$.map(getObject);
-      qrl2.$capture$ = null;
-    }
-  }
-});
-var DerivedSignalSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (obj) => obj instanceof SignalDerived,
-  $collect$: (obj, collector, leaks) => {
-    if (obj.$args$) {
-      for (const arg of obj.$args$) {
-        collectValue(arg, collector, leaks);
-      }
-    }
-  },
-  $serialize$: (signal, getObjID, collector) => {
-    const serialized = serializeDerivedSignalFunc(signal);
-    let index = collector.$inlinedFunctions$.indexOf(serialized);
-    if (index < 0) {
-      index = collector.$inlinedFunctions$.length;
-      collector.$inlinedFunctions$.push(serialized);
-    }
-    return mapJoin(signal.$args$, getObjID, " ") + " @" + intToStr(index);
-  },
-  $prepare$: (data) => {
-    const ids = data.split(" ");
-    const args = ids.slice(0, -1);
-    const fn = ids[ids.length - 1];
-    return new SignalDerived(fn, args, fn);
-  },
-  $fill$: (fn, getObject) => {
-    assertString(fn.$func$, "fn.$func$ should be a string");
-    fn.$func$ = getObject(fn.$func$);
-    fn.$args$ = fn.$args$.map(getObject);
-  }
-});
-var SignalSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof SignalImpl,
-  $collect$: (obj, collector, leaks) => {
-    collectValue(obj.untrackedValue, collector, leaks);
-    const mutable = (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE) === 0;
-    if (leaks === true && mutable) {
-      collectSubscriptions(obj[QObjectManagerSymbol], collector, true);
-    }
-    return obj;
-  },
-  $serialize$: (obj, getObjId) => {
-    return getObjId(obj.untrackedValue);
-  },
-  $prepare$: (data, containerState) => {
-    return new SignalImpl(data, containerState?.$subsManager$?.$createManager$(), 0);
-  },
-  $subs$: (signal, subs) => {
-    signal[QObjectManagerSymbol].$addSubs$(subs);
-  },
-  $fill$: (signal, getObject) => {
-    signal.untrackedValue = getObject(signal.untrackedValue);
-  }
-});
-var SignalWrapperSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof SignalWrapper,
-  $collect$(obj, collector, leaks) {
-    collectValue(obj.ref, collector, leaks);
-    if (fastWeakSerialize(obj.ref)) {
-      const localManager = getSubscriptionManager(obj.ref);
-      if (isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks)) {
-        collectValue(obj.ref[obj.prop], collector, leaks);
-      }
-    }
-    return obj;
-  },
-  $serialize$: (obj, getObjId) => {
-    return `${getObjId(obj.ref)} ${obj.prop}`;
-  },
-  $prepare$: (data) => {
-    const [id, prop] = data.split(" ");
-    return new SignalWrapper(id, prop);
-  },
-  $fill$: (signal, getObject) => {
-    signal.ref = getObject(signal.ref);
-  }
-});
-var NoFiniteNumberSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => typeof v === "number",
-  $serialize$: (v) => {
-    return String(v);
-  },
-  $prepare$: (data) => {
-    return Number(data);
-  }
-});
-var URLSearchParamsSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof URLSearchParams,
-  $serialize$: (obj) => obj.toString(),
-  $prepare$: (data) => new URLSearchParams(data)
-});
-var FormDataSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => typeof FormData !== "undefined" && v instanceof globalThis.FormData,
-  $serialize$: (formData) => {
-    const array = [];
-    formData.forEach((value, key) => {
-      if (typeof value === "string") {
-        array.push([key, value]);
-      } else {
-        array.push([key, value.name]);
-      }
-    });
-    return JSON.stringify(array);
-  },
-  $prepare$: (data) => {
-    const array = JSON.parse(data);
-    const formData = new FormData();
-    for (const [key, value] of array) {
-      formData.append(key, value);
-    }
-    return formData;
-  }
-});
-var JSXNodeSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => isJSXNode(v),
-  $collect$: (node, collector, leaks) => {
-    collectValue(node.children, collector, leaks);
-    collectValue(node.props, collector, leaks);
-    collectValue(node.constProps, collector, leaks);
-    collectValue(node.key, collector, leaks);
-    let type = node.type;
-    if (type === Slot) {
-      type = ":slot";
-    } else if (type === Fragment) {
-      type = ":fragment";
-    }
-    collectValue(type, collector, leaks);
-  },
-  $serialize$: (node, getObjID) => {
-    let type = node.type;
-    if (type === Slot) {
-      type = ":slot";
-    } else if (type === Fragment) {
-      type = ":fragment";
-    }
-    return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.constProps)} ${getObjID(
-      node.key
-    )} ${getObjID(node.children)} ${node.flags}`;
-  },
-  $prepare$: (data) => {
-    const [type, props, immutableProps, key, children, flags] = data.split(" ");
-    const node = new JSXNodeImpl(
-      type,
-      props,
-      immutableProps,
-      children,
-      parseInt(flags, 10),
-      key
-    );
-    return node;
-  },
-  $fill$: (node, getObject) => {
-    node.type = getResolveJSXType(getObject(node.type));
-    node.props = getObject(node.props);
-    node.constProps = getObject(node.constProps);
-    node.key = getObject(node.key);
-    node.children = getObject(node.children);
-  }
-});
-var BigIntSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => typeof v === "bigint",
-  $serialize$: (v) => {
-    return v.toString();
-  },
-  $prepare$: (data) => {
-    return BigInt(data);
-  }
-});
-var Uint8ArraySerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof Uint8Array,
-  $serialize$: (v) => {
-    let buf = "";
-    for (const c of v) {
-      buf += String.fromCharCode(c);
-    }
-    return btoa(buf).replace(/=+$/, "");
-  },
-  $prepare$: (data) => {
-    const buf = atob(data);
-    const bytes = new Uint8Array(buf.length);
-    let i = 0;
-    for (const s of buf) {
-      bytes[i++] = s.charCodeAt(0);
-    }
-    return bytes;
-  },
-  $fill$: void 0
-});
-var DATA = Symbol();
-var SetSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof Set,
-  $collect$: (set, collector, leaks) => {
-    set.forEach((value) => collectValue(value, collector, leaks));
-  },
-  $serialize$: (v, getObjID) => {
-    return Array.from(v).map(getObjID).join(" ");
-  },
-  $prepare$: (data) => {
-    const set = /* @__PURE__ */ new Set();
-    set[DATA] = data;
-    return set;
-  },
-  $fill$: (set, getObject) => {
-    const data = set[DATA];
-    set[DATA] = void 0;
-    assertString(data, "SetSerializer should be defined");
-    const items = data.length === 0 ? [] : data.split(" ");
-    for (const id of items) {
-      set.add(getObject(id));
-    }
-  }
-});
-var MapSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "",
-  $test$: (v) => v instanceof Map,
-  $collect$: (map, collector, leaks) => {
-    map.forEach((value, key) => {
-      collectValue(value, collector, leaks);
-      collectValue(key, collector, leaks);
-    });
-  },
-  $serialize$: (map, getObjID) => {
-    const result = [];
-    map.forEach((value, key) => {
-      result.push(getObjID(key) + " " + getObjID(value));
-    });
-    return result.join(" ");
-  },
-  $prepare$: (data) => {
-    const set = /* @__PURE__ */ new Map();
-    set[DATA] = data;
-    return set;
-  },
-  $fill$: (set, getObject) => {
-    const data = set[DATA];
-    set[DATA] = void 0;
-    assertString(data, "SetSerializer should be defined");
-    const items = data.length === 0 ? [] : data.split(" ");
-    assertTrue(items.length % 2 === 0, "MapSerializer should have even number of items");
-    for (let i = 0; i < items.length; i += 2) {
-      set.set(getObject(items[i]), getObject(items[i + 1]));
-    }
-  }
-});
-var StringSerializer = /* @__PURE__ */ serializer({
-  $prefix$: "\x1B",
-  $test$: (v) => !!getSerializer(v) || v === UNDEFINED_PREFIX,
-  $serialize$: (v) => v,
-  $prepare$: (data) => data
-});
-var serializers = [
-  // NULL                       \u0000
-  // UNDEFINED_PREFIX           \u0001
-  QRLSerializer,
-  ////////////// \u0002
-  TaskSerializer,
-  ///////////// \u0003
-  ResourceSerializer,
-  ///////// \u0004
-  URLSerializer,
-  ////////////// \u0005
-  DateSerializer,
-  ///////////// \u0006
-  RegexSerializer,
-  //////////// \u0007
-  // BACKSPACE                  \u0008
-  // HORIZONTAL TAB             \u0009
-  // NEW LINE                   \u000A
-  // VERTICAL TAB               \u000B
-  // FORM FEED                  \u000C
-  // CARRIAGE RETURN            \u000D
-  ErrorSerializer,
-  //////////// \u000E
-  DocumentSerializer,
-  ///////// \u000F
-  ComponentSerializer,
-  //////// \u0010
-  DerivedSignalSerializer,
-  //// \u0011
-  SignalSerializer,
-  /////////// \u0012
-  SignalWrapperSerializer,
-  //// \u0013
-  NoFiniteNumberSerializer,
-  /// \u0014
-  URLSearchParamsSerializer,
-  // \u0015
-  FormDataSerializer,
-  ///////// \u0016
-  JSXNodeSerializer,
-  ////////// \u0017
-  BigIntSerializer,
-  /////////// \u0018
-  SetSerializer,
-  ////////////// \u0019
-  MapSerializer,
-  ////////////// \u001a
-  StringSerializer,
-  /////////// \u001b
-  Uint8ArraySerializer
-  /////// \u001c
-];
-var serializerByPrefix = /* @__PURE__ */ (() => {
-  const serializerByPrefix2 = [];
-  serializers.forEach((s) => {
-    const prefix = s.$prefixCode$;
-    while (serializerByPrefix2.length < prefix) {
-      serializerByPrefix2.push(void 0);
-    }
-    serializerByPrefix2.push(s);
-  });
-  return serializerByPrefix2;
-})();
-function getSerializer(obj) {
-  if (typeof obj === "string") {
-    const prefix = obj.charCodeAt(0);
-    if (prefix < serializerByPrefix.length) {
-      return serializerByPrefix[prefix];
-    }
-  }
-  return void 0;
-}
-var collectorSerializers = /* @__PURE__ */ serializers.filter((a) => a.$collect$);
-var canSerialize = (obj) => {
-  for (const s of serializers) {
-    if (s.$test$(obj)) {
-      return true;
-    }
-  }
-  return false;
-};
-var collectDeps = (obj, collector, leaks) => {
-  for (const s of collectorSerializers) {
-    if (s.$test$(obj)) {
-      s.$collect$(obj, collector, leaks);
-      return true;
-    }
-  }
-  return false;
-};
-var serializeValue = (obj, getObjID, collector, containerState) => {
-  for (const s of serializers) {
-    if (s.$test$(obj)) {
-      let value = s.$prefixChar$;
-      if (s.$serialize$) {
-        value += s.$serialize$(obj, getObjID, collector, containerState);
-      }
-      return value;
-    }
-  }
-  if (typeof obj === "string") {
-    return obj;
-  }
-  return void 0;
-};
-var createParser = (containerState, doc) => {
-  const fillMap = /* @__PURE__ */ new Map();
-  const subsMap = /* @__PURE__ */ new Map();
-  return {
-    prepare(data) {
-      const serializer2 = getSerializer(data);
-      if (serializer2) {
-        const value = serializer2.$prepare$(data.slice(1), containerState, doc);
-        if (serializer2.$fill$) {
-          fillMap.set(value, serializer2);
-        }
-        if (serializer2.$subs$) {
-          subsMap.set(value, serializer2);
-        }
-        return value;
-      }
-      return data;
-    },
-    subs(obj, subs) {
-      const serializer2 = subsMap.get(obj);
-      if (serializer2) {
-        serializer2.$subs$(obj, subs, containerState);
-        return true;
-      }
-      return false;
-    },
-    fill(obj, getObject) {
-      const serializer2 = fillMap.get(obj);
-      if (serializer2) {
-        serializer2.$fill$(obj, getObject, containerState);
-        return true;
-      }
-      return false;
-    }
-  };
-};
-var OBJECT_TRANSFORMS = {
-  "!": (obj, containerState) => {
-    return containerState.$proxyMap$.get(obj) ?? getOrCreateProxy(obj, containerState);
-  },
-  "~": (obj) => {
-    return Promise.resolve(obj);
-  },
-  _: (obj) => {
-    return Promise.reject(obj);
-  }
-};
-var isTreeShakeable = (manager, target, leaks) => {
-  if (typeof leaks === "boolean") {
-    return leaks;
-  }
-  const localManager = manager.$groupToManagers$.get(leaks);
-  if (localManager && localManager.length > 0) {
-    if (localManager.length === 1) {
-      return localManager[0] !== target;
-    }
-    return true;
-  }
-  return false;
-};
-var getResolveJSXType = (type) => {
-  if (type === ":slot") {
-    return Slot;
-  }
-  if (type === ":fragment") {
-    return Fragment;
-  }
-  return type;
-};
+// packages/qwik/src/core/util/event.ts
+import { isBrowser as isBrowser3 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/core/state/common.ts
 var verifySerializable = (value, preMessage) => {
@@ -31789,7 +27668,7 @@ var verifySerializable = (value, preMessage) => {
   return _verifySerializable(value, seen, "_", preMessage);
 };
 var _verifySerializable = (value, seen, ctx, preMessage) => {
-  const unwrapped = unwrapProxy(value);
+  const unwrapped = unwrapStore(value);
   if (unwrapped == null) {
     return value;
   }
@@ -31798,7 +27677,10 @@ var _verifySerializable = (value, seen, ctx, preMessage) => {
       return value;
     }
     seen.add(unwrapped);
-    if (canSerialize(unwrapped)) {
+    if (isSignal(unwrapped)) {
+      return value;
+    }
+    if (canSerialize2(unwrapped)) {
       return value;
     }
     const typeObj = typeof unwrapped;
@@ -31860,7 +27742,6 @@ Please check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
   return value;
 };
 var noSerializeSet = /* @__PURE__ */ new WeakSet();
-var weakSerializeSet = /* @__PURE__ */ new WeakSet();
 var shouldSerialize = (obj) => {
   if (isObject(obj) || isFunction(obj)) {
     return !noSerializeSet.has(obj);
@@ -31870,303 +27751,23 @@ var shouldSerialize = (obj) => {
 var fastSkipSerialize = (obj) => {
   return noSerializeSet.has(obj);
 };
-var fastWeakSerialize = (obj) => {
-  return weakSerializeSet.has(obj);
-};
 var noSerialize = (input) => {
   if (input != null) {
     noSerializeSet.add(input);
   }
   return input;
 };
-var isConnected = (sub) => {
-  if (isSubscriberDescriptor(sub)) {
-    return isConnected(sub.$el$);
-  } else {
-    return !!tryGetContext2(sub) || sub.isConnected;
-  }
-};
-var unwrapProxy = (proxy) => {
-  return isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
-};
-var getProxyTarget = (obj) => {
-  return obj[QObjectTargetSymbol];
-};
 var getSubscriptionManager = (obj) => {
   return obj[QObjectManagerSymbol];
 };
-var getProxyFlags = (obj) => {
-  return obj[QObjectFlagsSymbol];
-};
-var serializeSubscription = (sub, getObjId) => {
-  const type = sub[0 /* TYPE */];
-  const host = typeof sub[1 /* HOST */] === "string" ? sub[1 /* HOST */] : getObjId(sub[1 /* HOST */]);
-  if (!host) {
-    return void 0;
-  }
-  let base = type + " " + host;
-  let key;
-  if (type === 0 /* HOST */) {
-    key = sub[2 /* SIGNAL */];
-  } else {
-    const signalID = getObjId(sub[2 /* SIGNAL */]);
-    if (!signalID) {
-      return void 0;
-    }
-    if (type <= 2 /* PROP_MUTABLE */) {
-      key = sub[4 /* ELEMENT_PROP */];
-      base += ` ${signalID} ${must(getObjId(sub[3 /* ELEMENT */]))} ${sub[4 /* ELEMENT_PROP */]}`;
-    } else if (type <= 4 /* TEXT_MUTABLE */) {
-      key = sub.length > 4 /* ELEMENT_PROP */ ? sub[4 /* ELEMENT_PROP */] : void 0;
-      const nodeID = typeof sub[3 /* ELEMENT */] === "string" ? sub[3 /* ELEMENT */] : must(getObjId(sub[3 /* ELEMENT */]));
-      base += ` ${signalID} ${nodeID}`;
-    } else {
-      assertFail("Should not get here: " + type);
-    }
-  }
-  if (key) {
-    base += ` ${encodeURI(key)}`;
-  }
-  return base;
-};
-var parseSubscription = (sub, getObject) => {
-  const parts = sub.split(" ");
-  const type = parseInt(parts[0], 10);
-  assertTrue(parts.length >= 2, "At least 2 parts");
-  const host = getObject(parts[1]);
-  if (!host) {
-    return void 0;
-  }
-  if (isSubscriberDescriptor(host) && !host.$el$) {
-    return void 0;
-  }
-  if (type === 0 /* HOST */) {
-    assertTrue(parts.length <= 3, "Max 3 parts");
-    return [type, host, parts.length === 3 ? safeDecode(parts[2]) : void 0];
-  } else if (type <= 2) {
-    assertTrue(parts.length === 6 || parts.length === 7, "Type B has 5");
-    return [
-      type,
-      host,
-      getObject(parts[2]),
-      getObject(parts[3]),
-      parts[4],
-      safeDecode(parts[5]),
-      safeDecode(parts[6])
-    ];
-  }
-  assertTrue(type <= 4 && (parts.length === 4 || parts.length === 5), "Type C has 4");
-  return [
-    type,
-    host,
-    getObject(parts[2]),
-    getObject(parts[3]),
-    safeDecode(parts[4])
-  ];
-};
-var safeDecode = (str) => {
-  if (str !== void 0) {
-    return decodeURI(str);
-  }
-  return void 0;
-};
-var createSubscriptionManager = (containerState) => {
-  const groupToManagers = /* @__PURE__ */ new Map();
-  const manager = {
-    $groupToManagers$: groupToManagers,
-    $createManager$: (initialMap) => {
-      return new LocalSubscriptionManager5(groupToManagers, containerState, initialMap);
-    },
-    $clearSub$: (group) => {
-      const managers = groupToManagers.get(group);
-      if (managers) {
-        for (const manager2 of managers) {
-          manager2.$unsubGroup$(group);
-        }
-        groupToManagers.delete(group);
-        managers.length = 0;
-      }
-    },
-    $clearSignal$: (signal) => {
-      const managers = groupToManagers.get(signal[1 /* HOST */]);
-      if (managers) {
-        for (const manager2 of managers) {
-          manager2.$unsubEntry$(signal);
-        }
-      }
-    }
-  };
-  seal(manager);
-  return manager;
-};
-var LocalSubscriptionManager5 = class {
-  constructor($groupToManagers$, $containerState$, initialMap) {
-    this.$groupToManagers$ = $groupToManagers$;
-    this.$containerState$ = $containerState$;
-    this.$subs$ = [];
-    if (initialMap) {
-      this.$addSubs$(initialMap);
-    }
-    seal(this);
-  }
-  $addSubs$(subs) {
-    this.$subs$.push(...subs);
-    for (const sub of this.$subs$) {
-      this.$addToGroup$(sub[1 /* HOST */], this);
-    }
-  }
-  $addToGroup$(group, manager) {
-    let managers = this.$groupToManagers$.get(group);
-    if (!managers) {
-      this.$groupToManagers$.set(group, managers = []);
-    }
-    if (!managers.includes(manager)) {
-      managers.push(manager);
-    }
-  }
-  $unsubGroup$(group) {
-    const subs = this.$subs$;
-    for (let i = 0; i < subs.length; i++) {
-      const found = subs[i][1 /* HOST */] === group;
-      if (found) {
-        subs.splice(i, 1);
-        i--;
-      }
-    }
-  }
-  $unsubEntry$(entry) {
-    const [type, group, signal, elm] = entry;
-    const subs = this.$subs$;
-    if (type === 1 /* PROP_IMMUTABLE */ || type === 2 /* PROP_MUTABLE */) {
-      const prop = entry[4 /* ELEMENT_PROP */];
-      for (let i = 0; i < subs.length; i++) {
-        const sub = subs[i];
-        const match = sub[0 /* TYPE */] === type && sub[1 /* HOST */] === group && sub[2 /* SIGNAL */] === signal && sub[3 /* ELEMENT */] === elm && sub[4 /* ELEMENT_PROP */] === prop;
-        if (match) {
-          subs.splice(i, 1);
-          i--;
-        }
-      }
-    } else if (type === 3 /* TEXT_IMMUTABLE */ || type === 4 /* TEXT_MUTABLE */) {
-      for (let i = 0; i < subs.length; i++) {
-        const sub = subs[i];
-        const match = sub[0 /* TYPE */] === type && sub[1 /* HOST */] === group && sub[2 /* SIGNAL */] === signal && sub[3 /* ELEMENT */] === elm;
-        if (match) {
-          subs.splice(i, 1);
-          i--;
-        }
-      }
-    }
-  }
-  $addSub$(sub, key) {
-    const subs = this.$subs$;
-    const group = sub[1 /* HOST */];
-    if (sub[0 /* TYPE */] === 0 /* HOST */ && subs.some(
-      ([_type, _group, _key]) => _type === 0 /* HOST */ && _group === group && _key === key
-    )) {
-      return;
-    }
-    subs.push(__lastSubscription = [...sub, key]);
-    this.$addToGroup$(group, this);
-  }
-  $notifySubs$(key) {
-    const subs = [...this.$subs$];
-    for (const sub of subs) {
-      const compare = sub[sub.length - 1];
-      if (key && compare && compare !== key) {
-        continue;
-      }
-      if (isContainer2(this.$containerState$)) {
-        const type = sub[0 /* TYPE */];
-        const host = sub[1 /* HOST */];
-        const scheduler = this.$containerState$.$scheduler$;
-        if (type == 0 /* HOST */) {
-          if (isTask(host)) {
-            if (isComputedTask(host)) {
-              scheduler(1 /* COMPUTED */, host);
-            } else if (isResourceTask2(host)) {
-              scheduler(2 /* RESOURCE */, host);
-            } else {
-              const task = host;
-              scheduler(
-                task.$flags$ & 1 /* VISIBLE_TASK */ ? 32 /* VISIBLE */ : 3 /* TASK */,
-                task
-              );
-            }
-          } else {
-            const componentQrl3 = this.$containerState$.getHostProp(
-              host,
-              OnRenderProp
-            );
-            assertDefined(componentQrl3, "No Component found at this location");
-            const componentProps = this.$containerState$.getHostProp(
-              host,
-              ELEMENT_PROPS
-            );
-            scheduler(6 /* COMPONENT */, host, componentQrl3, componentProps);
-          }
-        } else {
-          const signal = sub[2 /* SIGNAL */];
-          this.$containerState$.$subsManager$.$clearSignal$(sub);
-          const value = trackSignal(signal, sub);
-          if (type == 1 /* PROP_IMMUTABLE */ || type == 2 /* PROP_MUTABLE */) {
-            const target = sub[3 /* ELEMENT */];
-            const propKey = sub[4 /* ELEMENT_PROP */];
-            const styleScopedId = sub[5 /* STYLE_ID */];
-            updateNodeProp(
-              this.$containerState$,
-              styleScopedId || null,
-              target,
-              propKey,
-              // untrack(() => signal.value),
-              value,
-              type == 1 /* PROP_IMMUTABLE */
-            );
-          } else {
-            scheduler(
-              4 /* NODE_DIFF */,
-              host,
-              sub[3 /* ELEMENT */],
-              // untrack(() => signal.value)
-              value
-            );
-          }
-        }
-      } else {
-        notifyChange(sub, this.$containerState$);
-      }
-    }
-  }
-};
-function updateNodeProp(container, styleScopedId, target, propKey, propValue, immutable) {
-  let value = propValue;
-  value = serializeAttribute(propKey, value, styleScopedId);
-  if (!immutable) {
-    vnode_setAttr(container.$journal$, target, propKey, value);
-  } else {
-    const element = target[6 /* element */];
-    container.$journal$.push(2 /* SetAttribute */, element, propKey, value);
-  }
-  container.$scheduler$(24 /* JOURNAL_FLUSH */);
-}
-var __lastSubscription;
-function getLastSubscription() {
-  return __lastSubscription;
-}
-var must = (a) => {
-  if (a == null) {
-    throw logError("must be non null", a);
-  }
-  return a;
-};
 
 // packages/qwik/src/core/qrl/qrl-class.ts
-var isQrl = (value) => {
+var isQrl2 = (value) => {
   return typeof value === "function" && typeof value.getSymbol === "function";
 };
 var SYNC_QRL = "<sync>";
 var isSyncQrl = (value) => {
-  return isQrl(value) && value.$symbol$ == SYNC_QRL;
+  return isQrl2(value) && value.$symbol$ == SYNC_QRL;
 };
 var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
   if (qDev && qSerialize) {
@@ -32283,7 +27884,7 @@ var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSym
   if (symbolRef) {
     symbolRef = maybeThen(symbolRef, (resolved) => qrl2.resolved = symbolRef = wrapFn(resolved));
   }
-  if (isDev5) {
+  if (isDev4) {
     Object.defineProperty(qrl2, "_devOnlySymbolRef", {
       get() {
         return symbolRef;
@@ -32304,15 +27905,8 @@ var getSymbolHash = (symbolName) => {
 };
 function assertQrl(qrl2) {
   if (qDev) {
-    if (!isQrl(qrl2)) {
+    if (!isQrl2(qrl2)) {
       throw new Error("Not a QRL");
-    }
-  }
-}
-function assertSignal(obj) {
-  if (qDev) {
-    if (!isSignal(obj)) {
-      throw new Error("Not a Signal");
     }
   }
 }
@@ -32347,11 +27941,316 @@ var now = () => {
   return 0;
 };
 
+// packages/qwik/src/core/qrl/qrl.public.ts
+var runtimeSymbolId = 0;
+var $ = (expression) => {
+  if (!qRuntimeQrl && qDev) {
+    throw new Error(
+      "Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead."
+    );
+  }
+  return createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
+};
+var dollar = $;
+var eventQrl = (qrl2) => {
+  return qrl2;
+};
+
+// packages/qwik/src/core/render/ssr/render-ssr.ts
+var IS_HEAD2 = 1 << 0;
+var IS_HTML = 1 << 2;
+var IS_TEXT = 1 << 3;
+var IS_INVISIBLE = 1 << 4;
+var IS_PHASING = 1 << 5;
+var IS_ANCHOR = 1 << 6;
+var IS_BUTTON = 1 << 7;
+var IS_TABLE = 1 << 8;
+var IS_PHRASING_CONTAINER = 1 << 9;
+var IS_IMMUTABLE2 = 1 << 10;
+var _a2;
+var MockElement = class {
+  constructor(nodeType) {
+    this.nodeType = nodeType;
+    this[_a2] = null;
+    seal(this);
+  }
+};
+_a2 = Q_CTX;
+
+// packages/qwik/src/core/v2/ssr/ssr-render-jsx.ts
+import { isDev as isDev5 } from "@builder.io/qwik/build";
+
+// packages/qwik/src/core/component/component.public.ts
+var componentQrl = (componentQrl3) => {
+  const QwikComponent = () => {
+  };
+  QwikComponent[SERIALIZABLE_STATE] = [componentQrl3];
+  return QwikComponent;
+};
+var isQwikComponent = (component) => {
+  return typeof component == "function" && component[SERIALIZABLE_STATE] !== void 0;
+};
+
+// packages/qwik/src/core/render/jsx/jsx-runtime.ts
+var _jsxSorted = (type, varProps, constProps, children, flags, key, dev) => {
+  const processed = key == null ? null : String(key);
+  const node = new JSXNodeImpl(
+    type,
+    varProps || {},
+    constProps || null,
+    children,
+    flags,
+    processed
+  );
+  if (qDev && dev) {
+    node.dev = {
+      stack: new Error().stack,
+      ...dev
+    };
+  }
+  seal(node);
+  return node;
+};
+var _jsxSplit = (type, varProps, constProps, children, flags, key, dev) => {
+  let sortedProps;
+  if (varProps) {
+    sortedProps = Object.fromEntries(
+      untrack(() => Object.entries(varProps)).filter((entry) => {
+        const attr = entry[0];
+        if (attr === "children") {
+          children ?? (children = entry[1]);
+          return false;
+        } else if (attr === "key") {
+          key = entry[1];
+          return false;
+        }
+        return !constProps || !(attr in constProps) || // special case for event handlers, they merge
+        /^on[A-Z].*\$$/.test(attr);
+      }).sort(([a], [b]) => a < b ? -1 : 1)
+    );
+  } else {
+    sortedProps = typeof type === "string" ? EMPTY_OBJ : {};
+  }
+  if (constProps && "children" in constProps) {
+    children = constProps.children;
+    constProps.children = void 0;
+  }
+  return _jsxSorted(type, sortedProps, constProps, children, flags, key, dev);
+};
+var jsx = (type, props, key) => {
+  return _jsxSplit(type, props, null, null, 0, key || null);
+};
+var isPropsProxy = (obj) => {
+  return obj && obj[_VAR_PROPS] !== void 0;
+};
+var JSXNodeImpl = class {
+  constructor(type, varProps, constProps, children, flags, key = null) {
+    this.type = type;
+    this.varProps = varProps;
+    this.constProps = constProps;
+    this.children = children;
+    this.flags = flags;
+    this.key = key;
+    this._proxy = null;
+    if (qDev) {
+      if (typeof varProps !== "object") {
+        throw new Error(`JSXNodeImpl: varProps must be objects: ` + JSON.stringify(varProps));
+      }
+      if (typeof constProps !== "object") {
+        throw new Error(`JSXNodeImpl: constProps must be objects: ` + JSON.stringify(constProps));
+      }
+    }
+  }
+  get props() {
+    if (!this._proxy) {
+      this._proxy = createPropsProxy(this.varProps, this.constProps, this.children);
+    }
+    return this._proxy;
+  }
+};
+var Virtual = (props) => props.children;
+var isJSXNode = (n) => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (isObject(n) && "key" in n && "props" in n && "type" in n) {
+      logWarn(`Duplicate implementations of "JSXNode" found`);
+      return true;
+    }
+    return false;
+  } else {
+    return n instanceof JSXNodeImpl;
+  }
+};
+var Fragment = (props) => props.children;
+function createPropsProxy(varProps, constProps, children) {
+  return new Proxy({}, new PropsProxyHandler(varProps, constProps, children));
+}
+var PropsProxyHandler = class {
+  constructor($varProps$, $constProps$, $children$) {
+    this.$varProps$ = $varProps$;
+    this.$constProps$ = $constProps$;
+    this.$children$ = $children$;
+  }
+  get(_, prop) {
+    if (prop === _CONST_PROPS) {
+      return this.$constProps$;
+    }
+    if (prop === _VAR_PROPS) {
+      return this.$varProps$;
+    }
+    if (this.$children$ != null && prop === "children") {
+      return this.$children$;
+    }
+    const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
+    return value instanceof WrappedSignal ? value.value : value;
+  }
+  set(_, prop, value) {
+    if (prop === _CONST_PROPS) {
+      this.$constProps$ = value;
+      return true;
+    }
+    if (prop === _VAR_PROPS) {
+      this.$varProps$ = value;
+      return true;
+    }
+    if (this.$constProps$ && prop in this.$constProps$) {
+      this.$constProps$[prop] = value;
+    } else {
+      this.$varProps$[prop] = value;
+    }
+    return true;
+  }
+  deleteProperty(_, prop) {
+    if (typeof prop !== "string") {
+      return false;
+    }
+    let didDelete = delete this.$varProps$[prop];
+    if (this.$constProps$) {
+      didDelete = delete this.$constProps$[prop] || didDelete;
+    }
+    if (this.$children$ != null && prop === "children") {
+      this.$children$ = null;
+    }
+    return didDelete;
+  }
+  has(_, prop) {
+    const hasProp = prop === "children" && this.$children$ != null || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || (this.$constProps$ ? prop in this.$constProps$ : false);
+    return hasProp;
+  }
+  getOwnPropertyDescriptor(target, p) {
+    const value = p === "children" && this.$children$ != null ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
+    return {
+      configurable: true,
+      enumerable: true,
+      value
+    };
+  }
+  ownKeys() {
+    const out = Object.keys(this.$varProps$);
+    if (this.$children$ != null && out.indexOf("children") === -1) {
+      out.push("children");
+    }
+    if (this.$constProps$) {
+      for (const key in this.$constProps$) {
+        if (out.indexOf(key) === -1) {
+          out.push(key);
+        }
+      }
+    }
+    return out;
+  }
+};
+
+// packages/qwik/src/core/debug.ts
+var stringifyPath = [];
+function qwikDebugToString(value) {
+  if (value === null) {
+    return "null";
+  } else if (value === void 0) {
+    return "undefined";
+  } else if (typeof value === "string") {
+    return '"' + value + '"';
+  } else if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  } else if (isTask(value)) {
+    return `Task(${qwikDebugToString(value.$qrl$)})`;
+  } else if (isQrl(value)) {
+    return `Qrl(${value.$symbol$})`;
+  } else if (typeof value === "object" || typeof value === "function") {
+    if (stringifyPath.includes(value)) {
+      return "*";
+    }
+    if (stringifyPath.length > 10) {
+    }
+    try {
+      stringifyPath.push(value);
+      if (Array.isArray(value)) {
+        if (vnode_isVNode(value)) {
+          return vnode_toString.apply(value);
+        } else {
+          return value.map(qwikDebugToString);
+        }
+      } else if (isSignal(value)) {
+        if (value instanceof WrappedSignal) {
+          return "WrappedSignal";
+        } else if (value instanceof ComputedSignal) {
+          return "ComputedSignal";
+        } else {
+          return "Signal";
+        }
+      } else if (isStore(value)) {
+        return "Store";
+      } else if (isJSXNode(value)) {
+        return jsxToString2(value);
+      }
+    } finally {
+      stringifyPath.pop();
+    }
+  }
+  return value;
+}
+var pad = (text, prefix) => {
+  return String(text).split("\n").map((line, idx) => (idx ? prefix : "") + line).join("\n");
+};
+var jsxToString2 = (value) => {
+  if (isJSXNode(value)) {
+    let type = value.type;
+    if (typeof type === "function") {
+      type = type.name || "Component";
+    }
+    let str = "<" + value.type;
+    if (value.props) {
+      for (const [key, val] of Object.entries(value.props)) {
+        str += " " + key + "=" + qwikDebugToString(val);
+      }
+      const children = value.children;
+      if (children != null) {
+        str += ">";
+        if (Array.isArray(children)) {
+          children.forEach((child) => {
+            str += jsxToString2(child);
+          });
+        } else {
+          str += jsxToString2(children);
+        }
+        str += "</" + value.type + ">";
+      } else {
+        str += "/>";
+      }
+    }
+    return str;
+  } else {
+    return String(value);
+  }
+};
+
 // packages/qwik/src/core/v2/client/vnode.ts
 var vnode_newElement = (element, elementName) => {
   assertEqual(fastNodeType(element), 1, "Expecting element node.");
   const vnode = VNodeArray.createElement(
-    1 /* Element */ | 8 /* Inflated */ | -1 << 7 /* shift */,
+    1 /* Element */ | 8 /* Inflated */ | -1 << 8 /* shift */,
     // Flag
     null,
     null,
@@ -32369,7 +28268,7 @@ var vnode_newElement = (element, elementName) => {
 var vnode_newUnMaterializedElement = (element) => {
   assertEqual(fastNodeType(element), 1, "Expecting element node.");
   const vnode = VNodeArray.createElement(
-    1 /* Element */ | -1 << 7 /* shift */,
+    1 /* Element */ | -1 << 8 /* shift */,
     // Flag
     null,
     null,
@@ -32387,7 +28286,7 @@ var vnode_newUnMaterializedElement = (element) => {
 var vnode_newSharedText = (previousTextNode, sharedTextNode, textContent) => {
   sharedTextNode && assertEqual(fastNodeType(sharedTextNode), 3, "Expecting element node.");
   const vnode = VNodeArray.createText(
-    4 /* Text */ | -1 << 7 /* shift */,
+    4 /* Text */ | -1 << 8 /* shift */,
     // Flag
     null,
     // Parent
@@ -32407,7 +28306,7 @@ var vnode_newSharedText = (previousTextNode, sharedTextNode, textContent) => {
 };
 var vnode_newText = (textNode, textContent) => {
   const vnode = VNodeArray.createText(
-    4 /* Text */ | 8 /* Inflated */ | -1 << 7 /* shift */,
+    4 /* Text */ | 8 /* Inflated */ | -1 << 8 /* shift */,
     // Flags
     null,
     // Parent
@@ -32428,7 +28327,7 @@ var vnode_newText = (textNode, textContent) => {
 };
 var vnode_newVirtual = () => {
   const vnode = VNodeArray.createVirtual(
-    2 /* Virtual */ | -1 << 7 /* shift */,
+    2 /* Virtual */ | -1 << 8 /* shift */,
     // Flags
     null,
     null,
@@ -32511,7 +28410,7 @@ var vnode_ensureElementInflated = (vnode) => {
     for (let idx = 0; idx < attributes.length; idx++) {
       const attr = attributes[idx];
       const key = attr.name;
-      if (key == ":" || !key) {
+      if (key == Q_PROPS_SEPARATOR || !key) {
         break;
       } else if (key.startsWith(QContainerAttr)) {
         if (attr.value === "html" /* HTML */) {
@@ -32536,13 +28435,14 @@ var vnode_ensureElementInflated = (vnode) => {
     }
   }
 };
-function vnode_walkVNode(vNode) {
+function vnode_walkVNode(vNode, callback) {
   let vCursor = vNode;
   if (vnode_isTextVNode(vNode)) {
     return;
   }
   let vParent = null;
   do {
+    callback?.(vCursor, vParent);
     const vFirstChild = vnode_getFirstChild(vCursor);
     if (vFirstChild) {
       vCursor = vFirstChild;
@@ -32739,7 +28639,7 @@ var vnode_locate = (rootVNode, id) => {
 var vnode_getChildWithIdx = (vNode, childIdx) => {
   let child = vnode_getFirstChild(vNode);
   assertDefined(child, "Missing child.");
-  while (child[0 /* flags */] >>> 7 /* shift */ !== childIdx) {
+  while (child[0 /* flags */] >>> 8 /* shift */ !== childIdx) {
     child = vnode_getNextSibling(child);
     assertDefined(child, "Missing child.");
   }
@@ -33314,14 +29214,14 @@ function vnode_toString(depth = 10, offset = "", materialize = false) {
   const strings = [];
   do {
     if (vnode_isTextVNode(vnode)) {
-      strings.push(stringify(vnode_getText(vnode)));
+      strings.push(qwikDebugToString(vnode_getText(vnode)));
     } else if (vnode_isVirtualVNode(vnode)) {
-      const idx = vnode[0 /* flags */] >>> 7 /* shift */;
+      const idx = vnode[0 /* flags */] >>> 8 /* shift */;
       const attrs = ["[" + String(idx) + "]"];
       vnode_getAttrKeys(vnode).forEach((key) => {
         if (key !== DEBUG_TYPE) {
           const value = vnode_getAttr(vnode, key);
-          attrs.push(" " + key + "=" + stringify(value));
+          attrs.push(" " + key + "=" + qwikDebugToString(value));
         }
       });
       const name = VirtualTypeName[vnode_getAttr(vnode, DEBUG_TYPE) || "V" /* Virtual */] || VirtualTypeName["V" /* Virtual */];
@@ -33335,20 +29235,20 @@ function vnode_toString(depth = 10, offset = "", materialize = false) {
       const keys = vnode_getAttrKeys(vnode);
       keys.forEach((key) => {
         const value = vnode_getAttr(vnode, key);
-        attrs.push(" " + key + "=" + stringify(value));
+        attrs.push(" " + key + "=" + qwikDebugToString(value));
       });
       const node = vnode_getNode(vnode);
       if (node) {
         const vnodeData = node.ownerDocument.qVNodeData?.get(node);
         if (vnodeData) {
-          attrs.push(" q:vnodeData=" + stringify(vnodeData));
+          attrs.push(" q:vnodeData=" + qwikDebugToString(vnodeData));
         }
       }
       const domAttrs = node.attributes;
       for (let i = 0; i < domAttrs.length; i++) {
         const attr = domAttrs[i];
         if (keys.indexOf(attr.name) === -1) {
-          attrs.push(" " + attr.name + (attr.value ? "=" + stringify(attr.value) : ""));
+          attrs.push(" " + attr.name + (attr.value ? "=" + qwikDebugToString(attr.value) : ""));
         }
       }
       strings.push("<" + tag + attrs.join("") + ">");
@@ -33395,7 +29295,7 @@ function materializeFromVNodeData(vParent, vData, element, child) {
     return ch;
   };
   const addVNode = (node) => {
-    node[0 /* flags */] = node[0 /* flags */] & 127 /* negated_mask */ | idx << 7 /* shift */;
+    node[0 /* flags */] = node[0 /* flags */] & 255 /* negated_mask */ | idx << 8 /* shift */;
     idx++;
     vLast && (vLast[3 /* nextSibling */] = node);
     node[2 /* previousSibling */] = vLast;
@@ -33577,44 +29477,6 @@ var vnode_getProjectionParentComponent = (vHost, rootVNode) => {
     }
   }
   return vHost;
-};
-var stringifyPath = [];
-var stringify = (value) => {
-  stringifyPath.push(value);
-  try {
-    if (value === null) {
-      return "null";
-    } else if (value === void 0) {
-      return "undefined";
-    } else if (typeof value === "string") {
-      return '"' + value + '"';
-    } else if (typeof value === "function") {
-      if (isQrl(value)) {
-        return '"' + (value.$chunk$ || "") + "#" + value.$hash$ + '"';
-      } else {
-        return '"' + value.name + '()"';
-      }
-    } else if (vnode_isVNode(value)) {
-      if (stringifyPath.indexOf(value) !== -1) {
-        return "*";
-      } else {
-        return '"' + String(value).replaceAll(/\n\s*/gm, "") + '"';
-      }
-    } else if (Array.isArray(value)) {
-      return "[" + value.map(stringify).join(", ") + "]";
-    }
-    if (value instanceof SignalImpl) {
-      return stringify(value.value);
-    } else {
-      if (value.toString) {
-        return String(value);
-      } else {
-        return JSON.stringify(value);
-      }
-    }
-  } finally {
-    stringifyPath.pop();
-  }
 };
 var VNodeArray = class VNode extends Array {
   static createElement(flags, parent, previousSibling, nextSibling, firstChild, lastChild, element, elementName) {
@@ -33833,24 +29695,24 @@ function getVNodeChildren(vNode) {
   }
   return children;
 }
-function jsxToHTML(jsx4, pad = "") {
+function jsxToHTML(jsx4, pad2 = "") {
   const html = [];
   if (jsx4.type) {
-    html.push(pad, "<", tagToString(jsx4.type), ">\n");
+    html.push(pad2, "<", tagToString(jsx4.type), ">\n");
     getJSXChildren(jsx4).forEach((jsx5) => {
-      html.push(jsxToHTML(jsx5, pad + "  "));
+      html.push(jsxToHTML(jsx5, pad2 + "  "));
     });
-    html.push(pad, "</", tagToString(jsx4.type), ">\n");
+    html.push(pad2, "</", tagToString(jsx4.type), ">\n");
   } else {
-    html.push(pad, JSON.stringify(jsx4), "\n");
+    html.push(pad2, JSON.stringify(jsx4), "\n");
   }
   return html.join("");
 }
-function vnodeToHTML(vNode, pad = "") {
+function vnodeToHTML(vNode, pad2 = "") {
   const html = [];
   while (vNode) {
     html.push(
-      pad + vNode.toString().split("\n").join("\n" + pad)
+      pad2 + vNode.toString().split("\n").join("\n" + pad2)
     );
     while (shouldSkip(vNode = vnode_getNextSibling(vNode))) {
     }
@@ -33944,7 +29806,7 @@ function constPropsFromElement(element) {
   const props = [];
   for (let i = 0; i < element.attributes.length; i++) {
     const attr = element.attributes[i];
-    if (attr.name !== "" && attr.name !== ":") {
+    if (attr.name !== "" && attr.name !== Q_PROPS_SEPARATOR) {
       props.push(attr.name);
     }
   }
@@ -34098,7 +29960,7 @@ function attrsEqual(expectedValue, receivedValue) {
 
 // packages/qwik/src/testing/element-fixture.ts
 import { vi } from "vitest";
-import { _getQContainerElement as _getQContainerElement4, getDomContainer as getDomContainer2 } from "../core.mjs";
+import { _getQContainerElement as _getQContainerElement3, getDomContainer as getDomContainer2 } from "../core.mjs";
 
 // packages/qwik/src/testing/platform.ts
 import { existsSync } from "fs";
@@ -34132,10 +29994,10 @@ function createPlatform2() {
         return mod2[symbolName];
       });
     },
-    nextTick: (renderMarked2) => {
+    nextTick: (renderMarked) => {
       if (!render) {
         render = {
-          fn: renderMarked2,
+          fn: renderMarked,
           promise: null,
           resolve: null,
           reject: null
@@ -34144,7 +30006,7 @@ function createPlatform2() {
           render.resolve = resolve;
           render.reject = reject;
         });
-      } else if (renderMarked2 !== render.fn) {
+      } else if (renderMarked !== render.fn) {
         throw new Error(
           "Must be same function\nIt looks like previous test has not drained all ticks, and new test has started?"
         );
@@ -34356,7 +30218,7 @@ import {
 import { isDev as isDev7 } from "@builder.io/qwik/build";
 
 // packages/qwik/src/optimizer/src/versions.ts
-var versions = {
+var versions2 = {
   qwik: globalThis.QWIK_VERSION
 };
 
@@ -34709,93 +30571,6 @@ var PrefetchImplementationDefault = {
   prefetchEvent: "always"
 };
 
-// packages/qwik/src/server/utils.ts
-function createTimer() {
-  if (typeof performance === "undefined") {
-    return () => 0;
-  }
-  const start = performance.now();
-  return () => {
-    const end = performance.now();
-    const delta = end - start;
-    return delta / 1e6;
-  };
-}
-function getBuildBase(opts) {
-  let base = opts.base;
-  if (typeof opts.base === "function") {
-    base = opts.base(opts);
-  }
-  if (typeof base === "string") {
-    if (!base.endsWith("/")) {
-      base += "/";
-    }
-    return base;
-  }
-  return `${import.meta.env.BASE_URL}build/`;
-}
-var versions2 = {
-  qwik: globalThis.QWIK_VERSION,
-  qwikDom: globalThis.QWIK_DOM_VERSION
-};
-
-// packages/qwik/src/server/prefetch-strategy.ts
-function getPrefetchResources(qrls, opts, resolvedManifest) {
-  if (!resolvedManifest) {
-    return [];
-  }
-  const prefetchStrategy = opts.prefetchStrategy;
-  const buildBase = getBuildBase(opts);
-  if (prefetchStrategy !== null) {
-    if (!prefetchStrategy || !prefetchStrategy.symbolsToPrefetch || prefetchStrategy.symbolsToPrefetch === "auto") {
-      return getAutoPrefetch(qrls, resolvedManifest, buildBase);
-    }
-    if (typeof prefetchStrategy.symbolsToPrefetch === "function") {
-      try {
-        return prefetchStrategy.symbolsToPrefetch({ manifest: resolvedManifest.manifest });
-      } catch (e) {
-        console.error("getPrefetchUrls, symbolsToPrefetch()", e);
-      }
-    }
-  }
-  return [];
-}
-function getAutoPrefetch(qrls, resolvedManifest, buildBase) {
-  const prefetchResources = [];
-  const { mapper, manifest } = resolvedManifest;
-  const urls = /* @__PURE__ */ new Map();
-  if (mapper && manifest) {
-    for (const obj of qrls) {
-      const qrlSymbolName = obj.getHash();
-      const resolvedSymbol = mapper[qrlSymbolName];
-      if (resolvedSymbol) {
-        addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[1]);
-      }
-    }
-  }
-  return prefetchResources;
-}
-function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
-  const url = buildBase + bundleFileName;
-  let prefetchResource = urls.get(url);
-  if (!prefetchResource) {
-    prefetchResource = {
-      url,
-      imports: []
-    };
-    urls.set(url, prefetchResource);
-    const bundle = manifest.bundles[bundleFileName];
-    if (bundle) {
-      if (Array.isArray(bundle.imports)) {
-        for (const importedFilename of bundle.imports) {
-          addBundle(manifest, urls, prefetchResource.imports, buildBase, importedFilename);
-        }
-      }
-    }
-  }
-  prefetchResources.push(prefetchResource);
-}
-
 // packages/qwik/src/server/scripts.ts
 var QWIK_LOADER_DEFAULT_MINIFIED = globalThis.QWIK_LOADER_DEFAULT_MINIFIED;
 var QWIK_LOADER_DEFAULT_DEBUG = globalThis.QWIK_LOADER_DEFAULT_DEBUG;
@@ -34964,7 +30739,7 @@ async function renderToStream(rootNode, opts) {
       children.push(
         jsx3("script", {
           type: "qwik/json",
-          dangerouslySetInnerHTML: escapeText2(jsonData),
+          dangerouslySetInnerHTML: escapeText(jsonData),
           nonce: opts.serverData?.nonce
         })
       );
@@ -35080,7 +30855,7 @@ function resolveManifest(manifest) {
   }
   return void 0;
 }
-var escapeText2 = (str) => {
+var escapeText = (str) => {
   return str.replace(/<(\/?script)/gi, "\\x3C$1");
 };
 function collectRenderSymbols(renderSymbols, elements) {
@@ -35113,7 +30888,7 @@ var render2 = async (parent, jsxNode, opts = {}) => {
   container.$serverData$ = opts.serverData || {};
   const host = container.rootVNode;
   container.$scheduler$(4 /* NODE_DIFF */, host, host, jsxNode);
-  await container.$scheduler$(63 /* WAIT_FOR_ALL */);
+  await container.$scheduler$(127 /* WAIT_FOR_ALL */);
   return {
     cleanup: () => {
       cleanup(container, container.rootVNode);
@@ -35127,7 +30902,8 @@ import {
   _jsxSorted as _jsxSorted3,
   _jsxSplit as _jsxSplit2,
   _walkJSX as _walkJSX2,
-  isSignal as isSignal3
+  isSignal as isSignal3,
+  _EffectData as EffectData2
 } from "../core.mjs";
 import { isDev as isDev9 } from "@builder.io/qwik/build";
 import { getQwikLoaderScript as getQwikLoaderScript2 } from "../server.mjs";
@@ -35811,7 +31587,7 @@ var SSRContainer = class extends _SharedContainer2 {
     if (varAttrs) {
       innerHTML = this.writeAttrs(elementName, varAttrs, false);
     }
-    this.write(" :");
+    this.write(" " + Q_PROPS_SEPARATOR);
     isDev9 && this.write('=""');
     if (constAttrs && constAttrs.length) {
       innerHTML = this.writeAttrs(elementName, constAttrs, true) || innerHTML;
@@ -36395,7 +32171,7 @@ var SSRContainer = class extends _SharedContainer2 {
       this.write(element);
     }
   }
-  writeAttrs(tag, attrs, immutable) {
+  writeAttrs(tag, attrs, isConst) {
     let innerHTML = void 0;
     if (attrs.length) {
       for (let i = 0; i < attrs.length; i++) {
@@ -36425,14 +32201,11 @@ var SSRContainer = class extends _SharedContainer2 {
         }
         if (isSignal3(value)) {
           const lastNode = this.getLastNode();
-          value = this.trackSignalValue(value, [
-            immutable ? 1 /* PROP_IMMUTABLE */ : 2 /* PROP_MUTABLE */,
-            lastNode,
-            value,
-            lastNode,
-            key,
-            styleScopedId || void 0
-          ]);
+          const signalData = new EffectData2({
+            $scopedStyleIdPrefix$: styleScopedId,
+            $isConst$: isConst
+          });
+          value = this.trackSignalValue(value, lastNode, key, signalData);
         }
         if (key === dangerouslySetInnerHTML) {
           innerHTML = String(value);
@@ -36669,6 +32442,9 @@ function shouldSkipChunk(chunk) {
   return chunk === void 0 || chunk === null || chunk === "<!--" + FLUSH_COMMENT + "-->" || chunk === "<!--" + STREAM_BLOCK_START_COMMENT + "-->" || chunk === "<!--" + STREAM_BLOCK_END_COMMENT + "-->";
 }
 
+// packages/qwik/src/core/qrl/qrl.public.dollar.ts
+var event$ = implicit$FirstArg(eventQrl);
+
 // packages/qwik/src/core/style/scoped-stylesheet.ts
 var rule = 0;
 var elementClassIdSelector = 1;
@@ -36836,6 +32612,9 @@ var STATE_MACHINE = (
   ])()
 );
 
+// packages/qwik/src/core/use/use-task-dollar.ts
+var useComputed$ = implicit$FirstArg(useComputedQrl);
+
 // packages/qwik/src/core/components/prefetch.ts
 import { isDev as isDev10 } from "@builder.io/qwik/build";
 
@@ -36963,7 +32742,7 @@ async function rerenderComponent(element) {
   const host = getHostVNode(vElement);
   const qrl2 = container.getHostProp(host, OnRenderProp);
   const props = container.getHostProp(host, ELEMENT_PROPS);
-  await container.$scheduler$(6 /* COMPONENT */, host, qrl2, props);
+  await container.$scheduler$(7 /* COMPONENT */, host, qrl2, props);
   await getTestPlatform().flush();
 }
 function getHostVNode(vElement) {

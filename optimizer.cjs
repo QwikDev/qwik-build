@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+b6ac7d3
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+6c4c5b9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+b6ac7d3"
+    qwik: "2.0.0-0-dev+6c4c5b9"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1764,9 +1764,9 @@ globalThis.qwikOptimizer = function(module) {
     return e;
   }
   var findLocation = e => {
-    const stack = e.stack;
-    if ("string" === typeof stack) {
-      const lines = stack.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
+    const stack2 = e.stack;
+    if ("string" === typeof stack2) {
+      const lines = stack2.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].replace("file:///", "/");
         if (/^\s+at/.test(line)) {
@@ -1832,12 +1832,12 @@ globalThis.qwikOptimizer = function(module) {
     start = posToNumber(source, start);
     end = end || start;
     const lines = source.split(splitRE);
-    let count = 0;
+    let count2 = 0;
     const res = [];
     for (let i = 0; i < lines.length; i++) {
-      count += lines[i].length + 1;
-      if (count >= start) {
-        for (let j = i - range; j <= i + range || end > count; j++) {
+      count2 += lines[i].length + 1;
+      if (count2 >= start) {
+        for (let j = i - range; j <= i + range || end > count2; j++) {
           if (j < 0 || j >= lines.length) {
             continue;
           }
@@ -1845,15 +1845,15 @@ globalThis.qwikOptimizer = function(module) {
           res.push(`${line}${" ".repeat(Math.max(3 - String(line).length, 0))}|  ${lines[j]}`);
           const lineLength = lines[j].length;
           if (j === i) {
-            const pad = Math.max(start - (count - lineLength) + 1, 0);
-            const length = Math.max(1, end > count ? lineLength - pad : end - start);
-            res.push("   |  " + " ".repeat(pad) + "^".repeat(length));
+            const pad2 = Math.max(start - (count2 - lineLength) + 1, 0);
+            const length = Math.max(1, end > count2 ? lineLength - pad2 : end - start);
+            res.push("   |  " + " ".repeat(pad2) + "^".repeat(length));
           } else if (j > i) {
-            if (end > count) {
-              const length = Math.max(Math.min(end - count, lineLength), 1);
+            if (end > count2) {
+              const length = Math.max(Math.min(end - count2, lineLength), 1);
               res.push("   |  " + "^".repeat(length));
             }
-            count += lineLength + 1;
+            count2 += lineLength + 1;
           }
         }
         break;
@@ -2082,9 +2082,9 @@ globalThis.qwikOptimizer = function(module) {
     };
     let resolveIdCount = 0;
     const resolveId = async (ctx, id2, importerId, resolveOpts) => {
-      const count = resolveIdCount++;
+      const count2 = resolveIdCount++;
       const isServer2 = getIsServer(resolveOpts);
-      debug(`resolveId(${count})`, "Start", id2, {
+      debug(`resolveId(${count2})`, "Start", id2, {
         from: importerId,
         for: isServer2 ? "server" : "client"
       });
@@ -2098,14 +2098,14 @@ globalThis.qwikOptimizer = function(module) {
         };
       }
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
-        debug(`resolveId(${count})`, "Resolved", QWIK_BUILD_ID);
+        debug(`resolveId(${count2})`, "Resolved", QWIK_BUILD_ID);
         return {
           id: normalizePath(getPath().resolve(opts.rootDir, QWIK_BUILD_ID)),
           moduleSideEffects: false
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
-        debug(`resolveId(${count})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
+        debug(`resolveId(${count2})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
         if ("lib" === opts.target) {
           return {
             id: id2,
@@ -2124,7 +2124,7 @@ globalThis.qwikOptimizer = function(module) {
       if (importerId) {
         const looksLikePath = id2.startsWith(".") || id2.startsWith("/");
         if (!looksLikePath) {
-          debug(`resolveId(${count})`, "falling back to default resolver");
+          debug(`resolveId(${count2})`, "falling back to default resolver");
           const parentId = getParentId(importerId, isServer2);
           if (parentId) {
             return ctx.resolve(id2, parentId, {
@@ -2156,7 +2156,7 @@ globalThis.qwikOptimizer = function(module) {
           importeePathId = normalizePath(path.resolve(dir, importeePathId));
           const parentId = getParentId(importeePathId, isServer2);
           if (parentId) {
-            debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs`);
+            debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs`);
             return {
               id: importeePathId + parsedId.query
             };
@@ -2167,13 +2167,13 @@ globalThis.qwikOptimizer = function(module) {
         const importeePathId = normalizePath(parsedId.pathId);
         const ext = path.extname(importeePathId).toLowerCase();
         if (ext in RESOLVE_EXTS && getParentId(importeePathId, isServer2)) {
-          debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
+          debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
           return {
             id: importeePathId + parsedId.query
           };
         }
       }
-      debug(`resolveId(${count})`, "Not resolved", id2, importerId);
+      debug(`resolveId(${count2})`, "Not resolved", id2, importerId);
       return null;
     };
     const load = async (ctx, id2, loadOpts) => {
@@ -2361,7 +2361,7 @@ globalThis.qwikOptimizer = function(module) {
     const debug = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
     };
-    const log = (...str) => {
+    const log3 = (...str) => {
       console.log(`[QWIK PLUGIN: ${id}]`, ...str);
     };
     const onDiagnostics = cb => {
@@ -2414,7 +2414,7 @@ globalThis.qwikOptimizer = function(module) {
       init: init2,
       load: load,
       debug: debug,
-      log: log,
+      log: log3,
       normalizeOptions: normalizeOptions,
       normalizePath: normalizePath,
       onDiagnostics: onDiagnostics,
@@ -2848,7 +2848,7 @@ globalThis.qwikOptimizer = function(module) {
     return `Img${toPascalCase(value)}`;
   }
   function toPascalCase(string) {
-    return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), (($1, $22, $3) => `${$22.toUpperCase() + $3}`)).replace(new RegExp(/\w/), (s => s.toUpperCase()));
+    return `${string}`.toLowerCase().replace(new RegExp(/[-_]+/, "g"), " ").replace(new RegExp(/[^\w\s]/, "g"), "").replace(new RegExp(/\s+(.)(\w*)/, "g"), (($1, $2, $3) => `${$2.toUpperCase() + $3}`)).replace(new RegExp(/\w/), (s => s.toUpperCase()));
   }
   var FORCE_COLOR;
   var NODE_DISABLE_COLORS;
@@ -2903,1623 +2903,41 @@ globalThis.qwikOptimizer = function(module) {
   var click_to_component_default = "<style>\n  #qwik-inspector-overlay {\n    position: fixed;\n    background: rgba(24, 182, 246, 0.27);\n    pointer-events: none;\n    box-sizing: border-box;\n    border: 2px solid rgba(172, 126, 244, 0.46);\n    border-radius: 4px;\n    contain: strict;\n    cursor: pointer;\n    z-index: 999999;\n  }\n  #qwik-inspector-info-popup {\n    position: fixed;\n    bottom: 10px;\n    right: 10px;\n    font-family: monospace;\n    background: #000000c2;\n    color: white;\n    padding: 10px 20px;\n    border-radius: 8px;\n    box-shadow:\n      0 20px 25px -5px rgb(0 0 0 / 34%),\n      0 8px 10px -6px rgb(0 0 0 / 24%);\n    backdrop-filter: blur(4px);\n    -webkit-animation: fadeOut 0.3s 3s ease-in-out forwards;\n    animation: fadeOut 0.3s 3s ease-in-out forwards;\n    z-index: 999999;\n    contain: layout;\n  }\n  #qwik-inspector-info-popup p {\n    margin: 0px;\n  }\n  @-webkit-keyframes fadeOut {\n    0% {\n      opacity: 1;\n    }\n    100% {\n      opacity: 0;\n    }\n  }\n\n  @keyframes fadeOut {\n    0% {\n      opacity: 1;\n    }\n    100% {\n      opacity: 0;\n      visibility: hidden;\n    }\n  }\n</style>\n<div id=\"qwik-inspector-info-popup\" aria-hidden=\"true\">Click-to-Source</div>\n<script>\n  (function () {\n    const inspectAttribute = 'data-qwik-inspector';\n    const hotKeys = globalThis.qwikdevtools.hotKeys;\n    const srcDir = globalThis.qwikdevtools.srcDir;\n    document.querySelector('#qwik-inspector-info-popup').textContent =\n      `Click-to-Source: ${hotKeys.join(' + ')}`;\n    console.debug(\n      '%c🔍 Qwik Click-To-Source',\n      'background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      `Hold-press the '${hotKeys.join(' + ')}' key${\n        (hotKeys.length > 1 && 's') || ''\n      } and click a component to jump directly to the source code in your IDE!`\n    );\n    window.__qwik_inspector_state = {\n      pressedKeys: new Set(),\n    };\n    const origin = 'http://local.local';\n    const body = document.body;\n    const overlay = document.createElement('div');\n    overlay.id = 'qwik-inspector-overlay';\n    overlay.setAttribute('aria-hidden', 'true');\n    body.appendChild(overlay);\n\n    function findContainer(el) {\n      if (el && el instanceof Element) {\n        return el.closest(`[${inspectAttribute}]`);\n      }\n      return null;\n    }\n\n    document.addEventListener(\n      'keydown',\n      (event) => {\n        window.__qwik_inspector_state.pressedKeys.add(event.code);\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'keyup',\n      (event) => {\n        window.__qwik_inspector_state.pressedKeys.delete(event.code);\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    window.addEventListener(\n      'blur',\n      (event) => {\n        window.__qwik_inspector_state.pressedKeys.clear();\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'mouseover',\n      (event) => {\n        const target = findContainer(event.target);\n        if (target) {\n          window.__qwik_inspector_state.hoveredElement = target;\n        } else {\n          window.__qwik_inspector_state.hoveredElement = undefined;\n        }\n        updateOverlay();\n      },\n      { capture: true }\n    );\n\n    document.addEventListener(\n      'click',\n      (event) => {\n        if (isActive()) {\n          window.__qwik_inspector_state.pressedKeys.clear();\n          const target = findContainer(event.target);\n          if (target) {\n            event.preventDefault();\n            const inspectUrl = target.getAttribute(inspectAttribute);\n            if (inspectUrl !== 'false') {\n              body.style.setProperty('cursor', 'progress');\n              qwikOpenInEditor(inspectUrl);\n            }\n          }\n        }\n      },\n      { capture: true }\n    );\n\n    globalThis.qwikOpenInEditor = function (path) {\n      const isWindows = navigator.platform.includes('Win');\n      const resolvedURL = new URL(path, isWindows ? origin : srcDir);\n      if (resolvedURL.origin === origin) {\n        const params = new URLSearchParams();\n        const prefix = isWindows ? srcDir : '';\n        params.set('file', prefix + resolvedURL.pathname);\n        fetch('/__open-in-editor?' + params.toString());\n      } else {\n        location.href = resolvedURL.href;\n      }\n    };\n    document.addEventListener(\n      'contextmenu',\n      (event) => {\n        if (isActive()) {\n          window.__qwik_inspector_state.pressedKeys.clear();\n          const target = findContainer(event.target);\n          if (target) {\n            event.preventDefault();\n          }\n        }\n      },\n      { capture: true }\n    );\n\n    function updateOverlay() {\n      const hoverElement = window.__qwik_inspector_state.hoveredElement;\n      if (hoverElement && isActive()) {\n        const rect = hoverElement.getBoundingClientRect();\n        overlay.style.setProperty('height', rect.height + 'px');\n        overlay.style.setProperty('width', rect.width + 'px');\n        overlay.style.setProperty('top', rect.top + 'px');\n        overlay.style.setProperty('left', rect.left + 'px');\n        overlay.style.setProperty('visibility', 'visible');\n        body.style.setProperty('cursor', 'pointer');\n      } else {\n        overlay.style.setProperty('height', '0px');\n        overlay.style.setProperty('width', '0px');\n        overlay.style.setProperty('visibility', 'hidden');\n        body.style.removeProperty('cursor');\n      }\n    }\n\n    function checkKeysArePressed() {\n      const activeKeys = Array.from(window.__qwik_inspector_state.pressedKeys).map((key) =>\n        key ? key.replace(/(Left|Right)$/g, '') : undefined\n      );\n      return hotKeys.every((key) => activeKeys.includes(key));\n    }\n\n    function isActive() {\n      return checkKeysArePressed();\n    }\n    window.addEventListener('resize', updateOverlay);\n    document.addEventListener('scroll', updateOverlay);\n  })();\n<\/script>\n";
   var perf_warning_default = "<script>\n  if (!window.__qwikViteLog) {\n    window.__qwikViteLog = true;\n    console.debug(\n      '%c⭐️ Qwik Dev SSR Mode',\n      'background: #0c75d2; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;',\n      \"App is running in SSR development mode!\\n - Additional JS is loaded by Vite for debugging and live reloading\\n - Rendering performance might not be optimal\\n - Delayed interactivity because prefetching is disabled\\n - Vite dev bundles do not represent production output\\n\\nProduction build can be tested running 'npm run preview'\"\n    );\n  }\n<\/script>\n";
   var error_host_default = "<script>\n  document.addEventListener('qerror', (ev) => {\n    const ErrorOverlay = customElements.get('vite-error-overlay');\n    if (!ErrorOverlay) {\n      return;\n    }\n    const err = ev.detail.error;\n    const overlay = new ErrorOverlay(err);\n    document.body.appendChild(overlay);\n  });\n<\/script>\n<script>\n  /**\n   * Usage:\n   *\n   * <errored-host></errored-host>\n   */\n  class ErroredHost extends HTMLElement {\n    get _root() {\n      return this.shadowRoot || this;\n    }\n\n    constructor() {\n      super();\n      const self = this;\n\n      this.state = {};\n      if (!this.props) {\n        this.props = {};\n      }\n\n      this.componentProps = ['children', 'error'];\n\n      // used to keep track of all nodes created by show/for\n      this.nodesToDestroy = [];\n      // batch updates\n      this.pendingUpdate = false;\n\n      this.attachShadow({ mode: 'open' });\n    }\n\n    destroyAnyNodes() {\n      // destroy current view template refs before rendering again\n      this.nodesToDestroy.forEach((el) => el.remove());\n      this.nodesToDestroy = [];\n    }\n\n    connectedCallback() {\n      this.getAttributeNames().forEach((attr) => {\n        const jsVar = attr.replace(/-/g, '');\n        const regexp = new RegExp(jsVar, 'i');\n        this.componentProps.forEach((prop) => {\n          if (regexp.test(prop)) {\n            const attrValue = this.getAttribute(attr);\n            if (this.props[prop] !== attrValue) {\n              this.props[prop] = attrValue;\n            }\n          }\n        });\n      });\n\n      this._root.innerHTML = `\n\n        <template data-el=\"show-errored-host\">\n        <div class=\"error\">\n          <template data-el=\"div-errored-host-2\">\n            \x3c!-- String(props.error) --\x3e\n          </template>\n        </div>\n        </template>\n\n        <div class=\"arrow\">👇 Uncaught error happened here 👇\n          <span class=\"dev-tools\">DevTools: Cmd+Alt+I</span>\n        </div>\n        <div class=\"div\">\n          <slot></slot>\n        </div>\n\n        <style>\n          .error {\n            border-radius: 5px 5px 0px 0;\n            background: black;\n            color: white;\n            font-family: monospace;\n            font-size: 12px;\n            margin: 0;\n            padding: 10px;\n          }\n          .arrow {\n            background: #f47e81;\n            color: black;\n            font-size: 14px;\n            padding: 10px;\n            text-align: center;\n            font-family: sans-serif;\n          }\n          .dev-tools {\n            background: red;\n            padding: 2px 5px;\n            border-radius: 3px;\n            font-weight: 800;\n          }\n          .div {\n            outline: 5px solid red;\n            border-radius: 10px;\n          }\n        </style>`;\n      this.pendingUpdate = true;\n\n      this.render();\n      this.onMount();\n      this.pendingUpdate = false;\n      this.update();\n    }\n\n    showContent(el) {\n      // https://developer.mozilla.org/en-US/docs/Web/API/HTMLTemplateElement/content\n      // grabs the content of a node that is between <template> tags\n      // iterates through child nodes to register all content including text elements\n      // attaches the content after the template\n\n      const elementFragment = el.content.cloneNode(true);\n      const children = Array.from(elementFragment.childNodes);\n      children.forEach((child) => {\n        if (el?.scope) {\n          child.scope = el.scope;\n        }\n        if (el?.context) {\n          child.context = el.context;\n        }\n        this.nodesToDestroy.push(child);\n      });\n      el.after(elementFragment);\n    }\n\n    onMount() {}\n\n    onUpdate() {}\n\n    update() {\n      if (this.pendingUpdate === true) {\n        return;\n      }\n      this.pendingUpdate = true;\n      this.render();\n      this.onUpdate();\n      this.pendingUpdate = false;\n    }\n\n    render() {\n      // re-rendering needs to ensure that all nodes generated by for/show are refreshed\n      this.destroyAnyNodes();\n      this.updateBindings();\n    }\n\n    updateBindings() {\n      this._root.querySelectorAll(\"[data-el='show-errored-host']\").forEach((el) => {\n        const whenCondition = this.props.error;\n        if (whenCondition) {\n          this.showContent(el);\n        }\n      });\n\n      this._root.querySelectorAll(\"[data-el='div-errored-host-2']\").forEach((el) => {\n        this.renderTextNode(el, String(this.props.error));\n      });\n    }\n\n    // Helper to render content\n    renderTextNode(el, text) {\n      const textNode = document.createTextNode(text);\n      if (el?.scope) {\n        textNode.scope = el.scope;\n      }\n      if (el?.context) {\n        textNode.context = el.context;\n      }\n      el.after(textNode);\n      this.nodesToDestroy.push(el.nextSibling);\n    }\n  }\n\n  customElements.define('errored-host', ErroredHost);\n<\/script>\n";
-  var isBrowser = (() => "undefined" !== typeof window && "undefined" !== typeof HTMLElement && !!window.document && String(HTMLElement).includes("[native code]"))();
-  var isServer = !isBrowser;
-  var isDev = (() => true === globalThis.qDev)();
-  var isNode = value => value && "number" === typeof value.nodeType;
-  var isDocument = value => 9 === value.nodeType;
-  var isElement = value => 1 === value.nodeType;
-  var isVirtualElement = value => {
-    const nodeType = value.nodeType;
-    return 11 === nodeType || 111 === nodeType;
-  };
-  var qDev = false !== globalThis.qDev;
+  globalThis.qDev;
   globalThis.qInspector;
-  var qSerialize = false !== globalThis.qSerialize;
-  var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
-  var qTest = true === globalThis.qTest;
-  var qRuntimeQrl = true === globalThis.qRuntimeQrl;
-  var seal = obj => {
-    qDev && Object.seal(obj);
-  };
-  var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
-  var logError = (message, ...optionalParams) => createAndLogError(false, message, ...optionalParams);
-  var throwErrorAndStop = (message, ...optionalParams) => {
-    const error = createAndLogError(false, message, ...optionalParams);
-    debugger;
-    throw error;
-  };
-  var logErrorAndStop = (message, ...optionalParams) => {
-    const err = createAndLogError(true, message, ...optionalParams);
-    debugger;
-    return err;
-  };
-  var _printed = new Set;
-  var logOnceWarn = (message, ...optionalParams) => {
-    if (qDev) {
-      const key = "warn" + String(message);
-      if (!_printed.has(key)) {
-        _printed.add(key);
-        logWarn(message, ...optionalParams);
-      }
-    }
-  };
-  var logWarn = (message, ...optionalParams) => {
-    qDev && console.warn("%cQWIK WARN", STYLE, message, ...printParams(optionalParams));
-  };
-  var tryGetContext = element => element._qc_;
-  var printParams = optionalParams => {
-    if (qDev) {
-      return optionalParams.map((p => {
-        if (isNode(p) && isElement(p)) {
-          return printElement(p);
-        }
-        return p;
-      }));
-    }
-    return optionalParams;
-  };
-  var printElement = el => {
-    var _a3;
-    const ctx = tryGetContext(el);
-    const isServer2 = (() => "undefined" !== typeof process && !!process.versions && !!process.versions.node)();
-    return {
-      tagName: el.tagName,
-      renderQRL: null == (_a3 = null == ctx ? void 0 : ctx.$componentQrl$) ? void 0 : _a3.getSymbol(),
-      element: isServer2 ? void 0 : el,
-      ctx: isServer2 ? void 0 : ctx
-    };
-  };
-  var createAndLogError = (asyncThrow, message, ...optionalParams) => {
-    const err = message instanceof Error ? message : new Error(message);
-    console.error("%cQWIK ERROR", STYLE, err.message, ...printParams(optionalParams), err.stack);
-    asyncThrow && !qTest && setTimeout((() => {
-      throw err;
-    }), 0);
-    return err;
-  };
-  var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
-  function assertDefined(value, text, ...parts) {
-    if (qDev) {
-      if (null != value) {
-        return;
-      }
-      throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-    }
-  }
-  function assertTrue(value1, text, ...parts) {
-    if (qDev) {
-      if (true === value1) {
-        return;
-      }
-      throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-    }
-  }
-  function assertString(value1, text, ...parts) {
-    if (qDev) {
-      if ("string" === typeof value1) {
-        return;
-      }
-      throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
-    }
-  }
-  var codeToText = (code, ...parts) => {
-    if (qDev) {
-      const MAP = [ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property {{0}}", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", "", "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", 'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", 'The provided Context reference "{{0}}" is not a valid context created by createContextId()', "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ];
-      let text = MAP[code] ?? "";
-      parts.length && (text = text.replaceAll(/{{(\d+)}}/g, ((_, index) => {
-        let v = parts[index];
-        v && "object" === typeof v && v.constructor === Object && (v = JSON.stringify(v).slice(0, 50));
-        return v;
-      })));
-      return `Code(${code}): ${text}`;
-    }
-    return `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
-  };
-  var QError_verifySerializable = 3;
-  var QError_qrlIsNotFunction = 10;
-  var QError_useInvokeContext = 20;
-  var QError_qrlMissingContainer = 30;
-  var QError_qrlMissingChunk = 31;
-  var qError = (code, ...parts) => {
-    const text = codeToText(code, ...parts);
-    return logErrorAndStop(text, ...parts);
-  };
-  var createPlatform = () => ({
-    isServer: isServer,
-    importSymbol(containerEl, url, symbolName) {
-      var _a3;
-      if (isServer) {
-        const hash = getSymbolHash2(symbolName);
-        const regSym = null == (_a3 = globalThis.__qwik_reg_symbols) ? void 0 : _a3.get(hash);
-        if (regSym) {
-          return regSym;
-        }
-      }
-      if (!url) {
-        throw qError(QError_qrlMissingChunk, symbolName);
-      }
-      if (!containerEl) {
-        throw qError(QError_qrlMissingContainer, url, symbolName);
-      }
-      const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
-      const urlCopy = new URL(urlDoc);
-      urlCopy.hash = "";
-      const importURL = urlCopy.href;
-      return import(importURL).then((mod => mod[symbolName]));
-    },
-    raf: fn => new Promise((resolve => {
-      requestAnimationFrame((() => {
-        resolve(fn());
-      }));
-    })),
-    nextTick: fn => new Promise((resolve => {
-      setTimeout((() => {
-        resolve(fn());
-      }));
-    })),
-    chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
-  });
-  var toUrl = (doc, containerEl, url) => {
-    const baseURI = doc.baseURI;
-    const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
-    return new URL(url, base);
-  };
-  var _platform = createPlatform();
-  var getPlatform = () => _platform;
-  var isServerPlatform = () => {
-    if (qDynamicPlatform) {
-      return _platform.isServer;
-    }
-    return false;
-  };
-  var implicit$FirstArg = fn => function(first, ...rest) {
-    return fn.call(null, dollar(first), ...rest);
-  };
-  var runtimeSymbolId = 0;
-  var $2 = expression => {
-    if (!qRuntimeQrl && qDev) {
-      throw new Error("Optimizer should replace all usages of $() with some special syntax. If you need to create a QRL manually, use inlinedQrl() instead.");
-    }
-    return createQRL(null, "s" + runtimeSymbolId++, expression, null, null, null, null);
-  };
-  var dollar = $2;
-  var eventQrl = qrl => qrl;
-  implicit$FirstArg(eventQrl);
-  var QSlotS = "q:s";
-  var QFuncsPrefix = "qFuncs_";
-  var getQFuncs = (document2, hash) => document2[QFuncsPrefix + hash] || [];
-  var QLocaleAttr = "q:locale";
-  var QInstanceAttr = "q:instance";
-  var QContainerSelector = "[q\\:container]:not([q\\:container=html]):not([q\\:container=text])";
-  var ComputedEvent = "qComputed";
-  var RenderEvent = "qRender";
-  var ELEMENT_SEQ = "q:seq";
-  var ELEMENT_SEQ_IDX = "q:seqIdx";
+  globalThis.qSerialize;
+  globalThis.qDynamicPlatform;
+  globalThis.qTest;
+  globalThis.qRuntimeQrl;
+  Symbol("proxy target");
+  Symbol("proxy flags");
+  Symbol("proxy manager");
+  Symbol("CONST");
+  Symbol("VAR");
+  Symbol("IMMUTABLE");
+  var Q_CTX = "_qc_";
   var EMPTY_ARRAY = [];
   var EMPTY_OBJ = {};
   Object.freeze(EMPTY_ARRAY);
   Object.freeze(EMPTY_OBJ);
-  var isSerializableObject = v => {
-    const proto = Object.getPrototypeOf(v);
-    return proto === Object.prototype || null === proto;
-  };
-  var isObject = v => !!v && "object" === typeof v;
-  var isArray = v => Array.isArray(v);
-  var isString = v => "string" === typeof v;
-  var isFunction = v => "function" === typeof v;
-  var serializeQRL = (qrl, opts = {}) => {
-    var _a3, _b;
-    assertTrue(qSerialize, "In order to serialize a QRL, qSerialize must be true");
-    assertQrl(qrl);
-    let symbol = qrl.$symbol$;
-    let chunk = qrl.$chunk$;
-    const refSymbol = qrl.$refSymbol$ ?? symbol;
-    const platform = getPlatform();
-    if (platform) {
-      const result = platform.chunkForSymbol(refSymbol, chunk, null == (_a3 = qrl.dev) ? void 0 : _a3.file);
-      if (result) {
-        chunk = result[1];
-        qrl.$refSymbol$ || (symbol = result[0]);
-      } else {
-        console.error("serializeQRL: Cannot resolve symbol", symbol, "in", chunk, null == (_b = qrl.dev) ? void 0 : _b.file);
-      }
-    }
-    if (qRuntimeQrl && null == chunk) {
-      chunk = "/runtimeQRL";
-      symbol = "_";
-    }
-    if (null == chunk) {
-      throw qError(QError_qrlMissingChunk, qrl.$symbol$);
-    }
-    chunk.startsWith("./") && (chunk = chunk.slice(2));
-    if (isSyncQrl(qrl)) {
-      if (opts.$containerState$) {
-        const fn = qrl.resolved;
-        const containerState = opts.$containerState$;
-        const fnStrKey = fn.toString();
-        let id = containerState.$inlineFns$.get(fnStrKey);
-        if (void 0 === id) {
-          id = containerState.$inlineFns$.size;
-          containerState.$inlineFns$.set(fnStrKey, id);
-        }
-        symbol = String(id);
-      } else {
-        throwErrorAndStop("Sync QRL without containerState");
-      }
-    }
-    let output = `${chunk}#${symbol}`;
-    const capture = qrl.$capture$;
-    const captureRef = qrl.$captureRef$;
-    captureRef && captureRef.length ? opts.$getObjId$ ? output += `[${mapJoin(captureRef, opts.$getObjId$, " ")}]` : opts.$addRefMap$ && (output += `[${mapJoin(captureRef, opts.$addRefMap$, " ")}]`) : capture && capture.length > 0 && (output += `[${capture.join(" ")}]`);
-    return output;
-  };
-  var parseQRL = (qrl, containerEl) => {
-    const endIdx = qrl.length;
-    const hashIdx = indexOf(qrl, 0, "#");
-    const captureIdx = indexOf(qrl, hashIdx, "[");
-    const chunkEndIdx = Math.min(hashIdx, captureIdx);
-    const chunk = qrl.substring(0, chunkEndIdx);
-    const symbolStartIdx = hashIdx == endIdx ? hashIdx : hashIdx + 1;
-    const symbolEndIdx = captureIdx;
-    const symbol = symbolStartIdx == symbolEndIdx ? "default" : qrl.substring(symbolStartIdx, symbolEndIdx);
-    const captureStartIdx = captureIdx;
-    const captureEndIdx = endIdx;
-    const capture = captureStartIdx === captureEndIdx ? EMPTY_ARRAY : qrl.substring(captureStartIdx + 1, captureEndIdx - 1).split(" ");
-    const iQrl = createQRL(chunk, symbol, null, null, capture, null, null);
-    containerEl && iQrl.$setContainer$(containerEl);
-    return iQrl;
-  };
-  var indexOf = (text, startIdx, char) => {
-    const endIdx = text.length;
-    const charIdx = text.indexOf(char, startIdx == endIdx ? 0 : startIdx);
-    return -1 == charIdx ? endIdx : charIdx;
-  };
-  var QObjectImmutable = 2;
-  var QObjectTargetSymbol = Symbol("proxy target");
-  var QObjectFlagsSymbol = Symbol("proxy flags");
-  var QObjectManagerSymbol = Symbol("proxy manager");
-  var _CONST_PROPS = Symbol("CONST");
-  var _VAR_PROPS = Symbol("VAR");
-  Symbol("IMMUTABLE");
-  var Q_CTX = "_qc_";
-  var isPromise = value => value && "object" == typeof value && "function" === typeof value.then;
-  var safeCall = (call, thenFn, rejectFn) => {
-    try {
-      const result = call();
-      return isPromise(result) ? result.then(thenFn, rejectFn) : thenFn(result);
-    } catch (e) {
-      return rejectFn(e);
-    }
-  };
-  var maybeThen = (promise, thenFn) => isPromise(promise) ? promise.then(thenFn, shouldNotError) : thenFn(promise);
-  var shouldNotError = reason => {
-    throwErrorAndStop("QWIK ERROR:", reason);
-  };
-  var SkipRender = Symbol("skip render");
-  var useSequentialScope = () => {
-    const iCtx = useInvokeContext();
-    const hostElement = iCtx.$hostElement$;
-    const host = hostElement;
-    let seq = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ);
-    if (null === seq) {
-      seq = [];
-      iCtx.$container2$.setHostProp(host, ELEMENT_SEQ, seq);
-    }
-    let seqIdx = iCtx.$container2$.getHostProp(host, ELEMENT_SEQ_IDX);
-    null === seqIdx && (seqIdx = 0);
-    iCtx.$container2$.setHostProp(host, ELEMENT_SEQ_IDX, seqIdx + 1);
-    while (seq.length <= seqIdx) {
-      seq.push(void 0);
-    }
-    const set = value => {
-      qDev && qSerialize && verifySerializable(value);
-      return seq[seqIdx] = value;
-    };
-    return {
-      val: seq[seqIdx],
-      set: set,
-      i: seqIdx,
-      iCtx: iCtx
-    };
-  };
-  var Slot = props => _jsxSorted(Virtual, null, {
-    [QSlotS]: ""
-  }, props.children, 0, props.name ?? "");
-  var _jsxSorted = (type, varProps, constProps, children, flags, key, dev) => {
-    const processed = null == key ? null : String(key);
-    const node = new JSXNodeImpl(type, varProps || {}, constProps || null, children, flags, processed);
-    qDev && dev && (node.dev = {
-      stack: (new Error).stack,
-      ...dev
-    });
-    validateJSXNode(node);
-    seal(node);
-    return node;
-  };
-  var JSXNodeImpl = class {
-    constructor(type, varProps, constProps, children, flags, key = null) {
-      this.type = type;
-      this.varProps = varProps;
-      this.constProps = constProps;
-      this.children = children;
-      this.flags = flags;
-      this.key = key;
-      this._proxy = null;
-      if (qDev) {
-        if ("object" !== typeof varProps) {
-          throw new Error("JSXNodeImpl: varProps must be objects: " + JSON.stringify(varProps));
-        }
-        if ("object" !== typeof constProps) {
-          throw new Error("JSXNodeImpl: constProps must be objects: " + JSON.stringify(constProps));
-        }
-      }
-    }
-    get props() {
-      this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, this.children));
-      return this._proxy;
-    }
-  };
-  var Virtual = props => props.children;
-  var validateJSXNode = node => {
-    if (qDev) {
-      const {type: type, varProps: varProps, constProps: constProps, children: children} = node;
-      invoke(void 0, (() => {
-        const isQwikC = isQwikComponent(type);
-        if (!isString(type) && !isFunction(type)) {
-          throw new Error(`The <Type> of the JSX element must be either a string or a function. Instead, it's a "${typeof type}": ${String(type)}.`);
-        }
-        if (children) {
-          const flatChildren = isArray(children) ? children.flat() : [ children ];
-          (isString(type) || isQwikC) && flatChildren.forEach((child => {
-            if (!isValidJSXChild(child)) {
-              const typeObj = typeof child;
-              let explanation = "";
-              "object" === typeObj ? explanation = (null == child ? void 0 : child.constructor) ? `it's an instance of "${null == child ? void 0 : child.constructor.name}".` : `it's a object literal: ${printObjectLiteral(child)} ` : "function" === typeObj ? explanation += `it's a function named "${child.name}".` : explanation = `it's a "${typeObj}": ${String(child)}.`;
-              throw new Error(`One of the children of <${type}> is not an accepted value. JSX children must be either: string, boolean, number, <element>, Array, undefined/null, or a Promise/Signal. Instead, ${explanation}\n`);
-            }
-          }));
-          if (isBrowser && (isFunction(type) || constProps)) {
-            const keys2 = {};
-            flatChildren.forEach((child => {
-              if (isJSXNode(child) && null != child.key) {
-                const key = String(child.type) + ":" + child.key;
-                if (keys2[key]) {
-                  const err = createJSXError("Multiple JSX sibling nodes with the same key.\nThis is likely caused by missing a custom key in a for loop", child);
-                  err && (isString(child.type), logOnceWarn(err));
-                } else {
-                  keys2[key] = true;
-                }
-              }
-            }));
-          }
-        }
-        const allProps = [ ...varProps ? Object.entries(varProps) : [], ...constProps ? Object.entries(constProps) : [] ];
-        if (!qRuntimeQrl) {
-          for (const [prop, value] of allProps) {
-            if (prop.endsWith("$") && value && !isQrl(value) && !Array.isArray(value)) {
-              throw new Error(`The value passed in ${prop}={...}> must be a QRL, instead you passed a "${typeof value}". Make sure your ${typeof value} is wrapped with $(...), so it can be serialized. Like this:\n$(${String(value)})`);
-            }
-            "children" !== prop && isQwikC && value && verifySerializable(value, `The value of the JSX attribute "${prop}" can not be serialized`);
-          }
-        }
-        if (isString(type)) {
-          const hasSetInnerHTML = allProps.some((a => "dangerouslySetInnerHTML" === a[0]));
-          if (hasSetInnerHTML && children && (!Array.isArray(children) || children.length > 0)) {
-            const err = createJSXError(`The JSX element <${type}> can not have both 'dangerouslySetInnerHTML' and children.`, node);
-            logError(err);
-          }
-          "style" === type && children && logOnceWarn("jsx: Using <style>{content}</style> will escape the content, effectively breaking the CSS.\nIn order to disable content escaping use '<style dangerouslySetInnerHTML={content}/>'\n\nHowever, if the use case is to inject component styleContent, use 'useStyles$()' instead, it will be a lot more efficient.\nSee https://qwik.dev/docs/components/styles/#usestyles for more information.");
-          "script" === type && children && logOnceWarn("jsx: Using <script>{content}<\/script> will escape the content, effectively breaking the inlined JS.\nIn order to disable content escaping use '<script dangerouslySetInnerHTML={content}/>'");
-        }
-      }));
-    }
-  };
-  var printObjectLiteral = obj => `{ ${Object.keys(obj).map((key => `"${key}"`)).join(", ")} }`;
-  var isJSXNode = n => {
-    if (qDev) {
-      if (n instanceof JSXNodeImpl) {
-        return true;
-      }
-      if (isObject(n) && "key" in n && "props" in n && "type" in n) {
-        logWarn('Duplicate implementations of "JSXNode" found');
-        return true;
-      }
-      return false;
-    }
-    return n instanceof JSXNodeImpl;
-  };
-  var isValidJSXChild = node => {
-    if (!node) {
-      return true;
-    }
-    if (node === SkipRender) {
-      return true;
-    }
-    if (isString(node) || "number" === typeof node || "boolean" === typeof node) {
-      return true;
-    }
-    if (isJSXNode(node)) {
-      return true;
-    }
-    if (isArray(node)) {
-      return node.every(isValidJSXChild);
-    }
-    if (isSignal(node)) {
-      return isValidJSXChild(node.value);
-    }
-    if (isPromise(node)) {
-      return true;
-    }
-    return false;
-  };
-  var Fragment = props => props.children;
-  var createJSXError = (message, node) => {
-    const error = new Error(message);
-    if (!node.dev) {
-      return error;
-    }
-    error.stack = `JSXError: ${message}\n${filterStack(node.dev.stack, 1)}`;
-    return error;
-  };
-  var filterStack = (stack, offset = 0) => stack.split("\n").slice(offset).join("\n");
-  function createPropsProxy(varProps, constProps, children) {
-    return new Proxy({}, new PropsProxyHandler(varProps, constProps, children));
-  }
-  var PropsProxyHandler = class {
-    constructor($varProps$, $constProps$, $children$) {
-      this.$varProps$ = $varProps$;
-      this.$constProps$ = $constProps$;
-      this.$children$ = $children$;
-    }
-    get(_, prop) {
-      if (prop === _CONST_PROPS) {
-        return this.$constProps$;
-      }
-      if (prop === _VAR_PROPS) {
-        return this.$varProps$;
-      }
-      if (null != this.$children$ && "children" === prop) {
-        return this.$children$;
-      }
-      const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
-      return value instanceof SignalDerived ? value.value : value;
-    }
-    set(_, prop, value) {
-      if (prop === _CONST_PROPS) {
-        this.$constProps$ = value;
-        return true;
-      }
-      if (prop === _VAR_PROPS) {
-        this.$varProps$ = value;
-        return true;
-      }
-      this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] = value : this.$varProps$[prop] = value;
-      return true;
-    }
-    deleteProperty(_, prop) {
-      if ("string" !== typeof prop) {
-        return false;
-      }
-      let didDelete = delete this.$varProps$[prop];
-      this.$constProps$ && (didDelete = delete this.$constProps$[prop] || didDelete);
-      null != this.$children$ && "children" === prop && (this.$children$ = null);
-      return didDelete;
-    }
-    has(_, prop) {
-      const hasProp = "children" === prop && null != this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
-      return hasProp;
-    }
-    getOwnPropertyDescriptor(target, p) {
-      const value = "children" === p && null != this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
-      return {
-        configurable: true,
-        enumerable: true,
-        value: value
-      };
-    }
-    ownKeys() {
-      const out = Object.keys(this.$varProps$);
-      null != this.$children$ && -1 === out.indexOf("children") && out.push("children");
-      if (this.$constProps$) {
-        for (const key in this.$constProps$) {
-          -1 === out.indexOf(key) && out.push(key);
-        }
-      }
-      return out;
-    }
-  };
+  globalThis.QWIK_DOM_VERSION;
+  Symbol("skip render");
+  Symbol("store.target");
+  Symbol("store.handler");
+  Symbol("store.array");
   Symbol("UNWRAP");
   Symbol("resolve");
   Symbol("reject");
   Symbol("SERIALIZABLE_ROOT_ID");
-  var runComputed2 = (task, container, host) => {
-    assertSignal(task.$state$);
-    task.$flags$ &= -17;
-    const iCtx = newInvokeContext(container.$locale$, host, void 0, ComputedEvent);
-    iCtx.$subscriber$ = [ 0, task ];
-    const taskFn = task.$qrl$.getFn(iCtx, (() => {
-      container.$subsManager$.$clearSub$(task);
-    }));
-    const handleError2 = reason => container.handleError(reason, host);
-    const result = safeCall(taskFn, (returnValue => untrack((() => {
-      const signal = task.$state$;
-      signal[QObjectSignalFlags] &= ~SIGNAL_UNASSIGNED;
-      signal.untrackedValue = returnValue;
-      signal[QObjectManagerSymbol].$notifySubs$();
-    }))), handleError2);
-    return result;
-  };
-  var useComputedQrl = qrl => {
-    const {val: val, set: set, iCtx: iCtx, i: i} = useSequentialScope();
-    if (val) {
-      return val;
-    }
-    assertQrl(qrl);
-    const host = iCtx.$hostElement$;
-    const signal = _createSignal(void 0, iCtx.$container2$.$subsManager$, SIGNAL_UNASSIGNED | SIGNAL_IMMUTABLE, void 0);
-    const task = new Task(26, i, iCtx.$hostElement$, qrl, signal, null);
-    set(signal);
-    qrl.$resolveLazy$(host);
-    const result = runComputed2(task, iCtx.$container2$, host);
-    if (isPromise(result)) {
-      throw result;
-    }
-    return signal;
-  };
-  implicit$FirstArg(useComputedQrl);
-  var isSubscriberDescriptor = obj => isObject(obj) && obj instanceof Task;
-  var serializeTask = (task, getObjId) => {
-    let value = `${intToStr(task.$flags$)} ${intToStr(task.$index$)} ${getObjId(task.$qrl$)} ${getObjId(task.$el$)}`;
-    task.$state$ && (value += ` ${getObjId(task.$state$)}`);
-    return value;
-  };
-  var parseTask = data => {
-    const [flags, index, qrl, el, resource] = data.split(" ");
-    return new Task(strToInt(flags), strToInt(index), el, qrl, resource, null);
-  };
-  var Task = class {
-    constructor($flags$, $index$, $el$, $qrl$, $state$, $destroy$) {
-      this.$flags$ = $flags$;
-      this.$index$ = $index$;
-      this.$el$ = $el$;
-      this.$qrl$ = $qrl$;
-      this.$state$ = $state$;
-      this.$destroy$ = $destroy$;
-    }
-  };
-  var HOST_FLAG_DYNAMIC = 8;
-  var tryGetContext2 = element => element[Q_CTX];
-  function setLocale(locale) {
-    locale;
-  }
-  var _context;
-  var tryGetInvokeContext = () => {
-    if (!_context) {
-      const context = "undefined" !== typeof document && document && document.__q_context__;
-      if (!context) {
-        return;
-      }
-      if (isArray(context)) {
-        return document.__q_context__ = newInvokeContextFromTuple(context);
-      }
-      return context;
-    }
-    return _context;
-  };
-  var useInvokeContext = () => {
-    const ctx = tryGetInvokeContext();
-    if (!ctx || ctx.$event$ !== RenderEvent) {
-      throw qError(QError_useInvokeContext);
-    }
-    assertDefined(ctx.$hostElement$, "invoke: $hostElement$ must be defined", ctx);
-    assertDefined(ctx.$subscriber$, "invoke: $subscriber$ must be defined", ctx);
-    return ctx;
-  };
-  function invoke(context, fn, ...args) {
-    return invokeApply.call(this, context, fn, args);
-  }
-  function invokeApply(context, fn, args) {
-    const previousContext = _context;
-    let returnValue;
-    try {
-      _context = context;
-      returnValue = fn.apply(this, args);
-    } finally {
-      _context = previousContext;
-    }
-    return returnValue;
-  }
-  var newInvokeContextFromTuple = ([element, event, url]) => {
-    const container = element.closest(QContainerSelector);
-    const locale = (null == container ? void 0 : container.getAttribute(QLocaleAttr)) || void 0;
-    locale && setLocale(locale);
-    return newInvokeContext(locale, void 0, element, event, url);
-  };
-  var newInvokeContext = (locale, hostElement, element, event, url) => {
-    const $locale$ = locale || ("object" === typeof event && event && "locale" in event ? event.locale : void 0);
-    const ctx = {
-      $url$: url,
-      $i$: 0,
-      $hostElement$: hostElement,
-      $element$: element,
-      $event$: event,
-      $qrl$: void 0,
-      $waitOn$: void 0,
-      $subscriber$: void 0,
-      $renderCtx$: void 0,
-      $locale$: $locale$,
-      $container2$: void 0
-    };
-    seal(ctx);
-    return ctx;
-  };
-  var untrack = fn => invoke(void 0, fn);
-  var _createSignal = (value, subsManager, flags, subscriptions) => {
-    const manager = subsManager.$createManager$(subscriptions);
-    const signal = new SignalImpl(value, manager, flags);
-    return signal;
-  };
-  var QObjectSignalFlags = Symbol("proxy manager");
-  var SIGNAL_IMMUTABLE = 1;
-  var SIGNAL_UNASSIGNED = 2;
-  var SignalUnassignedException = Symbol("unassigned signal");
-  var SignalBase = class {};
-  var _a;
-  var SignalImpl = class extends SignalBase {
-    constructor(v, manager, flags) {
-      super();
-      this[_a] = 0;
-      this.untrackedValue = v;
-      this[QObjectManagerSymbol] = manager;
-      this[QObjectSignalFlags] = flags;
-    }
-    valueOf() {
-      if (qDev) {
-        throw new TypeError("Cannot coerce a Signal, use `.value` instead");
-      }
-    }
-    toString() {
-      return `[Signal ${String(this.value)}]`;
-    }
-    toJSON() {
-      return {
-        value: this.value
-      };
-    }
-    get value() {
-      var _a3;
-      if (this[QObjectSignalFlags] & SIGNAL_UNASSIGNED) {
-        throw SignalUnassignedException;
-      }
-      const sub = null == (_a3 = tryGetInvokeContext()) ? void 0 : _a3.$subscriber$;
-      sub && this[QObjectManagerSymbol].$addSub$(sub);
-      return this.untrackedValue;
-    }
-    set value(v) {
-      if (qDev) {
-        if (this[QObjectSignalFlags] & SIGNAL_IMMUTABLE) {
-          throw new Error("Cannot mutate immutable signal");
-        }
-        qSerialize && verifySerializable(v);
-        const invokeCtx = tryGetInvokeContext();
-        invokeCtx && (invokeCtx.$event$ === RenderEvent ? logWarn("State mutation inside render function. Use useTask$() instead.", String(invokeCtx.$hostElement$)) : invokeCtx.$event$ === ComputedEvent && logWarn("State mutation inside useComputed$() is an antipattern. Use useTask$() instead", String(invokeCtx.$hostElement$)));
-      }
-      const manager = this[QObjectManagerSymbol];
-      const oldValue = this.untrackedValue;
-      if (manager && oldValue !== v) {
-        this.untrackedValue = v;
-        manager.$notifySubs$();
-      }
-    }
-  };
-  _a = QObjectSignalFlags;
-  var SignalDerived = class extends SignalBase {
-    constructor($func$, $args$, $funcStr$) {
-      super();
-      this.$func$ = $func$;
-      this.$args$ = $args$;
-      this.$funcStr$ = $funcStr$;
-    }
-    get value() {
-      return this.$func$.apply(void 0, this.$args$);
-    }
-    get [QObjectManagerSymbol]() {
-      const args = this.$args$;
-      if ((null == args ? void 0 : args.length) >= 2 && "object" === typeof args[0] && "string" === typeof args[1]) {
-        const subMgr = getSubscriptionManager(args[0]);
-        if (subMgr) {
-          return new DerivedSubscriptionManager(subMgr, args[1]);
-        }
-      }
-      return;
-    }
-  };
-  var notImplemented = () => {
-    throw new Error;
-  };
-  var DerivedSubscriptionManager = class {
-    constructor($delegate$, $prop$) {
-      this.$delegate$ = $delegate$;
-      this.$prop$ = $prop$;
-      this.$addSubs$ = notImplemented;
-      this.$addToGroup$ = notImplemented;
-      this.$unsubGroup$ = notImplemented;
-      this.$unsubEntry$ = notImplemented;
-      this.$notifySubs$ = notImplemented;
-    }
-    $addSub$(sub, key) {
-      this.$delegate$.$addSub$(sub, this.$prop$);
-    }
-  };
-  var SignalWrapper = class extends SignalBase {
-    constructor(ref, prop) {
-      super();
-      this.ref = ref;
-      this.prop = prop;
-    }
-    get [QObjectManagerSymbol]() {
-      return getSubscriptionManager(this.ref);
-    }
-    get value() {
-      return this.ref[this.prop];
-    }
-    set value(value) {
-      this.ref[this.prop] = value;
-    }
-  };
-  var isSignal = obj => obj instanceof SignalBase;
-  Symbol("ContainerState");
-  var intToStr = nu => nu.toString(36);
-  var strToInt = nu => parseInt(nu, 36);
-  var mapJoin = (objects, getObjectId, sep) => {
-    let output = "";
-    for (const obj of objects) {
-      const id = getObjectId(obj);
-      if (null !== id) {
-        "" !== output && (output += sep);
-        output += id;
-      }
-    }
-    return output;
-  };
-  var collectDeferElement = (el, collector) => {
-    const ctx = tryGetContext2(el);
-    if (collector.$elements$.includes(ctx)) {
-      return;
-    }
-    collector.$elements$.push(ctx);
-    if (ctx.$flags$ & HOST_FLAG_DYNAMIC) {
-      collector.$prefetch$++;
-      collectElementData(ctx, collector, true);
-      collector.$prefetch$--;
-    } else {
-      collector.$deferElements$.push(ctx);
-    }
-  };
-  var collectElementData = (elCtx, collector, dynamicCtx) => {
-    if (elCtx.$props$ && !isEmptyObj(elCtx.$props$)) {
-      collectValue(elCtx.$props$, collector, dynamicCtx);
-      collectSubscriptions(getSubscriptionManager(elCtx.$props$), collector, dynamicCtx);
-    }
-    elCtx.$componentQrl$ && collectValue(elCtx.$componentQrl$, collector, dynamicCtx);
-    if (elCtx.$seq$) {
-      for (const obj of elCtx.$seq$) {
-        collectValue(obj, collector, dynamicCtx);
-      }
-    }
-    if (elCtx.$tasks$) {
-      const map = collector.$containerState$.$subsManager$.$groupToManagers$;
-      for (const obj of elCtx.$tasks$) {
-        map.has(obj) && collectValue(obj, collector, dynamicCtx);
-      }
-    }
-    if (true === dynamicCtx) {
-      collectContext(elCtx, collector);
-      if (elCtx.$dynamicSlots$) {
-        for (const slotCtx of elCtx.$dynamicSlots$) {
-          collectContext(slotCtx, collector);
-        }
-      }
-    }
-  };
-  var collectContext = (elCtx, collector) => {
-    while (elCtx) {
-      if (elCtx.$contexts$) {
-        for (const obj of elCtx.$contexts$.values()) {
-          collectValue(obj, collector, true);
-        }
-      }
-      elCtx = elCtx.$parentCtx$;
-    }
-  };
-  var collectSubscriptions = (manager, collector, leaks) => {
-    if (collector.$seen$.has(manager)) {
-      return;
-    }
-    collector.$seen$.add(manager);
-    const subs = manager.$subs$;
-    assertDefined(subs, "subs must be defined");
-    for (const sub of subs) {
-      const type = sub[0];
-      type > 0 && collectValue(sub[2], collector, leaks);
-      if (true === leaks) {
-        const host = sub[1];
-        isNode(host) && isVirtualElement(host) ? 0 === sub[0] && collectDeferElement(host, collector) : collectValue(host, collector, true);
-      }
-    }
-  };
-  var PROMISE_VALUE = Symbol();
-  var resolvePromise = promise => promise.then((value => {
-    const v = {
-      resolved: true,
-      value: value
-    };
-    promise[PROMISE_VALUE] = v;
-    return value;
-  }), (value => {
-    const v = {
-      resolved: false,
-      value: value
-    };
-    promise[PROMISE_VALUE] = v;
-    return value;
-  }));
-  var collectValue = (obj, collector, leaks) => {
-    if (null != obj) {
-      switch (typeof obj) {
-       case "function":
-       case "object":
-        {
-          if (collector.$seen$.has(obj)) {
-            return;
-          }
-          collector.$seen$.add(obj);
-          if (fastSkipSerialize(obj)) {
-            collector.$objSet$.add(void 0);
-            collector.$noSerialize$.push(obj);
-            return;
-          }
-          const input = obj;
-          const target = getProxyTarget(obj);
-          if (target) {
-            obj = target;
-            const mutable = 0 === (getProxyFlags(obj) & QObjectImmutable);
-            leaks && mutable && collectSubscriptions(getSubscriptionManager(input), collector, leaks);
-            if (fastWeakSerialize(input)) {
-              collector.$objSet$.add(obj);
-              return;
-            }
-          }
-          const collected = collectDeps(obj, collector, leaks);
-          if (collected) {
-            collector.$objSet$.add(obj);
-            return;
-          }
-          if (isPromise(obj)) {
-            collector.$promises$.push(resolvePromise(obj).then((value => {
-              collectValue(value, collector, leaks);
-            })));
-            return;
-          }
-          if ("object" === typeof obj) {
-            if (isNode(obj)) {
-              return;
-            }
-            if (isArray(obj)) {
-              for (let i = 0; i < obj.length; i++) {
-                collectValue(input[i], collector, leaks);
-              }
-            } else if (isSerializableObject(obj)) {
-              for (const key in obj) {
-                collectValue(input[key], collector, leaks);
-              }
-            }
-          }
-          break;
-        }
-      }
-    }
-    collector.$objSet$.add(obj);
-  };
-  var isEmptyObj = obj => 0 === Object.keys(obj).length;
   Q_CTX;
-  var serializeDerivedSignalFunc = signal => {
-    const fnBody = qSerialize ? signal.$funcStr$ : "null";
-    assertDefined(fnBody, "If qSerialize is true then fnStr must be provided.");
-    let args = "";
-    for (let i = 0; i < signal.$args$.length; i++) {
-      args += `p${i},`;
-    }
-    return `(${args})=>(${fnBody})`;
-  };
-  var componentQrl = componentQrl2 => {
-    const QwikComponent = () => {};
-    QwikComponent[SERIALIZABLE_STATE] = [ componentQrl2 ];
-    return QwikComponent;
-  };
-  var isQwikComponent = component => "function" == typeof component && void 0 !== component[SERIALIZABLE_STATE];
-  var _createResourceReturn = opts => {
-    const resource = {
-      __brand: "resource",
-      value: void 0,
-      loading: !isServerPlatform(),
-      _resolved: void 0,
-      _error: void 0,
-      _state: "pending",
-      _timeout: (null == opts ? void 0 : opts.timeout) ?? -1,
-      _cache: 0
-    };
-    return resource;
-  };
-  var isResourceReturn = obj => isObject(obj) && "resource" === (getProxyTarget(obj) || obj).__brand;
-  var serializeResource = (resource, getObjId) => {
-    const state = resource._state;
-    return "resolved" === state ? `0 ${getObjId(resource._resolved)}` : "pending" === state ? "1" : `2 ${getObjId(resource._error)}`;
-  };
-  var parseResourceReturn = data => {
-    const [first, id] = data.split(" ");
-    const result = _createResourceReturn();
-    result.value = Promise.resolve();
-    if ("0" === first) {
-      result._state = "resolved";
-      result._resolved = id;
-      result.loading = false;
-    } else if ("1" === first) {
-      result._state = "pending";
-      result.value = new Promise((() => {}));
-      result.loading = true;
-    } else if ("2" === first) {
-      result._state = "rejected";
-      result._error = id;
-      result.loading = false;
-    }
-    return result;
-  };
-  var UNDEFINED_PREFIX = "";
-  function serializer(serializer2) {
-    return {
-      $prefixCode$: serializer2.$prefix$.charCodeAt(0),
-      $prefixChar$: serializer2.$prefix$,
-      $test$: serializer2.$test$,
-      $serialize$: serializer2.$serialize$,
-      $prepare$: serializer2.$prepare$,
-      $fill$: serializer2.$fill$,
-      $collect$: serializer2.$collect$,
-      $subs$: serializer2.$subs$
-    };
-  }
-  var QRLSerializer = serializer({
-    $prefix$: "",
-    $test$: v => isQrl(v),
-    $collect$: (v, collector, leaks) => {
-      if (v.$captureRef$) {
-        for (const item of v.$captureRef$) {
-          collectValue(item, collector, leaks);
-        }
-      }
-      0 === collector.$prefetch$ && collector.$qrls$.push(v);
-    },
-    $serialize$: (obj, getObjId) => serializeQRL(obj, {
-      $getObjId$: getObjId
-    }),
-    $prepare$: (data, containerState) => parseQRL(data, containerState.$containerEl$),
-    $fill$: (qrl, getObject) => {
-      if (qrl.$capture$ && qrl.$capture$.length > 0) {
-        qrl.$captureRef$ = qrl.$capture$.map(getObject);
-        qrl.$capture$ = null;
-      }
-    }
-  });
-  var TaskSerializer = serializer({
-    $prefix$: "",
-    $test$: v => isSubscriberDescriptor(v),
-    $collect$: (v, collector, leaks) => {
-      collectValue(v.$qrl$, collector, leaks);
-      if (v.$state$) {
-        collectValue(v.$state$, collector, leaks);
-        true === leaks && v.$state$ instanceof SignalImpl && collectSubscriptions(v.$state$[QObjectManagerSymbol], collector, true);
-      }
-    },
-    $serialize$: (obj, getObjId) => serializeTask(obj, getObjId),
-    $prepare$: data => parseTask(data),
-    $fill$: (task, getObject) => {
-      task.$el$ = getObject(task.$el$);
-      task.$qrl$ = getObject(task.$qrl$);
-      task.$state$ && (task.$state$ = getObject(task.$state$));
-    }
-  });
-  var ResourceSerializer = serializer({
-    $prefix$: "",
-    $test$: v => isResourceReturn(v),
-    $collect$: (obj, collector, leaks) => {
-      collectValue(obj.value, collector, leaks);
-      collectValue(obj._resolved, collector, leaks);
-    },
-    $serialize$: (obj, getObjId) => serializeResource(obj, getObjId),
-    $prepare$: data => parseResourceReturn(data),
-    $fill$: (resource, getObject) => {
-      if ("resolved" === resource._state) {
-        resource._resolved = getObject(resource._resolved);
-        resource.value = Promise.resolve(resource._resolved);
-      } else if ("rejected" === resource._state) {
-        const p = Promise.reject(resource._error);
-        p.catch((() => null));
-        resource._error = getObject(resource._error);
-        resource.value = p;
-      }
-    }
-  });
-  var URLSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof URL,
-    $serialize$: obj => obj.href,
-    $prepare$: data => new URL(data)
-  });
-  var DateSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof Date,
-    $serialize$: obj => obj.toISOString(),
-    $prepare$: data => new Date(data)
-  });
-  var RegexSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof RegExp,
-    $serialize$: obj => `${obj.flags} ${obj.source}`,
-    $prepare$: data => {
-      const space = data.indexOf(" ");
-      const source = data.slice(space + 1);
-      const flags = data.slice(0, space);
-      return new RegExp(source, flags);
-    }
-  });
-  var ErrorSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof Error,
-    $serialize$: obj => obj.message,
-    $prepare$: text => {
-      const err = new Error(text);
-      err.stack = void 0;
-      return err;
-    }
-  });
-  var DocumentSerializer = serializer({
-    $prefix$: "",
-    $test$: v => !!v && "object" === typeof v && isDocument(v),
-    $prepare$: (_, _c, doc) => doc
-  });
-  var SERIALIZABLE_STATE = Symbol("serializable-data");
-  var ComponentSerializer = serializer({
-    $prefix$: "",
-    $test$: obj => isQwikComponent(obj),
-    $serialize$: (obj, getObjId) => {
-      const [qrl] = obj[SERIALIZABLE_STATE];
-      return serializeQRL(qrl, {
-        $getObjId$: getObjId
-      });
-    },
-    $prepare$: (data, containerState) => {
-      const qrl = parseQRL(data, containerState.$containerEl$);
-      return componentQrl(qrl);
-    },
-    $fill$: (component, getObject) => {
-      var _a3;
-      const [qrl] = component[SERIALIZABLE_STATE];
-      if (null == (_a3 = qrl.$capture$) ? void 0 : _a3.length) {
-        qrl.$captureRef$ = qrl.$capture$.map(getObject);
-        qrl.$capture$ = null;
-      }
-    }
-  });
-  var DerivedSignalSerializer = serializer({
-    $prefix$: "",
-    $test$: obj => obj instanceof SignalDerived,
-    $collect$: (obj, collector, leaks) => {
-      if (obj.$args$) {
-        for (const arg of obj.$args$) {
-          collectValue(arg, collector, leaks);
-        }
-      }
-    },
-    $serialize$: (signal, getObjID, collector) => {
-      const serialized = serializeDerivedSignalFunc(signal);
-      let index = collector.$inlinedFunctions$.indexOf(serialized);
-      if (index < 0) {
-        index = collector.$inlinedFunctions$.length;
-        collector.$inlinedFunctions$.push(serialized);
-      }
-      return mapJoin(signal.$args$, getObjID, " ") + " @" + intToStr(index);
-    },
-    $prepare$: data => {
-      const ids = data.split(" ");
-      const args = ids.slice(0, -1);
-      const fn = ids[ids.length - 1];
-      return new SignalDerived(fn, args, fn);
-    },
-    $fill$: (fn, getObject) => {
-      assertString(fn.$func$, "fn.$func$ should be a string");
-      fn.$func$ = getObject(fn.$func$);
-      fn.$args$ = fn.$args$.map(getObject);
-    }
-  });
-  var SignalSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof SignalImpl,
-    $collect$: (obj, collector, leaks) => {
-      collectValue(obj.untrackedValue, collector, leaks);
-      const mutable = 0 === (obj[QObjectSignalFlags] & SIGNAL_IMMUTABLE);
-      true === leaks && mutable && collectSubscriptions(obj[QObjectManagerSymbol], collector, true);
-      return obj;
-    },
-    $serialize$: (obj, getObjId) => getObjId(obj.untrackedValue),
-    $prepare$: (data, containerState) => {
-      var _a3;
-      return new SignalImpl(data, null == (_a3 = null == containerState ? void 0 : containerState.$subsManager$) ? void 0 : _a3.$createManager$(), 0);
-    },
-    $subs$: (signal, subs) => {
-      signal[QObjectManagerSymbol].$addSubs$(subs);
-    },
-    $fill$: (signal, getObject) => {
-      signal.untrackedValue = getObject(signal.untrackedValue);
-    }
-  });
-  var SignalWrapperSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof SignalWrapper,
-    $collect$(obj, collector, leaks) {
-      collectValue(obj.ref, collector, leaks);
-      if (fastWeakSerialize(obj.ref)) {
-        const localManager = getSubscriptionManager(obj.ref);
-        isTreeShakeable(collector.$containerState$.$subsManager$, localManager, leaks) && collectValue(obj.ref[obj.prop], collector, leaks);
-      }
-      return obj;
-    },
-    $serialize$: (obj, getObjId) => `${getObjId(obj.ref)} ${obj.prop}`,
-    $prepare$: data => {
-      const [id, prop] = data.split(" ");
-      return new SignalWrapper(id, prop);
-    },
-    $fill$: (signal, getObject) => {
-      signal.ref = getObject(signal.ref);
-    }
-  });
-  var NoFiniteNumberSerializer = serializer({
-    $prefix$: "",
-    $test$: v => "number" === typeof v,
-    $serialize$: v => String(v),
-    $prepare$: data => Number(data)
-  });
-  var URLSearchParamsSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof URLSearchParams,
-    $serialize$: obj => obj.toString(),
-    $prepare$: data => new URLSearchParams(data)
-  });
-  var FormDataSerializer = serializer({
-    $prefix$: "",
-    $test$: v => "undefined" !== typeof FormData && v instanceof globalThis.FormData,
-    $serialize$: formData => {
-      const array = [];
-      formData.forEach(((value, key) => {
-        "string" === typeof value ? array.push([ key, value ]) : array.push([ key, value.name ]);
-      }));
-      return JSON.stringify(array);
-    },
-    $prepare$: data => {
-      const array = JSON.parse(data);
-      const formData = new FormData;
-      for (const [key, value] of array) {
-        formData.append(key, value);
-      }
-      return formData;
-    }
-  });
-  var JSXNodeSerializer = serializer({
-    $prefix$: "",
-    $test$: v => isJSXNode(v),
-    $collect$: (node, collector, leaks) => {
-      collectValue(node.children, collector, leaks);
-      collectValue(node.props, collector, leaks);
-      collectValue(node.constProps, collector, leaks);
-      collectValue(node.key, collector, leaks);
-      let type = node.type;
-      type === Slot ? type = ":slot" : type === Fragment && (type = ":fragment");
-      collectValue(type, collector, leaks);
-    },
-    $serialize$: (node, getObjID) => {
-      let type = node.type;
-      type === Slot ? type = ":slot" : type === Fragment && (type = ":fragment");
-      return `${getObjID(type)} ${getObjID(node.props)} ${getObjID(node.constProps)} ${getObjID(node.key)} ${getObjID(node.children)} ${node.flags}`;
-    },
-    $prepare$: data => {
-      const [type, props, immutableProps, key, children, flags] = data.split(" ");
-      const node = new JSXNodeImpl(type, props, immutableProps, children, parseInt(flags, 10), key);
-      return node;
-    },
-    $fill$: (node, getObject) => {
-      node.type = getResolveJSXType(getObject(node.type));
-      node.props = getObject(node.props);
-      node.constProps = getObject(node.constProps);
-      node.key = getObject(node.key);
-      node.children = getObject(node.children);
-    }
-  });
-  var BigIntSerializer = serializer({
-    $prefix$: "",
-    $test$: v => "bigint" === typeof v,
-    $serialize$: v => v.toString(),
-    $prepare$: data => BigInt(data)
-  });
-  var Uint8ArraySerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof Uint8Array,
-    $serialize$: v => {
-      let buf = "";
-      for (const c of v) {
-        buf += String.fromCharCode(c);
-      }
-      return btoa(buf).replace(/=+$/, "");
-    },
-    $prepare$: data => {
-      const buf = atob(data);
-      const bytes = new Uint8Array(buf.length);
-      let i = 0;
-      for (const s of buf) {
-        bytes[i++] = s.charCodeAt(0);
-      }
-      return bytes;
-    },
-    $fill$: void 0
-  });
-  var DATA = Symbol();
-  var SetSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof Set,
-    $collect$: (set, collector, leaks) => {
-      set.forEach((value => collectValue(value, collector, leaks)));
-    },
-    $serialize$: (v, getObjID) => Array.from(v).map(getObjID).join(" "),
-    $prepare$: data => {
-      const set = new Set;
-      set[DATA] = data;
-      return set;
-    },
-    $fill$: (set, getObject) => {
-      const data = set[DATA];
-      set[DATA] = void 0;
-      assertString(data, "SetSerializer should be defined");
-      const items = 0 === data.length ? [] : data.split(" ");
-      for (const id of items) {
-        set.add(getObject(id));
-      }
-    }
-  });
-  var MapSerializer = serializer({
-    $prefix$: "",
-    $test$: v => v instanceof Map,
-    $collect$: (map, collector, leaks) => {
-      map.forEach(((value, key) => {
-        collectValue(value, collector, leaks);
-        collectValue(key, collector, leaks);
-      }));
-    },
-    $serialize$: (map, getObjID) => {
-      const result = [];
-      map.forEach(((value, key) => {
-        result.push(getObjID(key) + " " + getObjID(value));
-      }));
-      return result.join(" ");
-    },
-    $prepare$: data => {
-      const set = new Map;
-      set[DATA] = data;
-      return set;
-    },
-    $fill$: (set, getObject) => {
-      const data = set[DATA];
-      set[DATA] = void 0;
-      assertString(data, "SetSerializer should be defined");
-      const items = 0 === data.length ? [] : data.split(" ");
-      assertTrue(items.length % 2 === 0, "MapSerializer should have even number of items");
-      for (let i = 0; i < items.length; i += 2) {
-        set.set(getObject(items[i]), getObject(items[i + 1]));
-      }
-    }
-  });
-  var StringSerializer = serializer({
-    $prefix$: "",
-    $test$: v => !!getSerializer(v) || v === UNDEFINED_PREFIX,
-    $serialize$: v => v,
-    $prepare$: data => data
-  });
-  var serializers = [ QRLSerializer, TaskSerializer, ResourceSerializer, URLSerializer, DateSerializer, RegexSerializer, ErrorSerializer, DocumentSerializer, ComponentSerializer, DerivedSignalSerializer, SignalSerializer, SignalWrapperSerializer, NoFiniteNumberSerializer, URLSearchParamsSerializer, FormDataSerializer, JSXNodeSerializer, BigIntSerializer, SetSerializer, MapSerializer, StringSerializer, Uint8ArraySerializer ];
-  var serializerByPrefix = (() => {
-    const serializerByPrefix2 = [];
-    serializers.forEach((s => {
-      const prefix = s.$prefixCode$;
-      while (serializerByPrefix2.length < prefix) {
-        serializerByPrefix2.push(void 0);
-      }
-      serializerByPrefix2.push(s);
-    }));
-    return serializerByPrefix2;
-  })();
-  function getSerializer(obj) {
-    if ("string" === typeof obj) {
-      const prefix = obj.charCodeAt(0);
-      if (prefix < serializerByPrefix.length) {
-        return serializerByPrefix[prefix];
-      }
-    }
-    return;
-  }
-  var collectorSerializers = serializers.filter((a => a.$collect$));
-  var canSerialize = obj => {
-    for (const s of serializers) {
-      if (s.$test$(obj)) {
-        return true;
-      }
-    }
-    return false;
-  };
-  var collectDeps = (obj, collector, leaks) => {
-    for (const s of collectorSerializers) {
-      if (s.$test$(obj)) {
-        s.$collect$(obj, collector, leaks);
-        return true;
-      }
-    }
-    return false;
-  };
-  var isTreeShakeable = (manager, target, leaks) => {
-    if ("boolean" === typeof leaks) {
-      return leaks;
-    }
-    const localManager = manager.$groupToManagers$.get(leaks);
-    if (localManager && localManager.length > 0) {
-      if (1 === localManager.length) {
-        return localManager[0] !== target;
-      }
-      return true;
-    }
-    return false;
-  };
-  var getResolveJSXType = type => {
-    if (":slot" === type) {
-      return Slot;
-    }
-    if (":fragment" === type) {
-      return Fragment;
-    }
-    return type;
-  };
-  var verifySerializable = (value, preMessage) => {
-    const seen = new Set;
-    return _verifySerializable(value, seen, "_", preMessage);
-  };
-  var _verifySerializable = (value, seen, ctx, preMessage) => {
-    const unwrapped = unwrapProxy(value);
-    if (null == unwrapped) {
-      return value;
-    }
-    if (shouldSerialize(unwrapped)) {
-      if (seen.has(unwrapped)) {
-        return value;
-      }
-      seen.add(unwrapped);
-      if (canSerialize(unwrapped)) {
-        return value;
-      }
-      const typeObj = typeof unwrapped;
-      switch (typeObj) {
-       case "object":
-        if (isPromise(unwrapped)) {
-          return value;
-        }
-        if (isNode(unwrapped)) {
-          return value;
-        }
-        if (isArray(unwrapped)) {
-          let expectIndex = 0;
-          unwrapped.forEach(((v, i) => {
-            if (i !== expectIndex) {
-              throw qError(QError_verifySerializable, unwrapped);
-            }
-            _verifySerializable(v, seen, ctx + "[" + i + "]");
-            expectIndex = i + 1;
-          }));
-          return value;
-        }
-        if (isSerializableObject(unwrapped)) {
-          for (const [key, item] of Object.entries(unwrapped)) {
-            _verifySerializable(item, seen, ctx + "." + key);
-          }
-          return value;
-        }
-        break;
-
-       case "boolean":
-       case "string":
-       case "number":
-        return value;
-      }
-      let message = "";
-      message = preMessage || "Value cannot be serialized";
-      "_" !== ctx && (message += ` in ${ctx},`);
-      if ("object" === typeObj) {
-        message += ` because it's an instance of "${null == value ? void 0 : value.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.dev/docs/advanced/dollar/`;
-      } else if ("function" === typeObj) {
-        const fnName = value.name;
-        message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
-      }
-      console.error("Trying to serialize", value);
-      throwErrorAndStop(message);
-    }
-    return value;
-  };
-  var noSerializeSet = new WeakSet;
-  var weakSerializeSet = new WeakSet;
-  var shouldSerialize = obj => {
-    if (isObject(obj) || isFunction(obj)) {
-      return !noSerializeSet.has(obj);
-    }
-    return true;
-  };
-  var fastSkipSerialize = obj => noSerializeSet.has(obj);
-  var fastWeakSerialize = obj => weakSerializeSet.has(obj);
-  var unwrapProxy = proxy => isObject(proxy) ? getProxyTarget(proxy) ?? proxy : proxy;
-  var getProxyTarget = obj => obj[QObjectTargetSymbol];
-  var getSubscriptionManager = obj => obj[QObjectManagerSymbol];
-  var getProxyFlags = obj => obj[QObjectFlagsSymbol];
-  var isQrl = value => "function" === typeof value && "function" === typeof value.getSymbol;
+  Symbol("serializable-data");
+  Symbol();
+  Symbol();
+  var QObjectSignalFlags = Symbol("proxy manager");
+  Symbol("unassigned signal");
+  QObjectSignalFlags;
+  Symbol("ContainerState");
   var SYNC_QRL = "<sync>";
-  var isSyncQrl = value => isQrl(value) && value.$symbol$ == SYNC_QRL;
-  var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
-    if (qDev && qSerialize && captureRef) {
-      for (const item of captureRef) {
-        verifySerializable(item, "Captured variable in the closure can not be serialized");
-      }
-    }
-    let _containerEl;
-    const qrl = async function(...args) {
-      const fn = invokeFn.call(this, tryGetInvokeContext());
-      const result = await fn(...args);
-      return result;
-    };
-    const setContainer = el => {
-      _containerEl || (_containerEl = el);
-      return _containerEl;
-    };
-    const wrapFn = fn => {
-      if ("function" !== typeof fn || !(null == capture ? void 0 : capture.length) && !(null == captureRef ? void 0 : captureRef.length)) {
-        return fn;
-      }
-      return function(...args) {
-        let context = tryGetInvokeContext();
-        if (context) {
-          return fn.apply(this, args);
-        }
-        context = newInvokeContext();
-        context.$qrl$ = qrl;
-        context.$event$ = this;
-        return invoke.call(this, context, fn, ...args);
-      };
-    };
-    const resolve = async containerEl => {
-      if (null !== symbolRef) {
-        return symbolRef;
-      }
-      containerEl && setContainer(containerEl);
-      if ("" === chunk) {
-        assertDefined(_containerEl, "Sync QRL must have container element");
-        const hash2 = _containerEl.getAttribute(QInstanceAttr);
-        const doc = _containerEl.ownerDocument;
-        const qFuncs = getQFuncs(doc, hash2);
-        return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
-      }
-      const start = now();
-      const ctx = tryGetInvokeContext();
-      if (null !== symbolFn) {
-        symbolRef = symbolFn().then((module2 => qrl.resolved = symbolRef = wrapFn(module2[symbol])));
-      } else {
-        const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
-        symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
-      }
-      symbolRef.finally((() => emitUsedSymbol(symbol, null == ctx ? void 0 : ctx.$element$, start)));
-      return symbolRef;
-    };
-    const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
-    function invokeFn(currentCtx, beforeFn) {
-      return (...args) => maybeThen(resolveLazy(), (f => {
-        if (!isFunction(f)) {
-          throw qError(QError_qrlIsNotFunction);
-        }
-        if (beforeFn && false === beforeFn()) {
-          return;
-        }
-        const context = createOrReuseInvocationContext(currentCtx);
-        const prevQrl = context.$qrl$;
-        const prevEvent = context.$event$;
-        context.$qrl$ = qrl;
-        context.$event$ ||= this;
-        try {
-          return invoke.call(this, context, f, ...args);
-        } finally {
-          context.$qrl$ = prevQrl;
-          context.$event$ = prevEvent;
-        }
-      }));
-    }
-    const createOrReuseInvocationContext = invoke2 => null == invoke2 ? newInvokeContext() : isArray(invoke2) ? newInvokeContextFromTuple(invoke2) : invoke2;
-    const resolvedSymbol = refSymbol ?? symbol;
-    const hash = getSymbolHash2(resolvedSymbol);
-    Object.assign(qrl, {
-      getSymbol: () => resolvedSymbol,
-      getHash: () => hash,
-      getCaptured: () => captureRef,
-      resolve: resolve,
-      $resolveLazy$: resolveLazy,
-      $setContainer$: setContainer,
-      $chunk$: chunk,
-      $symbol$: symbol,
-      $refSymbol$: refSymbol,
-      $hash$: hash,
-      getFn: invokeFn,
-      $capture$: capture,
-      $captureRef$: captureRef,
-      dev: null,
-      resolved: void 0
-    });
-    symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved))));
-    isDev && Object.defineProperty(qrl, "_devOnlySymbolRef", {
-      get: () => symbolRef
-    });
-    qDev && seal(qrl);
-    return qrl;
-  };
-  var getSymbolHash2 = symbolName => {
-    const index = symbolName.lastIndexOf("_");
-    if (index > -1) {
-      return symbolName.slice(index + 1);
-    }
-    return symbolName;
-  };
-  function assertQrl(qrl) {
-    if (qDev && !isQrl(qrl)) {
-      throw new Error("Not a QRL");
-    }
-  }
-  function assertSignal(obj) {
-    if (qDev && !isSignal(obj)) {
-      throw new Error("Not a Signal");
-    }
-  }
-  var EMITTED = new Set;
-  var emitUsedSymbol = (symbol, element, reqTime) => {
-    if (!EMITTED.has(symbol)) {
-      EMITTED.add(symbol);
-      emitEvent("qsymbol", {
-        symbol: symbol,
-        element: element,
-        reqTime: reqTime
-      });
-    }
-  };
-  var emitEvent = (eventName, detail) => {
-    qTest || isServerPlatform() || "object" !== typeof document || document.dispatchEvent(new CustomEvent(eventName, {
-      bubbles: false,
-      detail: detail
-    }));
-  };
-  var now = () => {
-    if (qTest || isServerPlatform()) {
-      return 0;
-    }
-    if ("object" === typeof performance) {
-      return performance.now();
-    }
-    return 0;
-  };
   function getOrigin(req) {
     const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;
     const headers = req.headers;
@@ -5196,12 +3614,12 @@ globalThis.qwikOptimizer = function(module) {
           type: "full-reload"
         });
       },
-      onLog(level, log) {
+      onLog(level, log3) {
         var _a3, _b, _c;
-        if ("vite-plugin-qwik" == log.plugin) {
+        if ("vite-plugin-qwik" == log3.plugin) {
           const color = LOG_COLOR[level] || ANSI_COLOR.White;
-          const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${null == (_a3 = null == log ? void 0 : log.loc) ? void 0 : _a3.file}:${null == (_b = null == log ? void 0 : log.loc) ? void 0 : _b.line}:${null == (_c = null == log ? void 0 : log.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
+          const frames = (log3.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log3.plugin}](${level}): ${log3.message}\n`, `  ${null == (_a3 = null == log3 ? void 0 : log3.loc) ? void 0 : _a3.file}:${null == (_b = null == log3 ? void 0 : log3.loc) ? void 0 : _b.line}:${null == (_c = null == log3 ? void 0 : log3.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
           return false;
         }
       }
