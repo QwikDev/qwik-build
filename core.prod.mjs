@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+5b15250
+ * @builder.io/qwik 2.0.0-0-dev+02ae97a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
 
-const version = "2.0.0-0-dev+5b15250";
+const version = "2.0.0-0-dev+02ae97a";
 
 const SkipRender = Symbol("skip render");
 
@@ -1291,9 +1291,12 @@ function serializeEffectSubs(addRoot, effects) {
         for (let i = 0; i < effects.length; i++) {
             const effectSubscription = effects[i];
             const prop = effectSubscription[EffectSubscriptionsProp.PROPERTY];
-            const additionalData = effectSubscription[EffectSubscriptionsProp.DATA];
-            data += ";" + addRoot(effectSubscription[EffectSubscriptionsProp.EFFECT]) + " " + prop + " " + addRoot(additionalData);
-            for (let j = EffectSubscriptionsProp.FIRST_BACK_REF; j < effectSubscription.length; j++) {
+            data += ";" + addRoot(effectSubscription[EffectSubscriptionsProp.EFFECT]) + " " + prop;
+            let effectSubscriptionDataIndex = EffectSubscriptionsProp.FIRST_BACK_REF_OR_DATA;
+            const effectSubscriptionData = effectSubscription[effectSubscriptionDataIndex];
+            effectSubscriptionData instanceof EffectData && (data += " |" + addRoot(effectSubscriptionData.data), 
+            effectSubscriptionDataIndex++);
+            for (let j = effectSubscriptionDataIndex; j < effectSubscription.length; j++) {
                 data += " " + addRoot(effectSubscription[j]);
             }
         }
@@ -1373,7 +1376,7 @@ function deserializeStore2(container, data) {
 
 function deserializeSignal2Effect(idx, parts, container, effects) {
     for (;idx < parts.length; ) {
-        const effect = parts[idx++].split(" ").map(((obj, idx) => 1 == idx ? obj : container.$getObjectById$(obj)));
+        const effect = parts[idx++].split(" ").map(((obj, idx) => idx === EffectSubscriptionsProp.PROPERTY ? obj : "|" === obj[0] ? new EffectData(container.$getObjectById$(parseInt(obj.substring(1)))) : container.$getObjectById$(obj)));
         effects.push(effect);
     }
     return idx;
@@ -2193,8 +2196,8 @@ function clearEffects(subscriber, value) {
 const executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, props) => {
     const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, "qRender");
     let componentFn;
-    if (iCtx.$effectSubscriber$ = [ subscriptionHost, EffectProperty.COMPONENT, null ], 
-    iCtx.$container2$ = container, container.ensureProjectionResolved(renderHost), null === componentQRL && assertDefined(componentQRL = componentQRL || container.getHostProp(renderHost, "q:renderFn"), "No Component found at this location"), 
+    if (iCtx.$effectSubscriber$ = [ subscriptionHost, EffectProperty.COMPONENT ], iCtx.$container2$ = container, 
+    container.ensureProjectionResolved(renderHost), null === componentQRL && assertDefined(componentQRL = componentQRL || container.getHostProp(renderHost, "q:renderFn"), "No Component found at this location"), 
     isQrl(componentQRL)) {
         (props = props || container.getHostProp(renderHost, "q:props") || EMPTY_OBJ) && props.children && delete props.children, 
         componentFn = componentQRL.getFn(iCtx);
@@ -2488,8 +2491,14 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                             continue;
                         }
                     }
-                    if (isSignal(value) && (value = trackSignal((() => value.value), vNewNode, key, container, scopedStyleIdPrefix)), 
-                    key !== dangerouslySetInnerHTML) {
+                    if (isSignal(value)) {
+                        const signalData = new EffectData({
+                            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+                            $isConst$: !0
+                        });
+                        value = trackSignal((() => value.value), vNewNode, key, container, signalData);
+                    }
+                    if (key !== dangerouslySetInnerHTML) {
                         if ("textarea" !== elementName || "value" !== key) {
                             value = serializeAttribute(key, value, scopedStyleIdPrefix), null != value && element.setAttribute(key, String(value));
                         } else {
@@ -3160,12 +3169,13 @@ const createScheduler = (container, scheduleDrain, journalFlush) => {
           case ChoreType.NODE_PROP:
             const virtualNode = chore.$host$;
             const payload = chore.$payload$;
-            let value = payload.value;
-            let isConst = !1;
-            isSignal(value) && (value = value.value, isConst = !0);
+            let value = payload.$value$;
+            isSignal(value) && (value = value.value);
+            const isConst = payload.$isConst$;
             const journal = container.$journal$;
             const property = chore.$idx$;
-            if (value = serializeAttribute(property, value, payload.scopedStyleIdPrefix), isConst) {
+            if (value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$), 
+            isConst) {
                 journal.push(VNodeJournalOpCode.SetAttribute, virtualNode[ElementVNodeProps.element], property, value);
             } else {
                 vnode_setAttr(journal, virtualNode, property, value);
@@ -3275,13 +3285,19 @@ const throwIfQRLNotResolved = qrl => {
 
 const isSignal = value => value instanceof Signal;
 
+class EffectData {
+    constructor(data) {
+        this.data = data;
+    }
+}
+
 var EffectSubscriptionsProp;
 
 var EffectProperty;
 
 !function(EffectSubscriptionsProp) {
     EffectSubscriptionsProp[EffectSubscriptionsProp.EFFECT = 0] = "EFFECT", EffectSubscriptionsProp[EffectSubscriptionsProp.PROPERTY = 1] = "PROPERTY", 
-    EffectSubscriptionsProp[EffectSubscriptionsProp.DATA = 2] = "DATA", EffectSubscriptionsProp[EffectSubscriptionsProp.FIRST_BACK_REF = 3] = "FIRST_BACK_REF";
+    EffectSubscriptionsProp[EffectSubscriptionsProp.FIRST_BACK_REF_OR_DATA = 2] = "FIRST_BACK_REF_OR_DATA";
 }(EffectSubscriptionsProp || (EffectSubscriptionsProp = {})), function(EffectProperty) {
     EffectProperty.COMPONENT = ":", EffectProperty.VNODE = ".";
 }(EffectProperty || (EffectProperty = {}));
@@ -3411,10 +3427,14 @@ const triggerEffects = (container, signal, effects) => {
             } else if (property === EffectProperty.VNODE) {
                 container.$scheduler$(ChoreType.NODE_DIFF, effect, effect, signal);
             } else {
-                container.$scheduler$(ChoreType.NODE_PROP, effect, property, {
-                    value: signal,
-                    scopedStyleIdPrefix: effectSubscriptions[EffectSubscriptionsProp.DATA]
-                });
+                let effectData = effectSubscriptions[EffectSubscriptionsProp.FIRST_BACK_REF_OR_DATA];
+                if (effectData instanceof EffectData) {
+                    const payload = {
+                        ...effectData.data,
+                        $value$: signal
+                    };
+                    container.$scheduler$(ChoreType.NODE_PROP, effect, property, payload);
+                }
             }
         };
         effects.forEach(scheduleEffect);
@@ -3445,7 +3465,7 @@ class ComputedSignal extends Signal {
         const ctx = tryGetInvokeContext();
         assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
         const previousEffectSubscription = ctx?.$effectSubscriber$;
-        ctx && (ctx.$effectSubscriber$ = [ this, EffectProperty.VNODE, null ]), assertTrue(!!computeQrl.resolved, "Computed signals must run sync. Expected the QRL to be resolved at this point.");
+        ctx && (ctx.$effectSubscriber$ = [ this, EffectProperty.VNODE ]), assertTrue(!!computeQrl.resolved, "Computed signals must run sync. Expected the QRL to be resolved at this point.");
         try {
             const untrackedValue = computeQrl.getFn(ctx)();
             assertFalse(isPromise(untrackedValue), "Computed function must be synchronous."), 
@@ -8441,7 +8461,7 @@ const runTask2 = (task, container, host) => {
     const taskApi = {
         track: (obj, prop) => {
             const ctx = newInvokeContext();
-            return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT, null ], ctx.$container2$ = container, 
+            return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT ], ctx.$container2$ = container, 
             invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal(obj) ? obj.value : obj));
         },
         cleanup
@@ -8504,7 +8524,7 @@ const runResource = (task, container, host) => {
     const opts = {
         track: (obj, prop) => {
             const ctx = newInvokeContext();
-            return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT, null ], ctx.$container2$ = container, 
+            return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT ], ctx.$container2$ = container, 
             invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal(obj) ? obj.value : obj));
         },
         cleanup(fn) {
@@ -8876,12 +8896,12 @@ const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "
 
 const trackSignalV1 = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
 
-const trackSignal = (fn, subscriber, property, container, data = null) => {
+const trackSignal = (fn, subscriber, property, container, data) => {
     const previousSubscriber = trackInvocation.$effectSubscriber$;
     const previousContainer = trackInvocation.$container2$;
     try {
-        return trackInvocation.$effectSubscriber$ = [ subscriber, property, data ], trackInvocation.$container2$ = container, 
-        invoke(trackInvocation, fn);
+        return trackInvocation.$effectSubscriber$ = [ subscriber, property ], data && trackInvocation.$effectSubscriber$.push(data), 
+        trackInvocation.$container2$ = container, invoke(trackInvocation, fn);
     } finally {
         trackInvocation.$effectSubscriber$ = previousSubscriber, trackInvocation.$container2$ = previousContainer;
     }
@@ -10454,4 +10474,4 @@ const PrefetchGraph = (opts = {}) => {
     }, null, 0, "prefetch-graph");
 };
 
-export { $, Fragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, SubscriptionType, _CONST_PROPS, DomContainer as _DomContainer, EMPTY_ARRAY as _EMPTY_ARRAY, _IMMUTABLE, _SharedContainer, _VAR_PROPS, _deserialize, _fnSignal, _getContextElement, _getContextEvent, getDomContainer as _getDomContainer, _getQContainerElement, _hW, isJSXNode as _isJSXNode, isStringifiable as _isStringifiable, _jsxBranch, _jsxC, _jsxQ, _jsxS, _jsxSorted, _jsxSplit, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serialize, verifySerializable as _verifySerializable, _waitUntilRendered, _walkJSX, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getDomContainer, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render2 as render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, SubscriptionType, _CONST_PROPS, DomContainer as _DomContainer, EMPTY_ARRAY as _EMPTY_ARRAY, EffectData as _EffectData, _IMMUTABLE, _SharedContainer, _VAR_PROPS, _deserialize, _fnSignal, _getContextElement, _getContextEvent, getDomContainer as _getDomContainer, _getQContainerElement, _hW, isJSXNode as _isJSXNode, isStringifiable as _isStringifiable, _jsxBranch, _jsxC, _jsxQ, _jsxS, _jsxSorted, _jsxSplit, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serialize, verifySerializable as _verifySerializable, _waitUntilRendered, _walkJSX, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getDomContainer, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render2 as render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };

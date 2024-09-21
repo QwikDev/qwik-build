@@ -1004,10 +1004,14 @@ export declare type EagernessOptions = 'visible' | 'load' | 'idle';
  * - `Task`: `useTask`, `useVisibleTask`, `useResource`
  * - `VNode` and `ISsrNode`: Either a component or `<Signal>`
  * - `Signal2`: A derived signal which contains a computation function.
- *
- * @internal
  */
-export declare type Effect = Task | _VNode | ISsrNode | Signal_3;
+declare type Effect = Task | _VNode | ISsrNode | Signal_3;
+
+/** @internal */
+export declare class _EffectData<T extends Record<string, any> = Record<string, any>> {
+    data: T;
+    constructor(data: T);
+}
 
 /**
  * An effect plus a list of subscriptions effect depends on.
@@ -1048,9 +1052,7 @@ export declare type Effect = Task | _VNode | ISsrNode | Signal_3;
 declare type EffectSubscriptions = [
 Effect,
 string,
-// EffectSubscriptionsProp.PROPERTY
-any | null,
-...(string | Signal_3 | TargetType)[]
+...(_EffectData | string | Signal_3 | TargetType)[]
 ];
 
 /** @internal */
@@ -2706,7 +2708,7 @@ export declare abstract class _SharedContainer implements Container2 {
     $currentUniqueId$: number;
     $instanceHash$: string | null;
     constructor(scheduleDrain: () => void, journalFlush: () => void, serverData: Record<string, any>, locale: string);
-    trackSignalValue<T>(signal: Signal_2, subscriber: Effect, property: string, data: any): T;
+    trackSignalValue<T>(signal: Signal_2, subscriber: Effect, property: string, data: _EffectData): T;
     serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter_3): SerializationContext;
     abstract ensureProjectionResolved(host: HostElement): void;
     abstract processJsx(host: HostElement, jsx: JSXOutput): ValueOrPromise<void>;
@@ -4344,7 +4346,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+5b15250
+ * 2.0.0-0-dev+02ae97a
  *
  * @public
  */

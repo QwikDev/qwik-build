@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+5b15250
+ * @builder.io/qwik 2.0.0-0-dev+02ae97a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -656,7 +656,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+5b15250";
+    const version = "2.0.0-0-dev+02ae97a";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -1829,9 +1829,14 @@
                 const effectSubscription = effects[i];
                 const effect = effectSubscription[EffectSubscriptionsProp.EFFECT];
                 const prop = effectSubscription[EffectSubscriptionsProp.PROPERTY];
-                const additionalData = effectSubscription[EffectSubscriptionsProp.DATA];
-                data += ';' + addRoot(effect) + ' ' + prop + ' ' + addRoot(additionalData);
-                for (let j = EffectSubscriptionsProp.FIRST_BACK_REF; j < effectSubscription.length; j++) {
+                data += ';' + addRoot(effect) + ' ' + prop;
+                let effectSubscriptionDataIndex = EffectSubscriptionsProp.FIRST_BACK_REF_OR_DATA;
+                const effectSubscriptionData = effectSubscription[effectSubscriptionDataIndex];
+                if (effectSubscriptionData instanceof EffectData) {
+                    data += ' |' + addRoot(effectSubscriptionData.data);
+                    effectSubscriptionDataIndex++;
+                }
+                for (let j = effectSubscriptionDataIndex; j < effectSubscription.length; j++) {
                     data += ' ' + addRoot(effectSubscription[j]);
                 }
             }
@@ -1930,9 +1935,17 @@
     function deserializeSignal2Effect(idx, parts, container, effects) {
         while (idx < parts.length) {
             // idx == 1 is the attribute name
-            const effect = parts[idx++]
-                .split(' ')
-                .map((obj, idx) => (idx == 1 ? obj : container.$getObjectById$(obj)));
+            const effect = parts[idx++].split(' ').map((obj, idx) => {
+                if (idx === EffectSubscriptionsProp.PROPERTY) {
+                    return obj;
+                }
+                else {
+                    if (obj[0] === '|') {
+                        return new EffectData(container.$getObjectById$(parseInt(obj.substring(1))));
+                    }
+                    return container.$getObjectById$(obj);
+                }
+            });
             effects.push(effect);
         }
         return idx;
@@ -3354,7 +3367,7 @@
      */
     const executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, props) => {
         const iCtx = newInvokeContext(container.$locale$, subscriptionHost, undefined, RenderEvent);
-        iCtx.$effectSubscriber$ = [subscriptionHost, EffectProperty.COMPONENT, null];
+        iCtx.$effectSubscriber$ = [subscriptionHost, EffectProperty.COMPONENT];
         iCtx.$container2$ = container;
         let componentFn;
         container.ensureProjectionResolved(renderHost);
@@ -4033,7 +4046,11 @@
                         }
                     }
                     if (isSignal(value)) {
-                        value = trackSignal(() => value.value, vNewNode, key, container, scopedStyleIdPrefix);
+                        const signalData = new EffectData({
+                            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+                            $isConst$: true,
+                        });
+                        value = trackSignal(() => value.value, vNewNode, key, container, signalData);
                     }
                     if (key === dangerouslySetInnerHTML) {
                         element.innerHTML = value;
@@ -5247,16 +5264,14 @@
                 case ChoreType.NODE_PROP:
                     const virtualNode = chore.$host$;
                     const payload = chore.$payload$;
-                    let value = payload.value;
-                    // TODO: temp solution!
-                    let isConst = false;
+                    let value = payload.$value$;
                     if (isSignal(value)) {
                         value = value.value;
-                        isConst = true;
                     }
+                    const isConst = payload.$isConst$;
                     const journal = container.$journal$;
                     const property = chore.$idx$;
-                    value = serializeAttribute(property, value, payload.scopedStyleIdPrefix);
+                    value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$);
                     if (isConst) {
                         const element = virtualNode[ElementVNodeProps.element];
                         journal.push(VNodeJournalOpCode.SetAttribute, element, property, value);
@@ -5422,12 +5437,17 @@
     const isSignal = (value) => {
         return value instanceof Signal;
     };
+    /** @internal */
+    class EffectData {
+        constructor(data) {
+            this.data = data;
+        }
+    }
     var EffectSubscriptionsProp;
     (function (EffectSubscriptionsProp) {
         EffectSubscriptionsProp[EffectSubscriptionsProp["EFFECT"] = 0] = "EFFECT";
         EffectSubscriptionsProp[EffectSubscriptionsProp["PROPERTY"] = 1] = "PROPERTY";
-        EffectSubscriptionsProp[EffectSubscriptionsProp["DATA"] = 2] = "DATA";
-        EffectSubscriptionsProp[EffectSubscriptionsProp["FIRST_BACK_REF"] = 3] = "FIRST_BACK_REF";
+        EffectSubscriptionsProp[EffectSubscriptionsProp["FIRST_BACK_REF_OR_DATA"] = 2] = "FIRST_BACK_REF_OR_DATA";
     })(EffectSubscriptionsProp || (EffectSubscriptionsProp = {}));
     var EffectProperty;
     (function (EffectProperty) {
@@ -5609,12 +5629,15 @@
                 }
                 else {
                     const host = effect;
-                    const scopedStyleIdPrefix = effectSubscriptions[EffectSubscriptionsProp.DATA];
-                    const payload = {
-                        value: signal,
-                        scopedStyleIdPrefix,
-                    };
-                    container.$scheduler$(ChoreType.NODE_PROP, host, property, payload);
+                    let effectData = effectSubscriptions[EffectSubscriptionsProp.FIRST_BACK_REF_OR_DATA];
+                    if (effectData instanceof EffectData) {
+                        effectData = effectData;
+                        const payload = {
+                            ...effectData.data,
+                            $value$: signal,
+                        };
+                        container.$scheduler$(ChoreType.NODE_PROP, host, property, payload);
+                    }
                 }
             };
             effects.forEach(scheduleEffect);
@@ -5670,7 +5693,7 @@
             const ctx = tryGetInvokeContext();
             assertDefined(computeQrl, 'Signal is marked as dirty, but no compute function is provided.');
             const previousEffectSubscription = ctx?.$effectSubscriber$;
-            ctx && (ctx.$effectSubscriber$ = [this, EffectProperty.VNODE, null]);
+            ctx && (ctx.$effectSubscriber$ = [this, EffectProperty.VNODE]);
             assertTrue(!!computeQrl.resolved, 'Computed signals must run sync. Expected the QRL to be resolved at this point.');
             try {
                 const untrackedValue = computeQrl.getFn(ctx)();
@@ -13496,7 +13519,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
         const track = (obj, prop) => {
             const ctx = newInvokeContext();
-            ctx.$effectSubscriber$ = [task, EffectProperty.COMPONENT, null];
+            ctx.$effectSubscriber$ = [task, EffectProperty.COMPONENT];
             ctx.$container2$ = container;
             return invoke(ctx, () => {
                 if (isFunction(obj)) {
@@ -13646,7 +13669,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
         assertDefined(resource, 'useResource: when running a resource, "task.resource" must be a defined.', task);
         const track = (obj, prop) => {
             const ctx = newInvokeContext();
-            ctx.$effectSubscriber$ = [task, EffectProperty.COMPONENT, null];
+            ctx.$effectSubscriber$ = [task, EffectProperty.COMPONENT];
             ctx.$container2$ = container;
             return invoke(ctx, () => {
                 if (isFunction(obj)) {
@@ -14201,11 +14224,14 @@ Task Symbol: ${task.$qrl$.$symbol$}
      * @param container
      * @returns
      */
-    const trackSignal = (fn, subscriber, property, container, data = null) => {
+    const trackSignal = (fn, subscriber, property, container, data) => {
         const previousSubscriber = trackInvocation.$effectSubscriber$;
         const previousContainer = trackInvocation.$container2$;
         try {
-            trackInvocation.$effectSubscriber$ = [subscriber, property, data];
+            trackInvocation.$effectSubscriber$ = [subscriber, property];
+            if (data) {
+                trackInvocation.$effectSubscriber$.push(data);
+            }
             trackInvocation.$container2$ = container;
             return invoke(trackInvocation, fn);
         }
@@ -17104,6 +17130,7 @@ Task Symbol: ${task.$qrl$.$symbol$}
     exports._CONST_PROPS = _CONST_PROPS;
     exports._DomContainer = DomContainer;
     exports._EMPTY_ARRAY = EMPTY_ARRAY;
+    exports._EffectData = EffectData;
     exports._IMMUTABLE = _IMMUTABLE;
     exports._SharedContainer = _SharedContainer;
     exports._VAR_PROPS = _VAR_PROPS;

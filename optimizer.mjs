@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+5b15250
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+02ae97a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+5b15250"
+  qwik: "2.0.0-0-dev+02ae97a"
 };
 
 async function getSystem() {
@@ -3377,7 +3377,7 @@ var delay = timeout => new Promise((resolve => {
 }));
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+5b15250",
+  qwik: "2.0.0-0-dev+02ae97a",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -3842,7 +3842,7 @@ function clearEffects(subscriber, value) {
 
 var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, props) => {
   const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
-  iCtx.$effectSubscriber$ = [ subscriptionHost, ":", null ];
+  iCtx.$effectSubscriber$ = [ subscriptionHost, ":" ];
   iCtx.$container2$ = container;
   let componentFn;
   container.ensureProjectionResolved(renderHost);
@@ -4284,7 +4284,13 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             continue;
           }
         }
-        isSignal(value) && (value = trackSignal((() => value.value), vNewNode, key2, container, scopedStyleIdPrefix));
+        if (isSignal(value)) {
+          const signalData = new EffectData({
+            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+            $isConst$: true
+          });
+          value = trackSignal((() => value.value), vNewNode, key2, container, signalData);
+        }
         if (key2 === dangerouslySetInnerHTML) {
           element.innerHTML = value;
           element.setAttribute(QContainerAttr, "html");
@@ -4832,15 +4838,12 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
      case 5:
       const virtualNode = chore.$host$;
       const payload = chore.$payload$;
-      let value = payload.value;
-      let isConst = false;
-      if (isSignal(value)) {
-        value = value.value;
-        isConst = true;
-      }
+      let value = payload.$value$;
+      isSignal(value) && (value = value.value);
+      const isConst = payload.$isConst$;
       const journal = container.$journal$;
       const property = chore.$idx$;
-      value = serializeAttribute(property, value, payload.scopedStyleIdPrefix);
+      value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$);
       if (isConst) {
         const element = virtualNode[6];
         journal.push(2, element, property, value);
@@ -4977,7 +4980,7 @@ function debugTrace(action, arg, currentChore, queue) {
   console.log(lines.join("\n  ") + "\n");
 }
 
-var version = "2.0.0-0-dev+5b15250";
+var version = "2.0.0-0-dev+02ae97a";
 
 var isDev2 = true;
 
@@ -5798,9 +5801,14 @@ function serializeEffectSubs(addRoot, effects) {
       const effectSubscription = effects[i];
       const effect = effectSubscription[0];
       const prop = effectSubscription[1];
-      const additionalData = effectSubscription[2];
-      data += ";" + addRoot(effect) + " " + prop + " " + addRoot(additionalData);
-      for (let j = 3; j < effectSubscription.length; j++) {
+      data += ";" + addRoot(effect) + " " + prop;
+      let effectSubscriptionDataIndex = 2;
+      const effectSubscriptionData = effectSubscription[effectSubscriptionDataIndex];
+      if (effectSubscriptionData instanceof EffectData) {
+        data += " |" + addRoot(effectSubscriptionData.data);
+        effectSubscriptionDataIndex++;
+      }
+      for (let j = effectSubscriptionDataIndex; j < effectSubscription.length; j++) {
         data += " " + addRoot(effectSubscription[j]);
       }
     }
@@ -5895,7 +5903,15 @@ function deserializeStore2(container, data) {
 
 function deserializeSignal2Effect(idx, parts, container, effects) {
   while (idx < parts.length) {
-    const effect = parts[idx++].split(" ").map(((obj, idx2) => 1 == idx2 ? obj : container.$getObjectById$(obj)));
+    const effect = parts[idx++].split(" ").map(((obj, idx2) => {
+      if (1 === idx2) {
+        return obj;
+      }
+      if ("|" === obj[0]) {
+        return new EffectData(container.$getObjectById$(parseInt(obj.substring(1))));
+      }
+      return container.$getObjectById$(obj);
+    }));
     effects.push(effect);
   }
   return idx;
@@ -7694,6 +7710,12 @@ var throwIfQRLNotResolved = qrl => {
 
 var isSignal = value => value instanceof Signal;
 
+var EffectData = class {
+  constructor(data) {
+    this.data = data;
+  }
+};
+
 var Signal = class extends Subscriber {
   constructor(container, value) {
     super();
@@ -7841,12 +7863,14 @@ var triggerEffects = (container, signal, effects) => {
         container.$scheduler$(4, host, target, signal);
       } else {
         const host = effect;
-        const scopedStyleIdPrefix = effectSubscriptions[2];
-        const payload = {
-          value: signal,
-          scopedStyleIdPrefix: scopedStyleIdPrefix
-        };
-        container.$scheduler$(5, host, property, payload);
+        let effectData = effectSubscriptions[2];
+        if (effectData instanceof EffectData) {
+          const payload = {
+            ...effectData.data,
+            $value$: signal
+          };
+          container.$scheduler$(5, host, property, payload);
+        }
       }
     };
     effects.forEach(scheduleEffect);
@@ -7886,7 +7910,7 @@ var ComputedSignal = class extends Signal {
     const ctx = tryGetInvokeContext();
     assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
     const previousEffectSubscription = ctx?.$effectSubscriber$;
-    ctx && (ctx.$effectSubscriber$ = [ this, ".", null ]);
+    ctx && (ctx.$effectSubscriber$ = [ this, "." ]);
     assertTrue(!!computeQrl.resolved, "Computed signals must run sync. Expected the QRL to be resolved at this point.");
     try {
       const untrackedValue = computeQrl.getFn(ctx)();
@@ -8236,7 +8260,7 @@ var runTask2 = (task, container, host) => {
   const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberEffectDependencies(task)));
   const track = (obj, prop) => {
     const ctx = newInvokeContext();
-    ctx.$effectSubscriber$ = [ task, ":", null ];
+    ctx.$effectSubscriber$ = [ task, ":" ];
     ctx.$container2$ = container;
     return invoke(ctx, (() => {
       if (isFunction(obj)) {
@@ -8283,7 +8307,7 @@ var runResource = (task, container, host) => {
   assertDefined(resource, 'useResource: when running a resource, "task.resource" must be a defined.', task);
   const track = (obj, prop) => {
     const ctx = newInvokeContext();
-    ctx.$effectSubscriber$ = [ task, ":", null ];
+    ctx.$effectSubscriber$ = [ task, ":" ];
     ctx.$container2$ = container;
     return invoke(ctx, (() => {
       if (isFunction(obj)) {
@@ -8480,11 +8504,12 @@ var untrack = fn => invoke(void 0, fn);
 
 var trackInvocation = newInvokeContext(void 0, void 0, void 0, RenderEvent);
 
-var trackSignal = (fn, subscriber, property, container, data = null) => {
+var trackSignal = (fn, subscriber, property, container, data) => {
   const previousSubscriber = trackInvocation.$effectSubscriber$;
   const previousContainer = trackInvocation.$container2$;
   try {
-    trackInvocation.$effectSubscriber$ = [ subscriber, property, data ];
+    trackInvocation.$effectSubscriber$ = [ subscriber, property ];
+    data && trackInvocation.$effectSubscriber$.push(data);
     trackInvocation.$container2$ = container;
     return invoke(trackInvocation, fn);
   } finally {

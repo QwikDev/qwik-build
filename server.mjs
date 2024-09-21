@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+5b15250
+ * @builder.io/qwik/server 2.0.0-0-dev+02ae97a
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -298,7 +298,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "2.0.0-0-dev+5b15250",
+  qwik: "2.0.0-0-dev+02ae97a",
   qwikDom: "2.1.19"
 };
 
@@ -960,7 +960,7 @@ var addComponentStylePrefix = (styleId) => {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+5b15250";
+var version = "2.0.0-0-dev+02ae97a";
 
 // packages/qwik/src/build/index.dev.ts
 var isDev = true;
@@ -3538,9 +3538,14 @@ function serializeEffectSubs(addRoot, effects) {
       const effectSubscription = effects[i];
       const effect = effectSubscription[0 /* EFFECT */];
       const prop = effectSubscription[1 /* PROPERTY */];
-      const additionalData = effectSubscription[2 /* DATA */];
-      data += ";" + addRoot(effect) + " " + prop + " " + addRoot(additionalData);
-      for (let j = 3 /* FIRST_BACK_REF */; j < effectSubscription.length; j++) {
+      data += ";" + addRoot(effect) + " " + prop;
+      let effectSubscriptionDataIndex = 2 /* FIRST_BACK_REF_OR_DATA */;
+      const effectSubscriptionData = effectSubscription[effectSubscriptionDataIndex];
+      if (effectSubscriptionData instanceof EffectData) {
+        data += " |" + addRoot(effectSubscriptionData.data);
+        effectSubscriptionDataIndex++;
+      }
+      for (let j = effectSubscriptionDataIndex; j < effectSubscription.length; j++) {
         data += " " + addRoot(effectSubscription[j]);
       }
     }
@@ -3643,7 +3648,16 @@ function deserializeStore2(container, data) {
 }
 function deserializeSignal2Effect(idx, parts, container, effects) {
   while (idx < parts.length) {
-    const effect = parts[idx++].split(" ").map((obj, idx2) => idx2 == 1 ? obj : container.$getObjectById$(obj));
+    const effect = parts[idx++].split(" ").map((obj, idx2) => {
+      if (idx2 === 1 /* PROPERTY */) {
+        return obj;
+      } else {
+        if (obj[0] === "|") {
+          return new EffectData(container.$getObjectById$(parseInt(obj.substring(1))));
+        }
+        return container.$getObjectById$(obj);
+      }
+    });
     effects.push(effect);
   }
   return idx;
@@ -4152,7 +4166,7 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
     void 0,
     RenderEvent
   );
-  iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */, null];
+  iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
   iCtx.$container2$ = container;
   let componentFn;
   container.ensureProjectionResolved(renderHost);
@@ -4665,12 +4679,16 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           }
         }
         if (isSignal(value)) {
+          const signalData = new EffectData({
+            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+            $isConst$: true
+          });
           value = trackSignal(
             () => value.value,
             vNewNode,
             key2,
             container,
-            scopedStyleIdPrefix
+            signalData
           );
         }
         if (key2 === dangerouslySetInnerHTML) {
@@ -5566,15 +5584,14 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
       case 5 /* NODE_PROP */:
         const virtualNode = chore.$host$;
         const payload = chore.$payload$;
-        let value = payload.value;
-        let isConst = false;
+        let value = payload.$value$;
         if (isSignal(value)) {
           value = value.value;
-          isConst = true;
         }
+        const isConst = payload.$isConst$;
         const journal = container.$journal$;
         const property = chore.$idx$;
-        value = serializeAttribute(property, value, payload.scopedStyleIdPrefix);
+        value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$);
         if (isConst) {
           const element = virtualNode[6 /* element */];
           journal.push(2 /* SetAttribute */, element, property, value);
@@ -5720,7 +5737,7 @@ var runTask2 = (task, container, host) => {
   const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
   const track = (obj, prop) => {
     const ctx = newInvokeContext();
-    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */, null];
+    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */];
     ctx.$container2$ = container;
     return invoke(ctx, () => {
       if (isFunction(obj)) {
@@ -5783,7 +5800,7 @@ var runResource = (task, container, host) => {
   );
   const track = (obj, prop) => {
     const ctx = newInvokeContext();
-    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */, null];
+    ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */];
     ctx.$container2$ = container;
     return invoke(ctx, () => {
       if (isFunction(obj)) {
@@ -6303,6 +6320,11 @@ var throwIfQRLNotResolved = (qrl) => {
 var isSignal = (value) => {
   return value instanceof Signal;
 };
+var EffectData = class {
+  constructor(data) {
+    this.data = data;
+  }
+};
 var Signal = class extends Subscriber {
   constructor(container, value) {
     super();
@@ -6468,12 +6490,15 @@ var triggerEffects = (container, signal, effects) => {
         container.$scheduler$(4 /* NODE_DIFF */, host, target, signal);
       } else {
         const host = effect;
-        const scopedStyleIdPrefix = effectSubscriptions[2 /* DATA */];
-        const payload = {
-          value: signal,
-          scopedStyleIdPrefix
-        };
-        container.$scheduler$(5 /* NODE_PROP */, host, property, payload);
+        let effectData = effectSubscriptions[2 /* FIRST_BACK_REF_OR_DATA */];
+        if (effectData instanceof EffectData) {
+          effectData = effectData;
+          const payload = {
+            ...effectData.data,
+            $value$: signal
+          };
+          container.$scheduler$(5 /* NODE_PROP */, host, property, payload);
+        }
       }
     };
     effects.forEach(scheduleEffect);
@@ -6523,7 +6548,7 @@ var ComputedSignal = class extends Signal {
     const ctx = tryGetInvokeContext();
     assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
     const previousEffectSubscription = ctx?.$effectSubscriber$;
-    ctx && (ctx.$effectSubscriber$ = [this, "." /* VNODE */, null]);
+    ctx && (ctx.$effectSubscriber$ = [this, "." /* VNODE */]);
     assertTrue(
       !!computeQrl.resolved,
       "Computed signals must run sync. Expected the QRL to be resolved at this point."
@@ -7086,11 +7111,14 @@ var trackInvocation = /* @__PURE__ */ newInvokeContext(
   void 0,
   RenderEvent
 );
-var trackSignal = (fn, subscriber, property, container, data = null) => {
+var trackSignal = (fn, subscriber, property, container, data) => {
   const previousSubscriber = trackInvocation.$effectSubscriber$;
   const previousContainer = trackInvocation.$container2$;
   try {
-    trackInvocation.$effectSubscriber$ = [subscriber, property, data];
+    trackInvocation.$effectSubscriber$ = [subscriber, property];
+    if (data) {
+      trackInvocation.$effectSubscriber$.push(data);
+    }
     trackInvocation.$container2$ = container;
     return invoke(trackInvocation, fn);
   } finally {
@@ -7266,7 +7294,8 @@ import {
   _jsxSorted as _jsxSorted3,
   _jsxSplit as _jsxSplit2,
   _walkJSX as _walkJSX2,
-  isSignal as isSignal2
+  isSignal as isSignal2,
+  _EffectData as EffectData2
 } from "@builder.io/qwik";
 import { isDev as isDev9 } from "@builder.io/qwik/build";
 
@@ -8533,7 +8562,7 @@ var SSRContainer = class extends _SharedContainer2 {
       this.write(element);
     }
   }
-  writeAttrs(tag, attrs, immutable) {
+  writeAttrs(tag, attrs, isConst) {
     let innerHTML = void 0;
     if (attrs.length) {
       for (let i = 0; i < attrs.length; i++) {
@@ -8563,7 +8592,11 @@ var SSRContainer = class extends _SharedContainer2 {
         }
         if (isSignal2(value)) {
           const lastNode = this.getLastNode();
-          value = this.trackSignalValue(value, lastNode, key, styleScopedId);
+          const signalData = new EffectData2({
+            $scopedStyleIdPrefix$: styleScopedId,
+            $isConst$: isConst
+          });
+          value = this.trackSignalValue(value, lastNode, key, signalData);
         }
         if (key === dangerouslySetInnerHTML) {
           innerHTML = String(value);
