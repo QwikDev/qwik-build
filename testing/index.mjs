@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+1da95e2
+ * @builder.io/qwik/testing 2.0.0-0-dev+5b15250
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22304,7 +22304,7 @@ var require_lib = __commonJS({
 });
 
 // packages/qwik/src/testing/vdom-diff.unit-util.ts
-import { Fragment as Fragment2, _isJSXNode, _isStringifiable, isSignal as isSignal3 } from "../core.mjs";
+import { Fragment as Fragment2, _isJSXNode, _isStringifiable, isSignal as isSignal2 } from "../core.mjs";
 import { expect } from "vitest";
 
 // packages/qwik/src/core/v2/client/vnode.ts
@@ -23298,38 +23298,38 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 // packages/qwik/src/core/v2/signal/v2-subscriber.ts
 var Subscriber = class {
   constructor() {
-    this.$dependencies$ = null;
+    this.$effectDependencies$ = null;
   }
 };
 function isSubscriber(value) {
   return value instanceof Subscriber;
 }
-function clearVNodeDependencies(value) {
+function clearVNodeEffectDependencies(value) {
   const effects = vnode_getProp(value, QSubscribers, null);
   if (!effects) {
     return;
   }
   for (let i = effects.length - 1; i >= 0; i--) {
     const subscriber = effects[i];
-    const subscriptionRemoved = clearSubscriptions(subscriber, value);
+    const subscriptionRemoved = clearEffects(subscriber, value);
     if (subscriptionRemoved) {
       effects.splice(i, 1);
     }
   }
 }
-function clearSubscriberDependencies(value) {
-  if (value.$dependencies$) {
-    for (let i = value.$dependencies$.length - 1; i >= 0; i--) {
-      const subscriber = value.$dependencies$[i];
-      const subscriptionRemoved = clearSubscriptions(subscriber, value);
+function clearSubscriberEffectDependencies(value) {
+  if (value.$effectDependencies$) {
+    for (let i = value.$effectDependencies$.length - 1; i >= 0; i--) {
+      const subscriber = value.$effectDependencies$[i];
+      const subscriptionRemoved = clearEffects(subscriber, value);
       if (subscriptionRemoved) {
-        value.$dependencies$.splice(i, 1);
+        value.$effectDependencies$.splice(i, 1);
       }
     }
   }
 }
-function clearSubscriptions(subscriber, value) {
-  if (!isSignal2(subscriber)) {
+function clearEffects(subscriber, value) {
+  if (!isSignal(subscriber)) {
     return false;
   }
   const effectSubscriptions = subscriber.$effects$;
@@ -23359,10 +23359,10 @@ var throwIfQRLNotResolved = (qrl2) => {
     throw qrl2.resolve();
   }
 };
-var isSignal2 = (value) => {
-  return value instanceof Signal2;
+var isSignal = (value) => {
+  return value instanceof Signal;
 };
-var Signal2 = class extends Subscriber {
+var Signal = class extends Subscriber {
   constructor(container, value) {
     super();
     /** Store a list of effects which are dependent on this signal. */
@@ -23445,11 +23445,11 @@ var ensureContainsEffect = (array, effectSubscriptions) => {
 };
 var ensureEffectContainsSubscriber = (effect, subscriber, container) => {
   if (isSubscriber(effect)) {
-    effect.$dependencies$ || (effect.$dependencies$ = []);
-    if (subscriberExistInSubscribers(effect.$dependencies$, subscriber)) {
+    effect.$effectDependencies$ || (effect.$effectDependencies$ = []);
+    if (subscriberExistInSubscribers(effect.$effectDependencies$, subscriber)) {
       return;
     }
-    effect.$dependencies$.push(subscriber);
+    effect.$effectDependencies$.push(subscriber);
   } else if (vnode_isVNode(effect) && vnode_isVirtualVNode(effect)) {
     let subscribers = vnode_getProp(
       effect,
@@ -23499,8 +23499,8 @@ var triggerEffects = (container, signal, effects) => {
           choreType = 2 /* RESOURCE */;
         }
         container.$scheduler$(choreType, effect);
-      } else if (effect instanceof Signal2) {
-        if (effect instanceof ComputedSignal2) {
+      } else if (effect instanceof Signal) {
+        if (effect instanceof ComputedSignal) {
           if (!effect.$computeQrl$.resolved) {
             container.$scheduler$(1 /* QRL_RESOLVE */, null, effect.$computeQrl$);
           }
@@ -23539,7 +23539,7 @@ var triggerEffects = (container, signal, effects) => {
   }
   DEBUG && log("done scheduling");
 };
-var ComputedSignal2 = class extends Signal2 {
+var ComputedSignal = class extends Signal {
   constructor(container, computeTask) {
     super(container, NEEDS_COMPUTATION);
     // We need a separate flag to know when the computation needs running because
@@ -23609,7 +23609,7 @@ var ComputedSignal2 = class extends Signal2 {
     throw new TypeError("ComputedSignal is read-only");
   }
 };
-var WrappedSignal = class extends Signal2 {
+var WrappedSignal = class extends Signal {
   constructor(container, fn, args, fnStr) {
     super(container, NEEDS_COMPUTATION);
     // We need a separate flag to know when the computation needs running because
@@ -23645,7 +23645,7 @@ var WrappedSignal = class extends Signal2 {
     if (!this.$invalid$) {
       return false;
     }
-    this.$untrackedValue$ = trackSignal2(
+    this.$untrackedValue$ = trackSignal(
       () => this.$func$(...this.$args$),
       this,
       "." /* VNODE */,
@@ -23697,7 +23697,7 @@ var executeComponent2 = (container, renderHost, subscriptionHost, componentQRL, 
       container.setHostProp(renderHost, USE_ON_LOCAL_SEQ_IDX, null);
       container.setHostProp(renderHost, ELEMENT_PROPS, props);
       if (vnode_isVNode(renderHost)) {
-        clearVNodeDependencies(renderHost);
+        clearVNodeEffectDependencies(renderHost);
       }
       return componentFn(props);
     },
@@ -23778,7 +23778,7 @@ function findFirstStringJSX(jsx4) {
       queue.push(...jsx5);
     } else if (isPromise(jsx5)) {
       return maybeThen(jsx5, (jsx6) => findFirstStringJSX(jsx6));
-    } else if (isSignal2(jsx5)) {
+    } else if (isSignal(jsx5)) {
       return findFirstStringJSX(untrack(() => jsx5.value));
     }
   }
@@ -23874,13 +23874,13 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         } else if (jsxValue && typeof jsxValue === "object") {
           if (Array.isArray(jsxValue)) {
             descend(jsxValue, false);
-          } else if (isSignal2(jsxValue)) {
+          } else if (isSignal(jsxValue)) {
             if (vCurrent) {
-              clearVNodeDependencies(vCurrent);
+              clearVNodeEffectDependencies(vCurrent);
             }
             expectVirtual("S" /* WrappedSignal */, null);
             descend(
-              trackSignal2(
+              trackSignal(
                 () => jsxValue.value,
                 vNewNode || vCurrent,
                 "." /* VNODE */,
@@ -24126,7 +24126,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     if (constProps && typeof constProps == "object" && "name" in constProps) {
       const constValue = constProps.name;
       if (constValue instanceof WrappedSignal) {
-        return trackSignal2(
+        return trackSignal(
           () => constValue.value,
           vHost,
           ":" /* COMPONENT */,
@@ -24204,7 +24204,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           continue;
         }
         if (key2 === "ref") {
-          if (isSignal2(value)) {
+          if (isSignal(value)) {
             value.value = element;
             continue;
           } else if (typeof value === "function") {
@@ -24212,8 +24212,8 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             continue;
           }
         }
-        if (isSignal2(value)) {
-          value = trackSignal2(
+        if (isSignal(value)) {
+          value = trackSignal(
             () => value.value,
             vNewNode,
             key2,
@@ -24330,7 +24330,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       }
       if (key === "ref") {
         const element = vnode_getNode(vnode);
-        if (isSignal2(value)) {
+        if (isSignal(value)) {
           value.value = element;
           return;
         } else if (typeof value === "function") {
@@ -24338,7 +24338,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
           return;
         }
       }
-      if (isSignal2(value)) {
+      if (isSignal(value)) {
         value = untrack(() => value.value);
       }
       vnode_setAttr(journal, vnode, key, value);
@@ -24540,7 +24540,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
   }
   function insertNewComponent(host, componentQRL, jsxProps) {
     if (host) {
-      clearVNodeDependencies(host);
+      clearVNodeEffectDependencies(host);
     }
     vnode_insertBefore(
       journal,
@@ -24633,7 +24633,7 @@ function cleanup(container, vNode) {
     const type = vCursor[0 /* flags */];
     if (type & 3 /* ELEMENT_OR_VIRTUAL_MASK */) {
       if (type & 2 /* Virtual */) {
-        clearVNodeDependencies(vCursor);
+        clearVNodeEffectDependencies(vCursor);
         markVNodeAsDeleted(vNode, vParent, vCursor);
         const seq = container.getHostProp(vCursor, ELEMENT_SEQ);
         if (seq) {
@@ -24641,7 +24641,7 @@ function cleanup(container, vNode) {
             const obj = seq[i];
             if (isTask(obj)) {
               const task = obj;
-              clearSubscriberDependencies(task);
+              clearSubscriberEffectDependencies(task);
               if (task.$flags$ & 1 /* VISIBLE_TASK */) {
                 container.$scheduler$(80 /* CLEANUP_VISIBLE */, task);
               } else {
@@ -24733,6 +24733,13 @@ function markVNodeAsDeleted(vNode, vParent, vCursor) {
 }
 var HANDLER_PREFIX = ":";
 var count = 0;
+
+// packages/qwik/src/core/util/implicit_dollar.ts
+var implicit$FirstArg = (fn) => {
+  return function(first, ...rest2) {
+    return fn.call(null, dollar(first), ...rest2);
+  };
+};
 
 // packages/qwik/src/core/v2/shared/scheduler.ts
 var DEBUG2 = false;
@@ -24846,7 +24853,7 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
       case 4 /* NODE_DIFF */:
         const parentVirtualNode = chore.$target$;
         let jsx4 = chore.$payload$;
-        if (isSignal2(jsx4)) {
+        if (isSignal(jsx4)) {
           jsx4 = jsx4.value;
         }
         returnValue = vnode_diff(container, jsx4, parentVirtualNode, null);
@@ -24856,7 +24863,7 @@ var createScheduler = (container, scheduleDrain, journalFlush) => {
         const payload = chore.$payload$;
         let value = payload.value;
         let isConst = false;
-        if (isSignal2(value)) {
+        if (isSignal(value)) {
           value = value.value;
           isConst = true;
         }
@@ -25017,7 +25024,7 @@ var _SharedContainer = class {
     this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
   }
   trackSignalValue(signal, subscriber, property, data) {
-    return trackSignal2(() => signal.value, subscriber, property, this, data);
+    return trackSignal(() => signal.value, subscriber, property, this, data);
   }
   serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
     return createSerializationContext(
@@ -25853,8 +25860,8 @@ var DeserializationHandler = class {
     if (property === SERIALIZER_PROXY_UNWRAP) {
       return target;
     }
-    if (getStoreTarget2(target) !== void 0) {
-      const unwrapped = unwrapDeserializerProxy(unwrapStore2(target));
+    if (getStoreTarget(target) !== void 0) {
+      const unwrapped = unwrapDeserializerProxy(unwrapStore(target));
       const unwrappedPropValue = Reflect.get(unwrapped, property, receiver);
       if (typeof unwrappedPropValue === "string" && unwrappedPropValue.length >= 1 && unwrappedPropValue.charCodeAt(0) === 5 /* String_VALUE */) {
         return allocate(unwrappedPropValue);
@@ -25963,7 +25970,7 @@ var inflate = (container, target, needsInflationData) => {
       task.$flags$ = restInt();
       task.$index$ = restInt();
       task.$el$ = container.$getObjectById$(restInt());
-      task.$dependencies$ = container.$getObjectById$(restInt());
+      task.$effectDependencies$ = container.$getObjectById$(restInt());
       task.$qrl$ = inflateQRL(container, parseQRL(restString()));
       const taskState = restString();
       task.$state$ = taskState ? container.$getObjectById$(taskState) : void 0;
@@ -26066,11 +26073,11 @@ var allocate = (value) => {
     case 19 /* Component_VALUE */:
       return componentQrl(parseQRL(value));
     case 20 /* Signal_VALUE */:
-      return new Signal2(null, 0);
+      return new Signal(null, 0);
     case 21 /* WrappedSignal_VALUE */:
       return new WrappedSignal(null, null, null, null);
     case 22 /* ComputedSignal_VALUE */:
-      return new ComputedSignal2(null, null);
+      return new ComputedSignal(null, null);
     case 7 /* NotFinite_VALUE */:
       const type = value.substring(1);
       const isNaN = type.length === 0;
@@ -26234,7 +26241,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
       if (shouldTrackObj(obj) || frameworkType(obj)) {
         const isRoot = obj === rootObj;
         const id = $wasSeen$(obj);
-        const unwrapObj = unwrapStore2(obj);
+        const unwrapObj = unwrapStore(obj);
         if (id === void 0 || isRoot) {
           !isRoot && $seen$(obj);
           if (typeof obj !== "object" || obj === null || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Error || obj instanceof Date || obj instanceof Uint8Array || obj instanceof URLSearchParams || typeof FormData !== "undefined" && obj instanceof FormData) {
@@ -26253,18 +26260,18 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
             });
             setSerializableDataRootId($addRoot$, obj, tuples);
             discoveredValues.push(tuples);
-          } else if (obj instanceof Signal2) {
+          } else if (obj instanceof Signal) {
             discoveredValues.push(obj.$untrackedValue$);
             if (obj.$effects$) {
               for (const effect of obj.$effects$) {
                 discoveredValues.push(effect[0 /* EFFECT */]);
               }
             }
-            if (obj.$dependencies$) {
-              discoveredValues.push(obj.$dependencies$);
+            if (obj.$effectDependencies$) {
+              discoveredValues.push(obj.$effectDependencies$);
             }
           } else if (obj instanceof Task3) {
-            discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$dependencies$);
+            discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
           } else if (NodeConstructor && obj instanceof NodeConstructor) {
           } else if (isJSXNode(obj)) {
             discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
@@ -26377,9 +26384,9 @@ function serialize(serializationContext) {
       const constProps = value[_CONST_PROPS];
       const constId = $addRoot$(constProps);
       writeString("" /* PropsProxy_CHAR */ + varId + " " + constId);
-    } else if (isStore2(value)) {
-      const storeHandler = getStoreHandler2(value);
-      let store = "" /* Store_CHAR */ + $addRoot$(unwrapStore2(value)) + " " + storeHandler.$flags$;
+    } else if (isStore(value)) {
+      const storeHandler = getStoreHandler(value);
+      let store = "" /* Store_CHAR */ + $addRoot$(unwrapStore(value)) + " " + storeHandler.$flags$;
       const effects = storeHandler.$effects$;
       if (effects) {
         let sep = " ";
@@ -26397,20 +26404,20 @@ function serialize(serializationContext) {
         serializationContext.$resources$.add(value);
       }
       serializeObjectLiteral(value, $writer$, writeValue, writeString);
-    } else if (value instanceof Signal2) {
+    } else if (value instanceof Signal) {
       if (value instanceof WrappedSignal) {
         writeString(
-          "" /* WrappedSignal_CHAR */ + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$dependencies$) + ";" + // `.untrackedValue` implicitly calls `$computeIfNeeded$`, which is what we want in case
+          "" /* WrappedSignal_CHAR */ + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + // `.untrackedValue` implicitly calls `$computeIfNeeded$`, which is what we want in case
           // the signal is not computed yet.
           $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$)
         );
-      } else if (value instanceof ComputedSignal2) {
+      } else if (value instanceof ComputedSignal) {
         writeString(
-          "" /* ComputedSignal_CHAR */ + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$dependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+          "" /* ComputedSignal_CHAR */ + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
         );
       } else {
         writeString(
-          "" /* Signal_CHAR */ + $addRoot$(value.$dependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+          "" /* Signal_CHAR */ + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
         );
       }
     } else if (value instanceof URL) {
@@ -26454,7 +26461,7 @@ function serialize(serializationContext) {
       );
     } else if (value instanceof Task3) {
       writeString(
-        "" /* Task_CHAR */ + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + $addRoot$(value.$dependencies$) + " " + qrlToString(serializationContext, value.$qrl$) + (value.$state$ == null ? "" : " " + $addRoot$(value.$state$))
+        "" /* Task_CHAR */ + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + $addRoot$(value.$effectDependencies$) + " " + qrlToString(serializationContext, value.$qrl$) + (value.$state$ == null ? "" : " " + $addRoot$(value.$state$))
       );
     } else if (isPromise(value)) {
       writeString("" /* Promise_CHAR */ + getSerializableDataRootId(value));
@@ -26550,7 +26557,7 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
     computedSignal.$computeQrl$ = inflateQRL(container, parseQRL(parts[idx++]));
   }
   const dependencies = container.$getObjectById$(parts[idx++]);
-  signal.$dependencies$ = dependencies;
+  signal.$effectDependencies$ = dependencies;
   let signalValue = container.$getObjectById$(parts[idx++]);
   if (vnode_isVNode(signalValue)) {
     signalValue = vnode_getNode(signalValue);
@@ -26566,8 +26573,8 @@ function deserializeStore2(container, data) {
   rest = data;
   restIdx = 1;
   const target = container.$getObjectById$(restInt());
-  const store = createStore2(container, target, restInt());
-  const storeHandler = getStoreHandler2(store);
+  const store = createStore(container, target, restInt());
+  const storeHandler = getStoreHandler(store);
   const effectSerializedString = rest.substring(restIdx);
   const storeHasEffects = !!effectSerializedString.length;
   if (storeHasEffects) {
@@ -26668,15 +26675,15 @@ function isResource(value) {
   return "__brand" in value && value.__brand === "resource";
 }
 var frameworkType = (obj) => {
-  return typeof obj === "object" && obj !== null && (obj instanceof Signal2 || obj instanceof Task3 || isJSXNode(obj)) || isQrl2(obj);
+  return typeof obj === "object" && obj !== null && (obj instanceof Signal || obj instanceof Task3 || isJSXNode(obj)) || isQrl2(obj);
 };
 var canSerialize2 = (value) => {
   if (value == null || typeof value === "string" || typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
     return true;
   } else if (typeof value === "object") {
     const proto = Object.getPrototypeOf(value);
-    if (isStore2(value)) {
-      value = unwrapStore2(value);
+    if (isStore(value)) {
+      value = unwrapStore(value);
     }
     if (proto == Object.prototype) {
       for (const key in value) {
@@ -26826,27 +26833,27 @@ var log2 = (...args) => console.log("STORE", ...args.map(qwikDebugToString));
 var STORE_TARGET = Symbol("store.target");
 var STORE_HANDLER = Symbol("store.handler");
 var STORE_ARRAY_PROP = Symbol("store.array");
-var getStoreHandler2 = (value) => {
+var getStoreHandler = (value) => {
   return value[STORE_HANDLER];
 };
-var getStoreTarget2 = (value) => {
+var getStoreTarget = (value) => {
   return value?.[STORE_TARGET] || null;
 };
-var unwrapStore2 = (value) => {
-  return getStoreTarget2(value) || value;
+var unwrapStore = (value) => {
+  return getStoreTarget(value) || value;
 };
-var isStore2 = (value) => {
-  const unwrap = unwrapStore2(value);
+var isStore = (value) => {
+  const unwrap = unwrapStore(value);
   return unwrap !== value;
 };
-function createStore2(container, obj, flags) {
+function createStore(container, obj, flags) {
   return new Proxy(obj, new StoreHandler(flags, container || null));
 }
-var getOrCreateStore2 = (obj, flags, container) => {
+var getOrCreateStore = (obj, flags, container) => {
   if (isSerializableObject(obj) && container) {
     let store = container.$storeProxyMap$.get(obj);
     if (!store) {
-      store = createStore2(container, obj, flags);
+      store = createStore(container, obj, flags);
       container.$storeProxyMap$.set(obj, store);
     }
     return store;
@@ -26898,8 +26905,8 @@ var StoreHandler = class {
       return this.toString;
     }
     const flags = this.$flags$;
-    if (flags & 1 /* RECURSIVE */ && typeof value === "object" && value !== null && !Object.isFrozen(value) && !isStore2(value) && !Object.isFrozen(target)) {
-      value = getOrCreateStore2(value, this.$flags$, this.$container$);
+    if (flags & 1 /* RECURSIVE */ && typeof value === "object" && value !== null && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target)) {
+      value = getOrCreateStore(value, this.$flags$, this.$container$);
       target[prop] = value;
     }
     return value;
@@ -26911,15 +26918,15 @@ var StoreHandler = class {
       target[prop] = value;
       return true;
     }
-    const newValue = this.$flags$ & 1 /* RECURSIVE */ ? unwrapStore2(value) : value;
+    const newValue = this.$flags$ & 1 /* RECURSIVE */ ? unwrapStore(value) : value;
     if (prop in target) {
       const oldValue = target[prop];
       if (newValue !== oldValue) {
-        DEBUG3 && log2("Signal.set", oldValue, "->", newValue, pad("\n" + this.toString(), "  "));
+        DEBUG3 && log2("Store.set", oldValue, "->", newValue, pad("\n" + this.toString(), "  "));
         setNewValueAndTriggerEffects(prop, newValue, target, this);
       }
     } else {
-      DEBUG3 && log2("Signal.set", "create property", newValue, pad("\n" + this.toString(), "  "));
+      DEBUG3 && log2("Store.set", "create property", newValue, pad("\n" + this.toString(), "  "));
       setNewValueAndTriggerEffects(prop, newValue, target, this);
     }
     return true;
@@ -27173,20 +27180,13 @@ var isRecoverable = (err) => {
   return true;
 };
 
-// packages/qwik/src/core/util/implicit_dollar.ts
-var implicit$FirstArg = (fn) => {
-  return function(first, ...rest2) {
-    return fn.call(null, dollar(first), ...rest2);
-  };
-};
-
 // packages/qwik/src/core/use/use-task.ts
 var runTask2 = (task, container, host) => {
   task.$flags$ &= ~16 /* DIRTY */;
   cleanupTask(task);
   const iCtx = newInvokeContext(container.$locale$, host, void 0, TaskEvent);
   iCtx.$container2$ = container;
-  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberDependencies(task));
+  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
   const track = (obj, prop) => {
     const ctx = newInvokeContext();
     ctx.$effectSubscriber$ = [task, ":" /* COMPONENT */, null];
@@ -27197,7 +27197,7 @@ var runTask2 = (task, container, host) => {
       }
       if (prop) {
         return obj[prop];
-      } else if (isSignal2(obj)) {
+      } else if (isSignal(obj)) {
         return obj.value;
       } else {
         return obj;
@@ -27244,7 +27244,7 @@ var useComputedQrl = (qrl2) => {
     return val;
   }
   assertQrl(qrl2);
-  const signal = new ComputedSignal2(null, qrl2);
+  const signal = new ComputedSignal(null, qrl2);
   set(signal);
   throwIfQRLNotResolved(qrl2);
   return signal;
@@ -27254,7 +27254,7 @@ var runResource = (task, container, host) => {
   cleanupTask(task);
   const iCtx = newInvokeContext(container.$locale$, host, void 0, ResourceEvent);
   iCtx.$container2$ = container;
-  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberDependencies(task));
+  const taskFn = task.$qrl$.getFn(iCtx, () => clearSubscriberEffectDependencies(task));
   const resource = task.$state$;
   assertDefined(
     resource,
@@ -27271,7 +27271,7 @@ var runResource = (task, container, host) => {
       }
       if (prop) {
         return obj[prop];
-      } else if (isSignal2(obj)) {
+      } else if (isSignal(obj)) {
         return obj.value;
       } else {
         return obj;
@@ -27290,7 +27290,7 @@ var runResource = (task, container, host) => {
     });
     done = true;
   });
-  const resourceTarget = unwrapStore2(resource);
+  const resourceTarget = unwrapStore(resource);
   const opts = {
     track,
     cleanup(fn) {
@@ -27490,7 +27490,7 @@ var trackInvocation = /* @__PURE__ */ newInvokeContext(
   void 0,
   RenderEvent
 );
-var trackSignal2 = (fn, subscriber, property, container, data = null) => {
+var trackSignal = (fn, subscriber, property, container, data = null) => {
   const previousSubscriber = trackInvocation.$effectSubscriber$;
   const previousContainer = trackInvocation.$container2$;
   try {
@@ -27640,7 +27640,7 @@ var verifySerializable = (value, preMessage) => {
   return _verifySerializable(value, seen, "_", preMessage);
 };
 var _verifySerializable = (value, seen, ctx, preMessage) => {
-  const unwrapped = unwrapStore2(value);
+  const unwrapped = unwrapStore(value);
   if (unwrapped == null) {
     return value;
   }
@@ -27649,7 +27649,7 @@ var _verifySerializable = (value, seen, ctx, preMessage) => {
       return value;
     }
     seen.add(unwrapped);
-    if (isSignal2(unwrapped)) {
+    if (isSignal(unwrapped)) {
       return value;
     }
     if (canSerialize2(unwrapped)) {
@@ -28164,15 +28164,15 @@ function qwikDebugToString(value) {
         } else {
           return value.map(qwikDebugToString);
         }
-      } else if (isSignal2(value)) {
+      } else if (isSignal(value)) {
         if (value instanceof WrappedSignal) {
           return "WrappedSignal";
-        } else if (value instanceof ComputedSignal2) {
+        } else if (value instanceof ComputedSignal) {
           return "ComputedSignal";
         } else {
           return "Signal";
         }
-      } else if (isStore2(value)) {
+      } else if (isStore(value)) {
         return "Store";
       } else if (isJSXNode(value)) {
         return jsxToString2(value);
@@ -29721,7 +29721,7 @@ function walkJSX(jsx4, apply) {
     throw new Error("unsupported: " + jsx4);
   }
   function processChild(child) {
-    if (isSignal3(child)) {
+    if (isSignal2(child)) {
       child = child.value;
     }
     if (_isStringifiable(child)) {
@@ -30874,7 +30874,7 @@ import {
   _jsxSorted as _jsxSorted3,
   _jsxSplit as _jsxSplit2,
   _walkJSX as _walkJSX2,
-  isSignal as isSignal4
+  isSignal as isSignal3
 } from "../core.mjs";
 import { isDev as isDev9 } from "@builder.io/qwik/build";
 import { getQwikLoaderScript as getQwikLoaderScript2 } from "../server.mjs";
@@ -32162,7 +32162,7 @@ var SSRContainer = class extends _SharedContainer2 {
         }
         if (key === "ref") {
           const lastNode = this.getLastNode();
-          if (isSignal4(value)) {
+          if (isSignal3(value)) {
             value.value = lastNode;
             continue;
           } else if (typeof value === "function") {
@@ -32170,7 +32170,7 @@ var SSRContainer = class extends _SharedContainer2 {
             continue;
           }
         }
-        if (isSignal4(value)) {
+        if (isSignal3(value)) {
           const lastNode = this.getLastNode();
           value = this.trackSignalValue(value, lastNode, key, styleScopedId);
         }

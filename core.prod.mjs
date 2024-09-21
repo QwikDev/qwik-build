@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+1da95e2
+ * @builder.io/qwik 2.0.0-0-dev+5b15250
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
 
-const version = "2.0.0-0-dev+1da95e2";
+const version = "2.0.0-0-dev+5b15250";
 
 const SkipRender = Symbol("skip render");
 
@@ -579,29 +579,29 @@ const STORE_HANDLER = Symbol("store.handler");
 
 const STORE_ARRAY_PROP = Symbol("store.array");
 
-var Store2Flags;
+var StoreFlags;
 
-!function(Store2Flags) {
-    Store2Flags[Store2Flags.NONE = 0] = "NONE", Store2Flags[Store2Flags.RECURSIVE = 1] = "RECURSIVE", 
-    Store2Flags[Store2Flags.IMMUTABLE = 2] = "IMMUTABLE";
-}(Store2Flags || (Store2Flags = {}));
+!function(StoreFlags) {
+    StoreFlags[StoreFlags.NONE = 0] = "NONE", StoreFlags[StoreFlags.RECURSIVE = 1] = "RECURSIVE", 
+    StoreFlags[StoreFlags.IMMUTABLE = 2] = "IMMUTABLE";
+}(StoreFlags || (StoreFlags = {}));
 
-const getStoreHandler2 = value => value[STORE_HANDLER];
+const getStoreHandler = value => value[STORE_HANDLER];
 
-const getStoreTarget2 = value => value?.[STORE_TARGET] || null;
+const getStoreTarget = value => value?.[STORE_TARGET] || null;
 
-const unwrapStore2 = value => getStoreTarget2(value) || value;
+const unwrapStore = value => getStoreTarget(value) || value;
 
-const isStore2 = value => unwrapStore2(value) !== value;
+const isStore = value => unwrapStore(value) !== value;
 
-function createStore2(container, obj, flags) {
+function createStore(container, obj, flags) {
     return new Proxy(obj, new StoreHandler(flags, container || null));
 }
 
-const getOrCreateStore2 = (obj, flags, container) => {
+const getOrCreateStore = (obj, flags, container) => {
     if (isSerializableObject(obj) && container) {
         let store = container.$storeProxyMap$.get(obj);
-        return store || (store = createStore2(container, obj, flags), container.$storeProxyMap$.set(obj, store)), 
+        return store || (store = createStore(container, obj, flags), container.$storeProxyMap$.set(obj, store)), 
         store;
     }
     return obj;
@@ -644,14 +644,14 @@ class StoreHandler {
         if ("toString" === prop && value === Object.prototype.toString) {
             return this.toString;
         }
-        return this.$flags$ & Store2Flags.RECURSIVE && "object" == typeof value && null !== value && !Object.isFrozen(value) && !isStore2(value) && !Object.isFrozen(target) && (value = getOrCreateStore2(value, this.$flags$, this.$container$), 
+        return this.$flags$ & StoreFlags.RECURSIVE && "object" == typeof value && null !== value && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target) && (value = getOrCreateStore(value, this.$flags$, this.$container$), 
         target[prop] = value), value;
     }
     set(target, prop, value) {
         if (target = unwrapDeserializerProxy(target), "symbol" == typeof prop) {
             return target[prop] = value, !0;
         }
-        const newValue = this.$flags$ & Store2Flags.RECURSIVE ? unwrapStore2(value) : value;
+        const newValue = this.$flags$ & StoreFlags.RECURSIVE ? unwrapStore(value) : value;
         if (prop in target) {
             newValue !== target[prop] && setNewValueAndTriggerEffects(prop, newValue, target, this);
         } else {
@@ -730,8 +730,8 @@ class DeserializationHandler {
         if (property === SERIALIZER_PROXY_UNWRAP) {
             return target;
         }
-        if (void 0 !== getStoreTarget2(target)) {
-            const unwrapped = unwrapDeserializerProxy(unwrapStore2(target));
+        if (void 0 !== getStoreTarget(target)) {
+            const unwrapped = unwrapDeserializerProxy(unwrapStore(target));
             const unwrappedPropValue = Reflect.get(unwrapped, property, receiver);
             if ("string" == typeof unwrappedPropValue && unwrappedPropValue.length >= 1 && unwrappedPropValue.charCodeAt(0) === SerializationConstant.String_VALUE) {
                 return allocate(unwrappedPropValue);
@@ -816,7 +816,7 @@ const inflate = (container, target, needsInflationData) => {
       case SerializationConstant.Task_VALUE:
         const task = target;
         task.$flags$ = restInt(), task.$index$ = restInt(), task.$el$ = container.$getObjectById$(restInt()), 
-        task.$dependencies$ = container.$getObjectById$(restInt()), task.$qrl$ = inflateQRL(container, parseQRL$1(restString()));
+        task.$effectDependencies$ = container.$getObjectById$(restInt()), task.$qrl$ = inflateQRL(container, parseQRL$1(restString()));
         const taskState = restString();
         task.$state$ = taskState ? container.$getObjectById$(taskState) : void 0;
         break;
@@ -934,13 +934,13 @@ const allocate = value => {
         return componentQrl(parseQRL$1(value));
 
       case SerializationConstant.Signal_VALUE:
-        return new Signal2(null, 0);
+        return new Signal(null, 0);
 
       case SerializationConstant.WrappedSignal_VALUE:
         return new WrappedSignal(null, null, null, null);
 
       case SerializationConstant.ComputedSignal_VALUE:
-        return new ComputedSignal2(null, null);
+        return new ComputedSignal(null, null);
 
       case SerializationConstant.NotFinite_VALUE:
         const type = value.substring(1);
@@ -1101,7 +1101,7 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, setP
             if (shouldTrackObj(obj) || frameworkType(obj)) {
                 const isRoot = obj === rootObj;
                 const id = $wasSeen$(obj);
-                const unwrapObj = unwrapStore2(obj);
+                const unwrapObj = unwrapStore(obj);
                 if (void 0 === id || isRoot) {
                     if (!isRoot && $seen$(obj), "object" != typeof obj || null === obj || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Error || obj instanceof Date || obj instanceof Uint8Array || obj instanceof URLSearchParams || "undefined" != typeof FormData && obj instanceof FormData) {} else if (fastSkipSerialize(obj)) {} else if (unwrapObj !== obj) {
                         discoveredValues.push(unwrapObj);
@@ -1113,15 +1113,15 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, setP
                         obj.forEach(((v, k) => {
                             tuples.push(k, v), discoveredValues.push(k, v);
                         })), setSerializableDataRootId($addRoot$, obj, tuples), discoveredValues.push(tuples);
-                    } else if (obj instanceof Signal2) {
+                    } else if (obj instanceof Signal) {
                         if (discoveredValues.push(obj.$untrackedValue$), obj.$effects$) {
                             for (const effect of obj.$effects$) {
                                 discoveredValues.push(effect[EffectSubscriptionsProp.EFFECT]);
                             }
                         }
-                        obj.$dependencies$ && discoveredValues.push(obj.$dependencies$);
+                        obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
                     } else if (obj instanceof Task) {
-                        discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$dependencies$);
+                        discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
                     } else if (NodeConstructor && obj instanceof NodeConstructor) {} else if (isJSXNode(obj)) {
                         discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
                     } else if (Array.isArray(obj)) {
@@ -1217,9 +1217,9 @@ function serialize(serializationContext) {
             const varId = $addRoot$(value[_VAR_PROPS]);
             const constId = $addRoot$(value[_CONST_PROPS]);
             writeString(SerializationConstant.PropsProxy_CHAR + varId + " " + constId);
-        } else if (isStore2(value)) {
-            const storeHandler = getStoreHandler2(value);
-            let store = SerializationConstant.Store_CHAR + $addRoot$(unwrapStore2(value)) + " " + storeHandler.$flags$;
+        } else if (isStore(value)) {
+            const storeHandler = getStoreHandler(value);
+            let store = SerializationConstant.Store_CHAR + $addRoot$(unwrapStore(value)) + " " + storeHandler.$flags$;
             const effects = storeHandler.$effects$;
             if (effects) {
                 let sep = " ";
@@ -1231,8 +1231,8 @@ function serialize(serializationContext) {
             writeString(store);
         } else if (isObjectLiteral(value)) {
             isResource(value) && serializationContext.$resources$.add(value), serializeObjectLiteral(value, $writer$, writeValue, writeString);
-        } else if (value instanceof Signal2) {
-            writeString(value instanceof WrappedSignal ? SerializationConstant.WrappedSignal_CHAR + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$dependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal2 ? SerializationConstant.ComputedSignal_CHAR + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$dependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : SerializationConstant.Signal_CHAR + $addRoot$(value.$dependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
+        } else if (value instanceof Signal) {
+            writeString(value instanceof WrappedSignal ? SerializationConstant.WrappedSignal_CHAR + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal ? SerializationConstant.ComputedSignal_CHAR + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : SerializationConstant.Signal_CHAR + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
         } else if (value instanceof URL) {
             writeString(SerializationConstant.URL_CHAR + value.href);
         } else if (value instanceof Date) {
@@ -1261,7 +1261,7 @@ function serialize(serializationContext) {
         } else if (isJSXNode(value)) {
             writeString(SerializationConstant.JSXNode_CHAR + serializeJSXType($addRoot$, value.type) + " " + $addRoot$(value.varProps) + " " + $addRoot$(value.constProps) + " " + $addRoot$(value.children) + " " + value.flags + " " + (value.key || ""));
         } else if (value instanceof Task) {
-            writeString(SerializationConstant.Task_CHAR + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + $addRoot$(value.$dependencies$) + " " + qrlToString(serializationContext, value.$qrl$) + (null == value.$state$ ? "" : " " + $addRoot$(value.$state$)));
+            writeString(SerializationConstant.Task_CHAR + value.$flags$ + " " + value.$index$ + " " + $addRoot$(value.$el$) + " " + $addRoot$(value.$effectDependencies$) + " " + qrlToString(serializationContext, value.$qrl$) + (null == value.$state$ ? "" : " " + $addRoot$(value.$state$)));
         } else if (isPromise(value)) {
             writeString(SerializationConstant.Promise_CHAR + getSerializableDataRootId(value));
         } else {
@@ -1341,7 +1341,7 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
         signal.$computeQrl$ = inflateQRL(container, parseQRL$1(parts[idx++]));
     }
     const dependencies = container.$getObjectById$(parts[idx++]);
-    signal.$dependencies$ = dependencies;
+    signal.$effectDependencies$ = dependencies;
     let signalValue = container.$getObjectById$(parts[idx++]);
     if (vnode_isVNode(signalValue) && (signalValue = vnode_getNode(signalValue)), signal.$untrackedValue$ = signalValue, 
     idx < parts.length) {
@@ -1352,8 +1352,8 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
 function deserializeStore2(container, data) {
     restStack.push(rest, restIdx), rest = data, restIdx = 1;
     const target = container.$getObjectById$(restInt());
-    const store = createStore2(container, target, restInt());
-    const storeHandler = getStoreHandler2(store);
+    const store = createStore(container, target, restInt());
+    const storeHandler = getStoreHandler(store);
     const effectSerializedString = rest.substring(restIdx);
     if (!!effectSerializedString.length) {
         const effectProps = effectSerializedString.split("|");
@@ -1501,7 +1501,7 @@ function isResource(value) {
     return "__brand" in value && "resource" === value.__brand;
 }
 
-const frameworkType = obj => "object" == typeof obj && null !== obj && (obj instanceof Signal2 || obj instanceof Task || isJSXNode(obj)) || isQrl(obj);
+const frameworkType = obj => "object" == typeof obj && null !== obj && (obj instanceof Signal || obj instanceof Task || isJSXNode(obj)) || isQrl(obj);
 
 const canSerialize2 = value => {
     if (null == value || "string" == typeof value || "number" == typeof value || "boolean" == typeof value || "bigint" == typeof value) {
@@ -1509,7 +1509,7 @@ const canSerialize2 = value => {
     }
     if ("object" == typeof value) {
         const proto = Object.getPrototypeOf(value);
-        if (isStore2(value) && (value = unwrapStore2(value)), proto == Object.prototype) {
+        if (isStore(value) && (value = unwrapStore(value)), proto == Object.prototype) {
             for (const key in value) {
                 if (!canSerialize2(value[key])) {
                     return !1;
@@ -1637,7 +1637,7 @@ class _SharedContainer {
         }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
     }
     trackSignalValue(signal, subscriber, property, data) {
-        return trackSignal2((() => signal.value), subscriber, property, this, data);
+        return trackSignal((() => signal.value), subscriber, property, this, data);
     }
     serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
         return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.setHostProp.bind(this), writer);
@@ -2149,7 +2149,7 @@ const useOnEventsSequentialScope = () => {
 
 class Subscriber {
     constructor() {
-        this.$dependencies$ = null;
+        this.$effectDependencies$ = null;
     }
 }
 
@@ -2157,25 +2157,25 @@ function isSubscriber(value) {
     return value instanceof Subscriber;
 }
 
-function clearVNodeDependencies(value) {
+function clearVNodeEffectDependencies(value) {
     const effects = vnode_getProp(value, QSubscribers, null);
     if (effects) {
         for (let i = effects.length - 1; i >= 0; i--) {
-            clearSubscriptions(effects[i], value) && effects.splice(i, 1);
+            clearEffects(effects[i], value) && effects.splice(i, 1);
         }
     }
 }
 
-function clearSubscriberDependencies(value) {
-    if (value.$dependencies$) {
-        for (let i = value.$dependencies$.length - 1; i >= 0; i--) {
-            clearSubscriptions(value.$dependencies$[i], value) && value.$dependencies$.splice(i, 1);
+function clearSubscriberEffectDependencies(value) {
+    if (value.$effectDependencies$) {
+        for (let i = value.$effectDependencies$.length - 1; i >= 0; i--) {
+            clearEffects(value.$effectDependencies$[i], value) && value.$effectDependencies$.splice(i, 1);
         }
     }
 }
 
-function clearSubscriptions(subscriber, value) {
-    if (!isSignal2(subscriber)) {
+function clearEffects(subscriber, value) {
+    if (!isSignal(subscriber)) {
         return !1;
     }
     const effectSubscriptions = subscriber.$effects$;
@@ -2207,7 +2207,7 @@ const executeComponent2 = (container, renderHost, subscriptionHost, componentQRL
     }
     const executeComponentWithPromiseExceptionRetry = () => safeCall((() => (container.setHostProp(renderHost, "q:seqIdx", null), 
     container.setHostProp(renderHost, ":onIdx", null), container.setHostProp(renderHost, "q:props", props), 
-    vnode_isVNode(renderHost) && clearVNodeDependencies(renderHost), componentFn(props))), (jsx => {
+    vnode_isVNode(renderHost) && clearVNodeEffectDependencies(renderHost), componentFn(props))), (jsx => {
         const useOnEvents = container.getHostProp(renderHost, ":on");
         return useOnEvents ? maybeThen(addUseOnEvents(jsx, useOnEvents), (() => jsx)) : jsx;
     }), (err => {
@@ -2254,7 +2254,7 @@ function findFirstStringJSX(jsx) {
             if (isPromise(jsx)) {
                 return maybeThen(jsx, (jsx => findFirstStringJSX(jsx)));
             }
-            if (isSignal2(jsx)) {
+            if (isSignal(jsx)) {
                 return findFirstStringJSX(untrack((() => jsx.value)));
             }
         }
@@ -2336,9 +2336,9 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                 } else if (jsxValue && "object" == typeof jsxValue) {
                     if (Array.isArray(jsxValue)) {
                         descend(jsxValue, !1);
-                    } else if (isSignal2(jsxValue)) {
-                        vCurrent && clearVNodeDependencies(vCurrent), expectVirtual(VirtualType.WrappedSignal, null), 
-                        descend(trackSignal2((() => jsxValue.value), vNewNode || vCurrent, EffectProperty.VNODE, container), !0);
+                    } else if (isSignal(jsxValue)) {
+                        vCurrent && clearVNodeEffectDependencies(vCurrent), expectVirtual(VirtualType.WrappedSignal, null), 
+                        descend(trackSignal((() => jsxValue.value), vNewNode || vCurrent, EffectProperty.VNODE, container), !0);
                     } else if (isPromise(jsxValue)) {
                         expectVirtual(VirtualType.Awaited, null), asyncQueue.push(jsxValue, vNewNode || vCurrent);
                     } else if (isJSXNode(jsxValue)) {
@@ -2430,7 +2430,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             if (constProps && "object" == typeof constProps && "name" in constProps) {
                 const constValue = constProps.name;
                 if (constValue instanceof WrappedSignal) {
-                    return trackSignal2((() => constValue.value), vHost, EffectProperty.COMPONENT, container);
+                    return trackSignal((() => constValue.value), vHost, EffectProperty.COMPONENT, container);
                 }
             }
             return jsxValue.props.name || QDefaultSlot;
@@ -2479,7 +2479,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                     eventName && registerQwikLoaderEvent(eventName), needsQDispatchEventPatch = !0;
                 } else {
                     if ("ref" === key) {
-                        if (isSignal2(value)) {
+                        if (isSignal(value)) {
                             value.value = element;
                             continue;
                         }
@@ -2488,7 +2488,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                             continue;
                         }
                     }
-                    if (isSignal2(value) && (value = trackSignal2((() => value.value), vNewNode, key, container, scopedStyleIdPrefix)), 
+                    if (isSignal(value) && (value = trackSignal((() => value.value), vNewNode, key, container, scopedStyleIdPrefix)), 
                     key !== dangerouslySetInnerHTML) {
                         if ("textarea" !== elementName || "value" !== key) {
                             value = serializeAttribute(key, value, scopedStyleIdPrefix), null != value && element.setAttribute(key, String(value));
@@ -2542,14 +2542,14 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                 } else {
                     if ("ref" === key) {
                         const element = vnode_getNode(vnode);
-                        if (isSignal2(value)) {
+                        if (isSignal(value)) {
                             return void (value.value = element);
                         }
                         if ("function" == typeof value) {
                             return void value(element);
                         }
                     }
-                    isSignal2(value) && (value = untrack((() => value.value))), vnode_setAttr(journal, vnode, key, value), 
+                    isSignal(value) && (value = untrack((() => value.value))), vnode_setAttr(journal, vnode, key, value), 
                     null === value && (dstLength = dstAttrs.length);
                 }
             };
@@ -2686,7 +2686,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         }
     }
     function insertNewComponent(host, componentQRL, jsxProps) {
-        if (host && clearVNodeDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
+        if (host && clearVNodeEffectDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
         isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.Component), container.setHostProp(vNewNode, "q:renderFn", componentQRL), 
         container.setHostProp(vNewNode, "q:props", jsxProps), container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key), 
         host) {
@@ -2757,14 +2757,14 @@ function cleanup(container, vNode) {
         const type = vCursor[VNodeProps.flags];
         if (type & VNodeFlags.ELEMENT_OR_VIRTUAL_MASK) {
             if (type & VNodeFlags.Virtual) {
-                clearVNodeDependencies(vCursor), markVNodeAsDeleted(vNode, vParent, vCursor);
+                clearVNodeEffectDependencies(vCursor), markVNodeAsDeleted(vNode, vParent, vCursor);
                 const seq = container.getHostProp(vCursor, "q:seq");
                 if (seq) {
                     for (let i = 0; i < seq.length; i++) {
                         const obj = seq[i];
                         if (isTask$1(obj)) {
                             const task = obj;
-                            clearSubscriberDependencies(task), task.$flags$ & TaskFlags.VISIBLE_TASK ? container.$scheduler$(ChoreType.CLEANUP_VISIBLE, task) : cleanupTask(task);
+                            clearSubscriberEffectDependencies(task), task.$flags$ & TaskFlags.VISIBLE_TASK ? container.$scheduler$(ChoreType.CLEANUP_VISIBLE, task) : cleanupTask(task);
                         }
                     }
                 }
@@ -3047,6 +3047,20 @@ class DomContainer extends _SharedContainer {
     }
 }
 
+const implicit$FirstArg = fn => function(first, ...rest) {
+    return fn.call(null, dollar(first), ...rest);
+};
+
+const createSignal$1 = value => new Signal(null, value);
+
+const createComputedSignal = qrl => (throwIfQRLNotResolved(qrl), new ComputedSignal(null, qrl));
+
+const createSignal = createSignal$1;
+
+const createComputedQrl = createComputedSignal;
+
+const createComputed$ = /*#__PURE__*/ implicit$FirstArg(createComputedQrl);
+
 var ChoreType;
 
 !function(ChoreType) {
@@ -3140,7 +3154,7 @@ const createScheduler = (container, scheduleDrain, journalFlush) => {
           case ChoreType.NODE_DIFF:
             const parentVirtualNode = chore.$target$;
             let jsx = chore.$payload$;
-            isSignal2(jsx) && (jsx = jsx.value), returnValue = vnode_diff(container, jsx, parentVirtualNode, null);
+            isSignal(jsx) && (jsx = jsx.value), returnValue = vnode_diff(container, jsx, parentVirtualNode, null);
             break;
 
           case ChoreType.NODE_PROP:
@@ -3148,7 +3162,7 @@ const createScheduler = (container, scheduleDrain, journalFlush) => {
             const payload = chore.$payload$;
             let value = payload.value;
             let isConst = !1;
-            isSignal2(value) && (value = value.value, isConst = !0);
+            isSignal(value) && (value = value.value, isConst = !0);
             const journal = container.$journal$;
             const property = chore.$idx$;
             if (value = serializeAttribute(property, value, payload.scopedStyleIdPrefix), isConst) {
@@ -3253,17 +3267,13 @@ const NEEDS_COMPUTATION = {
 
 const log = (...args) => console.log("SIGNAL", ...args.map(qwikDebugToString));
 
-const createSignal2$1 = value => new Signal2(null, value);
-
-const createComputedSignal2 = qrl => (throwIfQRLNotResolved(qrl), new ComputedSignal2(null, qrl));
-
 const throwIfQRLNotResolved = qrl => {
     if (!qrl.resolved) {
         throw qrl.resolve();
     }
 };
 
-const isSignal2 = value => value instanceof Signal2;
+const isSignal = value => value instanceof Signal;
 
 var EffectSubscriptionsProp;
 
@@ -3276,7 +3286,7 @@ var EffectProperty;
     EffectProperty.COMPONENT = ":", EffectProperty.VNODE = ".";
 }(EffectProperty || (EffectProperty = {}));
 
-class Signal2 extends Subscriber {
+class Signal extends Subscriber {
     constructor(container, value) {
         super(), this.$effects$ = null, this.$container$ = null, this.$container$ = container, 
         this.$untrackedValue$ = value;
@@ -3341,10 +3351,10 @@ const ensureContainsEffect = (array, effectSubscriptions) => {
 
 const ensureEffectContainsSubscriber = (effect, subscriber, container) => {
     if (isSubscriber(effect)) {
-        if (effect.$dependencies$ || (effect.$dependencies$ = []), subscriberExistInSubscribers(effect.$dependencies$, subscriber)) {
+        if (effect.$effectDependencies$ || (effect.$effectDependencies$ = []), subscriberExistInSubscribers(effect.$effectDependencies$, subscriber)) {
             return;
         }
-        effect.$dependencies$.push(subscriber);
+        effect.$effectDependencies$.push(subscriber);
     } else if (vnode_isVNode(effect) && vnode_isVirtualVNode(effect)) {
         let subscribers = vnode_getProp(effect, QSubscribers, container ? container.$getObjectById$ : null);
         if (subscribers || (subscribers = []), subscriberExistInSubscribers(subscribers, subscriber)) {
@@ -3381,8 +3391,8 @@ const triggerEffects = (container, signal, effects) => {
                 let choreType = ChoreType.TASK;
                 effect.$flags$ & TaskFlags.VISIBLE_TASK ? choreType = ChoreType.VISIBLE : effect.$flags$ & TaskFlags.RESOURCE && (choreType = ChoreType.RESOURCE), 
                 container.$scheduler$(choreType, effect);
-            } else if (effect instanceof Signal2) {
-                effect instanceof ComputedSignal2 && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$)), 
+            } else if (effect instanceof Signal) {
+                effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(ChoreType.QRL_RESOLVE, null, effect.$computeQrl$)), 
                 effect.$invalid$ = !0;
                 const previousSignal = signal;
                 try {
@@ -3411,7 +3421,7 @@ const triggerEffects = (container, signal, effects) => {
     }
 };
 
-class ComputedSignal2 extends Signal2 {
+class ComputedSignal extends Signal {
     constructor(container, computeTask) {
         super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$computeQrl$ = computeTask;
     }
@@ -3454,7 +3464,7 @@ class ComputedSignal2 extends Signal2 {
     }
 }
 
-class WrappedSignal extends Signal2 {
+class WrappedSignal extends Signal {
     constructor(container, fn, args, fnStr) {
         super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$args$ = args, this.$func$ = fn, 
         this.$funcStr$ = fnStr;
@@ -3473,7 +3483,7 @@ class WrappedSignal extends Signal2 {
         if (!this.$invalid$) {
             return !1;
         }
-        this.$untrackedValue$ = trackSignal2((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
+        this.$untrackedValue$ = trackSignal((() => this.$func$(...this.$args$)), this, EffectProperty.VNODE, this.$container$);
     }
     get value() {
         return super.value;
@@ -3512,10 +3522,10 @@ function qwikDebugToString(value) {
             if (stringifyPath.push(value), Array.isArray(value)) {
                 return vnode_isVNode(value) ? vnode_toString.apply(value) : value.map(qwikDebugToString);
             }
-            if (isSignal2(value)) {
-                return value instanceof WrappedSignal ? "WrappedSignal" : value instanceof ComputedSignal2 ? "ComputedSignal" : "Signal";
+            if (isSignal(value)) {
+                return value instanceof WrappedSignal ? "WrappedSignal" : value instanceof ComputedSignal ? "ComputedSignal" : "Signal";
             }
-            if (isStore2(value)) {
+            if (isStore(value)) {
                 return "Store";
             }
             if (isJSXNode(value)) {
@@ -4609,7 +4619,7 @@ const setQId = (rCtx, elCtx) => {
     elCtx.$id$ = id;
 };
 
-const jsxToString = data => isSignal(data) ? jsxToString(data.value) : null == data || "boolean" == typeof data ? "" : String(data);
+const jsxToString = data => isSignalV1(data) ? jsxToString(data.value) : null == data || "boolean" == typeof data ? "" : String(data);
 
 function isAriaAttribute(prop) {
     return prop.startsWith("aria-");
@@ -4758,7 +4768,7 @@ class ReadWriteProxyHandler {
     }
 }
 
-const immutableValue = value => value === _CONST_PROPS || isSignal(value);
+const immutableValue = value => value === _CONST_PROPS || isSignalV1(value);
 
 const wrap = (value, storeTracker) => {
     if (isObject(value)) {
@@ -5074,8 +5084,8 @@ const renderNode = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             if (isOnProp(rawProp)) {
                 return void setEvent(elCtx.li, rawProp, value, void 0);
             }
-            if (isSignal(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
-            value = trackSignal(value, isImmutable ? [ SubscriptionType.PROP_IMMUTABLE, elm, value, hostCtx.$element$, rawProp, void 0 ] : [ SubscriptionType.PROP_MUTABLE, hostCtx.$element$, value, elm, rawProp, void 0 ]), 
+            if (isSignalV1(value) && (assertDefined(hostCtx, "Signals can not be used outside the root"), 
+            value = trackSignalV1(value, isImmutable ? [ SubscriptionType.PROP_IMMUTABLE, elm, value, hostCtx.$element$, rawProp, void 0 ] : [ SubscriptionType.PROP_MUTABLE, hostCtx.$element$, value, elm, rawProp, void 0 ]), 
             useSignal = !0), rawProp === dangerouslySetInnerHTML) {
                 return void (htmlStr = value);
             }
@@ -5211,14 +5221,14 @@ const processData$1 = (node, rCtx, ssrCtx, stream, flags, beforeClose) => {
             if (isArray(node)) {
                 return walkChildren(node, rCtx, ssrCtx, stream, flags);
             }
-            if (isSignal(node)) {
+            if (isSignalV1(node)) {
                 const insideText = 8 & flags;
                 const hostEl = rCtx.$cmpCtx$?.$element$;
                 let value;
                 if (hostEl) {
                     if (!insideText) {
                         const id = getNextIndex(rCtx);
-                        if (value = trackSignal(node, 1024 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, "#" + id, node, "#" + id ] : [ SubscriptionType.TEXT_MUTABLE, hostEl, node, "#" + id ]), 
+                        if (value = trackSignalV1(node, 1024 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, "#" + id, node, "#" + id ] : [ SubscriptionType.TEXT_MUTABLE, hostEl, node, "#" + id ]), 
                         isString(value)) {
                             const str = jsxToString(value);
                             ssrCtx.$static$.$textNodes$.set(str, id);
@@ -5301,7 +5311,7 @@ const setComponentProps$1 = (rCtx, elCtx, expectProps) => {
     }
     const immutableMeta = target[_CONST_PROPS] = expectProps[_CONST_PROPS] ?? EMPTY_OBJ;
     for (const prop of keys) {
-        "children" !== prop && prop !== QSlot && (isSignal(immutableMeta[prop]) ? target["_IMMUTABLE_PREFIX" + prop] = immutableMeta[prop] : target[prop] = expectProps[prop]);
+        "children" !== prop && prop !== QSlot && (isSignalV1(immutableMeta[prop]) ? target["_IMMUTABLE_PREFIX" + prop] = immutableMeta[prop] : target[prop] = expectProps[prop]);
     }
 };
 
@@ -5547,10 +5557,10 @@ function processJSXNode(ssr, enqueue, value, styleScoped) {
             for (let i = value.length - 1; i >= 0; i--) {
                 enqueue(value[i]);
             }
-        } else if (isSignal2(value)) {
+        } else if (isSignal(value)) {
             ssr.openFragment(isDev ? [ DEBUG_TYPE, VirtualType.WrappedSignal ] : EMPTY_ARRAY);
             const signalNode = ssr.getLastNode();
-            enqueue(ssr.closeFragment), enqueue(trackSignal2((() => value.value), signalNode, EffectProperty.VNODE, ssr));
+            enqueue(ssr.closeFragment), enqueue(trackSignal((() => value.value), signalNode, EffectProperty.VNODE, ssr));
         } else if (isPromise(value)) {
             ssr.openFragment(isDev ? [ DEBUG_TYPE, VirtualType.Awaited ] : EMPTY_ARRAY), enqueue(ssr.closeFragment), 
             enqueue(value), enqueue(Promise), enqueue((() => ssr.commentNode(FLUSH_COMMENT$1)));
@@ -5657,7 +5667,7 @@ function toSsrAttrs(record, anotherRecord, serializationCtx, pushMergedEventProp
             const eventValue = setEvent$1(serializationCtx, key, value);
             eventValue && ssrAttrs.push(convertEventNameFromJsxPropToHtmlAttr(key), eventValue);
         } else {
-            isSignal2(value) ? isClassAttr(key) ? ssrAttrs.push(key, [ value, styleScopedId ]) : ssrAttrs.push(key, value) : (isPreventDefault(key) && addPreventDefaultEventToSerializationContext(serializationCtx, key), 
+            isSignal(value) ? isClassAttr(key) ? ssrAttrs.push(key, [ value, styleScopedId ]) : ssrAttrs.push(key, value) : (isPreventDefault(key) && addPreventDefaultEventToSerializationContext(serializationCtx, key), 
             value = serializeAttribute(key, value, styleScopedId), ssrAttrs.push(key, value));
         }
     }
@@ -5717,7 +5727,7 @@ function getSlotName$1(host, jsx, ssr) {
     if (constProps && "object" == typeof constProps && "name" in constProps) {
         const constValue = constProps.name;
         if (constValue instanceof WrappedSignal) {
-            return trackSignal2((() => constValue.value), host, EffectProperty.COMPONENT, ssr);
+            return trackSignal((() => constValue.value), host, EffectProperty.COMPONENT, ssr);
         }
     }
     return jsx.props.name || QDefaultSlot;
@@ -5955,7 +5965,7 @@ function getResourceValueAsPromise(props) {
         }
         return resource.value.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
     }
-    return isPromise(resource) ? resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : isSignal2(resource) ? Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
+    return isPromise(resource) ? resource.then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : isSignal(resource) ? Promise.resolve(resource.value).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected)) : Promise.resolve(resource).then(useBindInvokeContext(props.onResolved), useBindInvokeContext(props.onRejected));
 }
 
 const _createResourceReturn = opts => ({
@@ -5971,10 +5981,10 @@ const _createResourceReturn = opts => ({
 
 const createResourceReturn = (container, opts, initialPromise) => {
     const result = _createResourceReturn(opts);
-    return result.value = initialPromise, createStore2(container, result, Store2Flags.RECURSIVE);
+    return result.value = initialPromise, createStore(container, result, StoreFlags.RECURSIVE);
 };
 
-const isResourceReturn = obj => isObject(obj) && "resource" === (getStoreTarget2(obj) || obj).__brand;
+const isResourceReturn = obj => isObject(obj) && "resource" === (getStoreTarget(obj) || obj).__brand;
 
 const serializeResource = (resource, getObjId) => {
     const state = resource._state;
@@ -7239,7 +7249,7 @@ const processData = (node, invocationContext) => {
         if (isJSXNode(node)) {
             return processNode(node, invocationContext);
         }
-        if (isSignal(node)) {
+        if (isSignalV1(node)) {
             const newNode = new ProcessedJSXNodeImpl("#signal", EMPTY_OBJ, null, EMPTY_ARRAY, 0, null);
             return newNode.$signal$ = node, newNode;
         }
@@ -7414,7 +7424,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
     newVnode.$elm$ = elm, "#text" === tag) {
         staticCtx.$visited$.push(elm);
         const signal = newVnode.$signal$;
-        return signal && (newVnode.$text$ = jsxToString(trackSignal(signal, [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]))), 
+        return signal && (newVnode.$text$ = jsxToString(trackSignalV1(signal, [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]))), 
         void setProperty(staticCtx, elm, "data", newVnode.$text$);
     }
     if ("#signal" === tag) {
@@ -7437,7 +7447,7 @@ const diffVnode = (rCtx, oldVnode, newVnode, flags) => {
                         const normalized = setEvent(elCtx.li, prop, newValue, containerState.$containerEl$);
                         addQwikEvent(staticCtx, elm, normalized);
                     } else {
-                        isSignal(newValue) && (newValue = trackSignal(newValue, [ SubscriptionType.PROP_IMMUTABLE, currentComponent.$element$, newValue, elm, prop, void 0 ])), 
+                        isSignalV1(newValue) && (newValue = trackSignalV1(newValue, [ SubscriptionType.PROP_IMMUTABLE, currentComponent.$element$, newValue, elm, prop, void 0 ])), 
                         "class" === prop ? newValue = serializeClassWithHost(newValue, currentComponent) : "style" === prop && (newValue = stringifyStyle(newValue)), 
                         values[prop] !== newValue && (values[prop] = newValue, smartSetProperty(staticCtx, elm, prop, newValue, isSvg));
                     }
@@ -7560,7 +7570,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
         const signalValue = signal.value;
         if (isJSXNode(signalValue)) {
             const processedSignal = processData(signalValue);
-            if (isSignal(processedSignal)) {
+            if (isSignalV1(processedSignal)) {
                 throw new Error("NOT IMPLEMENTED: Promise");
             }
             if (Array.isArray(processedSignal)) {
@@ -7568,13 +7578,13 @@ const createElm = (rCtx, vnode, flags, promises) => {
             }
             {
                 const elm = createElm(rCtx, processedSignal, flags, promises);
-                return trackSignal(signal, 4 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, elm, signal, elm ] : [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]), 
+                return trackSignalV1(signal, 4 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, elm, signal, elm ] : [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]), 
                 vnode.$elm$ = elm;
             }
         }
         {
             const elm = doc.createTextNode(vnode.$text$);
-            return elm.data = vnode.$text$ = jsxToString(signalValue), trackSignal(signal, 4 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, elm, signal, elm ] : [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]), 
+            return elm.data = vnode.$text$ = jsxToString(signalValue), trackSignalV1(signal, 4 & flags ? [ SubscriptionType.TEXT_IMMUTABLE, elm, signal, elm ] : [ SubscriptionType.TEXT_MUTABLE, currentComponent.$element$, signal, elm ]), 
             vnode.$elm$ = elm;
         }
     }
@@ -7603,7 +7613,7 @@ const createElm = (rCtx, vnode, flags, promises) => {
                 for (const prop in expectProps) {
                     if ("children" !== prop && prop !== QSlot) {
                         const immutableValue = immutableMeta[prop];
-                        isSignal(immutableValue) ? target["_IMMUTABLE_PREFIX" + prop] = immutableValue : target[prop] = expectProps[prop];
+                        isSignalV1(immutableValue) ? target["_IMMUTABLE_PREFIX" + prop] = immutableValue : target[prop] = expectProps[prop];
                     }
                 }
             }
@@ -7762,8 +7772,8 @@ const setProperties = (staticCtx, elCtx, hostCtx, newProps, isSvg, immutable) =>
             if (isOnProp(prop)) {
                 setEvent(elCtx.li, prop, newValue, staticCtx.$containerState$.$containerEl$);
             } else {
-                if (isSignal(newValue) && (assertDefined(hostCtx, "Signals can only be used in components"), 
-                newValue = trackSignal(newValue, immutable ? [ SubscriptionType.PROP_IMMUTABLE, elm, newValue, hostCtx.$element$, prop, void 0 ] : [ SubscriptionType.PROP_MUTABLE, hostCtx.$element$, newValue, elm, prop, void 0 ])), 
+                if (isSignalV1(newValue) && (assertDefined(hostCtx, "Signals can only be used in components"), 
+                newValue = trackSignalV1(newValue, immutable ? [ SubscriptionType.PROP_IMMUTABLE, elm, newValue, hostCtx.$element$, prop, void 0 ] : [ SubscriptionType.PROP_MUTABLE, hostCtx.$element$, newValue, elm, prop, void 0 ])), 
                 "class" === prop) {
                     if (qDev && values.class) {
                         throw new TypeError("Can only provide one of class or className");
@@ -8380,16 +8390,6 @@ const handleError = (err, hostElement, containerState) => {
 
 const isRecoverable = err => !(err && err instanceof Error && "plugin" in err);
 
-const implicit$FirstArg = fn => function(first, ...rest) {
-    return fn.call(null, dollar(first), ...rest);
-};
-
-const createSignal2 = createSignal2$1;
-
-const createComputed2Qrl = createComputedSignal2;
-
-const createComputed2$ = /*#__PURE__*/ implicit$FirstArg(createComputed2Qrl);
-
 var TaskFlags;
 
 !function(TaskFlags) {
@@ -8424,7 +8424,7 @@ const runTask2 = (task, container, host) => {
     task.$flags$ &= ~TaskFlags.DIRTY, cleanupTask(task);
     const iCtx = newInvokeContext(container.$locale$, host, void 0, "qTask");
     iCtx.$container2$ = container;
-    const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberDependencies(task)));
+    const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberEffectDependencies(task)));
     const handleError = reason => container.handleError(reason, host);
     let cleanupFns = null;
     const cleanup = fn => {
@@ -8442,7 +8442,7 @@ const runTask2 = (task, container, host) => {
         track: (obj, prop) => {
             const ctx = newInvokeContext();
             return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT, null ], ctx.$container2$ = container, 
-            invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal2(obj) ? obj.value : obj));
+            invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal(obj) ? obj.value : obj));
         },
         cleanup
     };
@@ -8455,7 +8455,7 @@ const useComputedQrl = qrl => {
         return val;
     }
     assertQrl(qrl);
-    const signal = new ComputedSignal2(null, qrl);
+    const signal = new ComputedSignal(null, qrl);
     return set(signal), throwIfQRLNotResolved(qrl), signal;
 };
 
@@ -8487,7 +8487,7 @@ const runResource = (task, container, host) => {
     task.$flags$ &= ~TaskFlags.DIRTY, cleanupTask(task);
     const iCtx = newInvokeContext(container.$locale$, host, void 0, "qResource");
     iCtx.$container2$ = container;
-    const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberDependencies(task)));
+    const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberEffectDependencies(task)));
     const resource = task.$state$;
     assertDefined(resource, 'useResource: when running a resource, "task.resource" must be a defined.', task);
     const cleanups = [];
@@ -8500,12 +8500,12 @@ const runResource = (task, container, host) => {
             }
         })), done = !0;
     }));
-    const resourceTarget = unwrapStore2(resource);
+    const resourceTarget = unwrapStore(resource);
     const opts = {
         track: (obj, prop) => {
             const ctx = newInvokeContext();
             return ctx.$effectSubscriber$ = [ task, EffectProperty.COMPONENT, null ], ctx.$container2$ = container, 
-            invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal2(obj) ? obj.value : obj));
+            invoke(ctx, (() => isFunction(obj) ? obj() : prop ? obj[prop] : isSignal(obj) ? obj.value : obj));
         },
         cleanup(fn) {
             "function" == typeof fn && cleanups.push(fn);
@@ -8874,9 +8874,9 @@ const untrack = fn => invoke(void 0, fn);
 
 const trackInvocation = /*#__PURE__*/ newInvokeContext(void 0, void 0, void 0, "qRender");
 
-const trackSignal = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
+const trackSignalV1 = (signal, sub) => (trackInvocation.$subscriber$ = sub, invoke(trackInvocation, (() => signal.value)));
 
-const trackSignal2 = (fn, subscriber, property, container, data = null) => {
+const trackSignal = (fn, subscriber, property, container, data = null) => {
     const previousSubscriber = trackInvocation.$effectSubscriber$;
     const previousContainer = trackInvocation.$container2$;
     try {
@@ -9022,7 +9022,7 @@ class SignalWrapper extends SignalBase {
     }
 }
 
-const isSignal = obj => obj instanceof SignalBase;
+const isSignalV1 = obj => obj instanceof SignalBase;
 
 const getProp = (obj, prop) => obj[prop];
 
@@ -9030,7 +9030,7 @@ const _wrapProp = (obj, prop = "value") => {
     if (!isObject(obj)) {
         return obj[prop];
     }
-    if (isSignal2(obj)) {
+    if (isSignal(obj)) {
         return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
         new WrappedSignal(null, getProp, [ obj, prop ], null);
     }
@@ -9040,10 +9040,10 @@ const _wrapProp = (obj, prop = "value") => {
             return constProps[prop];
         }
     } else {
-        const target = getStoreTarget2(obj);
+        const target = getStoreTarget(obj);
         if (target) {
             const signal = target[prop];
-            return isSignal2(signal) ? signal : new WrappedSignal(null, getProp, [ obj, prop ], null);
+            return isSignal(signal) ? signal : new WrappedSignal(null, getProp, [ obj, prop ], null);
         }
     }
     return new WrappedSignal(null, getProp, [ obj, prop ], null);
@@ -9103,7 +9103,7 @@ const setRef = (value, elm) => {
     if (isFunction(value)) {
         return value(elm);
     }
-    if (isSignal(value)) {
+    if (isSignalV1(value)) {
         return isServerPlatform() ? value.untrackedValue = elm : value.value = elm;
     }
     throw qError(32, value);
@@ -9366,7 +9366,7 @@ const executeSignalOperation = (rCtx, operation) => {
                 const prop = operation[4];
                 const isSVG = elm.namespaceURI === SVG_NS;
                 staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
-                let value = trackSignal(operation[2], operation.slice(0, -1));
+                let value = trackSignalV1(operation[2], operation.slice(0, -1));
                 "class" === prop ? value = serializeClassWithHost(value, tryGetContext(hostElm)) : "style" === prop && (value = stringifyStyle(value));
                 const vdom = getVdom(elCtx);
                 if (prop in vdom.$varProps$ && vdom.$varProps$[prop] === value) {
@@ -9382,7 +9382,7 @@ const executeSignalOperation = (rCtx, operation) => {
                 if (!staticCtx.$visited$.includes(elm)) {
                     staticCtx.$containerState$.$subsManager$.$clearSignal$(operation);
                     const invocationContext = void 0;
-                    let signalValue = trackSignal(operation[2], operation.slice(0, -1));
+                    let signalValue = trackSignalV1(operation[2], operation.slice(0, -1));
                     const subscription = getLastSubscription();
                     Array.isArray(signalValue) && (signalValue = new JSXNodeImpl(Virtual, {}, null, signalValue, 0, null));
                     let newVnode = processData(signalValue, invocationContext);
@@ -9626,7 +9626,7 @@ const verifySerializable = (value, preMessage) => {
 };
 
 const _verifySerializable = (value, seen, ctx, preMessage) => {
-    const unwrapped = unwrapStore2(value);
+    const unwrapped = unwrapStore(value);
     if (null == unwrapped) {
         return value;
     }
@@ -9634,7 +9634,7 @@ const _verifySerializable = (value, seen, ctx, preMessage) => {
         if (seen.has(unwrapped)) {
             return value;
         }
-        if (seen.add(unwrapped), isSignal2(unwrapped)) {
+        if (seen.add(unwrapped), isSignal(unwrapped)) {
             return value;
         }
         if (canSerialize2(unwrapped)) {
@@ -9864,7 +9864,7 @@ class LocalSubscriptionManager {
                     } else {
                         const signal = sub[SubscriptionProp.SIGNAL];
                         this.$containerState$.$subsManager$.$clearSignal$(sub);
-                        const value = trackSignal(signal, sub);
+                        const value = trackSignalV1(signal, sub);
                         if (type == SubscriptionType.PROP_IMMUTABLE || type == SubscriptionType.PROP_MUTABLE) {
                             updateNodeProp(this.$containerState$, sub[SubscriptionProp.STYLE_ID] || null, sub[SubscriptionProp.ELEMENT], sub[SubscriptionProp.ELEMENT_PROP], value, type == SubscriptionType.PROP_IMMUTABLE);
                         } else {
@@ -10003,7 +10003,7 @@ function assertQrl(qrl) {
 }
 
 function assertSignal(obj) {
-    if (qDev && !isSignal(obj) && !isSignal2(obj)) {
+    if (qDev && !isSignal(obj) && !isSignal(obj)) {
         throw new Error("Not a Signal");
     }
 }
@@ -10093,7 +10093,7 @@ const useStore = (initialState, opts) => {
     }
     {
         const containerState = iCtx.$container2$;
-        const newStore = getOrCreateStore2(value, opts?.deep ?? !0 ? Store2Flags.RECURSIVE : Store2Flags.NONE, containerState);
+        const newStore = getOrCreateStore(value, opts?.deep ?? !0 ? StoreFlags.RECURSIVE : StoreFlags.NONE, containerState);
         return set(newStore), newStore;
     }
 };
@@ -10376,7 +10376,7 @@ const useSignal = initialState => {
         return val;
     }
     const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
-    return set(createSignal2(value));
+    return set(createSignal(value));
 };
 
 const useConstant = value => {
@@ -10454,4 +10454,4 @@ const PrefetchGraph = (opts = {}) => {
     }, null, 0, "prefetch-graph");
 };
 
-export { $, Fragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, SubscriptionType, _CONST_PROPS, DomContainer as _DomContainer, EMPTY_ARRAY as _EMPTY_ARRAY, _IMMUTABLE, _SharedContainer, _VAR_PROPS, _deserialize, _fnSignal, _getContextElement, _getContextEvent, getDomContainer as _getDomContainer, _getQContainerElement, _hW, isJSXNode as _isJSXNode, isStringifiable as _isStringifiable, _jsxBranch, _jsxC, _jsxQ, _jsxS, _jsxSorted, _jsxSplit, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serialize, verifySerializable as _verifySerializable, _waitUntilRendered, _walkJSX, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed2$, createComputed2Qrl, createContextId, h as createElement, createSignal2, event$, eventQrl, getDomContainer, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal2 as isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render2 as render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
+export { $, Fragment, PrefetchGraph, PrefetchServiceWorker, RenderOnce, Resource, SSRComment, SSRRaw, SSRStream, SSRStreamBlock, SkipRender, Slot, SubscriptionType, _CONST_PROPS, DomContainer as _DomContainer, EMPTY_ARRAY as _EMPTY_ARRAY, _IMMUTABLE, _SharedContainer, _VAR_PROPS, _deserialize, _fnSignal, _getContextElement, _getContextEvent, getDomContainer as _getDomContainer, _getQContainerElement, _hW, isJSXNode as _isJSXNode, isStringifiable as _isStringifiable, _jsxBranch, _jsxC, _jsxQ, _jsxS, _jsxSorted, _jsxSplit, _noopQrl, _noopQrlDEV, _pauseFromContexts, _qrlSync, _regSymbol, _renderSSR, _restProps, _serialize, verifySerializable as _verifySerializable, _waitUntilRendered, _walkJSX, _weakSerialize, _wrapProp, _wrapSignal, component$, componentQrl, createComputed$, createComputedQrl, createContextId, h as createElement, createSignal, event$, eventQrl, getDomContainer, getLocale, getPlatform, h, implicit$FirstArg, inlinedQrl, inlinedQrlDEV, isSignal, jsx, jsxDEV, jsx as jsxs, noSerialize, qrl, qrlDEV, render2 as render, setPlatform, sync$, untrack, useComputed$, useComputedQrl, useConstant, useContext, useContextProvider, useErrorBoundary, useId, useLexicalScope, useOn, useOnDocument, useOnWindow, useResource$, useResourceQrl, useServerData, useSignal, useStore, useStyles$, useStylesQrl, useStylesScoped$, useStylesScopedQrl, useTask$, useTaskQrl, useVisibleTask$, useVisibleTaskQrl, version, withLocale };
