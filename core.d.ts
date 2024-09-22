@@ -2763,7 +2763,7 @@ declare class Signal_3<T = any> extends Subscriber_2 implements Signal<T> {
     set untrackedValue(value: T);
     get value(): T;
     set value(value: T);
-    valueOf(): void;
+    valueOf(): undefined;
     toString(): string;
     toJSON(): {
         value: T;
@@ -4346,7 +4346,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+6c4c5b9
+ * 2.0.0-0-dev+cf77a1f
  *
  * @public
  */

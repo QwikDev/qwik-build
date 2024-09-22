@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+6c4c5b9
+ * @builder.io/qwik 2.0.0-0-dev+cf77a1f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
 
-const version = "2.0.0-0-dev+6c4c5b9";
+const version = "2.0.0-0-dev+cf77a1f";
 
 const SkipRender = Symbol("skip render");
 
@@ -822,7 +822,7 @@ const inflate = (container, target, needsInflationData) => {
         break;
 
       case SerializationConstant.Resource_VALUE:
-        throw new Error("Not implemented");
+        return throwErrorAndStop("Not implemented");
 
       case SerializationConstant.Component_VALUE:
         inflateQRL(container, target[SERIALIZABLE_STATE][0]);
@@ -898,7 +898,7 @@ const inflate = (container, target, needsInflationData) => {
         break;
 
       default:
-        throw new Error("Not implemented");
+        return throwErrorAndStop("Not implemented");
     }
     restIdx = restStack.pop(), rest = restStack.pop();
 };
@@ -915,7 +915,7 @@ const allocate = value => {
         return new Task(-1, -1, null, null, null, null);
 
       case SerializationConstant.Resource_VALUE:
-        throw new Error("Not implemented");
+        return throwErrorAndStop("Not implemented");
 
       case SerializationConstant.URL_VALUE:
         return new URL(value.substring(1));
@@ -987,7 +987,7 @@ const allocate = value => {
         return createPropsProxy(null, null);
 
       default:
-        throw new Error("unknown allocate type: " + value.charCodeAt(0));
+        return throwErrorAndStop("unknown allocate type: " + value.charCodeAt(0));
     }
 };
 
@@ -1138,7 +1138,7 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, setP
                         })), promises.push(obj);
                     } else {
                         if (!isObjectLiteral(obj)) {
-                            throw new Error("Unknown type: " + obj);
+                            return throwErrorAndStop("Unknown type: " + obj);
                         }
                         for (const key in obj) {
                             Object.prototype.hasOwnProperty.call(obj, key) && discoveredValues.push(obj[key]);
@@ -1202,7 +1202,7 @@ function serialize(serializationContext) {
             value.length > 0 && value.charCodeAt(0) < SerializationConstant.LAST_VALUE ? writeString(SerializationConstant.String_CHAR + value) : writeString(value);
         } else {
             if (void 0 !== value) {
-                throw new Error("Unknown type: " + typeof value);
+                return throwErrorAndStop("Unknown type: " + typeof value);
             }
             writeString(SerializationConstant.UNDEFINED_CHAR);
         }
@@ -1266,7 +1266,7 @@ function serialize(serializationContext) {
             writeString(SerializationConstant.Promise_CHAR + getSerializableDataRootId(value));
         } else {
             if (!(value instanceof Uint8Array)) {
-                throw new Error("implement");
+                return throwErrorAndStop("implement");
             }
             {
                 let buf = "";
@@ -1830,7 +1830,7 @@ function processVNodeData(document) {
                 let islandNode = node;
                 do {
                     if (islandNode = walker.nextNode(), !islandNode) {
-                        throw new Error(`Island inside \x3c!--${node?.nodeValue}--\x3e not found!`);
+                        return throwErrorAndStop(`Island inside \x3c!--${node?.nodeValue}--\x3e not found!`);
                     }
                 } while (getFastNodeType(islandNode) !== NodeType.COMMENT_ISLAND_START);
                 nextNode = null;
@@ -1838,7 +1838,7 @@ function processVNodeData(document) {
                 nextNode = node;
                 do {
                     if (nextNode = walker.nextNode(), !nextNode) {
-                        throw new Error("Ignore block not closed!");
+                        return throwErrorAndStop("Ignore block not closed!");
                     }
                 } while (getFastNodeType(nextNode) !== NodeType.COMMENT_IGNORE_END);
                 nextNode = null;
@@ -1846,7 +1846,7 @@ function processVNodeData(document) {
                 nextNode = node;
                 do {
                     if (nextNode = nextSibling(nextNode), !nextNode) {
-                        throw new Error(`\x3c!--${node?.nodeValue}--\x3e not closed!`);
+                        return throwErrorAndStop(`\x3c!--${node?.nodeValue}--\x3e not closed!`);
                     }
                 } while (getFastNodeType(nextNode) !== NodeType.COMMENT_SKIP_END);
                 walkContainer(walker, node, node, nextNode, "", null);
@@ -2503,9 +2503,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                             value = serializeAttribute(key, value, scopedStyleIdPrefix), null != value && element.setAttribute(key, String(value));
                         } else {
                             if ("string" != typeof value) {
-                                if (isDev) {
-                                    throw new Error("The value of the textarea must be a string");
-                                }
+                                isDev && throwErrorAndStop("The value of the textarea must be a string");
                                 continue;
                             }
                             element.value = escapeHTML(value);
@@ -2899,13 +2897,11 @@ const isDomContainer = container => container instanceof DomContainer;
 
 class DomContainer extends _SharedContainer {
     constructor(element) {
-        if (super((() => this.scheduleRender()), (() => vnode_applyJournal(this.$journal$)), {}, element.getAttribute("q:locale")), 
+        super((() => this.scheduleRender()), (() => vnode_applyJournal(this.$journal$)), {}, element.getAttribute("q:locale")), 
         this.renderDone = null, this.$storeProxyMap$ = new WeakMap, this.$styleIds$ = null, 
         this.$vnodeLocate$ = id => vnode_locate(this.rootVNode, id), this.$renderCount$ = 0, 
         this.$getObjectById$ = id => ("string" == typeof id && (id = parseFloat(id)), assertTrue(id < this.$rawStateData$.length, `Invalid reference: ${id} < ${this.$rawStateData$.length}`), 
-        this.stateData[id]), this.qContainer = element.getAttribute("q:container"), !this.qContainer) {
-            throw new Error("Element must have 'q:container' attribute.");
-        }
+        this.stateData[id]), this.qContainer = element.getAttribute("q:container"), this.qContainer || throwErrorAndStop("Element must have 'q:container' attribute."), 
         this.$journal$ = [ VNodeJournalOpCode.HoistStyles, element.ownerDocument ], this.document = element.ownerDocument, 
         this.element = element, this.qBase = element.getAttribute("q:base"), this.$instanceHash$ = element.getAttribute("q:instance"), 
         this.qManifestHash = element.getAttribute("q:manifest-hash"), this.rootVNode = vnode_newUnMaterializedElement(this.element), 
@@ -3215,10 +3211,8 @@ function choreComparator(a, b, shouldThrowOnHostMismatch) {
         if (aHost !== bHost && null !== aHost && null !== bHost) {
             if (!vnode_isVNode(aHost) || !vnode_isVNode(bHost)) {
                 const errorMessage = "SERVER: during HTML streaming, it is not possible to cause a re-run of tasks on a different host";
-                if (shouldThrowOnHostMismatch) {
-                    throw new Error(errorMessage);
-                }
-                return logWarn(errorMessage), null;
+                return shouldThrowOnHostMismatch && throwErrorAndStop(errorMessage), logWarn(errorMessage), 
+                null;
             }
             {
                 const hostDiff = vnode_documentPosition(aHost, bHost);
@@ -3338,7 +3332,7 @@ class Signal extends Subscriber {
     }
     valueOf() {
         if (qDev) {
-            throw new TypeError("Cannot coerce a Signal, use `.value` instead");
+            return throwErrorAndStop("Cannot coerce a Signal, use `.value` instead");
         }
     }
     toString() {
@@ -3480,7 +3474,7 @@ class ComputedSignal extends Signal {
         return super.value;
     }
     set value(_) {
-        throw new TypeError("ComputedSignal is read-only");
+        throwErrorAndStop("ComputedSignal is read-only");
     }
 }
 
@@ -3509,7 +3503,7 @@ class WrappedSignal extends Signal {
         return super.value;
     }
     set value(_) {
-        throw new TypeError("WrappedSignal is read-only");
+        throwErrorAndStop("WrappedSignal is read-only");
     }
 }
 

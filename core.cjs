@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+6c4c5b9
+ * @builder.io/qwik 2.0.0-0-dev+cf77a1f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -656,7 +656,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+6c4c5b9";
+    const version = "2.0.0-0-dev+cf77a1f";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -1183,7 +1183,7 @@
                     : undefined;
                 break;
             case SerializationConstant.Resource_VALUE:
-                throw new Error('Not implemented');
+                return throwErrorAndStop('Not implemented');
             case SerializationConstant.Component_VALUE:
                 inflateQRL(container, target[SERIALIZABLE_STATE][0]);
                 break;
@@ -1254,7 +1254,7 @@
                 propsProxy[_CONST_PROPS] = container.$getObjectById$(restInt());
                 break;
             default:
-                throw new Error('Not implemented');
+                return throwErrorAndStop('Not implemented');
         }
         restIdx = restStack.pop();
         rest = restStack.pop();
@@ -1268,7 +1268,7 @@
             case SerializationConstant.Task_VALUE:
                 return new Task(-1, -1, null, null, null, null);
             case SerializationConstant.Resource_VALUE:
-                throw new Error('Not implemented');
+                return throwErrorAndStop('Not implemented');
             case SerializationConstant.URL_VALUE:
                 return new URL(value.substring(1));
             case SerializationConstant.Date_VALUE:
@@ -1329,7 +1329,7 @@
             case SerializationConstant.PropsProxy_VALUE:
                 return createPropsProxy(null, null);
             default:
-                throw new Error('unknown allocate type: ' + value.charCodeAt(0));
+                return throwErrorAndStop('unknown allocate type: ' + value.charCodeAt(0));
         }
     };
     const PROMISE_RESOLVE = Symbol('resolve');
@@ -1552,7 +1552,7 @@
                             }
                         }
                         else {
-                            throw new Error('Unknown type: ' + obj);
+                            return throwErrorAndStop('Unknown type: ' + obj);
                         }
                     }
                     else if (id === Number.MIN_SAFE_INTEGER) {
@@ -1643,7 +1643,7 @@
                 writeString(SerializationConstant.UNDEFINED_CHAR);
             }
             else {
-                throw new Error('Unknown type: ' + typeof value);
+                return throwErrorAndStop('Unknown type: ' + typeof value);
             }
         };
         const writeObjectValue = (value, idx) => {
@@ -1805,7 +1805,7 @@
                 writeString(SerializationConstant.Uint8Array_CHAR + out);
             }
             else {
-                throw new Error('implement');
+                return throwErrorAndStop('implement');
             }
         };
         const serializeObjectLiteral = (value, $writer$, writeValue, writeString) => {
@@ -2688,7 +2688,7 @@
                     do {
                         islandNode = walker.nextNode();
                         if (!islandNode) {
-                            throw new Error(`Island inside <!--${node?.nodeValue}--> not found!`);
+                            return throwErrorAndStop(`Island inside <!--${node?.nodeValue}--> not found!`);
                         }
                     } while (getFastNodeType(islandNode) !== NodeType.COMMENT_ISLAND_START);
                     nextNode = null;
@@ -2698,7 +2698,7 @@
                     do {
                         nextNode = walker.nextNode();
                         if (!nextNode) {
-                            throw new Error(`Ignore block not closed!`);
+                            return throwErrorAndStop(`Ignore block not closed!`);
                         }
                     } while (getFastNodeType(nextNode) !== NodeType.COMMENT_IGNORE_END);
                     nextNode = null;
@@ -2709,7 +2709,7 @@
                     do {
                         nextNode = nextSibling(nextNode);
                         if (!nextNode) {
-                            throw new Error(`<!--${node?.nodeValue}--> not closed!`);
+                            return throwErrorAndStop(`<!--${node?.nodeValue}--> not closed!`);
                         }
                     } while (getFastNodeType(nextNode) !== NodeType.COMMENT_SKIP_END);
                     // console.log('EXIT', nextNode?.outerHTML);
@@ -4060,7 +4060,7 @@
                     if (elementName === 'textarea' && key === 'value') {
                         if (typeof value !== 'string') {
                             if (build.isDev) {
-                                throw new Error('The value of the textarea must be a string');
+                                throwErrorAndStop('The value of the textarea must be a string');
                             }
                             continue;
                         }
@@ -4768,7 +4768,7 @@
             };
             this.qContainer = element.getAttribute(QContainerAttr);
             if (!this.qContainer) {
-                throw new Error("Element must have 'q:container' attribute.");
+                throwErrorAndStop("Element must have 'q:container' attribute.");
             }
             this.$journal$ = [
                 // The first time we render we need to hoist the styles.
@@ -5339,7 +5339,7 @@
                     // implies that things need to be re-run nad that is not supported because of streaming.
                     const errorMessage = 'SERVER: during HTML streaming, it is not possible to cause a re-run of tasks on a different host';
                     if (shouldThrowOnHostMismatch) {
-                        throw new Error(errorMessage);
+                        throwErrorAndStop(errorMessage);
                     }
                     logWarn(errorMessage);
                     return null;
@@ -5509,7 +5509,7 @@
         // prevent accidental use as value
         valueOf() {
             if (qDev) {
-                throw new TypeError('Cannot coerce a Signal, use `.value` instead');
+                return throwErrorAndStop('Cannot coerce a Signal, use `.value` instead');
             }
         }
         toString() {
@@ -5715,7 +5715,7 @@
             return super.value;
         }
         set value(_) {
-            throw new TypeError('ComputedSignal is read-only');
+            throwErrorAndStop('ComputedSignal is read-only');
         }
     }
     // TO DISCUSS: shouldn't this type of signal have the $dependencies$ array instead of EVERY type of signal?
@@ -5765,7 +5765,7 @@
             return super.value;
         }
         set value(_) {
-            throw new TypeError('WrappedSignal is read-only');
+            throwErrorAndStop('WrappedSignal is read-only');
         }
     }
 

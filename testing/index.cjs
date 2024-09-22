@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+6c4c5b9
+ * @builder.io/qwik/testing 2.0.0-0-dev+cf77a1f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23442,7 +23442,7 @@ var Signal = class extends Subscriber {
   // prevent accidental use as value
   valueOf() {
     if (qDev) {
-      throw new TypeError("Cannot coerce a Signal, use `.value` instead");
+      return throwErrorAndStop("Cannot coerce a Signal, use `.value` instead");
     }
   }
   toString() {
@@ -23636,7 +23636,7 @@ var ComputedSignal = class extends Signal {
     return super.value;
   }
   set value(_) {
-    throw new TypeError("ComputedSignal is read-only");
+    throwErrorAndStop("ComputedSignal is read-only");
   }
 };
 var WrappedSignal = class extends Signal {
@@ -23688,7 +23688,7 @@ var WrappedSignal = class extends Signal {
     return super.value;
   }
   set value(_) {
-    throw new TypeError("WrappedSignal is read-only");
+    throwErrorAndStop("WrappedSignal is read-only");
   }
 };
 
@@ -24264,7 +24264,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         if (elementName === "textarea" && key2 === "value") {
           if (typeof value !== "string") {
             if (import_build3.isDev) {
-              throw new Error("The value of the textarea must be a string");
+              throwErrorAndStop("The value of the textarea must be a string");
             }
             continue;
           }
@@ -24957,7 +24957,7 @@ function choreComparator(a, b, shouldThrowOnHostMismatch) {
       } else {
         const errorMessage = "SERVER: during HTML streaming, it is not possible to cause a re-run of tasks on a different host";
         if (shouldThrowOnHostMismatch) {
-          throw new Error(errorMessage);
+          throwErrorAndStop(errorMessage);
         }
         logWarn(errorMessage);
         return null;
@@ -25516,7 +25516,7 @@ function processVNodeData(document2) {
         do {
           islandNode = walker2.nextNode();
           if (!islandNode) {
-            throw new Error(`Island inside <!--${node == null ? void 0 : node.nodeValue}--> not found!`);
+            return throwErrorAndStop(`Island inside <!--${node == null ? void 0 : node.nodeValue}--> not found!`);
           }
         } while (getFastNodeType(islandNode) !== 65 /* COMMENT_ISLAND_START */);
         nextNode = null;
@@ -25525,7 +25525,7 @@ function processVNodeData(document2) {
         do {
           nextNode = walker2.nextNode();
           if (!nextNode) {
-            throw new Error(`Ignore block not closed!`);
+            return throwErrorAndStop(`Ignore block not closed!`);
           }
         } while (getFastNodeType(nextNode) !== 32 /* COMMENT_IGNORE_END */);
         nextNode = null;
@@ -25534,7 +25534,7 @@ function processVNodeData(document2) {
         do {
           nextNode = nextSibling(nextNode);
           if (!nextNode) {
-            throw new Error(`<!--${node == null ? void 0 : node.nodeValue}--> not closed!`);
+            return throwErrorAndStop(`<!--${node == null ? void 0 : node.nodeValue}--> not closed!`);
           }
         } while (getFastNodeType(nextNode) !== 8 /* COMMENT_SKIP_END */);
         walkContainer(walker2, node, node, nextNode, "", null, prefix + "  ");
@@ -25664,7 +25664,7 @@ var DomContainer = class extends _SharedContainer {
     };
     this.qContainer = element.getAttribute(QContainerAttr);
     if (!this.qContainer) {
-      throw new Error("Element must have 'q:container' attribute.");
+      throwErrorAndStop("Element must have 'q:container' attribute.");
     }
     this.$journal$ = [
       // The first time we render we need to hoist the styles.
@@ -26013,7 +26013,7 @@ var inflate = (container, target, needsInflationData) => {
       task.$state$ = taskState ? container.$getObjectById$(taskState) : void 0;
       break;
     case 18 /* Resource_VALUE */:
-      throw new Error("Not implemented");
+      return throwErrorAndStop("Not implemented");
     case 19 /* Component_VALUE */:
       inflateQRL(container, target[SERIALIZABLE_STATE][0]);
       break;
@@ -26083,7 +26083,7 @@ var inflate = (container, target, needsInflationData) => {
       propsProxy[_CONST_PROPS] = container.$getObjectById$(restInt());
       break;
     default:
-      throw new Error("Not implemented");
+      return throwErrorAndStop("Not implemented");
   }
   restIdx = restStack.pop();
   rest = restStack.pop();
@@ -26097,7 +26097,7 @@ var allocate = (value) => {
     case 17 /* Task_VALUE */:
       return new Task3(-1, -1, null, null, null, null);
     case 18 /* Resource_VALUE */:
-      throw new Error("Not implemented");
+      return throwErrorAndStop("Not implemented");
     case 2 /* URL_VALUE */:
       return new URL(value.substring(1));
     case 3 /* Date_VALUE */:
@@ -26157,7 +26157,7 @@ var allocate = (value) => {
     case 31 /* PropsProxy_VALUE */:
       return createPropsProxy(null, null);
     default:
-      throw new Error("unknown allocate type: " + value.charCodeAt(0));
+      return throwErrorAndStop("unknown allocate type: " + value.charCodeAt(0));
   }
 };
 var PROMISE_RESOLVE = Symbol("resolve");
@@ -26337,7 +26337,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
               }
             }
           } else {
-            throw new Error("Unknown type: " + obj);
+            return throwErrorAndStop("Unknown type: " + obj);
           }
         } else if (id === Number.MIN_SAFE_INTEGER) {
           $addRoot$(obj);
@@ -26406,7 +26406,7 @@ function serialize(serializationContext) {
     } else if (typeof value === "undefined") {
       writeString("\0" /* UNDEFINED_CHAR */);
     } else {
-      throw new Error("Unknown type: " + typeof value);
+      return throwErrorAndStop("Unknown type: " + typeof value);
     }
   };
   const writeObjectValue = (value, idx) => {
@@ -26510,7 +26510,7 @@ function serialize(serializationContext) {
       const out = btoa(buf).replace(/=+$/, "");
       writeString("" /* Uint8Array_CHAR */ + out);
     } else {
-      throw new Error("implement");
+      return throwErrorAndStop("implement");
     }
   };
   const serializeObjectLiteral = (value, $writer$2, writeValue2, writeString2) => {

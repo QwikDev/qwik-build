@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+6c4c5b9
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+cf77a1f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+6c4c5b9"
+  qwik: "2.0.0-0-dev+cf77a1f"
 };
 
 async function getSystem() {
@@ -3377,7 +3377,7 @@ var delay = timeout => new Promise((resolve => {
 }));
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+6c4c5b9",
+  qwik: "2.0.0-0-dev+cf77a1f",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -4298,9 +4298,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         }
         if ("textarea" === elementName && "value" === key2) {
           if ("string" !== typeof value) {
-            if (isDev) {
-              throw new Error("The value of the textarea must be a string");
-            }
+            isDev && throwErrorAndStop("The value of the textarea must be a string");
             continue;
           }
           element.value = escapeHTML(value);
@@ -4892,9 +4890,7 @@ function choreComparator(a, b, shouldThrowOnHostMismatch) {
     if (aHost !== bHost && null !== aHost && null !== bHost) {
       if (!vnode_isVNode(aHost) || !vnode_isVNode(bHost)) {
         const errorMessage = "SERVER: during HTML streaming, it is not possible to cause a re-run of tasks on a different host";
-        if (shouldThrowOnHostMismatch) {
-          throw new Error(errorMessage);
-        }
+        shouldThrowOnHostMismatch && throwErrorAndStop(errorMessage);
         logWarn(errorMessage);
         return null;
       }
@@ -4980,7 +4976,7 @@ function debugTrace(action, arg, currentChore, queue) {
   console.log(lines.join("\n  ") + "\n");
 }
 
-var version = "2.0.0-0-dev+6c4c5b9";
+var version = "2.0.0-0-dev+cf77a1f";
 
 var isDev2 = true;
 
@@ -5285,7 +5281,7 @@ var inflate = (container, target, needsInflationData) => {
     break;
 
    case 18:
-    throw new Error("Not implemented");
+    return throwErrorAndStop("Not implemented");
 
    case 19:
     inflateQRL(container, target[SERIALIZABLE_STATE][0]);
@@ -5365,7 +5361,7 @@ var inflate = (container, target, needsInflationData) => {
     break;
 
    default:
-    throw new Error("Not implemented");
+    return throwErrorAndStop("Not implemented");
   }
   restIdx = restStack.pop();
   rest = restStack.pop();
@@ -5383,7 +5379,7 @@ var allocate = value => {
     return new Task2(-1, -1, null, null, null, null);
 
    case 18:
-    throw new Error("Not implemented");
+    return throwErrorAndStop("Not implemented");
 
    case 2:
     return new URL(value.substring(1));
@@ -5464,7 +5460,7 @@ var allocate = value => {
     return createPropsProxy(null, null);
 
    default:
-    throw new Error("unknown allocate type: " + value.charCodeAt(0));
+    return throwErrorAndStop("unknown allocate type: " + value.charCodeAt(0));
   }
 };
 
@@ -5632,7 +5628,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
             promises.push(obj);
           } else {
             if (!isObjectLiteral(obj)) {
-              throw new Error("Unknown type: " + obj);
+              return throwErrorAndStop("Unknown type: " + obj);
             }
             for (const key in obj) {
               Object.prototype.hasOwnProperty.call(obj, key) && discoveredValues.push(obj[key]);
@@ -5700,7 +5696,7 @@ function serialize(serializationContext) {
       value.length > 0 && value.charCodeAt(0) < 32 ? writeString("" + value) : writeString(value);
     } else {
       if ("undefined" !== typeof value) {
-        throw new Error("Unknown type: " + typeof value);
+        return throwErrorAndStop("Unknown type: " + typeof value);
       }
       writeString("\0");
     }
@@ -5770,7 +5766,7 @@ function serialize(serializationContext) {
       writeString("" + getSerializableDataRootId(value));
     } else {
       if (!(value instanceof Uint8Array)) {
-        throw new Error("implement");
+        return throwErrorAndStop("implement");
       }
       {
         let buf = "";
@@ -6242,7 +6238,7 @@ function processVNodeData(document2) {
         do {
           islandNode = walker2.nextNode();
           if (!islandNode) {
-            throw new Error(`Island inside \x3c!--${node?.nodeValue}--\x3e not found!`);
+            return throwErrorAndStop(`Island inside \x3c!--${node?.nodeValue}--\x3e not found!`);
           }
         } while (65 !== getFastNodeType(islandNode));
         nextNode = null;
@@ -6251,7 +6247,7 @@ function processVNodeData(document2) {
         do {
           nextNode = walker2.nextNode();
           if (!nextNode) {
-            throw new Error("Ignore block not closed!");
+            return throwErrorAndStop("Ignore block not closed!");
           }
         } while (32 !== getFastNodeType(nextNode));
         nextNode = null;
@@ -6260,7 +6256,7 @@ function processVNodeData(document2) {
         do {
           nextNode = nextSibling(nextNode);
           if (!nextNode) {
-            throw new Error(`\x3c!--${node?.nodeValue}--\x3e not closed!`);
+            return throwErrorAndStop(`\x3c!--${node?.nodeValue}--\x3e not closed!`);
           }
         } while (8 !== getFastNodeType(nextNode));
         walkContainer(walker2, node, node, nextNode, "", null, prefix + "  ");
@@ -6353,9 +6349,7 @@ var DomContainer = class extends _SharedContainer {
       return this.stateData[id];
     };
     this.qContainer = element.getAttribute(QContainerAttr);
-    if (!this.qContainer) {
-      throw new Error("Element must have 'q:container' attribute.");
-    }
+    this.qContainer || throwErrorAndStop("Element must have 'q:container' attribute.");
     this.$journal$ = [ 3, element.ownerDocument ];
     this.document = element.ownerDocument;
     this.element = element;
@@ -7762,7 +7756,7 @@ var Signal = class extends Subscriber {
   }
   valueOf() {
     if (qDev) {
-      throw new TypeError("Cannot coerce a Signal, use `.value` instead");
+      return throwErrorAndStop("Cannot coerce a Signal, use `.value` instead");
     }
   }
   toString() {
@@ -7928,7 +7922,7 @@ var ComputedSignal = class extends Signal {
     return super.value;
   }
   set value(_) {
-    throw new TypeError("ComputedSignal is read-only");
+    throwErrorAndStop("ComputedSignal is read-only");
   }
 };
 
@@ -7966,7 +7960,7 @@ var WrappedSignal = class extends Signal {
     return super.value;
   }
   set value(_) {
-    throw new TypeError("WrappedSignal is read-only");
+    throwErrorAndStop("WrappedSignal is read-only");
   }
 };
 
