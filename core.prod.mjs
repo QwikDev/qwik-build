@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+cf77a1f
+ * @builder.io/qwik 2.0.0-0-dev+8edd2e7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -504,7 +504,7 @@ const delay = timeout => new Promise((resolve => {
     setTimeout(resolve, timeout);
 }));
 
-const version = "2.0.0-0-dev+cf77a1f";
+const version = "2.0.0-0-dev+8edd2e7";
 
 const SkipRender = Symbol("skip render");
 
@@ -1119,7 +1119,7 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, setP
                                 discoveredValues.push(effect[EffectSubscriptionsProp.EFFECT]);
                             }
                         }
-                        obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
+                        obj instanceof WrappedSignal && obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
                     } else if (obj instanceof Task) {
                         discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
                     } else if (NodeConstructor && obj instanceof NodeConstructor) {} else if (isJSXNode(obj)) {
@@ -1232,7 +1232,7 @@ function serialize(serializationContext) {
         } else if (isObjectLiteral(value)) {
             isResource(value) && serializationContext.$resources$.add(value), serializeObjectLiteral(value, $writer$, writeValue, writeString);
         } else if (value instanceof Signal) {
-            writeString(value instanceof WrappedSignal ? SerializationConstant.WrappedSignal_CHAR + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal ? SerializationConstant.ComputedSignal_CHAR + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : SerializationConstant.Signal_CHAR + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
+            writeString(value instanceof WrappedSignal ? SerializationConstant.WrappedSignal_CHAR + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal ? SerializationConstant.ComputedSignal_CHAR + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : SerializationConstant.Signal_CHAR + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
         } else if (value instanceof URL) {
             writeString(SerializationConstant.URL_CHAR + value.href);
         } else if (value instanceof Date) {
@@ -1339,12 +1339,12 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
         for (let i = 1; i < fnParts.length; i++) {
             (derivedSignal.$args$ || (derivedSignal.$args$ = [])).push(container.$getObjectById$(parseInt(fnParts[i])));
         }
+        const dependencies = container.$getObjectById$(parts[idx++]);
+        derivedSignal.$effectDependencies$ = dependencies;
     }
     if (readQrl) {
         signal.$computeQrl$ = inflateQRL(container, parseQRL$1(parts[idx++]));
     }
-    const dependencies = container.$getObjectById$(parts[idx++]);
-    signal.$effectDependencies$ = dependencies;
     let signalValue = container.$getObjectById$(parts[idx++]);
     if (vnode_isVNode(signalValue) && (signalValue = vnode_getNode(signalValue)), signal.$untrackedValue$ = signalValue, 
     idx < parts.length) {
@@ -2157,7 +2157,7 @@ class Subscriber {
 }
 
 function isSubscriber(value) {
-    return value instanceof Subscriber;
+    return value instanceof Subscriber || value instanceof WrappedSignal;
 }
 
 function clearVNodeEffectDependencies(value) {
@@ -3296,10 +3296,9 @@ var EffectProperty;
     EffectProperty.COMPONENT = ":", EffectProperty.VNODE = ".";
 }(EffectProperty || (EffectProperty = {}));
 
-class Signal extends Subscriber {
+class Signal {
     constructor(container, value) {
-        super(), this.$effects$ = null, this.$container$ = null, this.$container$ = container, 
-        this.$untrackedValue$ = value;
+        this.$effects$ = null, this.$container$ = null, this.$container$ = container, this.$untrackedValue$ = value;
     }
     get untrackedValue() {
         return this.$untrackedValue$;
@@ -3322,7 +3321,7 @@ class Signal extends Subscriber {
             if (effectSubscriber) {
                 const effects = this.$effects$ || (this.$effects$ = []);
                 ensureContainsEffect(effects, effectSubscriber), ensureContains(effectSubscriber, this), 
-                ensureEffectContainsSubscriber(effectSubscriber[EffectSubscriptionsProp.EFFECT], this, this.$container$);
+                isSubscriber(this) && ensureEffectContainsSubscriber(effectSubscriber[EffectSubscriptionsProp.EFFECT], this, this.$container$);
             }
         }
         return this.untrackedValue;
@@ -3480,8 +3479,8 @@ class ComputedSignal extends Signal {
 
 class WrappedSignal extends Signal {
     constructor(container, fn, args, fnStr) {
-        super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$args$ = args, this.$func$ = fn, 
-        this.$funcStr$ = fnStr;
+        super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$effectDependencies$ = null, 
+        this.$args$ = args, this.$func$ = fn, this.$funcStr$ = fnStr;
     }
     $invalidate$() {
         this.$invalid$ = !0, this.$effects$?.length && this.$computeIfNeeded$() && triggerEffects(this.$container$, this, this.$effects$);

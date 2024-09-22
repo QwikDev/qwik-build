@@ -2753,7 +2753,7 @@ declare interface Signal_2<T = any> {
     value: T;
 }
 
-declare class Signal_3<T = any> extends Subscriber_2 implements Signal<T> {
+declare class Signal_3<T = any> implements Signal<T> {
     $untrackedValue$: T;
     /** Store a list of effects which are dependent on this signal. */
     $effects$: null | EffectSubscriptions[];
@@ -4346,7 +4346,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+cf77a1f
+ * 2.0.0-0-dev+8edd2e7
  *
  * @public
  */
@@ -4512,11 +4512,12 @@ export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAt
  */
 export declare function withLocale<T>(locale: string, fn: () => T): T;
 
-declare class WrappedSignal<T> extends Signal_3<T> {
+declare class WrappedSignal<T> extends Signal_3<T> implements Subscriber_2 {
     $args$: any[];
     $func$: (...args: any[]) => T;
     $funcStr$: string | null;
     $invalid$: boolean;
+    $effectDependencies$: Subscriber_2[] | null;
     constructor(container: Container2 | null, fn: (...args: any[]) => T, args: any[], fnStr: string | null);
     $invalidate$(): void;
     /**

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+cf77a1f
+ * @builder.io/qwik 2.0.0-0-dev+8edd2e7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -656,7 +656,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+cf77a1f";
+    const version = "2.0.0-0-dev+8edd2e7";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -1511,7 +1511,7 @@
                                     discoveredValues.push(effect[EffectSubscriptionsProp.EFFECT]);
                                 }
                             }
-                            if (obj.$effectDependencies$) {
+                            if (obj instanceof WrappedSignal && obj.$effectDependencies$) {
                                 discoveredValues.push(obj.$effectDependencies$);
                             }
                             // TODO(mhevery): should scan the QRLs???
@@ -1711,15 +1711,11 @@
                     writeString(SerializationConstant.ComputedSignal_CHAR +
                         qrlToString(serializationContext, value.$computeQrl$) +
                         ';' +
-                        $addRoot$(value.$effectDependencies$) +
-                        ';' +
                         $addRoot$(value.$untrackedValue$) +
                         serializeEffectSubs($addRoot$, value.$effects$));
                 }
                 else {
                     writeString(SerializationConstant.Signal_CHAR +
-                        $addRoot$(value.$effectDependencies$) +
-                        ';' +
                         $addRoot$(value.$untrackedValue$) +
                         serializeEffectSubs($addRoot$, value.$effects$));
                 }
@@ -1886,13 +1882,13 @@
             for (let i = 1; i < fnParts.length; i++) {
                 (derivedSignal.$args$ || (derivedSignal.$args$ = [])).push(container.$getObjectById$(parseInt(fnParts[i])));
             }
+            const dependencies = container.$getObjectById$(parts[idx++]);
+            derivedSignal.$effectDependencies$ = dependencies;
         }
         if (readQrl) {
             const computedSignal = signal;
             computedSignal.$computeQrl$ = inflateQRL(container, parseQRL$1(parts[idx++]));
         }
-        const dependencies = container.$getObjectById$(parts[idx++]);
-        signal.$effectDependencies$ = dependencies;
         let signalValue = container.$getObjectById$(parts[idx++]);
         if (vnode_isVNode(signalValue)) {
             signalValue = vnode_getNode(signalValue);
@@ -3299,7 +3295,7 @@
         }
     }
     function isSubscriber(value) {
-        return value instanceof Subscriber;
+        return value instanceof Subscriber || value instanceof WrappedSignal;
     }
     function clearVNodeEffectDependencies(value) {
         const effects = vnode_getProp(value, QSubscribers, null);
@@ -5454,9 +5450,8 @@
         EffectProperty["COMPONENT"] = ":";
         EffectProperty["VNODE"] = ".";
     })(EffectProperty || (EffectProperty = {}));
-    class Signal extends Subscriber {
+    class Signal {
         constructor(container, value) {
-            super();
             /** Store a list of effects which are dependent on this signal. */
             this.$effects$ = null;
             this.$container$ = null;
@@ -5494,8 +5489,10 @@
                     // to unsubscribe from. So we need to store the reference from the effect back
                     // to this signal.
                     ensureContains(effectSubscriber, this);
-                    // We need to add the subscriber to the effect so that we can clean it up later
-                    ensureEffectContainsSubscriber(effectSubscriber[EffectSubscriptionsProp.EFFECT], this, this.$container$);
+                    if (isSubscriber(this)) {
+                        // We need to add the subscriber to the effect so that we can clean it up later
+                        ensureEffectContainsSubscriber(effectSubscriber[EffectSubscriptionsProp.EFFECT], this, this.$container$);
+                    }
                 }
             }
             return this.untrackedValue;
@@ -5725,6 +5722,7 @@
             // We need a separate flag to know when the computation needs running because
             // we need the old value to know if effects need running after computation
             this.$invalid$ = true;
+            this.$effectDependencies$ = null;
             this.$args$ = args;
             this.$func$ = fn;
             this.$funcStr$ = fnStr;

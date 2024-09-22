@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+cf77a1f
+ * @builder.io/qwik/testing 2.0.0-0-dev+8edd2e7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23321,7 +23321,7 @@ var Subscriber = class {
   }
 };
 function isSubscriber(value) {
-  return value instanceof Subscriber;
+  return value instanceof Subscriber || value instanceof WrappedSignal;
 }
 function clearVNodeEffectDependencies(value) {
   const effects = vnode_getProp(value, QSubscribers, null);
@@ -23386,9 +23386,8 @@ var EffectData = class {
     this.data = data;
   }
 };
-var Signal = class extends Subscriber {
+var Signal = class {
   constructor(container, value) {
-    super();
     /** Store a list of effects which are dependent on this signal. */
     this.$effects$ = null;
     this.$container$ = null;
@@ -23422,11 +23421,13 @@ var Signal = class extends Subscriber {
         const effects = this.$effects$ ||= [];
         ensureContainsEffect(effects, effectSubscriber);
         ensureContains(effectSubscriber, this);
-        ensureEffectContainsSubscriber(
-          effectSubscriber[0 /* EFFECT */],
-          this,
-          this.$container$
-        );
+        if (isSubscriber(this)) {
+          ensureEffectContainsSubscriber(
+            effectSubscriber[0 /* EFFECT */],
+            this,
+            this.$container$
+          );
+        }
         DEBUG && log("read->sub", pad("\n" + this.toString(), "  "));
       }
     }
@@ -23645,6 +23646,7 @@ var WrappedSignal = class extends Signal {
     // We need a separate flag to know when the computation needs running because
     // we need the old value to know if effects need running after computation
     this.$invalid$ = true;
+    this.$effectDependencies$ = null;
     this.$args$ = args;
     this.$func$ = fn;
     this.$funcStr$ = fnStr;
@@ -26304,7 +26306,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
                 discoveredValues.push(effect[0 /* EFFECT */]);
               }
             }
-            if (obj.$effectDependencies$) {
+            if (obj instanceof WrappedSignal && obj.$effectDependencies$) {
               discoveredValues.push(obj.$effectDependencies$);
             }
           } else if (obj instanceof Task3) {
@@ -26450,11 +26452,11 @@ function serialize(serializationContext) {
         );
       } else if (value instanceof ComputedSignal) {
         writeString(
-          "" /* ComputedSignal_CHAR */ + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+          "" /* ComputedSignal_CHAR */ + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
         );
       } else {
         writeString(
-          "" /* Signal_CHAR */ + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
+          "" /* Signal_CHAR */ + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$)
         );
       }
     } else if (value instanceof URL) {
@@ -26593,13 +26595,13 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
         container.$getObjectById$(parseInt(fnParts[i]))
       );
     }
+    const dependencies = container.$getObjectById$(parts[idx++]);
+    derivedSignal.$effectDependencies$ = dependencies;
   }
   if (readQrl) {
     const computedSignal = signal;
     computedSignal.$computeQrl$ = inflateQRL(container, parseQRL(parts[idx++]));
   }
-  const dependencies = container.$getObjectById$(parts[idx++]);
-  signal.$effectDependencies$ = dependencies;
   let signalValue = container.$getObjectById$(parts[idx++]);
   if (vnode_isVNode(signalValue)) {
     signalValue = vnode_getNode(signalValue);

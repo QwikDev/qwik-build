@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+cf77a1f
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+8edd2e7
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+cf77a1f"
+  qwik: "2.0.0-0-dev+8edd2e7"
 };
 
 async function getSystem() {
@@ -3377,7 +3377,7 @@ var delay = timeout => new Promise((resolve => {
 }));
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+cf77a1f",
+  qwik: "2.0.0-0-dev+8edd2e7",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -3796,7 +3796,7 @@ var Subscriber = class {
 };
 
 function isSubscriber(value) {
-  return value instanceof Subscriber;
+  return value instanceof Subscriber || value instanceof WrappedSignal;
 }
 
 function clearVNodeEffectDependencies(value) {
@@ -4976,7 +4976,7 @@ function debugTrace(action, arg, currentChore, queue) {
   console.log(lines.join("\n  ") + "\n");
 }
 
-var version = "2.0.0-0-dev+cf77a1f";
+var version = "2.0.0-0-dev+8edd2e7";
 
 var isDev2 = true;
 
@@ -5606,7 +5606,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
                 discoveredValues.push(effect[0]);
               }
             }
-            obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
+            obj instanceof WrappedSignal && obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
           } else if (obj instanceof Task2) {
             discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
           } else if (NodeConstructor && obj instanceof NodeConstructor) {} else if (isJSXNode(obj)) {
@@ -5730,7 +5730,7 @@ function serialize(serializationContext) {
       isResource(value) && serializationContext.$resources$.add(value);
       serializeObjectLiteral(value, $writer$, writeValue, writeString);
     } else if (value instanceof Signal) {
-      writeString(value instanceof WrappedSignal ? "" + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal ? "" + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : "" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
+      writeString(value instanceof WrappedSignal ? "" + serializeDerivedFn(serializationContext, value, $addRoot$) + ";" + $addRoot$(value.$effectDependencies$) + ";" + $addRoot$(value.untrackedValue) + serializeEffectSubs($addRoot$, value.$effects$) : value instanceof ComputedSignal ? "" + qrlToString(serializationContext, value.$computeQrl$) + ";" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$) : "" + $addRoot$(value.$untrackedValue$) + serializeEffectSubs($addRoot$, value.$effects$));
     } else if (value instanceof URL) {
       writeString("" + value.href);
     } else if (value instanceof Date) {
@@ -5853,13 +5853,13 @@ function deserializeSignal2(signal, container, data, readFn, readQrl) {
     for (let i = 1; i < fnParts.length; i++) {
       (derivedSignal.$args$ || (derivedSignal.$args$ = [])).push(container.$getObjectById$(parseInt(fnParts[i])));
     }
+    const dependencies = container.$getObjectById$(parts[idx++]);
+    derivedSignal.$effectDependencies$ = dependencies;
   }
   if (readQrl) {
     const computedSignal = signal;
     computedSignal.$computeQrl$ = inflateQRL(container, parseQRL(parts[idx++]));
   }
-  const dependencies = container.$getObjectById$(parts[idx++]);
-  signal.$effectDependencies$ = dependencies;
   let signalValue = container.$getObjectById$(parts[idx++]);
   vnode_isVNode(signalValue) && (signalValue = vnode_getNode(signalValue));
   signal.$untrackedValue$ = signalValue;
@@ -7710,9 +7710,8 @@ var EffectData = class {
   }
 };
 
-var Signal = class extends Subscriber {
+var Signal = class {
   constructor(container, value) {
-    super();
     this.$effects$ = null;
     this.$container$ = null;
     this.$container$ = container;
@@ -7741,7 +7740,7 @@ var Signal = class extends Subscriber {
         const effects = this.$effects$ || (this.$effects$ = []);
         ensureContainsEffect(effects, effectSubscriber);
         ensureContains(effectSubscriber, this);
-        ensureEffectContainsSubscriber(effectSubscriber[0], this, this.$container$);
+        isSubscriber(this) && ensureEffectContainsSubscriber(effectSubscriber[0], this, this.$container$);
         DEBUG3 && log2("read->sub", pad("\n" + this.toString(), "  "));
       }
     }
@@ -7930,6 +7929,7 @@ var WrappedSignal = class extends Signal {
   constructor(container, fn, args, fnStr) {
     super(container, NEEDS_COMPUTATION);
     this.$invalid$ = true;
+    this.$effectDependencies$ = null;
     this.$args$ = args;
     this.$func$ = fn;
     this.$funcStr$ = fnStr;
