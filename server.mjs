@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+8edd2e7
+ * @builder.io/qwik/server 2.0.0-0-dev+8d5959f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -298,7 +298,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "2.0.0-0-dev+8edd2e7",
+  qwik: "2.0.0-0-dev+8d5959f",
   qwikDom: "2.1.19"
 };
 
@@ -960,7 +960,7 @@ var addComponentStylePrefix = (styleId) => {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+8edd2e7";
+var version = "2.0.0-0-dev+8d5959f";
 
 // packages/qwik/src/build/index.dev.ts
 var isDev = true;

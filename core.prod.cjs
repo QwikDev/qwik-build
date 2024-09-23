@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8edd2e7
+ * @builder.io/qwik 2.0.0-0-dev+8d5959f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -278,7 +278,7 @@
     const delay = timeout => new Promise((resolve => {
         setTimeout(resolve, timeout);
     }));
-    const version = "2.0.0-0-dev+8edd2e7";
+    const version = "2.0.0-0-dev+8d5959f";
     const SkipRender = Symbol("skip render");
     const SSRRaw = () => null;
     const SSRComment = () => null;
@@ -7761,7 +7761,7 @@
         }
         if (isSignal(obj)) {
             return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
-            new WrappedSignal(null, getProp, [ obj, prop ], null);
+            obj instanceof WrappedSignal ? obj : new WrappedSignal(null, getProp, [ obj, prop ], null);
         }
         if (_CONST_PROPS in obj) {
             const constProps = obj[_CONST_PROPS];

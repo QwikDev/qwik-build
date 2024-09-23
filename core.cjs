@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8edd2e7
+ * @builder.io/qwik 2.0.0-0-dev+8d5959f
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -656,7 +656,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+8edd2e7";
+    const version = "2.0.0-0-dev+8d5959f";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -5715,7 +5715,6 @@
             throwErrorAndStop('ComputedSignal is read-only');
         }
     }
-    // TO DISCUSS: shouldn't this type of signal have the $dependencies$ array instead of EVERY type of signal?
     class WrappedSignal extends Signal {
         constructor(container, fn, args, fnStr) {
             super(container, NEEDS_COMPUTATION);
@@ -14416,6 +14415,9 @@ Task Symbol: ${task.$qrl$.$symbol$}
         }
         if (isSignal(obj)) {
             assertEqual(prop, 'value', 'Left side is a signal, prop must be value');
+            if (obj instanceof WrappedSignal) {
+                return obj;
+            }
             return new WrappedSignal(null, getProp, [obj, prop], null);
         }
         if (_CONST_PROPS in obj) {
