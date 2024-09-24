@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8d5959f
+ * @builder.io/qwik 2.0.0-0-dev+00c599d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -652,7 +652,7 @@ const delay = (timeout) => {
  *
  * @public
  */
-const version = "2.0.0-0-dev+8d5959f";
+const version = "2.0.0-0-dev+00c599d";
 
 /** @public */
 const SkipRender = Symbol('skip render');
@@ -5016,11 +5016,27 @@ const createComputedSignal = (qrl) => {
     return new ComputedSignal(null, qrl);
 };
 
-/** @public */
+/**
+ * Creates a Signal with the given value. If no value is given, the signal is created with
+ * `undefined`.
+ *
+ * @public
+ */
 const createSignal = createSignal$1;
 /** @public */
 const createComputedQrl = createComputedSignal;
-/** @public */
+/**
+ * Create a computed signal which is calculated from the given QRL. A computed signal is a signal
+ * which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated.
+ *
+ * The QRL must be a function which returns the value of the signal. The function must not have side
+ * effects, and it mus be synchronous.
+ *
+ * If you need the function to be async, use `useSignal` and `useTask$` instead.
+ *
+ * @public
+ */
 const createComputed$ = /*#__PURE__*/ implicit$FirstArg(createComputedQrl);
 
 /**
@@ -5642,14 +5658,14 @@ const triggerEffects = (container, signal, effects) => {
  * The value is available synchronously, but the computation is done lazily.
  */
 class ComputedSignal extends Signal {
-    constructor(container, computeTask) {
+    constructor(container, fn) {
         // The value is used for comparison when signals trigger, which can only happen
         // when it was calculated before. Therefore we can pass whatever we like.
         super(container, NEEDS_COMPUTATION);
         // We need a separate flag to know when the computation needs running because
         // we need the old value to know if effects need running after computation
         this.$invalid$ = true;
-        this.$computeQrl$ = computeTask;
+        this.$computeQrl$ = fn;
     }
     $invalidate$() {
         this.$invalid$ = true;
@@ -5681,16 +5697,15 @@ class ComputedSignal extends Signal {
             return false;
         }
         const computeQrl = this.$computeQrl$;
-        assertDefined(computeQrl.resolved, 'Computed signals must run sync. Expected the QRL to be resolved at this point.');
         throwIfQRLNotResolved(computeQrl);
         const ctx = tryGetInvokeContext();
-        assertDefined(computeQrl, 'Signal is marked as dirty, but no compute function is provided.');
         const previousEffectSubscription = ctx?.$effectSubscriber$;
         ctx && (ctx.$effectSubscriber$ = [this, EffectProperty.VNODE]);
-        assertTrue(!!computeQrl.resolved, 'Computed signals must run sync. Expected the QRL to be resolved at this point.');
         try {
             const untrackedValue = computeQrl.getFn(ctx)();
-            assertFalse(isPromise(untrackedValue), 'Computed function must be synchronous.');
+            if (isPromise(untrackedValue)) {
+                throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ''}${computeQrl.$hash$} returned a Promise`);
+            }
             DEBUG && log('Signal.$compute$', untrackedValue);
             this.$invalid$ = false;
             const didChange = untrackedValue !== this.$untrackedValue$;
@@ -13570,6 +13585,9 @@ const useComputedQrl = (qrl) => {
     assertQrl(qrl);
     const signal = new ComputedSignal(null, qrl);
     set(signal);
+    // Note that we first save the signal
+    // and then we throw to load the qrl
+    // This is why we can't use useConstant, we need to keep using the same qrl object
     throwIfQRLNotResolved(qrl);
     return signal;
 };
@@ -16848,22 +16866,19 @@ const _useStyles = (styleQrl, transform, scoped) => {
 
 /** @public */
 const useSignal = (initialState) => {
-    const { val, set } = useSequentialScope();
-    if (val != null) {
-        return val;
-    }
-    const value = isFunction(initialState) && !isQwikComponent(initialState)
-        ? invoke(undefined, initialState)
-        : initialState;
-    const signal = createSignal(value);
-    return set(signal);
+    return useConstant(() => {
+        const value = isFunction(initialState) && !isQwikComponent(initialState)
+            ? invoke(undefined, initialState)
+            : initialState;
+        return createSignal(value);
+    });
 };
 /**
- * Stores a value which is retained for the lifetime of the component.
+ * Stores a value which is retained for the lifetime of the component. Subsequent calls to
+ * `useConstant` will always return the first value given.
  *
- * If the value is a function, the function is invoked to calculate the actual value.
+ * If the value is a function, the function is invoked once to calculate the actual value.
  *
- * @deprecated This is a technology preview
  * @public
  */
 const useConstant = (value) => {
@@ -16876,7 +16891,16 @@ const useConstant = (value) => {
     return set(value);
 };
 
-/** @public */
+/**
+ * Creates a computed signal which is calculated from the given function. A computed signal is a
+ * signal which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated, and if the result changed, all tasks which are tracking the signal will be re-run
+ * and all components that read the signal will be re-rendered.
+ *
+ * The function must be synchronous and must not have any side effects.
+ *
+ * @public
+ */
 const useComputed$ = implicit$FirstArg(useComputedQrl);
 // <docs markdown="../readme.md#useTask">
 // !!DO NOT EDIT THIS COMMENT DIRECTLY!!!

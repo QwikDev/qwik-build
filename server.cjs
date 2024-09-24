@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+8d5959f
+ * @builder.io/qwik/server 2.0.0-0-dev+00c599d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -338,7 +338,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "2.0.0-0-dev+8d5959f",
+  qwik: "2.0.0-0-dev+00c599d",
   qwikDom: "2.1.19"
 };
 
@@ -1002,7 +1002,7 @@ var addComponentStylePrefix = (styleId) => {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+8d5959f";
+var version = "2.0.0-0-dev+00c599d";
 
 // packages/qwik/src/build/index.dev.ts
 var isDev = true;
@@ -6561,12 +6561,12 @@ var triggerEffects = (container, signal, effects) => {
   DEBUG3 && log2("done scheduling");
 };
 var ComputedSignal = class extends Signal {
-  constructor(container, computeTask) {
+  constructor(container, fn) {
     super(container, NEEDS_COMPUTATION);
     // We need a separate flag to know when the computation needs running because
     // we need the old value to know if effects need running after computation
     this.$invalid$ = true;
-    this.$computeQrl$ = computeTask;
+    this.$computeQrl$ = fn;
   }
   $invalidate$() {
     var _a3;
@@ -6596,22 +6596,17 @@ var ComputedSignal = class extends Signal {
       return false;
     }
     const computeQrl = this.$computeQrl$;
-    assertDefined(
-      computeQrl.resolved,
-      "Computed signals must run sync. Expected the QRL to be resolved at this point."
-    );
     throwIfQRLNotResolved(computeQrl);
     const ctx = tryGetInvokeContext();
-    assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
     const previousEffectSubscription = ctx == null ? void 0 : ctx.$effectSubscriber$;
     ctx && (ctx.$effectSubscriber$ = [this, "." /* VNODE */]);
-    assertTrue(
-      !!computeQrl.resolved,
-      "Computed signals must run sync. Expected the QRL to be resolved at this point."
-    );
     try {
       const untrackedValue = computeQrl.getFn(ctx)();
-      assertFalse(isPromise(untrackedValue), "Computed function must be synchronous.");
+      if (isPromise(untrackedValue)) {
+        throwErrorAndStop(
+          `useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`
+        );
+      }
       DEBUG3 && log2("Signal.$compute$", untrackedValue);
       this.$invalid$ = false;
       const didChange = untrackedValue !== this.$untrackedValue$;

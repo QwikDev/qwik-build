@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8d5959f
+ * @builder.io/qwik 2.0.0-0-dev+00c599d
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -278,7 +278,7 @@
     const delay = timeout => new Promise((resolve => {
         setTimeout(resolve, timeout);
     }));
-    const version = "2.0.0-0-dev+8d5959f";
+    const version = "2.0.0-0-dev+00c599d";
     const SkipRender = Symbol("skip render");
     const SSRRaw = () => null;
     const SSRComment = () => null;
@@ -2872,8 +2872,8 @@
         }
     };
     class ComputedSignal extends Signal {
-        constructor(container, computeTask) {
-            super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$computeQrl$ = computeTask;
+        constructor(container, fn) {
+            super(container, NEEDS_COMPUTATION), this.$invalid$ = !0, this.$computeQrl$ = fn;
         }
         $invalidate$() {
             this.$invalid$ = !0, this.$effects$?.length && this.$computeIfNeeded$() && triggerEffects(this.$container$, this, this.$effects$);
@@ -2890,15 +2890,13 @@
                 return !1;
             }
             const computeQrl = this.$computeQrl$;
-            assertDefined(computeQrl.resolved, "Computed signals must run sync. Expected the QRL to be resolved at this point."), 
             throwIfQRLNotResolved(computeQrl);
             const ctx = tryGetInvokeContext();
-            assertDefined(computeQrl, "Signal is marked as dirty, but no compute function is provided.");
             const previousEffectSubscription = ctx?.$effectSubscriber$;
-            ctx && (ctx.$effectSubscriber$ = [ this, EffectProperty.VNODE ]), assertTrue(!!computeQrl.resolved, "Computed signals must run sync. Expected the QRL to be resolved at this point.");
+            ctx && (ctx.$effectSubscriber$ = [ this, EffectProperty.VNODE ]);
             try {
                 const untrackedValue = computeQrl.getFn(ctx)();
-                assertFalse(isPromise(untrackedValue), "Computed function must be synchronous."), 
+                isPromise(untrackedValue) && throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`), 
                 this.$invalid$ = !1;
                 const didChange = untrackedValue !== this.$untrackedValue$;
                 return this.$untrackedValue$ = untrackedValue, didChange;
@@ -8915,6 +8913,10 @@
             styleId;
         }
     };
+    const useConstant = value => {
+        const {val, set} = useSequentialScope();
+        return null != val ? val : set(value = isFunction(value) && !isQwikComponent(value) ? value() : value);
+    };
     const useComputed$ = implicit$FirstArg(useComputedQrl);
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
     const useVisibleTask$ = /*#__PURE__*/ implicit$FirstArg(useVisibleTaskQrl);
@@ -9163,10 +9165,7 @@
         }
         return qDev && (fn = new Function("return " + fn.toString())()), createQRL("", "<sync>", fn, null, null, null, null);
     }, exports.untrack = untrack, exports.useComputed$ = useComputed$, exports.useComputedQrl = useComputedQrl, 
-    exports.useConstant = value => {
-        const {val, set} = useSequentialScope();
-        return null != val ? val : set(value = isFunction(value) && !isQwikComponent(value) ? value() : value);
-    }, exports.useContext = (context, defaultValue) => {
+    exports.useConstant = useConstant, exports.useContext = (context, defaultValue) => {
         const {val, set, iCtx, elCtx} = useSequentialScope();
         if (void 0 !== val) {
             return val;
@@ -9209,14 +9208,10 @@
         _useOn(createEventName(event, "window"), eventQrl);
     }, exports.useResource$ = (generatorFn, opts) => useResourceQrl(dollar(generatorFn), opts), 
     exports.useResourceQrl = useResourceQrl, exports.useServerData = useServerData, 
-    exports.useSignal = initialState => {
-        const {val, set} = useSequentialScope();
-        if (null != val) {
-            return val;
-        }
+    exports.useSignal = initialState => useConstant((() => {
         const value = isFunction(initialState) && !isQwikComponent(initialState) ? invoke(void 0, initialState) : initialState;
-        return set(createSignal(value));
-    }, exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
+        return createSignal(value);
+    })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
     exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = version, exports.withLocale = function(locale, fn) {

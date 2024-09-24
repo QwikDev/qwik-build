@@ -587,10 +587,6 @@ declare type ComponentChildren<PROPS> = PROPS extends {
  */
 export declare const componentQrl: <PROPS extends Record<any, any>>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
-declare interface Computed {
-    <T>(qrl: ComputedFn<T>): ReadonlySignal<T>;
-}
-
 declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, Signal<T>> {
 }
 
@@ -599,11 +595,13 @@ declare const ComputedEvent = "qComputed";
 /** @public */
 export declare type ComputedFn<T> = () => T;
 
-declare interface ComputedQRL {
-    <T>(qrl: QRL<ComputedFn<T>>): ReadonlySignal<T>;
-}
-
-/** @public */
+/**
+ * A computed signal is a signal which is calculated from other signals. When the signals change,
+ * the computed signal is recalculated, and if the result changed, all tasks which are tracking the
+ * signal will be re-run and all components that read the signal will be re-rendered.
+ *
+ * @public
+ */
 export declare interface ComputedSignal<T> extends ReadonlySignal<T> {
     /**
      * Use this to force recalculation and running subscribers, for example when the calculated value
@@ -814,11 +812,22 @@ export declare interface CorrectedToggleEvent extends Event {
     readonly prevState: 'open' | 'closed';
 }
 
-/** @public */
-export declare const createComputed$: <T>(qrl: () => T) => ComputedSignal<T>;
+/**
+ * Create a computed signal which is calculated from the given QRL. A computed signal is a signal
+ * which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated.
+ *
+ * The QRL must be a function which returns the value of the signal. The function must not have side
+ * effects, and it mus be synchronous.
+ *
+ * If you need the function to be async, use `useSignal` and `useTask$` instead.
+ *
+ * @public
+ */
+export declare const createComputed$: <T>(qrl: () => T) => T extends Promise<any> ? never : ComputedSignal<T>;
 
 /** @public */
-export declare const createComputedQrl: <T>(qrl: QRL<() => T>) => ComputedSignal<T>;
+export declare const createComputedQrl: <T>(qrl: QRL<() => T>) => T extends Promise<any> ? never : ComputedSignal<T>;
 
 /**
  * Create a context ID to be used in your application. The name should be written with no spaces.
@@ -885,7 +894,12 @@ declare const createScheduler: (container: Container2, scheduleDrain: () => void
     (type: ChoreType.CLEANUP_VISIBLE, task: Task): ValueOrPromise<JSXOutput>;
 };
 
-/** @public */
+/**
+ * Creates a Signal with the given value. If no value is given, the signal is created with
+ * `undefined`.
+ *
+ * @public
+ */
 export declare const createSignal: {
     <T>(): Signal<T | undefined>;
     <T>(value: T): Signal<T>;
@@ -3661,18 +3675,27 @@ export declare const untrack: <T>(fn: () => T) => T;
 
 declare type UnwantedKeys = keyof HTMLAttributesBase | keyof DOMAttributes<any> | keyof ARIAMixin | keyof GlobalEventHandlers | 'enterKeyHint' | 'innerText' | 'innerHTML' | 'outerHTML' | 'inputMode' | 'outerText' | 'nodeValue' | 'textContent';
 
-/** @public */
-export declare const useComputed$: Computed;
+/**
+ * Creates a computed signal which is calculated from the given function. A computed signal is a
+ * signal which is calculated from other signals. When the signals change, the computed signal is
+ * recalculated, and if the result changed, all tasks which are tracking the signal will be re-run
+ * and all components that read the signal will be re-rendered.
+ *
+ * The function must be synchronous and must not have any side effects.
+ *
+ * @public
+ */
+export declare const useComputed$: <T>(qrl: ComputedFn<T>) => T extends Promise<any> ? never : ReadonlySignal<T>;
 
 /** @public */
-export declare const useComputedQrl: ComputedQRL;
+export declare const useComputedQrl: <T>(qrl: QRL<ComputedFn<T>>) => T extends Promise<any> ? never : ReadonlySignal<T>;
 
 /**
- * Stores a value which is retained for the lifetime of the component.
+ * Stores a value which is retained for the lifetime of the component. Subsequent calls to
+ * `useConstant` will always return the first value given.
  *
- * If the value is a function, the function is invoked to calculate the actual value.
+ * If the value is a function, the function is invoked once to calculate the actual value.
  *
- * @deprecated This is a technology preview
  * @public
  */
 export declare const useConstant: <T>(value: (() => T) | T) => T;
@@ -4346,7 +4369,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+8d5959f
+ * 2.0.0-0-dev+00c599d
  *
  * @public
  */
