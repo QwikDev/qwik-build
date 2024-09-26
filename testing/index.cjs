@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+00c599d
+ * @builder.io/qwik/testing 2.0.0-0-dev+8af82a9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22383,11 +22383,12 @@ function getAutoPrefetch(qrls, resolvedManifest, buildBase) {
   const { mapper, manifest } = resolvedManifest;
   const urls = /* @__PURE__ */ new Map();
   if (mapper && manifest) {
-    for (const obj of qrls) {
-      const qrlSymbolName = obj.getHash();
+    for (const qrl2 of qrls) {
+      const qrlSymbolName = qrl2.getHash();
       const resolvedSymbol = mapper[qrlSymbolName];
       if (resolvedSymbol) {
-        addBundle(manifest, urls, prefetchResources, buildBase, resolvedSymbol[1]);
+        const bundleFileName = resolvedSymbol[1];
+        addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName);
       }
     }
   }
@@ -22814,8 +22815,10 @@ var ELEMENT_KEY = "q:key";
 var ELEMENT_PROPS = "q:props";
 var ELEMENT_SEQ = "q:seq";
 var ELEMENT_SEQ_IDX = "q:seqIdx";
-var USE_ON_LOCAL = ":on";
-var USE_ON_LOCAL_SEQ_IDX = ":onIdx";
+var NON_SERIALIZABLE_MARKER_PREFIX = ":";
+var USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "on";
+var USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
+var USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
 var FLUSH_COMMENT = "qkssr-f";
 var STREAM_BLOCK_START_COMMENT = "qkssr-pu";
 var STREAM_BLOCK_END_COMMENT = "qkssr-po";
@@ -22889,7 +22892,7 @@ var Slot = (props) => {
 
 // packages/qwik/src/core/util/prop.ts
 function isSlotProp(prop) {
-  return !prop.startsWith("q:");
+  return !prop.startsWith("q:") && !prop.startsWith(NON_SERIALIZABLE_MARKER_PREFIX);
 }
 function isParentSlotProp(prop) {
   return prop.startsWith(QSlotParent);
@@ -26295,10 +26298,19 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, setPro
             setSerializableDataRootId($addRoot$, obj, tuples);
             discoveredValues.push(tuples);
           } else if (obj instanceof Signal) {
+            $addRoot$(obj);
             discoveredValues.push(obj.$untrackedValue$);
             if (obj.$effects$) {
               for (const effect of obj.$effects$) {
-                discoveredValues.push(effect[0 /* EFFECT */]);
+                for (let i = 0; i <= effect.length; i++) {
+                  if (i === 1 /* PROPERTY */) {
+                    continue;
+                  }
+                  const effectData = effect[i];
+                  if (effectData instanceof Signal && effectData !== obj) {
+                    discoveredValues.push(effect[i]);
+                  }
+                }
               }
             }
             if (obj instanceof WrappedSignal && obj.$effectDependencies$) {
@@ -30875,8 +30887,8 @@ function resolveManifest(manifest) {
   manifest = getValidManifest(manifest);
   if (manifest) {
     const mapper = {};
-    Object.entries(manifest.mapping).forEach(([key, value]) => {
-      mapper[getSymbolHash2(key)] = [key, value];
+    Object.entries(manifest.mapping).forEach(([symbol, bundleFilename]) => {
+      mapper[getSymbolHash2(symbol)] = [symbol, bundleFilename];
     });
     return {
       mapper,
@@ -30952,7 +30964,7 @@ var SsrNode = class {
     if (this.attrs === import_qwik6._EMPTY_ARRAY) {
       this.attrs = [];
     }
-    if (name.startsWith(":")) {
+    if (name.startsWith(NON_SERIALIZABLE_MARKER_PREFIX)) {
       mapArray_set(this.locals || (this.locals = []), name, value, 0);
     } else {
       mapArray_set(this.attrs, name, value, 0);
@@ -30962,14 +30974,14 @@ var SsrNode = class {
     }
   }
   getProp(name) {
-    if (name.startsWith(":")) {
+    if (name.startsWith(NON_SERIALIZABLE_MARKER_PREFIX)) {
       return this.locals ? mapArray_get(this.locals, name, 0) : null;
     } else {
       return mapArray_get(this.attrs, name, 0);
     }
   }
   removeProp(name) {
-    if (name.startsWith(":")) {
+    if (name.startsWith(NON_SERIALIZABLE_MARKER_PREFIX)) {
       if (this.locals) {
         mapApp_remove(this.locals, name, 0);
       }

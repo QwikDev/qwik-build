@@ -31,6 +31,17 @@ declare type EmitMode = 'dev' | 'prod' | 'lib';
 /** @public */
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
+/** List experimental features here */
+declare const experimental: readonly ["preventNavigate", "valibot"];
+
+/**
+ * Use `__EXPERIMENTAL__.x` to check if feature `x` is enabled. It will be replaced with `true` or
+ * `false` via an exact string replacement.
+ *
+ * @alpha
+ */
+export declare type ExperimentalFeatures = (typeof experimental)[number];
+
 /** @public */
 export declare interface GlobalInjections {
     tag: string;
@@ -69,11 +80,11 @@ export declare interface InsightManifest {
 /** @public */
 export declare type MinifyMode = 'simplify' | 'none';
 
-declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots'> {
+declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOptions>, 'vendorRoots' | 'experimental'> {
     input: string[] | {
         [entry: string]: string;
     };
-    isDev: boolean;
+    experimental?: Record<ExperimentalFeatures, boolean>;
 }
 
 /** @public */
@@ -160,6 +171,8 @@ export declare type QwikBuildTarget = 'client' | 'ssr' | 'lib' | 'test';
 /** @public */
 export declare interface QwikBundle {
     size: number;
+    /** Not precise, but an indication of whether this import may be a task */
+    isTask?: boolean;
     symbols?: string[];
     imports?: string[];
     dynamicImports?: string[];
@@ -242,8 +255,11 @@ declare interface QwikPluginOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
-    /** Override isDev for testing purposes */
-    isDev?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releases
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 /** @public */
@@ -322,6 +338,11 @@ export declare interface QwikRollupPluginOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releases.
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 /** @public */
@@ -453,8 +474,11 @@ declare interface QwikVitePluginCommonOptions {
      * large projects. Defaults to `true`
      */
     lint?: boolean;
-    /** @internal Override isDev for testing purposes */
-    isDev?: boolean;
+    /**
+     * Experimental features. These can come and go in patch releases, and their API is not guaranteed
+     * to be stable between releases
+     */
+    experimental?: ExperimentalFeatures[];
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
@@ -662,7 +686,6 @@ export declare interface TransformOptions {
     stripCtxName?: string[];
     stripEventHandlers?: boolean;
     isServer?: boolean;
-    isDev?: boolean;
 }
 
 /** @public */

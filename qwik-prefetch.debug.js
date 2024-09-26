@@ -16,9 +16,9 @@
         }
     }
     async function enqueueFileAndDependencies(swState, base, filenames, priority) {
-        const fetchSet =  new Set;
-        filenames.forEach((filename => addDependencies(base.$graph$, fetchSet, filename)));
-        await Promise.all(Array.from(fetchSet).map((filename => async function(swState, url, priority) {
+        const fetchMap =  new Map;
+        filenames.forEach((filename => addDependencies(base, fetchMap, filename, priority)));
+        await Promise.all(Array.from(fetchMap.entries()).map((([filename, prio]) => async function(swState, url, priority) {
             let task = swState.$queue$.find((task2 => task2.$url$.pathname === url.pathname));
             const mode = priority >= DIRECT_PRIORITY ? "direct" : "prefetch";
             if (task) {
@@ -44,7 +44,7 @@
                 }
             }
             return task;
-        }(swState, new URL(base.$path$ + filename, swState.$url$.origin), priority))));
+        }(swState, new URL(base.$path$ + filename, swState.$url$.origin), prio))));
         taskTick(swState);
     }
     function taskTick(swState) {
@@ -75,17 +75,44 @@
     function byFetchOrder(a, b) {
         return b.$priority$ - a.$priority$;
     }
-    function addDependencies(graph, fetchSet, filename) {
-        if (!fetchSet.has(filename)) {
-            fetchSet.add(filename);
-            let index = graph.findIndex((file => file === filename));
-            if (-1 !== index) {
-                while ("number" == typeof graph[++index]) {
-                    addDependencies(graph, fetchSet, graph[graph[index]]);
+    function addDependencies(base, fetchMap, filename, priority, addIndirect = !0) {
+        if (!fetchMap.has(filename)) {
+            fetchMap.set(filename, priority);
+            if (!base.$processed$) {
+                base.$processed$ =  new Map;
+                let current, isDirect;
+                for (let i = 0; i < base.$graph$.length; i++) {
+                    const item = base.$graph$[i];
+                    if ("string" == typeof item) {
+                        current = {
+                            $direct$: [],
+                            $indirect$: []
+                        };
+                        isDirect = !0;
+                        base.$processed$.set(item, current);
+                    } else if (-1 === item) {
+                        isDirect = !1;
+                    } else {
+                        const depName = base.$graph$[item];
+                        isDirect ? current.$direct$.push(depName) : current.$indirect$.push(depName);
+                    }
+                }
+            }
+            const deps = base.$processed$.get(filename);
+            if (!deps) {
+                return fetchMap;
+            }
+            for (const dependentFilename of deps.$direct$) {
+                addDependencies(base, fetchMap, dependentFilename, priority);
+            }
+            if (addIndirect) {
+                priority--;
+                for (const dependentFilename of deps.$indirect$) {
+                    addDependencies(base, fetchMap, dependentFilename, priority, !1);
                 }
             }
         }
-        return fetchSet;
+        return fetchMap;
     }
     function parseBaseFilename(url) {
         const pathname = new URL(url).pathname;
@@ -117,7 +144,8 @@
         swState.$log$("adding base:", base);
         swState.$bases$.push({
             $path$: base,
-            $graph$: graph
+            $graph$: graph,
+            $processed$: void 0
         });
         if (cleanup) {
             const bundles = new Set(graph.filter((item => "string" == typeof item)));
@@ -150,7 +178,7 @@
         }
     }
     class SWStateImpl {
-        constructor($fetch$, $url$, $maxPrefetchRequests$ = 10, $cache$ = null, $msgQueuePromise$ = null, $queue$ = [], $bases$ = [], $msgQueue$ = []) {
+        constructor($fetch$, $url$, $maxPrefetchRequests$ = 4, $cache$ = null, $msgQueuePromise$ = null, $queue$ = [], $bases$ = [], $msgQueue$ = []) {
             this.$fetch$ = $fetch$;
             this.$url$ = $url$;
             this.$maxPrefetchRequests$ = $maxPrefetchRequests$;

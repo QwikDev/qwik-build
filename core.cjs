@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+00c599d
+ * @builder.io/qwik 2.0.0-0-dev+8af82a9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -515,9 +515,10 @@
     const ELEMENT_SEQ_IDX = 'q:seqIdx';
     const ELEMENT_ID_PREFIX = '#';
     /** Non serializable markers - always begins with `:` character */
-    const USE_ON_LOCAL = ':on';
-    const USE_ON_LOCAL_SEQ_IDX = ':onIdx';
-    const USE_ON_LOCAL_FLAGS = ':onFlags';
+    const NON_SERIALIZABLE_MARKER_PREFIX = ':';
+    const USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + 'on';
+    const USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + 'onIdx';
+    const USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + 'onFlags';
     // comment nodes
     const FLUSH_COMMENT$1 = 'qkssr-f';
     const STREAM_BLOCK_START_COMMENT = 'qkssr-pu';
@@ -656,7 +657,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+00c599d";
+    const version = "2.0.0-0-dev+8af82a9";
 
     /** @public */
     const SkipRender = Symbol('skip render');
@@ -732,7 +733,7 @@
     };
 
     function isSlotProp(prop) {
-        return !prop.startsWith('q:');
+        return !prop.startsWith('q:') && !prop.startsWith(NON_SERIALIZABLE_MARKER_PREFIX);
     }
     function isParentSlotProp(prop) {
         return prop.startsWith(QSlotParent);
@@ -1505,10 +1506,21 @@
                             discoveredValues.push(tuples);
                         }
                         else if (obj instanceof Signal) {
+                            $addRoot$(obj);
                             discoveredValues.push(obj.$untrackedValue$);
                             if (obj.$effects$) {
                                 for (const effect of obj.$effects$) {
-                                    discoveredValues.push(effect[EffectSubscriptionsProp.EFFECT]);
+                                    for (let i = 0; i <= effect.length; i++) {
+                                        if (i === EffectSubscriptionsProp.PROPERTY) {
+                                            // ignore EffectSubscriptions property
+                                            continue;
+                                        }
+                                        const effectData = effect[i];
+                                        // ignore current signal, we already added this, prevent infinity loop
+                                        if (effectData instanceof Signal && effectData !== obj) {
+                                            discoveredValues.push(effect[i]);
+                                        }
+                                    }
                                 }
                             }
                             if (obj instanceof WrappedSignal && obj.$effectDependencies$) {

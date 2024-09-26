@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+00c599d
+ * @builder.io/qwik 2.0.0-0-dev+8af82a9
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -222,6 +222,10 @@
     const QDefaultSlot = "";
     const ELEMENT_ID = "q:id";
     const ELEMENT_KEY = "q:key";
+    const NON_SERIALIZABLE_MARKER_PREFIX = ":";
+    const USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "on";
+    const USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
+    const USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
     const FLUSH_COMMENT$1 = "qkssr-f";
     const Q_PROPS_SEPARATOR = ":";
     const QObjectTargetSymbol = Symbol("proxy target");
@@ -278,7 +282,7 @@
     const delay = timeout => new Promise((resolve => {
         setTimeout(resolve, timeout);
     }));
-    const version = "2.0.0-0-dev+00c599d";
+    const version = "2.0.0-0-dev+8af82a9";
     const SkipRender = Symbol("skip render");
     const SSRRaw = () => null;
     const SSRComment = () => null;
@@ -289,7 +293,7 @@
     const unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "borderImageOutset", "borderImageSlice", "borderImageWidth", "boxFlex", "boxFlexGroup", "boxOrdinalGroup", "columnCount", "columns", "flex", "flexGrow", "flexShrink", "gridArea", "gridRow", "gridRowEnd", "gridRowStart", "gridColumn", "gridColumnEnd", "gridColumnStart", "fontWeight", "lineClamp", "lineHeight", "opacity", "order", "orphans", "scale", "tabSize", "widows", "zIndex", "zoom", "MozAnimationIterationCount", "MozBoxFlex", "msFlex", "msFlexPositive", "WebkitAnimationIterationCount", "WebkitBoxFlex", "WebkitBoxOrdinalGroup", "WebkitColumnCount", "WebkitColumns", "WebkitFlex", "WebkitFlexGrow", "WebkitFlexShrink", "WebkitLineClamp" ]);
     const isQrl$1 = value => "function" == typeof value && "function" == typeof value.getSymbol;
     function isSlotProp(prop) {
-        return !prop.startsWith("q:");
+        return !prop.startsWith("q:") && !prop.startsWith(NON_SERIALIZABLE_MARKER_PREFIX);
     }
     function hasClassAttr(props) {
         for (const key in props) {
@@ -1002,9 +1006,15 @@
                                 tuples.push(k, v), discoveredValues.push(k, v);
                             })), setSerializableDataRootId($addRoot$, obj, tuples), discoveredValues.push(tuples);
                         } else if (obj instanceof Signal) {
-                            if (discoveredValues.push(obj.$untrackedValue$), obj.$effects$) {
+                            if ($addRoot$(obj), discoveredValues.push(obj.$untrackedValue$), obj.$effects$) {
                                 for (const effect of obj.$effects$) {
-                                    discoveredValues.push(effect[EffectSubscriptionsProp.EFFECT]);
+                                    for (let i = 0; i <= effect.length; i++) {
+                                        if (i === EffectSubscriptionsProp.PROPERTY) {
+                                            continue;
+                                        }
+                                        const effectData = effect[i];
+                                        effectData instanceof Signal && effectData !== obj && discoveredValues.push(effect[i]);
+                                    }
                                 }
                             }
                             obj instanceof WrappedSignal && obj.$effectDependencies$ && discoveredValues.push(obj.$effectDependencies$);
@@ -1480,12 +1490,12 @@
     const useOnEventsSequentialScope = () => {
         const iCtx = useInvokeContext();
         const host = iCtx.$hostElement$;
-        let onMap = iCtx.$container2$.getHostProp(host, ":on");
-        null === onMap && (onMap = {}, iCtx.$container2$.setHostProp(host, ":on", onMap));
-        let seqIdx = iCtx.$container2$.getHostProp(host, ":onIdx");
-        null === seqIdx && (seqIdx = 0), iCtx.$container2$.setHostProp(host, ":onIdx", seqIdx + 1);
-        let addedFlags = iCtx.$container2$.getHostProp(host, ":onFlags");
-        for (null === addedFlags && (addedFlags = [], iCtx.$container2$.setHostProp(host, ":onFlags", addedFlags)); addedFlags.length <= seqIdx; ) {
+        let onMap = iCtx.$container2$.getHostProp(host, USE_ON_LOCAL);
+        null === onMap && (onMap = {}, iCtx.$container2$.setHostProp(host, USE_ON_LOCAL, onMap));
+        let seqIdx = iCtx.$container2$.getHostProp(host, USE_ON_LOCAL_SEQ_IDX);
+        null === seqIdx && (seqIdx = 0), iCtx.$container2$.setHostProp(host, USE_ON_LOCAL_SEQ_IDX, seqIdx + 1);
+        let addedFlags = iCtx.$container2$.getHostProp(host, USE_ON_LOCAL_FLAGS);
+        for (null === addedFlags && (addedFlags = [], iCtx.$container2$.setHostProp(host, USE_ON_LOCAL_FLAGS, addedFlags)); addedFlags.length <= seqIdx; ) {
             addedFlags.push(!1);
         }
         return {
@@ -1551,9 +1561,9 @@
             componentFn = () => invokeApply(iCtx, inlineComponent, [ props || EMPTY_OBJ ]);
         }
         const executeComponentWithPromiseExceptionRetry = () => safeCall((() => (container.setHostProp(renderHost, "q:seqIdx", null), 
-        container.setHostProp(renderHost, ":onIdx", null), container.setHostProp(renderHost, "q:props", props), 
+        container.setHostProp(renderHost, USE_ON_LOCAL_SEQ_IDX, null), container.setHostProp(renderHost, "q:props", props), 
         vnode_isVNode(renderHost) && clearVNodeEffectDependencies(renderHost), componentFn(props))), (jsx => {
-            const useOnEvents = container.getHostProp(renderHost, ":on");
+            const useOnEvents = container.getHostProp(renderHost, USE_ON_LOCAL);
             return useOnEvents ? maybeThen(function(jsx, useOnEvents) {
                 const jsxElement = findFirstStringJSX(jsx);
                 return maybeThen(jsxElement, (jsxElement => {
@@ -2471,7 +2481,7 @@
                 break;
 
               case "q:seqIdx":
-              case ":onIdx":
+              case USE_ON_LOCAL_SEQ_IDX:
                 getObjectById = parseInt;
             }
             return vnode_getProp(vNode, name, getObjectById);
