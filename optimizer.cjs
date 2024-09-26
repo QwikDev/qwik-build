@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+8af82a9
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+b040b46
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+8af82a9"
+    qwik: "2.0.0-0-dev+b040b46"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -1462,7 +1462,7 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("Not implemented");
   };
   var convertOptions = opts => {
-    var _a3, _b;
+    var _a, _b;
     const output = {
       minify: "simplify",
       sourceMaps: false,
@@ -1483,7 +1483,7 @@ globalThis.qwikOptimizer = function(module) {
     Object.entries(opts).forEach((([key, value]) => {
       null != value && (output[key] = value);
     }));
-    output.entryStrategy = (null == (_a3 = opts.entryStrategy) ? void 0 : _a3.type) ?? "smart";
+    output.entryStrategy = (null == (_a = opts.entryStrategy) ? void 0 : _a.type) ?? "smart";
     output.manualChunks = (null == (_b = opts.entryStrategy) ? void 0 : _b.manual) ?? void 0;
     return output;
   };
@@ -1778,9 +1778,9 @@ globalThis.qwikOptimizer = function(module) {
     return e;
   }
   var findLocation = e => {
-    const stack2 = e.stack;
-    if ("string" === typeof stack2) {
-      const lines = stack2.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
+    const stack = e.stack;
+    if ("string" === typeof stack) {
+      const lines = stack.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].replace("file:///", "/");
         if (/^\s+at/.test(line)) {
@@ -1846,12 +1846,12 @@ globalThis.qwikOptimizer = function(module) {
     start = posToNumber(source, start);
     end = end || start;
     const lines = source.split(splitRE);
-    let count2 = 0;
+    let count = 0;
     const res = [];
     for (let i = 0; i < lines.length; i++) {
-      count2 += lines[i].length + 1;
-      if (count2 >= start) {
-        for (let j = i - range; j <= i + range || end > count2; j++) {
+      count += lines[i].length + 1;
+      if (count >= start) {
+        for (let j = i - range; j <= i + range || end > count; j++) {
           if (j < 0 || j >= lines.length) {
             continue;
           }
@@ -1859,15 +1859,15 @@ globalThis.qwikOptimizer = function(module) {
           res.push(`${line}${" ".repeat(Math.max(3 - String(line).length, 0))}|  ${lines[j]}`);
           const lineLength = lines[j].length;
           if (j === i) {
-            const pad2 = Math.max(start - (count2 - lineLength) + 1, 0);
-            const length = Math.max(1, end > count2 ? lineLength - pad2 : end - start);
+            const pad2 = Math.max(start - (count - lineLength) + 1, 0);
+            const length = Math.max(1, end > count ? lineLength - pad2 : end - start);
             res.push("   |  " + " ".repeat(pad2) + "^".repeat(length));
           } else if (j > i) {
-            if (end > count2) {
-              const length = Math.max(Math.min(end - count2, lineLength), 1);
+            if (end > count) {
+              const length = Math.max(Math.min(end - count, lineLength), 1);
               res.push("   |  " + "^".repeat(length));
             }
-            count2 += lineLength + 1;
+            count += lineLength + 1;
           }
         }
         break;
@@ -2100,9 +2100,9 @@ globalThis.qwikOptimizer = function(module) {
     };
     let resolveIdCount = 0;
     const resolveId = async (ctx, id2, importerId, resolveOpts) => {
-      const count2 = resolveIdCount++;
+      const count = resolveIdCount++;
       const isServer2 = getIsServer(resolveOpts);
-      debug(`resolveId(${count2})`, "Start", id2, {
+      debug(`resolveId(${count})`, "Start", id2, {
         from: importerId,
         for: isServer2 ? "server" : "client"
       });
@@ -2116,14 +2116,14 @@ globalThis.qwikOptimizer = function(module) {
         };
       }
       if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
-        debug(`resolveId(${count2})`, "Resolved", QWIK_BUILD_ID);
+        debug(`resolveId(${count})`, "Resolved", QWIK_BUILD_ID);
         return {
           id: normalizePath(getPath().resolve(opts.rootDir, QWIK_BUILD_ID)),
           moduleSideEffects: false
         };
       }
       if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
-        debug(`resolveId(${count2})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
+        debug(`resolveId(${count})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
         if ("lib" === opts.target) {
           return {
             id: id2,
@@ -2142,7 +2142,7 @@ globalThis.qwikOptimizer = function(module) {
       if (importerId) {
         const looksLikePath = id2.startsWith(".") || id2.startsWith("/");
         if (!looksLikePath) {
-          debug(`resolveId(${count2})`, "falling back to default resolver");
+          debug(`resolveId(${count})`, "falling back to default resolver");
           const parentId = getParentId(importerId, isServer2);
           if (parentId) {
             return ctx.resolve(id2, parentId, {
@@ -2174,7 +2174,7 @@ globalThis.qwikOptimizer = function(module) {
           importeePathId = normalizePath(path.resolve(dir, importeePathId));
           const parentId = getParentId(importeePathId, isServer2);
           if (parentId) {
-            debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs`);
+            debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs`);
             return {
               id: importeePathId + parsedId.query
             };
@@ -2185,13 +2185,13 @@ globalThis.qwikOptimizer = function(module) {
         const importeePathId = normalizePath(parsedId.pathId);
         const ext = path.extname(importeePathId).toLowerCase();
         if (ext in RESOLVE_EXTS && getParentId(importeePathId, isServer2)) {
-          debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
+          debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
           return {
             id: importeePathId + parsedId.query
           };
         }
       }
-      debug(`resolveId(${count2})`, "Not resolved", id2, importerId);
+      debug(`resolveId(${count})`, "Not resolved", id2, importerId);
       return null;
     };
     const load = async (ctx, id2, loadOpts) => {
@@ -2245,7 +2245,7 @@ globalThis.qwikOptimizer = function(module) {
       return null;
     };
     const transform = async function(ctx, code, id2, transformOpts = {}) {
-      var _a3;
+      var _a;
       if (id2.startsWith("\0")) {
         return;
       }
@@ -2267,8 +2267,8 @@ globalThis.qwikOptimizer = function(module) {
         debug("transform()", `Transforming ${id2} (for: ${isServer2 ? "server" : "client"}${strip ? ", strip" : ""})`);
         const mode = "lib" === opts.target ? "lib" : "development" === opts.buildMode ? "dev" : "prod";
         "lib" !== mode && (code = code.replaceAll(/__EXPERIMENTAL__\.(\w+)/g, ((_, feature) => {
-          var _a4;
-          if (null == (_a4 = opts.experimental) ? void 0 : _a4[feature]) {
+          var _a2;
+          if (null == (_a2 = opts.experimental) ? void 0 : _a2[feature]) {
             return "true";
           }
           return "false";
@@ -2327,7 +2327,7 @@ globalThis.qwikOptimizer = function(module) {
         for (const mod of newOutput.modules) {
           if (mod !== module2) {
             const key = normalizePath(path.join(srcDir, mod.path));
-            debug("transform()", `segment ${key}`, null == (_a3 = mod.segment) ? void 0 : _a3.displayName);
+            debug("transform()", `segment ${key}`, null == (_a = mod.segment) ? void 0 : _a.displayName);
             currentOutputs.set(key, [ mod, id2 ]);
             deps.add(key);
             devServer || "client" !== opts.target || ctx.emitFile({
@@ -2385,7 +2385,7 @@ globalThis.qwikOptimizer = function(module) {
     const debug = (...str) => {
       opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
     };
-    const log3 = (...str) => {
+    const log = (...str) => {
       console.log(`[QWIK PLUGIN: ${id}]`, ...str);
     };
     const onDiagnostics = cb => {
@@ -2404,7 +2404,7 @@ globalThis.qwikOptimizer = function(module) {
       opts.sourcemap = sourcemap;
     }
     function handleHotUpdate(ctx) {
-      var _a3, _b;
+      var _a, _b;
       debug("handleHotUpdate()", ctx.file);
       for (const mod of ctx.modules) {
         const {id: id2} = mod;
@@ -2413,7 +2413,7 @@ globalThis.qwikOptimizer = function(module) {
           serverResults.delete(id2);
           clientResults.delete(id2);
         }
-        for (const dep of (null == (_b = null == (_a3 = mod.info) ? void 0 : _a3.meta) ? void 0 : _b.qwikdeps) || []) {
+        for (const dep of (null == (_b = null == (_a = mod.info) ? void 0 : _a.meta) ? void 0 : _b.qwikdeps) || []) {
           debug("handleHotUpdate()", `invalidate segment ${dep}`);
           serverTransformedOutputs.delete(dep);
           clientTransformedOutputs.delete(dep);
@@ -2439,7 +2439,7 @@ globalThis.qwikOptimizer = function(module) {
       init: init2,
       load: load,
       debug: debug,
-      log: log3,
+      log: log,
       normalizeOptions: normalizeOptions,
       normalizePath: normalizePath,
       onDiagnostics: onDiagnostics,
@@ -2521,7 +2521,7 @@ globalThis.qwikOptimizer = function(module) {
         getOptions: () => qwikPlugin.getOptions()
       },
       async options(inputOpts) {
-        var _a3;
+        var _a;
         await qwikPlugin.init();
         const origOnwarn = inputOpts.onwarn;
         inputOpts.onwarn = (warning, warn) => {
@@ -2544,7 +2544,7 @@ globalThis.qwikOptimizer = function(module) {
           manifestOutput: qwikRollupOpts.manifestOutput,
           manifestInput: qwikRollupOpts.manifestInput,
           transformedModuleOutput: qwikRollupOpts.transformedModuleOutput,
-          inlineStylesUpToBytes: null == (_a3 = qwikRollupOpts.optimizerOptions) ? void 0 : _a3.inlineStylesUpToBytes,
+          inlineStylesUpToBytes: null == (_a = qwikRollupOpts.optimizerOptions) ? void 0 : _a.inlineStylesUpToBytes,
           lint: qwikRollupOpts.lint,
           experimental: qwikRollupOpts.experimental
         };
@@ -2581,7 +2581,7 @@ globalThis.qwikOptimizer = function(module) {
         return qwikPlugin.transform(this, code, id);
       },
       async generateBundle(_, rollupBundle) {
-        var _a3;
+        var _a;
         const opts = qwikPlugin.getOptions();
         if ("client" === opts.target) {
           const optimizer = qwikPlugin.getOptimizer();
@@ -2589,7 +2589,7 @@ globalThis.qwikOptimizer = function(module) {
           const manifest = await outputAnalyzer.generateManifest();
           manifest.platform = {
             ...versions,
-            rollup: (null == (_a3 = this.meta) ? void 0 : _a3.rollupVersion) || "",
+            rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
             env: optimizer.sys.env,
             os: optimizer.sys.os
           };
@@ -2936,34 +2936,26 @@ globalThis.qwikOptimizer = function(module) {
   globalThis.qDynamicPlatform;
   globalThis.qTest;
   globalThis.qRuntimeQrl;
+  var EMPTY_ARRAY = [];
+  var EMPTY_OBJ = {};
+  Object.freeze(EMPTY_ARRAY);
+  Object.freeze(EMPTY_OBJ);
   Symbol("proxy target");
   Symbol("proxy flags");
   Symbol("proxy manager");
   Symbol("CONST");
   Symbol("VAR");
   Symbol("IMMUTABLE");
-  var Q_CTX = "_qc_";
-  var EMPTY_ARRAY = [];
-  var EMPTY_OBJ = {};
-  Object.freeze(EMPTY_ARRAY);
-  Object.freeze(EMPTY_OBJ);
   globalThis.QWIK_DOM_VERSION;
-  Symbol("skip render");
   Symbol("store.target");
   Symbol("store.handler");
   Symbol("store.array");
+  Symbol("skip render");
+  Symbol("serializable-data");
   Symbol("UNWRAP");
   Symbol("resolve");
   Symbol("reject");
   Symbol("SERIALIZABLE_ROOT_ID");
-  Q_CTX;
-  Symbol("serializable-data");
-  Symbol();
-  Symbol();
-  var QObjectSignalFlags = Symbol("proxy manager");
-  Symbol("unassigned signal");
-  QObjectSignalFlags;
-  Symbol("ContainerState");
   var SYNC_QRL = "<sync>";
   function getOrigin(req) {
     const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;
@@ -3005,12 +2997,12 @@ globalThis.qwikOptimizer = function(module) {
     throw new Error("symbolMapper not initialized");
   };
   async function configureDevServer(base, server, opts, sys, path, isClientDevOnly, clientDevInput, devSsrServer) {
-    var _a3;
+    var _a;
     symbolMapper = lazySymbolMapper = createSymbolMapper(base, opts, path, sys);
     if (!devSsrServer) {
       return;
     }
-    const hasQwikCity = null == (_a3 = server.config.plugins) ? void 0 : _a3.some((plugin => "vite-plugin-qwik-city" === plugin.name));
+    const hasQwikCity = null == (_a = server.config.plugins) ? void 0 : _a.some((plugin => "vite-plugin-qwik-city" === plugin.name));
     server.middlewares.use((async (req, res, next) => {
       try {
         const {ORIGIN: ORIGIN} = process.env;
@@ -3059,8 +3051,8 @@ globalThis.qwikOptimizer = function(module) {
             const added = new Set;
             Array.from(server.moduleGraph.fileToModulesMap.entries()).forEach((entry => {
               entry[1].forEach((v => {
-                var _a4, _b;
-                const segment = null == (_b = null == (_a4 = v.info) ? void 0 : _a4.meta) ? void 0 : _b.segment;
+                var _a2, _b;
+                const segment = null == (_b = null == (_a2 = v.info) ? void 0 : _a2.meta) ? void 0 : _b.segment;
                 let url2 = v.url;
                 v.lastHMRTimestamp && (url2 += `?t=${v.lastHMRTimestamp}`);
                 segment && (manifest.mapping[segment.name] = relativeURL(url2, opts.rootDir));
@@ -3273,12 +3265,12 @@ globalThis.qwikOptimizer = function(module) {
       enforce: "pre",
       api: api,
       async config(viteConfig, viteEnv) {
-        var _a3, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
         await qwikPlugin.init();
         const sys = qwikPlugin.getSys();
         const path = qwikPlugin.getPath();
         let target;
-        target = (null == (_a3 = viteConfig.build) ? void 0 : _a3.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "test" === viteEnv.mode ? "test" : "client";
+        target = (null == (_a = viteConfig.build) ? void 0 : _a.ssr) || "ssr" === viteEnv.mode ? "ssr" : "lib" === viteEnv.mode ? "lib" : "test" === viteEnv.mode ? "test" : "client";
         let buildMode;
         buildMode = "production" === viteEnv.mode ? "production" : "development" === viteEnv.mode ? "development" : "build" === viteCommand && "client" === target ? "production" : "development";
         viteCommand = viteEnv.command;
@@ -3439,7 +3431,7 @@ globalThis.qwikOptimizer = function(module) {
         return updatedViteConfig;
       },
       async configResolved(config) {
-        var _a3, _b;
+        var _a, _b;
         basePathname = config.base;
         if (!(basePathname.startsWith("/") && basePathname.endsWith("/"))) {
           throw new Error("Vite's config.base must begin and end with /");
@@ -3447,7 +3439,7 @@ globalThis.qwikOptimizer = function(module) {
         const sys = qwikPlugin.getSys();
         if ("node" === sys.env && !qwikViteOpts.entryStrategy) {
           try {
-            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a3 = qwikViteOpts.client) ? void 0 : _a3.outDir);
+            const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a = qwikViteOpts.client) ? void 0 : _a.outDir);
             entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
           } catch (e) {}
         }
@@ -3507,7 +3499,7 @@ globalThis.qwikOptimizer = function(module) {
       generateBundle: {
         order: "post",
         async handler(_, rollupBundle) {
-          var _a3;
+          var _a;
           const opts = qwikPlugin.getOptions();
           if ("client" === opts.target) {
             const outputAnalyzer = qwikPlugin.createOutputAnalyzer(rollupBundle);
@@ -3554,7 +3546,7 @@ globalThis.qwikOptimizer = function(module) {
             manifest.platform = {
               ...versions,
               vite: "",
-              rollup: (null == (_a3 = this.meta) ? void 0 : _a3.rollupVersion) || "",
+              rollup: (null == (_a = this.meta) ? void 0 : _a.rollupVersion) || "",
               env: optimizer.sys.env,
               os: optimizer.sys.os
             };
@@ -3652,12 +3644,12 @@ globalThis.qwikOptimizer = function(module) {
           type: "full-reload"
         });
       },
-      onLog(level, log3) {
-        var _a3, _b, _c;
-        if ("vite-plugin-qwik" == log3.plugin) {
+      onLog(level, log) {
+        var _a, _b, _c;
+        if ("vite-plugin-qwik" == log.plugin) {
           const color = LOG_COLOR[level] || ANSI_COLOR.White;
-          const frames = (log3.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log3.plugin}](${level}): ${log3.message}\n`, `  ${null == (_a3 = null == log3 ? void 0 : log3.loc) ? void 0 : _a3.file}:${null == (_b = null == log3 ? void 0 : log3.loc) ? void 0 : _b.line}:${null == (_c = null == log3 ? void 0 : log3.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
+          const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+          console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${null == (_a = null == log ? void 0 : log.loc) ? void 0 : _a.file}:${null == (_b = null == log ? void 0 : log.loc) ? void 0 : _b.line}:${null == (_c = null == log ? void 0 : log.loc) ? void 0 : _c.column}\n`, `  ${frames.join("\n  ")}\n`);
           return false;
         }
       }

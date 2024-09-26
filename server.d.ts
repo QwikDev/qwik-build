@@ -6,6 +6,25 @@ import type { SnapshotResult } from '.';
 import type { StreamWriter } from '.';
 import type { SymbolMapperFn } from './optimizer';
 
+/** @public */
+declare interface DevJSX {
+    fileName: string;
+    lineNumber: number;
+    columnNumber: number;
+    stack?: string;
+}
+
+/**
+ * Any function taking a props object that returns JSXOutput.
+ *
+ * The `key`, `flags` and `dev` parameters are for internal use.
+ *
+ * @public
+ */
+declare type FunctionComponent<P = unknown> = {
+    renderFn(props: P, key: string | null, flags: number, dev?: DevJSX): JSXOutput;
+}['renderFn'];
+
 /**
  * Provides the `qwikloader.js` file as a string. Useful for tooling to inline the qwikloader script
  * into HTML.
@@ -54,6 +73,32 @@ export declare interface InOrderDisabled {
 
 /** @public */
 export declare type InOrderStreaming = InOrderAuto | InOrderDisabled | InOrderDirect;
+
+/** @public */
+declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
+
+/**
+ * A JSX Node, an internal structure. You probably want to use `JSXOutput` instead.
+ *
+ * @public
+ */
+declare interface JSXNode<T extends string | FunctionComponent | unknown = unknown> {
+    type: T;
+    props: T extends FunctionComponent<infer P> ? P : Record<any, unknown>;
+    varProps: Record<any, unknown>;
+    constProps: Record<any, unknown> | null;
+    children: JSXChildren | null;
+    flags: number;
+    key: string | null;
+    dev?: DevJSX;
+}
+
+/**
+ * Any valid output for a component
+ *
+ * @public
+ */
+declare type JSXOutput = JSXNode | string | number | boolean | null | undefined | JSXOutput[];
 
 /** @public */
 export declare interface PrefetchImplementation {
@@ -193,6 +238,11 @@ declare interface QwikSymbol {
 }
 
 /** @public */
+declare interface ReadonlySignal<T = unknown> {
+    readonly value: T;
+}
+
+/** @public */
 export declare type Render = RenderToString | RenderToStream;
 
 /** @public */
@@ -247,15 +297,7 @@ export declare type RenderToStream = (opts: RenderToStreamOptions) => Promise<Re
  *
  * @public
  */
-export declare const renderToStream: typeof renderToStream_2;
-
-/**
- * Creates a server-side `document`, renders to root node to the document, then serializes the
- * document to a string.
- *
- * @public
- */
-declare function renderToStream_2(rootNode: any, opts: RenderToStreamOptions): Promise<RenderToStreamResult>;
+export declare const renderToStream: (jsx: JSXOutput, opts: RenderToStreamOptions) => Promise<RenderToStreamResult>;
 
 /** @public */
 export declare interface RenderToStreamOptions extends RenderOptions {
@@ -283,15 +325,7 @@ export declare type RenderToString = (opts: RenderToStringOptions) => Promise<Re
  *
  * @public
  */
-export declare const renderToString: typeof renderToString_2;
-
-/**
- * Creates a server-side `document`, renders to root node to the document, then serializes the
- * document to a string.
- *
- * @public
- */
-declare function renderToString_2(rootNode: any, opts?: RenderToStringOptions): Promise<RenderToStringResult>;
+export declare const renderToString: (jsx: JSXOutput, opts?: RenderToStringOptions) => Promise<RenderToStringResult>;
 
 /** @public */
 export declare interface RenderToStringOptions extends RenderOptions {
@@ -325,6 +359,22 @@ export declare interface SerializeDocumentOptions {
 
 /** @public */
 export declare function setServerPlatform(manifest: QwikManifest | ResolvedManifest | undefined): Promise<void>;
+
+/**
+ * A signal is a reactive value which can be read and written. When the signal is written, all tasks
+ * which are tracking the signal will be re-run and all components that read the signal will be
+ * re-rendered.
+ *
+ * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
+ * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
+ * will update the `title` attribute when the signal changes without having to re-render the
+ * component.
+ *
+ * @public
+ */
+declare interface Signal<T = any> extends ReadonlySignal<T> {
+    value: T;
+}
 
 /** @public */
 export declare interface StreamingOptions {

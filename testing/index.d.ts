@@ -33,7 +33,6 @@ export declare const createDOM: ({ html }?: {
 /** @public */
 export declare function domRender(jsx: JSXOutput, opts?: {
     debug?: boolean;
-    oldSSR?: boolean;
 }): Promise<{
     document: Document;
     container: ClientContainer;
@@ -101,7 +100,6 @@ declare interface MockWindow extends Window {
 /** @public */
 export declare function ssrRenderToDom(jsx: JSXOutput, opts?: {
     debug?: boolean;
-    oldSSR?: boolean;
     raw?: boolean;
 }): Promise<{
     container: _DomContainer;

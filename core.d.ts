@@ -1,5 +1,7 @@
 import * as CSS_2 from 'csstype';
 import type { JSXNode as JSXNode_2 } from '.';
+import type { RenderOptions as RenderOptions_2 } from '.';
+import type { RenderResult as RenderResult_2 } from '.';
 import type { StreamWriter as StreamWriter_2 } from '.';
 
 /**
@@ -431,7 +433,7 @@ declare const enum ChoreType {
 export declare type ClassList = string | undefined | null | false | Record<string, boolean | string | number | null | undefined> | ClassList[];
 
 /** @internal */
-export declare interface ClientContainer extends Container2 {
+export declare interface ClientContainer extends Container {
     document: _QDocument;
     element: _ContainerElement;
     qContainer: string;
@@ -587,9 +589,6 @@ declare type ComponentChildren<PROPS> = PROPS extends {
  */
 export declare const componentQrl: <PROPS extends Record<any, any>>(componentQrl: QRL<OnRenderFn<PROPS>>) => Component<PROPS>;
 
-declare interface ComputedDescriptor<T> extends DescriptorBase<ComputedFn<T>, Signal<T>> {
-}
-
 declare const ComputedEvent = "qComputed";
 
 /** @public */
@@ -613,7 +612,7 @@ export declare interface ComputedSignal<T> extends ReadonlySignal<T> {
 /** @internal */
 export declare const _CONST_PROPS: unique symbol;
 
-declare interface Container2 {
+declare interface Container {
     readonly $version$: string;
     readonly $scheduler$: Scheduler;
     readonly $storeProxyMap$: ObjToProxyMap;
@@ -638,7 +637,7 @@ declare interface Container2 {
      * @param renderHost - Host element to ensure projection is resolved.
      */
     ensureProjectionResolved(host: HostElement): void;
-    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter_3): SerializationContext;
+    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
 }
 
 /** @internal */
@@ -658,26 +657,6 @@ export declare interface _ContainerElement extends HTMLElement {
     qVNodeRefs?: Map<number, Element | _ElementVNode>;
     /** String from `<script type="qwik/vnode">` tag. */
     qVnodeData?: string;
-}
-
-/** @public */
-declare interface ContainerState extends StoreTracker {
-    readonly $containerEl$: Element;
-    readonly $taskNext$: Set<SubscriberEffect>;
-    readonly $taskStaging$: Set<SubscriberEffect>;
-    readonly $opsNext$: Set<SubscriberSignal>;
-    readonly $hostsNext$: Set<QContext>;
-    readonly $hostsStaging$: Set<QContext>;
-    readonly $base$: string;
-    $hostsRendering$: Set<QContext> | undefined;
-    $renderPromise$: Promise<void> | undefined;
-    $serverData$: Record<string, any>;
-    $elementIndex$: number;
-    $pauseCtx$: PauseContext | undefined;
-    $styleMoved$: boolean;
-    readonly $styleIds$: Set<string>;
-    readonly $events$: Set<string>;
-    readonly $inlineFns$: Map<string, number>;
 }
 
 /**
@@ -881,7 +860,7 @@ export declare const createComputedQrl: <T>(qrl: QRL<() => T>) => T extends Prom
  */
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
-declare const createScheduler: (container: Container2, scheduleDrain: () => void, journalFlush: () => void) => {
+declare const createScheduler: (container: Container, scheduleDrain: () => void, journalFlush: () => void) => {
     (type: ChoreType.QRL_RESOLVE, ignore: null, target: QRLInternal<any>): ValueOrPromise<void>;
     (type: ChoreType.JOURNAL_FLUSH): ValueOrPromise<void>;
     (type: ChoreType.WAIT_FOR_ALL): ValueOrPromise<void>;
@@ -926,10 +905,10 @@ export declare interface DelHTMLAttributes<T extends Element> extends Attrs<'del
 }
 
 /** @public */
-declare interface DescriptorBase<T = unknown, B = unknown> extends Subscriber_2 {
+declare interface DescriptorBase<T = unknown, B = unknown> extends Subscriber {
     $flags$: number;
     $index$: number;
-    $el$: QwikElement;
+    $el$: HostElement;
     $qrl$: QRLInternal<T>;
     $state$: B | undefined;
     $destroy$: NoSerialize<() => void> | null;
@@ -962,7 +941,7 @@ export declare interface DialogHTMLAttributes<T extends Element> extends Attrs<'
 
 /** The Qwik-specific attributes that DOM elements accept @public */
 export declare interface DOMAttributes<EL extends Element> extends DOMAttributesBase<EL>, QwikEvents<EL> {
-    class?: ClassList | Signal_2<ClassList> | undefined;
+    class?: ClassList | Signal<ClassList> | undefined;
 }
 
 declare interface DOMAttributesBase<EL extends Element> extends QwikIntrinsicAttributes, PreventDefault, StopPropagation, RefAttr<EL> {
@@ -1019,7 +998,7 @@ export declare type EagernessOptions = 'visible' | 'load' | 'idle';
  * - `VNode` and `ISsrNode`: Either a component or `<Signal>`
  * - `Signal2`: A derived signal which contains a computation function.
  */
-declare type Effect = Task | _VNode | ISsrNode | Signal_3;
+declare type Effect = Task | _VNode | ISsrNode | Signal_2;
 
 /** @internal */
 export declare class _EffectData<T extends Record<string, any> = Record<string, any>> {
@@ -1066,7 +1045,7 @@ export declare class _EffectData<T extends Record<string, any> = Record<string, 
 declare type EffectSubscriptions = [
 Effect,
 string,
-...(_EffectData | string | Signal_3 | TargetType)[]
+...(_EffectData | string | Signal_2 | TargetType)[]
 ];
 
 /** @internal */
@@ -1174,7 +1153,7 @@ export declare const _getContextElement: () => unknown;
 export declare const _getContextEvent: () => unknown;
 
 /** @public */
-declare function getDomContainer(element: Element | _ElementVNode): ClientContainer;
+declare function getDomContainer(element: Element | _VNode): ClientContainer;
 export { getDomContainer as _getDomContainer }
 export { getDomContainer }
 
@@ -1187,10 +1166,6 @@ export { getDomContainer }
  * @internal
  */
 export declare function getLocale(defaultLocale?: string): string;
-
-declare type GetObject = (id: string) => any;
-
-declare type GetObjID = (obj: any) => string | number | null;
 
 /**
  * Retrieve the `CorePlatform`.
@@ -1207,11 +1182,7 @@ declare type GetObjID = (obj: any) => string | number | null;
 export declare const getPlatform: () => CorePlatform;
 
 /** @internal */
-export declare function _getQContainerElement(element: Element | _ElementVNode): Element | null;
-
-declare type Group = SubscriberEffect | SubscriberHost | Node;
-
-declare type GroupToManagersMap = Map<Group, LocalSubscriptionManager[]>;
+export declare function _getQContainerElement(element: Element | _VNode): Element | null;
 
 /**
  * The legacy transform, used in special cases like `<div {...props} key="key" />`. Note that the
@@ -1226,14 +1197,6 @@ export { h as createElement }
 export { h }
 
 declare type HostElement = _VirtualVNode | ISsrNode;
-
-/** Used with: Host (component) or Task */
-declare type HostSubscriber = readonly [
-type: SubscriptionType.HOST,
-host: SubscriberEffect | SubscriberHost
-];
-
-declare type HostSubscriberWithKey = [...HostSubscriber, key: string | undefined];
 
 /** @public */
 export declare interface HrHTMLAttributes<T extends Element> extends Attrs<'hr', T> {
@@ -1414,21 +1377,16 @@ declare interface InvokeContext {
     /** The next available index for the sequentialScope array */
     $i$: number;
     /** The Virtual parent component for the current component code */
-    $hostElement$: QwikElement | undefined;
+    $hostElement$: HostElement | undefined;
     /** The current DOM element */
     $element$: Element | undefined;
     /** The event we're currently handling */
     $event$: PossibleEvents | undefined;
     /** The QRL function we're currently executing */
     $qrl$: QRL | undefined;
-    /** Promises that need awaiting before the current invocation is done */
-    $waitOn$: Promise<unknown>[] | undefined;
-    /** The current subscriber for registering signal reads */
-    $subscriber$: Subscriber | null | undefined;
     $effectSubscriber$: EffectSubscriptions | undefined;
-    $renderCtx$: RenderContext | undefined;
     $locale$: string | undefined;
-    $container2$: Container2 | undefined;
+    $container$: Container | undefined;
 }
 
 declare type InvokeTuple = [Element, Event, URL?];
@@ -1487,7 +1445,7 @@ export declare const _jsxBranch: <T>(input?: T) => T | undefined;
 export declare const _jsxC: (type: any, mutable: any, _flags: any, key: any) => JSXNode<any>;
 
 /** @public */
-export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal_2<JSXChildren> | JSXNode;
+export declare type JSXChildren = string | number | boolean | null | undefined | Function | RegExp | JSXChildren[] | Promise<JSXChildren> | Signal<JSXChildren> | JSXNode;
 
 /** @public */
 export declare const jsxDEV: <T extends string | FunctionComponent<Props>>(type: T, props: T extends FunctionComponent<infer PROPS> ? PROPS : Props, key: string | number | null | undefined, _isStatic: boolean, opts: JsxDevOpts, _ctx: unknown) => JSXNode<T>;
@@ -1607,12 +1565,6 @@ export declare interface LiHTMLAttributes<T extends Element> extends Attrs<'li',
 export declare interface LinkHTMLAttributes<T extends Element> extends Attrs<'link', T> {
 }
 
-/** A QRL that will be called when the event occurs */
-declare type Listener = [
-eventName: string,
-qrl: QRLInternal<(event: PossibleEvents, elem?: Element) => any>
-];
-
 /**
  * Allows creating a union type by combining primitive types and literal types without sacrificing
  * auto-completion in IDEs for the literal type part of the union.
@@ -1638,19 +1590,6 @@ qrl: QRLInternal<(event: PossibleEvents, elem?: Element) => any>
  * ```
  */
 declare type LiteralUnion<LiteralType, BaseType extends Primitive> = LiteralType | (BaseType & Record<never, never>);
-
-declare class LocalSubscriptionManager {
-    private $groupToManagers$;
-    private $containerState$;
-    readonly $subs$: Subscriptions[];
-    constructor($groupToManagers$: GroupToManagersMap, $containerState$: ContainerState, initialMap?: Subscriptions[]);
-    $addSubs$(subs: Subscriptions[]): void;
-    $addToGroup$(group: Group, manager: LocalSubscriptionManager): void;
-    $unsubGroup$(group: Group): void;
-    $unsubEntry$(entry: SubscriberSignal): void;
-    $addSub$(sub: Subscriber, key?: string): void;
-    $notifySubs$(key?: string | undefined): void;
-}
 
 /** @public */
 export declare interface MapHTMLAttributes<T extends Element> extends Attrs<'map', T> {
@@ -1819,20 +1758,6 @@ declare type PascalMap<M> = {
     [K in Extract<keyof M, string> as K extends keyof LcEventNameMap ? LcEventNameMap[K] : Capitalize<K>]: M[K];
 };
 
-/** @public */
-declare interface PauseContext {
-    getObject: GetObject;
-    meta: SnapshotMeta;
-    refs: Record<string, string>;
-}
-
-/**
- * Grab all state needed to resume the container later.
- *
- * @internal
- */
-export declare const _pauseFromContexts: (allContexts: QContext[], containerState: ContainerState, fallbackGetObjId?: GetObjID, textNodes?: Map<string, string>) => Promise<SnapshotResult>;
-
 declare type PopoverTargetAction = 'hide' | 'show' | 'toggle';
 
 declare type PossibleEvents = Event | SimplifiedServerRequestEvent | typeof TaskEvent | typeof RenderEvent | typeof ComputedEvent | typeof ResourceEvent;
@@ -1906,22 +1831,6 @@ declare type PreventDefault = {
 /** Matches any primitive value. */
 declare type Primitive = null | undefined | string | number | boolean | symbol | bigint;
 
-declare interface ProcessedJSXNode {
-    $type$: ProcessedJSXNodeType;
-    $id$: string;
-    $varProps$: Record<string, any>;
-    $constProps$: Record<string, any> | null;
-    $flags$: number;
-    $children$: ProcessedJSXNode[];
-    $key$: string | null;
-    $elm$: Node | VirtualElement | null;
-    $text$: string;
-    $signal$: Signal_2<any> | null;
-    $dev$?: DevJSX;
-}
-
-declare type ProcessedJSXNodeType = '#text' | ':virtual' | ':signal' | typeof SKIP_RENDER_TYPE | string;
-
 /** @public */
 export declare interface ProgressHTMLAttributes<T extends Element> extends Attrs<'progress', T> {
 }
@@ -1968,18 +1877,6 @@ declare type Props = Record<string, unknown>;
  */
 export declare type PropsOf<COMP> = COMP extends string ? COMP extends keyof QwikIntrinsicElements ? QwikIntrinsicElements[COMP] : QwikIntrinsicElements['span'] : NonNullable<COMP> extends never ? never : COMP extends FunctionComponent<infer PROPS> ? PROPS extends Record<any, infer V> ? IsAny<V> extends true ? never : ObjectProps<PROPS> : COMP extends Component<infer OrigProps> ? ObjectProps<OrigProps> : PROPS : never;
 
-/** Used with derived signal on property: `<div prop={signal}>` */
-declare type PropSubscriber = readonly [
-type: SubscriptionType.PROP_IMMUTABLE | SubscriptionType.PROP_MUTABLE,
-host: SubscriberHost,
-signal: Signal_2,
-elm: QwikElement,
-elementProperty: string,
-styleScopedId: string | undefined
-];
-
-declare type PropSubscriberWithKey = [...PropSubscriber, key: string | undefined];
-
 /**
  * Extends the defined component PROPS, adding the default ones (children and q:slot) and allowing
  * plain functions to QRL arguments.
@@ -1987,42 +1884,6 @@ declare type PropSubscriberWithKey = [...PropSubscriber, key: string | undefined
  * @public
  */
 export declare type PublicProps<PROPS> = (PROPS extends Record<any, any> ? Omit<PROPS, `${string}$`> & _Only$<PROPS> : unknown extends PROPS ? {} : PROPS) & ComponentBaseProps & ComponentChildren<PROPS>;
-
-/** Qwik Context of an element. */
-declare interface QContext {
-    /** VDOM element. */
-    $element$: QwikElement;
-    $refMap$: any[];
-    $flags$: number;
-    /** QId, for referenced components */
-    $id$: string;
-    /** Proxy for the component props */
-    $props$: Record<string, any> | null;
-    /** The QRL if this is `component$`-wrapped component. */
-    $componentQrl$: QRLInternal<OnRenderFn<any>> | null;
-    /** The event handlers for this element */
-    li: Listener[];
-    /** Sequential data store for hooks, managed by useSequentialScope. */
-    $seq$: any[] | null;
-    $tasks$: SubscriberEffect[] | null;
-    /** The public contexts defined on this (always Virtual) component, managed by useContextProvider. */
-    $contexts$: Map<string, any> | null;
-    $appendStyles$: StyleAppend[] | null;
-    $scopeIds$: string[] | null;
-    $vdom$: ProcessedJSXNode | null;
-    $slots$: ProcessedJSXNode[] | null;
-    $dynamicSlots$: QContext[] | null;
-    /**
-     * The Qwik Context of the virtual parent component, null if no parent. For an real element, it's
-     * the owner virtual component, and for a virtual component it's the wrapping virtual component.
-     */
-    $parentCtx$: QContext | null | undefined;
-    /**
-     * During SSR, separately store the actual parent of slotted components to correctly pause
-     * subscriptions
-     */
-    $realParentCtx$: QContext | undefined;
-}
 
 /** @internal */
 export declare interface _QDocument extends Document {
@@ -2266,8 +2127,6 @@ export declare interface QwikDOMAttributes extends DOMAttributes<Element> {
 /** @public @deprecated Use `DragEvent` and use the second argument to the handler function for the current event target */
 export declare type QwikDragEvent<T = Element> = NativeDragEvent;
 
-declare type QwikElement = Element | VirtualElement;
-
 /** @public */
 declare type QwikEvents<EL, Plain extends boolean = true> = Plain extends true ? QwikKnownEventsPlain<EL> & QwikCustomEventsPlain<EL> : QwikKnownEvents<EL> & QwikCustomEvents<EL>;
 
@@ -2410,7 +2269,7 @@ export declare interface ReadonlySignal<T = unknown> {
  *
  * @public
  */
-declare type Ref<EL extends Element = Element> = Signal_2<Element | undefined> | RefFnInterface<EL>;
+declare type Ref<EL extends Element = Element> = Signal<Element | undefined> | RefFnInterface<EL>;
 
 declare interface RefAttr<EL extends Element> {
     ref?: Ref<EL> | undefined;
@@ -2436,16 +2295,7 @@ export declare const _regSymbol: (symbol: any, hash: string) => any;
  * @returns An object containing a cleanup function.
  * @public
  */
-export declare const render: (parent: Element | Document, jsxNode: JSXOutput | FunctionComponent<any>, opts?: RenderOptions) => Promise<RenderResult>;
-
-/** @public */
-declare interface RenderContext {
-    readonly $static$: RenderStaticContext;
-    /** Current Qwik component */
-    $cmpCtx$: QContext | null;
-    /** Current Slot parent */
-    $slotCtx$: QContext | undefined;
-}
+export declare const render: (parent: Element | Document, jsxNode: JSXOutput | FunctionComponent<any>, opts?: RenderOptions_2) => Promise<RenderResult_2>;
 
 declare const RenderEvent = "qRender";
 
@@ -2454,12 +2304,6 @@ export declare const RenderOnce: FunctionComponent<{
     children?: unknown;
     key?: string | number | null | undefined;
 }>;
-
-/** @public */
-declare interface RenderOperation {
-    $operation$: (...args: any[]) => void;
-    $args$: any[];
-}
 
 /** @public */
 export declare interface RenderOptions {
@@ -2471,9 +2315,6 @@ export declare interface RenderResult {
     cleanup(): void;
 }
 
-/** @internal */
-export declare const _renderSSR: (node: JSXOutput, opts: RenderSSROptions) => Promise<void>;
-
 /** @public */
 export declare interface RenderSSROptions {
     containerTagName: string;
@@ -2481,22 +2322,7 @@ export declare interface RenderSSROptions {
     stream: StreamWriter;
     base?: string;
     serverData?: Record<string, any>;
-    beforeContent?: JSXNode<string>[];
-    beforeClose?: (contexts: QContext[], containerState: ContainerState, containsDynamic: boolean, textNodes: Map<string, string>) => Promise<JSXNode>;
     manifestHash: string;
-}
-
-declare interface RenderStaticContext {
-    readonly $locale$: string;
-    readonly $doc$: Document;
-    readonly $roots$: QContext[];
-    readonly $hostElements$: Set<QwikElement>;
-    readonly $visited$: (Node | QwikElement)[];
-    readonly $operations$: RenderOperation[];
-    readonly $postOperations$: RenderOperation[];
-    readonly $containerState$: ContainerState;
-    readonly $addSlots$: [QwikElement, QwikElement][];
-    readonly $rmSlots$: QwikElement[];
 }
 
 /**
@@ -2560,9 +2386,6 @@ export declare interface ResourceCtx<T> {
     readonly previous: T | undefined;
 }
 
-declare interface ResourceDescriptor<T> extends DescriptorBase<ResourceFn<T>, ResourceReturnInternal<T>> {
-}
-
 declare const ResourceEvent = "qResource";
 
 /** @public */
@@ -2590,7 +2413,7 @@ export declare interface ResourcePending<T> {
 
 /** @public */
 export declare interface ResourceProps<T> {
-    readonly value: ResourceReturn<T> | Signal_2<Promise<T> | T> | Promise<T>;
+    readonly value: ResourceReturn<T> | Signal<Promise<T> | T> | Promise<T>;
     onResolved: (value: T) => JSXOutput;
     onPending?: () => JSXOutput;
     onRejected?: (reason: Error) => JSXOutput;
@@ -2712,7 +2535,7 @@ export declare function _serialize(data: unknown[]): Promise<string>;
 export declare const setPlatform: (plt: CorePlatform) => CorePlatform;
 
 /** @internal */
-export declare abstract class _SharedContainer implements Container2 {
+export declare abstract class _SharedContainer implements Container {
     readonly $version$: string;
     readonly $scheduler$: Scheduler;
     readonly $storeProxyMap$: ObjToProxyMap;
@@ -2722,8 +2545,8 @@ export declare abstract class _SharedContainer implements Container2 {
     $currentUniqueId$: number;
     $instanceHash$: string | null;
     constructor(scheduleDrain: () => void, journalFlush: () => void, serverData: Record<string, any>, locale: string);
-    trackSignalValue<T>(signal: Signal_2, subscriber: Effect, property: string, data: _EffectData): T;
-    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter_3): SerializationContext;
+    trackSignalValue<T>(signal: Signal, subscriber: Effect, property: string, data: _EffectData): T;
+    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
     abstract ensureProjectionResolved(host: HostElement): void;
     abstract processJsx(host: HostElement, jsx: JSXOutput): ValueOrPromise<void>;
     abstract handleError(err: any, $host$: HostElement): void;
@@ -2751,28 +2574,12 @@ export declare interface Signal<T = any> extends ReadonlySignal<T> {
     value: T;
 }
 
-/**
- * A signal is a reactive value which can be read and written. When the signal is written, all tasks
- * which are tracking the signal will be re-run and all components that read the signal will be
- * re-rendered.
- *
- * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
- * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
- * will update the `title` attribute when the signal changes without having to re-render the
- * component.
- *
- * @public
- */
-declare interface Signal_2<T = any> {
-    value: T;
-}
-
-declare class Signal_3<T = any> implements Signal<T> {
+declare class Signal_2<T = any> implements Signal<T> {
     $untrackedValue$: T;
     /** Store a list of effects which are dependent on this signal. */
     $effects$: null | EffectSubscriptions[];
-    $container$: Container2 | null;
-    constructor(container: Container2 | null, value: T);
+    $container$: Container | null;
+    constructor(container: Container | null, value: T);
     get untrackedValue(): T;
     set untrackedValue(value: T);
     get value(): T;
@@ -2792,8 +2599,6 @@ declare interface SimplifiedServerRequestEvent<T = unknown> {
 
 /** @public */
 export declare type Size = number | string;
-
-declare const SKIP_RENDER_TYPE = ":skipRender";
 
 /** @public */
 export declare const SkipRender: JSXNode;
@@ -2924,12 +2729,12 @@ declare type SpecialAttrs = {
          */
         autoComplete?: HTMLInputAutocompleteAttribute | Omit<HTMLInputAutocompleteAttribute, string> | undefined;
         /** For type: 'checkbox' | 'radio' */
-        'bind:checked'?: Signal_2<boolean | undefined>;
+        'bind:checked'?: Signal<boolean | undefined>;
         /**
          * For type: HTMLInputTypeAttribute, excluding 'button' | 'reset' | 'submit' | 'checkbox' |
          * 'radio'
          */
-        'bind:value'?: Signal_2<string | undefined>;
+        'bind:value'?: Signal<string | undefined>;
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         height?: Size | undefined;
         max?: number | string | undefined;
@@ -3014,7 +2819,7 @@ declare type SpecialAttrs = {
     select: {
         form?: string | undefined;
         value?: string | ReadonlyArray<string> | number | undefined;
-        'bind:value'?: Signal_2<string | undefined>;
+        'bind:value'?: Signal<string | undefined>;
     };
     source: {
         /** Allowed if the parent is a `picture` element */
@@ -3041,7 +2846,7 @@ declare type SpecialAttrs = {
         enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send' | undefined;
         form?: string | undefined;
         value?: string | ReadonlyArray<string> | number | undefined;
-        'bind:value'?: Signal_2<string | undefined>;
+        'bind:value'?: Signal<string | undefined>;
         children?: string;
     };
     track: {
@@ -3061,16 +2866,16 @@ declare type SsrAttrKey = string;
 
 declare type SsrAttrs = Array<SsrAttrKey | SsrAttrValue>;
 
-declare type SsrAttrValue = string | Signal_2<any> | boolean | Object | null;
+declare type SsrAttrValue = string | Signal<any> | boolean | Object | null;
 
 /** @public */
 export declare const SSRComment: FunctionComponent<{
     data: string;
 }>;
 
-declare interface SSRContainer extends Container2 {
+declare interface SSRContainer extends Container {
     readonly tag: string;
-    readonly writer: StreamWriter_3;
+    readonly writer: StreamWriter;
     readonly prefetchResources: PrefetchResource[];
     readonly serializationCtx: SerializationContext;
     readonly symbolToChunkResolver: SymbolToChunkResolver;
@@ -3131,18 +2936,8 @@ declare type StopPropagation = {
     [K in keyof HTMLElementEventMap as `stoppropagation:${K}`]?: boolean;
 };
 
-declare interface StoreTracker {
-    $proxyMap$: ObjToProxyMap;
-    $subsManager$: SubscriptionManager;
-    $getObjectById$: (id: string | number) => any;
-}
-
-/** @public */
-export declare type StreamWriter = {
-    write: (chunk: string) => void;
-};
-
-declare interface StreamWriter_3 {
+/** @internal */
+export declare interface StreamWriter {
     write(chunk: string): void;
 }
 
@@ -3150,50 +2945,12 @@ declare interface StreamWriter_3 {
 /** @internal */
 export declare type _Stringifiable = string | boolean | number | null;
 
-declare interface StyleAppend {
-    styleId: string;
-    content: string | null;
-}
-
 /** @public */
 export declare interface StyleHTMLAttributes<T extends Element> extends Attrs<'style', T> {
 }
 
-declare type Subscriber = HostSubscriber | PropSubscriber | TextSubscriber;
-
-declare abstract class Subscriber_2 {
-    $effectDependencies$: Subscriber_2[] | null;
-}
-
-declare type SubscriberEffect = TaskDescriptor | ResourceDescriptor<unknown> | ComputedDescriptor<unknown>;
-
-declare type SubscriberHost = QwikElement;
-
-declare type SubscriberSignal = PropSubscriberWithKey | TextSubscriberWithKey;
-
-/**
- * Top level manager of subscriptions (singleton, attached to DOM Container).
- *
- * Use the `SubscriptionManager` to create a new `LocalSubscriptionManager` for tracking
- * subscriptions.
- */
-declare interface SubscriptionManager {
-    /** Map of all subscriptions from `Group` to their respective managers. */
-    $groupToManagers$: GroupToManagersMap;
-    $createManager$(map?: Subscriptions[]): LocalSubscriptionManager;
-    $clearSub$: (group: Group) => void;
-    $clearSignal$: (signal: SubscriberSignal) => void;
-}
-
-declare type Subscriptions = HostSubscriberWithKey | SubscriberSignal;
-
-/** @internal */
-export declare const enum SubscriptionType {
-    HOST = 0,
-    PROP_IMMUTABLE = 1,
-    PROP_MUTABLE = 2,
-    TEXT_IMMUTABLE = 3,
-    TEXT_MUTABLE = 4
+declare abstract class Subscriber {
+    $effectDependencies$: Subscriber[] | null;
 }
 
 /**
@@ -3508,14 +3265,14 @@ export declare interface TableHTMLAttributes<T extends Element> extends Attrs<'t
 
 declare type TargetType = Record<string | symbol, any>;
 
-declare class Task<T = unknown, B = T> extends Subscriber_2 implements DescriptorBase<unknown, Signal<B> | ResourceReturnInternal<B>> {
+declare class Task<T = unknown, B = T> extends Subscriber implements DescriptorBase<unknown, Signal<B> | ResourceReturnInternal<B>> {
     $flags$: number;
     $index$: number;
-    $el$: QwikElement;
+    $el$: HostElement;
     $qrl$: QRLInternal<T>;
     $state$: Signal<B> | ResourceReturnInternal<B> | undefined;
     $destroy$: NoSerialize<() => void> | null;
-    constructor($flags$: number, $index$: number, $el$: QwikElement, $qrl$: QRLInternal<T>, $state$: Signal<B> | ResourceReturnInternal<B> | undefined, $destroy$: NoSerialize<() => void> | null);
+    constructor($flags$: number, $index$: number, $el$: HostElement, $qrl$: QRLInternal<T>, $state$: Signal<B> | ResourceReturnInternal<B> | undefined, $destroy$: NoSerialize<() => void> | null);
 }
 
 /** @public */
@@ -3523,8 +3280,6 @@ export declare interface TaskCtx {
     track: Tracker;
     cleanup(callback: () => void): void;
 }
-
-declare type TaskDescriptor = DescriptorBase<TaskFn>;
 
 declare const TaskEvent = "qTask";
 
@@ -3538,16 +3293,6 @@ export declare interface TdHTMLAttributes<T extends Element> extends Attrs<'td',
 /** @public */
 export declare interface TextareaHTMLAttributes<T extends Element> extends Attrs<'textarea', T> {
 }
-
-/** Used with derived signal on text node: `<span>{signal}</span>` */
-declare type TextSubscriber = readonly [
-type: SubscriptionType.TEXT_IMMUTABLE | SubscriptionType.TEXT_MUTABLE,
-host: SubscriberHost | Text,
-signal: Signal_2,
-elm: Node | QwikElement
-];
-
-declare type TextSubscriberWithKey = [...TextSubscriber, key: string | undefined];
 
 /** @internal */
 export declare type _TextVNode = [
@@ -4369,7 +4114,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+8af82a9
+ * 2.0.0-0-dev+b040b46
  *
  * @public
  */
@@ -4377,39 +4122,6 @@ export declare const version: string;
 
 /** @public */
 export declare interface VideoHTMLAttributes<T extends Element> extends Attrs<'video', T> {
-}
-
-declare interface VirtualElement {
-    readonly open: Comment;
-    readonly close: Comment;
-    readonly isSvg: boolean;
-    readonly insertBefore: <T extends Node>(node: T, child: Node | null) => T;
-    readonly appendChild: <T extends Node>(node: T) => T;
-    readonly insertBeforeTo: (newParent: QwikElement, child: Node | null) => void;
-    readonly appendTo: (newParent: QwikElement) => void;
-    readonly ownerDocument: Document;
-    readonly namespaceURI: string;
-    readonly nodeType: 111;
-    readonly childNodes: Node[];
-    readonly firstChild: Node | null;
-    readonly previousSibling: Node | null;
-    readonly nextSibling: Node | null;
-    readonly remove: () => void;
-    readonly closest: (query: string) => Element | null;
-    readonly hasAttribute: (prop: string) => boolean;
-    readonly getAttribute: (prop: string) => string | null;
-    readonly removeAttribute: (prop: string) => void;
-    readonly querySelector: (query: string) => QwikElement | null;
-    readonly querySelectorAll: (query: string) => QwikElement[];
-    readonly compareDocumentPosition: (other: Node) => number;
-    readonly matches: (query: string) => boolean;
-    readonly setAttribute: (prop: string, value: string) => void;
-    readonly removeChild: (node: Node) => void;
-    readonly localName: string;
-    readonly nodeName: string;
-    readonly isConnected: boolean;
-    readonly parentElement: Element | null;
-    innerHTML: string;
 }
 
 /** @internal */
@@ -4535,13 +4247,13 @@ export declare interface WebViewHTMLAttributes<T extends Element> extends HTMLAt
  */
 export declare function withLocale<T>(locale: string, fn: () => T): T;
 
-declare class WrappedSignal<T> extends Signal_3<T> implements Subscriber_2 {
+declare class WrappedSignal<T> extends Signal_2<T> implements Subscriber {
     $args$: any[];
     $func$: (...args: any[]) => T;
     $funcStr$: string | null;
     $invalid$: boolean;
-    $effectDependencies$: Subscriber_2[] | null;
-    constructor(container: Container2 | null, fn: (...args: any[]) => T, args: any[], fnStr: string | null);
+    $effectDependencies$: Subscriber[] | null;
+    constructor(container: Container | null, fn: (...args: any[]) => T, args: any[], fnStr: string | null);
     $invalidate$(): void;
     /**
      * Use this to force running subscribers, for example when the calculated value has mutated but
