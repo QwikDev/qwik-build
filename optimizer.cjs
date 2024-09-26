@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.0-dev+5a0c31d
+ * @builder.io/qwik/optimizer 1.9.0-dev+d03b04b
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.0-dev+5a0c31d"
+    qwik: "1.9.0-dev+d03b04b"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5190,7 +5190,7 @@ globalThis.qwikOptimizer = function(module) {
       const parentPath = normalizePath(path.dirname(parent));
       const parentFile = path.basename(parent);
       const qrlPath = parentPath.startsWith(opts.rootDir) ? normalizePath(path.relative(opts.rootDir, parentPath)) : `@fs${maybeSlash}${parentPath}`;
-      const qrlFile = `${encode(qrlPath)}/${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parentFile)}`;
+      const qrlFile = `${encode(qrlPath)}/${parentFile.toLowerCase()}_${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parentFile)}`;
       return [ symbolName, `${base}${qrlFile}` ];
     };
   }
