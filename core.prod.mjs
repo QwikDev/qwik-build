@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+b040b46
+ * @builder.io/qwik 2.0.0-0-dev+01702b5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1681,7 +1681,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             const constProps = jsxValue.constProps;
             if (constProps && "object" == typeof constProps && "name" in constProps) {
                 const constValue = constProps.name;
-                if (constValue instanceof WrappedSignal) {
+                if (vHost && constValue instanceof WrappedSignal) {
                     return trackSignal((() => constValue.value), vHost, EffectProperty.COMPONENT, container);
                 }
             }
@@ -2322,7 +2322,7 @@ function sortedInsert(sortedArray, value) {
     return choreUpdate(existing, value), existing;
 }
 
-const version = "2.0.0-0-dev+b040b46";
+const version = "2.0.0-0-dev+01702b5";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -2799,7 +2799,7 @@ const useTaskQrl = (qrl, opts) => {
     if (isPromise(result)) {
         throw result;
     }
-    qrl.$resolveLazy$(host), isServerPlatform() && useRunTask(task, opts?.eagerness);
+    qrl.$resolveLazy$(iCtx.$element$), isServerPlatform() && useRunTask(task, opts?.eagerness);
 };
 
 const runTask = (task, container, host) => {
@@ -5881,7 +5881,7 @@ const _useStyles = (styleQrl, transform, scoped) => {
     const styleId = styleKey(styleQrl, i);
     const host = iCtx.$hostElement$;
     set(styleId);
-    const value = styleQrl.$resolveLazy$(host);
+    const value = styleQrl.$resolveLazy$(iCtx.$element$);
     if (isPromise(value)) {
         throw value.then((val => iCtx.$container$.$appendStyle$(transform(val, styleId), styleId, host, scoped))), 
         value;
@@ -5918,7 +5918,7 @@ const useVisibleTaskQrl = (qrl, opts) => {
     }
     assertQrl(qrl);
     const task = new Task(TaskFlags.VISIBLE_TASK, i, iCtx.$hostElement$, qrl, void 0, null);
-    set(task), useRunTask(task, eagerness), isServerPlatform() || (qrl.$resolveLazy$(iCtx.$hostElement$), 
+    set(task), useRunTask(task, eagerness), isServerPlatform() || (qrl.$resolveLazy$(iCtx.$element$), 
     iCtx.$container$.$scheduler$(ChoreType.VISIBLE, task));
 };
 

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+b040b46
+ * @builder.io/qwik 2.0.0-0-dev+01702b5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1253,7 +1253,7 @@
                 const constProps = jsxValue.constProps;
                 if (constProps && "object" == typeof constProps && "name" in constProps) {
                     const constValue = constProps.name;
-                    if (constValue instanceof WrappedSignal) {
+                    if (vHost && constValue instanceof WrappedSignal) {
                         return trackSignal((() => constValue.value), vHost, EffectProperty.COMPONENT, container);
                     }
                 }
@@ -1862,7 +1862,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+b040b46", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+01702b5", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -2253,7 +2253,7 @@
         if (isPromise(result)) {
             throw result;
         }
-        qrl.$resolveLazy$(host), isServerPlatform() && useRunTask(task, opts?.eagerness);
+        qrl.$resolveLazy$(iCtx.$element$), isServerPlatform() && useRunTask(task, opts?.eagerness);
     };
     const runTask = (task, container, host) => {
         task.$flags$ &= ~TaskFlags.DIRTY, cleanupTask(task);
@@ -4896,7 +4896,7 @@
         var qStyles, index;
         const host = iCtx.$hostElement$;
         set(styleId);
-        const value = styleQrl.$resolveLazy$(host);
+        const value = styleQrl.$resolveLazy$(iCtx.$element$);
         if (isPromise(value)) {
             throw value.then((val => iCtx.$container$.$appendStyle$(transform(val, styleId), styleId, host, scoped))), 
             value;
@@ -4925,7 +4925,7 @@
         }
         assertQrl(qrl);
         const task = new Task(TaskFlags.VISIBLE_TASK, i, iCtx.$hostElement$, qrl, void 0, null);
-        set(task), useRunTask(task, eagerness), isServerPlatform() || (qrl.$resolveLazy$(iCtx.$hostElement$), 
+        set(task), useRunTask(task, eagerness), isServerPlatform() || (qrl.$resolveLazy$(iCtx.$element$), 
         iCtx.$container$.$scheduler$(ChoreType.VISIBLE, task));
     };
     const useTask$ = /*#__PURE__*/ implicit$FirstArg(useTaskQrl);
@@ -5179,7 +5179,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+b040b46", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+01702b5", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

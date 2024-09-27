@@ -861,14 +861,14 @@ export declare const createComputedQrl: <T>(qrl: QRL<() => T>) => T extends Prom
 export declare const createContextId: <STATE = unknown>(name: string) => ContextId<STATE>;
 
 declare const createScheduler: (container: Container, scheduleDrain: () => void, journalFlush: () => void) => {
-    (type: ChoreType.QRL_RESOLVE, ignore: null, target: QRLInternal<any>): ValueOrPromise<void>;
+    (type: ChoreType.QRL_RESOLVE, ignore: null, target: QRLInternal<(...args: unknown[]) => unknown>): ValueOrPromise<void>;
     (type: ChoreType.JOURNAL_FLUSH): ValueOrPromise<void>;
     (type: ChoreType.WAIT_FOR_ALL): ValueOrPromise<void>;
     (type: ChoreType.WAIT_FOR_COMPONENTS): ValueOrPromise<void>;
     (type: ChoreType.TASK | ChoreType.VISIBLE | ChoreType.RESOURCE, task: Task): ValueOrPromise<void>;
-    (type: ChoreType.COMPONENT, host: HostElement, qrl: QRL<(...args: any[]) => any>, props: any): ValueOrPromise<JSXOutput>;
-    (type: ChoreType.COMPONENT_SSR, host: HostElement, qrl: QRL<(...args: any[]) => any>, props: any): ValueOrPromise<JSXOutput>;
-    (type: ChoreType.NODE_DIFF, host: HostElement, target: HostElement, value: JSXOutput): ValueOrPromise<void>;
+    (type: ChoreType.COMPONENT, host: HostElement, qrl: QRLInternal<OnRenderFn<unknown>>, props: Props | null): ValueOrPromise<JSXOutput>;
+    (type: ChoreType.COMPONENT_SSR, host: HostElement, qrl: QRLInternal<OnRenderFn<unknown>>, props: Props | null): ValueOrPromise<JSXOutput>;
+    (type: ChoreType.NODE_DIFF, host: HostElement, target: HostElement, value: JSXOutput | Signal): ValueOrPromise<void>;
     (type: ChoreType.NODE_PROP, host: HostElement, prop: string, value: any): ValueOrPromise<void>;
     (type: ChoreType.CLEANUP_VISIBLE, task: Task): ValueOrPromise<JSXOutput>;
 };
@@ -1196,7 +1196,7 @@ declare function h<TYPE extends string | FunctionComponent<PROPS>, PROPS extends
 export { h as createElement }
 export { h }
 
-declare type HostElement = _VirtualVNode | ISsrNode;
+declare type HostElement = _VNode | ISsrNode;
 
 /** @public */
 export declare interface HrHTMLAttributes<T extends Element> extends Attrs<'hr', T> {
@@ -4114,7 +4114,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+b040b46
+ * 2.0.0-0-dev+01702b5
  *
  * @public
  */

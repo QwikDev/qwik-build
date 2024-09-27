@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+b040b46
+ * @builder.io/qwik/testing 2.0.0-0-dev+01702b5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -24081,12 +24081,7 @@ function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
 // packages/qwik/src/core/shared/component-execution.ts
 import { isDev as isDev2 } from "@builder.io/qwik/build";
 var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
-  const iCtx = newInvokeContext(
-    container.$locale$,
-    subscriptionHost,
-    void 0,
-    RenderEvent
-  );
+  const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
   iCtx.$effectSubscriber$ = [subscriptionHost, ":" /* COMPONENT */];
   iCtx.$container$ = container;
   let componentFn;
@@ -24542,13 +24537,8 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     const constProps = jsxValue.constProps;
     if (constProps && typeof constProps == "object" && "name" in constProps) {
       const constValue = constProps.name;
-      if (constValue instanceof WrappedSignal) {
-        return trackSignal(
-          () => constValue.value,
-          vHost,
-          ":" /* COMPONENT */,
-          container
-        );
+      if (vHost && constValue instanceof WrappedSignal) {
+        return trackSignal(() => constValue.value, vHost, ":" /* COMPONENT */, container);
       }
     }
     return jsxValue.props.name || QDefaultSlot;

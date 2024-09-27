@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+b040b46
+ * @builder.io/qwik 2.0.0-0-dev+01702b5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -3136,7 +3136,7 @@
             const constProps = jsxValue.constProps;
             if (constProps && typeof constProps == 'object' && 'name' in constProps) {
                 const constValue = constProps.name;
-                if (constValue instanceof WrappedSignal) {
+                if (vHost && constValue instanceof WrappedSignal) {
                     return trackSignal(() => constValue.value, vHost, EffectProperty.COMPONENT, container);
                 }
             }
@@ -4343,7 +4343,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+b040b46";
+    const version = "2.0.0-0-dev+01702b5";
 
     /** @internal */
     class _SharedContainer {
@@ -5158,7 +5158,7 @@
         if (isPromise(result)) {
             throw result;
         }
-        qrl.$resolveLazy$(host);
+        qrl.$resolveLazy$(iCtx.$element$);
         if (isServerPlatform()) {
             useRunTask(task, opts?.eagerness);
         }
@@ -7177,8 +7177,6 @@
             else if (isSignal(value)) {
                 ssr.openFragment(build.isDev ? [DEBUG_TYPE, VirtualType.WrappedSignal] : EMPTY_ARRAY);
                 const signalNode = ssr.getLastNode();
-                // TODO(mhevery): It is unclear to me why we need to serialize host for WrappedSignal.
-                // const host = ssr.getComponentFrame(0)!.componentNode as fixMeAny;
                 enqueue(ssr.closeFragment);
                 enqueue(trackSignal(() => value.value, signalNode, EffectProperty.VNODE, ssr));
             }
@@ -10426,7 +10424,7 @@
         const styleId = styleKey(styleQrl, i);
         const host = iCtx.$hostElement$;
         set(styleId);
-        const value = styleQrl.$resolveLazy$(host);
+        const value = styleQrl.$resolveLazy$(iCtx.$element$);
         if (isPromise(value)) {
             value.then((val) => iCtx.$container$.$appendStyle$(transform(val, styleId), styleId, host, scoped));
             throw value;
@@ -10521,7 +10519,7 @@
         set(task);
         useRunTask(task, eagerness);
         if (!isServerPlatform()) {
-            qrl.$resolveLazy$(iCtx.$hostElement$);
+            qrl.$resolveLazy$(iCtx.$element$);
             iCtx.$container$.$scheduler$(ChoreType.VISIBLE, task);
         }
     };
