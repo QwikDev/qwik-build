@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.0-dev+d03b04b
+ * @builder.io/qwik/optimizer 1.9.0-dev+dd2e8fa
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.0-dev+d03b04b"
+    qwik: "1.9.0-dev+dd2e8fa"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2131,7 +2131,7 @@ globalThis.qwikOptimizer = function(module) {
             moduleSideEffects: false
           };
         }
-        const firstInput = Object.values(opts.input)[0];
+        const firstInput = opts.input && Object.values(opts.input)[0];
         return {
           id: normalizePath(getPath().resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)),
           moduleSideEffects: false
@@ -2229,10 +2229,8 @@ globalThis.qwikOptimizer = function(module) {
         debug("load()", "Found", id2);
         let {code: code} = transformedModule[0];
         const {map: map, segment: segment} = transformedModule[0];
-        if (devServer) {
-          const firstInput = Object.values(opts.input)[0];
-          code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)));
-        }
+        const firstInput = opts.input && Object.values(opts.input)[0];
+        devServer && firstInput && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID))));
         return {
           code: code,
           map: map,
@@ -5241,7 +5239,7 @@ globalThis.qwikOptimizer = function(module) {
             res.end(html);
             return;
           }
-          const firstInput = Object.values(opts.input)[0];
+          const firstInput = opts.input && Object.values(opts.input)[0];
           const ssrModule = await server.ssrLoadModule(firstInput);
           const render = ssrModule.default ?? ssrModule.render;
           if ("function" === typeof render) {
