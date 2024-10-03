@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+01702b5
+ * @builder.io/qwik/server 2.0.0-0-dev+1f3fde5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -359,25 +359,6 @@ var shouldNotError = (reason) => {
   throwErrorAndStop("QWIK ERROR:", reason);
 };
 
-// packages/qwik/src/core/shared/utils/flyweight.ts
-var EMPTY_ARRAY = [];
-var EMPTY_OBJ = {};
-Object.freeze(EMPTY_ARRAY);
-Object.freeze(EMPTY_OBJ);
-
-// packages/qwik/src/core/ssr/ssr-render-jsx.ts
-var import_build5 = require("@builder.io/qwik/build");
-
-// packages/qwik/src/core/shared/utils/constants.ts
-var QObjectRecursive = 1 << 0;
-var QObjectImmutable = 1 << 1;
-var QObjectTargetSymbol = Symbol("proxy target");
-var QObjectFlagsSymbol = Symbol("proxy flags");
-var QObjectManagerSymbol = Symbol("proxy manager");
-var _CONST_PROPS = Symbol("CONST");
-var _VAR_PROPS = Symbol("VAR");
-var _IMMUTABLE = Symbol("IMMUTABLE");
-
 // packages/qwik/src/core/shared/types.ts
 var DEBUG_TYPE = "q:type";
 var START = "\x1B[34m";
@@ -456,6 +437,7 @@ var NON_SERIALIZABLE_MARKER_PREFIX = ":";
 var USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "on";
 var USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
 var USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
+var UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "unwrap";
 var FLUSH_COMMENT = "qkssr-f";
 var STREAM_BLOCK_START_COMMENT = "qkssr-pu";
 var STREAM_BLOCK_END_COMMENT = "qkssr-po";
@@ -463,7 +445,7 @@ var Q_PROPS_SEPARATOR = ":";
 var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
 
 // packages/qwik/src/core/client/vnode.ts
-var import_build4 = require("@builder.io/qwik/build");
+var import_build5 = require("@builder.io/qwik/build");
 
 // packages/qwik/src/server/utils.ts
 var import_meta = {};
@@ -492,7 +474,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+01702b5",
+  qwik: "2.0.0-0-dev+1f3fde5",
   qwikDom: "2.1.19"
 };
 
@@ -554,6 +536,18 @@ function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName)
   prefetchResources.push(prefetchResource);
 }
 
+// packages/qwik/src/core/shared/utils/flyweight.ts
+var EMPTY_ARRAY = [];
+var EMPTY_OBJ = {};
+Object.freeze(EMPTY_ARRAY);
+Object.freeze(EMPTY_OBJ);
+
+// packages/qwik/src/core/ssr/ssr-render-jsx.ts
+var import_build4 = require("@builder.io/qwik/build");
+
+// packages/qwik/src/core/shared/jsx/utils.public.ts
+var SkipRender = Symbol("skip render");
+
 // packages/qwik/src/core/signal/store.ts
 var STORE_TARGET = Symbol("store.target");
 var STORE_HANDLER = Symbol("store.handler");
@@ -561,9 +555,6 @@ var STORE_ARRAY_PROP = Symbol("store.array");
 
 // packages/qwik/src/core/client/vnode-diff.ts
 var import_build3 = require("@builder.io/qwik/build");
-
-// packages/qwik/src/core/shared/jsx/utils.public.ts
-var SkipRender = Symbol("skip render");
 
 // packages/qwik/src/core/shared/component-execution.ts
 var import_build2 = require("@builder.io/qwik/build");
@@ -597,6 +588,22 @@ function escapeHTML(html) {
     return escapedHTML + html.substring(lastIdx);
   }
 }
+
+// packages/qwik/src/core/signal/signal.ts
+var NEEDS_COMPUTATION = Symbol("invalid");
+
+// packages/qwik/src/core/shared/utils/constants.ts
+var QObjectRecursive = 1 << 0;
+var QObjectImmutable = 1 << 1;
+var QObjectTargetSymbol = Symbol("proxy target");
+var QObjectFlagsSymbol = Symbol("proxy flags");
+var QObjectManagerSymbol = Symbol("proxy manager");
+var _CONST_PROPS = Symbol("CONST");
+var _VAR_PROPS = Symbol("VAR");
+var _IMMUTABLE = Symbol("IMMUTABLE");
+
+// packages/qwik/src/core/shared/component.public.ts
+var SERIALIZABLE_STATE = Symbol("serializable-data");
 
 // packages/qwik/src/core/shared/vnode-data-types.ts
 var VNodeDataSeparator = {
@@ -927,14 +934,8 @@ var mapArray_get = (elementVNode, key, start) => {
   }
 };
 
-// packages/qwik/src/core/shared/component.public.ts
-var SERIALIZABLE_STATE = Symbol("serializable-data");
-
 // packages/qwik/src/core/shared/shared-serialization.ts
 var SERIALIZER_PROXY_UNWRAP = Symbol("UNWRAP");
-var PROMISE_RESOLVE = Symbol("resolve");
-var PROMISE_REJECT = Symbol("reject");
-var SERIALIZABLE_ROOT_ID = Symbol("SERIALIZABLE_ROOT_ID");
 
 // packages/qwik/src/core/shared/utils/styles.ts
 var serializeClass = (obj) => {
@@ -1797,7 +1798,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
   async render(jsx2) {
     this.openContainer();
     await (0, import_qwik3._walkJSX)(this, jsx2, true, null);
-    this.closeContainer();
+    await this.closeContainer();
   }
   setContext(host, context, value) {
     const ssrNode = host;
@@ -2484,6 +2485,7 @@ var SSRContainer = class extends import_qwik3._SharedContainer {
         }
         if (key === "ref") {
           const lastNode = this.getLastNode();
+          lastNode.setProp(UNWRAP_VNODE_LOCAL, true);
           if ((0, import_qwik3.isSignal)(value)) {
             value.value = lastNode;
             continue;

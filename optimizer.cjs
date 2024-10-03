@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+01702b5
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+1f3fde5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+01702b5"
+    qwik: "2.0.0-0-dev+1f3fde5"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -2936,26 +2936,24 @@ globalThis.qwikOptimizer = function(module) {
   globalThis.qDynamicPlatform;
   globalThis.qTest;
   globalThis.qRuntimeQrl;
+  globalThis.QWIK_DOM_VERSION;
   var EMPTY_ARRAY = [];
   var EMPTY_OBJ = {};
   Object.freeze(EMPTY_ARRAY);
   Object.freeze(EMPTY_OBJ);
+  Symbol("skip render");
+  Symbol("store.target");
+  Symbol("store.handler");
+  Symbol("store.array");
+  Symbol("invalid");
   Symbol("proxy target");
   Symbol("proxy flags");
   Symbol("proxy manager");
   Symbol("CONST");
   Symbol("VAR");
   Symbol("IMMUTABLE");
-  globalThis.QWIK_DOM_VERSION;
-  Symbol("store.target");
-  Symbol("store.handler");
-  Symbol("store.array");
-  Symbol("skip render");
   Symbol("serializable-data");
   Symbol("UNWRAP");
-  Symbol("resolve");
-  Symbol("reject");
-  Symbol("SERIALIZABLE_ROOT_ID");
   var SYNC_QRL = "<sync>";
   function getOrigin(req) {
     const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;

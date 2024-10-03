@@ -1043,8 +1043,10 @@ export declare class _EffectData<T extends Record<string, any> = Record<string, 
  * - `EffectProperty.VNODE` if VNode
  */
 declare type EffectSubscriptions = [
+...[
 Effect,
-string,
+string
+],
 ...(_EffectData | string | Signal_2 | TargetType)[]
 ];
 
@@ -2470,8 +2472,8 @@ declare interface SerializationContext {
      * `objMap` return:
      *
      * - `>=0` - index of the object in `objRoots`.
-     * - `Number.MIN_SAFE_INTEGER` - object has been seen, only once, and therefor does not need to be
-     *   promoted into a root yet.
+     * - `-1` - object has been seen, only once, and therefore does not need to be promoted into a root
+     *   yet.
      */
     $wasSeen$: (obj: unknown) => number | undefined;
     $hasRootId$: (obj: unknown) => number | undefined;
@@ -2511,6 +2513,7 @@ declare interface SerializationContext {
     $eventNames$: Set<string>;
     $resources$: Set<ResourceReturnInternal<unknown>>;
     $renderSymbols$: Set<string>;
+    $getProp$: (obj: any, prop: string) => any;
     $setProp$: (obj: any, prop: string, value: any) => void;
 }
 
@@ -2884,7 +2887,7 @@ declare interface SSRContainer extends Container {
     additionalBodyNodes: Array<JSXNode>;
     unclaimedProjectionComponentFrameQueue: ISsrComponentFrame[];
     openContainer(): void;
-    closeContainer(): void;
+    closeContainer(): ValueOrPromise<void>;
     openElement(elementName: string, varAttrs: SsrAttrs | null, constAttrs?: SsrAttrs | null): string | undefined;
     closeElement(): ValueOrPromise<void>;
     openFragment(attrs: SsrAttrs): void;
@@ -4114,7 +4117,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+01702b5
+ * 2.0.0-0-dev+1f3fde5
  *
  * @public
  */

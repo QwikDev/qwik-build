@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+01702b5
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+1f3fde5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+01702b5"
+  qwik: "2.0.0-0-dev+1f3fde5"
 };
 
 async function getSystem() {
@@ -3046,30 +3046,6 @@ var qTest = true === globalThis.qTest;
 
 var qRuntimeQrl = true === globalThis.qRuntimeQrl;
 
-var EMPTY_ARRAY = [];
-
-var EMPTY_OBJ = {};
-
-Object.freeze(EMPTY_ARRAY);
-
-Object.freeze(EMPTY_OBJ);
-
-var QObjectRecursive = 1;
-
-var QObjectImmutable = 2;
-
-var QObjectTargetSymbol = Symbol("proxy target");
-
-var QObjectFlagsSymbol = Symbol("proxy flags");
-
-var QObjectManagerSymbol = Symbol("proxy manager");
-
-var _CONST_PROPS = Symbol("CONST");
-
-var _VAR_PROPS = Symbol("VAR");
-
-var _IMMUTABLE = Symbol("IMMUTABLE");
-
 var START = "[34m";
 
 var END = "[0m";
@@ -3112,10 +3088,22 @@ var USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
 
 var USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
 
+var UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "unwrap";
+
 var versions3 = {
-  qwik: "2.0.0-0-dev+01702b5",
+  qwik: "2.0.0-0-dev+1f3fde5",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
+
+var EMPTY_ARRAY = [];
+
+var EMPTY_OBJ = {};
+
+Object.freeze(EMPTY_ARRAY);
+
+Object.freeze(EMPTY_OBJ);
+
+var SkipRender = Symbol("skip render");
 
 var STORE_TARGET = Symbol("store.target");
 
@@ -3123,17 +3111,27 @@ var STORE_HANDLER = Symbol("store.handler");
 
 var STORE_ARRAY_PROP = Symbol("store.array");
 
-var SkipRender = Symbol("skip render");
+var NEEDS_COMPUTATION = Symbol("invalid");
+
+var QObjectRecursive = 1;
+
+var QObjectImmutable = 2;
+
+var QObjectTargetSymbol = Symbol("proxy target");
+
+var QObjectFlagsSymbol = Symbol("proxy flags");
+
+var QObjectManagerSymbol = Symbol("proxy manager");
+
+var _CONST_PROPS = Symbol("CONST");
+
+var _VAR_PROPS = Symbol("VAR");
+
+var _IMMUTABLE = Symbol("IMMUTABLE");
 
 var SERIALIZABLE_STATE = Symbol("serializable-data");
 
 var SERIALIZER_PROXY_UNWRAP = Symbol("UNWRAP");
-
-var PROMISE_RESOLVE = Symbol("resolve");
-
-var PROMISE_REJECT = Symbol("reject");
-
-var SERIALIZABLE_ROOT_ID = Symbol("SERIALIZABLE_ROOT_ID");
 
 var SYNC_QRL = "<sync>";
 
