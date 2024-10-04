@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+1f3fde5
+ * @builder.io/qwik 2.0.0-0-dev+6f082cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1288,17 +1288,9 @@
             }
         }
         function insertNewComponent(host, componentQRL, jsxProps) {
-            if (host && clearVNodeEffectDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
+            host && clearVNodeEffectDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
             build.isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.Component), container.setHostProp(vNewNode, "q:renderFn", componentQRL), 
-            container.setHostProp(vNewNode, "q:props", jsxProps), container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key), 
-            host) {
-                for (let i = vnode_getPropStartIndex(host); i < host.length; i += 2) {
-                    const prop = host[i];
-                    if (isSlotProp(prop)) {
-                        container.setHostProp(vNewNode, prop, host[i + 1]);
-                    }
-                }
-            }
+            container.setHostProp(vNewNode, "q:props", jsxProps), container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
         }
         function expectText(text) {
             if (null !== vCurrent) {
@@ -1334,7 +1326,7 @@
             const type = vCursor[VNodeProps.flags];
             if (type & VNodeFlags.ELEMENT_OR_VIRTUAL_MASK) {
                 if (type & VNodeFlags.Virtual) {
-                    clearVNodeEffectDependencies(vCursor), markVNodeAsDeleted(vNode, vParent, vCursor);
+                    clearVNodeEffectDependencies(vCursor), markVNodeAsDeleted(vCursor);
                     const seq = container.getHostProp(vCursor, "q:seq");
                     if (seq) {
                         for (let i = 0; i < seq.length; i++) {
@@ -1409,13 +1401,8 @@
             projectionParent[VNodeProps.flags] & VNodeFlags.Element && vnode_getElementName(projectionParent) === QTemplate && vnode_remove(journal, projectionParent, projection, !0);
         }
     }
-    function markVNodeAsDeleted(vNode, vParent, vCursor) {
-        if (vNode !== vCursor) {
-            vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
-        } else {
-            const currentVParent = vParent || vnode_getParent(vNode);
-            currentVParent && null !== vnode_getProp(currentVParent, QSlot, null) || (vCursor[VNodeProps.flags] |= VNodeFlags.Deleted);
-        }
+    function markVNodeAsDeleted(vCursor) {
+        vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
     }
     const HANDLER_PREFIX = ":";
     let count = 0;
@@ -2163,7 +2150,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+1f3fde5", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+6f082cf", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -5138,7 +5125,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+1f3fde5", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+6f082cf", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

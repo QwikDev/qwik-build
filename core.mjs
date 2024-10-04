@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+1f3fde5
+ * @builder.io/qwik 2.0.0-0-dev+6f082cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -3031,16 +3031,6 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         container.setHostProp(vNewNode, OnRenderProp, componentQRL);
         container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
         container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
-        // rewrite slot props to the new node
-        if (host) {
-            for (let i = vnode_getPropStartIndex(host); i < host.length; i = i + 2) {
-                const prop = host[i];
-                if (isSlotProp(prop)) {
-                    const value = host[i + 1];
-                    container.setHostProp(vNewNode, prop, value);
-                }
-            }
-        }
     }
     function expectText(text) {
         if (vCurrent !== null) {
@@ -3160,7 +3150,7 @@ function cleanup(container, vNode) {
             if (type & VNodeFlags.Virtual) {
                 // Only virtual nodes have subscriptions
                 clearVNodeEffectDependencies(vCursor);
-                markVNodeAsDeleted(vNode, vParent, vCursor);
+                markVNodeAsDeleted(vCursor);
                 const seq = container.getHostProp(vCursor, ELEMENT_SEQ);
                 if (seq) {
                     for (let i = 0; i < seq.length; i++) {
@@ -3269,21 +3259,12 @@ function cleanupStaleUnclaimedProjection(journal, projection) {
         }
     }
 }
-function markVNodeAsDeleted(vNode, vParent, vCursor) {
+function markVNodeAsDeleted(vCursor) {
     /**
-     * Marks vCursor as deleted, but only if it is not a projection. We need to do this to prevent
-     * chores from running after the vnode is removed. (for example signal subscriptions)
+     * Marks vCursor as deleted. We need to do this to prevent chores from running after the vnode is
+     * removed. (for example signal subscriptions)
      */
-    if (vNode !== vCursor) {
-        vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
-    }
-    else {
-        const currentVParent = vParent || vnode_getParent(vNode);
-        const isParentProjection = currentVParent && vnode_getProp(currentVParent, QSlot, null) !== null;
-        if (!isParentProjection) {
-            vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
-        }
-    }
+    vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
 }
 /**
  * This marks the property as immutable. It is needed for the QRLs so that QwikLoader can get a hold
@@ -4760,7 +4741,7 @@ function appendQwikInspectorAttribute(jsx) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+1f3fde5";
+const version = "2.0.0-0-dev+6f082cf";
 
 /** @internal */
 class _SharedContainer {

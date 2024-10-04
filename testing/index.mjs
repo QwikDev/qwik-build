@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+1f3fde5
+ * @builder.io/qwik/testing 2.0.0-0-dev+6f082cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -25058,15 +25058,6 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
     container.setHostProp(vNewNode, OnRenderProp, componentQRL);
     container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
     container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
-    if (host) {
-      for (let i = vnode_getPropStartIndex(host); i < host.length; i = i + 2) {
-        const prop = host[i];
-        if (isSlotProp(prop)) {
-          const value = host[i + 1];
-          container.setHostProp(vNewNode, prop, value);
-        }
-      }
-    }
   }
   function expectText(text) {
     if (vCurrent !== null) {
@@ -25140,7 +25131,7 @@ function cleanup(container, vNode) {
     if (type & 3 /* ELEMENT_OR_VIRTUAL_MASK */) {
       if (type & 2 /* Virtual */) {
         clearVNodeEffectDependencies(vCursor);
-        markVNodeAsDeleted(vNode, vParent, vCursor);
+        markVNodeAsDeleted(vCursor);
         const seq = container.getHostProp(vCursor, ELEMENT_SEQ);
         if (seq) {
           for (let i = 0; i < seq.length; i++) {
@@ -25226,16 +25217,8 @@ function cleanupStaleUnclaimedProjection(journal, projection) {
     }
   }
 }
-function markVNodeAsDeleted(vNode, vParent, vCursor) {
-  if (vNode !== vCursor) {
-    vCursor[0 /* flags */] |= 32 /* Deleted */;
-  } else {
-    const currentVParent = vParent || vnode_getParent(vNode);
-    const isParentProjection = currentVParent && vnode_getProp(currentVParent, QSlot, null) !== null;
-    if (!isParentProjection) {
-      vCursor[0 /* flags */] |= 32 /* Deleted */;
-    }
-  }
+function markVNodeAsDeleted(vCursor) {
+  vCursor[0 /* flags */] |= 32 /* Deleted */;
 }
 var HANDLER_PREFIX = ":";
 var count = 0;

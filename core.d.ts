@@ -4117,7 +4117,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+1f3fde5
+ * 2.0.0-0-dev+6f082cf
  *
  * @public
  */

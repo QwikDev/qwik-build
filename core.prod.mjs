@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+1f3fde5
+ * @builder.io/qwik 2.0.0-0-dev+6f082cf
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1658,17 +1658,9 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         }
     }
     function insertNewComponent(host, componentQRL, jsxProps) {
-        if (host && clearVNodeEffectDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
+        host && clearVNodeEffectDependencies(host), vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
         isDev && vnode_setProp(vNewNode, DEBUG_TYPE, VirtualType.Component), container.setHostProp(vNewNode, "q:renderFn", componentQRL), 
-        container.setHostProp(vNewNode, "q:props", jsxProps), container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key), 
-        host) {
-            for (let i = vnode_getPropStartIndex(host); i < host.length; i += 2) {
-                const prop = host[i];
-                if (isSlotProp(prop)) {
-                    container.setHostProp(vNewNode, prop, host[i + 1]);
-                }
-            }
-        }
+        container.setHostProp(vNewNode, "q:props", jsxProps), container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
     }
     function expectText(text) {
         if (null !== vCurrent) {
@@ -1729,7 +1721,7 @@ function cleanup(container, vNode) {
         const type = vCursor[VNodeProps.flags];
         if (type & VNodeFlags.ELEMENT_OR_VIRTUAL_MASK) {
             if (type & VNodeFlags.Virtual) {
-                clearVNodeEffectDependencies(vCursor), markVNodeAsDeleted(vNode, vParent, vCursor);
+                clearVNodeEffectDependencies(vCursor), markVNodeAsDeleted(vCursor);
                 const seq = container.getHostProp(vCursor, "q:seq");
                 if (seq) {
                     for (let i = 0; i < seq.length; i++) {
@@ -1806,13 +1798,8 @@ function cleanupStaleUnclaimedProjection(journal, projection) {
     }
 }
 
-function markVNodeAsDeleted(vNode, vParent, vCursor) {
-    if (vNode !== vCursor) {
-        vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
-    } else {
-        const currentVParent = vParent || vnode_getParent(vNode);
-        currentVParent && null !== vnode_getProp(currentVParent, QSlot, null) || (vCursor[VNodeProps.flags] |= VNodeFlags.Deleted);
-    }
+function markVNodeAsDeleted(vCursor) {
+    vCursor[VNodeProps.flags] |= VNodeFlags.Deleted;
 }
 
 const HANDLER_PREFIX = ":";
@@ -2633,7 +2620,7 @@ function appendQwikInspectorAttribute(jsx) {
     }
 }
 
-const version = "2.0.0-0-dev+1f3fde5";
+const version = "2.0.0-0-dev+6f082cf";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
