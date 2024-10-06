@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.0-dev+a69de93
+ * @builder.io/qwik 1.9.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,6 @@
             return value;
         }
     };
-    const version = "1.9.0-dev+a69de93";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -4438,7 +4437,7 @@
     };
     const getElement = docOrElm => isDocument(docOrElm) ? docOrElm.documentElement : docOrElm;
     const injectQContainer = containerEl => {
-        directSetAttribute(containerEl, "q:version", version ?? "dev"), directSetAttribute(containerEl, "q:container", "resumed"), 
+        directSetAttribute(containerEl, "q:version", "1.9.1"), directSetAttribute(containerEl, "q:container", "resumed"), 
         directSetAttribute(containerEl, "q:render", "dom");
     };
     const useStore = (initialState, opts) => {
@@ -4781,7 +4780,7 @@
         const locale = opts.serverData?.locale;
         const containerAttributes = opts.containerAttributes;
         const qRender = containerAttributes["q:render"];
-        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = version ?? "dev", 
+        containerAttributes["q:container"] = "paused", containerAttributes["q:version"] = "1.9.1", 
         containerAttributes["q:render"] = (qRender ? qRender + "-" : "") + "ssr", containerAttributes["q:base"] = opts.base || "", 
         containerAttributes["q:locale"] = locale, containerAttributes["q:manifest-hash"] = opts.manifestHash, 
         containerAttributes["q:instance"] = hash();
@@ -4957,7 +4956,7 @@
     exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = version, exports.withLocale = function(locale, fn) {
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "1.9.1", exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
             return _locale = locale, fn();
