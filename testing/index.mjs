@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 1.9.0-dev+37962aa
+ * @builder.io/qwik/testing 1.9.0-dev+54d6a24
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22457,7 +22457,7 @@ function assertQwikElement(el) {
 var codeToText = (code2, ...parts) => {
   if (qDev) {
     const MAP = [
-      "Error while serializing class attribute",
+      "Error while serializing class or style attributes",
       // 0
       "Can not serialize a HTML Node that is not an Element",
       // 1

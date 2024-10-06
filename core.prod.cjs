@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.0-dev+37962aa
+ * @builder.io/qwik 1.9.0-dev+54d6a24
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.9.0-dev+37962aa";
+    const version = "1.9.0-dev+54d6a24";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -533,7 +533,7 @@
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
                         const value = obj[key];
-                        null != value && (key.startsWith("--") ? chunks.push(key + ":" + value) : chunks.push(fromCamelToKebabCase(key) + ":" + setValueForStyle(key, value)));
+                        null != value && "function" != typeof value && (key.startsWith("--") ? chunks.push(key + ":" + value) : chunks.push(fromCamelToKebabCase(key) + ":" + setValueForStyle(key, value)));
                     }
                 }
                 return chunks.join(";");
