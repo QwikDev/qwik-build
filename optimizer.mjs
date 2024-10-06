@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.0-dev+dd2e8fa
+ * @builder.io/qwik/optimizer 1.9.0-dev+37962aa
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.9.0-dev+dd2e8fa"
+  qwik: "1.9.0-dev+37962aa"
 };
 
 async function getSystem() {
@@ -1900,7 +1900,12 @@ var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader
 
 var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
 
-var experimental = [ "preventNavigate", "valibot" ];
+var ExperimentalFeatures = (ExperimentalFeatures2 => {
+  ExperimentalFeatures2.preventNavigate = "preventNavigate";
+  ExperimentalFeatures2.valibot = "valibot";
+  ExperimentalFeatures2.noSPA = "noSPA";
+  return ExperimentalFeatures2;
+})(ExperimentalFeatures || {});
 
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
@@ -2056,7 +2061,7 @@ function createPlugin(optimizerOptions = {}) {
     "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
     opts.experimental = void 0;
     for (const feature of updatedOpts.experimental ?? []) {
-      experimental.includes(feature) ? (opts.experimental || (opts.experimental = {}))[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+      ExperimentalFeatures[feature] ? (opts.experimental || (opts.experimental = {}))[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
     }
     return {
       ...opts

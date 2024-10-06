@@ -31,16 +31,22 @@ declare type EmitMode = 'dev' | 'prod' | 'lib';
 /** @public */
 export declare type EntryStrategy = InlineEntryStrategy | HoistEntryStrategy | SingleEntryStrategy | HookEntryStrategy_2 | SegmentEntryStrategy | ComponentEntryStrategy | SmartEntryStrategy;
 
-/** List experimental features here */
-declare const experimental: readonly ["preventNavigate", "valibot"];
-
 /**
  * Use `__EXPERIMENTAL__.x` to check if feature `x` is enabled. It will be replaced with `true` or
  * `false` via an exact string replacement.
  *
+ * Add experimental features to this enum definition.
+ *
  * @alpha
  */
-export declare type ExperimentalFeatures = (typeof experimental)[number];
+export declare enum ExperimentalFeatures {
+    /** Enable the usePreventNavigate hook */
+    preventNavigate = "preventNavigate",
+    /** Enable the Valibot form validation */
+    valibot = "valibot",
+    /** Disable SPA navigation handler in Qwik City */
+    noSPA = "noSPA"
+}
 
 /** @public */
 export declare interface GlobalInjections {
@@ -84,7 +90,7 @@ declare interface NormalizedQwikPluginOptions extends Omit<Required<QwikPluginOp
     input: string[] | {
         [entry: string]: string;
     };
-    experimental?: Record<ExperimentalFeatures, boolean>;
+    experimental?: Record<keyof typeof ExperimentalFeatures, boolean>;
 }
 
 /** @public */
@@ -257,9 +263,9 @@ declare interface QwikPluginOptions {
     lint?: boolean;
     /**
      * Experimental features. These can come and go in patch releases, and their API is not guaranteed
-     * to be stable between releases
+     * to be stable between releases.
      */
-    experimental?: ExperimentalFeatures[];
+    experimental?: (keyof typeof ExperimentalFeatures)[];
 }
 
 /** @public */
@@ -342,7 +348,7 @@ export declare interface QwikRollupPluginOptions {
      * Experimental features. These can come and go in patch releases, and their API is not guaranteed
      * to be stable between releases.
      */
-    experimental?: ExperimentalFeatures[];
+    experimental?: (keyof typeof ExperimentalFeatures)[];
 }
 
 /** @public */
@@ -478,7 +484,7 @@ declare interface QwikVitePluginCommonOptions {
      * Experimental features. These can come and go in patch releases, and their API is not guaranteed
      * to be stable between releases
      */
-    experimental?: ExperimentalFeatures[];
+    experimental?: (keyof typeof ExperimentalFeatures)[];
 }
 
 declare interface QwikVitePluginCSROptions extends QwikVitePluginCommonOptions {
