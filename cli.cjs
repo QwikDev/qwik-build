@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 1.9.0-dev+a9ee2a6
+ * @builder.io/qwik/cli 1.9.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2822,7 +2822,7 @@ var jokes_default = [
   ],
   ["Why do programmers always mix up Halloween and Christmas?", "Because Oct 31 == Dec 25"],
   ["I was gonna tell you a joke about UDP...", "...but you might not get it."],
-  ["Normal People: give me just a second", "Developers: give me 100 milliseconds!"],
+  ["Normal People: give me just a second", "Developers: give me 1000 milliseconds!"],
   ["Why do programmers prefer dark mode?", "Because light attracts bugs."],
   ["Why don't programmers like nature?", "It has too many bugs."],
   ["Why was the computer freezing?", "It left its Windows open!"],
@@ -4896,7 +4896,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("1.9.0-dev+a9ee2a6");
+  console.log("1.9.1");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

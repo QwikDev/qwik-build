@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.0-dev+a9ee2a6
+ * @builder.io/qwik/optimizer 1.9.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.9.0-dev+a9ee2a6"
+  qwik: "1.9.1"
 };
 
 async function getSystem() {
@@ -1627,12 +1627,20 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
   };
   const buildPath = path.resolve(opts.rootDir, opts.outDir, "build");
   const canonPath = p => path.relative(buildPath, path.resolve(opts.rootDir, opts.outDir, p));
+  const getBundleName = name => {
+    const bundle = outputBundles[name];
+    if (!bundle) {
+      console.warn(`Client manifest generation: skipping external import "${name}"`);
+      return;
+    }
+    return canonPath(bundle.fileName);
+  };
   const qrlNames = new Set([ ...segments.map((h => h.name)) ]);
   for (const outputBundle of Object.values(outputBundles)) {
     if ("chunk" !== outputBundle.type) {
       continue;
     }
-    const bundleFileName = path.relative(buildPath, path.resolve(opts.outDir, outputBundle.fileName));
+    const bundleFileName = canonPath(outputBundle.fileName);
     const bundle = {
       size: outputBundle.code.length
     };
@@ -1646,9 +1654,9 @@ function generateManifestFromBundles(path, segments, injections, outputBundles, 
       "_hW" === symbol && (hasHW = true);
     }
     hasSymbols && hasHW && (bundle.isTask = true);
-    const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
+    const bundleImports = outputBundle.imports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleImports.length > 0 && (bundle.imports = bundleImports);
-    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => canonPath(outputBundles[i].fileName || i)));
+    const bundleDynamicImports = outputBundle.dynamicImports.filter((i => outputBundle.code.includes(path.basename(i)))).map((i => getBundleName(i))).filter(Boolean);
     bundleDynamicImports.length > 0 && (bundle.dynamicImports = bundleDynamicImports);
     const ids = outputBundle.moduleIds || Object.keys(outputBundle.modules);
     const modulePaths = ids.filter((m => !m.startsWith("\0"))).map((m => path.relative(opts.rootDir, m)));
@@ -1892,7 +1900,12 @@ var SERVER_STRIP_CTX_NAME = [ "useServer", "route", "server", "action$", "loader
 
 var CLIENT_STRIP_CTX_NAME = [ "useClient", "useBrowser", "useVisibleTask", "client", "browser", "event$" ];
 
-var experimental = [ "preventNavigate", "valibot" ];
+var ExperimentalFeatures = (ExperimentalFeatures2 => {
+  ExperimentalFeatures2.preventNavigate = "preventNavigate";
+  ExperimentalFeatures2.valibot = "valibot";
+  ExperimentalFeatures2.noSPA = "noSPA";
+  return ExperimentalFeatures2;
+})(ExperimentalFeatures || {});
 
 function createPlugin(optimizerOptions = {}) {
   const id = `${Math.round(899 * Math.random()) + 100}`;
@@ -2048,7 +2061,7 @@ function createPlugin(optimizerOptions = {}) {
     "boolean" === typeof updatedOpts.lint ? opts.lint = updatedOpts.lint : opts.lint = "development" === updatedOpts.buildMode;
     opts.experimental = void 0;
     for (const feature of updatedOpts.experimental ?? []) {
-      experimental.includes(feature) ? (opts.experimental || (opts.experimental = {}))[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
+      ExperimentalFeatures[feature] ? (opts.experimental || (opts.experimental = {}))[feature] = true : console.error(`Qwik plugin: Unknown experimental feature: ${feature}`);
     }
     return {
       ...opts
@@ -2142,7 +2155,7 @@ function createPlugin(optimizerOptions = {}) {
           moduleSideEffects: false
         };
       }
-      const firstInput = Object.values(opts.input)[0];
+      const firstInput = opts.input && Object.values(opts.input)[0];
       return {
         id: normalizePath(getPath().resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)),
         moduleSideEffects: false
@@ -2240,10 +2253,8 @@ function createPlugin(optimizerOptions = {}) {
       debug("load()", "Found", id2);
       let {code: code} = transformedModule[0];
       const {map: map, segment: segment} = transformedModule[0];
-      if (devServer) {
-        const firstInput = Object.values(opts.input)[0];
-        code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID)));
-      }
+      const firstInput = opts.input && Object.values(opts.input)[0];
+      devServer && firstInput && (code = code.replace(/@qwik-client-manifest/g, normalizePath(path.resolve(firstInput, QWIK_CLIENT_MANIFEST_ID))));
       return {
         code: code,
         map: map,
@@ -2339,11 +2350,18 @@ function createPlugin(optimizerOptions = {}) {
           debug("transform()", `segment ${key}`, mod.segment?.displayName);
           currentOutputs.set(key, [ mod, id2 ]);
           deps.add(key);
-          devServer || "client" !== opts.target || ctx.emitFile({
-            id: key,
-            type: "chunk",
-            preserveSignature: "allow-extension"
-          });
+          if ("client" === opts.target) {
+            if (devServer) {
+              const rollupModule = devServer.moduleGraph.getModuleById(key);
+              rollupModule && devServer.moduleGraph.invalidateModule(rollupModule);
+            } else {
+              ctx.emitFile({
+                id: key,
+                type: "chunk",
+                preserveSignature: "allow-extension"
+              });
+            }
+          }
         }
       }
       for (const id3 of deps.values()) {
@@ -3188,7 +3206,7 @@ function assertQwikElement(el) {
 
 var codeToText = (code, ...parts) => {
   if (qDev) {
-    const MAP = [ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property {{0}}", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", "", "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", 'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", 'The provided Context reference "{{0}}" is not a valid context created by createContextId()', "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ];
+    const MAP = [ "Error while serializing class or style attributes", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property {{0}}", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", "", "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", 'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", 'The provided Context reference "{{0}}" is not a valid context created by createContextId()', "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ];
     let text = MAP[code] ?? "";
     parts.length && (text = text.replaceAll(/{{(\d+)}}/g, ((_, index) => {
       let v = parts[index];
@@ -5675,7 +5693,7 @@ function createSymbolMapper(base, opts, path, sys) {
     const parentPath = normalizePath(path.dirname(parent));
     const parentFile = path.basename(parent);
     const qrlPath = parentPath.startsWith(opts.rootDir) ? normalizePath(path.relative(opts.rootDir, parentPath)) : `@fs${maybeSlash}${parentPath}`;
-    const qrlFile = `${encode(qrlPath)}/${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parentFile)}`;
+    const qrlFile = `${encode(qrlPath)}/${parentFile.toLowerCase()}_${symbolName.toLowerCase()}.js?_qrl_parent=${encode(parentFile)}`;
     return [ symbolName, `${base}${qrlFile}` ];
   };
 }
@@ -5728,7 +5746,7 @@ async function configureDevServer(base, server, opts, sys, path, isClientDevOnly
           res.end(html);
           return;
         }
-        const firstInput = Object.values(opts.input)[0];
+        const firstInput = opts.input && Object.values(opts.input)[0];
         const ssrModule = await server.ssrLoadModule(firstInput);
         const render = ssrModule.default ?? ssrModule.render;
         if ("function" === typeof render) {
@@ -6489,6 +6507,9 @@ function convertManifestToBundleGraph(manifest) {
   const map = new Map;
   const clearTransitiveDeps = (parentDeps, seen, bundleName) => {
     const bundle = graph[bundleName];
+    if (!bundle) {
+      return;
+    }
     for (const dep of bundle.imports || []) {
       parentDeps.has(dep) && parentDeps.delete(dep);
       if (!seen.has(dep)) {

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.0-dev+a9ee2a6
+ * @builder.io/qwik 1.9.1
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -239,7 +239,7 @@ const codeToText = (code, ...parts) => {
     if (qDev) {
         // Keep one error, one line to make it easier to search for the error message.
         const MAP = [
-            'Error while serializing class attribute', // 0
+            'Error while serializing class or style attributes', // 0
             'Can not serialize a HTML Node that is not an Element', // 1
             'Runtime but no instance found on element.', // 2
             'Only primitive and object literals can be serialized', // 3
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.9.0-dev+a9ee2a6";
+const version = "1.9.1";
 
 /**
  * @internal
@@ -1534,7 +1534,7 @@ const stringifyStyle = (obj) => {
             for (const key in obj) {
                 if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     const value = obj[key];
-                    if (value != null) {
+                    if (value != null && typeof value !== 'function') {
                         if (key.startsWith('--')) {
                             chunks.push(key + ':' + value);
                         }
