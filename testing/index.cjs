@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+6f082cf
+ * @builder.io/qwik/testing 2.0.0-0-dev+386edeb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -24576,7 +24576,9 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
       }
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
-        const slotName = String(isJSXNode(child) && child.props[QSlot] || QDefaultSlot);
+        const slotName = String(
+          isJSXNode(child) && directGetPropsProxyProp(child, QSlot) || QDefaultSlot
+        );
         const idx = mapApp_findIndx(projections, slotName, 0);
         let jsxBucket;
         if (idx >= 0) {
@@ -24658,7 +24660,7 @@ var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
         return trackSignal(() => constValue.value, vHost, ":" /* COMPONENT */, container);
       }
     }
-    return jsxValue.props.name || QDefaultSlot;
+    return directGetPropsProxyProp(jsxValue, "name") || QDefaultSlot;
   }
   function drainAsyncQueue() {
     while (asyncQueue.length) {
@@ -27938,6 +27940,9 @@ var PropsProxyHandler = class {
     }
     return out;
   }
+};
+var directGetPropsProxyProp = (jsx2, prop) => {
+  return jsx2.constProps && prop in jsx2.constProps ? jsx2.constProps[prop] : jsx2.varProps[prop];
 };
 
 // packages/qwik/src/core/debug.ts
@@ -31614,9 +31619,14 @@ function newTagError(text) {
 function hasDestroy(obj) {
   return obj && typeof obj === "object" && typeof obj.$destroy$ === "function";
 }
-var unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/;
 function isSSRUnsafeAttr(name) {
-  return unsafeAttrCharRE.test(name);
+  for (let idx = 0; idx < name.length; idx++) {
+    const ch = name.charCodeAt(idx);
+    if (ch === 62 || ch === 47 || ch === 61 || ch === 34 || ch === 39 || ch === 9 || ch === 10 || ch === 12 || ch === 32) {
+      return true;
+    }
+  }
+  return false;
 }
 function hash2() {
   return Math.random().toString(36).slice(2);

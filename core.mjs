@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+6f082cf
+ * @builder.io/qwik 2.0.0-0-dev+386edeb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2468,7 +2468,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
             /// STEP 1: Bucketize the children based on the projection name.
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];
-                const slotName = String((isJSXNode(child) && child.props[QSlot]) || QDefaultSlot);
+                const slotName = String((isJSXNode(child) && directGetPropsProxyProp(child, QSlot)) || QDefaultSlot);
                 const idx = mapApp_findIndx(projections, slotName, 0);
                 let jsxBucket;
                 if (idx >= 0) {
@@ -2547,7 +2547,7 @@ const vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
                 return trackSignal(() => constValue.value, vHost, EffectProperty.COMPONENT, container);
             }
         }
-        return jsxValue.props.name || QDefaultSlot;
+        return directGetPropsProxyProp(jsxValue, 'name') || QDefaultSlot;
     }
     function drainAsyncQueue() {
         while (asyncQueue.length) {
@@ -4453,14 +4453,7 @@ function processJSXNode(ssr, enqueue, value, styleScoped) {
             const type = jsx.type;
             // Below, JSXChildren allows functions and regexes, but we assume the dev only uses those as appropriate.
             if (typeof type === 'string') {
-                // append class attribute if styleScopedId exists and there is no class attribute
-                const classAttributeExists = hasClassAttr(jsx.varProps) || (jsx.constProps && hasClassAttr(jsx.constProps));
-                if (!classAttributeExists && styleScoped) {
-                    if (!jsx.constProps) {
-                        jsx.constProps = {};
-                    }
-                    jsx.constProps['class'] = '';
-                }
+                appendClassIfScopedStyleExists(jsx, styleScoped);
                 appendQwikInspectorAttribute(jsx);
                 const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, styleScoped));
                 if (innerHTML) {
@@ -4517,7 +4510,7 @@ function processJSXNode(ssr, enqueue, value, styleScoped) {
                     }
                 }
                 else if (type === SSRComment) {
-                    ssr.commentNode(jsx.props.data || '');
+                    ssr.commentNode(directGetPropsProxyProp(jsx, 'data') || '');
                 }
                 else if (type === SSRStream) {
                     ssr.commentNode(FLUSH_COMMENT);
@@ -4538,7 +4531,7 @@ function processJSXNode(ssr, enqueue, value, styleScoped) {
                     isPromise(value) && enqueue(Promise);
                 }
                 else if (type === SSRRaw) {
-                    ssr.htmlNode(jsx.props.data);
+                    ssr.htmlNode(directGetPropsProxyProp(jsx, 'data'));
                 }
                 else if (isQwikComponent(type)) {
                     // prod: use new instance of an array for props, we always modify props for a component
@@ -4720,19 +4713,26 @@ function getSlotName(host, jsx, ssr) {
             return trackSignal(() => constValue.value, host, EffectProperty.COMPONENT, ssr);
         }
     }
-    return jsx.props.name || QDefaultSlot;
+    return directGetPropsProxyProp(jsx, 'name') || QDefaultSlot;
 }
 function appendQwikInspectorAttribute(jsx) {
     if (isDev && qInspector && jsx.dev && jsx.type !== 'head') {
         const sanitizedFileName = jsx.dev.fileName?.replace(/\\/g, '/');
         const qwikInspectorAttr = 'data-qwik-inspector';
-        if (sanitizedFileName && !(qwikInspectorAttr in jsx.props)) {
-            if (!jsx.constProps) {
-                jsx.constProps = {};
-            }
-            jsx.constProps[qwikInspectorAttr] =
+        if (sanitizedFileName && (!jsx.constProps || !(qwikInspectorAttr in jsx.constProps))) {
+            (jsx.constProps || (jsx.constProps = {}))[qwikInspectorAttr] =
                 `${sanitizedFileName}:${jsx.dev.lineNumber}:${jsx.dev.columnNumber}`;
         }
+    }
+}
+// append class attribute if styleScopedId exists and there is no class attribute
+function appendClassIfScopedStyleExists(jsx, styleScoped) {
+    const classAttributeExists = directGetPropsProxyProp(jsx, 'class') != null;
+    if (!classAttributeExists && styleScoped) {
+        if (!jsx.constProps) {
+            jsx.constProps = {};
+        }
+        jsx.constProps['class'] = '';
     }
 }
 
@@ -4741,7 +4741,7 @@ function appendQwikInspectorAttribute(jsx) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+6f082cf";
+const version = "2.0.0-0-dev+386edeb";
 
 /** @internal */
 class _SharedContainer {
@@ -5132,6 +5132,13 @@ class PropsProxyHandler {
         return out;
     }
 }
+/**
+ * Instead of using PropsProxyHandler getter (which could create a component-level subscription).
+ * Use this function to get the props directly from a const or var props.
+ */
+const directGetPropsProxyProp = (jsx, prop) => {
+    return (jsx.constProps && prop in jsx.constProps ? jsx.constProps[prop] : jsx.varProps[prop]);
+};
 
 const stringifyPath = [];
 function qwikDebugToString(value) {

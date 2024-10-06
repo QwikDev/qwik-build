@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+6f082cf
+ * @builder.io/qwik/server 2.0.0-0-dev+386edeb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -474,7 +474,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+6f082cf",
+  qwik: "2.0.0-0-dev+386edeb",
   qwikDom: "2.1.19"
 };
 
@@ -2554,9 +2554,14 @@ function newTagError(text) {
 function hasDestroy(obj) {
   return obj && typeof obj === "object" && typeof obj.$destroy$ === "function";
 }
-var unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/;
 function isSSRUnsafeAttr(name) {
-  return unsafeAttrCharRE.test(name);
+  for (let idx = 0; idx < name.length; idx++) {
+    const ch = name.charCodeAt(idx);
+    if (ch === 62 || ch === 47 || ch === 61 || ch === 34 || ch === 39 || ch === 9 || ch === 10 || ch === 12 || ch === 32) {
+      return true;
+    }
+  }
+  return false;
 }
 function hash() {
   return Math.random().toString(36).slice(2);

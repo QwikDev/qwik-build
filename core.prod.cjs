@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+6f082cf
+ * @builder.io/qwik 2.0.0-0-dev+386edeb
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1013,7 +1013,7 @@
                         return trackSignal((() => constValue.value), vHost, EffectProperty.COMPONENT, container);
                     }
                 }
-                return jsxValue.props.name || QDefaultSlot;
+                return directGetPropsProxyProp(jsxValue, "name") || QDefaultSlot;
             }(vHost);
             const vProjectedNode = vHost ? vnode_getProp(vHost, slotNameKey, null) : null;
             return null == vProjectedNode ? (vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore()), 
@@ -1263,7 +1263,7 @@
                         }
                         for (let i = 0; i < children.length; i++) {
                             const child = children[i];
-                            const slotName = String(isJSXNode(child) && child.props[QSlot] || QDefaultSlot);
+                            const slotName = String(isJSXNode(child) && directGetPropsProxyProp(child, QSlot) || QDefaultSlot);
                             const idx = mapApp_findIndx(projections, slotName, 0);
                             let jsxBucket;
                             idx >= 0 ? jsxBucket = projections[idx + 1] : projections.splice(~idx, 0, slotName, jsxBucket = createProjectionJSXNode(slotName)), 
@@ -1996,13 +1996,15 @@
                 const jsx = value;
                 const type = jsx.type;
                 if ("string" == typeof type) {
-                    !(hasClassAttr(jsx.varProps) || jsx.constProps && hasClassAttr(jsx.constProps)) && styleScoped && (jsx.constProps || (jsx.constProps = {}), 
-                    jsx.constProps.class = ""), function(jsx) {
+                    !function(jsx, styleScoped) {
+                        const classAttributeExists = null != directGetPropsProxyProp(jsx, "class");
+                        !classAttributeExists && styleScoped && (jsx.constProps || (jsx.constProps = {}), 
+                        jsx.constProps.class = "");
+                    }(jsx, styleScoped), function(jsx) {
                         if (build.isDev && qInspector && jsx.dev && "head" !== jsx.type) {
                             const sanitizedFileName = jsx.dev.fileName?.replace(/\\/g, "/");
                             const qwikInspectorAttr = "data-qwik-inspector";
-                            sanitizedFileName && !(qwikInspectorAttr in jsx.props) && (jsx.constProps || (jsx.constProps = {}), 
-                            jsx.constProps[qwikInspectorAttr] = `${sanitizedFileName}:${jsx.dev.lineNumber}:${jsx.dev.columnNumber}`);
+                            !sanitizedFileName || jsx.constProps && qwikInspectorAttr in jsx.constProps || ((jsx.constProps || (jsx.constProps = {}))[qwikInspectorAttr] = `${sanitizedFileName}:${jsx.dev.lineNumber}:${jsx.dev.columnNumber}`);
                         }
                     }(jsx);
                     const innerHTML = ssr.openElement(type, toSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, !0, styleScoped, jsx.key), function(constProps, varProps, serializationCtx, styleScopedId) {
@@ -2034,7 +2036,7 @@
                                         return trackSignal((() => constValue.value), host, EffectProperty.COMPONENT, ssr);
                                     }
                                 }
-                                return jsx.props.name || QDefaultSlot;
+                                return directGetPropsProxyProp(jsx, "name") || QDefaultSlot;
                             }(host, jsx, ssr);
                             projectionAttrs.push(QSlot, slotName), enqueue(new SetScopedStyle(styleScoped)), 
                             enqueue(ssr.closeProjection);
@@ -2047,7 +2049,7 @@
                             ssr.closeFragment();
                         }
                     } else if (type === SSRComment) {
-                        ssr.commentNode(jsx.props.data || "");
+                        ssr.commentNode(directGetPropsProxyProp(jsx, "data") || "");
                     } else if (type === SSRStream) {
                         ssr.commentNode(FLUSH_COMMENT);
                         const generator = jsx.children;
@@ -2058,7 +2060,7 @@
                             }
                         }) : generator, enqueue(value), isPromise(value) && enqueue(Promise);
                     } else if (type === SSRRaw) {
-                        ssr.htmlNode(jsx.props.data);
+                        ssr.htmlNode(directGetPropsProxyProp(jsx, "data"));
                     } else if (isQwikComponent(type)) {
                         ssr.openComponent(build.isDev ? [ DEBUG_TYPE, VirtualType.Component ] : []);
                         const host = ssr.getLastNode();
@@ -2150,7 +2152,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+6f082cf", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+386edeb", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -2302,6 +2304,7 @@
             return out;
         }
     }
+    const directGetPropsProxyProp = (jsx, prop) => jsx.constProps && prop in jsx.constProps ? jsx.constProps[prop] : jsx.varProps[prop];
     const stringifyPath = [];
     function qwikDebugToString(value) {
         if (null === value) {
@@ -5125,7 +5128,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+6f082cf", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+386edeb", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
