@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+3c2163f
+ * @builder.io/qwik 1.9.1-dev+9d4a661
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -592,7 +592,7 @@ const serializeSStyle = scopeIds => {
     }
 };
 
-const version = "1.9.1-dev+3c2163f";
+const version = "1.9.1-dev+9d4a661";
 
 const useSequentialScope = () => {
     const iCtx = useInvokeContext();
@@ -4561,8 +4561,9 @@ const serializeQRL = (qrl, opts = {}) => {
     }
     if (chunk.startsWith("./") && (chunk = chunk.slice(2)), isSyncQrl(qrl)) {
         if (opts.$containerState$) {
+            const fn = qrl.resolved;
             const containerState = opts.$containerState$;
-            const fnStrKey = qrl.resolved.toString();
+            const fnStrKey = fn.serialized || fn.toString();
             let id = containerState.$inlineFns$.get(fnStrKey);
             void 0 === id && (id = containerState.$inlineFns$.size, containerState.$inlineFns$.set(fnStrKey, id)), 
             symbol = String(id);
@@ -5509,7 +5510,8 @@ const event$ = implicit$FirstArg(eventQrl);
 const sync$ = fn => createQRL("", "<sync>", fn, null, null, null, null);
 
 const _qrlSync = function(fn, serializedFn) {
-    return void 0 === serializedFn && (serializedFn = fn.toString()), createQRL("", "<sync>", fn, null, null, null, null);
+    return void 0 === serializedFn && (serializedFn = fn.toString()), fn.serialized = serializedFn, 
+    createQRL("", "<sync>", fn, null, null, null, null);
 };
 
 const componentQrl = componentQrl => {

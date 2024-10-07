@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+3c2163f
+ * @builder.io/qwik 1.9.1-dev+9d4a661
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -355,7 +355,7 @@
             return value;
         }
     };
-    const version = "1.9.1-dev+3c2163f";
+    const version = "1.9.1-dev+9d4a661";
     const useSequentialScope = () => {
         const iCtx = useInvokeContext();
         const elCtx = getContext(iCtx.$hostElement$, iCtx.$renderCtx$.$static$.$containerState$);
@@ -3579,8 +3579,9 @@
         }
         if (chunk.startsWith("./") && (chunk = chunk.slice(2)), isSyncQrl(qrl)) {
             if (opts.$containerState$) {
+                const fn = qrl.resolved;
                 const containerState = opts.$containerState$;
-                const fnStrKey = qrl.resolved.toString();
+                const fnStrKey = fn.serialized || fn.toString();
                 let id = containerState.$inlineFns$.get(fnStrKey);
                 void 0 === id && (id = containerState.$inlineFns$.size, containerState.$inlineFns$.set(fnStrKey, id)), 
                 symbol = String(id);
@@ -4756,7 +4757,8 @@
         const newQrl = _noopQrl(symbolName, lexicalScopeCapture);
         return newQrl.dev = opts, newQrl;
     }, exports._pauseFromContexts = _pauseFromContexts, exports._qrlSync = function(fn, serializedFn) {
-        return void 0 === serializedFn && (serializedFn = fn.toString()), createQRL("", "<sync>", fn, null, null, null, null);
+        return void 0 === serializedFn && (serializedFn = fn.toString()), fn.serialized = serializedFn, 
+        createQRL("", "<sync>", fn, null, null, null, null);
     }, exports._regSymbol = (symbol, hash) => (void 0 === globalThis.__qwik_reg_symbols && (globalThis.__qwik_reg_symbols = new Map), 
     globalThis.__qwik_reg_symbols.set(hash, symbol), symbol), exports._renderSSR = async (node, opts) => {
         const root = opts.containerTagName;

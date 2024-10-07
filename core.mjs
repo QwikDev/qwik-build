@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 1.9.1-dev+3c2163f
+ * @builder.io/qwik 1.9.1-dev+9d4a661
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1005,7 +1005,7 @@ const serializeSStyle = (scopeIds) => {
  *
  * @public
  */
-const version = "1.9.1-dev+3c2163f";
+const version = "1.9.1-dev+9d4a661";
 
 /**
  * @internal
@@ -7280,7 +7280,7 @@ const serializeQRL = (qrl, opts = {}) => {
         if (opts.$containerState$) {
             const fn = qrl.resolved;
             const containerState = opts.$containerState$;
-            const fnStrKey = fn.toString();
+            const fnStrKey = fn.serialized || fn.toString();
             let id = containerState.$inlineFns$.get(fnStrKey);
             if (id === undefined) {
                 id = containerState.$inlineFns$.size;
@@ -8899,6 +8899,7 @@ const _qrlSync = function (fn, serializedFn) {
     if (serializedFn === undefined) {
         serializedFn = fn.toString();
     }
+    fn.serialized = serializedFn;
     return createQRL('', SYNC_QRL, fn, null, null, null, null);
 };
 

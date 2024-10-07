@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+3c2163f
+ * @builder.io/qwik/optimizer 1.9.1-dev+9d4a661
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "1.9.1-dev+3c2163f"
+  qwik: "1.9.1-dev+9d4a661"
 };
 
 async function getSystem() {
@@ -4345,7 +4345,7 @@ var serializeQRL = (qrl, opts = {}) => {
     if (opts.$containerState$) {
       const fn = qrl.resolved;
       const containerState = opts.$containerState$;
-      const fnStrKey = fn.toString();
+      const fnStrKey = fn.serialized || fn.toString();
       let id = containerState.$inlineFns$.get(fnStrKey);
       if (void 0 === id) {
         id = containerState.$inlineFns$.size;
