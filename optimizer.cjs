@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 1.9.1-dev+9d4a661
+ * @builder.io/qwik/optimizer 1.9.1-dev+d937f84
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "1.9.1-dev+9d4a661"
+    qwik: "1.9.1-dev+d937f84"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5454,9 +5454,9 @@ globalThis.qwikOptimizer = function(module) {
     const fileFilter = qwikViteOpts.fileFilter ? (id, type) => TRANSFORM_REGEX.test(id) || qwikViteOpts.fileFilter(id, type) : () => true;
     const injections = [];
     const qwikPlugin = createPlugin(qwikViteOpts.optimizerOptions);
-    async function loadQwikInsights(clientOutDir2) {
+    async function loadQwikInsights(clientOutDir2 = "") {
       const sys = qwikPlugin.getSys();
-      const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2 ?? "dist", "q-insights.json");
+      const cwdRelativePath = absolutePathAwareJoin(sys.path, rootDir || ".", clientOutDir2, "q-insights.json");
       const path = absolutePathAwareJoin(sys.path, process.cwd(), cwdRelativePath);
       const fs = await sys.dynamicImport("node:fs");
       if (fs.existsSync(path)) {
@@ -5469,7 +5469,7 @@ globalThis.qwikOptimizer = function(module) {
       getOptimizer: () => qwikPlugin.getOptimizer(),
       getOptions: () => qwikPlugin.getOptions(),
       getManifest: () => manifestInput,
-      getInsightsManifest: clientOutDir2 => loadQwikInsights(clientOutDir2),
+      getInsightsManifest: (clientOutDir2 = "") => loadQwikInsights(clientOutDir2),
       getRootDir: () => qwikPlugin.getOptions().rootDir,
       getClientOutDir: () => clientOutDir,
       getClientPublicOutDir: () => clientPublicOutDir,
@@ -5543,7 +5543,7 @@ globalThis.qwikOptimizer = function(module) {
               } catch (e) {
                 console.error(e);
               }
-            } catch (e) {}
+            } catch {}
             const nodeOs = await sys.dynamicImport("node:os");
             const scopeSuffix = pluginOpts.scope ? `-${pluginOpts.scope.replace(/\//g, "--")}` : "";
             tmpClientManifestPath = path.join(nodeOs.tmpdir(), `vite-plugin-qwik-q-manifest${scopeSuffix}.json`);
@@ -5657,7 +5657,7 @@ globalThis.qwikOptimizer = function(module) {
           try {
             const entryStrategy = await loadQwikInsights(qwikViteOpts.csr || null == (_a3 = qwikViteOpts.client) ? void 0 : _a3.outDir);
             entryStrategy && (qwikViteOpts.entryStrategy = entryStrategy);
-          } catch (e) {}
+          } catch {}
         }
         const useSourcemap = !!config.build.sourcemap;
         useSourcemap && void 0 === (null == (_b = qwikViteOpts.optimizerOptions) ? void 0 : _b.sourcemap) && qwikPlugin.setSourceMapSupport(true);
