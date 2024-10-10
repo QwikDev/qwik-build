@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+8ab26f0
+ * @builder.io/qwik/testing 2.0.0-0-dev+cbeaee0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22803,7 +22803,6 @@ var NON_SERIALIZABLE_MARKER_PREFIX = ":";
 var USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "on";
 var USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
 var USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
-var UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "unwrap";
 var FLUSH_COMMENT = "qkssr-f";
 var STREAM_BLOCK_START_COMMENT = "qkssr-pu";
 var STREAM_BLOCK_END_COMMENT = "qkssr-po";
@@ -26603,7 +26602,10 @@ var _constants = [
   Fragment,
   NaN,
   Infinity,
-  -Infinity
+  -Infinity,
+  Number.MAX_SAFE_INTEGER,
+  Number.MAX_SAFE_INTEGER - 1,
+  Number.MIN_SAFE_INTEGER
 ];
 var _constantNames = [
   "undefined",
@@ -26618,7 +26620,10 @@ var _constantNames = [
   "Fragment",
   "NaN",
   "Infinity",
-  "-Infinity"
+  "-Infinity",
+  "MAX_SAFE_INTEGER",
+  "MAX_SAFE_INTEGER-1",
+  "MIN_SAFE_INTEGER"
 ];
 var allocate = (container, typeId, value) => {
   if (value === void 0) {
@@ -26742,6 +26747,11 @@ function inflateQRL(container, qrl2) {
   }
   return qrl2;
 }
+var DomVRef = class {
+  constructor(id) {
+    this.id = id;
+  }
+};
 var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
   if (!writer) {
     const buffer = [];
@@ -26765,11 +26775,12 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
     }
     return id;
   };
+  const isSsrNode = NodeConstructor ? (obj) => obj instanceof NodeConstructor : () => false;
   return {
     $serialize$() {
       serialize(this);
     },
-    $NodeConstructor$: NodeConstructor,
+    $isSsrNode$: isSsrNode,
     $symbolToChunkResolver$: symbolToChunkResolver,
     $wasSeen$,
     $roots$: roots,
@@ -26847,7 +26858,8 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
           discoveredValues.push(k, v);
         });
       } else if (obj instanceof Signal) {
-        if (obj.$untrackedValue$) {
+        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+        if (v !== NEEDS_COMPUTATION && !isSsrNode(v)) {
           discoveredValues.push(obj.$untrackedValue$);
         }
         if (obj.$effects$) {
@@ -26862,7 +26874,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
         }
       } else if (obj instanceof Task2) {
         discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
-      } else if (NodeConstructor && obj instanceof NodeConstructor) {
+      } else if (isSsrNode(obj)) {
       } else if (isJSXNode(obj)) {
         discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
       } else if (Array.isArray(obj)) {
@@ -26917,7 +26929,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
 };
 var promiseResults = /* @__PURE__ */ new WeakMap();
 function serialize(serializationContext) {
-  const { $writer$, $NodeConstructor$, $setProp$, $getProp$ } = serializationContext;
+  const { $writer$, $isSsrNode$, $setProp$ } = serializationContext;
   let depth = -1;
   let writeType = false;
   const output = (type, value) => {
@@ -26984,6 +26996,12 @@ function serialize(serializationContext) {
           1 /* Constant */,
           value < 0 ? 12 /* NegativeInfinity */ : 11 /* PositiveInfinity */
         );
+      } else if (value === Number.MAX_SAFE_INTEGER) {
+        output(1 /* Constant */, 13 /* MaxSafeInt */);
+      } else if (value === Number.MAX_SAFE_INTEGER - 1) {
+        output(1 /* Constant */, 14 /* AlmostMaxSafeInt */);
+      } else if (value === Number.MIN_SAFE_INTEGER) {
+        output(1 /* Constant */, 15 /* MinSafeInt */);
       } else {
         output(2 /* Number */, value);
       }
@@ -27067,25 +27085,30 @@ function serialize(serializationContext) {
         }
         output(13 /* Object */, out);
       }
+    } else if (value instanceof DomVRef) {
+      output(9 /* RefVNode */, value.id);
     } else if (value instanceof Signal) {
+      let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+      if ($isSsrNode$(v)) {
+        v = new DomVRef(v.id);
+      }
       if (value instanceof WrappedSignal) {
         output(23 /* WrappedSignal */, [
-          ...serializeDerivedFn(serializationContext, value),
+          ...serializeWrappingFn(serializationContext, value),
           value.$effectDependencies$,
-          // `.untrackedValue` implicitly calls `$computeIfNeeded$`, which is what we want in case
-          // the signal is not computed yet.
-          value.untrackedValue,
+          v,
           ...value.$effects$ || []
         ]);
       } else if (value instanceof ComputedSignal) {
         output(24 /* ComputedSignal */, [
           value.$computeQrl$,
-          value.$untrackedValue$,
+          v,
           value.$invalid$,
+          // TODO check if we can use domVRef for effects
           ...value.$effects$ || []
         ]);
       } else {
-        output(22 /* Signal */, [value.$untrackedValue$, ...value.$effects$ || []]);
+        output(22 /* Signal */, [v, ...value.$effects$ || []]);
       }
     } else if (value instanceof URL) {
       output(5 /* URL */, value.href);
@@ -27103,10 +27126,10 @@ function serialize(serializationContext) {
         out.push(value.stack);
       }
       output(12 /* Error */, out);
-    } else if ($NodeConstructor$ && value instanceof $NodeConstructor$) {
+    } else if ($isSsrNode$(value)) {
       if (isRootObject) {
         $setProp$(value, ELEMENT_ID, String(idx));
-        output($getProp$(value, UNWRAP_VNODE_LOCAL) ? 9 /* RefVNode */ : 8 /* VNode */, value.id);
+        output(8 /* VNode */, value.id);
       } else {
         serializationContext.$addRoot$(value);
         output(0 /* RootRef */, serializationContext.$roots$.length - 1);
@@ -27172,7 +27195,7 @@ function serialize(serializationContext) {
   };
   writeValue(serializationContext.$roots$, -1);
 }
-function serializeDerivedFn(serializationContext, value) {
+function serializeWrappingFn(serializationContext, value) {
   if (value.$funcStr$ && value.$funcStr$[0] === "{") {
     value.$funcStr$ = `(${value.$funcStr$})`;
   }
@@ -31515,7 +31538,6 @@ var SSRContainer = class extends _SharedContainer2 {
         }
         if (key === "ref") {
           const lastNode = this.getLastNode();
-          lastNode.setProp(UNWRAP_VNODE_LOCAL, true);
           if (isSignal3(value)) {
             value.value = lastNode;
             continue;

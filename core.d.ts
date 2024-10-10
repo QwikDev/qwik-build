@@ -637,7 +637,12 @@ declare interface Container {
      * @param renderHost - Host element to ensure projection is resolved.
      */
     ensureProjectionResolved(host: HostElement): void;
-    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
+    serializationCtxFactory(NodeConstructor: {
+        new (...rest: any[]): {
+            nodeType: number;
+            id: string;
+        };
+    } | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
 }
 
 /** @internal */
@@ -2495,18 +2500,7 @@ declare interface SerializationContext {
     $roots$: unknown[];
     $addSyncFn$($funcStr$: string | null, argsCount: number, fn: Function): number;
     $breakCircularDepsAndAwaitPromises$: () => ValueOrPromise<void>;
-    /**
-     * Node constructor, for instanceof checks.
-     *
-     * A node constructor can be null. For example on the client we can't serialize DOM nodes as
-     * server will not know what to do with them.
-     */
-    $NodeConstructor$: {
-        new (...rest: any[]): {
-            nodeType: number;
-            id: string;
-        };
-    } | null;
+    $isSsrNode$: (obj: unknown) => obj is SsrNode;
     $writer$: StreamWriter_2;
     $syncFns$: string[];
     $eventQrls$: Set<QRL>;
@@ -2549,7 +2543,12 @@ export declare abstract class _SharedContainer implements Container {
     $instanceHash$: string | null;
     constructor(scheduleDrain: () => void, journalFlush: () => void, serverData: Record<string, any>, locale: string);
     trackSignalValue<T>(signal: Signal, subscriber: Effect, property: string, data: _EffectData): T;
-    serializationCtxFactory(NodeConstructor: SerializationContext['$NodeConstructor$'] | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
+    serializationCtxFactory(NodeConstructor: {
+        new (...rest: any[]): {
+            nodeType: number;
+            id: string;
+        };
+    } | null, symbolToChunkResolver: SymbolToChunkResolver, writer?: StreamWriter): SerializationContext;
     abstract ensureProjectionResolved(host: HostElement): void;
     abstract processJsx(host: HostElement, jsx: JSXOutput): ValueOrPromise<void>;
     abstract handleError(err: any, $host$: HostElement): void;
@@ -2912,6 +2911,13 @@ declare interface SSRContainer extends Container {
 /** @public */
 export declare type SSRHintProps = {
     dynamic?: boolean;
+};
+
+/** A selection of attributes of the real thing */
+declare type SsrNode = {
+    nodeType: number;
+    id: string;
+    vnodeData?: _VNode;
 };
 
 /** @public */
@@ -4117,7 +4123,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+8ab26f0
+ * 2.0.0-0-dev+cbeaee0
  *
  * @public
  */
@@ -4269,8 +4275,18 @@ declare class WrappedSignal<T> extends Signal_2<T> implements Subscriber {
     set value(_: any);
 }
 
-/** @internal */
-export declare const _wrapProp: <T extends Record<any, any>, P extends keyof T>(obj: T, prop?: P | undefined) => any;
+/**
+ * This wraps a property access of a possible Signal/Store into a WrappedSignal. The optimizer does
+ * this automatically when a prop is only used as a prop on JSX.
+ *
+ * When a WrappedSignal is read via the PropsProxy, it will be unwrapped. This allows forwarding the
+ * reactivity of a prop to the point of actual use.
+ *
+ * For efficiency, if you pass only one argument, the property is 'value'.
+ *
+ * @internal
+ */
+export declare const _wrapProp: <T extends Record<any, any>, P extends keyof T>(args_0: T, args_1?: P | undefined) => any;
 
 /** @internal @deprecated v1 compat */
 export declare const _wrapSignal: <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P) => any;

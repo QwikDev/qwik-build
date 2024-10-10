@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+8ab26f0
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+cbeaee0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+8ab26f0"
+  qwik: "2.0.0-0-dev+cbeaee0"
 };
 
 async function getSystem() {
@@ -1785,9 +1785,9 @@ async function formatError(sys, e) {
 }
 
 var findLocation = e => {
-  const stack = e.stack;
-  if ("string" === typeof stack) {
-    const lines = stack.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
+  const stack2 = e.stack;
+  if ("string" === typeof stack2) {
+    const lines = stack2.split("\n").filter((l => !l.includes("/node_modules/") && !l.includes("(node:")));
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].replace("file:///", "/");
       if (/^\s+at/.test(line)) {
@@ -1858,12 +1858,12 @@ function generateCodeFrame(source, start = 0, end) {
   start = posToNumber(source, start);
   end = end || start;
   const lines = source.split(splitRE);
-  let count = 0;
+  let count2 = 0;
   const res = [];
   for (let i = 0; i < lines.length; i++) {
-    count += lines[i].length + 1;
-    if (count >= start) {
-      for (let j = i - range; j <= i + range || end > count; j++) {
+    count2 += lines[i].length + 1;
+    if (count2 >= start) {
+      for (let j = i - range; j <= i + range || end > count2; j++) {
         if (j < 0 || j >= lines.length) {
           continue;
         }
@@ -1871,15 +1871,15 @@ function generateCodeFrame(source, start = 0, end) {
         res.push(`${line}${" ".repeat(Math.max(3 - String(line).length, 0))}|  ${lines[j]}`);
         const lineLength = lines[j].length;
         if (j === i) {
-          const pad2 = Math.max(start - (count - lineLength) + 1, 0);
-          const length = Math.max(1, end > count ? lineLength - pad2 : end - start);
+          const pad2 = Math.max(start - (count2 - lineLength) + 1, 0);
+          const length = Math.max(1, end > count2 ? lineLength - pad2 : end - start);
           res.push("   |  " + " ".repeat(pad2) + "^".repeat(length));
         } else if (j > i) {
-          if (end > count) {
-            const length = Math.max(Math.min(end - count, lineLength), 1);
+          if (end > count2) {
+            const length = Math.max(Math.min(end - count2, lineLength), 1);
             res.push("   |  " + "^".repeat(length));
           }
-          count += lineLength + 1;
+          count2 += lineLength + 1;
         }
       }
       break;
@@ -2119,9 +2119,9 @@ function createPlugin(optimizerOptions = {}) {
   };
   let resolveIdCount = 0;
   const resolveId = async (ctx, id2, importerId, resolveOpts) => {
-    const count = resolveIdCount++;
+    const count2 = resolveIdCount++;
     const isServer2 = getIsServer(resolveOpts);
-    debug(`resolveId(${count})`, "Start", id2, {
+    debug(`resolveId(${count2})`, "Start", id2, {
       from: importerId,
       for: isServer2 ? "server" : "client"
     });
@@ -2135,14 +2135,14 @@ function createPlugin(optimizerOptions = {}) {
       };
     }
     if (opts.resolveQwikBuild && id2.endsWith(QWIK_BUILD_ID)) {
-      debug(`resolveId(${count})`, "Resolved", QWIK_BUILD_ID);
+      debug(`resolveId(${count2})`, "Resolved", QWIK_BUILD_ID);
       return {
         id: normalizePath(getPath().resolve(opts.rootDir, QWIK_BUILD_ID)),
         moduleSideEffects: false
       };
     }
     if (id2.endsWith(QWIK_CLIENT_MANIFEST_ID)) {
-      debug(`resolveId(${count})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
+      debug(`resolveId(${count2})`, "Resolved", QWIK_CLIENT_MANIFEST_ID);
       if ("lib" === opts.target) {
         return {
           id: id2,
@@ -2161,7 +2161,7 @@ function createPlugin(optimizerOptions = {}) {
     if (importerId) {
       const looksLikePath = id2.startsWith(".") || id2.startsWith("/");
       if (!looksLikePath) {
-        debug(`resolveId(${count})`, "falling back to default resolver");
+        debug(`resolveId(${count2})`, "falling back to default resolver");
         const parentId = getParentId(importerId, isServer2);
         if (parentId) {
           return ctx.resolve(id2, parentId, {
@@ -2193,7 +2193,7 @@ function createPlugin(optimizerOptions = {}) {
         importeePathId = normalizePath(path.resolve(dir, importeePathId));
         const parentId = getParentId(importeePathId, isServer2);
         if (parentId) {
-          debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs`);
+          debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs`);
           return {
             id: importeePathId + parsedId.query
           };
@@ -2204,13 +2204,13 @@ function createPlugin(optimizerOptions = {}) {
       const importeePathId = normalizePath(parsedId.pathId);
       const ext = path.extname(importeePathId).toLowerCase();
       if (ext in RESOLVE_EXTS && getParentId(importeePathId, isServer2)) {
-        debug(`resolveId(${count}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
+        debug(`resolveId(${count2}) Resolved ${importeePathId} from transformedOutputs (no importer)`);
         return {
           id: importeePathId + parsedId.query
         };
       }
     }
-    debug(`resolveId(${count})`, "Not resolved", id2, importerId);
+    debug(`resolveId(${count2})`, "Not resolved", id2, importerId);
     return null;
   };
   const load = async (ctx, id2, loadOpts) => {
@@ -2402,7 +2402,7 @@ function createPlugin(optimizerOptions = {}) {
   const debug = (...str) => {
     opts.debug && console.debug(`[QWIK PLUGIN: ${id}]`, ...str);
   };
-  const log = (...str) => {
+  const log3 = (...str) => {
     console.log(`[QWIK PLUGIN: ${id}]`, ...str);
   };
   const onDiagnostics = cb => {
@@ -2455,7 +2455,7 @@ function createPlugin(optimizerOptions = {}) {
     init: init2,
     load: load,
     debug: debug,
-    log: log,
+    log: log3,
     normalizeOptions: normalizeOptions,
     normalizePath: normalizePath,
     onDiagnostics: onDiagnostics,
@@ -3034,6 +3034,12 @@ var perf_warning_default = "<script>\n  if (!window.__qwikViteLog) {\n    window
 
 var error_host_default = "<script>\n  document.addEventListener('qerror', (ev) => {\n    const ErrorOverlay = customElements.get('vite-error-overlay');\n    if (!ErrorOverlay) {\n      return;\n    }\n    const err = ev.detail.error;\n    const overlay = new ErrorOverlay(err);\n    document.body.appendChild(overlay);\n  });\n<\/script>\n<script>\n  /**\n   * Usage:\n   *\n   * <errored-host></errored-host>\n   */\n  class ErroredHost extends HTMLElement {\n    get _root() {\n      return this.shadowRoot || this;\n    }\n\n    constructor() {\n      super();\n      const self = this;\n\n      this.state = {};\n      if (!this.props) {\n        this.props = {};\n      }\n\n      this.componentProps = ['children', 'error'];\n\n      // used to keep track of all nodes created by show/for\n      this.nodesToDestroy = [];\n      // batch updates\n      this.pendingUpdate = false;\n\n      this.attachShadow({ mode: 'open' });\n    }\n\n    destroyAnyNodes() {\n      // destroy current view template refs before rendering again\n      this.nodesToDestroy.forEach((el) => el.remove());\n      this.nodesToDestroy = [];\n    }\n\n    connectedCallback() {\n      this.getAttributeNames().forEach((attr) => {\n        const jsVar = attr.replace(/-/g, '');\n        const regexp = new RegExp(jsVar, 'i');\n        this.componentProps.forEach((prop) => {\n          if (regexp.test(prop)) {\n            const attrValue = this.getAttribute(attr);\n            if (this.props[prop] !== attrValue) {\n              this.props[prop] = attrValue;\n            }\n          }\n        });\n      });\n\n      this._root.innerHTML = `\n\n        <template data-el=\"show-errored-host\">\n        <div class=\"error\">\n          <template data-el=\"div-errored-host-2\">\n            \x3c!-- String(props.error) --\x3e\n          </template>\n        </div>\n        </template>\n\n        <div class=\"arrow\">👇 Uncaught error happened here 👇\n          <span class=\"dev-tools\">DevTools: Cmd+Alt+I</span>\n        </div>\n        <div class=\"div\">\n          <slot></slot>\n        </div>\n\n        <style>\n          .error {\n            border-radius: 5px 5px 0px 0;\n            background: black;\n            color: white;\n            font-family: monospace;\n            font-size: 12px;\n            margin: 0;\n            padding: 10px;\n          }\n          .arrow {\n            background: #f47e81;\n            color: black;\n            font-size: 14px;\n            padding: 10px;\n            text-align: center;\n            font-family: sans-serif;\n          }\n          .dev-tools {\n            background: red;\n            padding: 2px 5px;\n            border-radius: 3px;\n            font-weight: 800;\n          }\n          .div {\n            outline: 5px solid red;\n            border-radius: 10px;\n          }\n        </style>`;\n      this.pendingUpdate = true;\n\n      this.render();\n      this.onMount();\n      this.pendingUpdate = false;\n      this.update();\n    }\n\n    showContent(el) {\n      // https://developer.mozilla.org/en-US/docs/Web/API/HTMLTemplateElement/content\n      // grabs the content of a node that is between <template> tags\n      // iterates through child nodes to register all content including text elements\n      // attaches the content after the template\n\n      const elementFragment = el.content.cloneNode(true);\n      const children = Array.from(elementFragment.childNodes);\n      children.forEach((child) => {\n        if (el?.scope) {\n          child.scope = el.scope;\n        }\n        if (el?.context) {\n          child.context = el.context;\n        }\n        this.nodesToDestroy.push(child);\n      });\n      el.after(elementFragment);\n    }\n\n    onMount() {}\n\n    onUpdate() {}\n\n    update() {\n      if (this.pendingUpdate === true) {\n        return;\n      }\n      this.pendingUpdate = true;\n      this.render();\n      this.onUpdate();\n      this.pendingUpdate = false;\n    }\n\n    render() {\n      // re-rendering needs to ensure that all nodes generated by for/show are refreshed\n      this.destroyAnyNodes();\n      this.updateBindings();\n    }\n\n    updateBindings() {\n      this._root.querySelectorAll(\"[data-el='show-errored-host']\").forEach((el) => {\n        const whenCondition = this.props.error;\n        if (whenCondition) {\n          this.showContent(el);\n        }\n      });\n\n      this._root.querySelectorAll(\"[data-el='div-errored-host-2']\").forEach((el) => {\n        this.renderTextNode(el, String(this.props.error));\n      });\n    }\n\n    // Helper to render content\n    renderTextNode(el, text) {\n      const textNode = document.createTextNode(text);\n      if (el?.scope) {\n        textNode.scope = el.scope;\n      }\n      if (el?.context) {\n        textNode.context = el.context;\n      }\n      el.after(textNode);\n      this.nodesToDestroy.push(el.nextSibling);\n    }\n  }\n\n  customElements.define('errored-host', ErroredHost);\n<\/script>\n";
 
+var isBrowser = (() => "undefined" !== typeof window && "undefined" !== typeof HTMLElement && !!window.document && String(HTMLElement).includes("[native code]"))();
+
+var isServer = !isBrowser;
+
+var isDev = (() => true === globalThis.qDev)();
+
 var qDev = false !== globalThis.qDev;
 
 var qInspector = true === globalThis.qInspector;
@@ -3045,6 +3051,200 @@ var qDynamicPlatform = false !== globalThis.qDynamicPlatform;
 var qTest = true === globalThis.qTest;
 
 var qRuntimeQrl = true === globalThis.qRuntimeQrl;
+
+var seal = obj => {
+  qDev && Object.seal(obj);
+};
+
+var STYLE = qDev ? "background: #564CE0; color: white; padding: 2px 3px; border-radius: 2px; font-size: 0.8em;" : "";
+
+var logError = (message, ...optionalParams) => createAndLogError(false, message, ...optionalParams);
+
+var throwErrorAndStop = (message, ...optionalParams) => {
+  const error = createAndLogError(false, message, ...optionalParams);
+  debugger;
+  throw error;
+};
+
+var logErrorAndStop = (message, ...optionalParams) => {
+  const err = createAndLogError(true, message, ...optionalParams);
+  debugger;
+  return err;
+};
+
+var logWarn = (message, ...optionalParams) => {
+  qDev && console.warn("%cQWIK WARN", STYLE, message, ...optionalParams);
+};
+
+var createAndLogError = (asyncThrow, message, ...optionalParams) => {
+  const err = message instanceof Error ? message : new Error(message);
+  console.error("%cQWIK ERROR", STYLE, err.message, ...optionalParams, err.stack);
+  asyncThrow && !qTest && setTimeout((() => {
+    throw err;
+  }), 0);
+  return err;
+};
+
+var ASSERT_DISCLAIMER = "Internal assert, this is likely caused by a bug in Qwik: ";
+
+function assertDefined(value, text, ...parts) {
+  if (qDev) {
+    if (null != value) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+
+function assertEqual(value1, value2, text, ...parts) {
+  if (qDev) {
+    if (value1 === value2) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+
+function assertTrue(value1, text, ...parts) {
+  if (qDev) {
+    if (true === value1) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+
+function assertFalse(value1, text, ...parts) {
+  if (qDev) {
+    if (false === value1) {
+      return;
+    }
+    throwErrorAndStop(ASSERT_DISCLAIMER + text, ...parts);
+  }
+}
+
+var codeToText = (code, ...parts) => {
+  if (qDev) {
+    const MAP = [ "Error while serializing class attribute", "Can not serialize a HTML Node that is not an Element", "Runtime but no instance found on element.", "Only primitive and object literals can be serialized", "Crash while rendering", "You can render over a existing q:container. Skipping render().", "Set property {{0}}", "Only function's and 'string's are supported.", "Only objects can be wrapped in 'QObject'", "Only objects literals can be wrapped in 'QObject'", "QRL is not a function", "Dynamic import not found", "Unknown type argument", "Actual value for useContext({{0}}) can not be found, make sure some ancestor component has set a value using useContextProvider(). In the browser make sure that the context was used during SSR so its state was serialized.", "Invoking 'use*()' method outside of invocation context.", "Cant access renderCtx for existing context", "Cant access document for existing context", "props are immutable", "<div> component can only be used at the root of a Qwik component$()", "Props are immutable by default.", "Calling a 'use*()' method outside 'component$(() => { HERE })' is not allowed. 'use*()' methods provide hooks to the 'component$' state and lifecycle, ie 'use' hooks can only be called synchronously within the 'component$' function or another 'use' method.\nSee https://qwik.dev/docs/components/tasks/#use-method-rules", "Container is already paused. Skipping", "", "When rendering directly on top of Document, the root node must be a <html>", "A <html> node must have 2 children. The first one <head> and the second one a <body>", 'Invalid JSXNode type "{{0}}". It must be either a function or a string. Found:', "Tracking value changes can only be done to useStore() objects and component props", "Missing Object ID for captured object", 'The provided Context reference "{{0}}" is not a valid context created by createContextId()', "<html> is the root container, it can not be rendered inside a component", "QRLs can not be resolved because it does not have an attached container. This means that the QRL does not know where it belongs inside the DOM, so it cant dynamically import() from a relative path.", "QRLs can not be dynamically resolved, because it does not have a chunk path", "The JSX ref attribute must be a Signal" ];
+    let text = MAP[code] ?? "";
+    parts.length && (text = text.replaceAll(/{{(\d+)}}/g, ((_, index) => {
+      let v = parts[index];
+      v && "object" === typeof v && v.constructor === Object && (v = JSON.stringify(v).slice(0, 50));
+      return v;
+    })));
+    return `Code(${code}): ${text}`;
+  }
+  return `Code(${code}) https://github.com/QwikDev/qwik/blob/main/packages/qwik/src/core/error/error.ts#L${8 + code}`;
+};
+
+var QError_stringifyClassOrStyle = 0;
+
+var QError_verifySerializable = 3;
+
+var QError_qrlIsNotFunction = 10;
+
+var QError_qrlMissingContainer = 30;
+
+var QError_qrlMissingChunk = 31;
+
+var qError = (code, ...parts) => {
+  const text = codeToText(code, ...parts);
+  return logErrorAndStop(text, ...parts);
+};
+
+var createPlatform = () => ({
+  isServer: isServer,
+  importSymbol(containerEl, url, symbolName) {
+    if (isServer) {
+      const hash = getSymbolHash2(symbolName);
+      const regSym = globalThis.__qwik_reg_symbols?.get(hash);
+      if (regSym) {
+        return regSym;
+      }
+    }
+    if (!url) {
+      throw qError(QError_qrlMissingChunk, symbolName);
+    }
+    if (!containerEl) {
+      throw qError(QError_qrlMissingContainer, url, symbolName);
+    }
+    const urlDoc = toUrl(containerEl.ownerDocument, containerEl, url).toString();
+    const urlCopy = new URL(urlDoc);
+    urlCopy.hash = "";
+    const importURL = urlCopy.href;
+    return import(importURL).then((mod => mod[symbolName]));
+  },
+  raf: fn => new Promise((resolve => {
+    requestAnimationFrame((() => {
+      resolve(fn());
+    }));
+  })),
+  nextTick: fn => new Promise((resolve => {
+    setTimeout((() => {
+      resolve(fn());
+    }));
+  })),
+  chunkForSymbol: (symbolName, chunk) => [ symbolName, chunk ?? "_" ]
+});
+
+var toUrl = (doc, containerEl, url) => {
+  const baseURI = doc.baseURI;
+  const base = new URL(containerEl.getAttribute("q:base") ?? baseURI, baseURI);
+  return new URL(url, base);
+};
+
+var _platform = createPlatform();
+
+var getPlatform = () => _platform;
+
+var isServerPlatform = () => {
+  if (qDynamicPlatform) {
+    return _platform.isServer;
+  }
+  return false;
+};
+
+var isNode = value => value && "number" === typeof value.nodeType;
+
+var isPromise = value => !!value && "object" == typeof value && "function" === typeof value.then;
+
+var safeCall = (call, thenFn, rejectFn) => {
+  try {
+    const result = call();
+    return isPromise(result) ? result.then(thenFn, rejectFn) : thenFn(result);
+  } catch (e) {
+    return rejectFn(e);
+  }
+};
+
+var maybeThen = (valueOrPromise, thenFn) => isPromise(valueOrPromise) ? valueOrPromise.then(thenFn, shouldNotError) : thenFn(valueOrPromise);
+
+var maybeThenPassError = (valueOrPromise, thenFn) => isPromise(valueOrPromise) ? valueOrPromise.then(thenFn) : thenFn(valueOrPromise);
+
+var shouldNotError = reason => {
+  throwErrorAndStop("QWIK ERROR:", reason);
+};
+
+var delay = timeout => new Promise((resolve => {
+  setTimeout(resolve, timeout);
+}));
+
+var isSerializableObject = v => {
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === Array.prototype || null === proto;
+};
+
+var isObject = v => !!v && "object" === typeof v;
+
+var isArray = v => Array.isArray(v);
+
+var isString = v => "string" === typeof v;
+
+var isFunction = v => "function" === typeof v;
+
+var isDev2 = true;
+
+var DEBUG_TYPE = "q:type";
 
 var START = "[34m";
 
@@ -3060,11 +3260,41 @@ var VirtualTypeName = {
   P: START + "Projection" + END
 };
 
+var OnRenderProp = "q:renderFn";
+
+var ComponentStylesPrefixContent = "⭐️";
+
+var QSlot = "q:slot";
+
+var QSlotParent = ":";
+
+var QSlotRef = "q:sref";
+
+var QSlotS = "q:s";
+
+var QStyle = "q:style";
+
 var QStyleSelector = "style[q\\:style]";
 
 var QStyleSSelector = "style[q\\:sstyle]";
 
 var QStylesAllSelector = QStyleSelector + "," + QStyleSSelector;
+
+var QScopedStyle = "q:sstyle";
+
+var QCtxAttr = "q:ctx";
+
+var QSubscribers = "q:subs";
+
+var QFuncsPrefix = "qFuncs_";
+
+var getQFuncs = (document2, hash) => document2[QFuncsPrefix + hash] || [];
+
+var QBaseAttr = "q:base";
+
+var QLocaleAttr = "q:locale";
+
+var QInstanceAttr = "q:instance";
 
 var QContainerIsland = "q:container-island";
 
@@ -3078,7 +3308,33 @@ var QContainerAttr = "q:container";
 
 var QContainerAttrEnd = "/" + QContainerAttr;
 
+var QTemplate = "q:template";
+
 var QContainerSelector = "[q\\:container]:not([q\\:container=html]):not([q\\:container=text])";
+
+var HTML_NS = "http://www.w3.org/1999/xhtml";
+
+var SVG_NS = "http://www.w3.org/2000/svg";
+
+var MATH_NS = "http://www.w3.org/1998/Math/MathML";
+
+var ResourceEvent = "qResource";
+
+var RenderEvent = "qRender";
+
+var TaskEvent = "qTask";
+
+var QDefaultSlot = "";
+
+var ELEMENT_ID = "q:id";
+
+var ELEMENT_KEY = "q:key";
+
+var ELEMENT_PROPS = "q:props";
+
+var ELEMENT_SEQ = "q:seq";
+
+var ELEMENT_SEQ_IDX = "q:seqIdx";
 
 var NON_SERIALIZABLE_MARKER_PREFIX = ":";
 
@@ -3088,12 +3344,22 @@ var USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
 
 var USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
 
-var UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "unwrap";
+var Q_PROPS_SEPARATOR = ":";
+
+var dangerouslySetInnerHTML = "dangerouslySetInnerHTML";
+
+var _locale = void 0;
+
+function setLocale(locale) {
+  _locale = locale;
+}
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+8ab26f0",
+  qwik: "2.0.0-0-dev+cbeaee0",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
+
+var isQrl = value => "function" === typeof value && "function" === typeof value.getSymbol;
 
 var EMPTY_ARRAY = [];
 
@@ -3103,7 +3369,185 @@ Object.freeze(EMPTY_ARRAY);
 
 Object.freeze(EMPTY_OBJ);
 
+var Slot = props => _jsxSorted(Virtual, null, {
+  [QSlotS]: ""
+}, props.children, 0, props.name ?? "");
+
 var SkipRender = Symbol("skip render");
+
+var SSRRaw = () => null;
+
+var SSRComment = () => null;
+
+var isJsxPropertyAnEventName = name => (name.startsWith("on") || name.startsWith("window:on") || name.startsWith("document:on")) && name.endsWith("$");
+
+var isHtmlAttributeAnEventName = name => name.startsWith("on:") || name.startsWith("on-window:") || name.startsWith("on-document:");
+
+var getEventNameFromJsxProp = name => {
+  if (name.endsWith("$")) {
+    let idx = -1;
+    name.startsWith("on") ? idx = 2 : name.startsWith("window:on") ? idx = 9 : name.startsWith("document:on") && (idx = 11);
+    if (-1 != idx) {
+      const isCaseSensitive = isDashAt(name, idx) && !isDashAt(name, idx + 1);
+      isCaseSensitive && idx++;
+      let lastIdx = idx;
+      let eventName = "";
+      while (true) {
+        idx = name.indexOf("-", lastIdx);
+        const chunk = name.substring(lastIdx, -1 === idx ? name.length - 1 : idx);
+        eventName += isCaseSensitive ? chunk : chunk.toLowerCase();
+        if (-1 == idx) {
+          return eventName;
+        }
+        if (isDashAt(name, idx + 1)) {
+          eventName += "-";
+          idx++;
+        } else {
+          eventName += name.charAt(idx + 1).toUpperCase();
+          idx++;
+        }
+        lastIdx = idx + 1;
+      }
+    }
+  }
+  return null;
+};
+
+var getEventNameScopeFromJsxProp = name => {
+  const index = name.indexOf(":");
+  return -1 !== index ? name.substring(0, index) : "";
+};
+
+var isDashAt = (name, idx) => 45 === name.charCodeAt(idx);
+
+var convertEventNameFromJsxPropToHtmlAttr = name => {
+  if (name.endsWith("$")) {
+    let prefix = null;
+    name.startsWith("on") ? prefix = "on:" : name.startsWith("window:on") ? prefix = "on-window:" : name.startsWith("document:on") && (prefix = "on-document:");
+    if (null !== prefix) {
+      const eventName = getEventNameFromJsxProp(name);
+      return prefix + fromCamelToKebabCase(eventName);
+    }
+  }
+  return null;
+};
+
+var fromCamelToKebabCase = text => text.replace(/([A-Z-])/g, "-$1").toLowerCase();
+
+function isPreventDefault(key) {
+  return key.startsWith("preventdefault:");
+}
+
+var unitlessNumbers = new Set([ "animationIterationCount", "aspectRatio", "borderImageOutset", "borderImageSlice", "borderImageWidth", "boxFlex", "boxFlexGroup", "boxOrdinalGroup", "columnCount", "columns", "flex", "flexGrow", "flexShrink", "gridArea", "gridRow", "gridRowEnd", "gridRowStart", "gridColumn", "gridColumnEnd", "gridColumnStart", "fontWeight", "lineClamp", "lineHeight", "opacity", "order", "orphans", "scale", "tabSize", "widows", "zIndex", "zoom", "MozAnimationIterationCount", "MozBoxFlex", "msFlex", "msFlexPositive", "WebkitAnimationIterationCount", "WebkitBoxFlex", "WebkitBoxOrdinalGroup", "WebkitColumnCount", "WebkitColumns", "WebkitFlex", "WebkitFlexGrow", "WebkitFlexShrink", "WebkitLineClamp" ]);
+
+var isUnitlessNumber = name => unitlessNumbers.has(name);
+
+var serializeClass = obj => {
+  if (!obj) {
+    return "";
+  }
+  if (isString(obj)) {
+    return obj.trim();
+  }
+  const classes = [];
+  if (isArray(obj)) {
+    for (const o of obj) {
+      const classList = serializeClass(o);
+      classList && classes.push(classList);
+    }
+  } else {
+    for (const [key, value] of Object.entries(obj)) {
+      value && classes.push(key.trim());
+    }
+  }
+  return classes.join(" ");
+};
+
+var stringifyStyle = obj => {
+  if (null == obj) {
+    return "";
+  }
+  if ("object" == typeof obj) {
+    if (isArray(obj)) {
+      throw qError(QError_stringifyClassOrStyle, obj, "style");
+    }
+    {
+      const chunks = [];
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          null != value && (key.startsWith("--") ? chunks.push(key + ":" + value) : chunks.push(fromCamelToKebabCase(key) + ":" + setValueForStyle(key, value)));
+        }
+      }
+      return chunks.join(";");
+    }
+  }
+  return String(obj);
+};
+
+var serializeBooleanOrNumberAttribute = value => null != value ? String(value) : null;
+
+function serializeAttribute(key, value, styleScopedId) {
+  if (isClassAttr(key)) {
+    const serializedClass = serializeClass(value);
+    value = styleScopedId ? styleScopedId + (serializedClass.length ? " " + serializedClass : serializedClass) : serializedClass;
+  } else {
+    "style" === key ? value = stringifyStyle(value) : isEnumeratedBooleanAttribute(key) || "number" === typeof value ? value = serializeBooleanOrNumberAttribute(value) : false === value || null == value ? value = null : true === value && isPreventDefault(key) && (value = "");
+  }
+  return value;
+}
+
+function isEnumeratedBooleanAttribute(key) {
+  return isAriaAttribute(key) || [ "spellcheck", "draggable", "contenteditable" ].includes(key);
+}
+
+var setValueForStyle = (styleName, value) => {
+  if ("number" === typeof value && 0 !== value && !isUnitlessNumber(styleName)) {
+    return value + "px";
+  }
+  return value;
+};
+
+function isAriaAttribute(prop) {
+  return prop.startsWith("aria-");
+}
+
+var styleContent = styleId => ComponentStylesPrefixContent + styleId;
+
+function hasClassAttr(props) {
+  for (const key in props) {
+    if (Object.prototype.hasOwnProperty.call(props, key) && isClassAttr(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isClassAttr(key) {
+  return "class" === key || "className" === key;
+}
+
+function convertScopedStyleIdsToArray(scopedStyleIds) {
+  return scopedStyleIds?.split(" ") ?? null;
+}
+
+function convertStyleIdsToString(scopedStyleIds) {
+  return Array.from(scopedStyleIds).join(" ");
+}
+
+var addComponentStylePrefix = styleId => {
+  if (styleId) {
+    let idx = 0;
+    do {
+      styleId = styleId.substring(0, idx) + styleContent(styleId.substring(idx));
+    } while (0 !== (idx = styleId.indexOf(" ", idx) + 1));
+  }
+  return styleId || null;
+};
+
+var DEBUG = false;
+
+var log = (...args) => console.log("STORE", ...args.map(qwikDebugToString));
 
 var STORE_TARGET = Symbol("store.target");
 
@@ -3111,7 +3555,1967 @@ var STORE_HANDLER = Symbol("store.handler");
 
 var STORE_ARRAY_PROP = Symbol("store.array");
 
+var getStoreHandler = value => value[STORE_HANDLER];
+
+var getStoreTarget = value => value?.[STORE_TARGET] || null;
+
+var unwrapStore = value => getStoreTarget(value) || value;
+
+var isStore = value => STORE_TARGET in value;
+
+function createStore(container, obj, flags) {
+  return new Proxy(obj, new StoreHandler(flags, container || null));
+}
+
+var getOrCreateStore = (obj, flags, container) => {
+  if (isSerializableObject(obj) && container) {
+    let store = container.$storeProxyMap$.get(obj);
+    if (!store) {
+      store = createStore(container, obj, flags);
+      container.$storeProxyMap$.set(obj, store);
+    }
+    return store;
+  }
+  return obj;
+};
+
+var StoreHandler = class {
+  constructor($flags$, $container$) {
+    this.$flags$ = $flags$;
+    this.$container$ = $container$;
+    this.$effects$ = null;
+  }
+  toString() {
+    return "[Store]";
+  }
+  get(target, prop) {
+    if ("symbol" === typeof prop) {
+      if (prop === STORE_TARGET) {
+        return target;
+      }
+      if (prop === STORE_HANDLER) {
+        return this;
+      }
+      return target[prop];
+    }
+    const ctx = tryGetInvokeContext();
+    let value = target[prop];
+    if (ctx) {
+      if (null === this.$container$) {
+        if (!ctx.$container$) {
+          return value;
+        }
+        this.$container$ = ctx.$container$;
+      } else {
+        assertTrue(!ctx.$container$ || ctx.$container$ === this.$container$, "Do not use signals across containers");
+      }
+      const effectSubscriber = ctx.$effectSubscriber$;
+      effectSubscriber && addEffect(target, Array.isArray(target) ? STORE_ARRAY_PROP : prop, this, effectSubscriber);
+    }
+    if ("toString" === prop && value === Object.prototype.toString) {
+      return this.toString;
+    }
+    const flags = this.$flags$;
+    if (1 & flags && "object" === typeof value && null !== value && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target)) {
+      value = getOrCreateStore(value, this.$flags$, this.$container$);
+      target[prop] = value;
+    }
+    return value;
+  }
+  set(target, prop, value) {
+    target = unwrapDeserializerProxy(target);
+    if ("symbol" === typeof prop) {
+      target[prop] = value;
+      return true;
+    }
+    const newValue = 1 & this.$flags$ ? unwrapStore(value) : value;
+    if (prop in target) {
+      const oldValue = target[prop];
+      if (newValue !== oldValue) {
+        DEBUG && log("Store.set", oldValue, "->", newValue, pad("\n" + this.toString(), "  "));
+        setNewValueAndTriggerEffects(prop, newValue, target, this);
+      }
+    } else {
+      DEBUG && log("Store.set", "create property", newValue, pad("\n" + this.toString(), "  "));
+      setNewValueAndTriggerEffects(prop, newValue, target, this);
+    }
+    return true;
+  }
+  deleteProperty(target, prop) {
+    if ("string" != typeof prop || !delete target[prop]) {
+      return false;
+    }
+    triggerEffects(this.$container$, this, getEffects(target, prop, this.$effects$));
+    return true;
+  }
+  has(target, prop) {
+    if (prop === STORE_TARGET) {
+      return true;
+    }
+    return Object.prototype.hasOwnProperty.call(target, prop);
+  }
+  ownKeys(target) {
+    const ctx = tryGetInvokeContext();
+    const effectSubscriber = ctx?.$effectSubscriber$;
+    effectSubscriber && addEffect(target, STORE_ARRAY_PROP, this, effectSubscriber);
+    return Reflect.ownKeys(target);
+  }
+  getOwnPropertyDescriptor(target, prop) {
+    if (Array.isArray(target) || "symbol" === typeof prop) {
+      return Object.getOwnPropertyDescriptor(target, prop);
+    }
+    return {
+      enumerable: true,
+      configurable: true
+    };
+  }
+};
+
+function addEffect(target, prop, store, effectSubscriber) {
+  const effectsMap = store.$effects$ || (store.$effects$ = {});
+  const effects = Object.prototype.hasOwnProperty.call(effectsMap, prop) && effectsMap[prop] || (effectsMap[prop] = []);
+  ensureContainsEffect(effects, effectSubscriber);
+  ensureContains(effectSubscriber, target);
+  DEBUG && log("sub", pad("\n" + store.$effects$.toString(), "  "));
+}
+
+function setNewValueAndTriggerEffects(prop, value, target, currentStore) {
+  target[prop] = value;
+  triggerEffects(currentStore.$container$, currentStore, getEffects(target, prop, currentStore.$effects$));
+}
+
+function getEffects(target, prop, storeEffects) {
+  let effectsToTrigger = storeEffects ? Array.isArray(target) ? Object.values(storeEffects).flatMap((effects => effects)) : storeEffects[prop] : null;
+  const storeArrayValue = storeEffects?.[STORE_ARRAY_PROP];
+  if (storeArrayValue) {
+    effectsToTrigger || (effectsToTrigger = []);
+    effectsToTrigger.push(...storeArrayValue);
+  }
+  return effectsToTrigger;
+}
+
+var Subscriber = class {
+  constructor() {
+    this.$effectDependencies$ = null;
+  }
+};
+
+function isSubscriber(value) {
+  return value instanceof Subscriber || value instanceof WrappedSignal;
+}
+
+function clearVNodeEffectDependencies(value) {
+  const effects = vnode_getProp(value, QSubscribers, null);
+  if (!effects) {
+    return;
+  }
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const subscriber = effects[i];
+    const subscriptionRemoved = clearEffects(subscriber, value);
+    subscriptionRemoved && effects.splice(i, 1);
+  }
+}
+
+function clearSubscriberEffectDependencies(value) {
+  if (value.$effectDependencies$) {
+    for (let i = value.$effectDependencies$.length - 1; i >= 0; i--) {
+      const subscriber = value.$effectDependencies$[i];
+      const subscriptionRemoved = clearEffects(subscriber, value);
+      subscriptionRemoved && value.$effectDependencies$.splice(i, 1);
+    }
+  }
+}
+
+function clearEffects(subscriber, value) {
+  if (!isSignal(subscriber)) {
+    return false;
+  }
+  const effectSubscriptions = subscriber.$effects$;
+  if (!effectSubscriptions) {
+    return false;
+  }
+  let subscriptionRemoved = false;
+  for (let i = effectSubscriptions.length - 1; i >= 0; i--) {
+    const effect = effectSubscriptions[i];
+    if (effect[0] === value) {
+      effectSubscriptions.splice(i, 1);
+      subscriptionRemoved = true;
+    }
+  }
+  return subscriptionRemoved;
+}
+
+var _createResourceReturn = opts => {
+  const resource = {
+    __brand: "resource",
+    value: void 0,
+    loading: !isServerPlatform(),
+    _resolved: void 0,
+    _error: void 0,
+    _state: "pending",
+    _timeout: opts?.timeout ?? -1,
+    _cache: 0
+  };
+  return resource;
+};
+
+var createResourceReturn = (container, opts, initialPromise) => {
+  const result = _createResourceReturn(opts);
+  result.value = initialPromise;
+  return createStore(container, result, 1);
+};
+
+var runResource = (task, container, host) => {
+  task.$flags$ &= -9;
+  cleanupTask(task);
+  const iCtx = newInvokeContext(container.$locale$, host, void 0, ResourceEvent);
+  iCtx.$container$ = container;
+  const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberEffectDependencies(task)));
+  const resource = task.$state$;
+  assertDefined(resource, 'useResource: when running a resource, "task.resource" must be a defined.', task);
+  const track = (obj, prop) => {
+    const ctx = newInvokeContext();
+    ctx.$effectSubscriber$ = [ task, ":" ];
+    ctx.$container$ = container;
+    return invoke(ctx, (() => {
+      if (isFunction(obj)) {
+        return obj();
+      }
+      return prop ? obj[prop] : isSignal(obj) ? obj.value : obj;
+    }));
+  };
+  const handleError = reason => container.handleError(reason, host);
+  const cleanups = [];
+  task.$destroy$ = noSerialize((() => {
+    cleanups.forEach((fn => {
+      try {
+        fn();
+      } catch (err) {
+        handleError(err);
+      }
+    }));
+    done = true;
+  }));
+  const resourceTarget = unwrapStore(resource);
+  const opts = {
+    track: track,
+    cleanup(fn) {
+      "function" === typeof fn && cleanups.push(fn);
+    },
+    cache(policy) {
+      let milliseconds = 0;
+      milliseconds = "immutable" === policy ? 1 / 0 : policy;
+      resource._cache = milliseconds;
+    },
+    previous: resourceTarget._resolved
+  };
+  let resolve;
+  let reject;
+  let done = false;
+  const setState = (resolved, value) => {
+    if (!done) {
+      done = true;
+      if (resolved) {
+        done = true;
+        resource.loading = false;
+        resource._state = "resolved";
+        resource._resolved = value;
+        resource._error = void 0;
+        resolve(value);
+      } else {
+        done = true;
+        resource.loading = false;
+        resource._state = "rejected";
+        resource._error = value;
+        reject(value);
+      }
+      return true;
+    }
+    return false;
+  };
+  cleanups.push((() => {
+    if (true === untrack((() => resource.loading))) {
+      const value = untrack((() => resource._resolved));
+      setState(true, value);
+    }
+  }));
+  invoke(iCtx, (() => {
+    resource._state = "pending";
+    resource.loading = !isServerPlatform();
+    const promise2 = resource.value = new Promise(((r, re) => {
+      resolve = r;
+      reject = re;
+    }));
+    promise2.catch(ignoreErrorToPreventNodeFromCrashing);
+  }));
+  const promise = safeCall((() => Promise.resolve(taskFn(opts))), (value => {
+    setState(true, value);
+  }), (err => {
+    if (isPromise(err)) {
+      return err.then((() => runResource(task, container, host)));
+    }
+    setState(false, err);
+  }));
+  const timeout = resourceTarget._timeout;
+  if (timeout > 0) {
+    return Promise.race([ promise, delay(timeout).then((() => {
+      setState(false, new Error("timeout")) && cleanupTask(task);
+    })) ]);
+  }
+  return promise;
+};
+
+var ignoreErrorToPreventNodeFromCrashing = err => {};
+
+var isForeignObjectElement = elementName => "foreignobject" === elementName.toLowerCase();
+
+var isSvgElement = elementName => "svg" === elementName || isForeignObjectElement(elementName);
+
+var isMathElement = elementName => "math" === elementName;
+
+var vnode_isDefaultNamespace = vnode => {
+  const flags = vnode[0];
+  return 0 === (192 & flags);
+};
+
+var vnode_getElementNamespaceFlags = elementName => isSvgElement(elementName) ? 64 : isMathElement(elementName) ? 128 : 0;
+
+function vnode_getDomChildrenWithCorrectNamespacesToInsert(journal, domParentVNode, newChild) {
+  const {elementNamespace: elementNamespace, elementNamespaceFlag: elementNamespaceFlag} = getNewElementNamespaceData(domParentVNode, newChild);
+  let domChildren = [];
+  if (elementNamespace === HTML_NS) {
+    domChildren = vnode_getDOMChildNodes(journal, newChild);
+  } else {
+    const children = vnode_getDOMChildNodes(journal, newChild, true);
+    for (let i = 0; i < children.length; i++) {
+      const childVNode = children[i];
+      if (vnode_isTextVNode(childVNode)) {
+        domChildren.push(childVNode[4]);
+        continue;
+      }
+      if ((192 & childVNode[0]) === (192 & domParentVNode[0])) {
+        domChildren.push(childVNode[6]);
+        continue;
+      }
+      const newChildElement = vnode_cloneElementWithNamespace(childVNode, domParentVNode, elementNamespace, elementNamespaceFlag);
+      newChildElement && domChildren.push(newChildElement);
+    }
+  }
+  return domChildren;
+}
+
+function cloneElementWithNamespace(element, elementName, namespace) {
+  const newElement = element.ownerDocument.createElementNS(namespace, elementName);
+  const attributes = element.attributes;
+  for (const attribute of attributes) {
+    const name = attribute.name;
+    const value = attribute.value;
+    if (!name || name === Q_PROPS_SEPARATOR) {
+      continue;
+    }
+    newElement.setAttribute(name, value);
+  }
+  return newElement;
+}
+
+function vnode_cloneElementWithNamespace(elementVNode, parentVNode, namespace, namespaceFlag) {
+  ensureElementVNode(elementVNode);
+  let vCursor = elementVNode;
+  let vParent = null;
+  let rootElement = null;
+  let parentElement = null;
+  while (vCursor) {
+    let childElement = null;
+    let newChildElement = null;
+    if (vnode_isElementVNode(vCursor)) {
+      childElement = vCursor[6];
+      const childElementTag = vnode_getElementName(vCursor);
+      const vCursorParent = vnode_getParent(vCursor);
+      const vCursorDomParent = null == rootElement ? parentVNode : vCursorParent && vnode_getDomParentVNode(vCursorParent);
+      if (vCursorDomParent) {
+        const namespaceData = getNewElementNamespaceData(vCursorDomParent, vnode_getElementName(vCursor));
+        namespace = namespaceData.elementNamespace;
+        namespaceFlag = namespaceData.elementNamespaceFlag;
+      }
+      newChildElement = cloneElementWithNamespace(childElement, childElementTag, namespace);
+      childElement.remove();
+      null == rootElement && (rootElement = newChildElement);
+      parentElement && parentElement.appendChild(newChildElement);
+      const vFirstChild = vnode_getFirstChild(vCursor);
+      vCursor[6] = newChildElement;
+      vCursor[0] &= -193;
+      vCursor[0] |= namespaceFlag;
+      if (vFirstChild) {
+        vCursor = vFirstChild;
+        parentElement = newChildElement;
+        continue;
+      }
+      if (shouldIgnoreChildren(childElement)) {
+        const container = getDomContainerFromQContainerElement(childElement);
+        if (container) {
+          const innerContainerFirstVNode = vnode_getFirstChild(container.rootVNode);
+          if (innerContainerFirstVNode) {
+            vCursor = innerContainerFirstVNode;
+            parentElement = newChildElement;
+            continue;
+          }
+        }
+      }
+    }
+    if (vCursor === elementVNode) {
+      return rootElement;
+    }
+    const vNextSibling = vnode_getNextSibling(vCursor);
+    if (vNextSibling) {
+      vCursor = vNextSibling;
+      continue;
+    }
+    vParent = vnode_getParent(vCursor);
+    while (vParent) {
+      if (vParent === elementVNode) {
+        return rootElement;
+      }
+      const vNextParentSibling = vnode_getNextSibling(vParent);
+      if (vNextParentSibling) {
+        vCursor = vNextParentSibling;
+        return rootElement;
+      }
+      vParent = vnode_getParent(vParent);
+    }
+    if (null == vParent) {
+      return rootElement;
+    }
+  }
+  return rootElement;
+}
+
+function isSvg(tagOrVNode) {
+  return "string" === typeof tagOrVNode ? isSvgElement(tagOrVNode) : 0 !== (64 & tagOrVNode[0]);
+}
+
+function isMath(tagOrVNode) {
+  return "string" === typeof tagOrVNode ? isMathElement(tagOrVNode) : 0 !== (128 & tagOrVNode[0]);
+}
+
+function getNewElementNamespaceData(domParentVNode, tagOrVNode) {
+  const parentIsDefaultNamespace = !domParentVNode || !!vnode_getElementName(domParentVNode) && vnode_isDefaultNamespace(domParentVNode);
+  const parentIsForeignObject = !parentIsDefaultNamespace && isForeignObjectElement(vnode_getElementName(domParentVNode));
+  let elementNamespace = HTML_NS;
+  let elementNamespaceFlag = 0;
+  const isElementVNodeOrString = "string" === typeof tagOrVNode || vnode_isElementVNode(tagOrVNode);
+  if (isElementVNodeOrString && isSvg(tagOrVNode)) {
+    elementNamespace = SVG_NS;
+    elementNamespaceFlag = 64;
+  } else if (isElementVNodeOrString && isMath(tagOrVNode)) {
+    elementNamespace = MATH_NS;
+    elementNamespaceFlag = 128;
+  } else if (domParentVNode && !parentIsForeignObject && !parentIsDefaultNamespace) {
+    const isParentSvg = 0 !== (64 & domParentVNode[0]);
+    const isParentMath = 0 !== (128 & domParentVNode[0]);
+    elementNamespace = isParentSvg ? SVG_NS : isParentMath ? MATH_NS : HTML_NS;
+    elementNamespaceFlag = 192 & domParentVNode[0];
+  }
+  return {
+    elementNamespace: elementNamespace,
+    elementNamespaceFlag: elementNamespaceFlag
+  };
+}
+
+var executeComponent = (container, renderHost, subscriptionHost, componentQRL, props) => {
+  const iCtx = newInvokeContext(container.$locale$, subscriptionHost, void 0, RenderEvent);
+  iCtx.$effectSubscriber$ = [ subscriptionHost, ":" ];
+  iCtx.$container$ = container;
+  let componentFn;
+  container.ensureProjectionResolved(renderHost);
+  if (null === componentQRL) {
+    componentQRL = componentQRL || container.getHostProp(renderHost, OnRenderProp);
+    assertDefined(componentQRL, "No Component found at this location");
+  }
+  if (isQrl2(componentQRL)) {
+    props = props || container.getHostProp(renderHost, ELEMENT_PROPS) || EMPTY_OBJ;
+    props && props.children && delete props.children;
+    componentFn = componentQRL.getFn(iCtx);
+  } else if (isQwikComponent(componentQRL)) {
+    const qComponentFn = componentQRL;
+    componentFn = () => invokeApply(iCtx, qComponentFn, [ props || EMPTY_OBJ, null, 0 ]);
+  } else {
+    const inlineComponent = componentQRL;
+    componentFn = () => invokeApply(iCtx, inlineComponent, [ props || EMPTY_OBJ ]);
+  }
+  const executeComponentWithPromiseExceptionRetry = () => safeCall((() => {
+    container.setHostProp(renderHost, ELEMENT_SEQ_IDX, null);
+    container.setHostProp(renderHost, USE_ON_LOCAL_SEQ_IDX, null);
+    container.setHostProp(renderHost, ELEMENT_PROPS, props);
+    vnode_isVNode(renderHost) && clearVNodeEffectDependencies(renderHost);
+    return componentFn(props);
+  }), (jsx2 => {
+    const useOnEvents = container.getHostProp(renderHost, USE_ON_LOCAL);
+    if (useOnEvents) {
+      return maybeThen(addUseOnEvents(jsx2, useOnEvents), (() => jsx2));
+    }
+    return jsx2;
+  }), (err => {
+    if (isPromise(err)) {
+      return err.then(executeComponentWithPromiseExceptionRetry);
+    }
+    throw err;
+  }));
+  return executeComponentWithPromiseExceptionRetry();
+};
+
+function addUseOnEvents(jsx2, useOnEvents) {
+  const jsxElement = findFirstStringJSX(jsx2);
+  return maybeThen(jsxElement, (jsxElement2 => {
+    let isInvisibleComponent = false;
+    jsxElement2 || (isInvisibleComponent = true);
+    for (const key in useOnEvents) {
+      if (Object.prototype.hasOwnProperty.call(useOnEvents, key)) {
+        if (isInvisibleComponent) {
+          if ("onQvisible$" === key) {
+            jsxElement2 = addScriptNodeForInvisibleComponents(jsx2);
+            jsxElement2 && addUseOnEvent(jsxElement2, "document:onQinit$", useOnEvents[key]);
+          } else if (key.startsWith("document:") || key.startsWith("window:")) {
+            jsxElement2 = addScriptNodeForInvisibleComponents(jsx2);
+            jsxElement2 && addUseOnEvent(jsxElement2, key, useOnEvents[key]);
+          } else {
+            isDev && logWarn('You are trying to add an event "' + key + '" using `useOn` hook, but a node to which you can add an event is not found. Please make sure that the component has a valid element node. ');
+          }
+        } else {
+          jsxElement2 && addUseOnEvent(jsxElement2, key, useOnEvents[key]);
+        }
+      }
+    }
+    return jsxElement2;
+  }));
+}
+
+function addUseOnEvent(jsxElement, key, value) {
+  let props = jsxElement.props;
+  props === EMPTY_OBJ && (props = jsxElement.props = {});
+  let propValue = props[key];
+  void 0 === propValue ? propValue = [] : Array.isArray(propValue) || (propValue = [ propValue ]);
+  propValue.push(...value);
+  props[key] = propValue;
+}
+
+function findFirstStringJSX(jsx2) {
+  const queue = [ jsx2 ];
+  while (queue.length) {
+    const jsx3 = queue.shift();
+    if (isJSXNode(jsx3)) {
+      if ("string" === typeof jsx3.type) {
+        return jsx3;
+      }
+      queue.push(jsx3.children);
+    } else if (Array.isArray(jsx3)) {
+      queue.push(...jsx3);
+    } else {
+      if (isPromise(jsx3)) {
+        return maybeThen(jsx3, (jsx4 => findFirstStringJSX(jsx4)));
+      }
+      if (isSignal(jsx3)) {
+        return findFirstStringJSX(untrack((() => jsx3.value)));
+      }
+    }
+  }
+  return null;
+}
+
+function addScriptNodeForInvisibleComponents(jsx2) {
+  if (isJSXNode(jsx2)) {
+    const jsxElement = new JSXNodeImpl("script", {}, {
+      type: "placeholder",
+      hidden: ""
+    }, null, 3);
+    null == jsx2.children ? jsx2.children = jsxElement : Array.isArray(jsx2.children) ? jsx2.children.push(jsxElement) : jsx2.children = [ jsx2.children, jsxElement ];
+    return jsxElement;
+  }
+  if (Array.isArray(jsx2) && jsx2.length) {
+    return addScriptNodeForInvisibleComponents(jsx2[0]);
+  }
+  return null;
+}
+
+function isSlotProp(prop) {
+  return !prop.startsWith("q:") && !prop.startsWith(NON_SERIALIZABLE_MARKER_PREFIX);
+}
+
+function isParentSlotProp(prop) {
+  return prop.startsWith(QSlotParent);
+}
+
+function escapeHTML(html) {
+  let escapedHTML = "";
+  const length = html.length;
+  let idx = 0;
+  let lastIdx = idx;
+  for (;idx < length; idx++) {
+    const ch = html.charCodeAt(idx);
+    if (60 === ch) {
+      escapedHTML += html.substring(lastIdx, idx) + "&lt;";
+    } else if (62 === ch) {
+      escapedHTML += html.substring(lastIdx, idx) + "&gt;";
+    } else if (38 === ch) {
+      escapedHTML += html.substring(lastIdx, idx) + "&amp;";
+    } else if (34 === ch) {
+      escapedHTML += html.substring(lastIdx, idx) + "&quot;";
+    } else {
+      if (39 !== ch) {
+        continue;
+      }
+      escapedHTML += html.substring(lastIdx, idx) + "&#39;";
+    }
+    lastIdx = idx + 1;
+  }
+  return 0 === lastIdx ? html : escapedHTML + html.substring(lastIdx);
+}
+
+var vnode_diff = (container, jsxNode, vStartNode, scopedStyleIdPrefix) => {
+  let journal = container.$journal$;
+  const stack2 = [];
+  const asyncQueue = [];
+  let vParent = null;
+  let vCurrent = null;
+  let vNewNode = null;
+  let vSiblings = null;
+  let vSiblingsIdx = -1;
+  let jsxChildren = null;
+  let jsxValue = null;
+  let jsxIdx = 0;
+  let jsxCount = 0;
+  let shouldAdvance = true;
+  diff(jsxNode, vStartNode);
+  return drainAsyncQueue();
+  function diff(jsxNode2, vStartNode2) {
+    assertFalse(vnode_isVNode(jsxNode2), "JSXNode should not be a VNode");
+    assertTrue(vnode_isVNode(vStartNode2), "vStartNode should be a VNode");
+    vParent = vStartNode2;
+    vNewNode = null;
+    vCurrent = vnode_getFirstChild(vStartNode2);
+    stackPush(jsxNode2, true);
+    while (stack2.length) {
+      while (jsxIdx < jsxCount) {
+        assertFalse(vParent === vCurrent, "Parent and current can't be the same");
+        if ("string" === typeof jsxValue) {
+          expectText(jsxValue);
+        } else if ("number" === typeof jsxValue) {
+          expectText(String(jsxValue));
+        } else if (jsxValue && "object" === typeof jsxValue) {
+          if (Array.isArray(jsxValue)) {
+            descend(jsxValue, false);
+          } else if (isSignal(jsxValue)) {
+            vCurrent && clearVNodeEffectDependencies(vCurrent);
+            expectVirtual("S", null);
+            descend(trackSignal((() => jsxValue.value), vNewNode || vCurrent, ".", container), true);
+          } else if (isPromise(jsxValue)) {
+            expectVirtual("A", null);
+            asyncQueue.push(jsxValue, vNewNode || vCurrent);
+          } else if (isJSXNode(jsxValue)) {
+            const type = jsxValue.type;
+            if ("string" === typeof type) {
+              expectNoMoreTextNodes();
+              expectElement(jsxValue, type);
+              descend(jsxValue.children, true);
+            } else if ("function" === typeof type) {
+              if (type === Fragment) {
+                expectNoMoreTextNodes();
+                expectVirtual("F", jsxValue.key);
+                descend(jsxValue.children, true);
+              } else if (type === Slot) {
+                expectNoMoreTextNodes();
+                expectSlot() || descend(jsxValue.children, true);
+              } else if (type === Projection) {
+                expectProjection();
+                descend(jsxValue.children, true);
+              } else if (type === SSRComment) {
+                expectNoMore();
+              } else if (type === SSRRaw) {
+                expectNoMore();
+              } else {
+                expectNoMoreTextNodes();
+                expectComponent(type);
+              }
+            }
+          }
+        } else {
+          jsxValue === SkipRender ? journal = [] : expectText("");
+        }
+        advance();
+      }
+      expectNoMore();
+      ascend();
+    }
+  }
+  function advance() {
+    if (!shouldAdvance) {
+      shouldAdvance = true;
+      return;
+    }
+    jsxIdx++;
+    if (jsxIdx < jsxCount) {
+      jsxValue = jsxChildren[jsxIdx];
+    } else if (false === stack2[stack2.length - 1]) {
+      return ascend();
+    }
+    null !== vNewNode ? vNewNode = null : advanceToNextSibling();
+  }
+  function peekNextSibling() {
+    if (null !== vSiblings) {
+      const idx = vSiblingsIdx + 5;
+      return idx < vSiblings.length ? vSiblings[idx] : null;
+    }
+    return vCurrent ? vnode_getNextSibling(vCurrent) : null;
+  }
+  function advanceToNextSibling() {
+    vCurrent = peekNextSibling();
+    null !== vSiblings && (vSiblingsIdx += 3);
+  }
+  function descend(children, descendVNode) {
+    if (null == children) {
+      expectNoChildren();
+      return;
+    }
+    stackPush(children, descendVNode);
+    if (descendVNode) {
+      assertDefined(vCurrent || vNewNode, "Expecting vCurrent to be defined.");
+      vSiblings = null;
+      vSiblingsIdx = -1;
+      vParent = vNewNode || vCurrent;
+      vCurrent = vnode_getFirstChild(vParent);
+      vNewNode = null;
+    }
+    shouldAdvance = false;
+  }
+  function ascend() {
+    const descendVNode = stack2.pop();
+    if (descendVNode) {
+      vSiblingsIdx = stack2.pop();
+      vSiblings = stack2.pop();
+      vNewNode = stack2.pop();
+      vCurrent = stack2.pop();
+      vParent = stack2.pop();
+    }
+    jsxValue = stack2.pop();
+    jsxCount = stack2.pop();
+    jsxIdx = stack2.pop();
+    jsxChildren = stack2.pop();
+    advance();
+  }
+  function stackPush(children, descendVNode) {
+    stack2.push(jsxChildren, jsxIdx, jsxCount, jsxValue);
+    descendVNode && stack2.push(vParent, vCurrent, vNewNode, vSiblings, vSiblingsIdx);
+    stack2.push(descendVNode);
+    if (Array.isArray(children)) {
+      jsxIdx = 0;
+      jsxCount = children.length;
+      jsxChildren = children;
+      jsxValue = jsxCount > 0 ? children[0] : null;
+    } else if (void 0 === children) {
+      jsxIdx = 0;
+      jsxValue = null;
+      jsxChildren = null;
+      jsxCount = 0;
+    } else {
+      jsxIdx = 0;
+      jsxValue = children;
+      jsxChildren = null;
+      jsxCount = 1;
+    }
+  }
+  function getInsertBefore() {
+    if (vNewNode) {
+      return vCurrent;
+    }
+    if (null !== vSiblings) {
+      const nextIdx = vSiblingsIdx + 5;
+      return nextIdx < vSiblings.length ? vSiblings[nextIdx] : null;
+    }
+    return peekNextSibling();
+  }
+  function descendContentToProject(children, host) {
+    Array.isArray(children) || (children = [ children ]);
+    if (children.length) {
+      const createProjectionJSXNode = slotName => new JSXNodeImpl(Projection, EMPTY_OBJ, null, [], 0, slotName);
+      const projections = [];
+      if (host) {
+        for (let i = vnode_getPropStartIndex(host); i < host.length; i += 2) {
+          const prop = host[i];
+          if (isSlotProp(prop)) {
+            const slotName = prop;
+            projections.push(slotName);
+            projections.push(createProjectionJSXNode(slotName));
+          }
+        }
+      }
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        const slotName = String(isJSXNode(child) && directGetPropsProxyProp(child, QSlot) || QDefaultSlot);
+        const idx = mapApp_findIndx(projections, slotName, 0);
+        let jsxBucket;
+        idx >= 0 ? jsxBucket = projections[idx + 1] : projections.splice(~idx, 0, slotName, jsxBucket = createProjectionJSXNode(slotName));
+        const removeProjection = false === child;
+        removeProjection || jsxBucket.children.push(child);
+      }
+      for (let i = projections.length - 2; i >= 0; i -= 2) {
+        projections.splice(i, 1);
+      }
+      descend(projections, true);
+    }
+  }
+  function expectProjection() {
+    const slotName = jsxValue.key;
+    vCurrent = vnode_getProp(vParent, slotName, (id => vnode_locate(container.rootVNode, id)));
+    if (null == vCurrent) {
+      vNewNode = vnode_newVirtual();
+      isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "P");
+      isDev && vnode_setProp(vNewNode, "q:code", "expectProjection");
+      vnode_setProp(vNewNode, QSlot, slotName);
+      vnode_setProp(vNewNode, QSlotParent, vParent);
+      vnode_setProp(vParent, slotName, vNewNode);
+    }
+  }
+  function expectSlot() {
+    const vHost = vnode_getProjectionParentComponent(vParent, container.rootVNode);
+    const slotNameKey = getSlotNameKey(vHost);
+    const vProjectedNode = vHost ? vnode_getProp(vHost, slotNameKey, null) : null;
+    if (null == vProjectedNode) {
+      vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore());
+      vnode_setProp(vNewNode, QSlot, slotNameKey);
+      vHost && vnode_setProp(vHost, slotNameKey, vNewNode);
+      isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "P");
+      isDev && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
+      return false;
+    }
+    if (vProjectedNode === vCurrent) {} else {
+      vnode_insertBefore(journal, vParent, vNewNode = vProjectedNode, vCurrent && getInsertBefore());
+      vnode_setProp(vNewNode, QSlot, slotNameKey);
+      vHost && vnode_setProp(vHost, slotNameKey, vNewNode);
+      isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "P");
+      isDev && vnode_setProp(vNewNode, "q:code", "expectSlot" + count++);
+    }
+    return true;
+  }
+  function getSlotNameKey(vHost) {
+    const constProps = jsxValue.constProps;
+    if (constProps && "object" == typeof constProps && "name" in constProps) {
+      const constValue = constProps.name;
+      if (vHost && constValue instanceof WrappedSignal) {
+        return trackSignal((() => constValue.value), vHost, ":", container);
+      }
+    }
+    return directGetPropsProxyProp(jsxValue, "name") || QDefaultSlot;
+  }
+  function drainAsyncQueue() {
+    while (asyncQueue.length) {
+      const jsxNode2 = asyncQueue.shift();
+      const vHostNode = asyncQueue.shift();
+      if (isPromise(jsxNode2)) {
+        return jsxNode2.then((jsxNode3 => {
+          diff(jsxNode3, vHostNode);
+          return drainAsyncQueue();
+        }));
+      }
+      diff(jsxNode2, vHostNode);
+    }
+  }
+  function expectNoChildren() {
+    const vFirstChild = vCurrent && vnode_getFirstChild(vCurrent);
+    if (null !== vFirstChild) {
+      let vChild = vFirstChild;
+      while (vChild) {
+        cleanup(container, vChild);
+        vChild = vnode_getNextSibling(vChild);
+      }
+      vnode_truncate(journal, vCurrent, vFirstChild);
+    }
+  }
+  function expectNoMore() {
+    assertFalse(vParent === vCurrent, "Parent and current can't be the same");
+    if (null !== vCurrent) {
+      while (vCurrent) {
+        const toRemove = vCurrent;
+        advanceToNextSibling();
+        cleanup(container, toRemove);
+        vParent === vnode_getParent(toRemove) && vnode_remove(journal, vParent, toRemove, true);
+      }
+    }
+  }
+  function expectNoMoreTextNodes() {
+    while (null !== vCurrent && vnode_isTextVNode(vCurrent)) {
+      cleanup(container, vCurrent);
+      const toRemove = vCurrent;
+      advanceToNextSibling();
+      vnode_remove(journal, vParent, toRemove, true);
+    }
+  }
+  function createNewElement(jsx2, elementName) {
+    const element = createElementWithNamespace(elementName);
+    const {constProps: constProps} = jsx2;
+    let needsQDispatchEventPatch = false;
+    if (constProps) {
+      for (const key2 in constProps) {
+        let value = constProps[key2];
+        if (isJsxPropertyAnEventName(key2)) {
+          const eventName = getEventNameFromJsxProp(key2);
+          const scope = getEventNameScopeFromJsxProp(key2);
+          vnode_setProp(vNewNode, HANDLER_PREFIX + ":" + scope + ":" + eventName, value);
+          eventName && registerQwikLoaderEvent(eventName);
+          needsQDispatchEventPatch = true;
+          continue;
+        }
+        if ("ref" === key2) {
+          if (isSignal(value)) {
+            value.value = element;
+            continue;
+          }
+          if ("function" === typeof value) {
+            value(element);
+            continue;
+          }
+        }
+        if (isSignal(value)) {
+          const signalData = new EffectData({
+            $scopedStyleIdPrefix$: scopedStyleIdPrefix,
+            $isConst$: true
+          });
+          value = trackSignal((() => value.value), vNewNode, key2, container, signalData);
+        }
+        if (key2 === dangerouslySetInnerHTML) {
+          element.innerHTML = value;
+          element.setAttribute(QContainerAttr, "html");
+          continue;
+        }
+        if ("textarea" === elementName && "value" === key2) {
+          if ("string" !== typeof value) {
+            isDev && throwErrorAndStop("The value of the textarea must be a string");
+            continue;
+          }
+          element.value = escapeHTML(value);
+          continue;
+        }
+        value = serializeAttribute(key2, value, scopedStyleIdPrefix);
+        null != value && element.setAttribute(key2, String(value));
+      }
+    }
+    const key = jsx2.key;
+    if (key) {
+      element.setAttribute(ELEMENT_KEY, key);
+      vnode_setProp(vNewNode, ELEMENT_KEY, key);
+    }
+    const classAttributeExists = hasClassAttr(jsx2.varProps) || jsx2.constProps && hasClassAttr(jsx2.constProps);
+    !classAttributeExists && scopedStyleIdPrefix && element.setAttribute("class", scopedStyleIdPrefix);
+    vnode_insertBefore(journal, vParent, vNewNode, vCurrent);
+    return needsQDispatchEventPatch;
+  }
+  function createElementWithNamespace(elementName) {
+    const domParentVNode = vnode_getDomParentVNode(vParent);
+    const {elementNamespace: elementNamespace, elementNamespaceFlag: elementNamespaceFlag} = getNewElementNamespaceData(domParentVNode, elementName);
+    const element = container.document.createElementNS(elementNamespace, elementName);
+    vNewNode = vnode_newElement(element, elementName);
+    vNewNode[0] |= elementNamespaceFlag;
+    return element;
+  }
+  function expectElement(jsx2, elementName) {
+    const isSameElementName = vCurrent && vnode_isElementVNode(vCurrent) && elementName === vnode_getElementName(vCurrent);
+    const jsxKey = jsx2.key;
+    let needsQDispatchEventPatch = false;
+    if (!isSameElementName || jsxKey !== getKey(vCurrent)) {
+      vNewNode = retrieveChildWithKey(elementName, jsxKey);
+      null === vNewNode ? needsQDispatchEventPatch = createNewElement(jsx2, elementName) : vnode_insertBefore(journal, vParent, vNewNode, vCurrent);
+    }
+    const jsxAttrs = [];
+    const props = jsx2.varProps;
+    for (const key in props) {
+      let value = props[key];
+      value = serializeAttribute(key, value, scopedStyleIdPrefix);
+      null != value && mapArray_set(jsxAttrs, key, value, 0);
+    }
+    null !== jsxKey && mapArray_set(jsxAttrs, ELEMENT_KEY, jsxKey, 0);
+    const vNode = vNewNode || vCurrent;
+    needsQDispatchEventPatch = setBulkProps(vNode, jsxAttrs) || needsQDispatchEventPatch;
+    if (needsQDispatchEventPatch) {
+      const element = vnode_getNode(vNode);
+      element.qDispatchEvent || (element.qDispatchEvent = (event, scope) => {
+        const eventName = event.type;
+        const eventProp = ":" + scope.substring(1) + ":" + eventName;
+        const qrls = [ vnode_getProp(vNode, eventProp, null), vnode_getProp(vNode, HANDLER_PREFIX + eventProp, null) ];
+        let returnValue = false;
+        qrls.flat(2).forEach((qrl => {
+          if (qrl) {
+            const value = qrl(event, element);
+            returnValue = returnValue || true === value;
+          }
+        }));
+        return returnValue;
+      });
+    }
+  }
+  function setBulkProps(vnode, srcAttrs) {
+    vnode_ensureElementInflated(vnode);
+    const dstAttrs = vnode;
+    let srcIdx = 0;
+    const srcLength = srcAttrs.length;
+    let dstIdx = 8;
+    let dstLength = dstAttrs.length;
+    let srcKey = srcIdx < srcLength ? srcAttrs[srcIdx++] : null;
+    let dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+    let patchEventDispatch = false;
+    const record = (key, value) => {
+      if (key.startsWith(":")) {
+        vnode_setProp(vnode, key, value);
+        return;
+      }
+      if ("ref" === key) {
+        const element = vnode_getNode(vnode);
+        if (isSignal(value)) {
+          value.value = element;
+          return;
+        }
+        if ("function" === typeof value) {
+          value(element);
+          return;
+        }
+      }
+      isSignal(value) && (value = untrack((() => value.value)));
+      vnode_setAttr(journal, vnode, key, value);
+      null === value && (dstLength = dstAttrs.length);
+    };
+    const recordJsxEvent = (key, value) => {
+      const eventName = getEventNameFromJsxProp(key);
+      if (eventName) {
+        const scope = getEventNameScopeFromJsxProp(key);
+        record(":" + scope + ":" + eventName, value);
+      }
+      const htmlEvent = convertEventNameFromJsxPropToHtmlAttr(key);
+      htmlEvent && record(htmlEvent, "");
+      eventName && registerQwikLoaderEvent(eventName);
+    };
+    while (null !== srcKey || null !== dstKey) {
+      if (dstKey?.startsWith(HANDLER_PREFIX) || dstKey == ELEMENT_KEY) {
+        dstIdx++;
+        dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+      } else if (null == srcKey) {
+        if (dstKey && isHtmlAttributeAnEventName(dstKey)) {
+          patchEventDispatch = true;
+          dstIdx++;
+        } else {
+          record(dstKey, null);
+          dstIdx--;
+        }
+        dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+      } else if (null == dstKey) {
+        const isEvent = isJsxPropertyAnEventName(srcKey);
+        if (isEvent) {
+          patchEventDispatch = true;
+          recordJsxEvent(srcKey, srcAttrs[srcIdx]);
+        } else {
+          record(srcKey, srcAttrs[srcIdx]);
+        }
+        srcIdx++;
+        srcKey = srcIdx < srcLength ? srcAttrs[srcIdx++] : null;
+      } else if (srcKey == dstKey) {
+        const srcValue = srcAttrs[srcIdx++];
+        const dstValue = dstAttrs[dstIdx++];
+        srcValue !== dstValue && record(dstKey, srcValue);
+        srcKey = srcIdx < srcLength ? srcAttrs[srcIdx++] : null;
+        dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+      } else if (srcKey < dstKey) {
+        if (isJsxPropertyAnEventName(srcKey)) {
+          patchEventDispatch = true;
+          recordJsxEvent(srcKey, srcAttrs[srcIdx]);
+        } else {
+          record(srcKey, srcAttrs[srcIdx]);
+        }
+        srcIdx++;
+        srcKey = srcIdx < srcLength ? srcAttrs[srcIdx++] : null;
+        dstIdx++;
+        dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+      } else {
+        if (isHtmlAttributeAnEventName(dstKey)) {
+          patchEventDispatch = true;
+          dstIdx++;
+        } else {
+          record(dstKey, null);
+          dstIdx--;
+        }
+        dstKey = dstIdx < dstLength ? dstAttrs[dstIdx++] : null;
+      }
+    }
+    return patchEventDispatch;
+  }
+  function registerQwikLoaderEvent(eventName) {
+    const window2 = container.document.defaultView;
+    window2 && (window2.qwikevents || (window2.qwikevents = [])).push(eventName);
+  }
+  function retrieveChildWithKey(nodeName, key) {
+    let vNodeWithKey = null;
+    if (-1 === vSiblingsIdx) {
+      vSiblings = [];
+      vSiblingsIdx = 0;
+      let vNode = vCurrent;
+      while (vNode) {
+        const name = vnode_isElementVNode(vNode) ? vnode_getElementName(vNode) : null;
+        const vKey = getKey(vNode) || getComponentHash(vNode, container.$getObjectById$);
+        null === vNodeWithKey && vKey == key && name == nodeName ? vNodeWithKey = vNode : vSiblings.push(name, vKey, vNode);
+        vNode = vnode_getNextSibling(vNode);
+      }
+    } else {
+      for (let idx = vSiblingsIdx; idx < vSiblings.length; idx += 3) {
+        const name = vSiblings[idx + 0];
+        const vKey = vSiblings[idx + 1];
+        if (vKey === key && name === nodeName) {
+          vNodeWithKey = vSiblings[idx + 2];
+          vSiblings?.splice(idx, 3);
+          break;
+        }
+      }
+    }
+    return vNodeWithKey;
+  }
+  function expectVirtual(type, jsxKey) {
+    if (vCurrent && vnode_isVirtualVNode(vCurrent) && vnode_getProp(vCurrent, ELEMENT_KEY, null) === jsxKey) {
+      return;
+    }
+    if (null !== jsxKey) {
+      vNewNode = retrieveChildWithKey(null, jsxKey);
+      if (null != vNewNode) {
+        vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore());
+        return;
+      }
+    }
+    vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore());
+    vnode_setProp(vNewNode, ELEMENT_KEY, jsxKey);
+    isDev && vnode_setProp(vNewNode || vCurrent, DEBUG_TYPE, type);
+  }
+  function expectComponent(component) {
+    const componentMeta = component[SERIALIZABLE_STATE];
+    let host = vNewNode || vCurrent;
+    if (componentMeta) {
+      const jsxProps = jsxValue.props;
+      let shouldRender = false;
+      const [componentQRL] = componentMeta;
+      const componentHash = componentQRL.$hash$;
+      const vNodeComponentHash = getComponentHash(host, container.$getObjectById$);
+      const lookupKey = jsxValue.key || componentHash;
+      const vNodeLookupKey = getKey(host) || vNodeComponentHash;
+      const lookupKeysAreEqual = lookupKey === vNodeLookupKey;
+      const hashesAreEqual = componentHash === vNodeComponentHash;
+      if (lookupKeysAreEqual) {
+        if (!hashesAreEqual) {
+          insertNewComponent(host, componentQRL, jsxProps);
+          if (vNewNode) {
+            host && (vNewNode[0] = host[0]);
+            host = vNewNode;
+            shouldRender = true;
+          }
+        }
+      } else {
+        vNewNode = retrieveChildWithKey(null, lookupKey);
+        vNewNode ? vnode_insertBefore(journal, vParent, vNewNode, vCurrent) : insertNewComponent(host, componentQRL, jsxProps);
+        host = vNewNode;
+        shouldRender = true;
+      }
+      if (host) {
+        const vNodeProps = vnode_getProp(host, ELEMENT_PROPS, container.$getObjectById$);
+        shouldRender = shouldRender || propsDiffer(jsxProps, vNodeProps);
+        shouldRender && container.$scheduler$(7, host, componentQRL, jsxProps);
+      }
+      null != jsxValue.children && descendContentToProject(jsxValue.children, host);
+    } else {
+      vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore());
+      isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "I");
+      vnode_setProp(vNewNode, ELEMENT_PROPS, jsxValue.props);
+      host = vNewNode;
+      let component$Host = host;
+      while (component$Host && (!vnode_isVirtualVNode(component$Host) || null === vnode_getProp(component$Host, OnRenderProp, null))) {
+        component$Host = vnode_getParent(component$Host);
+      }
+      const jsxOutput = executeComponent(container, host, component$Host || container.rootVNode, component, jsxValue.props);
+      asyncQueue.push(jsxOutput, host);
+    }
+  }
+  function insertNewComponent(host, componentQRL, jsxProps) {
+    host && clearVNodeEffectDependencies(host);
+    vnode_insertBefore(journal, vParent, vNewNode = vnode_newVirtual(), vCurrent && getInsertBefore());
+    isDev && vnode_setProp(vNewNode, DEBUG_TYPE, "C");
+    container.setHostProp(vNewNode, OnRenderProp, componentQRL);
+    container.setHostProp(vNewNode, ELEMENT_PROPS, jsxProps);
+    container.setHostProp(vNewNode, ELEMENT_KEY, jsxValue.key);
+  }
+  function expectText(text) {
+    if (null !== vCurrent) {
+      const type = vnode_getType(vCurrent);
+      if (3 === type) {
+        if (text !== vnode_getText(vCurrent)) {
+          vnode_setText(journal, vCurrent, text);
+          return;
+        }
+        return;
+      }
+    }
+    vnode_insertBefore(journal, vParent, vNewNode = vnode_newText(container.document.createTextNode(text), text), vCurrent);
+  }
+};
+
+function getKey(vNode) {
+  if (null == vNode) {
+    return null;
+  }
+  return vnode_getProp(vNode, ELEMENT_KEY, null);
+}
+
+function getComponentHash(vNode, getObject) {
+  if (null == vNode) {
+    return null;
+  }
+  const qrl = vnode_getProp(vNode, OnRenderProp, getObject);
+  return qrl ? qrl.$hash$ : null;
+}
+
+function Projection() {}
+
+function propsDiffer(src, dst) {
+  if (!src || !dst) {
+    return true;
+  }
+  let srcKeys = removeChildrenKey(Object.keys(src));
+  let dstKeys = removeChildrenKey(Object.keys(dst));
+  if (srcKeys.length !== dstKeys.length) {
+    return true;
+  }
+  srcKeys = srcKeys.sort();
+  dstKeys = dstKeys.sort();
+  for (let idx = 0; idx < srcKeys.length; idx++) {
+    const srcKey = srcKeys[idx];
+    const dstKey = dstKeys[idx];
+    if (srcKey !== dstKey || src[srcKey] !== dst[dstKey]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function removeChildrenKey(keys2) {
+  const childrenIdx = keys2.indexOf("children");
+  -1 !== childrenIdx && keys2.splice(childrenIdx, 1);
+  return keys2;
+}
+
+function cleanup(container, vNode) {
+  let vCursor = vNode;
+  if (vnode_isTextVNode(vNode)) {
+    return;
+  }
+  let vParent = null;
+  do {
+    const type = vCursor[0];
+    if (3 & type) {
+      if (2 & type) {
+        clearVNodeEffectDependencies(vCursor);
+        markVNodeAsDeleted(vCursor);
+        const seq = container.getHostProp(vCursor, ELEMENT_SEQ);
+        if (seq) {
+          for (let i = 0; i < seq.length; i++) {
+            const obj = seq[i];
+            if (isTask(obj)) {
+              const task = obj;
+              clearSubscriberEffectDependencies(task);
+              1 & task.$flags$ ? container.$scheduler$(80, task) : cleanupTask(task);
+            }
+          }
+        }
+      }
+      const isComponent = 2 & type && null !== vnode_getProp(vCursor, OnRenderProp, null);
+      if (isComponent) {
+        const attrs = vCursor;
+        for (let i = 6; i < attrs.length; i += 2) {
+          const key = attrs[i];
+          if (!isParentSlotProp(key) && isSlotProp(key)) {
+            const value = attrs[i + 1];
+            if (value) {
+              attrs[i + 1] = null;
+              const projection = "string" === typeof value ? vnode_locate(container.rootVNode, value) : value;
+              let projectionChild = vnode_getFirstChild(projection);
+              while (projectionChild) {
+                cleanup(container, projectionChild);
+                projectionChild = vnode_getNextSibling(projectionChild);
+              }
+              cleanupStaleUnclaimedProjection(container.$journal$, projection);
+            }
+          }
+        }
+      }
+      const isProjection = 2 & type && null !== vnode_getProp(vCursor, QSlot, null);
+      if (isProjection) {
+        if (vCursor === vNode) {
+          const vFirstChild = vnode_getFirstChild(vCursor);
+          if (vFirstChild) {
+            vnode_walkVNode(vFirstChild);
+            return;
+          }
+        }
+      } else {
+        const vFirstChild = vnode_getFirstChild(vCursor);
+        if (vFirstChild) {
+          vCursor = vFirstChild;
+          continue;
+        }
+      }
+    }
+    if (vCursor === vNode) {
+      return;
+    }
+    const vNextSibling = vnode_getNextSibling(vCursor);
+    if (vNextSibling) {
+      vCursor = vNextSibling;
+      continue;
+    }
+    vParent = vnode_getParent(vCursor);
+    while (vParent) {
+      if (vParent === vNode) {
+        return;
+      }
+      const vNextParentSibling = vnode_getNextSibling(vParent);
+      if (vNextParentSibling) {
+        vCursor = vNextParentSibling;
+        break;
+      }
+      vParent = vnode_getParent(vParent);
+    }
+    if (null == vParent) {
+      return;
+    }
+  } while (true);
+}
+
+function cleanupStaleUnclaimedProjection(journal, projection) {
+  const projectionParent = vnode_getParent(projection);
+  if (projectionParent) {
+    const projectionParentType = projectionParent[0];
+    1 & projectionParentType && vnode_getElementName(projectionParent) === QTemplate && vnode_remove(journal, projectionParent, projection, true);
+  }
+}
+
+function markVNodeAsDeleted(vCursor) {
+  vCursor[0] |= 32;
+}
+
+var HANDLER_PREFIX = ":";
+
+var count = 0;
+
+var DEBUG2 = false;
+
+var createScheduler = (container, scheduleDrain, journalFlush) => {
+  const choreQueue = [];
+  let currentChore = null;
+  let journalFlushScheduled = false;
+  return schedule;
+  function schedule(type, hostOrTask = null, targetOrQrl = null, payload = null) {
+    const runLater = 127 !== type && 16 !== type && 6 !== type;
+    const isTask2 = 3 === type || 64 === type || 2 === type || 80 === type;
+    isTask2 && (hostOrTask.$flags$ |= 8);
+    let chore = {
+      $type$: type,
+      $idx$: isTask2 ? hostOrTask.$index$ : "string" === typeof targetOrQrl ? targetOrQrl : 0,
+      $host$: isTask2 ? hostOrTask.$el$ : hostOrTask,
+      $target$: targetOrQrl,
+      $payload$: isTask2 ? hostOrTask : payload,
+      $resolve$: null,
+      $promise$: null,
+      $returnValue$: null,
+      $executed$: false
+    };
+    chore.$promise$ = new Promise((resolve => chore.$resolve$ = resolve));
+    DEBUG2 && debugTrace("schedule", chore, currentChore, choreQueue);
+    chore = sortedInsert(choreQueue, chore);
+    if (!journalFlushScheduled && runLater) {
+      journalFlushScheduled = true;
+      schedule(48);
+      scheduleDrain();
+    }
+    return runLater ? chore.$promise$ : drainUpTo(chore);
+  }
+  function drainUpTo(runUptoChore) {
+    if (runUptoChore.$executed$) {
+      return runUptoChore.$returnValue$;
+    }
+    if (currentChore) {
+      return runUptoChore.$promise$;
+    }
+    while (choreQueue.length) {
+      const nextChore = choreQueue.shift();
+      const order = choreComparator(nextChore, runUptoChore, false);
+      if (null === order) {
+        continue;
+      }
+      if (order > 0) {
+        break;
+      }
+      const isDeletedVNode = vNodeAlreadyDeleted(nextChore);
+      if (isDeletedVNode && 80 !== nextChore.$type$) {
+        DEBUG2 && debugTrace("skip chore", nextChore, currentChore, choreQueue);
+        continue;
+      }
+      const returnValue = executeChore(nextChore);
+      if (isPromise(returnValue)) {
+        const promise = returnValue.then((() => drainUpTo(runUptoChore)));
+        return promise;
+      }
+    }
+    return runUptoChore.$returnValue$;
+  }
+  function executeChore(chore) {
+    const host = chore.$host$;
+    DEBUG2 && debugTrace("execute", chore, currentChore, choreQueue);
+    assertEqual(currentChore, null, "Chore already running.");
+    currentChore = chore;
+    let returnValue = null;
+    switch (chore.$type$) {
+     case 48:
+      returnValue = journalFlush();
+      journalFlushScheduled = false;
+      break;
+
+     case 7:
+     case 6:
+      returnValue = safeCall((() => executeComponent(container, host, host, chore.$target$, chore.$payload$)), (jsx3 => 7 === chore.$type$ ? maybeThen(container.processJsx(host, jsx3), (() => jsx3)) : jsx3), (err => container.handleError(err, host)));
+      break;
+
+     case 2:
+      const result = runResource(chore.$payload$, container, host);
+      returnValue = isDomContainer(container) ? null : result;
+      break;
+
+     case 3:
+      returnValue = runTask(chore.$payload$, container, host);
+      break;
+
+     case 64:
+      returnValue = runTask(chore.$payload$, container, host);
+      break;
+
+     case 80:
+      const task = chore.$payload$;
+      cleanupTask(task);
+      break;
+
+     case 4:
+      const parentVirtualNode = chore.$target$;
+      let jsx2 = chore.$payload$;
+      isSignal(jsx2) && (jsx2 = jsx2.value);
+      returnValue = vnode_diff(container, jsx2, parentVirtualNode, null);
+      break;
+
+     case 5:
+      const virtualNode = chore.$host$;
+      const payload = chore.$payload$;
+      let value = payload.$value$;
+      isSignal(value) && (value = value.value);
+      const isConst = payload.$isConst$;
+      const journal = container.$journal$;
+      const property = chore.$idx$;
+      value = serializeAttribute(property, value, payload.$scopedStyleIdPrefix$);
+      if (isConst) {
+        const element = virtualNode[6];
+        journal.push(2, element, property, value);
+      } else {
+        vnode_setAttr(journal, virtualNode, property, value);
+      }
+      break;
+
+     case 1:
+      {
+        const target = chore.$target$;
+        returnValue = target.resolved ? null : target.resolve();
+        break;
+      }
+    }
+    return maybeThenPassError(returnValue, (value => {
+      DEBUG2 && debugTrace("execute.DONE", null, currentChore, choreQueue);
+      if (currentChore) {
+        currentChore.$executed$ = true;
+        currentChore.$resolve$?.(value);
+      }
+      currentChore = null;
+      return chore.$returnValue$ = value;
+    }));
+  }
+};
+
+var toNumber = value => "number" === typeof value ? value : -1;
+
+var choreUpdate = (existing, newChore) => {
+  4 === existing.$type$ && (existing.$payload$ = newChore.$payload$);
+};
+
+function vNodeAlreadyDeleted(chore) {
+  return !!(chore.$host$ && vnode_isVNode(chore.$host$) && 32 & chore.$host$[0]);
+}
+
+function choreComparator(a, b, shouldThrowOnHostMismatch) {
+  const macroTypeDiff = (112 & a.$type$) - (112 & b.$type$);
+  if (0 !== macroTypeDiff) {
+    return macroTypeDiff;
+  }
+  if (48 !== a.$type$) {
+    const aHost = a.$host$;
+    const bHost = b.$host$;
+    if (aHost !== bHost && null !== aHost && null !== bHost) {
+      if (!vnode_isVNode(aHost) || !vnode_isVNode(bHost)) {
+        const errorMessage = "SERVER: during HTML streaming, it is not possible to cause a re-run of tasks on a different host";
+        shouldThrowOnHostMismatch && throwErrorAndStop(errorMessage);
+        logWarn(errorMessage);
+        return null;
+      }
+      {
+        const hostDiff = vnode_documentPosition(aHost, bHost);
+        if (0 !== hostDiff) {
+          return hostDiff;
+        }
+      }
+    }
+    const microTypeDiff = (15 & a.$type$) - (15 & b.$type$);
+    if (0 !== microTypeDiff) {
+      return microTypeDiff;
+    }
+    const idxDiff = toNumber(a.$idx$) - toNumber(b.$idx$);
+    if (0 !== idxDiff) {
+      return idxDiff;
+    }
+    if (a.$target$ !== b.$target$ && (1 === a.$type$ && 1 === b.$type$ || 5 === a.$type$ && 5 === b.$type$)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+function sortedFindIndex(sortedArray, value) {
+  let bottom = 0;
+  let top = sortedArray.length;
+  while (bottom < top) {
+    const middle = bottom + (top - bottom >> 1);
+    const midChore = sortedArray[middle];
+    const comp = choreComparator(value, midChore, true);
+    if (comp < 0) {
+      top = middle;
+    } else {
+      if (!(comp > 0)) {
+        return middle;
+      }
+      bottom = middle + 1;
+    }
+  }
+  return ~bottom;
+}
+
+function sortedInsert(sortedArray, value) {
+  const idx = sortedFindIndex(sortedArray, value);
+  if (idx < 0) {
+    sortedArray.splice(~idx, 0, value);
+    return value;
+  }
+  const existing = sortedArray[idx];
+  choreUpdate(existing, value);
+  return existing;
+}
+
+function debugChoreToString(chore) {
+  const type = {
+    1: "QRL_RESOLVE",
+    2: "RESOURCE",
+    3: "TASK",
+    4: "NODE_DIFF",
+    5: "NODE_PROP",
+    7: "COMPONENT",
+    6: "COMPONENT_SSR",
+    48: "JOURNAL_FLUSH",
+    64: "VISIBLE",
+    80: "CLEANUP_VISIBLE",
+    127: "WAIT_FOR_ALL",
+    16: "WAIT_FOR_COMPONENTS"
+  }[chore.$type$] || "UNKNOWN: " + chore.$type$;
+  const host = String(chore.$host$).replaceAll(/\n.*/gim, "");
+  const qrlTarget = chore.$target$?.$symbol$;
+  return `Chore(${type} ${1 === chore.$type$ ? qrlTarget : host} ${chore.$idx$})`;
+}
+
+function debugTrace(action, arg, currentChore, queue) {
+  const lines = [ "Scheduler: " + action ];
+  arg && lines.push("    arg: " + ("$type$" in arg ? debugChoreToString(arg) : String(arg).replaceAll(/\n.*/gim, "")));
+  currentChore && lines.push("running: " + debugChoreToString(currentChore));
+  queue && queue.forEach(((chore, idx) => {
+    lines.push((0 == idx ? "  queue: " : "         ") + debugChoreToString(chore));
+  }));
+  console.log(lines.join("\n  ") + "\n");
+}
+
+var runTask = (task, container, host) => {
+  task.$flags$ &= -9;
+  cleanupTask(task);
+  const iCtx = newInvokeContext(container.$locale$, host, void 0, TaskEvent);
+  iCtx.$container$ = container;
+  const taskFn = task.$qrl$.getFn(iCtx, (() => clearSubscriberEffectDependencies(task)));
+  const track = (obj, prop) => {
+    const ctx = newInvokeContext();
+    ctx.$effectSubscriber$ = [ task, ":" ];
+    ctx.$container$ = container;
+    return invoke(ctx, (() => {
+      if (isFunction(obj)) {
+        return obj();
+      }
+      return prop ? obj[prop] : isSignal(obj) ? obj.value : obj;
+    }));
+  };
+  const handleError = reason => container.handleError(reason, host);
+  let cleanupFns = null;
+  const cleanup2 = fn => {
+    if ("function" == typeof fn) {
+      if (!cleanupFns) {
+        cleanupFns = [];
+        task.$destroy$ = noSerialize((() => {
+          task.$destroy$ = null;
+          cleanupFns.forEach((fn2 => {
+            try {
+              fn2();
+            } catch (err) {
+              handleError(err);
+            }
+          }));
+        }));
+      }
+      cleanupFns.push(fn);
+    }
+  };
+  const taskApi = {
+    track: track,
+    cleanup: cleanup2
+  };
+  const result = safeCall((() => taskFn(taskApi)), cleanup2, (err => isPromise(err) ? err.then((() => runTask(task, container, host))) : handleError(err)));
+  return result;
+};
+
+var cleanupTask = task => {
+  const destroy = task.$destroy$;
+  if (destroy) {
+    task.$destroy$ = null;
+    try {
+      destroy();
+    } catch (err) {
+      logError(err);
+    }
+  }
+};
+
+var Task = class extends Subscriber {
+  constructor($flags$, $index$, $el$, $qrl$, $state$, $destroy$) {
+    super();
+    this.$flags$ = $flags$;
+    this.$index$ = $index$;
+    this.$el$ = $el$;
+    this.$qrl$ = $qrl$;
+    this.$state$ = $state$;
+    this.$destroy$ = $destroy$;
+  }
+};
+
+var isTask = value => value instanceof Task;
+
+var DEBUG3 = false;
+
 var NEEDS_COMPUTATION = Symbol("invalid");
+
+var log2 = (...args) => console.log("SIGNAL", ...args.map(qwikDebugToString));
+
+var throwIfQRLNotResolved = qrl => {
+  const resolved = qrl.resolved;
+  if (!resolved) {
+    throw qrl.resolve();
+  }
+};
+
+var isSignal = value => value instanceof Signal;
+
+var EffectData = class {
+  constructor(data) {
+    this.data = data;
+  }
+};
+
+var Signal = class {
+  constructor(container, value) {
+    this.$effects$ = null;
+    this.$container$ = null;
+    this.$container$ = container;
+    this.$untrackedValue$ = value;
+    DEBUG3 && log2("new", this);
+  }
+  get untrackedValue() {
+    return this.$untrackedValue$;
+  }
+  set untrackedValue(value) {
+    this.$untrackedValue$ = value;
+  }
+  get value() {
+    const ctx = tryGetInvokeContext();
+    if (ctx) {
+      if (null === this.$container$) {
+        if (!ctx.$container$) {
+          return this.untrackedValue;
+        }
+        this.$container$ = ctx.$container$;
+      } else {
+        assertTrue(!ctx.$container$ || ctx.$container$ === this.$container$, "Do not use signals across containers");
+      }
+      const effectSubscriber = ctx.$effectSubscriber$;
+      if (effectSubscriber) {
+        const effects = this.$effects$ || (this.$effects$ = []);
+        ensureContainsEffect(effects, effectSubscriber);
+        ensureContains(effectSubscriber, this);
+        isSubscriber(this) && ensureEffectContainsSubscriber(effectSubscriber[0], this, this.$container$);
+        DEBUG3 && log2("read->sub", pad("\n" + this.toString(), "  "));
+      }
+    }
+    return this.untrackedValue;
+  }
+  set value(value) {
+    if (value !== this.$untrackedValue$) {
+      DEBUG3 && log2("Signal.set", this.$untrackedValue$, "->", value, pad("\n" + this.toString(), "  "));
+      this.$untrackedValue$ = value;
+      triggerEffects(this.$container$, this, this.$effects$);
+    }
+  }
+  valueOf() {
+    if (qDev) {
+      return throwErrorAndStop("Cannot coerce a Signal, use `.value` instead");
+    }
+  }
+  toString() {
+    return `[${this.constructor.name}${this.$invalid$ ? " INVALID" : ""} ${String(this.$untrackedValue$)}]` + (this.$effects$?.map((e => "\n -> " + pad(qwikDebugToString(e[0]), "    "))).join("\n") || "");
+  }
+  toJSON() {
+    return {
+      value: this.$untrackedValue$
+    };
+  }
+};
+
+var ensureContains = (array, value) => {
+  const isMissing = -1 === array.indexOf(value);
+  isMissing && array.push(value);
+};
+
+var ensureContainsEffect = (array, effectSubscriptions) => {
+  for (let i = 0; i < array.length; i++) {
+    const existingEffect = array[i];
+    if (existingEffect[0] === effectSubscriptions[0] && existingEffect[1] === effectSubscriptions[1]) {
+      return;
+    }
+  }
+  array.push(effectSubscriptions);
+};
+
+var ensureEffectContainsSubscriber = (effect, subscriber, container) => {
+  if (isSubscriber(effect)) {
+    effect.$effectDependencies$ || (effect.$effectDependencies$ = []);
+    if (subscriberExistInSubscribers(effect.$effectDependencies$, subscriber)) {
+      return;
+    }
+    effect.$effectDependencies$.push(subscriber);
+  } else if (vnode_isVNode(effect) && vnode_isVirtualVNode(effect)) {
+    let subscribers = vnode_getProp(effect, QSubscribers, container ? container.$getObjectById$ : null);
+    subscribers || (subscribers = []);
+    if (subscriberExistInSubscribers(subscribers, subscriber)) {
+      return;
+    }
+    subscribers.push(subscriber);
+    vnode_setProp(effect, QSubscribers, subscribers);
+  } else if (isSSRNode(effect)) {
+    let subscribers = effect.getProp(QSubscribers);
+    subscribers || (subscribers = []);
+    if (subscriberExistInSubscribers(subscribers, subscriber)) {
+      return;
+    }
+    subscribers.push(subscriber);
+    effect.setProp(QSubscribers, subscribers);
+  }
+};
+
+var isSSRNode = effect => "setProp" in effect && "getProp" in effect && "removeProp" in effect && "id" in effect;
+
+var subscriberExistInSubscribers = (subscribers, subscriber) => {
+  for (let i = 0; i < subscribers.length; i++) {
+    if (subscribers[i] === subscriber) {
+      return true;
+    }
+  }
+  return false;
+};
+
+var triggerEffects = (container, signal, effects) => {
+  if (effects) {
+    const scheduleEffect = effectSubscriptions => {
+      const effect = effectSubscriptions[0];
+      const property = effectSubscriptions[1];
+      assertDefined(container, "Container must be defined.");
+      if (isTask(effect)) {
+        effect.$flags$ |= 8;
+        DEBUG3 && log2("schedule.effect.task", pad("\n" + String(effect), "  "));
+        let choreType = 3;
+        1 & effect.$flags$ ? choreType = 64 : 4 & effect.$flags$ && (choreType = 2);
+        container.$scheduler$(choreType, effect);
+      } else if (effect instanceof Signal) {
+        effect instanceof ComputedSignal && (effect.$computeQrl$.resolved || container.$scheduler$(1, null, effect.$computeQrl$));
+        effect.$invalid$ = true;
+        const previousSignal = signal;
+        try {
+          signal = effect;
+          effect.$effects$?.forEach(scheduleEffect);
+        } catch (e) {
+          logError(e);
+        } finally {
+          signal = previousSignal;
+        }
+      } else if (":" === property) {
+        const host = effect;
+        const qrl = container.getHostProp(host, OnRenderProp);
+        assertDefined(qrl, "Component must have QRL");
+        const props = container.getHostProp(host, ELEMENT_PROPS);
+        container.$scheduler$(7, host, qrl, props);
+      } else if ("." === property) {
+        const host = effect;
+        const target = host;
+        container.$scheduler$(4, host, target, signal);
+      } else {
+        const host = effect;
+        let effectData = effectSubscriptions[2];
+        if (effectData instanceof EffectData) {
+          const data = effectData.data;
+          const payload = {
+            ...data,
+            $value$: signal
+          };
+          container.$scheduler$(5, host, property, payload);
+        }
+      }
+    };
+    effects.forEach(scheduleEffect);
+  }
+  DEBUG3 && log2("done scheduling");
+};
+
+var ComputedSignal = class extends Signal {
+  constructor(container, fn) {
+    super(container, NEEDS_COMPUTATION);
+    this.$invalid$ = true;
+    this.$computeQrl$ = fn;
+  }
+  $invalidate$() {
+    this.$invalid$ = true;
+    if (!this.$effects$?.length) {
+      return;
+    }
+    this.$computeIfNeeded$() && triggerEffects(this.$container$, this, this.$effects$);
+  }
+  force() {
+    this.$invalid$ = true;
+    triggerEffects(this.$container$, this, this.$effects$);
+  }
+  get untrackedValue() {
+    this.$computeIfNeeded$();
+    assertFalse(this.$untrackedValue$ === NEEDS_COMPUTATION, "Invalid state");
+    return this.$untrackedValue$;
+  }
+  $computeIfNeeded$() {
+    if (!this.$invalid$) {
+      return false;
+    }
+    const computeQrl = this.$computeQrl$;
+    throwIfQRLNotResolved(computeQrl);
+    const ctx = tryGetInvokeContext();
+    const previousEffectSubscription = ctx?.$effectSubscriber$;
+    ctx && (ctx.$effectSubscriber$ = [ this, "." ]);
+    try {
+      const untrackedValue = computeQrl.getFn(ctx)();
+      isPromise(untrackedValue) && throwErrorAndStop(`useComputedSignal$ QRL ${computeQrl.dev ? `${computeQrl.dev.file} ` : ""}${computeQrl.$hash$} returned a Promise`);
+      DEBUG3 && log2("Signal.$compute$", untrackedValue);
+      this.$invalid$ = false;
+      const didChange = untrackedValue !== this.$untrackedValue$;
+      this.$untrackedValue$ = untrackedValue;
+      return didChange;
+    } finally {
+      ctx && (ctx.$effectSubscriber$ = previousEffectSubscription);
+    }
+  }
+  get value() {
+    return super.value;
+  }
+  set value(_) {
+    throwErrorAndStop("ComputedSignal is read-only");
+  }
+};
+
+var WrappedSignal = class extends Signal {
+  constructor(container, fn, args, fnStr) {
+    super(container, NEEDS_COMPUTATION);
+    this.$invalid$ = true;
+    this.$effectDependencies$ = null;
+    this.$args$ = args;
+    this.$func$ = fn;
+    this.$funcStr$ = fnStr;
+  }
+  $invalidate$() {
+    this.$invalid$ = true;
+    if (!this.$effects$?.length) {
+      return;
+    }
+    this.$computeIfNeeded$() && triggerEffects(this.$container$, this, this.$effects$);
+  }
+  force() {
+    this.$invalid$ = true;
+    triggerEffects(this.$container$, this, this.$effects$);
+  }
+  get untrackedValue() {
+    this.$computeIfNeeded$();
+    assertFalse(this.$untrackedValue$ === NEEDS_COMPUTATION, "Invalid state");
+    return this.$untrackedValue$;
+  }
+  $computeIfNeeded$() {
+    if (!this.$invalid$) {
+      return false;
+    }
+    this.$untrackedValue$ = trackSignal((() => this.$func$(...this.$args$)), this, ".", this.$container$);
+  }
+  get value() {
+    return super.value;
+  }
+  set value(_) {
+    throwErrorAndStop("WrappedSignal is read-only");
+  }
+};
+
+var version = "2.0.0-0-dev+cbeaee0";
+
+var _SharedContainer = class {
+  constructor(scheduleDrain, journalFlush, serverData, locale) {
+    this.$currentUniqueId$ = 0;
+    this.$instanceHash$ = null;
+    this.$serverData$ = serverData;
+    this.$locale$ = locale;
+    this.$version$ = version;
+    this.$storeProxyMap$ = new WeakMap;
+    this.$getObjectById$ = id => {
+      throw Error("Not implemented");
+    };
+    this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
+  }
+  trackSignalValue(signal, subscriber, property, data) {
+    return trackSignal((() => signal.value), subscriber, property, this, data);
+  }
+  serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
+    return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), writer);
+  }
+};
 
 var QObjectRecursive = 1;
 
@@ -3129,11 +5533,3058 @@ var _VAR_PROPS = Symbol("VAR");
 
 var _IMMUTABLE = Symbol("IMMUTABLE");
 
+var componentQrl = componentQrl2 => {
+  const QwikComponent = () => {};
+  QwikComponent[SERIALIZABLE_STATE] = [ componentQrl2 ];
+  return QwikComponent;
+};
+
 var SERIALIZABLE_STATE = Symbol("serializable-data");
+
+var isQwikComponent = component => "function" == typeof component && void 0 !== component[SERIALIZABLE_STATE];
+
+var _jsxSorted = (type, varProps, constProps, children, flags, key, dev) => {
+  const processed = null == key ? null : String(key);
+  const node = new JSXNodeImpl(type, varProps || {}, constProps || null, children, flags, processed);
+  qDev && dev && (node.dev = {
+    stack: (new Error).stack,
+    ...dev
+  });
+  seal(node);
+  return node;
+};
+
+var isPropsProxy = obj => obj && void 0 !== obj[_VAR_PROPS];
+
+var JSXNodeImpl = class {
+  constructor(type, varProps, constProps, children, flags, key = null) {
+    this.type = type;
+    this.varProps = varProps;
+    this.constProps = constProps;
+    this.children = children;
+    this.flags = flags;
+    this.key = key;
+    this._proxy = null;
+    if (qDev) {
+      if ("object" !== typeof varProps) {
+        throw new Error("JSXNodeImpl: varProps must be objects: " + JSON.stringify(varProps));
+      }
+      if ("object" !== typeof constProps) {
+        throw new Error("JSXNodeImpl: constProps must be objects: " + JSON.stringify(constProps));
+      }
+    }
+  }
+  get props() {
+    this._proxy || (this._proxy = createPropsProxy(this.varProps, this.constProps, this.children));
+    return this._proxy;
+  }
+};
+
+var Virtual = props => props.children;
+
+var isJSXNode = n => {
+  if (qDev) {
+    if (n instanceof JSXNodeImpl) {
+      return true;
+    }
+    if (isObject(n) && "key" in n && "props" in n && "type" in n) {
+      logWarn('Duplicate implementations of "JSXNode" found');
+      return true;
+    }
+    return false;
+  }
+  return n instanceof JSXNodeImpl;
+};
+
+var Fragment = props => props.children;
+
+function createPropsProxy(varProps, constProps, children) {
+  return new Proxy({}, new PropsProxyHandler(varProps, constProps, children));
+}
+
+var PropsProxyHandler = class {
+  constructor($varProps$, $constProps$, $children$) {
+    this.$varProps$ = $varProps$;
+    this.$constProps$ = $constProps$;
+    this.$children$ = $children$;
+  }
+  get(_, prop) {
+    if (prop === _CONST_PROPS) {
+      return this.$constProps$;
+    }
+    if (prop === _VAR_PROPS) {
+      return this.$varProps$;
+    }
+    if (null != this.$children$ && "children" === prop) {
+      return this.$children$;
+    }
+    const value = this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] : this.$varProps$[prop];
+    return value instanceof WrappedSignal ? value.value : value;
+  }
+  set(_, prop, value) {
+    if (prop === _CONST_PROPS) {
+      this.$constProps$ = value;
+      return true;
+    }
+    if (prop === _VAR_PROPS) {
+      this.$varProps$ = value;
+      return true;
+    }
+    this.$constProps$ && prop in this.$constProps$ ? this.$constProps$[prop] = value : this.$varProps$[prop] = value;
+    return true;
+  }
+  deleteProperty(_, prop) {
+    if ("string" !== typeof prop) {
+      return false;
+    }
+    let didDelete = delete this.$varProps$[prop];
+    this.$constProps$ && (didDelete = delete this.$constProps$[prop] || didDelete);
+    null != this.$children$ && "children" === prop && (this.$children$ = null);
+    return didDelete;
+  }
+  has(_, prop) {
+    const hasProp = "children" === prop && null != this.$children$ || prop === _CONST_PROPS || prop === _VAR_PROPS || prop in this.$varProps$ || !!this.$constProps$ && prop in this.$constProps$;
+    return hasProp;
+  }
+  getOwnPropertyDescriptor(target, p) {
+    const value = "children" === p && null != this.$children$ ? this.$children$ : this.$constProps$ && p in this.$constProps$ ? this.$constProps$[p] : this.$varProps$[p];
+    return {
+      configurable: true,
+      enumerable: true,
+      value: value
+    };
+  }
+  ownKeys() {
+    const out = Object.keys(this.$varProps$);
+    null != this.$children$ && -1 === out.indexOf("children") && out.push("children");
+    if (this.$constProps$) {
+      for (const key in this.$constProps$) {
+        -1 === out.indexOf(key) && out.push(key);
+      }
+    }
+    return out;
+  }
+};
+
+var directGetPropsProxyProp = (jsx2, prop) => jsx2.constProps && prop in jsx2.constProps ? jsx2.constProps[prop] : jsx2.varProps[prop];
+
+var stringifyPath = [];
+
+function qwikDebugToString(value) {
+  if (null === value) {
+    return "null";
+  }
+  if (void 0 === value) {
+    return "undefined";
+  }
+  if ("string" === typeof value) {
+    return '"' + value + '"';
+  }
+  if ("number" === typeof value || "boolean" === typeof value) {
+    return String(value);
+  }
+  if (isTask(value)) {
+    return `Task(${qwikDebugToString(value.$qrl$)})`;
+  }
+  if (isQrl(value)) {
+    return `Qrl(${value.$symbol$})`;
+  }
+  if ("object" === typeof value || "function" === typeof value) {
+    if (stringifyPath.includes(value)) {
+      return "*";
+    }
+    stringifyPath.length;
+    try {
+      stringifyPath.push(value);
+      if (Array.isArray(value)) {
+        return vnode_isVNode(value) ? vnode_toString.apply(value) : value.map(qwikDebugToString);
+      }
+      if (isSignal(value)) {
+        return value instanceof WrappedSignal ? "WrappedSignal" : value instanceof ComputedSignal ? "ComputedSignal" : "Signal";
+      }
+      if (isStore(value)) {
+        return "Store";
+      }
+      if (isJSXNode(value)) {
+        return jsxToString(value);
+      }
+    } finally {
+      stringifyPath.pop();
+    }
+  }
+  return value;
+}
+
+var pad = (text, prefix) => String(text).split("\n").map(((line, idx) => (idx ? prefix : "") + line)).join("\n");
+
+var jsxToString = value => {
+  if (isJSXNode(value)) {
+    let type = value.type;
+    "function" === typeof type && (type = type.name || "Component");
+    let str = "<" + value.type;
+    if (value.props) {
+      for (const [key, val] of Object.entries(value.props)) {
+        str += " " + key + "=" + qwikDebugToString(val);
+      }
+      const children = value.children;
+      if (null != children) {
+        str += ">";
+        Array.isArray(children) ? children.forEach((child => {
+          str += jsxToString(child);
+        })) : str += jsxToString(children);
+        str += "</" + value.type + ">";
+      } else {
+        str += "/>";
+      }
+    }
+    return str;
+  }
+  return String(value);
+};
+
+var VNodeDataSeparator = {
+  REFERENCE_CH: "~",
+  REFERENCE: 126,
+  ADVANCE_1_CH: "!",
+  ADVANCE_1: 33,
+  ADVANCE_2_CH: '"',
+  ADVANCE_2: 34,
+  ADVANCE_4_CH: "#",
+  ADVANCE_4: 35,
+  ADVANCE_8_CH: "$",
+  ADVANCE_8: 36,
+  ADVANCE_16_CH: "%",
+  ADVANCE_16: 37,
+  ADVANCE_32_CH: "&",
+  ADVANCE_32: 38,
+  ADVANCE_64_CH: "'",
+  ADVANCE_64: 39,
+  ADVANCE_128_CH: "(",
+  ADVANCE_128: 40,
+  ADVANCE_256_CH: ")",
+  ADVANCE_256: 41,
+  ADVANCE_512_CH: "*",
+  ADVANCE_512: 42,
+  ADVANCE_1024_CH: "+",
+  ADVANCE_1024: 43,
+  ADVANCE_2048_CH: ",",
+  ADVANCE_2048: 44,
+  ADVANCE_4096_CH: "-",
+  ADVANCE_4096: 45,
+  ADVANCE_8192_CH: ".",
+  ADVANCE_8192: 46
+};
+
+var VNodeDataChar = {
+  OPEN: 123,
+  OPEN_CHAR: "{",
+  CLOSE: 125,
+  CLOSE_CHAR: "}",
+  SCOPED_STYLE: 59,
+  SCOPED_STYLE_CHAR: ";",
+  RENDER_FN: 60,
+  RENDER_FN_CHAR: "<",
+  ID: 61,
+  ID_CHAR: "=",
+  PROPS: 62,
+  PROPS_CHAR: ">",
+  SLOT_REF: 63,
+  SLOT_REF_CHAR: "?",
+  KEY: 64,
+  KEY_CHAR: "@",
+  SEQ: 91,
+  SEQ_CHAR: "[",
+  DON_T_USE: 93,
+  DON_T_USE_CHAR: "\\",
+  CONTEXT: 93,
+  CONTEXT_CHAR: "]",
+  SEQ_IDX: 94,
+  SEQ_IDX_CHAR: "^",
+  SEPARATOR: 124,
+  SEPARATOR_CHAR: "|",
+  SLOT: 126,
+  SLOT_CHAR: "~"
+};
+
+var vnode_newElement = (element, elementName) => {
+  assertEqual(fastNodeType(element), 1, "Expecting element node.");
+  const vnode = VNodeArray.createElement(-247, null, null, null, null, null, element, elementName);
+  assertTrue(vnode_isElementVNode(vnode), "Incorrect format of ElementVNode.");
+  assertFalse(vnode_isTextVNode(vnode), "Incorrect format of ElementVNode.");
+  assertFalse(vnode_isVirtualVNode(vnode), "Incorrect format of ElementVNode.");
+  return vnode;
+};
+
+var vnode_newUnMaterializedElement = element => {
+  assertEqual(fastNodeType(element), 1, "Expecting element node.");
+  const vnode = VNodeArray.createElement(-255, null, null, null, void 0, void 0, element, void 0);
+  assertTrue(vnode_isElementVNode(vnode), "Incorrect format of ElementVNode.");
+  assertFalse(vnode_isTextVNode(vnode), "Incorrect format of ElementVNode.");
+  assertFalse(vnode_isVirtualVNode(vnode), "Incorrect format of ElementVNode.");
+  return vnode;
+};
+
+var vnode_newSharedText = (previousTextNode, sharedTextNode, textContent) => {
+  sharedTextNode && assertEqual(fastNodeType(sharedTextNode), 3, "Expecting element node.");
+  const vnode = VNodeArray.createText(-252, null, previousTextNode, null, sharedTextNode, textContent);
+  assertFalse(vnode_isElementVNode(vnode), "Incorrect format of TextVNode.");
+  assertTrue(vnode_isTextVNode(vnode), "Incorrect format of TextVNode.");
+  assertFalse(vnode_isVirtualVNode(vnode), "Incorrect format of TextVNode.");
+  return vnode;
+};
+
+var vnode_newText = (textNode, textContent) => {
+  const vnode = VNodeArray.createText(-244, null, null, null, textNode, textContent);
+  assertEqual(fastNodeType(textNode), 3, "Expecting element node.");
+  assertFalse(vnode_isElementVNode(vnode), "Incorrect format of TextVNode.");
+  assertTrue(vnode_isTextVNode(vnode), "Incorrect format of TextVNode.");
+  assertFalse(vnode_isVirtualVNode(vnode), "Incorrect format of TextVNode.");
+  return vnode;
+};
+
+var vnode_newVirtual = () => {
+  const vnode = VNodeArray.createVirtual(-254, null, null, null, null, null);
+  assertFalse(vnode_isElementVNode(vnode), "Incorrect format of TextVNode.");
+  assertFalse(vnode_isTextVNode(vnode), "Incorrect format of TextVNode.");
+  assertTrue(vnode_isVirtualVNode(vnode), "Incorrect format of TextVNode.");
+  return vnode;
+};
+
+var vnode_isVNode = vNode => vNode instanceof VNodeArray;
+
+var vnode_isElementVNode = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  const flag = vNode[0];
+  return 1 === (1 & flag);
+};
+
+var vnode_isElementOrTextVNode = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  const flag = vNode[0];
+  return 0 !== (5 & flag);
+};
+
+var vnode_isMaterialized = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  const flag = vNode[0];
+  return 1 === (1 & flag) && void 0 !== vNode[4] && void 0 !== vNode[5];
+};
+
+var vnode_isTextVNode = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  const flag = vNode[0];
+  return 4 === (4 & flag);
+};
+
+var vnode_isVirtualVNode = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  const flag = vNode[0];
+  return 2 === (2 & flag);
+};
+
+var ensureTextVNode = vNode => {
+  assertTrue(vnode_isTextVNode(vNode), "Expecting TextVNode was: " + vnode_getNodeTypeName(vNode));
+  return vNode;
+};
+
+var ensureElementOrVirtualVNode = vNode => {
+  assertDefined(vNode, "Missing vNode");
+  assertTrue(0 !== (3 & vNode[0]), "Expecting ElementVNode or VirtualVNode was: " + vnode_getNodeTypeName(vNode));
+};
+
+var ensureElementVNode = vNode => {
+  assertTrue(vnode_isElementVNode(vNode), "Expecting ElementVNode was: " + vnode_getNodeTypeName(vNode));
+  return vNode;
+};
+
+var vnode_getNodeTypeName = vNode => {
+  if (vNode) {
+    const flags = vNode[0];
+    switch (7 & flags) {
+     case 1:
+      return "Element";
+
+     case 2:
+      return "Virtual";
+
+     case 4:
+      return "Text";
+    }
+  }
+  return "<unknown>";
+};
+
+var vnode_ensureElementInflated = vnode => {
+  const flags = vnode[0];
+  if (1 === (15 & flags)) {
+    const elementVNode = vnode;
+    elementVNode[0] ^= 8;
+    const element = elementVNode[6];
+    const attributes = element.attributes;
+    for (let idx = 0; idx < attributes.length; idx++) {
+      const attr = attributes[idx];
+      const key = attr.name;
+      if (key == Q_PROPS_SEPARATOR || !key) {
+        break;
+      }
+      if (key.startsWith(QContainerAttr)) {
+        "html" === attr.value ? mapArray_set(elementVNode, dangerouslySetInnerHTML, element.innerHTML, 8) : "text" === attr.value && "value" in element && mapArray_set(elementVNode, "value", element.value, 8);
+      } else if (!key.startsWith("on:")) {
+        const value = attr.value;
+        mapArray_set(elementVNode, key, value, 8);
+      }
+    }
+  }
+};
+
+function vnode_walkVNode(vNode, callback) {
+  let vCursor = vNode;
+  if (vnode_isTextVNode(vNode)) {
+    return;
+  }
+  let vParent = null;
+  do {
+    callback?.(vCursor, vParent);
+    const vFirstChild = vnode_getFirstChild(vCursor);
+    if (vFirstChild) {
+      vCursor = vFirstChild;
+      continue;
+    }
+    if (vCursor === vNode) {
+      return;
+    }
+    const vNextSibling = vnode_getNextSibling(vCursor);
+    if (vNextSibling) {
+      vCursor = vNextSibling;
+      continue;
+    }
+    vParent = vnode_getParent(vCursor);
+    while (vParent) {
+      if (vParent === vNode) {
+        return;
+      }
+      const vNextParentSibling = vnode_getNextSibling(vParent);
+      if (vNextParentSibling) {
+        vCursor = vNextParentSibling;
+        break;
+      }
+      vParent = vnode_getParent(vParent);
+    }
+    if (null == vParent) {
+      return;
+    }
+  } while (true);
+}
+
+function vnode_getDOMChildNodes(journal, root, isVNode = false, childNodes = []) {
+  if (vnode_isElementOrTextVNode(root)) {
+    vnode_isTextVNode(root) && vnode_ensureTextInflated(journal, root);
+    childNodes.push(isVNode ? root : vnode_getNode(root));
+    return childNodes;
+  }
+  let vNode = vnode_getFirstChild(root);
+  while (vNode) {
+    if (vnode_isElementVNode(vNode)) {
+      childNodes.push(isVNode ? vNode : vnode_getNode(vNode));
+    } else if (vnode_isTextVNode(vNode)) {
+      vnode_ensureTextInflated(journal, vNode);
+      childNodes.push(isVNode ? vNode : vnode_getNode(vNode));
+    } else {
+      vnode_getDOMChildNodes(journal, vNode, !!isVNode, childNodes);
+    }
+    vNode = vnode_getNextSibling(vNode);
+  }
+  return childNodes;
+}
+
+var vnode_getDomSibling = (vNode, nextDirection, descend) => {
+  const childProp = nextDirection ? 4 : 5;
+  const siblingProp = nextDirection ? 3 : 2;
+  let cursor = vNode;
+  while (descend && cursor && vnode_isVirtualVNode(cursor)) {
+    const child = cursor[childProp];
+    if (!child) {
+      break;
+    }
+    if (5 & child[0]) {
+      return child;
+    }
+    cursor = child;
+  }
+  while (cursor) {
+    let sibling = cursor[siblingProp];
+    if (sibling && 5 & sibling[0]) {
+      return sibling;
+    }
+    if (!sibling) {
+      let virtual = cursor[1];
+      if (virtual && !vnode_isVirtualVNode(virtual)) {
+        return null;
+      }
+      while (virtual && !(sibling = virtual[siblingProp])) {
+        virtual = virtual[1];
+        if (virtual && !vnode_isVirtualVNode(virtual)) {
+          return null;
+        }
+      }
+      if (!sibling) {
+        return null;
+      }
+      if (vnode_isTextVNode(sibling) && virtual && vnode_isElementVNode(virtual)) {
+        return null;
+      }
+    }
+    while (sibling) {
+      cursor = sibling;
+      if (5 & cursor[0] && vnode_getNode(cursor)) {
+        return cursor;
+      }
+      sibling = cursor[childProp];
+    }
+  }
+  return null;
+};
+
+var vnode_ensureInflatedIfText = (journal, vNode) => {
+  vnode_isTextVNode(vNode) && vnode_ensureTextInflated(journal, vNode);
+};
+
+var vnode_ensureTextInflated = (journal, vnode) => {
+  const textVNode = ensureTextVNode(vnode);
+  const flags = textVNode[0];
+  if (0 === (8 & flags)) {
+    const parentNode = vnode_getDomParent(vnode);
+    const sharedTextNode = textVNode[4];
+    const doc = parentNode.ownerDocument;
+    let cursor = vnode_getDomSibling(vnode, false, true);
+    const insertBeforeNode = sharedTextNode || vnode_getDomSibling(vnode, true, true)?.[6] || null;
+    let lastPreviousTextNode = insertBeforeNode;
+    while (cursor && vnode_isTextVNode(cursor)) {
+      if (0 === (8 & cursor[0])) {
+        const textNode = doc.createTextNode(cursor[5]);
+        journal.push(5, parentNode, lastPreviousTextNode, textNode);
+        lastPreviousTextNode = textNode;
+        cursor[4] = textNode;
+        cursor[0] |= 8;
+      }
+      cursor = vnode_getDomSibling(cursor, false, true);
+    }
+    cursor = vnode;
+    while (cursor && vnode_isTextVNode(cursor)) {
+      const next = vnode_getDomSibling(cursor, true, true);
+      const isLastNode = !next || !vnode_isTextVNode(next);
+      if (0 === (8 & cursor[0])) {
+        if (isLastNode && sharedTextNode) {
+          journal.push(1, sharedTextNode, cursor[5]);
+        } else {
+          const textNode = doc.createTextNode(cursor[5]);
+          journal.push(5, parentNode, insertBeforeNode, textNode);
+          cursor[4] = textNode;
+        }
+        cursor[0] |= 8;
+      }
+      cursor = next;
+    }
+  }
+};
+
+var vnode_locate = (rootVNode, id) => {
+  ensureElementVNode(rootVNode);
+  let vNode = rootVNode;
+  const containerElement = rootVNode[6];
+  const {qVNodeRefs: qVNodeRefs} = containerElement;
+  let elementOffset = -1;
+  let refElement;
+  if ("string" === typeof id) {
+    assertDefined(qVNodeRefs, "Missing qVNodeRefs.");
+    elementOffset = parseInt(id);
+    refElement = qVNodeRefs.get(elementOffset);
+  } else {
+    refElement = id;
+  }
+  assertDefined(refElement, "Missing refElement.");
+  if (vnode_isVNode(refElement)) {
+    vNode = refElement;
+  } else {
+    assertTrue(containerElement.contains(refElement), "Couldn't find the element inside the container while locating the VNode.");
+    let parent = refElement;
+    const elementPath = [ refElement ];
+    while (parent && parent !== containerElement) {
+      parent = parent.parentElement;
+      elementPath.push(parent);
+    }
+    for (let i = elementPath.length - 2; i >= 0; i--) {
+      vNode = vnode_getVNodeForChildNode(vNode, elementPath[i]);
+    }
+    -1 != elementOffset && qVNodeRefs.set(elementOffset, vNode);
+  }
+  if ("string" === typeof id) {
+    const idLength = id.length;
+    let idx = indexOfAlphanumeric(id, idLength);
+    let childIdx = 0;
+    while (idx < idLength) {
+      const ch = id.charCodeAt(idx);
+      childIdx *= 26;
+      if (ch >= 97) {
+        childIdx += ch - 97;
+      } else {
+        childIdx += ch - 65;
+        vNode = vnode_getChildWithIdx(vNode, childIdx);
+        childIdx = 0;
+      }
+      idx++;
+    }
+  }
+  return vNode;
+};
+
+var vnode_getChildWithIdx = (vNode, childIdx) => {
+  let child = vnode_getFirstChild(vNode);
+  assertDefined(child, "Missing child.");
+  while (child[0] >>> 8 !== childIdx) {
+    child = vnode_getNextSibling(child);
+    assertDefined(child, "Missing child.");
+  }
+  return child;
+};
+
+var vNodeStack = [];
+
+var vnode_getVNodeForChildNode = (vNode, childElement) => {
+  ensureElementVNode(vNode);
+  let child = vnode_getFirstChild(vNode);
+  assertDefined(child, "Missing child.");
+  while (child && child[6] !== childElement) {
+    if (vnode_isVirtualVNode(child)) {
+      const next = vnode_getNextSibling(child);
+      const firstChild = vnode_getFirstChild(child);
+      if (firstChild) {
+        next && vNodeStack.push(next);
+        child = firstChild;
+      } else {
+        child = next || (vNodeStack.length ? vNodeStack.pop() : null);
+      }
+    } else {
+      const next = vnode_getNextSibling(child);
+      child = next || (next || vNodeStack.pop());
+    }
+    assertDefined(child, "Missing child.");
+  }
+  while (vNodeStack.length) {
+    vNodeStack.pop();
+  }
+  ensureElementVNode(child);
+  assertEqual(child[6], childElement, "Child not found.");
+  return child;
+};
+
+var indexOfAlphanumeric = (id, length) => {
+  let idx = 0;
+  while (idx < length) {
+    if (!(id.charCodeAt(idx) <= 57)) {
+      return idx;
+    }
+    idx++;
+  }
+  return length;
+};
+
+var parseBoolean = value => {
+  if ("false" === value) {
+    return false;
+  }
+  return Boolean(value);
+};
+
+var isBooleanAttr = (element, key) => {
+  const isBoolean = "allowfullscreen" == key || "async" == key || "autofocus" == key || "autoplay" == key || "checked" == key || "controls" == key || "default" == key || "defer" == key || "disabled" == key || "formnovalidate" == key || "inert" == key || "ismap" == key || "itemscope" == key || "loop" == key || "multiple" == key || "muted" == key || "nomodule" == key || "novalidate" == key || "open" == key || "playsinline" == key || "readonly" == key || "required" == key || "reversed" == key || "selected" == key;
+  return isBoolean && key in element;
+};
+
+var vnode_applyJournal = journal => {
+  let idx = 0;
+  const length = journal.length;
+  while (idx < length) {
+    const op = journal[idx++];
+    switch (op) {
+     case 1:
+      const text = journal[idx++];
+      text.nodeValue = journal[idx++];
+      break;
+
+     case 2:
+      const element = journal[idx++];
+      let key = journal[idx++];
+      "className" === key && (key = "class");
+      const value = journal[idx++];
+      isBooleanAttr(element, key) ? element[key] = parseBoolean(value) : "value" === key && key in element ? element.value = escapeHTML(String(value)) : key === dangerouslySetInnerHTML ? element.innerHTML = value : null == value || false === value ? element.removeAttribute(key) : element.setAttribute(key, String(value));
+      break;
+
+     case 3:
+      const document2 = journal[idx++];
+      const head = document2.head;
+      const styles = document2.querySelectorAll(QStylesAllSelector);
+      for (let i = 0; i < styles.length; i++) {
+        head.appendChild(styles[i]);
+      }
+      break;
+
+     case 4:
+      const removeParent = journal[idx++];
+      let nodeToRemove;
+      while (idx < length && "number" !== typeof (nodeToRemove = journal[idx])) {
+        removeParent.removeChild(nodeToRemove);
+        idx++;
+      }
+      break;
+
+     case 5:
+      const insertParent = journal[idx++];
+      const insertBefore = journal[idx++];
+      let newChild;
+      while (idx < length && "number" !== typeof (newChild = journal[idx])) {
+        insertParent.insertBefore(newChild, insertBefore);
+        idx++;
+      }
+      break;
+    }
+  }
+  journal.length = 0;
+};
+
+var mapApp_findIndx = (elementVNode, key, start) => {
+  assertTrue(start % 2 === 0, "Expecting even number.");
+  let bottom = start >> 1;
+  let top = elementVNode.length - 2 >> 1;
+  while (bottom <= top) {
+    const mid = bottom + (top - bottom >> 1);
+    const midKey = elementVNode[mid << 1];
+    if (midKey === key) {
+      return mid << 1;
+    }
+    midKey < key ? bottom = mid + 1 : top = mid - 1;
+  }
+  return ~(bottom << 1);
+};
+
+var mapArray_set = (elementVNode, key, value, start) => {
+  const indx = mapApp_findIndx(elementVNode, key, start);
+  indx >= 0 ? null == value ? elementVNode.splice(indx, 2) : elementVNode[indx + 1] = value : null != value && elementVNode.splice(~indx, 0, key, value);
+};
+
+var mapArray_get = (elementVNode, key, start) => {
+  const indx = mapApp_findIndx(elementVNode, key, start);
+  return indx >= 0 ? elementVNode[indx + 1] : null;
+};
+
+var vnode_insertBefore = (journal, parent, newChild, insertBefore) => {
+  ensureElementOrVirtualVNode(parent);
+  vnode_isElementVNode(parent) && ensureMaterialized(parent);
+  let adjustedInsertBefore = null;
+  null == insertBefore ? vnode_isVirtualVNode(parent) && (adjustedInsertBefore = vnode_getDomSibling(parent, true, false)) : adjustedInsertBefore = vnode_isVirtualVNode(insertBefore) ? vnode_getDomSibling(insertBefore, true, true) : insertBefore;
+  adjustedInsertBefore && vnode_ensureInflatedIfText(journal, adjustedInsertBefore);
+  const domParentVNode = vnode_getDomParentVNode(parent);
+  const parentNode = domParentVNode && domParentVNode[6];
+  if (parentNode) {
+    const domChildren = vnode_getDomChildrenWithCorrectNamespacesToInsert(journal, domParentVNode, newChild);
+    domChildren.length && journal.push(5, parentNode, vnode_getNode(adjustedInsertBefore), ...domChildren);
+  }
+  const newChildCurrentParent = newChild[1];
+  newChildCurrentParent && (newChild[2] || newChild[3] || vnode_isElementVNode(newChildCurrentParent) && newChildCurrentParent !== parent) && vnode_remove(journal, newChildCurrentParent, newChild, false);
+  const vNext = insertBefore;
+  const vPrevious = vNext ? vNext[2] : parent[5];
+  vNext ? vNext[2] = newChild : parent[5] = newChild;
+  vPrevious ? vPrevious[3] = newChild : parent[4] = newChild;
+  newChild[2] = vPrevious;
+  newChild[3] = vNext;
+  newChild[1] = parent;
+};
+
+var vnode_getDomParent = vnode => {
+  vnode = vnode_getDomParentVNode(vnode);
+  return vnode && vnode[6];
+};
+
+var vnode_getDomParentVNode = vnode => {
+  while (vnode && !vnode_isElementVNode(vnode)) {
+    vnode = vnode[1];
+  }
+  return vnode;
+};
+
+var vnode_remove = (journal, vParent, vToRemove, removeDOM) => {
+  assertEqual(vParent, vnode_getParent(vToRemove), "Parent mismatch.");
+  vnode_isTextVNode(vToRemove) && vnode_ensureTextInflated(journal, vToRemove);
+  const vPrevious = vToRemove[2];
+  const vNext = vToRemove[3];
+  vPrevious ? vPrevious[3] = vNext : vParent[4] = vNext;
+  vNext ? vNext[2] = vPrevious : vParent[5] = vPrevious;
+  vToRemove[2] = null;
+  vToRemove[3] = null;
+  if (removeDOM) {
+    const domParent = vnode_getDomParent(vParent);
+    const isInnerHTMLParent = vnode_getAttr(vParent, dangerouslySetInnerHTML);
+    if (isInnerHTMLParent) {
+      return;
+    }
+    const children = vnode_getDOMChildNodes(journal, vToRemove);
+    domParent && children.length && journal.push(4, domParent, ...children);
+  }
+};
+
+var vnode_truncate = (journal, vParent, vDelete) => {
+  assertDefined(vDelete, "Missing vDelete.");
+  const parent = vnode_getDomParent(vParent);
+  const children = vnode_getDOMChildNodes(journal, vDelete);
+  parent && children.length && journal.push(4, parent, ...children);
+  const vPrevious = vDelete[2];
+  vPrevious ? vPrevious[3] = null : vParent[4] = null;
+  vParent[5] = vPrevious;
+};
+
+var vnode_getElementName = vnode => {
+  const elementVNode = ensureElementVNode(vnode);
+  let elementName = elementVNode[7];
+  if (void 0 === elementName) {
+    elementName = elementVNode[7] = elementVNode[6].nodeName.toLowerCase();
+    elementVNode[0] |= vnode_getElementNamespaceFlags(elementName);
+  }
+  return elementName;
+};
+
+var vnode_getText = vnode => {
+  const textVNode = ensureTextVNode(vnode);
+  let text = textVNode[5];
+  void 0 === text && (text = textVNode[5] = textVNode[4].nodeValue);
+  return text;
+};
+
+var vnode_setText = (journal, textVNode, text) => {
+  vnode_ensureTextInflated(journal, textVNode);
+  const textNode = textVNode[4];
+  journal.push(1, textNode, textVNode[5] = text);
+};
+
+var vnode_getFirstChild = vnode => {
+  if (vnode_isTextVNode(vnode)) {
+    return null;
+  }
+  let vFirstChild = vnode[4];
+  void 0 === vFirstChild && (vFirstChild = ensureMaterialized(vnode));
+  return vFirstChild;
+};
+
+var vnode_materialize = vNode => {
+  const element = vNode[6];
+  const firstChild = fastFirstChild(element);
+  const vNodeData = element.ownerDocument?.qVNodeData?.get(element);
+  const vFirstChild = vNodeData ? materializeFromVNodeData(vNode, vNodeData, element, firstChild) : materializeFromDOM(vNode, firstChild);
+  return vFirstChild;
+};
+
+var ensureMaterialized = vnode => {
+  const vParent = ensureElementVNode(vnode);
+  let vFirstChild = vParent[4];
+  if (void 0 === vFirstChild) {
+    const element = vParent[6];
+    vFirstChild = vParent[1] && shouldIgnoreChildren(element) ? vParent[4] = vParent[5] = null : vnode_materialize(vParent);
+  }
+  assertTrue(void 0 !== vParent[4], "Did not materialize.");
+  assertTrue(void 0 !== vParent[5], "Did not materialize.");
+  return vFirstChild;
+};
+
+var _fastHasAttribute = null;
+
+var shouldIgnoreChildren = node => {
+  _fastHasAttribute || (_fastHasAttribute = node.hasAttribute);
+  return _fastHasAttribute.call(node, QContainerAttr);
+};
+
+var _fastNodeType = null;
+
+var fastNodeType = node => {
+  _fastNodeType || (_fastNodeType = fastGetter(node, "nodeType"));
+  return _fastNodeType.call(node);
+};
+
+var fastIsTextOrElement = node => {
+  const type = fastNodeType(node);
+  return 3 === type || 1 === type;
+};
+
+var _fastNextSibling = null;
+
+var fastNextSibling = node => {
+  _fastNextSibling || (_fastNextSibling = fastGetter(node, "nextSibling"));
+  _fastFirstChild || (_fastFirstChild = fastGetter(node, "firstChild"));
+  while (node) {
+    node = _fastNextSibling.call(node);
+    if (null !== node) {
+      const type = fastNodeType(node);
+      if (3 === type || 1 === type) {
+        break;
+      }
+      if (8 === type) {
+        const nodeValue = node.nodeValue;
+        if (nodeValue?.startsWith(QIgnore)) {
+          return getNodeAfterCommentNode(node, QContainerIsland, _fastNextSibling, _fastFirstChild);
+        }
+        if (node.nodeValue?.startsWith(QContainerIslandEnd)) {
+          return getNodeAfterCommentNode(node, QIgnoreEnd, _fastNextSibling, _fastFirstChild);
+        }
+        if (nodeValue?.startsWith(QContainerAttr)) {
+          while (node && (node = _fastNextSibling.call(node))) {
+            if (8 === fastNodeType(node) && node.nodeValue?.startsWith(QContainerAttrEnd)) {
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  return node;
+};
+
+function getNodeAfterCommentNode(node, commentValue, nextSibling, firstChild) {
+  while (node) {
+    if (node.nodeValue?.startsWith(commentValue)) {
+      node = nextSibling.call(node) || null;
+      return node;
+    }
+    let nextNode = firstChild.call(node);
+    nextNode || (nextNode = nextSibling.call(node));
+    if (!nextNode) {
+      nextNode = fastParentNode(node);
+      nextNode && (nextNode = nextSibling.call(nextNode));
+    }
+    node = nextNode;
+  }
+  return null;
+}
+
+var _fastParentNode = null;
+
+var fastParentNode = node => {
+  _fastParentNode || (_fastParentNode = fastGetter(node, "parentNode"));
+  return _fastParentNode.call(node);
+};
+
+var _fastFirstChild = null;
+
+var fastFirstChild = node => {
+  _fastFirstChild || (_fastFirstChild = fastGetter(node, "firstChild"));
+  node = node && _fastFirstChild.call(node);
+  while (node && !fastIsTextOrElement(node)) {
+    node = fastNextSibling(node);
+  }
+  return node;
+};
+
+var fastGetter = (prototype, name) => {
+  let getter;
+  while (prototype && !(getter = Object.getOwnPropertyDescriptor(prototype, name)?.get)) {
+    prototype = Object.getPrototypeOf(prototype);
+  }
+  return getter || function() {
+    return this[name];
+  };
+};
+
+var isQStyleElement = node => isElement(node) && "STYLE" === node.nodeName && (node.hasAttribute(QScopedStyle) || node.hasAttribute(QStyle));
+
+var materializeFromDOM = (vParent, firstChild) => {
+  let vFirstChild = null;
+  let child = firstChild;
+  while (isQStyleElement(child)) {
+    child = fastNextSibling(child);
+  }
+  let vChild = null;
+  while (child) {
+    const nodeType = fastNodeType(child);
+    let vNextChild = null;
+    3 === nodeType ? vNextChild = vnode_newText(child, child.textContent ?? void 0) : 1 === nodeType && (vNextChild = vnode_newUnMaterializedElement(child));
+    if (vNextChild) {
+      vNextChild[1] = vParent;
+      vChild && (vChild[3] = vNextChild);
+      vNextChild[2] = vChild;
+      vChild = vNextChild;
+    }
+    vFirstChild || (vParent[4] = vFirstChild = vChild);
+    child = fastNextSibling(child);
+  }
+  vParent[5] = vChild || null;
+  vParent[4] = vFirstChild;
+  return vFirstChild;
+};
+
+var vnode_getNextSibling = vnode => vnode[3];
+
+var vnode_getPreviousSibling = vnode => vnode[2];
+
+var vnode_getAttrKeys = vnode => {
+  const type = vnode[0];
+  if (0 !== (3 & type)) {
+    vnode_ensureElementInflated(vnode);
+    const keys2 = [];
+    for (let i = vnode_getPropStartIndex(vnode); i < vnode.length; i += 2) {
+      const key = vnode[i];
+      key.startsWith(":") || keys2.push(key);
+    }
+    return keys2;
+  }
+  return [];
+};
+
+var vnode_setAttr = (journal, vnode, key, value) => {
+  const type = vnode[0];
+  if (0 !== (3 & type)) {
+    vnode_ensureElementInflated(vnode);
+    const idx = mapApp_findIndx(vnode, key, vnode_getPropStartIndex(vnode));
+    if (idx >= 0) {
+      if (vnode[idx + 1] != value && 0 !== (1 & type)) {
+        const element = vnode[6];
+        journal && journal.push(2, element, key, value);
+      }
+      null == value ? vnode.splice(idx, 2) : vnode[idx + 1] = value;
+    } else if (null != value) {
+      vnode.splice(~idx, 0, key, value);
+      if (0 !== (1 & type)) {
+        const element = vnode[6];
+        journal && journal.push(2, element, key, value);
+      }
+    }
+  }
+};
+
+var vnode_getAttr = (vnode, key) => {
+  const type = vnode[0];
+  if (0 !== (3 & type)) {
+    vnode_ensureElementInflated(vnode);
+    return mapArray_get(vnode, key, vnode_getPropStartIndex(vnode));
+  }
+  return null;
+};
+
+var vnode_getProp = (vnode, key, getObject) => {
+  const type = vnode[0];
+  if (0 !== (3 & type)) {
+    1 & type && vnode_ensureElementInflated(vnode);
+    const idx = mapApp_findIndx(vnode, key, vnode_getPropStartIndex(vnode));
+    if (idx >= 0) {
+      let value = vnode[idx + 1];
+      "string" === typeof value && getObject && (vnode[idx + 1] = value = getObject(value));
+      return value;
+    }
+  }
+  return null;
+};
+
+var vnode_setProp = (vnode, key, value) => {
+  ensureElementOrVirtualVNode(vnode);
+  const idx = mapApp_findIndx(vnode, key, vnode_getPropStartIndex(vnode));
+  idx >= 0 ? vnode[idx + 1] = value : null != value && vnode.splice(~idx, 0, key, value);
+};
+
+var vnode_getPropStartIndex = vnode => {
+  const type = 7 & vnode[0];
+  if (1 === type) {
+    return 8;
+  }
+  if (2 === type) {
+    return 6;
+  }
+  throw throwErrorAndStop("Invalid vnode type.");
+};
+
+var vnode_getParent = vnode => vnode[1] || null;
+
+var vnode_getNode = vnode => {
+  if (null === vnode || vnode_isVirtualVNode(vnode)) {
+    return null;
+  }
+  if (vnode_isElementVNode(vnode)) {
+    return vnode[6];
+  }
+  assertTrue(vnode_isTextVNode(vnode), "Expecting Text Node.");
+  return vnode[4];
+};
+
+function vnode_toString(depth = 10, offset = "", materialize = false) {
+  let vnode = this;
+  if (0 === depth) {
+    return "...";
+  }
+  if (null === vnode) {
+    return "null";
+  }
+  if (void 0 === vnode) {
+    return "undefined";
+  }
+  const strings = [];
+  do {
+    if (vnode_isTextVNode(vnode)) {
+      strings.push(qwikDebugToString(vnode_getText(vnode)));
+    } else if (vnode_isVirtualVNode(vnode)) {
+      const idx = vnode[0] >>> 8;
+      const attrs = [ "[" + String(idx) + "]" ];
+      vnode_getAttrKeys(vnode).forEach((key => {
+        if (key !== DEBUG_TYPE) {
+          const value = vnode_getAttr(vnode, key);
+          attrs.push(" " + key + "=" + qwikDebugToString(value));
+        }
+      }));
+      const name = VirtualTypeName[vnode_getAttr(vnode, DEBUG_TYPE) || "V"] || VirtualTypeName.V;
+      strings.push("<" + name + attrs.join("") + ">");
+      const child = vnode_getFirstChild(vnode);
+      child && strings.push("  " + vnode_toString.call(child, depth - 1, offset + "  ", true));
+      strings.push("</" + name + ">");
+    } else if (vnode_isElementVNode(vnode)) {
+      const tag = vnode_getElementName(vnode);
+      const attrs = [];
+      const keys2 = vnode_getAttrKeys(vnode);
+      keys2.forEach((key => {
+        const value = vnode_getAttr(vnode, key);
+        attrs.push(" " + key + "=" + qwikDebugToString(value));
+      }));
+      const node = vnode_getNode(vnode);
+      if (node) {
+        const vnodeData = node.ownerDocument.qVNodeData?.get(node);
+        vnodeData && attrs.push(" q:vnodeData=" + qwikDebugToString(vnodeData));
+      }
+      const domAttrs = node.attributes;
+      for (let i = 0; i < domAttrs.length; i++) {
+        const attr = domAttrs[i];
+        -1 === keys2.indexOf(attr.name) && attrs.push(" " + attr.name + (attr.value ? "=" + qwikDebugToString(attr.value) : ""));
+      }
+      strings.push("<" + tag + attrs.join("") + ">");
+      if (vnode_isMaterialized(vnode) || materialize) {
+        const child = vnode_getFirstChild(vnode);
+        child && strings.push("  " + vnode_toString.call(child, depth - 1, offset + "  ", true));
+      } else {
+        strings.push("  \x3c!-- not materialized --!>");
+      }
+      strings.push("</" + tag + ">");
+    }
+    vnode = vnode_getNextSibling(vnode) || null;
+  } while (vnode);
+  return strings.join("\n" + offset);
+}
+
+var isNumber = ch => 48 <= ch && ch <= 57;
+
+var isLowercase = ch => 97 <= ch && ch <= 122;
+
+var stack = [];
+
+function materializeFromVNodeData(vParent, vData, element, child) {
+  let idx = 0;
+  let nextToConsumeIdx = 0;
+  let vFirst = null;
+  let vLast = null;
+  let previousTextNode = null;
+  let ch = 0;
+  let peekCh = 0;
+  const peek = () => 0 !== peekCh ? peekCh : peekCh = nextToConsumeIdx < vData.length ? vData.charCodeAt(nextToConsumeIdx) : 0;
+  const consume = () => {
+    ch = peek();
+    peekCh = 0;
+    nextToConsumeIdx++;
+    return ch;
+  };
+  const addVNode = node => {
+    node[0] = 255 & node[0] | idx << 8;
+    idx++;
+    vLast && (vLast[3] = node);
+    node[2] = vLast;
+    node[1] = vParent;
+    vFirst || (vParent[4] = vFirst = node);
+    vLast = node;
+  };
+  const consumeValue = () => {
+    consume();
+    const start = nextToConsumeIdx;
+    while (peek() <= 58 && 0 !== peekCh || 95 === peekCh || peekCh >= 65 && peekCh <= 90 || peekCh >= 97 && peekCh <= 122) {
+      consume();
+    }
+    return vData.substring(start, nextToConsumeIdx);
+  };
+  let textIdx = 0;
+  let combinedText = null;
+  let container = null;
+  while (0 !== peek()) {
+    if (isNumber(peek())) {
+      while (!isElement(child)) {
+        child = fastNextSibling(child);
+        child || throwErrorAndStop("Materialize error: missing element: " + vData + " " + peek() + " " + nextToConsumeIdx);
+      }
+      while (isQStyleElement(child)) {
+        child = fastNextSibling(child);
+      }
+      combinedText = null;
+      previousTextNode = null;
+      let value = 0;
+      while (isNumber(peek())) {
+        value *= 10;
+        value += consume() - 48;
+      }
+      while (value--) {
+        addVNode(vnode_newUnMaterializedElement(child));
+        child = fastNextSibling(child);
+      }
+    } else if (peek() === VNodeDataChar.SCOPED_STYLE) {
+      vnode_setAttr(null, vParent, QScopedStyle, consumeValue());
+    } else if (peek() === VNodeDataChar.RENDER_FN) {
+      vnode_setAttr(null, vParent, OnRenderProp, consumeValue());
+    } else if (peek() === VNodeDataChar.ID) {
+      container || (container = getDomContainer(element));
+      const id = consumeValue();
+      container.$setRawState$(parseInt(id), vParent);
+      isDev && vnode_setAttr(null, vParent, ELEMENT_ID, id);
+    } else if (peek() === VNodeDataChar.PROPS) {
+      vnode_setAttr(null, vParent, ELEMENT_PROPS, consumeValue());
+    } else if (peek() === VNodeDataChar.SLOT_REF) {
+      vnode_setAttr(null, vParent, QSlotRef, consumeValue());
+    } else if (peek() === VNodeDataChar.KEY) {
+      vnode_setAttr(null, vParent, ELEMENT_KEY, consumeValue());
+    } else if (peek() === VNodeDataChar.SEQ) {
+      vnode_setAttr(null, vParent, ELEMENT_SEQ, consumeValue());
+    } else if (peek() === VNodeDataChar.SEQ_IDX) {
+      vnode_setAttr(null, vParent, ELEMENT_SEQ_IDX, consumeValue());
+    } else if (peek() === VNodeDataChar.CONTEXT) {
+      vnode_setAttr(null, vParent, QCtxAttr, consumeValue());
+    } else if (peek() === VNodeDataChar.OPEN) {
+      consume();
+      addVNode(vnode_newVirtual());
+      stack.push(vParent, vFirst, vLast, previousTextNode, idx);
+      idx = 0;
+      vParent = vLast;
+      vFirst = vLast = null;
+    } else if (peek() === VNodeDataChar.SEPARATOR) {
+      const key = consumeValue();
+      const value = consumeValue();
+      vnode_setAttr(null, vParent, key, value);
+    } else if (peek() === VNodeDataChar.CLOSE) {
+      consume();
+      vParent[5] = vLast;
+      idx = stack.pop();
+      previousTextNode = stack.pop();
+      vLast = stack.pop();
+      vFirst = stack.pop();
+      vParent = stack.pop();
+    } else if (peek() === VNodeDataChar.SLOT) {
+      vnode_setAttr(null, vParent, QSlot, consumeValue());
+    } else {
+      const textNode = child && 3 === fastNodeType(child) ? child : null;
+      if (null === combinedText) {
+        combinedText = textNode ? textNode.nodeValue : null;
+        textIdx = 0;
+      }
+      let length = 0;
+      while (isLowercase(peek())) {
+        length += consume() - 97;
+        length *= 26;
+      }
+      length += consume() - 65;
+      const text = null === combinedText ? "" : combinedText.substring(textIdx, textIdx + length);
+      addVNode(previousTextNode = vnode_newSharedText(previousTextNode, textNode, text));
+      textIdx += length;
+    }
+  }
+  vParent[5] = vLast;
+  return vFirst;
+}
+
+var vnode_getType = vnode => {
+  const type = vnode[0];
+  if (1 & type) {
+    return 1;
+  }
+  if (2 & type) {
+    return 11;
+  }
+  if (4 & type) {
+    return 3;
+  }
+  throw throwErrorAndStop("Unknown vnode type: " + type);
+};
+
+var isElement = node => node && "object" == typeof node && 1 === fastNodeType(node);
+
+var aPath = [];
+
+var bPath = [];
+
+var vnode_documentPosition = (a, b) => {
+  if (a === b) {
+    return 0;
+  }
+  let aDepth = -1;
+  let bDepth = -1;
+  while (a) {
+    a = (aPath[++aDepth] = a)[1];
+  }
+  while (b) {
+    b = (bPath[++bDepth] = b)[1];
+  }
+  while (aDepth >= 0 && bDepth >= 0) {
+    a = aPath[aDepth];
+    b = bPath[bDepth];
+    if (a !== b) {
+      let cursor = b;
+      do {
+        cursor = vnode_getNextSibling(cursor);
+        if (cursor === a) {
+          return 1;
+        }
+      } while (cursor);
+      cursor = b;
+      do {
+        cursor = vnode_getPreviousSibling(cursor);
+        if (cursor === a) {
+          return -1;
+        }
+      } while (cursor);
+      return 1;
+    }
+    aDepth--;
+    bDepth--;
+  }
+  return aDepth < bDepth ? -1 : 1;
+};
+
+var vnode_getProjectionParentComponent = (vHost, rootVNode) => {
+  let projectionDepth = 1;
+  while (projectionDepth--) {
+    while (vHost && (!vnode_isVirtualVNode(vHost) || null === vnode_getProp(vHost, OnRenderProp, null))) {
+      const qSlotParentProp = vnode_getProp(vHost, QSlotParent, null);
+      const qSlotParent = qSlotParentProp && ("string" === typeof qSlotParentProp ? vnode_locate(rootVNode, qSlotParentProp) : qSlotParentProp);
+      const vProjectionParent = vnode_isVirtualVNode(vHost) && qSlotParent;
+      vProjectionParent && projectionDepth++;
+      vHost = vProjectionParent || vnode_getParent(vHost);
+    }
+    projectionDepth > 0 && (vHost = vnode_getParent(vHost));
+  }
+  return vHost;
+};
+
+var VNodeArray = class VNode extends Array {
+  static createElement(flags, parent, previousSibling, nextSibling, firstChild, lastChild, element, elementName) {
+    const vnode = new VNode(flags, parent, previousSibling, nextSibling);
+    vnode.push(firstChild, lastChild, element, elementName);
+    return vnode;
+  }
+  static createText(flags, parent, previousSibling, nextSibling, textNode, text) {
+    const vnode = new VNode(flags, parent, previousSibling, nextSibling);
+    vnode.push(textNode, text);
+    return vnode;
+  }
+  static createVirtual(flags, parent, previousSibling, nextSibling, firstChild, lastChild) {
+    const vnode = new VNode(flags, parent, previousSibling, nextSibling);
+    vnode.push(firstChild, lastChild);
+    return vnode;
+  }
+  constructor(flags, parent, previousSibling, nextSibling) {
+    super();
+    this.push(flags, parent, previousSibling, nextSibling);
+    isDev && (this.toString = vnode_toString);
+  }
+};
+
+var _context;
+
+var tryGetInvokeContext = () => {
+  if (!_context) {
+    const context = "undefined" !== typeof document && document && document.__q_context__;
+    if (!context) {
+      return;
+    }
+    if (isArray(context)) {
+      return document.__q_context__ = newInvokeContextFromTuple(context);
+    }
+    return context;
+  }
+  return _context;
+};
+
+function invoke(context, fn, ...args) {
+  return invokeApply.call(this, context, fn, args);
+}
+
+function invokeApply(context, fn, args) {
+  const previousContext = _context;
+  let returnValue;
+  try {
+    _context = context;
+    returnValue = fn.apply(this, args);
+  } finally {
+    _context = previousContext;
+  }
+  return returnValue;
+}
+
+var newInvokeContextFromTuple = ([element, event, url]) => {
+  const container = element.closest(QContainerSelector);
+  const locale = container?.getAttribute(QLocaleAttr) || void 0;
+  locale && setLocale(locale);
+  return newInvokeContext(locale, void 0, element, event, url);
+};
+
+var newInvokeContext = (locale, hostElement, element, event, url) => {
+  const $locale$ = locale || ("object" === typeof event && event && "locale" in event ? event.locale : void 0);
+  const ctx = {
+    $url$: url,
+    $i$: 0,
+    $hostElement$: hostElement,
+    $element$: element,
+    $event$: event,
+    $qrl$: void 0,
+    $effectSubscriber$: void 0,
+    $locale$: $locale$,
+    $container$: void 0
+  };
+  seal(ctx);
+  return ctx;
+};
+
+var untrack = fn => invoke(void 0, fn);
+
+var trackInvocation = newInvokeContext(void 0, void 0, void 0, RenderEvent);
+
+var trackSignal = (fn, subscriber, property, container, data) => {
+  const previousSubscriber = trackInvocation.$effectSubscriber$;
+  const previousContainer = trackInvocation.$container$;
+  try {
+    trackInvocation.$effectSubscriber$ = [ subscriber, property ];
+    data && trackInvocation.$effectSubscriber$.push(data);
+    trackInvocation.$container$ = container;
+    return invoke(trackInvocation, fn);
+  } finally {
+    trackInvocation.$effectSubscriber$ = previousSubscriber;
+    trackInvocation.$container$ = previousContainer;
+  }
+};
+
+var createContextId = name => {
+  assertTrue(/^[\w/.-]+$/.test(name), "Context name must only contain A-Z,a-z,0-9, _", name);
+  return Object.freeze({
+    id: fromCamelToKebabCase(name)
+  });
+};
+
+var ERROR_CONTEXT = createContextId("qk-error");
+
+var isRecoverable = err => {
+  if (err && err instanceof Error && "plugin" in err) {
+    return false;
+  }
+  return true;
+};
+
+function processVNodeData(document2) {
+  const Q_CONTAINER = "q:container";
+  const Q_CONTAINER_END = "/" + Q_CONTAINER;
+  const Q_PROPS_SEPARATOR2 = ":";
+  const Q_SHADOW_ROOT = "q:shadowroot";
+  const Q_IGNORE = "q:ignore";
+  const Q_IGNORE_END = "/" + Q_IGNORE;
+  const Q_CONTAINER_ISLAND = "q:container-island";
+  const Q_CONTAINER_ISLAND_END = "/" + Q_CONTAINER_ISLAND;
+  const qDocument = document2;
+  const vNodeDataMap = qDocument.qVNodeData || (qDocument.qVNodeData = new WeakMap);
+  const prototype = document2.body;
+  const getter = (prototype2, name) => {
+    let getter2;
+    while (prototype2 && !(getter2 = Object.getOwnPropertyDescriptor(prototype2, name)?.get)) {
+      prototype2 = Object.getPrototypeOf(prototype2);
+    }
+    return getter2 || function() {
+      return this[name];
+    };
+  };
+  const getAttribute = prototype.getAttribute;
+  const hasAttribute = prototype.hasAttribute;
+  const getNodeType = getter(prototype, "nodeType");
+  const attachVnodeDataAndRefs = element => {
+    Array.from(element.querySelectorAll('script[type="qwik/vnode"]')).forEach((script => {
+      script.setAttribute("type", "x-qwik/vnode");
+      const qContainerElement = script.closest("[q\\:container]");
+      qContainerElement.qVnodeData = script.textContent;
+      qContainerElement.qVNodeRefs = new Map;
+    }));
+    element.querySelectorAll("[q\\:shadowroot]").forEach((parent => {
+      const shadowRoot = parent.shadowRoot;
+      shadowRoot && attachVnodeDataAndRefs(shadowRoot);
+    }));
+  };
+  attachVnodeDataAndRefs(document2);
+  let NodeType;
+  (NodeType2 => {
+    NodeType2[NodeType2.CONTAINER_MASK = 1] = "CONTAINER_MASK";
+    NodeType2[NodeType2.ELEMENT = 2] = "ELEMENT";
+    NodeType2[NodeType2.ELEMENT_CONTAINER = 3] = "ELEMENT_CONTAINER";
+    NodeType2[NodeType2.ELEMENT_SHADOW_ROOT = 6] = "ELEMENT_SHADOW_ROOT";
+    NodeType2[NodeType2.COMMENT_SKIP_START = 5] = "COMMENT_SKIP_START";
+    NodeType2[NodeType2.COMMENT_SKIP_END = 8] = "COMMENT_SKIP_END";
+    NodeType2[NodeType2.COMMENT_IGNORE_START = 16] = "COMMENT_IGNORE_START";
+    NodeType2[NodeType2.COMMENT_IGNORE_END = 32] = "COMMENT_IGNORE_END";
+    NodeType2[NodeType2.COMMENT_ISLAND_START = 65] = "COMMENT_ISLAND_START";
+    NodeType2[NodeType2.COMMENT_ISLAND_END = 128] = "COMMENT_ISLAND_END";
+    NodeType2[NodeType2.OTHER = 0] = "OTHER";
+  })(NodeType || (NodeType = {}));
+  const getFastNodeType = node => {
+    const nodeType = getNodeType.call(node);
+    if (1 === nodeType) {
+      const qContainer = getAttribute.call(node, Q_CONTAINER);
+      if (null === qContainer) {
+        if (hasAttribute.call(node, Q_SHADOW_ROOT)) {
+          return 6;
+        }
+        const isQElement = hasAttribute.call(node, Q_PROPS_SEPARATOR2);
+        return isQElement ? 2 : 0;
+      }
+      return 3;
+    }
+    if (8 === nodeType) {
+      const nodeValue = node.nodeValue || "";
+      if (nodeValue.startsWith(Q_CONTAINER_ISLAND)) {
+        return 65;
+      }
+      if (nodeValue.startsWith(Q_IGNORE)) {
+        return 16;
+      }
+      if (nodeValue.startsWith(Q_CONTAINER)) {
+        return 5;
+      }
+      if (nodeValue.startsWith(Q_CONTAINER_ISLAND_END)) {
+        return 128;
+      }
+      if (nodeValue.startsWith(Q_IGNORE_END)) {
+        return 32;
+      }
+      if (nodeValue.startsWith(Q_CONTAINER_END)) {
+        return 8;
+      }
+    }
+    return 0;
+  };
+  const isSeparator = ch => VNodeDataSeparator.ADVANCE_1 <= ch && ch <= VNodeDataSeparator.ADVANCE_8192;
+  const findVDataSectionEnd = (vData, start, end) => {
+    let depth = 0;
+    while (true) {
+      if (!(start < end)) {
+        break;
+      }
+      {
+        const ch = vData.charCodeAt(start);
+        if (0 === depth && isSeparator(ch)) {
+          break;
+        }
+        ch === VNodeDataChar.OPEN ? depth++ : ch === VNodeDataChar.CLOSE && depth--;
+        start++;
+      }
+    }
+    return start;
+  };
+  const nextSibling = node => {
+    while (node && (node = node.nextSibling) && 0 === getFastNodeType(node)) {}
+    return node;
+  };
+  const firstChild = node => {
+    while (node && (node = node.firstChild) && 0 === getFastNodeType(node)) {}
+    return node;
+  };
+  const walkContainer = (walker2, containerNode, node, exitNode, vData, qVNodeRefs, prefix) => {
+    const vData_length = vData.length;
+    let elementIdx = 0;
+    let vNodeElementIndex = -1;
+    let vData_start = 0;
+    let vData_end = 0;
+    let ch = 0;
+    let needsToStoreRef = -1;
+    let nextNode = null;
+    const howManyElementsToSkip = () => {
+      let elementsToSkip = 0;
+      while (isSeparator(ch = vData.charCodeAt(vData_start))) {
+        elementsToSkip += 1 << ch - VNodeDataSeparator.ADVANCE_1;
+        vData_start++;
+        if (vData_start >= vData_length) {
+          break;
+        }
+      }
+      return elementsToSkip;
+    };
+    do {
+      if (node === exitNode) {
+        return;
+      }
+      nextNode = null;
+      const nodeType = node == containerNode ? 2 : getFastNodeType(node);
+      if (3 === nodeType) {
+        const container = node;
+        let cursor = node;
+        while (cursor && !(nextNode = nextSibling(cursor))) {
+          cursor = cursor.parentNode;
+        }
+        walkContainer(walker2, container, node, nextNode, container.qVnodeData || "", container.qVNodeRefs, prefix + "  ");
+      } else if (16 === nodeType) {
+        let islandNode = node;
+        do {
+          islandNode = walker2.nextNode();
+          if (!islandNode) {
+            throw new Error(`Island inside \x3c!--${node?.nodeValue}--\x3e not found!`);
+          }
+        } while (65 !== getFastNodeType(islandNode));
+        nextNode = null;
+      } else if (128 === nodeType) {
+        nextNode = node;
+        do {
+          nextNode = walker2.nextNode();
+          if (!nextNode) {
+            throw new Error("Ignore block not closed!");
+          }
+        } while (32 !== getFastNodeType(nextNode));
+        nextNode = null;
+      } else if (5 === nodeType) {
+        nextNode = node;
+        do {
+          nextNode = nextSibling(nextNode);
+          if (!nextNode) {
+            throw new Error(`\x3c!--${node?.nodeValue}--\x3e not closed!`);
+          }
+        } while (8 !== getFastNodeType(nextNode));
+        walkContainer(walker2, node, node, nextNode, "", null, prefix + "  ");
+      } else if (6 === nodeType) {
+        nextNode = nextSibling(node);
+        const shadowRootContainer = node;
+        const shadowRoot = shadowRootContainer?.shadowRoot;
+        shadowRoot && walkContainer(document2.createTreeWalker(shadowRoot, 129), null, firstChild(shadowRoot), null, "", null, prefix + "  ");
+      }
+      if (2 === (2 & nodeType)) {
+        if (vNodeElementIndex < elementIdx) {
+          -1 === vNodeElementIndex && (vNodeElementIndex = 0);
+          vData_start = vData_end;
+          if (vData_start < vData_length) {
+            vNodeElementIndex += howManyElementsToSkip();
+            const shouldStoreRef = ch === VNodeDataSeparator.REFERENCE;
+            if (shouldStoreRef) {
+              needsToStoreRef = vNodeElementIndex;
+              vData_start++;
+              ch = vData_start < vData_length ? vData.charCodeAt(vData_end) : VNodeDataSeparator.ADVANCE_1;
+            }
+            vData_end = findVDataSectionEnd(vData, vData_start, vData_length);
+          } else {
+            vNodeElementIndex = Number.MAX_SAFE_INTEGER;
+          }
+        }
+        if (elementIdx === vNodeElementIndex) {
+          needsToStoreRef === elementIdx && qVNodeRefs.set(elementIdx, node);
+          const instructions = vData.substring(vData_start, vData_end);
+          vNodeDataMap.set(node, instructions);
+        }
+        elementIdx++;
+      }
+    } while (node = nextNode || walker2.nextNode());
+  };
+  const walker = document2.createTreeWalker(document2, 129);
+  walkContainer(walker, null, walker.firstChild(), null, "", null, "");
+}
+
+function getDomContainer(element) {
+  const qContainerElement = _getQContainerElement(element);
+  qContainerElement || throwErrorAndStop("Unable to find q:container.");
+  return getDomContainerFromQContainerElement(qContainerElement);
+}
+
+function getDomContainerFromQContainerElement(qContainerElement) {
+  const qElement = qContainerElement;
+  let container = qElement.qContainer;
+  if (!container) {
+    container = new DomContainer(qElement);
+    const containerAttributes = {};
+    if (qElement) {
+      const attrs = qElement.attributes;
+      if (attrs) {
+        for (let index = 0; index < attrs.length; index++) {
+          const attr = attrs[index];
+          if (attr.name === Q_PROPS_SEPARATOR) {
+            continue;
+          }
+          containerAttributes[attr.name] = attr.value;
+        }
+      }
+    }
+    container.$serverData$ = {
+      containerAttributes: containerAttributes
+    };
+    qElement.qContainer = container;
+  }
+  return container;
+}
+
+function _getQContainerElement(element) {
+  const qContainerElement = Array.isArray(element) ? vnode_getDomParent(element) : element;
+  return qContainerElement.closest(QContainerSelector);
+}
+
+var isDomContainer = container => container instanceof DomContainer;
+
+var DomContainer = class extends _SharedContainer {
+  constructor(element) {
+    super((() => this.scheduleRender()), (() => vnode_applyJournal(this.$journal$)), {}, element.getAttribute("q:locale"));
+    this.renderDone = null;
+    this.$storeProxyMap$ = new WeakMap;
+    this.$styleIds$ = null;
+    this.$vnodeLocate$ = id => vnode_locate(this.rootVNode, id);
+    this.$renderCount$ = 0;
+    this.$getObjectById$ = id => {
+      "string" === typeof id && (id = parseFloat(id));
+      assertTrue(id < this.$rawStateData$.length / 2, `Invalid reference: ${id} >= ${this.$rawStateData$.length / 2}`);
+      return this.stateData[id];
+    };
+    this.qContainer = element.getAttribute(QContainerAttr);
+    this.qContainer || throwErrorAndStop("Element must have 'q:container' attribute.");
+    this.$journal$ = [ 3, element.ownerDocument ];
+    this.document = element.ownerDocument;
+    this.element = element;
+    this.qBase = element.getAttribute(QBaseAttr);
+    this.$instanceHash$ = element.getAttribute(QInstanceAttr);
+    this.qManifestHash = element.getAttribute("q:manifest-hash");
+    this.rootVNode = vnode_newUnMaterializedElement(this.element);
+    this.$rawStateData$ = null;
+    this.stateData = null;
+    const document2 = this.element.ownerDocument;
+    document2.qVNodeData || processVNodeData(document2);
+    this.$rawStateData$ = [];
+    this.stateData = [];
+    const qwikStates = element.querySelectorAll('script[type="qwik/state"]');
+    if (0 !== qwikStates.length) {
+      const lastState = qwikStates[qwikStates.length - 1];
+      this.$rawStateData$ = JSON.parse(lastState.textContent);
+      this.stateData = wrapDeserializerProxy(this, this.$rawStateData$);
+    }
+    this.$qFuncs$ = getQFuncs(document2, this.$instanceHash$) || EMPTY_ARRAY;
+  }
+  $setRawState$(id, vParent) {
+    this.stateData[id] = vParent;
+  }
+  parseQRL(qrl) {
+    return inflateQRL(this, parseQRL(qrl));
+  }
+  processJsx(host, jsx2) {
+    const styleScopedId = this.getHostProp(host, QScopedStyle);
+    return vnode_diff(this, jsx2, host, addComponentStylePrefix(styleScopedId));
+  }
+  handleError(err, host) {
+    if (qDev) {
+      if ("undefined" !== typeof document) {
+        const vHost = host;
+        const errorDiv = document.createElement("errored-host");
+        err && err instanceof Error && (errorDiv.props = {
+          error: err
+        });
+        errorDiv.setAttribute("q:key", "_error_");
+        const journal = [];
+        vnode_getDOMChildNodes(journal, vHost).forEach((child => errorDiv.appendChild(child)));
+        const vErrorDiv = vnode_newElement(errorDiv, "error-host");
+        vnode_insertBefore(journal, vHost, vErrorDiv, null);
+        vnode_applyJournal(journal);
+      }
+      err && err instanceof Error && ("hostElement" in err || (err.hostElement = host));
+      if (!isRecoverable(err)) {
+        throw err;
+      }
+    }
+    const errorStore = this.resolveContext(host, ERROR_CONTEXT);
+    if (!errorStore) {
+      throw err;
+    }
+    errorStore.error = err;
+  }
+  setContext(host, context, value) {
+    let ctx = this.getHostProp(host, QCtxAttr);
+    ctx || this.setHostProp(host, QCtxAttr, ctx = []);
+    mapArray_set(ctx, context.id, value, 0);
+  }
+  resolveContext(host, contextId) {
+    while (host) {
+      const ctx = this.getHostProp(host, QCtxAttr);
+      if (ctx) {
+        const value = mapArray_get(ctx, contextId.id, 0);
+        if (value) {
+          return value;
+        }
+      }
+      host = this.getParentHost(host);
+    }
+    return;
+  }
+  getParentHost(host) {
+    let vNode = vnode_getParent(host);
+    while (vNode) {
+      if (vnode_isVirtualVNode(vNode)) {
+        if (null !== vnode_getProp(vNode, OnRenderProp, null)) {
+          return vNode;
+        }
+        const parent = vnode_getProp(vNode, QSlotParent, this.$vnodeLocate$);
+        if (parent) {
+          vNode = parent;
+          continue;
+        }
+      }
+      vNode = vnode_getParent(vNode);
+    }
+    return null;
+  }
+  setHostProp(host, name, value) {
+    const vNode = host;
+    vnode_setProp(vNode, name, value);
+  }
+  getHostProp(host, name) {
+    const vNode = host;
+    let getObjectById = null;
+    switch (name) {
+     case ELEMENT_SEQ:
+     case ELEMENT_PROPS:
+     case OnRenderProp:
+     case QCtxAttr:
+     case QSubscribers:
+      getObjectById = this.$getObjectById$;
+      break;
+
+     case ELEMENT_SEQ_IDX:
+     case USE_ON_LOCAL_SEQ_IDX:
+      getObjectById = parseInt;
+      break;
+    }
+    return vnode_getProp(vNode, name, getObjectById);
+  }
+  scheduleRender() {
+    this.$renderCount$++;
+    this.renderDone || (this.renderDone = getPlatform().nextTick((() => this.processChores())));
+    return this.renderDone;
+  }
+  processChores() {
+    let renderCount = this.$renderCount$;
+    const result = this.$scheduler$(127);
+    if (isPromise(result)) {
+      return result.then((async () => {
+        while (renderCount !== this.$renderCount$) {
+          renderCount = this.$renderCount$;
+          await this.$scheduler$(127);
+        }
+        this.renderDone = null;
+      }));
+    }
+    if (renderCount !== this.$renderCount$) {
+      this.processChores();
+      return;
+    }
+    this.renderDone = null;
+  }
+  ensureProjectionResolved(vNode) {
+    if (0 === (16 & vNode[0])) {
+      vNode[0] |= 16;
+      for (let i = vnode_getPropStartIndex(vNode); i < vNode.length; i += 2) {
+        const prop = vNode[i];
+        if (isSlotProp(prop)) {
+          const value = vNode[i + 1];
+          "string" == typeof value && (vNode[i + 1] = this.$vnodeLocate$(value));
+        }
+      }
+    }
+  }
+  getSyncFn(id) {
+    const fn = this.$qFuncs$[id];
+    assertTrue("function" === typeof fn, "Invalid reference: " + id);
+    return fn;
+  }
+  $appendStyle$(content, styleId, host, scoped) {
+    if (scoped) {
+      const scopedStyleIdsString = this.getHostProp(host, QScopedStyle);
+      const scopedStyleIds = new Set(convertScopedStyleIdsToArray(scopedStyleIdsString));
+      scopedStyleIds.add(styleId);
+      this.setHostProp(host, QScopedStyle, convertStyleIdsToString(scopedStyleIds));
+    }
+    if (null == this.$styleIds$) {
+      this.$styleIds$ = new Set;
+      this.element.querySelectorAll(QStyleSelector).forEach((style => {
+        this.$styleIds$.add(style.getAttribute(QStyle));
+      }));
+    }
+    if (!this.$styleIds$.has(styleId)) {
+      this.$styleIds$.add(styleId);
+      const styleElement = this.document.createElement("style");
+      styleElement.setAttribute(QStyle, styleId);
+      styleElement.textContent = content;
+      this.$journal$.push(5, this.document.head, null, styleElement);
+    }
+  }
+};
+
+var deserializedProxyMap = new WeakMap;
+
+var unwrapDeserializerProxy = value => {
+  const unwrapped = "object" === typeof value && null !== value && value[SERIALIZER_PROXY_UNWRAP];
+  return unwrapped || value;
+};
+
+var isDeserializerProxy = value => "object" === typeof value && null !== value && SERIALIZER_PROXY_UNWRAP in value;
 
 var SERIALIZER_PROXY_UNWRAP = Symbol("UNWRAP");
 
+var wrapDeserializerProxy = (container, data) => {
+  if (!Array.isArray(data) || vnode_isVNode(data) || isDeserializerProxy(data)) {
+    return data;
+  }
+  let proxy = deserializedProxyMap.get(data);
+  if (!proxy) {
+    const target = Array(data.length / 2).fill(void 0);
+    proxy = new Proxy(target, new DeserializationHandler(container, data));
+    deserializedProxyMap.set(data, proxy);
+  }
+  return proxy;
+};
+
+var DeserializationHandler = class {
+  constructor($container$, $data$) {
+    this.$container$ = $container$;
+    this.$data$ = $data$;
+    this.$length$ = this.$data$.length / 2;
+  }
+  get(target, property, receiver) {
+    if (property === SERIALIZER_PROXY_UNWRAP) {
+      return target;
+    }
+    const i = "number" === typeof property ? property : "string" === typeof property ? parseInt(property, 10) : NaN;
+    if (Number.isNaN(i) || i < 0 || i >= this.$length$) {
+      const out = Reflect.get(target, property, receiver);
+      return out;
+    }
+    const idx = 2 * i;
+    const typeId = this.$data$[idx];
+    const value = this.$data$[idx + 1];
+    if (void 0 === typeId) {
+      return value;
+    }
+    const container = this.$container$;
+    const propValue = allocate(container, typeId, value);
+    Reflect.set(target, property, propValue);
+    this.$data$[idx] = void 0;
+    this.$data$[idx + 1] = propValue;
+    typeId >= 12 && inflate(container, propValue, typeId, value);
+    return propValue;
+  }
+  has(target, property) {
+    if (property === SERIALIZER_PROXY_UNWRAP) {
+      return true;
+    }
+    return Object.prototype.hasOwnProperty.call(target, property);
+  }
+  set(target, property, value, receiver) {
+    if (property === SERIALIZER_PROXY_UNWRAP) {
+      return false;
+    }
+    const out = Reflect.set(target, property, value, receiver);
+    const i = "number" === typeof property ? property : parseInt(property, 10);
+    if (Number.isNaN(i) || i < 0 || i >= this.$data$.length / 2) {
+      return out;
+    }
+    const idx = 2 * i;
+    this.$data$[idx] = void 0;
+    this.$data$[idx + 1] = value;
+    return true;
+  }
+};
+
+var _eagerDeserializeArray = (container, data) => {
+  const out = Array(data.length / 2);
+  for (let i = 0; i < data.length; i += 2) {
+    out[i / 2] = deserializeData(container, data[i], data[i + 1]);
+  }
+  return out;
+};
+
+var resolvers = new WeakMap;
+
+var inflate = (container, target, typeId, data) => {
+  if (void 0 === typeId) {
+    return;
+  }
+  13 !== typeId && Array.isArray(data) && (data = _eagerDeserializeArray(container, data));
+  switch (typeId) {
+   case 13:
+    for (let i2 = 0; i2 < data.length; i2 += 4) {
+      const key = deserializeData(container, data[i2], data[i2 + 1]);
+      const valType = data[i2 + 2];
+      const valData = data[i2 + 3];
+      0 === valType || valType >= 12 ? Object.defineProperty(target, key, {
+        get: () => deserializeData(container, valType, valData),
+        set(value) {
+          Object.defineProperty(target, key, {
+            value: value,
+            writable: true,
+            enumerable: true,
+            configurable: true
+          });
+        },
+        enumerable: true,
+        configurable: true
+      }) : target[key] = deserializeData(container, valType, valData);
+    }
+    break;
+
+   case 18:
+    inflateQRL(container, target);
+    break;
+
+   case 19:
+    const task = target;
+    const v = data;
+    task.$qrl$ = inflateQRL(container, v[0]);
+    task.$flags$ = v[1];
+    task.$index$ = v[2];
+    task.$el$ = v[3];
+    task.$effectDependencies$ = v[4];
+    task.$state$ = v[5];
+    break;
+
+   case 20:
+    const [resolved, result, effects] = data;
+    const resource = target;
+    if (resolved) {
+      resource.value = Promise.resolve(result);
+      resource._resolved = result;
+      resource._state = "resolved";
+    } else {
+      resource.value = Promise.reject(result);
+      resource._error = result;
+      resource._state = "rejected";
+    }
+    getStoreHandler(target).$effects$ = effects;
+    break;
+
+   case 21:
+    target[SERIALIZABLE_STATE][0] = data[0];
+    break;
+
+   case 25:
+   case 26:
+    {
+      const [value, flags, effects2, storeEffect] = data;
+      const handler = getStoreHandler(target);
+      handler.$flags$ = flags;
+      Object.assign(getStoreTarget(target), value);
+      storeEffect && (effects2[STORE_ARRAY_PROP] = storeEffect);
+      handler.$effects$ = effects2;
+      break;
+    }
+
+   case 22:
+    {
+      const signal = target;
+      const d = data;
+      signal.$untrackedValue$ = d[0];
+      signal.$effects$ = d.slice(1);
+      break;
+    }
+
+   case 23:
+    {
+      const signal = target;
+      const d = data;
+      signal.$func$ = container.getSyncFn(d[0]);
+      signal.$args$ = d[1];
+      signal.$effectDependencies$ = d[2];
+      signal.$untrackedValue$ = d[3];
+      signal.$effects$ = d.slice(4);
+      break;
+    }
+
+   case 24:
+    {
+      const computed = target;
+      const d = data;
+      computed.$computeQrl$ = d[0];
+      computed.$untrackedValue$ = d[1];
+      computed.$invalid$ = d[2];
+      computed.$effects$ = d.slice(3);
+      break;
+    }
+
+   case 12:
+    {
+      const d = data;
+      target.message = d[0];
+      const second = d[1];
+      if (second && Array.isArray(second)) {
+        for (let i2 = 0; i2 < second.length; i2++) {
+          target[second[i2++]] = d[i2];
+        }
+        target.stack = d[2];
+      } else {
+        target.stack = second;
+      }
+      break;
+    }
+
+   case 27:
+    {
+      const formData = target;
+      const d = data;
+      for (let i2 = 0; i2 < d.length; i2++) {
+        formData.append(d[i2++], d[i2]);
+      }
+      break;
+    }
+
+   case 28:
+    {
+      const jsx2 = target;
+      const [type, varProps, constProps, children, flags, key] = data;
+      jsx2.type = type;
+      jsx2.varProps = varProps;
+      jsx2.constProps = constProps;
+      jsx2.children = children;
+      jsx2.flags = flags;
+      jsx2.key = key;
+      break;
+    }
+
+   case 15:
+    {
+      const set = target;
+      const d = data;
+      for (let i2 = 0; i2 < d.length; i2++) {
+        set.add(d[i2]);
+      }
+      break;
+    }
+
+   case 16:
+    {
+      const map = target;
+      const d = data;
+      for (let i2 = 0; i2 < d.length; i2++) {
+        map.set(d[i2++], d[i2]);
+      }
+      break;
+    }
+
+   case 14:
+    {
+      const promise = target;
+      const [resolved2, result2] = data;
+      const [resolve, reject] = resolvers.get(promise);
+      resolved2 ? resolve(result2) : reject(result2);
+      break;
+    }
+
+   case 17:
+    const bytes = target;
+    const buf = atob(data);
+    let i = 0;
+    for (const s of buf) {
+      bytes[i++] = s.charCodeAt(0);
+    }
+    break;
+
+   case 29:
+    const propsProxy = target;
+    propsProxy[_VAR_PROPS] = data[0];
+    propsProxy[_CONST_PROPS] = data[1];
+    break;
+
+   case 30:
+    {
+      const effectData = target;
+      effectData.data = data[0];
+      break;
+    }
+
+   default:
+    return throwErrorAndStop("Not implemented");
+  }
+};
+
+var _constants = [ void 0, null, true, false, "", EMPTY_ARRAY, EMPTY_OBJ, NEEDS_COMPUTATION, Slot, Fragment, NaN, 1 / 0, -1 / 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER - 1, Number.MIN_SAFE_INTEGER ];
+
+var allocate = (container, typeId, value) => {
+  if (void 0 === value) {
+    return typeId;
+  }
+  switch (typeId) {
+   case 0:
+    return container.$getObjectById$(value);
+
+   case 1:
+    return _constants[value];
+
+   case 2:
+    return value;
+
+   case 4:
+    return wrapDeserializerProxy(container, value);
+
+   case 13:
+    return {};
+
+   case 18:
+    return parseQRL(value);
+
+   case 19:
+    return new Task(-1, -1, null, null, null, null);
+
+   case 20:
+    {
+      const res = createResourceReturn(container, void 0, void 0);
+      res.loading = false;
+      return res;
+    }
+
+   case 5:
+    return new URL(value);
+
+   case 6:
+    return new Date(value);
+
+   case 7:
+    const idx = value.lastIndexOf("/");
+    return new RegExp(value.slice(1, idx), value.slice(idx + 1));
+
+   case 12:
+    return new Error;
+
+   case 21:
+    return componentQrl(null);
+
+   case 22:
+    return new Signal(container, 0);
+
+   case 23:
+    return new WrappedSignal(container, null, null, null);
+
+   case 24:
+    return new ComputedSignal(container, null);
+
+   case 25:
+    return createStore(container, {}, 0);
+
+   case 26:
+    return createStore(container, [], 0);
+
+   case 11:
+    return new URLSearchParams(value);
+
+   case 27:
+    return new FormData;
+
+   case 28:
+    return new JSXNodeImpl(null, null, null, null, -1, null);
+
+   case 10:
+    return BigInt(value);
+
+   case 15:
+    return new Set;
+
+   case 16:
+    return new Map;
+
+   case 3:
+    return value;
+
+   case 14:
+    let resolve;
+    let reject;
+    const promise = new Promise(((res, rej) => {
+      resolve = res;
+      reject = rej;
+    }));
+    resolvers.set(promise, [ resolve, reject ]);
+    return promise;
+
+   case 17:
+    const encodedLength = value.length;
+    const blocks = encodedLength >>> 2;
+    const rest = 3 & encodedLength;
+    const decodedLength = 3 * blocks + (rest ? rest - 1 : 0);
+    return new Uint8Array(decodedLength);
+
+   case 29:
+    return createPropsProxy(null, null);
+
+   case 8:
+    return retrieveVNodeOrDocument(container, value);
+
+   case 9:
+    const vNode = retrieveVNodeOrDocument(container, value);
+    return vnode_isVNode(vNode) ? vnode_getNode(vNode) : throwErrorAndStop("expected vnode for ref prop, but got " + typeof vNode);
+
+   case 30:
+    return new EffectData(null);
+
+   default:
+    return throwErrorAndStop("unknown allocate type: " + typeId);
+  }
+};
+
+function retrieveVNodeOrDocument(container, value) {
+  return value ? container.rootVNode ? vnode_locate(container.rootVNode, value) : void 0 : container.element?.ownerDocument;
+}
+
+function parseQRL(qrl) {
+  const hashIdx = qrl.indexOf("#");
+  const captureStart = qrl.indexOf("[", hashIdx);
+  const captureEnd = qrl.indexOf("]", captureStart);
+  const chunk = hashIdx > -1 ? qrl.slice(0, hashIdx) : qrl.slice(0, captureStart);
+  const symbol = captureStart > -1 ? qrl.slice(hashIdx + 1, captureStart) : qrl.slice(hashIdx + 1);
+  const captureIds = captureStart > -1 && captureEnd > -1 ? qrl.slice(captureStart + 1, captureEnd).split(" ").filter((v => v.length)).map((s => parseInt(s, 10))) : null;
+  let qrlRef = null;
+  if (isDev2 && chunk === QRL_RUNTIME_CHUNK) {
+    const backChannel = globalThis[QRL_RUNTIME_CHUNK];
+    assertDefined(backChannel, "Missing QRL_RUNTIME_CHUNK");
+    qrlRef = backChannel.get(symbol);
+  }
+  return createQRL(chunk, symbol, qrlRef, null, captureIds, null, null);
+}
+
+function inflateQRL(container, qrl) {
+  const captureIds = qrl.$capture$;
+  qrl.$captureRef$ = captureIds ? captureIds.map((id => container.$getObjectById$(id))) : null;
+  container.element && qrl.$setContainer$(container.element);
+  return qrl;
+}
+
+var DomVRef = class {
+  constructor(id) {
+    this.id = id;
+  }
+};
+
+var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+  if (!writer) {
+    const buffer = [];
+    writer = {
+      write: text => buffer.push(text),
+      toString: () => buffer.join("")
+    };
+  }
+  const map = new Map;
+  const syncFnMap = new Map;
+  const syncFns = [];
+  const roots = [];
+  const $wasSeen$ = obj => map.get(obj);
+  const $seen$ = obj => map.set(obj, -1);
+  const $addRoot$ = obj => {
+    let id = map.get(obj);
+    if ("number" !== typeof id || -1 === id) {
+      id = roots.length;
+      map.set(obj, id);
+      roots.push(obj);
+    }
+    return id;
+  };
+  const isSsrNode = NodeConstructor ? obj => obj instanceof NodeConstructor : () => false;
+  return {
+    $serialize$() {
+      serialize(this);
+    },
+    $isSsrNode$: isSsrNode,
+    $symbolToChunkResolver$: symbolToChunkResolver,
+    $wasSeen$: $wasSeen$,
+    $roots$: roots,
+    $seen$: $seen$,
+    $hasRootId$: obj => {
+      const id = map.get(obj);
+      return void 0 === id || -1 === id ? void 0 : id;
+    },
+    $addRoot$: $addRoot$,
+    $getRootId$: obj => {
+      const id = map.get(obj);
+      if (!id || -1 === id) {
+        return throwErrorAndStop("Missing root id for: " + obj);
+      }
+      return id;
+    },
+    $syncFns$: syncFns,
+    $addSyncFn$: (funcStr, argCount, fn) => {
+      const isFullFn = null == funcStr;
+      isFullFn && (funcStr = fn.toString());
+      let id = syncFnMap.get(funcStr);
+      if (void 0 === id) {
+        id = syncFns.length;
+        syncFnMap.set(funcStr, id);
+        if (isFullFn) {
+          syncFns.push(funcStr);
+        } else {
+          let code = "(";
+          for (let i = 0; i < argCount; i++) {
+            code += (0 == i ? "p" : ",p") + i;
+          }
+          syncFns.push(code += ")=>" + funcStr);
+        }
+      }
+      return id;
+    },
+    $writer$: writer,
+    $breakCircularDepsAndAwaitPromises$: breakCircularDependenciesAndResolvePromises,
+    $eventQrls$: new Set,
+    $eventNames$: new Set,
+    $resources$: new Set,
+    $renderSymbols$: new Set,
+    $getProp$: getProp,
+    $setProp$: setProp
+  };
+  async function breakCircularDependenciesAndResolvePromises() {
+    const discoveredValues = [];
+    const promises = [];
+    const visit = obj => {
+      if ("function" === typeof obj) {
+        if (isQrl2(obj)) {
+          obj.$captureRef$ && discoveredValues.push(...obj.$captureRef$);
+        } else if (isQwikComponent(obj)) {
+          const [qrl] = obj[SERIALIZABLE_STATE];
+          discoveredValues.push(qrl);
+        }
+      } else if ("object" !== typeof obj || null === obj || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Uint8Array || obj instanceof URLSearchParams || "undefined" !== typeof FormData && obj instanceof FormData || fastSkipSerialize(obj)) {} else if (obj instanceof Error) {
+        discoveredValues.push(...Object.values(obj));
+      } else if (isStore(obj)) {
+        discoveredValues.push(getStoreTarget(obj));
+        discoveredValues.push(getStoreHandler(obj).$effects$);
+      } else if (obj instanceof Set) {
+        discoveredValues.push(...obj.values());
+      } else if (obj instanceof Map) {
+        obj.forEach(((v, k) => {
+          discoveredValues.push(k, v);
+        }));
+      } else if (obj instanceof Signal) {
+        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+        v === NEEDS_COMPUTATION || isSsrNode(v) || discoveredValues.push(obj.$untrackedValue$);
+        obj.$effects$ && discoveredValues.push(...obj.$effects$);
+        obj instanceof WrappedSignal ? obj.$effectDependencies$ && discoveredValues.push(...obj.$effectDependencies$) : obj instanceof ComputedSignal && discoveredValues.push(obj.$computeQrl$);
+      } else if (obj instanceof Task) {
+        discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
+      } else if (isSsrNode(obj)) {} else if (isJSXNode(obj)) {
+        discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
+      } else if (Array.isArray(obj)) {
+        discoveredValues.push(...obj);
+      } else if (isQrl2(obj)) {
+        obj.$captureRef$ && obj.$captureRef$.length && discoveredValues.push(...obj.$captureRef$);
+      } else if (isPropsProxy(obj)) {
+        discoveredValues.push(obj[_VAR_PROPS], obj[_CONST_PROPS]);
+      } else if (isPromise(obj)) {
+        obj.then((value => {
+          promiseResults.set(obj, [ true, value ]);
+          discoveredValues.push(value);
+        }), (error => {
+          promiseResults.set(obj, [ false, error ]);
+          discoveredValues.push(error);
+        }));
+        promises.push(obj);
+      } else if (obj instanceof EffectData) {
+        discoveredValues.push(obj.data);
+      } else {
+        if (!isObjectLiteral(obj)) {
+          return throwErrorAndStop("Unknown type: " + obj);
+        }
+        Object.entries(obj).forEach((([key, value]) => {
+          discoveredValues.push(key, value);
+        }));
+      }
+    };
+    for (const root of roots) {
+      visit(root);
+    }
+    do {
+      while (discoveredValues.length) {
+        const obj = discoveredValues.pop();
+        if (!(shouldTrackObj(obj) || frameworkType(obj))) {
+          continue;
+        }
+        const id = $wasSeen$(obj);
+        if (void 0 === id) {
+          $seen$(obj);
+          visit(obj);
+        } else {
+          -1 === id && $addRoot$(obj);
+        }
+      }
+      await Promise.allSettled(promises);
+      promises.length = 0;
+    } while (discoveredValues.length);
+  }
+};
+
+var promiseResults = new WeakMap;
+
+function serialize(serializationContext) {
+  const {$writer$: $writer$, $isSsrNode$: $isSsrNode$, $setProp$: $setProp$} = serializationContext;
+  let depth = -1;
+  let writeType = false;
+  const output = (type, value) => {
+    writeType ? $writer$.write(`${type},`) : writeType = true;
+    if ("number" === typeof value) {
+      $writer$.write(value.toString());
+    } else if ("string" === typeof value) {
+      const s = JSON.stringify(value);
+      let angleBracketIdx = -1;
+      let lastIdx = 0;
+      while (-1 !== (angleBracketIdx = s.indexOf("</", lastIdx))) {
+        $writer$.write(s.slice(lastIdx, angleBracketIdx));
+        $writer$.write("<\\/");
+        lastIdx = angleBracketIdx + 2;
+      }
+      $writer$.write(0 === lastIdx ? s : s.slice(lastIdx));
+    } else {
+      depth++;
+      $writer$.write("[");
+      let separator = false;
+      for (let i = 0; i < value.length; i++) {
+        separator ? $writer$.write(",") : separator = true;
+        writeValue(value[i], i);
+      }
+      $writer$.write("]");
+      depth--;
+    }
+  };
+  const writeValue = (value, idx) => {
+    if (fastSkipSerialize(value)) {
+      output(1, 0);
+    } else if ("bigint" === typeof value) {
+      output(10, value.toString());
+    } else if ("boolean" === typeof value) {
+      output(1, value ? 2 : 3);
+    } else if ("function" === typeof value) {
+      if (value === Slot) {
+        output(1, 8);
+      } else if (value === Fragment) {
+        output(1, 9);
+      } else if (isQrl2(value)) {
+        output(18, qrlToString(serializationContext, value));
+      } else if (isQwikComponent(value)) {
+        const [qrl] = value[SERIALIZABLE_STATE];
+        serializationContext.$renderSymbols$.add(qrl.$symbol$);
+        output(21, [ qrl ]);
+      } else {
+        console.error("Cannot serialize function (ignoring for now): " + value.toString());
+        output(1, 0);
+      }
+    } else if ("number" === typeof value) {
+      Number.isNaN(value) ? output(1, 10) : Number.isFinite(value) ? value === Number.MAX_SAFE_INTEGER ? output(1, 13) : value === Number.MAX_SAFE_INTEGER - 1 ? output(1, 14) : value === Number.MIN_SAFE_INTEGER ? output(1, 15) : output(2, value) : output(1, value < 0 ? 12 : 11);
+    } else if ("object" === typeof value) {
+      if (value === EMPTY_ARRAY) {
+        output(1, 5);
+      } else if (value === EMPTY_OBJ) {
+        output(1, 6);
+      } else {
+        depth++;
+        null === value ? output(1, 1) : writeObjectValue(value, idx);
+        depth--;
+      }
+    } else if ("string" === typeof value) {
+      if (0 === value.length) {
+        output(1, 4);
+      } else {
+        const seen = depth > 1 && serializationContext.$wasSeen$(value);
+        "number" === typeof seen && seen >= 0 ? output(0, seen) : output(3, value);
+      }
+    } else {
+      "undefined" === typeof value ? output(1, 0) : value === NEEDS_COMPUTATION ? output(1, 7) : throwErrorAndStop("Unknown type: " + typeof value);
+    }
+  };
+  const writeObjectValue = (value, idx) => {
+    const isRootObject = 2 === depth;
+    if (depth > 2) {
+      const seen = serializationContext.$wasSeen$(value);
+      if ("number" === typeof seen && seen >= 0) {
+        output(0, seen);
+        return;
+      }
+    }
+    if (isPropsProxy(value)) {
+      const varProps = value[_VAR_PROPS];
+      const constProps = value[_CONST_PROPS];
+      output(29, [ varProps, constProps ]);
+    } else if (value instanceof EffectData) {
+      output(30, [ value.data ]);
+    } else if (isStore(value)) {
+      if (isResource(value)) {
+        serializationContext.$resources$.add(value);
+        const res = promiseResults.get(value.value);
+        if (!res) {
+          return throwErrorAndStop("Unvisited Resource");
+        }
+        output(20, [ ...res, getStoreHandler(value).$effects$ ]);
+      } else {
+        const storeHandler = getStoreHandler(value);
+        const store = getStoreTarget(value);
+        const flags = storeHandler.$flags$;
+        const effects = storeHandler.$effects$;
+        const storeEffect = effects?.[STORE_ARRAY_PROP];
+        const out = [ store, flags, effects, storeEffect ];
+        while (null == out[out.length - 1]) {
+          out.pop();
+        }
+        output(Array.isArray(store) ? 26 : 25, out);
+      }
+    } else if (isObjectLiteral(value)) {
+      if (Array.isArray(value)) {
+        output(4, value);
+      } else {
+        const out = [];
+        for (const key in value) {
+          Object.prototype.hasOwnProperty.call(value, key) && !fastSkipSerialize(value[key]) && out.push(key, value[key]);
+        }
+        output(13, out);
+      }
+    } else if (value instanceof DomVRef) {
+      output(9, value.id);
+    } else if (value instanceof Signal) {
+      let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+      $isSsrNode$(v) && (v = new DomVRef(v.id));
+      value instanceof WrappedSignal ? output(23, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(24, [ value.$computeQrl$, v, value.$invalid$, ...value.$effects$ || [] ]) : output(22, [ v, ...value.$effects$ || [] ]);
+    } else if (value instanceof URL) {
+      output(5, value.href);
+    } else if (value instanceof Date) {
+      output(6, Number.isNaN(value.valueOf()) ? "" : value.valueOf());
+    } else if (value instanceof RegExp) {
+      output(7, value.toString());
+    } else if (value instanceof Error) {
+      const out = [ value.message ];
+      const extraProps = Object.entries(value).flat();
+      extraProps.length && out.push(extraProps);
+      isDev2 && out.push(value.stack);
+      output(12, out);
+    } else if ($isSsrNode$(value)) {
+      if (isRootObject) {
+        $setProp$(value, ELEMENT_ID, String(idx));
+        output(8, value.id);
+      } else {
+        serializationContext.$addRoot$(value);
+        output(0, serializationContext.$roots$.length - 1);
+      }
+    } else if ("undefined" !== typeof FormData && value instanceof FormData) {
+      const array = [];
+      value.forEach(((value2, key) => {
+        "string" === typeof value2 ? array.push(key, value2) : array.push(key, value2.name);
+      }));
+      output(27, array);
+    } else if (value instanceof URLSearchParams) {
+      output(11, value.toString());
+    } else if (value instanceof Set) {
+      output(15, [ ...value.values() ]);
+    } else if (value instanceof Map) {
+      const combined = [];
+      for (const [k, v] of value.entries()) {
+        combined.push(k, v);
+      }
+      output(16, combined);
+    } else if (isJSXNode(value)) {
+      output(28, [ value.type, value.varProps, value.constProps, value.children, value.flags, value.key ]);
+    } else if (value instanceof Task) {
+      const out = [ value.$qrl$, value.$flags$, value.$index$, value.$el$, value.$effectDependencies$, value.$state$ ];
+      while (null == out[out.length - 1]) {
+        out.pop();
+      }
+      output(19, out);
+    } else if (isPromise(value)) {
+      const res = promiseResults.get(value);
+      if (!res) {
+        return throwErrorAndStop("Unvisited Promise");
+      }
+      output(14, res);
+    } else {
+      if (!(value instanceof Uint8Array)) {
+        return throwErrorAndStop("implement");
+      }
+      {
+        let buf = "";
+        for (const c of value) {
+          buf += String.fromCharCode(c);
+        }
+        const out = btoa(buf).replace(/=+$/, "");
+        output(17, out);
+      }
+    }
+  };
+  writeValue(serializationContext.$roots$, -1);
+}
+
+function serializeWrappingFn(serializationContext, value) {
+  value.$funcStr$ && "{" === value.$funcStr$[0] && (value.$funcStr$ = `(${value.$funcStr$})`);
+  const syncFnId = serializationContext.$addSyncFn$(value.$funcStr$, value.$args$.length, value.$func$);
+  return [ syncFnId, value.$args$ ];
+}
+
+function qrlToString(serializationContext, value) {
+  let symbol = value.$symbol$;
+  let chunk = value.$chunk$;
+  const refSymbol = value.$refSymbol$ ?? symbol;
+  const platform = getPlatform();
+  if (platform) {
+    const result = platform.chunkForSymbol(refSymbol, chunk, value.dev?.file);
+    if (result) {
+      chunk = result[1];
+      value.$refSymbol$ || (symbol = result[0]);
+    }
+  }
+  const isSync = isSyncQrl(value);
+  if (isSync) {
+    const fn = value.resolved;
+    chunk = "";
+    symbol = String(serializationContext.$addSyncFn$(null, 0, fn));
+  } else {
+    chunk || (chunk = serializationContext.$symbolToChunkResolver$(value.$hash$));
+    if (isDev2) {
+      let backChannel = globalThis[QRL_RUNTIME_CHUNK];
+      backChannel || (backChannel = globalThis[QRL_RUNTIME_CHUNK] = new Map);
+      backChannel.set(value.$symbol$, value._devOnlySymbolRef);
+      chunk || (chunk = QRL_RUNTIME_CHUNK);
+    }
+    chunk || throwErrorAndStop("Missing chunk for: " + value.$symbol$);
+    chunk.startsWith("./") && (chunk = chunk.slice(2));
+  }
+  let qrlStringInline = `${chunk}#${symbol}`;
+  if (Array.isArray(value.$captureRef$) && value.$captureRef$.length > 0) {
+    let serializedReferences = "";
+    for (let i = 0; i < value.$captureRef$.length; i++) {
+      i > 0 && (serializedReferences += " ");
+      serializedReferences += serializationContext.$addRoot$(value.$captureRef$[i]);
+    }
+    qrlStringInline += `[${serializedReferences}]`;
+  } else {
+    value.$capture$ && value.$capture$.length > 0 && (qrlStringInline += `[${value.$capture$.join(" ")}]`);
+  }
+  return qrlStringInline;
+}
+
+function deserializeData(container, typeId, propValue) {
+  if (void 0 === typeId) {
+    return propValue;
+  }
+  const value = allocate(container, typeId, propValue);
+  typeId >= 12 && inflate(container, value, typeId, propValue);
+  return value;
+}
+
+function shouldTrackObj(obj) {
+  return "object" === typeof obj && null !== obj || "string" === typeof obj && obj.length > 1;
+}
+
+function isObjectLiteral(obj) {
+  const prototype = Object.getPrototypeOf(obj);
+  return null == prototype || prototype === Object.prototype || prototype === Array.prototype;
+}
+
+function isResource(value) {
+  return "__brand" in value && "resource" === value.__brand;
+}
+
+var frameworkType = obj => "object" === typeof obj && null !== obj && (obj instanceof Signal || obj instanceof Task || isJSXNode(obj)) || isQrl2(obj);
+
+var canSerialize = value => {
+  if (null == value || "string" === typeof value || "number" === typeof value || "boolean" === typeof value || "bigint" === typeof value) {
+    return true;
+  }
+  if ("object" === typeof value) {
+    const proto = Object.getPrototypeOf(value);
+    isStore(value) && (value = getStoreTarget(value));
+    if (proto == Object.prototype) {
+      for (const key in value) {
+        if (!canSerialize(value[key])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (proto == Array.prototype) {
+      for (let i = 0; i < value.length; i++) {
+        if (!canSerialize(value[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
+    if (isTask(value)) {
+      return true;
+    }
+    if (isPropsProxy(value)) {
+      return true;
+    }
+    if (isPromise(value)) {
+      return true;
+    }
+    if (isJSXNode(value)) {
+      return true;
+    }
+    if (value instanceof Error) {
+      return true;
+    }
+    if (value instanceof URL) {
+      return true;
+    }
+    if (value instanceof Date) {
+      return true;
+    }
+    if (value instanceof RegExp) {
+      return true;
+    }
+    if (value instanceof URLSearchParams) {
+      return true;
+    }
+    if (value instanceof FormData) {
+      return true;
+    }
+    if (value instanceof Set) {
+      return true;
+    }
+    if (value instanceof Map) {
+      return true;
+    }
+    if (value instanceof Uint8Array) {
+      return true;
+    }
+  } else if ("function" === typeof value && (isQrl2(value) || isQwikComponent(value))) {
+    return true;
+  }
+  return false;
+};
+
+var QRL_RUNTIME_CHUNK = "mock-chunk";
+
+var verifySerializable = (value, preMessage) => {
+  const seen = new Set;
+  return _verifySerializable(value, seen, "_", preMessage);
+};
+
+var _verifySerializable = (value, seen, ctx, preMessage) => {
+  const unwrapped = unwrapStore(value);
+  if (null == unwrapped) {
+    return value;
+  }
+  if (shouldSerialize(unwrapped)) {
+    if (seen.has(unwrapped)) {
+      return value;
+    }
+    seen.add(unwrapped);
+    if (isSignal(unwrapped)) {
+      return value;
+    }
+    if (canSerialize(unwrapped)) {
+      return value;
+    }
+    const typeObj = typeof unwrapped;
+    switch (typeObj) {
+     case "object":
+      if (isPromise(unwrapped)) {
+        return value;
+      }
+      if (isNode(unwrapped)) {
+        return value;
+      }
+      if (isArray(unwrapped)) {
+        let expectIndex = 0;
+        unwrapped.forEach(((v, i) => {
+          if (i !== expectIndex) {
+            throw qError(QError_verifySerializable, unwrapped);
+          }
+          _verifySerializable(v, seen, ctx + "[" + i + "]");
+          expectIndex = i + 1;
+        }));
+        return value;
+      }
+      if (isSerializableObject(unwrapped)) {
+        for (const [key, item] of Object.entries(unwrapped)) {
+          _verifySerializable(item, seen, ctx + "." + key);
+        }
+        return value;
+      }
+      break;
+
+     case "boolean":
+     case "string":
+     case "number":
+      return value;
+    }
+    let message = "";
+    message = preMessage || "Value cannot be serialized";
+    "_" !== ctx && (message += ` in ${ctx},`);
+    if ("object" === typeObj) {
+      message += ` because it's an instance of "${value?.constructor.name}". You might need to use 'noSerialize()' or use an object literal instead. Check out https://qwik.dev/docs/advanced/dollar/`;
+    } else if ("function" === typeObj) {
+      const fnName = value.name;
+      message += ` because it's a function named "${fnName}". You might need to convert it to a QRL using $(fn):\n\nconst ${fnName} = $(${String(value)});\n\nPlease check out https://qwik.dev/docs/advanced/qrl/ for more information.`;
+    }
+    console.error("Trying to serialize", value);
+    throwErrorAndStop(message);
+  }
+  return value;
+};
+
+var noSerializeSet = new WeakSet;
+
+var shouldSerialize = obj => {
+  if (isObject(obj) || isFunction(obj)) {
+    return !noSerializeSet.has(obj);
+  }
+  return true;
+};
+
+var fastSkipSerialize = obj => noSerializeSet.has(obj);
+
+var noSerialize = input => {
+  null != input && noSerializeSet.add(input);
+  return input;
+};
+
+var isQrl2 = value => "function" === typeof value && "function" === typeof value.getSymbol;
+
 var SYNC_QRL = "<sync>";
+
+var isSyncQrl = value => isQrl2(value) && value.$symbol$ == SYNC_QRL;
+
+var createQRL = (chunk, symbol, symbolRef, symbolFn, capture, captureRef, refSymbol) => {
+  if (qDev && qSerialize && captureRef) {
+    for (const item of captureRef) {
+      verifySerializable(item, "Captured variable in the closure can not be serialized");
+    }
+  }
+  let _containerEl;
+  const qrl = async function(...args) {
+    const fn = invokeFn.call(this, tryGetInvokeContext());
+    const result = await fn(...args);
+    return result;
+  };
+  const setContainer = el => {
+    _containerEl || (_containerEl = el);
+    return _containerEl;
+  };
+  const wrapFn = fn => {
+    if ("function" !== typeof fn || !capture?.length && !captureRef?.length) {
+      return fn;
+    }
+    return function(...args) {
+      let context = tryGetInvokeContext();
+      if (context) {
+        return fn.apply(this, args);
+      }
+      context = newInvokeContext();
+      context.$qrl$ = qrl;
+      context.$event$ = this;
+      return invoke.call(this, context, fn, ...args);
+    };
+  };
+  const resolve = async containerEl => {
+    if (null !== symbolRef) {
+      return symbolRef;
+    }
+    containerEl && setContainer(containerEl);
+    if ("" === chunk) {
+      assertDefined(_containerEl, "Sync QRL must have container element");
+      const hash2 = _containerEl.getAttribute(QInstanceAttr);
+      const doc = _containerEl.ownerDocument;
+      const qFuncs = getQFuncs(doc, hash2);
+      return qrl.resolved = symbolRef = qFuncs[Number(symbol)];
+    }
+    const start = now();
+    const ctx = tryGetInvokeContext();
+    if (null !== symbolFn) {
+      symbolRef = symbolFn().then((module => qrl.resolved = symbolRef = wrapFn(module[symbol])));
+    } else {
+      const imported = getPlatform().importSymbol(_containerEl, chunk, symbol);
+      symbolRef = maybeThen(imported, (ref => qrl.resolved = symbolRef = wrapFn(ref)));
+    }
+    symbolRef.finally((() => emitUsedSymbol(symbol, ctx?.$element$, start)));
+    return symbolRef;
+  };
+  const resolveLazy = containerEl => null !== symbolRef ? symbolRef : resolve(containerEl);
+  function invokeFn(currentCtx, beforeFn) {
+    return (...args) => maybeThen(resolveLazy(), (f => {
+      if (!isFunction(f)) {
+        throw qError(QError_qrlIsNotFunction);
+      }
+      if (beforeFn && false === beforeFn()) {
+        return;
+      }
+      const context = createOrReuseInvocationContext(currentCtx);
+      const prevQrl = context.$qrl$;
+      const prevEvent = context.$event$;
+      context.$qrl$ = qrl;
+      context.$event$ || (context.$event$ = this);
+      try {
+        return invoke.call(this, context, f, ...args);
+      } finally {
+        context.$qrl$ = prevQrl;
+        context.$event$ = prevEvent;
+      }
+    }));
+  }
+  const createOrReuseInvocationContext = invoke2 => null == invoke2 ? newInvokeContext() : isArray(invoke2) ? newInvokeContextFromTuple(invoke2) : invoke2;
+  const resolvedSymbol = refSymbol ?? symbol;
+  const hash = getSymbolHash2(resolvedSymbol);
+  Object.assign(qrl, {
+    getSymbol: () => resolvedSymbol,
+    getHash: () => hash,
+    getCaptured: () => captureRef,
+    resolve: resolve,
+    $resolveLazy$: resolveLazy,
+    $setContainer$: setContainer,
+    $chunk$: chunk,
+    $symbol$: symbol,
+    $refSymbol$: refSymbol,
+    $hash$: hash,
+    getFn: invokeFn,
+    $capture$: capture,
+    $captureRef$: captureRef,
+    dev: null,
+    resolved: void 0
+  });
+  symbolRef && (symbolRef = maybeThen(symbolRef, (resolved => qrl.resolved = symbolRef = wrapFn(resolved))));
+  isDev && Object.defineProperty(qrl, "_devOnlySymbolRef", {
+    get: () => symbolRef
+  });
+  qDev && seal(qrl);
+  return qrl;
+};
+
+var getSymbolHash2 = symbolName => {
+  const index = symbolName.lastIndexOf("_");
+  if (index > -1) {
+    return symbolName.slice(index + 1);
+  }
+  return symbolName;
+};
+
+var EMITTED = new Set;
+
+var emitUsedSymbol = (symbol, element, reqTime) => {
+  if (!EMITTED.has(symbol)) {
+    EMITTED.add(symbol);
+    emitEvent("qsymbol", {
+      symbol: symbol,
+      element: element,
+      reqTime: reqTime
+    });
+  }
+};
+
+var emitEvent = (eventName, detail) => {
+  qTest || isServerPlatform() || "object" !== typeof document || document.dispatchEvent(new CustomEvent(eventName, {
+    bubbles: false,
+    detail: detail
+  }));
+};
+
+var now = () => {
+  if (qTest || isServerPlatform()) {
+    return 0;
+  }
+  if ("object" === typeof performance) {
+    return performance.now();
+  }
+  return 0;
+};
 
 function getOrigin(req) {
   const {PROTOCOL_HEADER: PROTOCOL_HEADER, HOST_HEADER: HOST_HEADER} = process.env;
@@ -3840,11 +9291,11 @@ function qwikVite(qwikViteOpts = {}) {
         type: "full-reload"
       });
     },
-    onLog(level, log) {
-      if ("vite-plugin-qwik" == log.plugin) {
+    onLog(level, log3) {
+      if ("vite-plugin-qwik" == log3.plugin) {
         const color = LOG_COLOR[level] || ANSI_COLOR.White;
-        const frames = (log.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
-        console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log.plugin}](${level}): ${log.message}\n`, `  ${log?.loc?.file}:${log?.loc?.line}:${log?.loc?.column}\n`, `  ${frames.join("\n  ")}\n`);
+        const frames = (log3.frame || "").split("\n").map((line => (line.match(/^\s*\^\s*$/) ? ANSI_COLOR.BrightWhite : ANSI_COLOR.BrightBlack) + line));
+        console[level](`${color}%s\n${ANSI_COLOR.BrightWhite}%s\n%s${ANSI_COLOR.RESET}`, `[${log3.plugin}](${level}): ${log3.message}\n`, `  ${log3?.loc?.file}:${log3?.loc?.line}:${log3?.loc?.column}\n`, `  ${frames.join("\n  ")}\n`);
         return false;
       }
     }

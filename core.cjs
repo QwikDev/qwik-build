@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8ab26f0
+ * @builder.io/qwik 2.0.0-0-dev+cbeaee0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -451,7 +451,6 @@
     const USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + 'on';
     const USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + 'onIdx';
     const USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + 'onFlags';
-    const UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + 'unwrap';
     // comment nodes
     const FLUSH_COMMENT = 'qkssr-f';
     const STREAM_BLOCK_START_COMMENT = 'qkssr-pu';
@@ -4745,7 +4744,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+8ab26f0";
+    const version = "2.0.0-0-dev+cbeaee0";
 
     /** @internal */
     class _SharedContainer {
@@ -4776,9 +4775,26 @@
     /** @internal @deprecated v1 compat */
     const _IMMUTABLE = Symbol('IMMUTABLE');
 
-    const getProp = (obj, prop) => obj[prop];
-    /** @internal */
-    const _wrapProp = (obj, prop = 'value') => {
+    const getProp = (...args) => {
+        const obj = args[0];
+        const prop = args.length < 2 ? 'value' : args[1];
+        return obj[prop];
+    };
+    const getWrapped = (args) => new WrappedSignal(null, getProp, args, null);
+    /**
+     * This wraps a property access of a possible Signal/Store into a WrappedSignal. The optimizer does
+     * this automatically when a prop is only used as a prop on JSX.
+     *
+     * When a WrappedSignal is read via the PropsProxy, it will be unwrapped. This allows forwarding the
+     * reactivity of a prop to the point of actual use.
+     *
+     * For efficiency, if you pass only one argument, the property is 'value'.
+     *
+     * @internal
+     */
+    const _wrapProp = (...args) => {
+        const obj = args[0];
+        const prop = args.length < 2 ? 'value' : args[1];
         if (!isObject(obj)) {
             return obj[prop];
         }
@@ -4787,9 +4803,9 @@
             if (obj instanceof WrappedSignal) {
                 return obj;
             }
-            return new WrappedSignal(null, getProp, [obj, prop], null);
+            return getWrapped(args);
         }
-        if (_CONST_PROPS in obj) {
+        if (isPropsProxy(obj)) {
             const constProps = obj[_CONST_PROPS];
             if (constProps && prop in constProps) {
                 // Const props don't need wrapping
@@ -4799,15 +4815,16 @@
         else {
             const target = getStoreTarget(obj);
             if (target) {
-                const signal = target[prop];
-                const wrappedValue = isSignal(signal)
-                    ? signal
-                    : new WrappedSignal(null, getProp, [obj, prop], null);
+                const value = target[prop];
+                const wrappedValue = isSignal(value)
+                    ? // If the value is already a signal, we don't need to wrap it again
+                        value
+                    : getWrapped(args);
                 return wrappedValue;
             }
         }
         // We need to forward the access to the original object
-        return new WrappedSignal(null, getProp, [obj, prop], null);
+        return getWrapped(args);
     };
     /** @internal @deprecated v1 compat */
     const _wrapSignal = (obj, prop) => {
@@ -7926,66 +7943,6 @@
         }
     }
     /**
-     * Convert an object (which is a component prop) to have derived signals (_CONST_PROPS).
-     *
-     * Input:
-     *
-     * ```
-     * {
-     *   "prop1": "DerivedSignal: ..",
-     *   "prop2": "DerivedSignal: .."
-     * }
-     * ```
-     *
-     * Becomes
-     *
-     * ```
-     * {
-     *   get prop1 {
-     *     return this[_CONST_PROPS].prop1.value;
-     *   },
-     *   get prop2 {
-     *     return this[_CONST_PROPS].prop2.value;
-     *   },
-     *   prop2: 'DerivedSignal: ..',
-     *   [_CONST_PROPS]: {
-     *     prop1: _fnSignal(p0=>p0.value, [prop1], 'p0.value'),
-     *     prop2: _fnSignal(p0=>p0.value, [prop1], 'p0.value')
-     *   }
-     * }
-     * ```
-     */
-    // function upgradePropsWithDerivedSignal(
-    //   container: DomContainer,
-    //   target: Record<string | symbol, any>,
-    //   property: string | symbol | number
-    // ): any {
-    //   const immutable: Record<string, WrappedSignal<unknown>> = {};
-    //   // TODO
-    //   for (const key in target) {
-    //     if (Object.prototype.hasOwnProperty.call(target, key)) {
-    //       const value = target[key];
-    //       if (typeof value === 'string' && value.charCodeAt(0) === TypeIds.WrappedSignal) {
-    //         const wrappedSignal = (immutable[key] = allocate(
-    //           container,
-    //           TypeIds.WrappedSignal,
-    //           value
-    //         ) as WrappedSignal<unknown>);
-    //         Object.defineProperty(target, key, {
-    //           get() {
-    //             return wrappedSignal.value;
-    //           },
-    //           enumerable: true,
-    //         });
-    //         // TODO
-    //         inflate(container, wrappedSignal, TypeIds.WrappedSignal, value);
-    //       }
-    //     }
-    //   }
-    //   target[_CONST_PROPS] = immutable;
-    //   return target[property];
-    // }
-    /**
      * Restores an array eagerly. If you need it lazily, use `deserializeData(container, TypeIds.Array,
      * array)` instead
      */
@@ -8204,6 +8161,9 @@
         NaN,
         Infinity,
         -Infinity,
+        Number.MAX_SAFE_INTEGER,
+        Number.MAX_SAFE_INTEGER - 1,
+        Number.MIN_SAFE_INTEGER,
     ];
     const allocate = (container, typeId, value) => {
         if (value === undefined) {
@@ -8338,7 +8298,20 @@
         }
         return qrl;
     }
-    const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+    /** A ref to a DOM element */
+    class DomVRef {
+        constructor(id) {
+            this.id = id;
+        }
+    }
+    const createSerializationContext = (
+    /**
+     * Node constructor, for instanceof checks.
+     *
+     * A node constructor can be null. For example on the client we can't serialize DOM nodes as
+     * server will not know what to do with them.
+     */
+    NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
         if (!writer) {
             const buffer = [];
             writer = {
@@ -8361,11 +8334,12 @@
             }
             return id;
         };
+        const isSsrNode = (NodeConstructor ? (obj) => obj instanceof NodeConstructor : () => false);
         return {
             $serialize$() {
                 serialize(this);
             },
-            $NodeConstructor$: NodeConstructor,
+            $isSsrNode$: isSsrNode,
             $symbolToChunkResolver$: symbolToChunkResolver,
             $wasSeen$,
             $roots$: roots,
@@ -8418,6 +8392,14 @@
             // As we walk the object graph we insert newly discovered objects which need to be scanned here.
             const discoveredValues = [];
             const promises = [];
+            /**
+             * Note on out of order streaming:
+             *
+             * When we implement that, we may need to send a reference to an object that was streamed
+             * earlier but wasn't a root. This means we'll have to keep track of all objects on both send
+             * and receive ends, which means we'll just have to make everything a root anyway, so `visit()`
+             * won't be needed.
+             */
             /** Visit an object, adding anything that will be serialized as to scan */
             const visit = (obj) => {
                 if (typeof obj === 'function') {
@@ -8459,7 +8441,16 @@
                     });
                 }
                 else if (obj instanceof Signal) {
-                    if (obj.$untrackedValue$) {
+                    /**
+                     * WrappedSignal might not be calculated yet so we need to use `untrackedValue` to get the
+                     * value. ComputedSignal can be left uncalculated.
+                     */
+                    const v = obj instanceof WrappedSignal
+                        ? obj.untrackedValue
+                        : obj instanceof ComputedSignal && obj.$invalid$
+                            ? NEEDS_COMPUTATION
+                            : obj.$untrackedValue$;
+                    if (v !== NEEDS_COMPUTATION && !isSsrNode(v)) {
                         discoveredValues.push(obj.$untrackedValue$);
                     }
                     if (obj.$effects$) {
@@ -8478,7 +8469,7 @@
                 else if (obj instanceof Task) {
                     discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
                 }
-                else if (NodeConstructor && obj instanceof NodeConstructor) ;
+                else if (isSsrNode(obj)) ;
                 else if (isJSXNode(obj)) {
                     discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
                 }
@@ -8552,7 +8543,7 @@
      * - Therefore root indexes need to be doubled to get the actual index.
      */
     function serialize(serializationContext) {
-        const { $writer$, $NodeConstructor$, $setProp$, $getProp$ } = serializationContext;
+        const { $writer$, $isSsrNode$, $setProp$ } = serializationContext;
         let depth = -1;
         // Skip the type for the roots output
         let writeType = false;
@@ -8581,6 +8572,7 @@
                 depth++;
                 $writer$.write('[');
                 let separator = false;
+                // TODO only until last non-null value
                 for (let i = 0; i < value.length; i++) {
                     if (separator) {
                         $writer$.write(',');
@@ -8631,6 +8623,15 @@
                 }
                 else if (!Number.isFinite(value)) {
                     output(TypeIds.Constant, value < 0 ? Constants.NegativeInfinity : Constants.PositiveInfinity);
+                }
+                else if (value === Number.MAX_SAFE_INTEGER) {
+                    output(TypeIds.Constant, Constants.MaxSafeInt);
+                }
+                else if (value === Number.MAX_SAFE_INTEGER - 1) {
+                    output(TypeIds.Constant, Constants.AlmostMaxSafeInt);
+                }
+                else if (value === Number.MIN_SAFE_INTEGER) {
+                    output(TypeIds.Constant, Constants.MinSafeInt);
                 }
                 else {
                     output(TypeIds.Number, value);
@@ -8752,30 +8753,43 @@
                             out.push(key, value[key]);
                         }
                     }
+                    // TODO if !out.length, output 0 and restore as {}
                     output(TypeIds.Object, out);
                 }
             }
+            else if (value instanceof DomVRef) {
+                output(TypeIds.RefVNode, value.id);
+            }
             else if (value instanceof Signal) {
+                /**
+                 * Special case: when a Signal value is an SSRNode, it always needs to be a DOM ref instead.
+                 * It can never be meant to become a vNode, because vNodes are internal only.
+                 */
+                let v = value instanceof ComputedSignal && value.$invalid$
+                    ? NEEDS_COMPUTATION
+                    : value.$untrackedValue$;
+                if ($isSsrNode$(v)) {
+                    v = new DomVRef(v.id);
+                }
                 if (value instanceof WrappedSignal) {
                     output(TypeIds.WrappedSignal, [
-                        ...serializeDerivedFn(serializationContext, value),
+                        ...serializeWrappingFn(serializationContext, value),
                         value.$effectDependencies$,
-                        // `.untrackedValue` implicitly calls `$computeIfNeeded$`, which is what we want in case
-                        // the signal is not computed yet.
-                        value.untrackedValue,
+                        v,
                         ...(value.$effects$ || []),
                     ]);
                 }
                 else if (value instanceof ComputedSignal) {
                     output(TypeIds.ComputedSignal, [
                         value.$computeQrl$,
-                        value.$untrackedValue$,
+                        v,
                         value.$invalid$,
+                        // TODO check if we can use domVRef for effects
                         ...(value.$effects$ || []),
                     ]);
                 }
                 else {
-                    output(TypeIds.Signal, [value.$untrackedValue$, ...(value.$effects$ || [])]);
+                    output(TypeIds.Signal, [v, ...(value.$effects$ || [])]);
                 }
             }
             else if (value instanceof URL) {
@@ -8799,11 +8813,11 @@
                 }
                 output(TypeIds.Error, out);
             }
-            else if ($NodeConstructor$ && value instanceof $NodeConstructor$) {
+            else if ($isSsrNode$(value)) {
                 if (isRootObject) {
-                    // Tell the VNode which root id it is
+                    // Tell the SsrNode which root id it is
                     $setProp$(value, ELEMENT_ID, String(idx));
-                    output($getProp$(value, UNWRAP_VNODE_LOCAL) ? TypeIds.RefVNode : TypeIds.VNode, value.id);
+                    output(TypeIds.VNode, value.id);
                 }
                 else {
                     // Promote the vnode to a root
@@ -8882,12 +8896,13 @@
         };
         writeValue(serializationContext.$roots$, -1);
     }
-    function serializeDerivedFn(serializationContext, value) {
+    function serializeWrappingFn(serializationContext, value) {
         // if value is an object then we need to wrap this in ()
         if (value.$funcStr$ && value.$funcStr$[0] === '{') {
             value.$funcStr$ = `(${value.$funcStr$})`;
         }
         const syncFnId = serializationContext.$addSyncFn$(value.$funcStr$, value.$args$.length, value.$func$);
+        // TODO null if no args
         return [syncFnId, value.$args$];
     }
     function qrlToString(serializationContext, value) {
@@ -9207,6 +9222,10 @@
         Constants[Constants["NaN"] = 10] = "NaN";
         Constants[Constants["PositiveInfinity"] = 11] = "PositiveInfinity";
         Constants[Constants["NegativeInfinity"] = 12] = "NegativeInfinity";
+        Constants[Constants["MaxSafeInt"] = 13] = "MaxSafeInt";
+        // used for close fragment
+        Constants[Constants["AlmostMaxSafeInt"] = 14] = "AlmostMaxSafeInt";
+        Constants[Constants["MinSafeInt"] = 15] = "MinSafeInt";
     })(Constants || (Constants = {}));
 
     /** @internal */

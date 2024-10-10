@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+8ab26f0
+ * @builder.io/qwik 2.0.0-0-dev+cbeaee0
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -337,8 +337,6 @@ const USE_ON_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "on";
 const USE_ON_LOCAL_SEQ_IDX = NON_SERIALIZABLE_MARKER_PREFIX + "onIdx";
 
 const USE_ON_LOCAL_FLAGS = NON_SERIALIZABLE_MARKER_PREFIX + "onFlags";
-
-const UNWRAP_VNODE_LOCAL = NON_SERIALIZABLE_MARKER_PREFIX + "unwrap";
 
 const FLUSH_COMMENT = "qkssr-f";
 
@@ -2623,7 +2621,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+8ab26f0";
+const version = "2.0.0-0-dev+cbeaee0";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -2647,17 +2645,21 @@ const _VAR_PROPS = Symbol("VAR");
 
 const _IMMUTABLE = Symbol("IMMUTABLE");
 
-const getProp = (obj, prop) => obj[prop];
+const getProp = (...args) => args[0][args.length < 2 ? "value" : args[1]];
 
-const _wrapProp = (obj, prop = "value") => {
+const getWrapped = args => new WrappedSignal(null, getProp, args, null);
+
+const _wrapProp = (...args) => {
+    const obj = args[0];
+    const prop = args.length < 2 ? "value" : args[1];
     if (!isObject(obj)) {
         return obj[prop];
     }
     if (isSignal(obj)) {
         return assertEqual(prop, "value", "Left side is a signal, prop must be value"), 
-        obj instanceof WrappedSignal ? obj : new WrappedSignal(null, getProp, [ obj, prop ], null);
+        obj instanceof WrappedSignal ? obj : getWrapped(args);
     }
-    if (_CONST_PROPS in obj) {
+    if (isPropsProxy(obj)) {
         const constProps = obj[_CONST_PROPS];
         if (constProps && prop in constProps) {
             return constProps[prop];
@@ -2665,11 +2667,11 @@ const _wrapProp = (obj, prop = "value") => {
     } else {
         const target = getStoreTarget(obj);
         if (target) {
-            const signal = target[prop];
-            return isSignal(signal) ? signal : new WrappedSignal(null, getProp, [ obj, prop ], null);
+            const value = target[prop];
+            return isSignal(value) ? value : getWrapped(args);
         }
     }
-    return new WrappedSignal(null, getProp, [ obj, prop ], null);
+    return getWrapped(args);
 };
 
 const _wrapSignal = (obj, prop) => {
@@ -4658,7 +4660,7 @@ const inflate = (container, target, typeId, data) => {
     }
 };
 
-const _constants = [ void 0, null, !0, !1, "", EMPTY_ARRAY, EMPTY_OBJ, NEEDS_COMPUTATION, Slot, Fragment, NaN, 1 / 0, -1 / 0 ];
+const _constants = [ void 0, null, !0, !1, "", EMPTY_ARRAY, EMPTY_OBJ, NEEDS_COMPUTATION, Slot, Fragment, NaN, 1 / 0, -1 / 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER - 1, Number.MIN_SAFE_INTEGER ];
 
 const allocate = (container, typeId, value) => {
     if (void 0 === value) {
@@ -4800,6 +4802,12 @@ function inflateQRL(container, qrl) {
     container.element && qrl.$setContainer$(container.element), qrl;
 }
 
+class DomVRef {
+    constructor(id) {
+        this.id = id;
+    }
+}
+
 const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
     if (!writer) {
         const buffer = [];
@@ -4819,11 +4827,12 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getP
         return "number" == typeof id && -1 !== id || (id = roots.length, map.set(obj, id), 
         roots.push(obj)), id;
     };
+    const isSsrNode = NodeConstructor ? obj => obj instanceof NodeConstructor : () => !1;
     return {
         $serialize$() {
             serialize(this);
         },
-        $NodeConstructor$: NodeConstructor,
+        $isSsrNode$: isSsrNode,
         $symbolToChunkResolver$: symbolToChunkResolver,
         $wasSeen$,
         $roots$: roots,
@@ -4878,11 +4887,12 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getP
                         discoveredValues.push(k, v);
                     }));
                 } else if (obj instanceof Signal) {
-                    obj.$untrackedValue$ && discoveredValues.push(obj.$untrackedValue$), obj.$effects$ && discoveredValues.push(...obj.$effects$), 
-                    obj instanceof WrappedSignal ? obj.$effectDependencies$ && discoveredValues.push(...obj.$effectDependencies$) : obj instanceof ComputedSignal && discoveredValues.push(obj.$computeQrl$);
+                    const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+                    v === NEEDS_COMPUTATION || isSsrNode(v) || discoveredValues.push(obj.$untrackedValue$), 
+                    obj.$effects$ && discoveredValues.push(...obj.$effects$), obj instanceof WrappedSignal ? obj.$effectDependencies$ && discoveredValues.push(...obj.$effectDependencies$) : obj instanceof ComputedSignal && discoveredValues.push(obj.$computeQrl$);
                 } else if (obj instanceof Task) {
                     discoveredValues.push(obj.$el$, obj.$qrl$, obj.$state$, obj.$effectDependencies$);
-                } else if (NodeConstructor && obj instanceof NodeConstructor) {} else if (isJSXNode(obj)) {
+                } else if (isSsrNode(obj)) {} else if (isJSXNode(obj)) {
                     discoveredValues.push(obj.type, obj.props, obj.constProps, obj.children);
                 } else if (Array.isArray(obj)) {
                     discoveredValues.push(...obj);
@@ -4934,7 +4944,7 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getP
 const promiseResults = new WeakMap;
 
 function serialize(serializationContext) {
-    const {$writer$, $NodeConstructor$, $setProp$, $getProp$} = serializationContext;
+    const {$writer$, $isSsrNode$, $setProp$} = serializationContext;
     let depth = -1;
     let writeType = !1;
     const output = (type, value) => {
@@ -4979,7 +4989,7 @@ function serialize(serializationContext) {
                 output(TypeIds.Constant, Constants.Undefined);
             }
         } else if ("number" == typeof value) {
-            Number.isNaN(value) ? output(TypeIds.Constant, Constants.NaN) : Number.isFinite(value) ? output(TypeIds.Number, value) : output(TypeIds.Constant, value < 0 ? Constants.NegativeInfinity : Constants.PositiveInfinity);
+            Number.isNaN(value) ? output(TypeIds.Constant, Constants.NaN) : Number.isFinite(value) ? value === Number.MAX_SAFE_INTEGER ? output(TypeIds.Constant, Constants.MaxSafeInt) : value === Number.MAX_SAFE_INTEGER - 1 ? output(TypeIds.Constant, Constants.AlmostMaxSafeInt) : value === Number.MIN_SAFE_INTEGER ? output(TypeIds.Constant, Constants.MinSafeInt) : output(TypeIds.Number, value) : output(TypeIds.Constant, value < 0 ? Constants.NegativeInfinity : Constants.PositiveInfinity);
         } else if ("object" == typeof value) {
             value === EMPTY_ARRAY ? output(TypeIds.Constant, Constants.EMPTY_ARRAY) : value === EMPTY_OBJ ? output(TypeIds.Constant, Constants.EMPTY_OBJ) : (depth++, 
             null === value ? output(TypeIds.Constant, Constants.Null) : writeObjectValue(value, idx), 
@@ -5037,8 +5047,11 @@ function serialize(serializationContext) {
                 }
                 output(TypeIds.Object, out);
             }
+        } else if (value instanceof DomVRef) {
+            output(TypeIds.RefVNode, value.id);
         } else if (value instanceof Signal) {
-            value instanceof WrappedSignal ? output(TypeIds.WrappedSignal, [ ...serializeDerivedFn(serializationContext, value), value.$effectDependencies$, value.untrackedValue, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(TypeIds.ComputedSignal, [ value.$computeQrl$, value.$untrackedValue$, value.$invalid$, ...value.$effects$ || [] ]) : output(TypeIds.Signal, [ value.$untrackedValue$, ...value.$effects$ || [] ]);
+            let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+            $isSsrNode$(v) && (v = new DomVRef(v.id)), value instanceof WrappedSignal ? output(TypeIds.WrappedSignal, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(TypeIds.ComputedSignal, [ value.$computeQrl$, v, value.$invalid$, ...value.$effects$ || [] ]) : output(TypeIds.Signal, [ v, ...value.$effects$ || [] ]);
         } else if (value instanceof URL) {
             output(TypeIds.URL, value.href);
         } else if (value instanceof Date) {
@@ -5049,8 +5062,8 @@ function serialize(serializationContext) {
             const out = [ value.message ];
             const extraProps = Object.entries(value).flat();
             extraProps.length && out.push(extraProps), out.push(value.stack), output(TypeIds.Error, out);
-        } else if ($NodeConstructor$ && value instanceof $NodeConstructor$) {
-            isRootObject ? ($setProp$(value, "q:id", String(idx)), output($getProp$(value, UNWRAP_VNODE_LOCAL) ? TypeIds.RefVNode : TypeIds.VNode, value.id)) : (serializationContext.$addRoot$(value), 
+        } else if ($isSsrNode$(value)) {
+            isRootObject ? ($setProp$(value, "q:id", String(idx)), output(TypeIds.VNode, value.id)) : (serializationContext.$addRoot$(value), 
             output(TypeIds.RootRef, serializationContext.$roots$.length - 1));
         } else if ("undefined" != typeof FormData && value instanceof FormData) {
             const array = [];
@@ -5098,7 +5111,7 @@ function serialize(serializationContext) {
     writeValue(serializationContext.$roots$, -1);
 }
 
-function serializeDerivedFn(serializationContext, value) {
+function serializeWrappingFn(serializationContext, value) {
     value.$funcStr$ && "{" === value.$funcStr$[0] && (value.$funcStr$ = `(${value.$funcStr$})`);
     return [ serializationContext.$addSyncFn$(value.$funcStr$, value.$args$.length, value.$func$), value.$args$ ];
 }
@@ -5297,7 +5310,8 @@ var Constants;
     Constants[Constants.EMPTY_OBJ = 6] = "EMPTY_OBJ", Constants[Constants.NEEDS_COMPUTATION = 7] = "NEEDS_COMPUTATION", 
     Constants[Constants.Slot = 8] = "Slot", Constants[Constants.Fragment = 9] = "Fragment", 
     Constants[Constants.NaN = 10] = "NaN", Constants[Constants.PositiveInfinity = 11] = "PositiveInfinity", 
-    Constants[Constants.NegativeInfinity = 12] = "NegativeInfinity";
+    Constants[Constants.NegativeInfinity = 12] = "NegativeInfinity", Constants[Constants.MaxSafeInt = 13] = "MaxSafeInt", 
+    Constants[Constants.AlmostMaxSafeInt = 14] = "AlmostMaxSafeInt", Constants[Constants.MinSafeInt = 15] = "MinSafeInt";
 }(Constants || (Constants = {}));
 
 const verifySerializable = (value, preMessage) => {
