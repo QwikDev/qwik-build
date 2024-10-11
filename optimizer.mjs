@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+c2c2a58
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+170b6b8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+c2c2a58"
+  qwik: "2.0.0-0-dev+170b6b8"
 };
 
 async function getSystem() {
@@ -3365,7 +3365,7 @@ function setLocale(locale) {
 }
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+c2c2a58",
+  qwik: "2.0.0-0-dev+170b6b8",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -5506,7 +5506,7 @@ var WrappedSignal = class extends Signal {
   }
 };
 
-var version = "2.0.0-0-dev+c2c2a58";
+var version = "2.0.0-0-dev+170b6b8";
 
 var _SharedContainer = class {
   constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -8153,9 +8153,9 @@ function serialize(serializationContext) {
     } else if (value instanceof DomVRef) {
       output(9, value.id);
     } else if (value instanceof Signal) {
-      let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+      let v = value instanceof ComputedSignal && (value.$invalid$ || fastSkipSerialize(value.$untrackedValue$)) ? NEEDS_COMPUTATION : value.$untrackedValue$;
       $isSsrNode$(v) && (v = new DomVRef(v.id));
-      value instanceof WrappedSignal ? output(23, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(24, [ value.$computeQrl$, v, value.$invalid$, ...value.$effects$ || [] ]) : output(22, [ v, ...value.$effects$ || [] ]);
+      value instanceof WrappedSignal ? output(23, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(24, [ value.$computeQrl$, v, v === NEEDS_COMPUTATION, ...value.$effects$ || [] ]) : output(22, [ v, ...value.$effects$ || [] ]);
     } else if (value instanceof URL) {
       output(5, value.href);
     } else if (value instanceof Date) {

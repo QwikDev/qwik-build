@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+c2c2a58
+ * @builder.io/qwik/testing 2.0.0-0-dev+170b6b8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -27091,7 +27091,7 @@ function serialize(serializationContext) {
     } else if (value instanceof DomVRef) {
       output(9 /* RefVNode */, value.id);
     } else if (value instanceof Signal) {
-      let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+      let v = value instanceof ComputedSignal && (value.$invalid$ || fastSkipSerialize(value.$untrackedValue$)) ? NEEDS_COMPUTATION : value.$untrackedValue$;
       if ($isSsrNode$(v)) {
         v = new DomVRef(v.id);
       }
@@ -27106,7 +27106,7 @@ function serialize(serializationContext) {
         output(24 /* ComputedSignal */, [
           value.$computeQrl$,
           v,
-          value.$invalid$,
+          v === NEEDS_COMPUTATION,
           // TODO check if we can use domVRef for effects
           ...value.$effects$ || []
         ]);

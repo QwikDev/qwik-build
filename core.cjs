@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+c2c2a58
+ * @builder.io/qwik 2.0.0-0-dev+170b6b8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4748,7 +4748,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+c2c2a58";
+    const version = "2.0.0-0-dev+170b6b8";
 
     /** @internal */
     class _SharedContainer {
@@ -8770,7 +8770,8 @@
                  * Special case: when a Signal value is an SSRNode, it always needs to be a DOM ref instead.
                  * It can never be meant to become a vNode, because vNodes are internal only.
                  */
-                let v = value instanceof ComputedSignal && value.$invalid$
+                let v = value instanceof ComputedSignal &&
+                    (value.$invalid$ || fastSkipSerialize(value.$untrackedValue$))
                     ? NEEDS_COMPUTATION
                     : value.$untrackedValue$;
                 if ($isSsrNode$(v)) {
@@ -8785,11 +8786,10 @@
                     ]);
                 }
                 else if (value instanceof ComputedSignal) {
-                    // TODO if value is not serializable, mark invalid so it recalculates
                     output(TypeIds.ComputedSignal, [
                         value.$computeQrl$,
                         v,
-                        value.$invalid$,
+                        v === NEEDS_COMPUTATION,
                         // TODO check if we can use domVRef for effects
                         ...(value.$effects$ || []),
                     ]);

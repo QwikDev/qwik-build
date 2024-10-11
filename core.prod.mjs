@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+c2c2a58
+ * @builder.io/qwik 2.0.0-0-dev+170b6b8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2623,7 +2623,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+c2c2a58";
+const version = "2.0.0-0-dev+170b6b8";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -5052,8 +5052,8 @@ function serialize(serializationContext) {
         } else if (value instanceof DomVRef) {
             output(TypeIds.RefVNode, value.id);
         } else if (value instanceof Signal) {
-            let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
-            $isSsrNode$(v) && (v = new DomVRef(v.id)), value instanceof WrappedSignal ? output(TypeIds.WrappedSignal, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(TypeIds.ComputedSignal, [ value.$computeQrl$, v, value.$invalid$, ...value.$effects$ || [] ]) : output(TypeIds.Signal, [ v, ...value.$effects$ || [] ]);
+            let v = value instanceof ComputedSignal && (value.$invalid$ || fastSkipSerialize(value.$untrackedValue$)) ? NEEDS_COMPUTATION : value.$untrackedValue$;
+            $isSsrNode$(v) && (v = new DomVRef(v.id)), value instanceof WrappedSignal ? output(TypeIds.WrappedSignal, [ ...serializeWrappingFn(serializationContext, value), value.$effectDependencies$, v, ...value.$effects$ || [] ]) : value instanceof ComputedSignal ? output(TypeIds.ComputedSignal, [ value.$computeQrl$, v, v === NEEDS_COMPUTATION, ...value.$effects$ || [] ]) : output(TypeIds.Signal, [ v, ...value.$effects$ || [] ]);
         } else if (value instanceof URL) {
             output(TypeIds.URL, value.href);
         } else if (value instanceof Date) {

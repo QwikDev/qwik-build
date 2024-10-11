@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+c2c2a58
+ * @builder.io/qwik/server 2.0.0-0-dev+170b6b8
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -676,7 +676,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+c2c2a58",
+  qwik: "2.0.0-0-dev+170b6b8",
   qwikDom: "2.1.19"
 };
 
@@ -3014,7 +3014,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+c2c2a58";
+var version = "2.0.0-0-dev+170b6b8";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -6188,7 +6188,7 @@ function serialize(serializationContext) {
     } else if (value instanceof DomVRef) {
       output(9 /* RefVNode */, value.id);
     } else if (value instanceof Signal) {
-      let v = value instanceof ComputedSignal && value.$invalid$ ? NEEDS_COMPUTATION : value.$untrackedValue$;
+      let v = value instanceof ComputedSignal && (value.$invalid$ || fastSkipSerialize(value.$untrackedValue$)) ? NEEDS_COMPUTATION : value.$untrackedValue$;
       if ($isSsrNode$(v)) {
         v = new DomVRef(v.id);
       }
@@ -6203,7 +6203,7 @@ function serialize(serializationContext) {
         output(24 /* ComputedSignal */, [
           value.$computeQrl$,
           v,
-          value.$invalid$,
+          v === NEEDS_COMPUTATION,
           // TODO check if we can use domVRef for effects
           ...value.$effects$ || []
         ]);
