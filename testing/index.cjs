@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+cbeaee0
+ * @builder.io/qwik/testing 2.0.0-0-dev+c2c2a58
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -22502,7 +22502,7 @@ function assertFalse(value1, text, ...parts) {
 var codeToText = (code2, ...parts) => {
   if (qDev) {
     const MAP = [
-      "Error while serializing class attribute",
+      "Error while serializing class or style attributes",
       // 0
       "Can not serialize a HTML Node that is not an Element",
       // 1
@@ -23937,6 +23937,9 @@ var serializeClass = (obj) => {
   }
   return classes.join(" ");
 };
+var fromCamelToKebabCaseWithDash = (text) => {
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
+};
 var stringifyStyle = (obj) => {
   if (obj == null) {
     return "";
@@ -23949,11 +23952,11 @@ var stringifyStyle = (obj) => {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          if (value != null) {
+          if (value != null && typeof value !== "function") {
             if (key.startsWith("--")) {
               chunks.push(key + ":" + value);
             } else {
-              chunks.push(fromCamelToKebabCase(key) + ":" + setValueForStyle(key, value));
+              chunks.push(fromCamelToKebabCaseWithDash(key) + ":" + setValueForStyle(key, value));
             }
           }
         }
@@ -26827,7 +26830,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
     $addSyncFn$: (funcStr, argCount, fn) => {
       const isFullFn = funcStr == null;
       if (isFullFn) {
-        funcStr = fn.toString();
+        funcStr = fn.serialized || fn.toString();
       }
       let id = syncFnMap.get(funcStr);
       if (id === void 0) {

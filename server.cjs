@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+cbeaee0
+ * @builder.io/qwik/server 2.0.0-0-dev+c2c2a58
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -178,7 +178,7 @@ var createAndLogError = (asyncThrow, message, ...optionalParams) => {
 var codeToText = (code, ...parts) => {
   if (qDev) {
     const MAP = [
-      "Error while serializing class attribute",
+      "Error while serializing class or style attributes",
       // 0
       "Can not serialize a HTML Node that is not an Element",
       // 1
@@ -722,7 +722,7 @@ function getBuildBase(opts) {
   return `${import_meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+cbeaee0",
+  qwik: "2.0.0-0-dev+c2c2a58",
   qwikDom: "2.1.19"
 };
 
@@ -3066,7 +3066,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+cbeaee0";
+var version = "2.0.0-0-dev+c2c2a58";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -5961,7 +5961,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
     $addSyncFn$: (funcStr, argCount, fn) => {
       const isFullFn = funcStr == null;
       if (isFullFn) {
-        funcStr = fn.toString();
+        funcStr = fn.serialized || fn.toString();
       }
       let id = syncFnMap.get(funcStr);
       if (id === void 0) {
@@ -6802,6 +6802,9 @@ var serializeClass = (obj) => {
   }
   return classes.join(" ");
 };
+var fromCamelToKebabCaseWithDash = (text) => {
+  return text.replace(/([A-Z])/g, "-$1").toLowerCase();
+};
 var stringifyStyle = (obj) => {
   if (obj == null) {
     return "";
@@ -6814,11 +6817,11 @@ var stringifyStyle = (obj) => {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          if (value != null) {
+          if (value != null && typeof value !== "function") {
             if (key.startsWith("--")) {
               chunks.push(key + ":" + value);
             } else {
-              chunks.push(fromCamelToKebabCase(key) + ":" + setValueForStyle(key, value));
+              chunks.push(fromCamelToKebabCaseWithDash(key) + ":" + setValueForStyle(key, value));
             }
           }
         }

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+cbeaee0
+ * @builder.io/qwik 2.0.0-0-dev+c2c2a58
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -112,7 +112,7 @@
         if (qDev) {
             // Keep one error, one line to make it easier to search for the error message.
             const MAP = [
-                'Error while serializing class attribute', // 0
+                'Error while serializing class or style attributes', // 0
                 'Can not serialize a HTML Node that is not an Element', // 1
                 'Runtime but no instance found on element.', // 2
                 'Only primitive and object literals can be serialized', // 3
@@ -831,6 +831,10 @@
         }
         return classes.join(' ');
     };
+    // Unlike fromCamelToKebabCase, this leaves `-` so that `background-color` stays `background-color`
+    const fromCamelToKebabCaseWithDash = (text) => {
+        return text.replace(/([A-Z])/g, '-$1').toLowerCase();
+    };
     const stringifyStyle = (obj) => {
         if (obj == null) {
             return '';
@@ -844,12 +848,12 @@
                 for (const key in obj) {
                     if (Object.prototype.hasOwnProperty.call(obj, key)) {
                         const value = obj[key];
-                        if (value != null) {
+                        if (value != null && typeof value !== 'function') {
                             if (key.startsWith('--')) {
                                 chunks.push(key + ':' + value);
                             }
                             else {
-                                chunks.push(fromCamelToKebabCase(key) + ':' + setValueForStyle(key, value));
+                                chunks.push(fromCamelToKebabCaseWithDash(key) + ':' + setValueForStyle(key, value));
                             }
                         }
                     }
@@ -4744,7 +4748,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+cbeaee0";
+    const version = "2.0.0-0-dev+c2c2a58";
 
     /** @internal */
     class _SharedContainer {
@@ -8360,7 +8364,7 @@
             $addSyncFn$: (funcStr, argCount, fn) => {
                 const isFullFn = funcStr == null;
                 if (isFullFn) {
-                    funcStr = fn.toString();
+                    funcStr = fn.serialized || fn.toString();
                 }
                 let id = syncFnMap.get(funcStr);
                 if (id === undefined) {
@@ -8604,6 +8608,7 @@
                     output(TypeIds.Constant, Constants.Fragment);
                 }
                 else if (isQrl(value)) {
+                    // TODO deduplicate the string
                     output(TypeIds.QRL, qrlToString(serializationContext, value));
                 }
                 else if (isQwikComponent(value)) {
@@ -8780,6 +8785,7 @@
                     ]);
                 }
                 else if (value instanceof ComputedSignal) {
+                    // TODO if value is not serializable, mark invalid so it recalculates
                     output(TypeIds.ComputedSignal, [
                         value.$computeQrl$,
                         v,
@@ -8946,6 +8952,7 @@
         else {
             const fn = value.resolved;
             chunk = '';
+            // TODO test that provided stringified fn is used
             symbol = String(serializationContext.$addSyncFn$(null, 0, fn));
         }
         let qrlStringInline = `${chunk}#${symbol}`;
@@ -9662,6 +9669,7 @@
         if (serializedFn === undefined) {
             serializedFn = fn.toString();
         }
+        fn.serialized = serializedFn;
         return createQRL('', SYNC_QRL, fn, null, null, null, null);
     };
 

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/cli 2.0.0-0-dev+cbeaee0
+ * @builder.io/qwik/cli 2.0.0-0-dev+c2c2a58
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2822,7 +2822,7 @@ var jokes_default = [
   ],
   ["Why do programmers always mix up Halloween and Christmas?", "Because Oct 31 == Dec 25"],
   ["I was gonna tell you a joke about UDP...", "...but you might not get it."],
-  ["Normal People: give me just a second", "Developers: give me 100 milliseconds!"],
+  ["Normal People: give me just a second", "Developers: give me 1000 milliseconds!"],
   ["Why do programmers prefer dark mode?", "Because light attracts bugs."],
   ["Why don't programmers like nature?", "It has too many bugs."],
   ["Why was the computer freezing?", "It left its Windows open!"],
@@ -4548,7 +4548,8 @@ async function runBuildCommand(app) {
       });
     } catch (e2) {
       console.error(script, "failed");
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     }
   }
   if (buildTypes) {
@@ -4568,7 +4569,8 @@ async function runBuildCommand(app) {
         out = out.slice(3);
       }
       console.log("\n" + out);
-      process.exit(1);
+      process.exitCode = 1;
+      throw new Error(`Type check failed: ${out}`);
     });
   }
   if (buildClientScript) {
@@ -4577,8 +4579,9 @@ async function runBuildCommand(app) {
       stdout: "inherit",
       stderr: "inherit",
       cwd: app.rootDir
-    }).catch(() => {
-      process.exit(1);
+    }).catch((error) => {
+      process.exitCode = 1;
+      throw new Error(`Client build failed: ${error}`);
     });
     console.log(``);
     console.log(`${cyan("\u2713")} Built client modules`);
@@ -4604,7 +4607,8 @@ async function runBuildCommand(app) {
         console.log(e2.stdout);
       }
       console.log(``);
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     });
     step2.push(libBuild);
   }
@@ -4628,7 +4632,8 @@ async function runBuildCommand(app) {
         console.log(e2.stdout);
       }
       console.log(``);
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     });
     step2.push(previewBuild);
   }
@@ -4652,7 +4657,8 @@ async function runBuildCommand(app) {
         console.log(e2.stdout);
       }
       console.log(``);
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     });
     step2.push(serverBuild);
   }
@@ -4675,7 +4681,8 @@ async function runBuildCommand(app) {
         console.log(e2.stdout);
       }
       console.log(``);
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     });
     step2.push(staticBuild);
   }
@@ -4697,7 +4704,8 @@ async function runBuildCommand(app) {
       console.log(e2.stdout);
       console.error(e2.stderr);
       console.log(``);
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     });
     step2.push(lintBuild);
   }
@@ -4734,10 +4742,10 @@ async function runBuildCommand(app) {
             console.log(e2.stdout);
           }
           console.log(``);
-          process.exit(1);
+          process.exitCode = 1;
         });
       }
-    });
+    }).catch((error) => console.log(red(error)));
   }
   for (const script of postbuildScripts) {
     try {
@@ -4751,7 +4759,8 @@ async function runBuildCommand(app) {
       });
     } catch (e2) {
       console.error(script, "failed");
-      process.exit(1);
+      process.exitCode = 1;
+      throw e2;
     }
   }
   console.log(``);
@@ -4896,7 +4905,7 @@ async function printHelp(app) {
   await runCommand2(Object.assign(app, { task: args[0], args }));
 }
 function printVersion() {
-  console.log("2.0.0-0-dev+cbeaee0");
+  console.log("2.0.0-0-dev+c2c2a58");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
