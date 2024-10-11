@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+170b6b8
+ * @builder.io/qwik 2.0.0-0-dev+d9f6df5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2151,7 +2151,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+170b6b8", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+d9f6df5", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -4297,7 +4297,7 @@
                             discoveredValues.push(k, v);
                         }));
                     } else if (obj instanceof Signal) {
-                        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+                        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && (obj.$invalid$ || fastSkipSerialize(obj)) ? NEEDS_COMPUTATION : obj.$untrackedValue$;
                         v === NEEDS_COMPUTATION || isSsrNode(v) || discoveredValues.push(obj.$untrackedValue$), 
                         obj.$effects$ && discoveredValues.push(...obj.$effects$), obj instanceof WrappedSignal ? obj.$effectDependencies$ && discoveredValues.push(...obj.$effectDependencies$) : obj instanceof ComputedSignal && discoveredValues.push(obj.$computeQrl$);
                     } else if (obj instanceof Task) {
@@ -5142,7 +5142,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+170b6b8", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+d9f6df5", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {

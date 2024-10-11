@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 2.0.0-0-dev+170b6b8
+ * @builder.io/qwik/server 2.0.0-0-dev+d9f6df5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -676,7 +676,7 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions = {
-  qwik: "2.0.0-0-dev+170b6b8",
+  qwik: "2.0.0-0-dev+d9f6df5",
   qwikDom: "2.1.19"
 };
 
@@ -3014,7 +3014,7 @@ var WrappedSignal = class extends Signal {
 };
 
 // packages/qwik/src/core/version.ts
-var version = "2.0.0-0-dev+170b6b8";
+var version = "2.0.0-0-dev+d9f6df5";
 
 // packages/qwik/src/core/shared/shared-container.ts
 var _SharedContainer = class {
@@ -5958,7 +5958,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
           discoveredValues.push(k, v);
         });
       } else if (obj instanceof Signal) {
-        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+        const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && (obj.$invalid$ || fastSkipSerialize(obj)) ? NEEDS_COMPUTATION : obj.$untrackedValue$;
         if (v !== NEEDS_COMPUTATION && !isSsrNode(v)) {
           discoveredValues.push(obj.$untrackedValue$);
         }

@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+170b6b8
+ * @builder.io/qwik 2.0.0-0-dev+d9f6df5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4748,7 +4748,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+170b6b8";
+    const version = "2.0.0-0-dev+d9f6df5";
 
     /** @internal */
     class _SharedContainer {
@@ -8451,7 +8451,7 @@
                      */
                     const v = obj instanceof WrappedSignal
                         ? obj.untrackedValue
-                        : obj instanceof ComputedSignal && obj.$invalid$
+                        : obj instanceof ComputedSignal && (obj.$invalid$ || fastSkipSerialize(obj))
                             ? NEEDS_COMPUTATION
                             : obj.$untrackedValue$;
                     if (v !== NEEDS_COMPUTATION && !isSsrNode(v)) {

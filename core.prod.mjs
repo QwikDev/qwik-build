@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+170b6b8
+ * @builder.io/qwik 2.0.0-0-dev+d9f6df5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -2623,7 +2623,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
     jsx.constProps.class = "");
 }
 
-const version = "2.0.0-0-dev+170b6b8";
+const version = "2.0.0-0-dev+d9f6df5";
 
 class _SharedContainer {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -4889,7 +4889,7 @@ const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getP
                         discoveredValues.push(k, v);
                     }));
                 } else if (obj instanceof Signal) {
-                    const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && obj.$invalid$ ? NEEDS_COMPUTATION : obj.$untrackedValue$;
+                    const v = obj instanceof WrappedSignal ? obj.untrackedValue : obj instanceof ComputedSignal && (obj.$invalid$ || fastSkipSerialize(obj)) ? NEEDS_COMPUTATION : obj.$untrackedValue$;
                     v === NEEDS_COMPUTATION || isSsrNode(v) || discoveredValues.push(obj.$untrackedValue$), 
                     obj.$effects$ && discoveredValues.push(...obj.$effects$), obj instanceof WrappedSignal ? obj.$effectDependencies$ && discoveredValues.push(...obj.$effectDependencies$) : obj instanceof ComputedSignal && discoveredValues.push(obj.$computeQrl$);
                 } else if (obj instanceof Task) {
