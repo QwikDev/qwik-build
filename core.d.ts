@@ -2507,6 +2507,7 @@ declare interface SerializationContext {
     $eventNames$: Set<string>;
     $resources$: Set<ResourceReturnInternal<unknown>>;
     $renderSymbols$: Set<string>;
+    $storeProxyMap$: ObjToProxyMap;
     $getProp$: (obj: any, prop: string) => any;
     $setProp$: (obj: any, prop: string, value: any) => void;
 }
@@ -4123,7 +4124,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+d9f6df5
+ * 2.0.0-0-dev+e2d67d3
  *
  * @public
  */

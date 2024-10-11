@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+d9f6df5
+ * @builder.io/qwik 2.0.0-0-dev+e2d67d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -986,7 +986,7 @@ class StoreHandler {
             return target[prop];
         }
         const ctx = tryGetInvokeContext();
-        let value = target[prop];
+        const value = target[prop];
         if (ctx) {
             if (this.$container$ === null) {
                 if (!ctx.$container$) {
@@ -1013,8 +1013,7 @@ class StoreHandler {
             !Object.isFrozen(value) &&
             !isStore(value) &&
             !Object.isFrozen(target)) {
-            value = getOrCreateStore(value, this.$flags$, this.$container$);
-            target[prop] = value;
+            return getOrCreateStore(value, this.$flags$, this.$container$);
         }
         return value;
     }
@@ -4744,7 +4743,7 @@ function appendClassIfScopedStyleExists(jsx, styleScoped) {
  *
  * @public
  */
-const version = "2.0.0-0-dev+d9f6df5";
+const version = "2.0.0-0-dev+e2d67d3";
 
 /** @internal */
 class _SharedContainer {
@@ -4764,7 +4763,7 @@ class _SharedContainer {
         return trackSignal(() => signal.value, subscriber, property, this, data);
     }
     serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
-        return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), writer);
+        return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), this.$storeProxyMap$, writer);
     }
 }
 
@@ -7903,13 +7902,6 @@ class DeserializationHandler {
             // The value is already cached
             return value;
         }
-        // TODO do we need this?
-        // if (typeId === TypeIds.WrappedSignal && this.isObject) {
-        //   // Special case of derived signal. We need to create a [_CONST_PROPS] property.
-        //   return wrapDeserializerProxy(
-        //     container,
-        //     upgradePropsWithDerivedSignal(container, target, property)
-        //   );
         const container = this.$container$;
         const propValue = allocate(container, typeId, value);
         Reflect.set(target, property, propValue);
@@ -8035,6 +8027,7 @@ const inflate = (container, target, typeId, data) => {
                 effects[STORE_ARRAY_PROP] = storeEffect;
             }
             handler.$effects$ = effects;
+            container.$storeProxyMap$.set(value, target);
             break;
         }
         case TypeIds.Signal: {
@@ -8311,7 +8304,7 @@ const createSerializationContext = (
  * A node constructor can be null. For example on the client we can't serialize DOM nodes as
  * server will not know what to do with them.
  */
-NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+NodeConstructor, symbolToChunkResolver, getProp, setProp, storeProxyMap, writer) => {
     if (!writer) {
         const buffer = [];
         writer = {
@@ -8385,6 +8378,7 @@ NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
         $eventNames$: new Set(),
         $resources$: new Set(),
         $renderSymbols$: new Set(),
+        $storeProxyMap$: storeProxyMap,
         $getProp$: getProp,
         $setProp$: setProp,
     };
@@ -8429,8 +8423,15 @@ NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
                 discoveredValues.push(...Object.values(obj));
             }
             else if (isStore(obj)) {
-                discoveredValues.push(getStoreTarget(obj));
-                discoveredValues.push(getStoreHandler(obj).$effects$);
+                const target = getStoreTarget(obj);
+                const effects = getStoreHandler(obj).$effects$;
+                discoveredValues.push(target, effects);
+                for (const prop in target) {
+                    const propValue = target[prop];
+                    if (storeProxyMap.has(propValue)) {
+                        discoveredValues.push(prop, storeProxyMap.get(propValue));
+                    }
+                }
             }
             else if (obj instanceof Set) {
                 discoveredValues.push(...obj.values());
@@ -8543,7 +8544,7 @@ const promiseResults = new WeakMap();
  * - Therefore root indexes need to be doubled to get the actual index.
  */
 function serialize(serializationContext) {
-    const { $writer$, $isSsrNode$, $setProp$ } = serializationContext;
+    const { $writer$, $isSsrNode$, $setProp$, $storeProxyMap$ } = serializationContext;
     let depth = -1;
     // Skip the type for the roots output
     let writeType = false;
@@ -8720,26 +8721,27 @@ function serialize(serializationContext) {
                     return throwErrorAndStop('Unvisited Resource');
                 }
                 output(TypeIds.Resource, [...res, getStoreHandler(value).$effects$]);
-                //   /**
-                //    * We always run on the server and the resource always resolved (until we implement resource
-                //    * streaming)
-                //    */
-                //   assertTrue(value._state !== 'pending', 'Resource still pending', value);
-                //   assertTrue(isPromise(value.value), 'Resource has no Promise');
-                //   output(TypeIds.Resource, [value.value]);
-                // storeValue, flags, ...effects
             }
             else {
                 const storeHandler = getStoreHandler(value);
-                const store = getStoreTarget(value);
+                const storeTarget = getStoreTarget(value);
                 const flags = storeHandler.$flags$;
                 const effects = storeHandler.$effects$;
-                const storeEffect = effects?.[STORE_ARRAY_PROP];
-                const out = [store, flags, effects, storeEffect];
+                const storeEffect = effects?.[STORE_ARRAY_PROP] ?? null;
+                const innerStores = [];
+                for (const prop in storeTarget) {
+                    const propValue = storeTarget[prop];
+                    if ($storeProxyMap$.has(propValue)) {
+                        const innerStore = $storeProxyMap$.get(propValue);
+                        innerStores.push(innerStore);
+                        serializationContext.$addRoot$(innerStore);
+                    }
+                }
+                const out = [storeTarget, flags, effects, storeEffect, ...innerStores];
                 while (out[out.length - 1] == null) {
                     out.pop();
                 }
-                output(Array.isArray(store) ? TypeIds.StoreArray : TypeIds.Store, out);
+                output(Array.isArray(storeTarget) ? TypeIds.StoreArray : TypeIds.Store, out);
             }
         }
         else if (isObjectLiteral(value)) {
@@ -8976,7 +8978,7 @@ function qrlToString(serializationContext, value) {
  * @internal
  */
 async function _serialize(data) {
-    const serializationContext = createSerializationContext(null, () => '', () => '', () => { });
+    const serializationContext = createSerializationContext(null, () => '', () => '', () => { }, new WeakMap());
     for (const root of data) {
         serializationContext.$addRoot$(root);
     }
@@ -9038,6 +9040,7 @@ function _createDeserializeContainer(stateData, element) {
             const fn = () => { };
             return fn;
         },
+        $storeProxyMap$: new WeakMap(),
         element: null,
     };
     state = wrapDeserializerProxy(container, stateData);

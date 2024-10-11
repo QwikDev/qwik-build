@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+d9f6df5
+ * @builder.io/qwik/testing 2.0.0-0-dev+e2d67d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -23573,7 +23573,7 @@ var StoreHandler = class {
       return target[prop];
     }
     const ctx = tryGetInvokeContext();
-    let value = target[prop];
+    const value = target[prop];
     if (ctx) {
       if (this.$container$ === null) {
         if (!ctx.$container$) {
@@ -23596,8 +23596,7 @@ var StoreHandler = class {
     }
     const flags = this.$flags$;
     if (flags & 1 /* RECURSIVE */ && typeof value === "object" && value !== null && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target)) {
-      value = getOrCreateStore(value, this.$flags$, this.$container$);
-      target[prop] = value;
+      return getOrCreateStore(value, this.$flags$, this.$container$);
     }
     return value;
   }
@@ -25517,6 +25516,7 @@ var _SharedContainer = class {
       symbolToChunkResolver,
       this.getHostProp.bind(this),
       this.setHostProp.bind(this),
+      this.$storeProxyMap$,
       writer
     );
   }
@@ -26482,6 +26482,7 @@ var inflate = (container, target, typeId, data) => {
         effects2[STORE_ARRAY_PROP] = storeEffect;
       }
       handler.$effects$ = effects2;
+      container.$storeProxyMap$.set(value, target);
       break;
     }
     case 22 /* Signal */: {
@@ -26755,7 +26756,7 @@ var DomVRef = class {
     this.id = id;
   }
 };
-var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, storeProxyMap, writer) => {
   if (!writer) {
     const buffer = [];
     writer = {
@@ -26828,6 +26829,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
     $eventNames$: /* @__PURE__ */ new Set(),
     $resources$: /* @__PURE__ */ new Set(),
     $renderSymbols$: /* @__PURE__ */ new Set(),
+    $storeProxyMap$: storeProxyMap,
     $getProp$: getProp,
     $setProp$: setProp
   };
@@ -26852,8 +26854,15 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
       } else if (obj instanceof Error) {
         discoveredValues.push(...Object.values(obj));
       } else if (isStore(obj)) {
-        discoveredValues.push(getStoreTarget(obj));
-        discoveredValues.push(getStoreHandler(obj).$effects$);
+        const target = getStoreTarget(obj);
+        const effects = getStoreHandler(obj).$effects$;
+        discoveredValues.push(target, effects);
+        for (const prop in target) {
+          const propValue = target[prop];
+          if (storeProxyMap.has(propValue)) {
+            discoveredValues.push(prop, storeProxyMap.get(propValue));
+          }
+        }
       } else if (obj instanceof Set) {
         discoveredValues.push(...obj.values());
       } else if (obj instanceof Map) {
@@ -26932,7 +26941,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
 };
 var promiseResults = /* @__PURE__ */ new WeakMap();
 function serialize(serializationContext) {
-  const { $writer$, $isSsrNode$, $setProp$ } = serializationContext;
+  const { $writer$, $isSsrNode$, $setProp$, $storeProxyMap$ } = serializationContext;
   let depth = -1;
   let writeType = false;
   const output = (type, value) => {
@@ -27066,15 +27075,24 @@ function serialize(serializationContext) {
         output(20 /* Resource */, [...res, getStoreHandler(value).$effects$]);
       } else {
         const storeHandler = getStoreHandler(value);
-        const store = getStoreTarget(value);
+        const storeTarget = getStoreTarget(value);
         const flags = storeHandler.$flags$;
         const effects = storeHandler.$effects$;
-        const storeEffect = effects?.[STORE_ARRAY_PROP];
-        const out = [store, flags, effects, storeEffect];
+        const storeEffect = effects?.[STORE_ARRAY_PROP] ?? null;
+        const innerStores = [];
+        for (const prop in storeTarget) {
+          const propValue = storeTarget[prop];
+          if ($storeProxyMap$.has(propValue)) {
+            const innerStore = $storeProxyMap$.get(propValue);
+            innerStores.push(innerStore);
+            serializationContext.$addRoot$(innerStore);
+          }
+        }
+        const out = [storeTarget, flags, effects, storeEffect, ...innerStores];
         while (out[out.length - 1] == null) {
           out.pop();
         }
-        output(Array.isArray(store) ? 26 /* StoreArray */ : 25 /* Store */, out);
+        output(Array.isArray(storeTarget) ? 26 /* StoreArray */ : 25 /* Store */, out);
       }
     } else if (isObjectLiteral(value)) {
       if (Array.isArray(value)) {
@@ -27408,13 +27426,13 @@ var printRaw = (value, prefix) => {
 ${prefix}${result}` : result;
 };
 var hasRaw = false;
-var dumpState = (state, color = false, prefix = "") => {
+var dumpState = (state, color = false, prefix = "", limit = 20) => {
   const RED = color ? "\x1B[31m" : "";
   const RESET = color ? "\x1B[0m" : "";
   const isRoot = prefix === "";
   const out = [];
   for (let i = 0; i < state.length; i++) {
-    if (i > 2 * 20) {
+    if (limit && i > 2 * limit) {
       out.push("...");
       break;
     }
@@ -30897,6 +30915,10 @@ var SSRContainer = class extends _SharedContainer2 {
     const ssrNode = host;
     return ssrNode.getProp(name);
   }
+  /**
+   * Renders opening tag for container. It could be a html tag for regular apps or custom element
+   * for micro-frontends
+   */
   openContainer() {
     if (this.tag == "html") {
       this.write("<!DOCTYPE html>");
@@ -30921,9 +30943,11 @@ var SSRContainer = class extends _SharedContainer2 {
     );
     this.openElement(this.tag, containerAttributeArray);
   }
+  /** Renders closing tag for current container */
   closeContainer() {
     return this.closeElement();
   }
+  /** Renders opening tag for DOM element */
   openElement(elementName, varAttrs, constAttrs) {
     let innerHTML = void 0;
     this.lastNode = null;
@@ -30946,11 +30970,10 @@ var SSRContainer = class extends _SharedContainer2 {
     this.lastNode = null;
     return innerHTML;
   }
+  /** Renders closing tag for DOM element */
   closeElement() {
-    const currentFrame = this.currentElementFrame;
-    if (currentFrame.parent === null && currentFrame.elementName !== "html" || currentFrame.elementName === "body") {
-      this.drainCleanupQueue();
-      this.timing.render = this.renderTimer();
+    if (this.shouldEmitDataBeforeClosingElement()) {
+      this.onRenderDone();
       const snapshotTimer = createTimer();
       return maybeThen(
         maybeThen(this.emitContainerData(), () => this._closeElement()),
@@ -30961,15 +30984,31 @@ var SSRContainer = class extends _SharedContainer2 {
     }
     this._closeElement();
   }
+  shouldEmitDataBeforeClosingElement() {
+    const currentFrame = this.currentElementFrame;
+    return (
+      /**
+       * - Micro-frontends don't have html tag, emit data before closing custom element
+       * - Regular applications should emit data inside body
+       */
+      currentFrame.parent === null && currentFrame.elementName !== "html" || currentFrame.elementName === "body"
+    );
+  }
+  onRenderDone() {
+    this.drainCleanupQueue();
+    this.timing.render = this.renderTimer();
+  }
+  /** Drain cleanup queue and cleanup tasks etc. */
   drainCleanupQueue() {
-    for (let i = 0; i < this.cleanupQueue.length; i++) {
-      const sequences = this.cleanupQueue[i];
+    let sequences = this.cleanupQueue.pop();
+    while (sequences) {
       for (let j = 0; j < sequences.length; j++) {
         const item = sequences[j];
         if (hasDestroy(item)) {
           item.$destroy$();
         }
       }
+      sequences = this.cleanupQueue.pop();
     }
   }
   _closeElement() {
@@ -30982,10 +31021,12 @@ var SSRContainer = class extends _SharedContainer2 {
     }
     this.lastNode = null;
   }
+  /** Writes opening data to vNodeData for fragment boundaries */
   openFragment(attrs) {
     this.lastNode = null;
     vNodeData_openFragment(this.currentElementFrame.vNodeData, attrs);
   }
+  /** Writes closing data to vNodeData for fragment boundaries */
   closeFragment() {
     vNodeData_closeFragment(this.currentElementFrame.vNodeData);
     this.lastNode = null;
@@ -31004,6 +31045,7 @@ var SSRContainer = class extends _SharedContainer2 {
     }
     this.closeFragment();
   }
+  /** Writes opening data to vNodeData for component boundaries */
   openComponent(attrs) {
     this.openFragment(attrs);
     this.currentComponentNode = this.getLastNode();
@@ -31028,6 +31070,7 @@ var SSRContainer = class extends _SharedContainer2 {
     }
     return this.getComponentFrame(currentFrame.projectionDepth);
   }
+  /** Writes closing data to vNodeData for component boundaries and mark unclaimed projections */
   closeComponent() {
     const componentFrame = this.componentStack.pop();
     componentFrame.releaseUnclaimedProjections(this.unclaimedProjections);
@@ -31386,7 +31429,7 @@ var SSRContainer = class extends _SharedContainer2 {
       this.closeElement();
     }
   }
-  async emitUnclaimedProjection() {
+  emitUnclaimedProjection() {
     const unclaimedProjections = this.unclaimedProjections;
     if (unclaimedProjections.length) {
       const previousCurrentComponentNode = this.currentComponentNode;
@@ -32073,7 +32116,10 @@ async function ssrRenderToDom(jsx2, opts = {}) {
     console.log(vnode_toString.call(container.rootVNode, Number.MAX_SAFE_INTEGER, "", true));
     console.log("------------------- SERIALIZED STATE -------------------");
     const origState = container.element.querySelector('script[type="qwik/state"]')?.textContent;
-    console.log(origState ? dumpState(JSON.parse(origState), true) : "No state found", "\n");
+    console.log(
+      origState ? dumpState(JSON.parse(origState), true, "", null) : "No state found",
+      "\n"
+    );
     const funcs = container.$qFuncs$;
     console.log("------------------- SERIALIZED QFUNCS -------------------");
     for (let i = 0; i < funcs.length; i++) {

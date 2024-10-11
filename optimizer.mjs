@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+d9f6df5
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+e2d67d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1251,7 +1251,7 @@ function createPath(opts = {}) {
 var QWIK_BINDING_MAP = {};
 
 var versions = {
-  qwik: "2.0.0-0-dev+d9f6df5"
+  qwik: "2.0.0-0-dev+e2d67d3"
 };
 
 async function getSystem() {
@@ -3365,7 +3365,7 @@ function setLocale(locale) {
 }
 
 var versions3 = {
-  qwik: "2.0.0-0-dev+d9f6df5",
+  qwik: "2.0.0-0-dev+e2d67d3",
   qwikDom: globalThis.QWIK_DOM_VERSION
 };
 
@@ -3611,7 +3611,7 @@ var StoreHandler = class {
       return target[prop];
     }
     const ctx = tryGetInvokeContext();
-    let value = target[prop];
+    const value = target[prop];
     if (ctx) {
       if (null === this.$container$) {
         if (!ctx.$container$) {
@@ -3629,8 +3629,7 @@ var StoreHandler = class {
     }
     const flags = this.$flags$;
     if (1 & flags && "object" === typeof value && null !== value && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target)) {
-      value = getOrCreateStore(value, this.$flags$, this.$container$);
-      target[prop] = value;
+      return getOrCreateStore(value, this.$flags$, this.$container$);
     }
     return value;
   }
@@ -5506,7 +5505,7 @@ var WrappedSignal = class extends Signal {
   }
 };
 
-var version = "2.0.0-0-dev+d9f6df5";
+var version = "2.0.0-0-dev+e2d67d3";
 
 var _SharedContainer = class {
   constructor(scheduleDrain, journalFlush, serverData, locale) {
@@ -5525,7 +5524,7 @@ var _SharedContainer = class {
     return trackSignal((() => signal.value), subscriber, property, this, data);
   }
   serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
-    return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), writer);
+    return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), this.$storeProxyMap$, writer);
   }
 };
 
@@ -7589,6 +7588,7 @@ var inflate = (container, target, typeId, data) => {
       Object.assign(getStoreTarget(target), value);
       storeEffect && (effects2[STORE_ARRAY_PROP] = storeEffect);
       handler.$effects$ = effects2;
+      container.$storeProxyMap$.set(value, target);
       break;
     }
 
@@ -7874,7 +7874,7 @@ var DomVRef = class {
   }
 };
 
-var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, storeProxyMap, writer) => {
   if (!writer) {
     const buffer = [];
     writer = {
@@ -7945,6 +7945,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
     $eventNames$: new Set,
     $resources$: new Set,
     $renderSymbols$: new Set,
+    $storeProxyMap$: storeProxyMap,
     $getProp$: getProp,
     $setProp$: setProp
   };
@@ -7962,8 +7963,13 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
       } else if ("object" !== typeof obj || null === obj || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Uint8Array || obj instanceof URLSearchParams || "undefined" !== typeof FormData && obj instanceof FormData || fastSkipSerialize(obj)) {} else if (obj instanceof Error) {
         discoveredValues.push(...Object.values(obj));
       } else if (isStore(obj)) {
-        discoveredValues.push(getStoreTarget(obj));
-        discoveredValues.push(getStoreHandler(obj).$effects$);
+        const target = getStoreTarget(obj);
+        const effects = getStoreHandler(obj).$effects$;
+        discoveredValues.push(target, effects);
+        for (const prop in target) {
+          const propValue = target[prop];
+          storeProxyMap.has(propValue) && discoveredValues.push(prop, storeProxyMap.get(propValue));
+        }
       } else if (obj instanceof Set) {
         discoveredValues.push(...obj.values());
       } else if (obj instanceof Map) {
@@ -8031,7 +8037,7 @@ var createSerializationContext = (NodeConstructor, symbolToChunkResolver, getPro
 var promiseResults = new WeakMap;
 
 function serialize(serializationContext) {
-  const {$writer$: $writer$, $isSsrNode$: $isSsrNode$, $setProp$: $setProp$} = serializationContext;
+  const {$writer$: $writer$, $isSsrNode$: $isSsrNode$, $setProp$: $setProp$, $storeProxyMap$: $storeProxyMap$} = serializationContext;
   let depth = -1;
   let writeType = false;
   const output = (type, value) => {
@@ -8130,15 +8136,24 @@ function serialize(serializationContext) {
         output(20, [ ...res, getStoreHandler(value).$effects$ ]);
       } else {
         const storeHandler = getStoreHandler(value);
-        const store = getStoreTarget(value);
+        const storeTarget = getStoreTarget(value);
         const flags = storeHandler.$flags$;
         const effects = storeHandler.$effects$;
-        const storeEffect = effects?.[STORE_ARRAY_PROP];
-        const out = [ store, flags, effects, storeEffect ];
+        const storeEffect = effects?.[STORE_ARRAY_PROP] ?? null;
+        const innerStores = [];
+        for (const prop in storeTarget) {
+          const propValue = storeTarget[prop];
+          if ($storeProxyMap$.has(propValue)) {
+            const innerStore = $storeProxyMap$.get(propValue);
+            innerStores.push(innerStore);
+            serializationContext.$addRoot$(innerStore);
+          }
+        }
+        const out = [ storeTarget, flags, effects, storeEffect, ...innerStores ];
         while (null == out[out.length - 1]) {
           out.pop();
         }
-        output(Array.isArray(store) ? 26 : 25, out);
+        output(Array.isArray(storeTarget) ? 26 : 25, out);
       }
     } else if (isObjectLiteral(value)) {
       if (Array.isArray(value)) {

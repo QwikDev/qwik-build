@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+d9f6df5
+ * @builder.io/qwik 2.0.0-0-dev+e2d67d3
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -400,7 +400,7 @@
                 return prop === STORE_TARGET ? target : prop === STORE_HANDLER ? this : target[prop];
             }
             const ctx = tryGetInvokeContext();
-            let value = target[prop];
+            const value = target[prop];
             if (ctx) {
                 if (null === this.$container$) {
                     if (!ctx.$container$) {
@@ -416,8 +416,7 @@
             if ("toString" === prop && value === Object.prototype.toString) {
                 return this.toString;
             }
-            return this.$flags$ & StoreFlags.RECURSIVE && "object" == typeof value && null !== value && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target) && (value = getOrCreateStore(value, this.$flags$, this.$container$), 
-            target[prop] = value), value;
+            return this.$flags$ & StoreFlags.RECURSIVE && "object" == typeof value && null !== value && !Object.isFrozen(value) && !isStore(value) && !Object.isFrozen(target) ? getOrCreateStore(value, this.$flags$, this.$container$) : value;
         }
         set(target, prop, value) {
             if (target = unwrapDeserializerProxy(target), "symbol" == typeof prop) {
@@ -2151,7 +2150,7 @@
     class _SharedContainer {
         constructor(scheduleDrain, journalFlush, serverData, locale) {
             this.$currentUniqueId$ = 0, this.$instanceHash$ = null, this.$serverData$ = serverData, 
-            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+d9f6df5", this.$storeProxyMap$ = new WeakMap, 
+            this.$locale$ = locale, this.$version$ = "2.0.0-0-dev+e2d67d3", this.$storeProxyMap$ = new WeakMap, 
             this.$getObjectById$ = () => {
                 throw Error("Not implemented");
             }, this.$scheduler$ = createScheduler(this, scheduleDrain, journalFlush);
@@ -2160,7 +2159,7 @@
             return trackSignal((() => signal.value), subscriber, property, this, data);
         }
         serializationCtxFactory(NodeConstructor, symbolToChunkResolver, writer) {
-            return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), writer);
+            return createSerializationContext(NodeConstructor, symbolToChunkResolver, this.getHostProp.bind(this), this.setHostProp.bind(this), this.$storeProxyMap$, writer);
         }
     }
     const _CONST_PROPS = Symbol("CONST");
@@ -3791,7 +3790,7 @@
                     const [value, flags, effects, storeEffect] = data;
                     const handler = getStoreHandler(target);
                     handler.$flags$ = flags, Object.assign(getStoreTarget(target), value), storeEffect && (effects[STORE_ARRAY_PROP] = storeEffect), 
-                    handler.$effects$ = effects;
+                    handler.$effects$ = effects, container.$storeProxyMap$.set(value, target);
                     break;
                 }
 
@@ -4050,7 +4049,7 @@
             this.id = id;
         }
     }
-    const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, writer) => {
+    const createSerializationContext = (NodeConstructor, symbolToChunkResolver, getProp, setProp, storeProxyMap, writer) => {
         if (!writer) {
             const buffer = [];
             writer = {
@@ -4073,7 +4072,7 @@
         return {
             $serialize$() {
                 !function(serializationContext) {
-                    const {$writer$, $isSsrNode$, $setProp$} = serializationContext;
+                    const {$writer$, $isSsrNode$, $setProp$, $storeProxyMap$} = serializationContext;
                     let depth = -1;
                     let writeType = !1;
                     const output = (type, value) => {
@@ -4158,15 +4157,23 @@
                                 output(TypeIds.Resource, [ ...res, getStoreHandler(value).$effects$ ]);
                             } else {
                                 const storeHandler = getStoreHandler(value);
-                                const store = getStoreTarget(value);
+                                const storeTarget = getStoreTarget(value);
                                 const flags = storeHandler.$flags$;
                                 const effects = storeHandler.$effects$;
-                                const storeEffect = effects?.[STORE_ARRAY_PROP];
-                                const out = [ store, flags, effects, storeEffect ];
+                                const storeEffect = effects?.[STORE_ARRAY_PROP] ?? null;
+                                const innerStores = [];
+                                for (const prop in storeTarget) {
+                                    const propValue = storeTarget[prop];
+                                    if ($storeProxyMap$.has(propValue)) {
+                                        const innerStore = $storeProxyMap$.get(propValue);
+                                        innerStores.push(innerStore), serializationContext.$addRoot$(innerStore);
+                                    }
+                                }
+                                const out = [ storeTarget, flags, effects, storeEffect, ...innerStores ];
                                 for (;null == out[out.length - 1]; ) {
                                     out.pop();
                                 }
-                                output(Array.isArray(store) ? TypeIds.StoreArray : TypeIds.Store, out);
+                                output(Array.isArray(storeTarget) ? TypeIds.StoreArray : TypeIds.Store, out);
                             }
                         } else if (isObjectLiteral(value)) {
                             if (Array.isArray(value)) {
@@ -4289,7 +4296,13 @@
                     } else if ("object" != typeof obj || null === obj || obj instanceof URL || obj instanceof Date || obj instanceof RegExp || obj instanceof Uint8Array || obj instanceof URLSearchParams || "undefined" != typeof FormData && obj instanceof FormData || fastSkipSerialize(obj)) {} else if (obj instanceof Error) {
                         discoveredValues.push(...Object.values(obj));
                     } else if (isStore(obj)) {
-                        discoveredValues.push(getStoreTarget(obj)), discoveredValues.push(getStoreHandler(obj).$effects$);
+                        const target = getStoreTarget(obj);
+                        const effects = getStoreHandler(obj).$effects$;
+                        discoveredValues.push(target, effects);
+                        for (const prop in target) {
+                            const propValue = target[prop];
+                            storeProxyMap.has(propValue) && discoveredValues.push(prop, storeProxyMap.get(propValue));
+                        }
                     } else if (obj instanceof Set) {
                         discoveredValues.push(...obj.values());
                     } else if (obj instanceof Map) {
@@ -4346,6 +4359,7 @@
             $eventNames$: new Set,
             $resources$: new Set,
             $renderSymbols$: new Set,
+            $storeProxyMap$: storeProxyMap,
             $getProp$: getProp,
             $setProp$: setProp
         };
@@ -4403,6 +4417,7 @@
                 stateData[id];
             }(id, state),
             getSyncFn: () => () => {},
+            $storeProxyMap$: new WeakMap,
             element: null
         };
         return state = wrapDeserializerProxy(container, stateData), container.$state$ = state, 
@@ -5017,7 +5032,7 @@
         }
         return target;
     }, exports._serialize = async function(data) {
-        const serializationContext = createSerializationContext(null, (() => ""), (() => ""), (() => {}));
+        const serializationContext = createSerializationContext(null, (() => ""), (() => ""), (() => {}), new WeakMap);
         for (const root of data) {
             serializationContext.$addRoot$(root);
         }
@@ -5142,7 +5157,7 @@
     })), exports.useStore = useStore, exports.useStyles$ = useStyles$, exports.useStylesQrl = useStylesQrl, 
     exports.useStylesScoped$ = useStylesScoped$, exports.useStylesScopedQrl = useStylesScopedQrl, 
     exports.useTask$ = useTask$, exports.useTaskQrl = useTaskQrl, exports.useVisibleTask$ = useVisibleTask$, 
-    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+d9f6df5", 
+    exports.useVisibleTaskQrl = useVisibleTaskQrl, exports.version = "2.0.0-0-dev+e2d67d3", 
     exports.withLocale = function(locale, fn) {
         const previousLang = _locale;
         try {
