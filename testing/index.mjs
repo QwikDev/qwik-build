@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+e2d67d3
+ * @builder.io/qwik/testing 2.0.0-0-dev+48b5156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -27987,7 +27987,7 @@ function qwikDebugToString(value) {
       stringifyPath.push(value);
       if (Array.isArray(value)) {
         if (vnode_isVNode(value)) {
-          return vnode_toString.apply(value);
+          return "(" + vnode_getProp(value, DEBUG_TYPE, null) + ")";
         } else {
           return value.map(qwikDebugToString);
         }
@@ -30345,10 +30345,12 @@ var SsrComponentFrame = class {
     this.slots = [];
     this.projectionDepth = 0;
     this.scopedStyleIds = /* @__PURE__ */ new Set();
-    this.childrenScopedStyle = null;
+    this.projectionScopedStyle = null;
+    this.projectionComponentFrame = null;
   }
-  distributeChildrenIntoSlots(children, scopedStyle) {
-    this.childrenScopedStyle = scopedStyle;
+  distributeChildrenIntoSlots(children, projectionScopedStyle, projectionComponentFrame) {
+    this.projectionScopedStyle = projectionScopedStyle;
+    this.projectionComponentFrame = projectionComponentFrame;
     if (isJSXNode2(children)) {
       const slotName = this.getSlotName(children);
       mapArray_set(this.slots, slotName, children, 0);
@@ -30403,7 +30405,7 @@ var SsrComponentFrame = class {
   releaseUnclaimedProjections(unclaimedProjections) {
     if (this.slots.length) {
       unclaimedProjections.push(this);
-      unclaimedProjections.push(this.childrenScopedStyle);
+      unclaimedProjections.push(this.projectionScopedStyle);
       unclaimedProjections.push.apply(unclaimedProjections, this.slots);
     }
   }
@@ -30878,7 +30880,11 @@ var SSRContainer = class extends _SharedContainer2 {
   }
   async render(jsx2) {
     this.openContainer();
-    await _walkJSX2(this, jsx2, true, null);
+    await _walkJSX2(this, jsx2, {
+      allowPromises: true,
+      currentStyleScoped: null,
+      parentComponentFrame: this.getComponentFrame()
+    });
     await this.closeContainer();
   }
   setContext(host, context, value) {
@@ -31049,7 +31055,7 @@ var SSRContainer = class extends _SharedContainer2 {
   openComponent(attrs) {
     this.openFragment(attrs);
     this.currentComponentNode = this.getLastNode();
-    this.componentStack.push(new SsrComponentFrame(this.getLastNode()));
+    this.componentStack.push(new SsrComponentFrame(this.currentComponentNode));
   }
   /**
    * Returns the current component frame.
@@ -31063,12 +31069,9 @@ var SSRContainer = class extends _SharedContainer2 {
     const idx = length - projectionDepth - 1;
     return idx >= 0 ? this.componentStack[idx] : null;
   }
-  getNearestComponentFrame() {
-    const currentFrame = this.getComponentFrame(0);
-    if (!currentFrame) {
-      return null;
-    }
-    return this.getComponentFrame(currentFrame.projectionDepth);
+  getParentComponentFrame() {
+    const localProjectionDepth = this.getComponentFrame()?.projectionDepth || 0;
+    return this.getComponentFrame(localProjectionDepth);
   }
   /** Writes closing data to vNodeData for component boundaries and mark unclaimed projections */
   closeComponent() {
@@ -31461,7 +31464,11 @@ var SSRContainer = class extends _SharedContainer2 {
               isDev8 ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode?.setProp(value, this.getLastNode().id);
-            _walkJSX2(this, children, false, scopedStyleId);
+            _walkJSX2(this, children, {
+              allowPromises: false,
+              currentStyleScoped: scopedStyleId,
+              parentComponentFrame: null
+            });
             this.closeFragment();
           } else {
             throw Error();

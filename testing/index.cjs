@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/testing 2.0.0-0-dev+e2d67d3
+ * @builder.io/qwik/testing 2.0.0-0-dev+48b5156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -28014,7 +28014,7 @@ function qwikDebugToString(value) {
       stringifyPath.push(value);
       if (Array.isArray(value)) {
         if (vnode_isVNode(value)) {
-          return vnode_toString.apply(value);
+          return "(" + vnode_getProp(value, DEBUG_TYPE, null) + ")";
         } else {
           return value.map(qwikDebugToString);
         }
@@ -30373,10 +30373,12 @@ var SsrComponentFrame = class {
     this.slots = [];
     this.projectionDepth = 0;
     this.scopedStyleIds = /* @__PURE__ */ new Set();
-    this.childrenScopedStyle = null;
+    this.projectionScopedStyle = null;
+    this.projectionComponentFrame = null;
   }
-  distributeChildrenIntoSlots(children, scopedStyle) {
-    this.childrenScopedStyle = scopedStyle;
+  distributeChildrenIntoSlots(children, projectionScopedStyle, projectionComponentFrame) {
+    this.projectionScopedStyle = projectionScopedStyle;
+    this.projectionComponentFrame = projectionComponentFrame;
     if ((0, import_qwik4._isJSXNode)(children)) {
       const slotName = this.getSlotName(children);
       mapArray_set(this.slots, slotName, children, 0);
@@ -30431,7 +30433,7 @@ var SsrComponentFrame = class {
   releaseUnclaimedProjections(unclaimedProjections) {
     if (this.slots.length) {
       unclaimedProjections.push(this);
-      unclaimedProjections.push(this.childrenScopedStyle);
+      unclaimedProjections.push(this.projectionScopedStyle);
       unclaimedProjections.push.apply(unclaimedProjections, this.slots);
     }
   }
@@ -30906,7 +30908,11 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
   }
   async render(jsx2) {
     this.openContainer();
-    await (0, import_qwik5._walkJSX)(this, jsx2, true, null);
+    await (0, import_qwik5._walkJSX)(this, jsx2, {
+      allowPromises: true,
+      currentStyleScoped: null,
+      parentComponentFrame: this.getComponentFrame()
+    });
     await this.closeContainer();
   }
   setContext(host, context, value) {
@@ -31077,7 +31083,7 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
   openComponent(attrs) {
     this.openFragment(attrs);
     this.currentComponentNode = this.getLastNode();
-    this.componentStack.push(new SsrComponentFrame(this.getLastNode()));
+    this.componentStack.push(new SsrComponentFrame(this.currentComponentNode));
   }
   /**
    * Returns the current component frame.
@@ -31091,12 +31097,10 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
     const idx = length - projectionDepth - 1;
     return idx >= 0 ? this.componentStack[idx] : null;
   }
-  getNearestComponentFrame() {
-    const currentFrame = this.getComponentFrame(0);
-    if (!currentFrame) {
-      return null;
-    }
-    return this.getComponentFrame(currentFrame.projectionDepth);
+  getParentComponentFrame() {
+    var _a;
+    const localProjectionDepth = ((_a = this.getComponentFrame()) == null ? void 0 : _a.projectionDepth) || 0;
+    return this.getComponentFrame(localProjectionDepth);
   }
   /** Writes closing data to vNodeData for component boundaries and mark unclaimed projections */
   closeComponent() {
@@ -31496,7 +31500,11 @@ var SSRContainer = class extends import_qwik5._SharedContainer {
               import_build9.isDev ? [DEBUG_TYPE, "P" /* Projection */, QSlotParent, ssrComponentNode.id] : [QSlotParent, ssrComponentNode.id]
             );
             ssrComponentNode == null ? void 0 : ssrComponentNode.setProp(value, this.getLastNode().id);
-            (0, import_qwik5._walkJSX)(this, children, false, scopedStyleId);
+            (0, import_qwik5._walkJSX)(this, children, {
+              allowPromises: false,
+              currentStyleScoped: scopedStyleId,
+              parentComponentFrame: null
+            });
             this.closeFragment();
           } else {
             throw Error();

@@ -1414,14 +1414,16 @@ declare type IsReadOnlyKey<T, K extends keyof T> = IfEquals<{
 /** @public */
 export declare const isSignal: (value: any) => value is Signal<unknown>;
 
-declare interface ISsrComponentFrame {
+/** @internal */
+export declare interface ISsrComponentFrame {
     componentNode: ISsrNode;
     scopedStyleIds: Set<string>;
-    childrenScopedStyle: string | null;
+    projectionScopedStyle: string | null;
+    projectionComponentFrame: ISsrComponentFrame | null;
     projectionDepth: number;
     releaseUnclaimedProjections(unclaimedProjections: (ISsrComponentFrame | JSXChildren | string)[]): void;
     consumeChildrenForSlot(projectionNode: ISsrNode, slotName: string): JSXChildren | null;
-    distributeChildrenIntoSlots(children: JSXChildren, scopedStyle: string | null): void;
+    distributeChildrenIntoSlots(children: JSXChildren, parentScopedStyle: string | null, parentComponentFrame: ISsrComponentFrame | null): void;
     hasSlot(slotName: string): boolean;
 }
 
@@ -2896,7 +2898,7 @@ declare interface SSRContainer extends Container {
     closeProjection(): void;
     openComponent(attrs: SsrAttrs): void;
     getComponentFrame(projectionDepth: number): ISsrComponentFrame | null;
-    getNearestComponentFrame(): ISsrComponentFrame | null;
+    getParentComponentFrame(): ISsrComponentFrame | null;
     closeComponent(): void;
     textNode(text: string): void;
     htmlNode(rawHtml: string): void;
@@ -4124,7 +4126,7 @@ export declare const _VAR_PROPS: unique symbol;
 export declare const _verifySerializable: <T>(value: T, preMessage?: string) => T;
 
 /**
- * 2.0.0-0-dev+e2d67d3
+ * 2.0.0-0-dev+48b5156
  *
  * @public
  */
@@ -4217,10 +4219,18 @@ declare const enum VNodeJournalOpCode {
 export declare const _waitUntilRendered: (elm: Element) => Promise<void>;
 
 /** @internal */
-export declare function _walkJSX(ssr: SSRContainer, value: JSXOutput, allowPromises: true, currentStyleScoped: string | null): ValueOrPromise<void>;
+export declare function _walkJSX(ssr: SSRContainer, value: JSXOutput, options: {
+    allowPromises: true;
+    currentStyleScoped: string | null;
+    parentComponentFrame: ISsrComponentFrame | null;
+}): ValueOrPromise<void>;
 
 /** @internal */
-export declare function _walkJSX(ssr: SSRContainer, value: JSXOutput, allowPromises: false, currentStyleScoped: string | null): false;
+export declare function _walkJSX(ssr: SSRContainer, value: JSXOutput, options: {
+    allowPromises: false;
+    currentStyleScoped: string | null;
+    parentComponentFrame: ISsrComponentFrame | null;
+}): false;
 
 /** @internal */
 export declare const _weakSerialize: <T extends object>(input: T) => Partial<T>;

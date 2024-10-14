@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik 2.0.0-0-dev+e2d67d3
+ * @builder.io/qwik 2.0.0-0-dev+48b5156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -4359,17 +4359,18 @@
         return scheduler(ChoreType.COMPONENT_SSR, host, componentQrl, srcProps);
     };
 
-    class SetScopedStyle {
-        constructor($scopedStyle$) {
+    class ParentComponentData {
+        constructor($scopedStyle$, $componentFrame$) {
             this.$scopedStyle$ = $scopedStyle$;
+            this.$componentFrame$ = $componentFrame$;
         }
     }
     /** @internal */
-    function _walkJSX(ssr, value, allowPromises, currentStyleScoped) {
+    function _walkJSX(ssr, value, options) {
         const stack = [value];
         let resolveDrain;
         let rejectDrain;
-        const drained = allowPromises &&
+        const drained = options.allowPromises &&
             new Promise((res, rej) => {
                 resolveDrain = res;
                 rejectDrain = rej;
@@ -4382,13 +4383,14 @@
         const drain = () => {
             while (stack.length) {
                 const value = stack.pop();
-                if (value instanceof SetScopedStyle) {
-                    currentStyleScoped = value.$scopedStyle$;
+                if (value instanceof ParentComponentData) {
+                    options.currentStyleScoped = value.$scopedStyle$;
+                    options.parentComponentFrame = value.$componentFrame$;
                     continue;
                 }
                 else if (typeof value === 'function') {
                     if (value === Promise) {
-                        if (!allowPromises) {
+                        if (!options.allowPromises) {
                             return throwErrorAndStop('Promises not expected here.');
                         }
                         stack.pop().then(resolveValue, rejectDrain);
@@ -4396,7 +4398,7 @@
                     }
                     const waitOn = value.apply(ssr);
                     if (waitOn) {
-                        if (!allowPromises) {
+                        if (!options.allowPromises) {
                             return throwErrorAndStop('Promises not expected here.');
                         }
                         waitOn.then(drain, rejectDrain);
@@ -4404,16 +4406,19 @@
                     }
                     continue;
                 }
-                processJSXNode(ssr, enqueue, value, currentStyleScoped);
+                processJSXNode(ssr, enqueue, value, {
+                    styleScoped: options.currentStyleScoped,
+                    parentComponentFrame: options.parentComponentFrame,
+                });
             }
-            if (stack.length === 0 && allowPromises) {
+            if (stack.length === 0 && options.allowPromises) {
                 resolveDrain();
             }
         };
         drain();
         return drained;
     }
-    function processJSXNode(ssr, enqueue, value, styleScoped) {
+    function processJSXNode(ssr, enqueue, value, options) {
         // console.log('processJSXNode', value);
         if (value === null || value === undefined) {
             ssr.textNode('');
@@ -4449,7 +4454,11 @@
             else if (isAsyncGenerator(value)) {
                 enqueue(async () => {
                     for await (const chunk of value) {
-                        await _walkJSX(ssr, chunk, true, styleScoped);
+                        await _walkJSX(ssr, chunk, {
+                            allowPromises: true,
+                            currentStyleScoped: options.styleScoped,
+                            parentComponentFrame: options.parentComponentFrame,
+                        });
                         ssr.commentNode(FLUSH_COMMENT);
                     }
                 });
@@ -4459,9 +4468,9 @@
                 const type = jsx.type;
                 // Below, JSXChildren allows functions and regexes, but we assume the dev only uses those as appropriate.
                 if (typeof type === 'string') {
-                    appendClassIfScopedStyleExists(jsx, styleScoped);
+                    appendClassIfScopedStyleExists(jsx, options.styleScoped);
                     appendQwikInspectorAttribute(jsx);
-                    const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, styleScoped));
+                    const innerHTML = ssr.openElement(type, varPropsToSsrAttrs(jsx.varProps, jsx.constProps, ssr.serializationCtx, options.styleScoped, jsx.key), constPropsToSsrAttrs(jsx.constProps, jsx.varProps, ssr.serializationCtx, options.styleScoped));
                     if (innerHTML) {
                         ssr.htmlNode(innerHTML);
                     }
@@ -4489,17 +4498,17 @@
                         children != null && enqueue(children);
                     }
                     else if (type === Slot) {
-                        const componentFrame = ssr.getNearestComponentFrame() || ssr.unclaimedProjectionComponentFrameQueue.shift();
-                        const projectionAttrs = build.isDev ? [DEBUG_TYPE, VirtualType.Projection] : [];
+                        const componentFrame = options.parentComponentFrame || ssr.unclaimedProjectionComponentFrameQueue.shift();
                         if (componentFrame) {
                             const compId = componentFrame.componentNode.id || '';
+                            const projectionAttrs = build.isDev ? [DEBUG_TYPE, VirtualType.Projection] : [];
                             projectionAttrs.push(':', compId);
                             ssr.openProjection(projectionAttrs);
                             const host = componentFrame.componentNode;
                             const node = ssr.getLastNode();
                             const slotName = getSlotName(host, jsx, ssr);
                             projectionAttrs.push(QSlot, slotName);
-                            enqueue(new SetScopedStyle(styleScoped));
+                            enqueue(new ParentComponentData(options.styleScoped, options.parentComponentFrame));
                             enqueue(ssr.closeProjection);
                             const slotDefaultChildren = jsx.children || null;
                             const slotChildren = componentFrame.consumeChildrenForSlot(node, slotName) || slotDefaultChildren;
@@ -4507,7 +4516,7 @@
                                 ssr.addUnclaimedProjection(componentFrame, QDefaultSlot, slotDefaultChildren);
                             }
                             enqueue(slotChildren);
-                            enqueue(new SetScopedStyle(componentFrame.childrenScopedStyle));
+                            enqueue(new ParentComponentData(componentFrame.projectionScopedStyle, componentFrame.projectionComponentFrame));
                         }
                         else {
                             // Even thought we are not projecting we still need to leave a marker for the slot.
@@ -4525,7 +4534,11 @@
                         if (isFunction(generator)) {
                             value = generator({
                                 async write(chunk) {
-                                    await _walkJSX(ssr, chunk, true, styleScoped);
+                                    await _walkJSX(ssr, chunk, {
+                                        allowPromises: true,
+                                        currentStyleScoped: options.styleScoped,
+                                        parentComponentFrame: options.parentComponentFrame,
+                                    });
                                     ssr.commentNode(FLUSH_COMMENT);
                                 },
                             });
@@ -4543,14 +4556,15 @@
                         // prod: use new instance of an array for props, we always modify props for a component
                         ssr.openComponent(build.isDev ? [DEBUG_TYPE, VirtualType.Component] : []);
                         const host = ssr.getLastNode();
-                        ssr.getComponentFrame(0).distributeChildrenIntoSlots(jsx.children, styleScoped);
+                        const componentFrame = ssr.getParentComponentFrame();
+                        componentFrame.distributeChildrenIntoSlots(jsx.children, options.styleScoped, options.parentComponentFrame);
                         const jsxOutput = applyQwikComponentBody(ssr, jsx, type);
                         const compStyleComponentId = addComponentStylePrefix(host.getProp(QScopedStyle));
-                        enqueue(new SetScopedStyle(styleScoped));
+                        enqueue(new ParentComponentData(options.styleScoped, options.parentComponentFrame));
                         enqueue(ssr.closeComponent);
                         enqueue(jsxOutput);
                         isPromise(jsxOutput) && enqueue(Promise);
-                        enqueue(new SetScopedStyle(compStyleComponentId));
+                        enqueue(new ParentComponentData(compStyleComponentId, componentFrame));
                     }
                     else {
                         ssr.openFragment(build.isDev ? [DEBUG_TYPE, VirtualType.InlineComponent] : EMPTY_ARRAY);
@@ -4747,7 +4761,7 @@
      *
      * @public
      */
-    const version = "2.0.0-0-dev+e2d67d3";
+    const version = "2.0.0-0-dev+48b5156";
 
     /** @internal */
     class _SharedContainer {
@@ -5192,7 +5206,7 @@
                 stringifyPath.push(value);
                 if (Array.isArray(value)) {
                     if (vnode_isVNode(value)) {
-                        return vnode_toString.apply(value);
+                        return '(' + vnode_getProp(value, DEBUG_TYPE, null) + ')';
                     }
                     else {
                         return value.map(qwikDebugToString);

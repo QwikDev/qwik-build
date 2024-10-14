@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/optimizer 2.0.0-0-dev+e2d67d3
+ * @builder.io/qwik/optimizer 2.0.0-0-dev+48b5156
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -1226,7 +1226,7 @@ globalThis.qwikOptimizer = function(module) {
   }
   var QWIK_BINDING_MAP = {};
   var versions = {
-    qwik: "2.0.0-0-dev+e2d67d3"
+    qwik: "2.0.0-0-dev+48b5156"
   };
   async function getSystem() {
     const sysEnv = getEnv();
@@ -5190,7 +5190,7 @@ globalThis.qwikOptimizer = function(module) {
       throwErrorAndStop("WrappedSignal is read-only");
     }
   };
-  var version = "2.0.0-0-dev+e2d67d3";
+  var version = "2.0.0-0-dev+48b5156";
   var _SharedContainer = class {
     constructor(scheduleDrain, journalFlush, serverData, locale) {
       this.$currentUniqueId$ = 0;
@@ -5368,7 +5368,7 @@ globalThis.qwikOptimizer = function(module) {
       try {
         stringifyPath.push(value);
         if (Array.isArray(value)) {
-          return vnode_isVNode(value) ? vnode_toString.apply(value) : value.map(qwikDebugToString);
+          return vnode_isVNode(value) ? "(" + vnode_getProp(value, DEBUG_TYPE, null) + ")" : value.map(qwikDebugToString);
         }
         if (isSignal(value)) {
           return value instanceof WrappedSignal ? "WrappedSignal" : value instanceof ComputedSignal ? "ComputedSignal" : "Signal";
