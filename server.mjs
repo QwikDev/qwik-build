@@ -1,6 +1,6 @@
 /**
  * @license
- * @builder.io/qwik/server 1.9.1-dev+6f24b81
+ * @builder.io/qwik/server 1.9.1-dev+4dfcba5
  * Copyright Builder.io, Inc. All Rights Reserved.
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://github.com/QwikDev/qwik/blob/main/LICENSE
@@ -208,10 +208,14 @@ function prefetchUrlsEvent(base, prefetchNodes, prefetchResources, nonce) {
 function linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl) {
   const urls = flattenPrefetchResources(prefetchResources);
   const rel = prefetchImpl.linkRel || "prefetch";
+  const priority = prefetchImpl.linkFetchPriority;
   for (const url of urls) {
     const attributes = {};
     attributes["href"] = url;
     attributes["rel"] = rel;
+    if (priority) {
+      attributes["fetchpriority"] = priority;
+    }
     if (rel === "prefetch" || rel === "preload") {
       if (url.endsWith(".js")) {
         attributes["as"] = "script";
@@ -222,6 +226,7 @@ function linkHtmlImplementation(prefetchNodes, prefetchResources, prefetchImpl) 
 }
 function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, nonce) {
   const rel = prefetchImpl.linkRel || "prefetch";
+  const priority = prefetchImpl.linkFetchPriority;
   let s = ``;
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
     s += `let supportsLinkRel = true;`;
@@ -231,6 +236,9 @@ function linkJsImplementation(prefetchNodes, prefetchResources, prefetchImpl, no
   s += `const l=document.createElement('link');`;
   s += `l.setAttribute("href",u);`;
   s += `l.setAttribute("rel","${rel}");`;
+  if (priority) {
+    s += `l.setAttribute("fetchpriority","${priority}");`;
+  }
   if (prefetchImpl.workerFetchInsert === "no-link-support") {
     s += `if(i===0){`;
     s += `try{`;
@@ -275,6 +283,7 @@ function normalizePrefetchImplementation(input) {
 var PrefetchImplementationDefault = {
   linkInsert: null,
   linkRel: null,
+  linkFetchPriority: null,
   workerFetchInsert: null,
   prefetchEvent: "always"
 };
@@ -305,9 +314,17 @@ function getBuildBase(opts) {
   return `${import.meta.env.BASE_URL}build/`;
 }
 var versions2 = {
-  qwik: "1.9.1-dev+6f24b81",
+  qwik: "1.9.1-dev+4dfcba5",
   qwikDom: "2.1.19"
 };
+
+// packages/qwik/src/core/util/qdev.ts
+var qDev = globalThis.qDev !== false;
+var qInspector = globalThis.qInspector === true;
+var qSerialize = globalThis.qSerialize !== false;
+var qDynamicPlatform = globalThis.qDynamicPlatform !== false;
+var qTest = globalThis.qTest === true;
+var qRuntimeQrl = globalThis.qRuntimeQrl === true;
 
 // packages/qwik/src/server/prefetch-strategy.ts
 function getPrefetchResources(snapshotResult, opts, resolvedManifest) {
@@ -348,7 +365,7 @@ function getAutoPrefetch(snapshotResult, resolvedManifest, buildBase) {
   return prefetchResources;
 }
 function addBundle(manifest, urls, prefetchResources, buildBase, bundleFileName) {
-  const url = buildBase + bundleFileName;
+  const url = qDev ? bundleFileName : buildBase + bundleFileName;
   let prefetchResource = urls.get(url);
   if (!prefetchResource) {
     prefetchResource = {
